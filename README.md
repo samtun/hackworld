@@ -1,5 +1,7 @@
 # Hackworld
 
+![Hackworld promo image](public/images/promo.png)
+
 A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 
 ## Features
