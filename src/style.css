@@ -1,0 +1,12 @@
+@font-face {
+    font-family: 'Share Tech';
+    src: url('/fonts/ShareTech-Regular.woff2') format('woff2');
+    font-weight: 400;
+    font-style: normal;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: 'Share Tech', sans-serif;
+}

@@ -1,0 +1,154 @@
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
+import { InputManager } from './InputManager';
+import { Weapon } from './Weapon';
+import { Enemy } from './Enemy';
+import { Item } from './InventoryManager';
+
+export class Player {
+    mesh: THREE.Mesh;
+    body: CANNON.Body;
+    input: InputManager;
+    weapon: Weapon;
+    speed: number = 6;
+    damage: number = 10;
+
+    // Stats
+    maxHp: number = 100;
+    hp: number = 100;
+    maxTp: number = 100;
+    tp: number = 100;
+    strength: number = 14;
+    defense: number = 17;
+    invulnerableTimer: number = 0;
+
+    // Inventory
+    inventory: Item[] = [];
+
+    constructor(scene: THREE.Scene, world: CANNON.World, input: InputManager, physicsMaterial: CANNON.Material) {
+        this.input = input;
+
+        // Initial Loot
+        this.inventory.push({ id: '1', name: 'Aegis Sword α', type: 'weapon' });
+        this.inventory.push({ id: '2', name: 'Brute Butcher β', type: 'weapon' });
+        this.inventory.push({ id: '3', name: 'Data Core α', type: 'core' });
+
+        // Visual Mesh
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const material = new THREE.MeshStandardMaterial({ color: 0x0000ff });
+        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.castShadow = true;
+        scene.add(this.mesh);
+
+        // Physics Body
+        const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+        this.body = new CANNON.Body({
+            mass: 1, // Dynamic body
+            position: new CANNON.Vec3(0, 5, 0), // Start in air
+            shape: shape,
+            fixedRotation: true, // Prevent tipping over
+            material: physicsMaterial
+        });
+        // Damping to stop sliding
+        this.body.linearDamping = 0.9;
+        world.addBody(this.body);
+
+        // Weapon
+        this.weapon = new Weapon(this.mesh);
+    }
+
+    update(dt: number, enemies: Enemy[] = []) {
+        // Movement
+        const inputVector = this.input.getMovementVector();
+
+        // Rotate movement to match isometric camera (45 degrees)
+        // Camera is at (10, 10, 10), so we rotate input by -45 degrees
+        const angle = -Math.PI / 4;
+        const moveX = inputVector.x * Math.cos(angle) - inputVector.y * Math.sin(angle);
+        const moveZ = inputVector.x * Math.sin(angle) + inputVector.y * Math.cos(angle);
+
+        // Apply velocity based on input
+        // We set velocity directly for responsive controls, but keep Y velocity (gravity)
+        this.body.velocity.x = moveX * this.speed;
+        this.body.velocity.z = moveZ * this.speed;
+
+        // Rotation: Face movement direction
+        if (inputVector.length() > 0.1) {
+            const rotationAngle = Math.atan2(moveX, moveZ);
+
+            // Smooth rotation using Quaternion slerp
+            const targetQuaternion = new THREE.Quaternion();
+            targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationAngle);
+            this.mesh.quaternion.slerp(targetQuaternion, 15 * dt);
+        }
+
+        // Sync Mesh with Body
+        this.mesh.position.copy(this.body.position as any);
+        // We handle rotation manually for the character facing, 
+        // but if we wanted physics rotation we'd copy quaternion.
+        // this.mesh.quaternion.copy(this.body.quaternion as any);
+
+        // Jump
+        if (this.input.isJumpPressed() && Math.abs(this.body.velocity.y) < 0.1) {
+            this.body.velocity.y = 10;
+        }
+
+        // Combat
+        if (this.input.isAttackPressed()) {
+            if (this.weapon.attack()) {
+                this.checkAttackHits(enemies);
+            }
+        }
+        this.weapon.update(dt);
+
+        // Invulnerability Timer
+        if (this.invulnerableTimer > 0) {
+            this.invulnerableTimer -= dt;
+            // Flash effect
+            if (Math.floor(this.invulnerableTimer * 10) % 2 === 0) {
+                (this.mesh.material as THREE.MeshStandardMaterial).opacity = 0.5;
+                (this.mesh.material as THREE.MeshStandardMaterial).transparent = true;
+            } else {
+                (this.mesh.material as THREE.MeshStandardMaterial).opacity = 1.0;
+            }
+        } else {
+            (this.mesh.material as THREE.MeshStandardMaterial).opacity = 1.0;
+            (this.mesh.material as THREE.MeshStandardMaterial).transparent = false;
+        }
+    }
+
+    checkAttackHits(enemies: Enemy[]) {
+        const attackRange = 2.0;
+        const attackAngle = Math.PI / 2; // 90 degrees cone
+
+        const playerPos = this.mesh.position;
+        const playerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+
+        for (const enemy of enemies) {
+            if (enemy.isDead || enemy.isDying) continue;
+
+            const enemyPos = enemy.mesh.position;
+            const dist = playerPos.distanceTo(enemyPos);
+
+            if (dist < attackRange) {
+                const dirToEnemy = enemyPos.clone().sub(playerPos).normalize();
+                const angle = playerForward.angleTo(dirToEnemy);
+
+                if (angle < attackAngle / 2) {
+                    enemy.takeDamage(this.damage, this.mesh.position);
+                    console.log("Hit enemy!");
+                }
+            }
+        }
+    }
+
+    takeDamage(amount: number) {
+        if (this.invulnerableTimer > 0) return;
+
+        this.hp -= amount;
+        if (this.hp < 0) this.hp = 0;
+
+        this.invulnerableTimer = 1.0; // 1 second invulnerability
+        console.log(`Player took ${amount} damage. HP: ${this.hp}`);
+    }
+}
