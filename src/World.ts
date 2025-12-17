@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Enemy } from './Enemy';
 import { Player } from './Player';
 
@@ -8,8 +9,9 @@ export class World {
     physicsWorld: CANNON.World;
     portalMesh!: THREE.Mesh;
     bodies: CANNON.Body[] = [];
-    meshes: THREE.Mesh[] = [];
+    meshes: (THREE.Mesh | THREE.Group | THREE.Object3D)[] = [];
     enemies: Enemy[] = [];
+    mixers: THREE.AnimationMixer[] = [];
     physicsMaterial: CANNON.Material;
 
     constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material) {
@@ -22,6 +24,12 @@ export class World {
     }
 
     clear() {
+        // Stop and remove mixers
+        for (const mixer of this.mixers) {
+            mixer.stopAllAction();
+        }
+        this.mixers = [];
+
         // Remove enemies
         for (const enemy of this.enemies) {
             this.scene.remove(enemy.mesh);
@@ -38,8 +46,15 @@ export class World {
         // Remove visual meshes
         for (const mesh of this.meshes) {
             this.scene.remove(mesh);
-            if (mesh.geometry) mesh.geometry.dispose();
-            if (mesh.material instanceof THREE.Material) mesh.material.dispose();
+            const m = mesh as any;
+            if (m.geometry) m.geometry.dispose();
+            if (m.material) {
+                if (Array.isArray(m.material)) {
+                    m.material.forEach((mat: any) => mat.dispose());
+                } else {
+                    m.material.dispose();
+                }
+            }
         }
         this.meshes = [];
 
@@ -83,6 +98,47 @@ export class World {
 
         // Add some walls or obstacles
         this.createBox(2, 2, 2, new CANNON.Vec3(-5, 1, -5));
+
+        // Load Trader Model
+        const loader = new GLTFLoader();
+        loader.load('models/trader_weapons.glb', (gltf) => {
+            const model = gltf.scene;
+            model.position.set(0, 0, -5);
+            this.scene.add(model);
+            this.meshes.push(model);
+
+            // Shadows
+            model.traverse((child) => {
+                if ((child as THREE.Mesh).isMesh) {
+                    child.castShadow = true;
+                    child.receiveShadow = true;
+                }
+            });
+
+            // Animation
+            if (gltf.animations && gltf.animations.length > 0) {
+                const mixer = new THREE.AnimationMixer(model);
+                const action = mixer.clipAction(gltf.animations[0]);
+                action.play();
+                this.mixers.push(mixer);
+            }
+
+            // Physics Body (Simple Box)
+            const box = new THREE.Box3().setFromObject(model);
+            const size = new THREE.Vector3();
+            box.getSize(size);
+            const center = new THREE.Vector3();
+            box.getCenter(center);
+
+            const halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
+            const shape = new CANNON.Box(halfExtents);
+            const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+            body.addShape(shape);
+            body.position.set(center.x, center.y, center.z);
+
+            this.physicsWorld.addBody(body);
+            this.bodies.push(body);
+        });
     }
 
     loadDungeon() {
@@ -131,6 +187,11 @@ export class World {
     }
 
     update(dt: number, player: Player) {
+        // Update mixers
+        for (const mixer of this.mixers) {
+            mixer.update(dt);
+        }
+
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
             enemy.update(dt, player);
