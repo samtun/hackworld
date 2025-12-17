@@ -1,4 +1,5 @@
 import { Player } from './Player';
+import { InputManager } from './InputManager';
 
 // --- Constants ---
 const COLORS = {
@@ -11,6 +12,7 @@ const COLORS = {
     PANEL_LOOT: '#555',
     SLOT_BG: '#cfd8dc',
     ITEM_HOVER: '#666',
+    ITEM_SELECTED: '#888',
     TRANSPARENT: 'transparent',
     SEPARATOR: '#BBBBBB'
 };
@@ -47,6 +49,15 @@ export class InventoryManager {
     // UI Elements
     statsText!: HTMLDivElement;
     lootList!: HTMLDivElement;
+    
+    // Navigation state
+    selectedIndex: number = 0;
+    itemElements: HTMLDivElement[] = [];
+    
+    // Input tracking for debouncing
+    private lastNavigateUpState: boolean = false;
+    private lastNavigateDownState: boolean = false;
+    private lastSelectState: boolean = false;
 
     constructor() {
         this.createUI();
@@ -176,22 +187,39 @@ export class InventoryManager {
     toggle() {
         this.isVisible = !this.isVisible;
         this.container.style.display = this.isVisible ? 'flex' : 'none';
+        
+        // Reset selection when opening inventory
+        if (this.isVisible) {
+            this.selectedIndex = 0;
+        }
     }
 
-    update(player: Player) {
+    update(player: Player, input?: InputManager) {
         if (!this.isVisible) return;
+
+        // Handle keyboard/gamepad navigation first
+        if (input) {
+            this.handleNavigation(player, input);
+        }
 
         // Update Stats
         this.statsText.innerHTML = this.generateStatsHTML(player);
 
         // Update Loot List
         this.lootList.innerHTML = '';
+        this.itemElements = [];
+        
         player.inventory.forEach((item, index) => {
             const itemDiv = document.createElement('div');
             itemDiv.innerText = item.name;
+            
+            const isSelected = index === this.selectedIndex;
+            
             Object.assign(itemDiv.style, {
                 padding: '5px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
+                border: isSelected ? '2px solid #fff' : '2px solid transparent'
             });
 
             // Add separator between items
@@ -199,8 +227,24 @@ export class InventoryManager {
                 itemDiv.style.borderBottom = `1px solid ${COLORS.SEPARATOR}`;
             }
 
-            itemDiv.onmouseover = () => itemDiv.style.backgroundColor = COLORS.ITEM_HOVER;
-            itemDiv.onmouseout = () => itemDiv.style.backgroundColor = COLORS.TRANSPARENT;
+            itemDiv.onmouseover = () => {
+                this.selectedIndex = index;
+                // Just update the visual style without re-rendering everything
+                this.itemElements.forEach((el, i) => {
+                    if (i === index) {
+                        el.style.backgroundColor = COLORS.ITEM_SELECTED;
+                        el.style.border = '2px solid #fff';
+                    } else {
+                        el.style.backgroundColor = COLORS.TRANSPARENT;
+                        el.style.border = '2px solid transparent';
+                    }
+                });
+            };
+            itemDiv.onmouseout = () => {
+                if (!isSelected) {
+                    itemDiv.style.backgroundColor = COLORS.TRANSPARENT;
+                }
+            };
             
             // Handle weapon equipping on click
             if (item.type === 'weapon' && item.weaponType) {
@@ -212,8 +256,43 @@ export class InventoryManager {
                 };
             }
             
+            this.itemElements.push(itemDiv);
             this.lootList.appendChild(itemDiv);
         });
+    }
+
+    private handleNavigation(player: Player, input: InputManager) {
+        const navigateUp = input.isNavigateUpPressed();
+        const navigateDown = input.isNavigateDownPressed();
+        const select = input.isSelectPressed();
+        
+        // Navigate up (with debouncing)
+        if (navigateUp && !this.lastNavigateUpState) {
+            if (this.selectedIndex > 0) {
+                this.selectedIndex--;
+            }
+        }
+        
+        // Navigate down (with debouncing)
+        if (navigateDown && !this.lastNavigateDownState) {
+            if (this.selectedIndex < player.inventory.length - 1) {
+                this.selectedIndex++;
+            }
+        }
+        
+        // Select/Equip item (with debouncing)
+        if (select && !this.lastSelectState) {
+            const item = player.inventory[this.selectedIndex];
+            if (item && item.type === 'weapon' && item.weaponType) {
+                player.equipWeapon(item.weaponType);
+                console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
+            }
+        }
+        
+        // Update last states for debouncing
+        this.lastNavigateUpState = navigateUp;
+        this.lastNavigateDownState = navigateDown;
+        this.lastSelectState = select;
     }
 
     private generateStatsHTML(player: Player): string {
