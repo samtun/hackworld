@@ -94,4 +94,23 @@ export class InputManager {
         }
         return false;
     }
+
+    getWeaponSwitchKey(): number | null {
+        if (this.keys['Digit1']) return 1;
+        if (this.keys['Digit2']) return 2;
+        if (this.keys['Digit3']) return 3;
+        if (this.keys['Digit4']) return 4;
+        
+        // Gamepad D-Pad
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[12].pressed) return 1; // D-Pad Up
+                if (gp.buttons[13].pressed) return 2; // D-Pad Down
+                if (gp.buttons[14].pressed) return 3; // D-Pad Left
+                if (gp.buttons[15].pressed) return 4; // D-Pad Right
+            }
+        }
+        return null;
+    }
 }

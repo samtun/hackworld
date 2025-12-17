@@ -1,4 +1,5 @@
 import { Player } from './Player';
+import { WeaponType } from './Weapon';
 
 export class UIManager {
     container: HTMLDivElement;
@@ -6,6 +7,7 @@ export class UIManager {
     tpPath: SVGPathElement;
     hpText: HTMLDivElement;
     tpText: HTMLDivElement;
+    weaponText: HTMLDivElement;
 
     constructor() {
         this.container = document.createElement('div');
@@ -95,12 +97,35 @@ export class UIManager {
         this.tpText.style.fontSize = '20px';
         this.tpText.style.textShadow = '2px 2px 0px #000';
         this.container.appendChild(this.tpText);
+
+        // Weapon Display
+        this.weaponText = document.createElement('div');
+        this.weaponText.style.position = 'absolute';
+        this.weaponText.style.left = '30px';
+        this.weaponText.style.top = '145px';
+        this.weaponText.style.color = '#ffffff';
+        this.weaponText.style.fontSize = '16px';
+        this.weaponText.style.textShadow = '2px 2px 0px #000';
+        this.weaponText.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        this.weaponText.style.padding = '5px 10px';
+        this.weaponText.style.borderRadius = '5px';
+        this.weaponText.style.whiteSpace = 'nowrap';
+        document.body.appendChild(this.weaponText);
     }
 
     update(player: Player) {
         // Update Text
         this.hpText.innerText = `${Math.ceil(player.hp)}`;
         this.tpText.innerText = `${Math.ceil(player.tp)}`;
+
+        // Update Weapon Display
+        const weaponNames = {
+            [WeaponType.SWORD]: 'Sword',
+            [WeaponType.DUAL_BLADE]: 'Dual Blade',
+            [WeaponType.LANCE]: 'Lance',
+            [WeaponType.HAMMER]: 'Hammer'
+        };
+        this.weaponText.innerText = `Weapon: ${weaponNames[player.currentWeaponType]} (Keys 1-4)`;
 
         // Update Rings
         const hpRatio = player.hp / player.maxHp;

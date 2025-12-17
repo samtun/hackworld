@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { InputManager } from './InputManager';
-import { Weapon } from './Weapon';
+import { Weapon, WeaponType } from './Weapon';
 import { Enemy } from './Enemy';
 import { Item } from './InventoryManager';
 
@@ -11,7 +11,8 @@ export class Player {
     input: InputManager;
     weapon: Weapon;
     speed: number = 6;
-    damage: number = 10;
+    currentWeaponType: WeaponType = WeaponType.SWORD;
+    lastWeaponSwitchKey: number | null = null;
 
     // Stats
     maxHp: number = 100;
@@ -54,10 +55,26 @@ export class Player {
         world.addBody(this.body);
 
         // Weapon
-        this.weapon = new Weapon(this.mesh);
+        this.weapon = new Weapon(this.mesh, this.currentWeaponType);
+    }
+
+    equipWeapon(weaponType: WeaponType) {
+        this.currentWeaponType = weaponType;
+        this.weapon.changeWeaponType(this.mesh, weaponType);
     }
 
     update(dt: number, enemies: Enemy[] = []) {
+        // Weapon Switching
+        const weaponKey = this.input.getWeaponSwitchKey();
+        if (weaponKey !== null && weaponKey !== this.lastWeaponSwitchKey) {
+            const weaponTypes = [WeaponType.SWORD, WeaponType.DUAL_BLADE, WeaponType.LANCE, WeaponType.HAMMER];
+            if (weaponKey >= 1 && weaponKey <= weaponTypes.length) {
+                this.equipWeapon(weaponTypes[weaponKey - 1]);
+                console.log(`Switched to weapon: ${this.currentWeaponType}`);
+            }
+        }
+        this.lastWeaponSwitchKey = weaponKey;
+
         // Movement
         const inputVector = this.input.getMovementVector();
 
@@ -118,8 +135,10 @@ export class Player {
     }
 
     checkAttackHits(enemies: Enemy[]) {
-        const attackRange = 2.0;
-        const attackAngle = Math.PI / 2; // 90 degrees cone
+        // Use weapon stats for range and angle
+        const attackRange = this.weapon.stats.range;
+        const attackAngle = this.weapon.stats.attackAngle;
+        const damage = this.weapon.stats.damage;
 
         const playerPos = this.mesh.position;
         const playerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
@@ -135,8 +154,8 @@ export class Player {
                 const angle = playerForward.angleTo(dirToEnemy);
 
                 if (angle < attackAngle / 2) {
-                    enemy.takeDamage(this.damage, this.mesh.position);
-                    console.log("Hit enemy!");
+                    enemy.takeDamage(damage, this.mesh.position);
+                    console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
                 }
             }
         }
