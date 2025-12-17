@@ -87,8 +87,8 @@ export class Weapon {
             const gltf = await this.loader.loadAsync(modelPath);
             const model = gltf.scene;
             
-            // Scale the model to appropriate size (adjust as needed)
-            model.scale.set(0.5, 0.5, 0.5);
+            // Scale the model to appropriate size (1.5x larger than original 0.5 scale)
+            model.scale.set(0.75, 0.75, 0.75);
             
             // Clear any existing children and dispose resources
             this.disposeChildren(this.mesh);
