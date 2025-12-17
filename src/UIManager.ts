@@ -6,6 +6,7 @@ export class UIManager {
     tpPath: SVGPathElement;
     hpText: HTMLDivElement;
     tpText: HTMLDivElement;
+    interactionHint: HTMLDivElement;
 
     constructor() {
         this.container = document.createElement('div');
@@ -95,6 +96,20 @@ export class UIManager {
         this.tpText.style.fontSize = '20px';
         this.tpText.style.textShadow = '2px 2px 0px #000';
         this.container.appendChild(this.tpText);
+
+        // Interaction Hint
+        this.interactionHint = document.createElement('div');
+        this.interactionHint.style.position = 'fixed';
+        this.interactionHint.style.bottom = '100px';
+        this.interactionHint.style.left = '50%';
+        this.interactionHint.style.transform = 'translateX(-50%)';
+        this.interactionHint.style.color = '#fff';
+        this.interactionHint.style.fontSize = '20px';
+        this.interactionHint.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        this.interactionHint.style.textShadow = '2px 2px 0px #000';
+        this.interactionHint.style.display = 'none';
+        this.interactionHint.innerText = '[ENTER] / (A) Interact';
+        document.body.appendChild(this.interactionHint);
     }
 
     update(player: Player) {
@@ -114,6 +129,11 @@ export class UIManager {
 
         // TP: Left side
         this.setArc(this.tpPath, 60, 60, 50, -Math.PI / 2 - gap + rotationOffset, -Math.PI * 1.5 + gap + rotationOffset, tpRatio, true);
+    }
+
+    showInteractionHint(show: boolean, text: string = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Interact') {
+        this.interactionHint.style.display = show ? 'block' : 'none';
+        this.interactionHint.innerHTML = text;
     }
 
     private setArc(path: SVGPathElement, cx: number, cy: number, r: number, startAngle: number, endAngle: number, ratio: number, counterClockwise: boolean) {

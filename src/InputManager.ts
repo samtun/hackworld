@@ -127,7 +127,7 @@ export class InputManager {
     }
 
     isSelectPressed(): boolean {
-        if (this.keys['Space'] || this.keys['Enter']) return true;
+        if (this.keys['Enter']) return true;
 
         // Gamepad A button (button 0)
         if (this.gamepadIndex !== null) {

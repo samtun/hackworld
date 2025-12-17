@@ -33,7 +33,7 @@ export class Game {
 
     // Input State
     wasInventoryPressed: boolean = false;
-    lastPortalDestination: string | null = null;
+    wasSelectPressed: boolean = false;
 
     constructor() {
         // Setup Three.js
@@ -185,31 +185,31 @@ export class Game {
 
         // Check Portal
         const destination = this.world.checkPortalInteraction(this.player.mesh.position);
+        const isSelectPressed = this.input.isSelectPressed();
 
         if (destination) {
-            // Only trigger if we just entered the portal area (or switched to a new one)
-            if (destination !== this.lastPortalDestination) {
-                this.lastPortalDestination = destination;
+            // Show hint
+            this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Enter Portal');
 
+            // Check for interaction
+            if (isSelectPressed && !this.wasSelectPressed) {
                 if (!this.dungeonSelection.isVisible) {
                     // If destination is 'selection', show dungeon selection UI
                     if (destination === 'selection') {
                         this.dungeonSelection.show((dungeonId: string) => {
                             this.switchScene(dungeonId);
-                            // Reset lastPortalDestination so we can use portal again if we come back
-                            this.lastPortalDestination = null;
                         });
                     } else {
                         // Otherwise, directly switch to the destination
                         this.switchScene(destination);
-                        this.lastPortalDestination = null;
                     }
                 }
             }
         } else {
-            // Reset when leaving portal area
-            this.lastPortalDestination = null;
+            // Hide hint
+            this.ui.showInteractionHint(false);
         }
+        this.wasSelectPressed = isSelectPressed;
 
         this.renderer.render(this.scene, this.camera);
     }

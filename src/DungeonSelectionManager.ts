@@ -40,8 +40,7 @@ export class DungeonSelectionManager {
     private lastNavigateDownState: boolean = false;
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
-
-    // Callback when dungeon is selected
+    private waitForRelease: boolean = false;
     private onDungeonSelected?: (dungeonId: string) => void;
 
     constructor(dungeonClasses: (typeof BaseDungeon)[]) {
@@ -141,6 +140,7 @@ export class DungeonSelectionManager {
         this.onDungeonSelected = onDungeonSelected;
         this.selectedIndex = 0;
         this.needsRender = true;
+        this.waitForRelease = true;
         this.render();
     }
 
@@ -237,6 +237,13 @@ export class DungeonSelectionManager {
         const isSelectPressed = input.isSelectPressed();
         const isCancelPressed = input.isCancelPressed();
 
+        // Wait for select key release to prevent accidental selection
+        if (this.waitForRelease) {
+            if (!isSelectPressed) {
+                this.waitForRelease = false;
+            }
+        }
+
         // Navigate Up
         if (isUpPressed && !this.lastNavigateUpState) {
             this.selectedIndex = Math.max(0, this.selectedIndex - 1);
@@ -250,7 +257,7 @@ export class DungeonSelectionManager {
         this.lastNavigateDownState = isDownPressed;
 
         // Select
-        if (isSelectPressed && !this.lastSelectState) {
+        if (isSelectPressed && !this.lastSelectState && !this.waitForRelease) {
             const metadata = this.dungeonClasses[this.selectedIndex].getMetadata();
             this.selectDungeon(metadata.id);
         }
