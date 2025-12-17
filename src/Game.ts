@@ -24,7 +24,7 @@ export class Game {
     dungeonSelection: DungeonSelectionManager;
 
     clock: THREE.Clock;
-    currentScene: 'lobby' | 'dungeon' | 'dungeon2' = 'lobby';
+    currentScene: string = 'lobby';
 
     // Debug
     physicsDebugger: any;
@@ -111,13 +111,13 @@ export class Game {
         // Use loadStage helper method
         if (destination) {
             this.world.loadStage(destination);
-            this.currentScene = destination as 'lobby' | 'dungeon' | 'dungeon2';
+            this.currentScene = destination;
         }
 
         // Reset player position
         this.player.body.position.set(0, 5, 0);
         this.player.body.velocity.set(0, 0, 0);
-        
+
         // Snap camera
         this.camera.position.set(10, 15, 10);
     }
