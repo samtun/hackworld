@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Enemy } from './Enemy';
+import { LargeEnemy } from './LargeEnemy';
 import { Player } from './Player';
 import { AssetManager } from './AssetManager';
 
@@ -216,6 +217,10 @@ export class World {
         this.spawnEnemy(new CANNON.Vec3(5, 2, -5));
         this.spawnEnemy(new CANNON.Vec3(-5, 2, -5));
         this.spawnEnemy(new CANNON.Vec3(8, 2, 8));
+        
+        // Spawn Large Enemies
+        this.spawnLargeEnemy(new CANNON.Vec3(0, 2, 10));
+        this.spawnLargeEnemy(new CANNON.Vec3(10, 2, 0));
     }
 
     loadDungeon2() {
@@ -266,6 +271,11 @@ export class World {
     spawnEnemy(position: CANNON.Vec3) {
         const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
         this.enemies.push(enemy);
+    }
+
+    spawnLargeEnemy(position: CANNON.Vec3) {
+        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+        this.enemies.push(largeEnemy);
     }
 
     update(dt: number, player: Player) {

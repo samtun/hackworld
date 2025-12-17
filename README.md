@@ -18,6 +18,11 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - **Rendering**: Three.js
 - **Physics**: Cannon-es
 - **Build Tool**: Vite
+- **Hosting**: GitHub Pages
+
+## Live Demo
+
+Play the game at: [https://samtun.github.io/hackworld/](https://samtun.github.io/hackworld/)
 
 ## Installation & Start
 
@@ -35,3 +40,10 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
    ```bash
    npm run build
    ```
+
+## Deployment
+
+The game is automatically deployed to GitHub Pages when changes are pushed to the `main` branch. The deployment workflow:
+- Builds the project using Vite with base path `/hackworld/`
+- Uploads the build artifacts from the `dist` folder
+- Deploys to GitHub Pages at [https://samtun.github.io/hackworld/](https://samtun.github.io/hackworld/)
