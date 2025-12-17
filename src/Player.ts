@@ -24,16 +24,17 @@ export class Player {
 
     // Inventory
     inventory: Item[] = [];
+    money: number = 500; // Starting money
 
     constructor(scene: THREE.Scene, world: CANNON.World, input: InputManager, physicsMaterial: CANNON.Material) {
         this.input = input;
 
-        // Initial Loot - Four weapons with specific names
-        this.inventory.push({ id: '1', name: 'Aegis Sword', type: 'weapon', weaponType: WeaponType.SWORD });
-        this.inventory.push({ id: '2', name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE });
-        this.inventory.push({ id: '3', name: 'Fierce Lance', type: 'weapon', weaponType: WeaponType.LANCE });
-        this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER });
-        this.inventory.push({ id: '5', name: 'Data Core α', type: 'core' });
+        // Initial Loot - Four weapons with specific names (with prices)
+        this.inventory.push({ id: '1', name: 'Aegis Sword', type: 'weapon', weaponType: WeaponType.SWORD, buyPrice: 100, sellPrice: 50 });
+        this.inventory.push({ id: '2', name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE, buyPrice: 150, sellPrice: 75 });
+        this.inventory.push({ id: '3', name: 'Fierce Lance', type: 'weapon', weaponType: WeaponType.LANCE, buyPrice: 120, sellPrice: 60 });
+        this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER, buyPrice: 180, sellPrice: 90 });
+        this.inventory.push({ id: '5', name: 'Data Core α', type: 'core', buyPrice: 200, sellPrice: 100 });
 
         // Visual Mesh
         const geometry = new THREE.BoxGeometry(1, 1, 1);

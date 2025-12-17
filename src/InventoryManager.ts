@@ -40,6 +40,8 @@ export interface Item {
         hp?: number;
         tp?: number;
     };
+    buyPrice?: number;  // Price to buy from trader
+    sellPrice?: number; // Price to sell to trader
 }
 
 export class InventoryManager {
@@ -227,7 +229,8 @@ export class InventoryManager {
         
         player.inventory.forEach((item, index) => {
             const itemDiv = document.createElement('div');
-            itemDiv.innerText = item.name;
+            const priceText = item.sellPrice !== undefined ? ` (${item.sellPrice}G)` : '';
+            itemDiv.innerText = `${item.name}${priceText}`;
             
             const isSelected = index === this.selectedIndex;
             

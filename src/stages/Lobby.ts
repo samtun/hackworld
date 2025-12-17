@@ -6,6 +6,9 @@ export class Lobby extends BaseDungeon {
     id = 'lobby';
     name = 'Lobby';
     description = 'Safe hub area';
+    
+    // Store trader position for interaction
+    private traderPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, -5);
 
     load(): void {
         this.clear();
@@ -62,5 +65,15 @@ export class Lobby extends BaseDungeon {
         } else {
             console.warn('Trader model not preloaded');
         }
+    }
+
+    /**
+     * Check if player is near trader
+     */
+    checkTraderInteraction(playerPosition: THREE.Vector3): boolean {
+        const dist = playerPosition.distanceTo(
+            new THREE.Vector3(this.traderPosition.x, this.traderPosition.y, this.traderPosition.z)
+        );
+        return dist < 2.0; // Interaction range
     }
 }
