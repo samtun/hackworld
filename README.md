@@ -39,6 +39,13 @@ Play the game at: [https://samtun.github.io/hackworld/](https://samtun.github.io
    npm run build
    ```
 
+## Development
+
+### Debug Mode
+The game includes a debug mode for visualizing physics colliders.
+- **Availability**: Development builds only (`npm run dev`)
+- **Toggle**: Press **F8** to show/hide colliders
+
 ## Deployment
 
 The game is automatically deployed to GitHub Pages when changes are pushed to the `main` branch. The deployment workflow:
