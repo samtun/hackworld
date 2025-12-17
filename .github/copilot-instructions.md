@@ -125,6 +125,7 @@ When updating README.md:
 ### Physics and Rendering Sync
 Always sync Three.js mesh positions with Cannon-es body positions:
 ```typescript
+// Note: Type casting is used due to compatibility between CANNON.Vec3/Quaternion and THREE.Vector3/Quaternion
 this.mesh.position.copy(this.body.position as any);
 this.mesh.quaternion.copy(this.body.quaternion as any);
 ```
@@ -135,8 +136,10 @@ Always clean up resources to prevent memory leaks:
 scene.remove(this.mesh);
 world.removeBody(this.body);
 if (this.mesh.geometry) this.mesh.geometry.dispose();
-if ((this.mesh.material as THREE.Material).dispose) {
-    (this.mesh.material as THREE.Material).dispose();
+// Check if material has dispose method before calling
+const material = this.mesh.material as THREE.Material;
+if (material && typeof material.dispose === 'function') {
+    material.dispose();
 }
 ```
 
@@ -150,7 +153,7 @@ Use the existing state management patterns in Game.ts for scene transitions and 
 - ❌ Don't forget to update README.md when adding features
 - ❌ Don't create tightly coupled components
 - ❌ Don't ignore TypeScript type errors
-- ❌ Don't leave console.log statements in production code
+- ❌ Don't leave excessive debug logging (use console.log sparingly for important events only)
 - ❌ Don't forget to dispose of resources (geometries, materials, bodies)
 
 ## Quick Checklist for Changes
