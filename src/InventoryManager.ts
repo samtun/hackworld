@@ -205,8 +205,10 @@ export class InventoryManager {
             // Handle weapon equipping on click
             if (item.type === 'weapon' && item.weaponType) {
                 itemDiv.onclick = () => {
-                    player.equipWeapon(item.weaponType!);
-                    console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
+                    if (item.weaponType) {
+                        player.equipWeapon(item.weaponType);
+                        console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
+                    }
                 };
             }
             
