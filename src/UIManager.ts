@@ -125,7 +125,7 @@ export class UIManager {
             [WeaponType.LANCE]: 'Lance',
             [WeaponType.HAMMER]: 'Hammer'
         };
-        this.weaponText.innerText = `Weapon: ${weaponNames[player.currentWeaponType]} (Keys 1-4)`;
+        this.weaponText.innerText = `Weapon: ${weaponNames[player.currentWeaponType]}`;
 
         // Update Rings
         const hpRatio = player.hp / player.maxHp;

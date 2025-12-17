@@ -25,10 +25,13 @@ const STYLES = {
     SLOT_GAP: '15px'
 };
 
+import { WeaponType } from './Weapon';
+
 export interface Item {
     id: string;
     name: string;
     type: 'weapon' | 'core' | 'chip';
+    weaponType?: WeaponType; // For weapon items
     stats?: {
         strength?: number;
         defense?: number;
@@ -198,6 +201,15 @@ export class InventoryManager {
 
             itemDiv.onmouseover = () => itemDiv.style.backgroundColor = COLORS.ITEM_HOVER;
             itemDiv.onmouseout = () => itemDiv.style.backgroundColor = COLORS.TRANSPARENT;
+            
+            // Handle weapon equipping on click
+            if (item.type === 'weapon' && item.weaponType) {
+                itemDiv.onclick = () => {
+                    player.equipWeapon(item.weaponType!);
+                    console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
+                };
+            }
+            
             this.lootList.appendChild(itemDiv);
         });
     }

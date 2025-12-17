@@ -12,7 +12,6 @@ export class Player {
     weapon: Weapon;
     speed: number = 6;
     currentWeaponType: WeaponType = WeaponType.SWORD;
-    lastWeaponSwitchKey: number | null = null;
 
     // Stats
     maxHp: number = 100;
@@ -29,10 +28,12 @@ export class Player {
     constructor(scene: THREE.Scene, world: CANNON.World, input: InputManager, physicsMaterial: CANNON.Material) {
         this.input = input;
 
-        // Initial Loot
-        this.inventory.push({ id: '1', name: 'Aegis Sword α', type: 'weapon' });
-        this.inventory.push({ id: '2', name: 'Brute Butcher β', type: 'weapon' });
-        this.inventory.push({ id: '3', name: 'Data Core α', type: 'core' });
+        // Initial Loot - Four weapons with specific names
+        this.inventory.push({ id: '1', name: 'Aegis Sword', type: 'weapon', weaponType: WeaponType.SWORD });
+        this.inventory.push({ id: '2', name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE });
+        this.inventory.push({ id: '3', name: 'Fierce Lance', type: 'weapon', weaponType: WeaponType.LANCE });
+        this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER });
+        this.inventory.push({ id: '5', name: 'Data Core α', type: 'core' });
 
         // Visual Mesh
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -64,17 +65,6 @@ export class Player {
     }
 
     update(dt: number, enemies: Enemy[] = []) {
-        // Weapon Switching
-        const weaponKey = this.input.getWeaponSwitchKey();
-        if (weaponKey !== null && weaponKey !== this.lastWeaponSwitchKey) {
-            const weaponTypes = [WeaponType.SWORD, WeaponType.DUAL_BLADE, WeaponType.LANCE, WeaponType.HAMMER];
-            if (weaponKey >= 1 && weaponKey <= weaponTypes.length) {
-                this.equipWeapon(weaponTypes[weaponKey - 1]);
-                console.log(`Switched to weapon: ${this.currentWeaponType}`);
-            }
-        }
-        this.lastWeaponSwitchKey = weaponKey;
-
         // Movement
         const inputVector = this.input.getMovementVector();
 
