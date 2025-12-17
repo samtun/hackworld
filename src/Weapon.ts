@@ -47,6 +47,7 @@ export class Weapon {
     isAttacking: boolean = false;
     private attackTimer: number = 0;
     private baseRotation: THREE.Euler;
+    private basePosition: THREE.Vector3;
     weaponType: WeaponType;
     stats: WeaponStats;
 
@@ -60,6 +61,7 @@ export class Weapon {
         // Position relative to player (held in hand)
         this.mesh.position.set(0.6, 0, 0.5);
         this.baseRotation = this.mesh.rotation.clone();
+        this.basePosition = this.mesh.position.clone();
 
         parent.add(this.mesh);
     }
@@ -82,7 +84,7 @@ export class Weapon {
                 const bladeMat = new THREE.MeshStandardMaterial({ color: 0x00ffff });
                 const blade1 = new THREE.Mesh(blade1Geom, bladeMat);
                 blade1.position.set(-0.15, 0, 0);
-                const blade2 = new THREE.Mesh(blade1Geom, bladeMat.clone());
+                const blade2 = new THREE.Mesh(blade1Geom, bladeMat);
                 blade2.position.set(0.15, 0, 0);
                 group.add(blade1);
                 group.add(blade2);
@@ -139,6 +141,7 @@ export class Weapon {
         if (progress >= 1) {
             this.isAttacking = false;
             this.mesh.rotation.copy(this.baseRotation);
+            this.mesh.position.copy(this.basePosition);
             return;
         }
 
@@ -164,7 +167,7 @@ export class Weapon {
             case WeaponType.LANCE:
                 // Thrust forward
                 const thrustDistance = Math.sin(progress * Math.PI) * 0.8;
-                this.mesh.position.z = 0.5 + thrustDistance;
+                this.mesh.position.z = this.basePosition.z + thrustDistance;
                 break;
                 
             case WeaponType.HAMMER:
@@ -191,6 +194,7 @@ export class Weapon {
         this.mesh = this.createWeaponMesh(newType);
         this.mesh.position.set(0.6, 0, 0.5);
         this.baseRotation = this.mesh.rotation.clone();
+        this.basePosition = this.mesh.position.clone();
         
         parent.add(this.mesh);
     }
