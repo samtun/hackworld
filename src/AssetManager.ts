@@ -1,5 +1,6 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 /**
  * AssetManager - Singleton class for preloading and caching GLTF models
@@ -67,7 +68,19 @@ export class AssetManager {
      * Get a preloaded model (clone it to allow multiple instances)
      */
     get(path: string): GLTF | null {
-        return this.cache.get(path) || null;
+        const cached = this.cache.get(path);
+        if (!cached) return null;
+
+        // We must clone the scene using SkeletonUtils to ensure SkinnedMeshes
+        // are correctly cloned and have their own unique skeletons.
+        // Standard .clone() shares the skeleton which causes issues.
+        const scene = SkeletonUtils.clone(cached.scene);
+
+        // Return a new object with the cloned scene but shared animations/data
+        return {
+            ...cached,
+            scene: scene as THREE.Group
+        };
     }
 
     /**

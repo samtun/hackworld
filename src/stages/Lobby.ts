@@ -23,7 +23,7 @@ export class Lobby extends BaseDungeon {
         // Load Trader Model from cache
         const traderGltf = this.assetManager.get('models/trader_weapons.glb');
         if (traderGltf) {
-            const model = traderGltf.scene.clone(true);
+            const model = traderGltf.scene;
             model.position.set(0, 0, -5);
             this.scene.add(model);
             this.meshes.push(model);
