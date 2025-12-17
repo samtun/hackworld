@@ -53,6 +53,7 @@ export class InventoryManager {
     // Navigation state
     selectedIndex: number = 0;
     itemElements: HTMLDivElement[] = [];
+    needsRender: boolean = false;
     
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
@@ -191,17 +192,32 @@ export class InventoryManager {
         // Reset selection when opening inventory
         if (this.isVisible) {
             this.selectedIndex = 0;
+            this.needsRender = true;
         }
     }
 
     update(player: Player, input?: InputManager) {
         if (!this.isVisible) return;
 
-        // Handle keyboard/gamepad navigation first
+        // Handle keyboard/gamepad navigation
         if (input) {
+            const oldIndex = this.selectedIndex;
             this.handleNavigation(player, input);
+            
+            // Mark for re-render if selection changed
+            if (oldIndex !== this.selectedIndex) {
+                this.needsRender = true;
+            }
         }
 
+        // Only re-render if needed
+        if (this.needsRender) {
+            this.render(player);
+            this.needsRender = false;
+        }
+    }
+
+    private render(player: Player) {
         // Update Stats
         this.statsText.innerHTML = this.generateStatsHTML(player);
 
