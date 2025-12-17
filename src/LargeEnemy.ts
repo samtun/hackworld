@@ -17,7 +17,6 @@ export class LargeEnemy extends Enemy {
         
         // Replace the mesh
         scene.remove(this.mesh);
-        this.mesh.removeFromParent();
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.castShadow = true;
         scene.add(this.mesh);
@@ -29,7 +28,7 @@ export class LargeEnemy extends Enemy {
         world.removeBody(this.body);
         const shape = new CANNON.Box(new CANNON.Vec3(0.75, 0.75, 0.75)); // 1.5 / 2
         this.body = new CANNON.Body({
-            mass: 8, // Heavier than normal enemy
+            mass: 17, // Proportional to volume: 5 * (1.5^3) ≈ 17
             material: physicsMaterial,
             fixedRotation: true
         });
