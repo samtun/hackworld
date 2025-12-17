@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 export enum WeaponType {
     SWORD = 'sword',
@@ -6,6 +7,14 @@ export enum WeaponType {
     LANCE = 'lance',
     HAMMER = 'hammer'
 }
+
+// Model paths for each weapon type
+const WEAPON_MODEL_PATHS: Record<WeaponType, string> = {
+    [WeaponType.SWORD]: '/models/sword.glb',
+    [WeaponType.DUAL_BLADE]: '/models/double_sword.glb',
+    [WeaponType.LANCE]: '/models/lance.glb',
+    [WeaponType.HAMMER]: '/models/hammer.glb'
+};
 
 export interface WeaponStats {
     damage: number;
@@ -50,13 +59,15 @@ export class Weapon {
     private basePosition: THREE.Vector3;
     weaponType: WeaponType;
     stats: WeaponStats;
+    private loader: GLTFLoader;
 
     constructor(parent: THREE.Object3D, weaponType: WeaponType = WeaponType.SWORD) {
         this.weaponType = weaponType;
         this.stats = WEAPON_CONFIGS[weaponType];
+        this.loader = new GLTFLoader();
         
-        // Create weapon mesh based on type
-        this.mesh = this.createWeaponMesh(weaponType);
+        // Create empty group initially
+        this.mesh = new THREE.Group();
         
         // Position relative to player (held in hand)
         this.mesh.position.set(0.6, 0, 0.5);
@@ -64,63 +75,54 @@ export class Weapon {
         this.basePosition = this.mesh.position.clone();
 
         parent.add(this.mesh);
+        
+        // Load the weapon model asynchronously
+        this.loadWeaponModel(weaponType);
     }
 
-    private createWeaponMesh(type: WeaponType): THREE.Group {
-        const group = new THREE.Group();
+    private async loadWeaponModel(type: WeaponType): Promise<void> {
+        const modelPath = WEAPON_MODEL_PATHS[type];
         
-        switch (type) {
-            case WeaponType.SWORD:
-                // Single red sword
-                const swordGeom = new THREE.BoxGeometry(0.1, 0.1, 1.5);
-                const swordMat = new THREE.MeshStandardMaterial({ color: 0xff0000 });
-                const sword = new THREE.Mesh(swordGeom, swordMat);
-                group.add(sword);
-                break;
-                
-            case WeaponType.DUAL_BLADE:
-                // Two smaller cyan blades
-                const blade1Geom = new THREE.BoxGeometry(0.08, 0.08, 1.2);
-                const bladeMat = new THREE.MeshStandardMaterial({ color: 0x00ffff });
-                const blade1 = new THREE.Mesh(blade1Geom, bladeMat);
-                blade1.position.set(-0.15, 0, 0);
-                const blade2 = new THREE.Mesh(blade1Geom, bladeMat);
-                blade2.position.set(0.15, 0, 0);
-                group.add(blade1);
-                group.add(blade2);
-                break;
-                
-            case WeaponType.LANCE:
-                // Long green spear
-                const shaftGeom = new THREE.CylinderGeometry(0.05, 0.05, 2.5);
-                const shaftMat = new THREE.MeshStandardMaterial({ color: 0x8b4513 });
-                const shaft = new THREE.Mesh(shaftGeom, shaftMat);
-                shaft.rotation.x = Math.PI / 2;
-                const tipGeom = new THREE.ConeGeometry(0.1, 0.3, 4);
-                const tipMat = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-                const tip = new THREE.Mesh(tipGeom, tipMat);
-                tip.rotation.x = Math.PI / 2;
-                tip.position.set(0, 0, 1.4);
-                group.add(shaft);
-                group.add(tip);
-                break;
-                
-            case WeaponType.HAMMER:
-                // Heavy purple hammer
-                const handleGeom = new THREE.CylinderGeometry(0.06, 0.06, 1.2);
-                const handleMat = new THREE.MeshStandardMaterial({ color: 0x4a2511 });
-                const handle = new THREE.Mesh(handleGeom, handleMat);
-                handle.rotation.x = Math.PI / 2;
-                const headGeom = new THREE.BoxGeometry(0.4, 0.4, 0.5);
-                const headMat = new THREE.MeshStandardMaterial({ color: 0x9c27b0 });
-                const head = new THREE.Mesh(headGeom, headMat);
-                head.position.set(0, 0, 0.85);
-                group.add(handle);
-                group.add(head);
-                break;
+        try {
+            const gltf = await this.loader.loadAsync(modelPath);
+            const model = gltf.scene;
+            
+            // Scale the model to appropriate size (adjust as needed)
+            model.scale.set(0.5, 0.5, 0.5);
+            
+            // Clear any existing children
+            while (this.mesh.children.length > 0) {
+                this.mesh.remove(this.mesh.children[0]);
+            }
+            
+            // Add the loaded model to the weapon group
+            this.mesh.add(model);
+            
+            console.log(`Loaded weapon model: ${type}`);
+        } catch (error) {
+            console.error(`Failed to load weapon model ${type}:`, error);
+            // Fall back to creating a simple placeholder
+            this.createFallbackMesh(type);
+        }
+    }
+
+    private createFallbackMesh(type: WeaponType): void {
+        // Clear any existing children
+        while (this.mesh.children.length > 0) {
+            this.mesh.remove(this.mesh.children[0]);
         }
         
-        return group;
+        // Create a simple colored box as fallback
+        const geometry = new THREE.BoxGeometry(0.1, 0.1, 1.0);
+        const colors: Record<WeaponType, number> = {
+            [WeaponType.SWORD]: 0xff0000,
+            [WeaponType.DUAL_BLADE]: 0x00ffff,
+            [WeaponType.LANCE]: 0x00ff00,
+            [WeaponType.HAMMER]: 0x9c27b0
+        };
+        const material = new THREE.MeshStandardMaterial({ color: colors[type] });
+        const mesh = new THREE.Mesh(geometry, material);
+        this.mesh.add(mesh);
     }
 
     attack(): boolean {
@@ -190,12 +192,15 @@ export class Weapon {
         this.weaponType = newType;
         this.stats = WEAPON_CONFIGS[newType];
         
-        // Create new mesh
-        this.mesh = this.createWeaponMesh(newType);
+        // Create new empty group
+        this.mesh = new THREE.Group();
         this.mesh.position.set(0.6, 0, 0.5);
         this.baseRotation = this.mesh.rotation.clone();
         this.basePosition = this.mesh.position.clone();
         
         parent.add(this.mesh);
+        
+        // Load the new weapon model
+        this.loadWeaponModel(newType);
     }
 }
