@@ -6,6 +6,8 @@ import { World } from './World';
 import { InputManager } from './InputManager';
 import { UIManager } from './UIManager';
 import { InventoryManager } from './InventoryManager';
+import { DungeonSelectionManager } from './DungeonSelectionManager';
+import { AVAILABLE_DUNGEONS } from './stages';
 
 export class Game {
     scene: THREE.Scene;
@@ -19,9 +21,10 @@ export class Game {
     input: InputManager;
     ui: UIManager;
     inventory: InventoryManager;
+    dungeonSelection: DungeonSelectionManager;
 
     clock: THREE.Clock;
-    currentScene: 'lobby' | 'dungeon' = 'lobby';
+    currentScene: string = 'lobby';
 
     // Debug
     physicsDebugger: any;
@@ -30,6 +33,7 @@ export class Game {
 
     // Input State
     wasInventoryPressed: boolean = false;
+    wasSelectPressed: boolean = false;
 
     constructor() {
         // Setup Three.js
@@ -73,6 +77,7 @@ export class Game {
         this.player = new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial);
         this.ui = new UIManager();
         this.inventory = new InventoryManager();
+        this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
         this.clock = new THREE.Clock();
 
         // Debug Mode Setup
@@ -92,6 +97,8 @@ export class Game {
                         mesh.visible = this.debugMode;
                     });
                     console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'}`);
+                } else if (this.debugMode) {
+                    console.log(`[Debug] Key pressed: ${e.code}`);
                 }
             });
         }
@@ -103,24 +110,19 @@ export class Game {
         this.animate();
     }
 
-    switchScene() {
-        if (this.currentScene === 'lobby') {
-            this.currentScene = 'dungeon';
-            this.world.loadDungeon();
-            // Reset player position
-            this.player.body.position.set(0, 5, 0);
-            this.player.body.velocity.set(0, 0, 0);
-            // Snap camera
-            this.camera.position.set(10, 15, 10);
-        } else {
-            this.currentScene = 'lobby';
-            this.world.loadLobby();
-            // Reset player position
-            this.player.body.position.set(0, 5, 0);
-            this.player.body.velocity.set(0, 0, 0);
-            // Snap camera
-            this.camera.position.set(10, 15, 10);
+    switchScene(destination?: string) {
+        // Use loadStage helper method
+        if (destination) {
+            this.world.loadStage(destination);
+            this.currentScene = destination;
         }
+
+        // Reset player position
+        this.player.body.position.set(0, 5, 0);
+        this.player.body.velocity.set(0, 0, 0);
+
+        // Snap camera
+        this.camera.position.set(10, 15, 10);
     }
 
     onWindowResize() {
@@ -151,8 +153,13 @@ export class Game {
             this.inventory.update(this.player, this.input);
         }
 
-        // Update Game Logic (only if inventory is closed)
-        if (!this.inventory.isVisible) {
+        // Update dungeon selection if visible
+        if (this.dungeonSelection.isVisible) {
+            this.dungeonSelection.update(this.input);
+        }
+
+        // Update Game Logic (only if inventory and dungeon selection are closed)
+        if (!this.inventory.isVisible && !this.dungeonSelection.isVisible) {
             // Step Physics
             this.physicsWorld.step(1 / 60, dt, 3);
 
@@ -177,9 +184,32 @@ export class Game {
         this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
 
         // Check Portal
-        if (this.world.checkPortalInteraction(this.player.mesh.position)) {
-            this.switchScene();
+        const destination = this.world.checkPortalInteraction(this.player.mesh.position);
+        const isSelectPressed = this.input.isSelectPressed();
+
+        if (destination) {
+            // Show hint
+            this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Enter Portal');
+
+            // Check for interaction
+            if (isSelectPressed && !this.wasSelectPressed) {
+                if (!this.dungeonSelection.isVisible) {
+                    // If destination is 'selection', show dungeon selection UI
+                    if (destination === 'selection') {
+                        this.dungeonSelection.show((dungeonId: string) => {
+                            this.switchScene(dungeonId);
+                        });
+                    } else {
+                        // Otherwise, directly switch to the destination
+                        this.switchScene(destination);
+                    }
+                }
+            }
+        } else {
+            // Hide hint
+            this.ui.showInteractionHint(false);
         }
+        this.wasSelectPressed = isSelectPressed;
 
         this.renderer.render(this.scene, this.camera);
     }

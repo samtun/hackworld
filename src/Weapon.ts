@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { AssetManager } from './AssetManager';
 
 export enum WeaponType {
     SWORD = 'sword',
@@ -10,10 +11,10 @@ export enum WeaponType {
 
 // Model paths for each weapon type
 const WEAPON_MODEL_PATHS: Record<WeaponType, string> = {
-    [WeaponType.SWORD]: '/models/sword.glb',
-    [WeaponType.DUAL_BLADE]: '/models/double_sword.glb',
-    [WeaponType.LANCE]: '/models/lance.glb',
-    [WeaponType.HAMMER]: '/models/hammer.glb'
+    [WeaponType.SWORD]: 'models/sword.glb',
+    [WeaponType.DUAL_BLADE]: 'models/double_sword.glb',
+    [WeaponType.LANCE]: 'models/lance.glb',
+    [WeaponType.HAMMER]: 'models/hammer.glb'
 };
 
 export interface WeaponStats {
@@ -60,42 +61,52 @@ export class Weapon {
     weaponType: WeaponType;
     stats: WeaponStats;
     private loader: GLTFLoader;
+    private assetManager: AssetManager;
 
     constructor(parent: THREE.Object3D, weaponType: WeaponType = WeaponType.SWORD) {
         this.weaponType = weaponType;
         this.stats = WEAPON_CONFIGS[weaponType];
         this.loader = new GLTFLoader();
-        
+        this.assetManager = AssetManager.getInstance();
+
         // Create empty group initially
         this.mesh = new THREE.Group();
-        
+
         // Position relative to player (held in hand)
         this.mesh.position.set(0.6, 0, 0.5);
         this.baseRotation = this.mesh.rotation.clone();
         this.basePosition = this.mesh.position.clone();
 
         parent.add(this.mesh);
-        
-        // Load the weapon model asynchronously
+
+        // Load the weapon model (will use preloaded if available)
         this.loadWeaponModel(weaponType);
     }
 
     private async loadWeaponModel(type: WeaponType): Promise<void> {
         const modelPath = WEAPON_MODEL_PATHS[type];
-        
+
         try {
-            const gltf = await this.loader.loadAsync(modelPath);
+            // Try to use preloaded asset first
+            let gltf = this.assetManager.get(modelPath);
+
+            if (!gltf) {
+                // Fallback to loading if not preloaded
+                console.log(`Weapon ${type} not preloaded, loading on-demand...`);
+                gltf = await this.loader.loadAsync(modelPath);
+            }
+
             const model = gltf.scene;
-            
+
             // Scale the model to appropriate size (1.5x larger than original 0.5 scale)
             model.scale.set(0.75, 0.75, 0.75);
-            
+
             // Clear any existing children and dispose resources
             this.disposeChildren(this.mesh);
-            
+
             // Add the loaded model to the weapon group
             this.mesh.add(model);
-            
+
             console.log(`Loaded weapon model: ${type}`);
         } catch (error) {
             console.error(`Failed to load weapon model ${type}:`, error);
@@ -109,7 +120,7 @@ export class Weapon {
         while (group.children.length > 0) {
             const child = group.children[0];
             group.remove(child);
-            
+
             // Dispose geometries and materials if it's a mesh
             if (child instanceof THREE.Mesh) {
                 if (child.geometry) {
@@ -123,7 +134,7 @@ export class Weapon {
                     }
                 }
             }
-            
+
             // Recursively dispose children if it's a group
             if (child instanceof THREE.Group) {
                 this.disposeChildren(child);
@@ -134,7 +145,7 @@ export class Weapon {
     private createFallbackMesh(type: WeaponType): void {
         // Clear any existing children and dispose resources
         this.disposeChildren(this.mesh);
-        
+
         // Create a simple colored box as fallback
         const geometry = new THREE.BoxGeometry(0.1, 0.1, 1.0);
         const colors: Record<WeaponType, number> = {
@@ -181,20 +192,20 @@ export class Weapon {
                 const swingAngle = Math.sin(progress * Math.PI) * 2;
                 this.mesh.rotation.x = this.baseRotation.x + swingAngle;
                 break;
-                
+
             case WeaponType.DUAL_BLADE:
                 // Fast spinning slash
                 const spinAngle = Math.sin(progress * Math.PI) * 2.5;
                 this.mesh.rotation.x = this.baseRotation.x + spinAngle;
                 this.mesh.rotation.y = this.baseRotation.y + spinAngle * 0.3;
                 break;
-                
+
             case WeaponType.LANCE:
                 // Thrust forward
                 const thrustDistance = Math.sin(progress * Math.PI) * 0.8;
                 this.mesh.position.z = this.basePosition.z + thrustDistance;
                 break;
-                
+
             case WeaponType.HAMMER:
                 // Overhead smash
                 const smashAngle = Math.sin(progress * Math.PI) * 2.8;
@@ -210,22 +221,22 @@ export class Weapon {
     changeWeaponType(parent: THREE.Object3D, newType: WeaponType) {
         // Dispose of old mesh resources
         this.disposeChildren(this.mesh);
-        
+
         // Remove old mesh from parent
         parent.remove(this.mesh);
-        
+
         // Update type and stats
         this.weaponType = newType;
         this.stats = WEAPON_CONFIGS[newType];
-        
+
         // Create new empty group
         this.mesh = new THREE.Group();
         this.mesh.position.set(0.6, 0, 0.5);
         this.baseRotation = this.mesh.rotation.clone();
         this.basePosition = this.mesh.position.clone();
-        
+
         parent.add(this.mesh);
-        
+
         // Load the new weapon model
         this.loadWeaponModel(newType);
     }
