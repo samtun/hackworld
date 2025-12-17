@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import CannonDebugger from 'cannon-es-debugger';
 import { Player } from './Player';
 import { World } from './World';
 import { InputManager } from './InputManager';
@@ -24,6 +25,11 @@ export class Game {
 
     clock: THREE.Clock;
     currentScene: 'lobby' | 'dungeon' | 'dungeon2' = 'lobby';
+
+    // Debug
+    physicsDebugger: any;
+    debugMode: boolean = false;
+    debugMeshes: THREE.Mesh[] = [];
 
     // Input State
     wasInventoryPressed: boolean = false;
@@ -73,6 +79,27 @@ export class Game {
         this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
         this.clock = new THREE.Clock();
 
+        // Debug Mode Setup
+        if (import.meta.env.DEV) {
+            this.physicsDebugger = CannonDebugger(this.scene, this.physicsWorld, {
+                color: 0xff0000,
+                onInit: (_body, mesh) => {
+                    mesh.visible = this.debugMode;
+                    this.debugMeshes.push(mesh);
+                }
+            });
+
+            window.addEventListener('keydown', (e) => {
+                if (e.code === 'F8') {
+                    this.debugMode = !this.debugMode;
+                    this.debugMeshes.forEach(mesh => {
+                        mesh.visible = this.debugMode;
+                    });
+                    console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'}`);
+                }
+            });
+        }
+
         // Resize Handler
         window.addEventListener('resize', () => this.onWindowResize(), false);
 
@@ -106,13 +133,18 @@ export class Game {
 
         const dt = this.clock.getDelta();
 
+        // Clean up debug meshes list occasionally (e.g. every frame is fine for small lists, or check length)
+        if (this.debugMeshes.length > 0) {
+            this.debugMeshes = this.debugMeshes.filter(m => m.parent !== null);
+        }
+
         // Input Handling for UI
         const isInventoryPressed = this.input.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
             this.inventory.toggle();
         }
         this.wasInventoryPressed = isInventoryPressed;
-        
+
         // Update inventory if visible (pass input for navigation)
         if (this.inventory.isVisible) {
             this.inventory.update(this.player, this.input);
@@ -127,6 +159,10 @@ export class Game {
         if (!this.inventory.isVisible && !this.dungeonSelection.isVisible) {
             // Step Physics
             this.physicsWorld.step(1 / 60, dt, 3);
+
+            if (this.debugMode && this.physicsDebugger) {
+                this.physicsDebugger.update();
+            }
 
             this.player.update(dt, this.world.enemies);
             this.world.update(dt, this.player);
