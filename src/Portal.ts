@@ -14,7 +14,6 @@ export class Portal {
         lifetimes: Float32Array;
         angles: Float32Array;
         radii: Float32Array;
-        alphas: Float32Array;
         count: number;
     };
     color: THREE.Color;
@@ -51,7 +50,6 @@ export class Portal {
             lifetimes: new Float32Array(this.PARTICLE_COUNT),
             angles: new Float32Array(this.PARTICLE_COUNT),
             radii: new Float32Array(this.PARTICLE_COUNT),
-            alphas: new Float32Array(this.PARTICLE_COUNT),
             count: this.PARTICLE_COUNT
         };
 
@@ -100,9 +98,6 @@ export class Portal {
         
         // Random lifetime for staggered respawn
         this.particleSystem.lifetimes[index] = Math.random() * this.PARTICLE_LIFETIME;
-        
-        // Initialize alpha
-        this.particleSystem.alphas[index] = 1.0;
     }
 
     /**
@@ -138,9 +133,9 @@ export class Portal {
             const turbulenceX = Math.sin(this.time * 3 + i * 0.5) * this.TURBULENCE_STRENGTH * ageFactor;
             const turbulenceZ = Math.cos(this.time * 3 + i * 0.7) * this.TURBULENCE_STRENGTH * ageFactor;
             
-            // Update position
+            // Update position - calculate Y based on age factor to avoid accumulation
             this.particleSystem.positions[i3] = portalPos.x + Math.cos(angle) * currentRadius + turbulenceX;
-            this.particleSystem.positions[i3 + 1] += this.RISE_SPEED * deltaTime;
+            this.particleSystem.positions[i3 + 1] = portalPos.y + (ageFactor * this.RISE_SPEED * this.PARTICLE_LIFETIME);
             this.particleSystem.positions[i3 + 2] = portalPos.z + Math.sin(angle) * currentRadius + turbulenceZ;
         }
 
@@ -158,13 +153,13 @@ export class Portal {
         
         if (this.mesh.geometry) this.mesh.geometry.dispose();
         const meshMaterial = this.mesh.material as THREE.Material;
-        if (meshMaterial && typeof meshMaterial.dispose === 'function') {
+        if (meshMaterial) {
             meshMaterial.dispose();
         }
         
         if (this.particles.geometry) this.particles.geometry.dispose();
         const particleMaterial = this.particles.material as THREE.Material;
-        if (particleMaterial && typeof particleMaterial.dispose === 'function') {
+        if (particleMaterial) {
             particleMaterial.dispose();
         }
     }
