@@ -111,9 +111,13 @@ export class Game {
         const isInventoryPressed = this.input.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
             this.inventory.toggle();
-            this.inventory.update(this.player);
         }
         this.wasInventoryPressed = isInventoryPressed;
+        
+        // Update inventory if visible (pass input for navigation)
+        if (this.inventory.isVisible) {
+            this.inventory.update(this.player, this.input);
+        }
 
         // Update Game Logic (only if inventory is closed)
         if (!this.inventory.isVisible) {

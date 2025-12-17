@@ -94,4 +94,48 @@ export class InputManager {
         }
         return false;
     }
+
+    // Navigation methods for inventory
+    isNavigateUpPressed(): boolean {
+        if (this.keys['ArrowUp']) return true;
+
+        // Gamepad D-Pad Up or Left Stick Up
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                // D-Pad Up (button 12) or Left Stick Up (axis 1 < -0.5)
+                if (gp.buttons[12]?.pressed) return true;
+                if (gp.axes[1] < -0.5) return true;
+            }
+        }
+        return false;
+    }
+
+    isNavigateDownPressed(): boolean {
+        if (this.keys['ArrowDown']) return true;
+
+        // Gamepad D-Pad Down or Left Stick Down
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                // D-Pad Down (button 13) or Left Stick Down (axis 1 > 0.5)
+                if (gp.buttons[13]?.pressed) return true;
+                if (gp.axes[1] > 0.5) return true;
+            }
+        }
+        return false;
+    }
+
+    isSelectPressed(): boolean {
+        if (this.keys['Space']) return true;
+
+        // Gamepad A button (button 0)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[0]?.pressed) return true;
+            }
+        }
+        return false;
+    }
 }

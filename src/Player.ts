@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { InputManager } from './InputManager';
-import { Weapon } from './Weapon';
+import { Weapon, WeaponType } from './Weapon';
 import { Enemy } from './Enemy';
 import { Item } from './InventoryManager';
 
@@ -11,7 +11,7 @@ export class Player {
     input: InputManager;
     weapon: Weapon;
     speed: number = 6;
-    damage: number = 10;
+    currentWeaponType: WeaponType = WeaponType.SWORD;
 
     // Stats
     maxHp: number = 100;
@@ -28,10 +28,12 @@ export class Player {
     constructor(scene: THREE.Scene, world: CANNON.World, input: InputManager, physicsMaterial: CANNON.Material) {
         this.input = input;
 
-        // Initial Loot
-        this.inventory.push({ id: '1', name: 'Aegis Sword α', type: 'weapon' });
-        this.inventory.push({ id: '2', name: 'Brute Butcher β', type: 'weapon' });
-        this.inventory.push({ id: '3', name: 'Data Core α', type: 'core' });
+        // Initial Loot - Four weapons with specific names
+        this.inventory.push({ id: '1', name: 'Aegis Sword', type: 'weapon', weaponType: WeaponType.SWORD });
+        this.inventory.push({ id: '2', name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE });
+        this.inventory.push({ id: '3', name: 'Fierce Lance', type: 'weapon', weaponType: WeaponType.LANCE });
+        this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER });
+        this.inventory.push({ id: '5', name: 'Data Core α', type: 'core' });
 
         // Visual Mesh
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -54,7 +56,12 @@ export class Player {
         world.addBody(this.body);
 
         // Weapon
-        this.weapon = new Weapon(this.mesh);
+        this.weapon = new Weapon(this.mesh, this.currentWeaponType);
+    }
+
+    equipWeapon(weaponType: WeaponType) {
+        this.currentWeaponType = weaponType;
+        this.weapon.changeWeaponType(this.mesh, weaponType);
     }
 
     update(dt: number, enemies: Enemy[] = []) {
@@ -118,8 +125,10 @@ export class Player {
     }
 
     checkAttackHits(enemies: Enemy[]) {
-        const attackRange = 2.0;
-        const attackAngle = Math.PI / 2; // 90 degrees cone
+        // Use weapon stats for range and angle
+        const attackRange = this.weapon.stats.range;
+        const attackAngle = this.weapon.stats.attackAngle;
+        const damage = this.weapon.stats.damage;
 
         const playerPos = this.mesh.position;
         const playerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
@@ -135,8 +144,8 @@ export class Player {
                 const angle = playerForward.angleTo(dirToEnemy);
 
                 if (angle < attackAngle / 2) {
-                    enemy.takeDamage(this.damage, this.mesh.position);
-                    console.log("Hit enemy!");
+                    enemy.takeDamage(damage, this.mesh.position);
+                    console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
                 }
             }
         }
