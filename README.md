@@ -11,6 +11,7 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Two unique dungeon stages accessible from the lobby
 - Asset preloading system to prevent visual popping during scene transitions
 - Inventory system with looting mechanics
+- **Interactive trader** in the lobby - Buy and sell items, manage your gold
 
 ## Tech Stack
 
@@ -40,6 +41,25 @@ Play the game at: [https://samtun.github.io/hackworld/](https://samtun.github.io
    ```bash
    npm run build
    ```
+
+## Gameplay
+
+### Controls
+- **WASD / Arrow Keys**: Move player
+- **Space**: Jump
+- **Enter / K**: Attack
+- **I**: Toggle inventory
+- **Enter / A Button**: Interact with trader or portals
+- **ESC / B Button**: Close menus
+
+### Trading System
+In the lobby, approach the trader NPC to buy and sell items:
+- **Interact**: Press **Enter** or **A** (gamepad) when near the trader
+- **Navigate**: Use **Arrow Keys** or **WASD** to move between trader and player inventories
+- **Buy/Sell**: Press **Enter** or **A** to complete transactions
+- **Close**: Press **ESC** or **B** to exit the trading menu
+- All items display their buy and sell prices
+- Player starts with 500 gold
 
 ## Development
 
