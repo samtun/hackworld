@@ -26,20 +26,21 @@ export class DungeonSelectionManager {
     container!: HTMLDivElement;
     isVisible: boolean = false;
     private dungeonClasses: (typeof BaseDungeon)[] = [];
-    
+
     // UI Elements
     dungeonList!: HTMLDivElement;
-    
+
     // Navigation state
     selectedIndex: number = 0;
     dungeonElements: HTMLDivElement[] = [];
     needsRender: boolean = false;
-    
+
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
     private lastNavigateDownState: boolean = false;
     private lastSelectState: boolean = false;
-    
+    private lastCancelState: boolean = false;
+
     // Callback when dungeon is selected
     private onDungeonSelected?: (dungeonId: string) => void;
 
@@ -79,7 +80,7 @@ export class DungeonSelectionManager {
 
         // Instructions
         const instructions = document.createElement('div');
-        instructions.innerText = "Use W/S or ↑/↓ to navigate, Space/Enter to select";
+        instructions.innerText = "Use W/S or ↑/↓ to navigate, Space/Enter to select, ESC/B to close";
         instructions.style.marginTop = '15px';
         instructions.style.textAlign = 'center';
         instructions.style.fontSize = '14px';
@@ -153,7 +154,7 @@ export class DungeonSelectionManager {
 
         const oldIndex = this.selectedIndex;
         this.handleNavigation(input);
-        
+
         // Mark for re-render if selection changed
         if (oldIndex !== this.selectedIndex) {
             this.needsRender = true;
@@ -170,17 +171,17 @@ export class DungeonSelectionManager {
         // Clear and rebuild dungeon list
         this.dungeonList.innerHTML = '';
         this.dungeonElements = [];
-        
+
         this.dungeonClasses.forEach((DungeonClass, index) => {
             // Get metadata from static method
             const metadata = DungeonClass.getMetadata();
-            
+
             const dungeonDiv = document.createElement('div');
             dungeonDiv.style.marginBottom = '10px';
             dungeonDiv.style.cursor = 'pointer';
-            
+
             const isSelected = index === this.selectedIndex;
-            
+
             Object.assign(dungeonDiv.style, {
                 padding: '15px',
                 backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
@@ -234,6 +235,7 @@ export class DungeonSelectionManager {
         const isUpPressed = input.isNavigateUpPressed();
         const isDownPressed = input.isNavigateDownPressed();
         const isSelectPressed = input.isSelectPressed();
+        const isCancelPressed = input.isCancelPressed();
 
         // Navigate Up
         if (isUpPressed && !this.lastNavigateUpState) {
@@ -253,6 +255,12 @@ export class DungeonSelectionManager {
             this.selectDungeon(metadata.id);
         }
         this.lastSelectState = isSelectPressed;
+
+        // Cancel
+        if (isCancelPressed && !this.lastCancelState) {
+            this.hide();
+        }
+        this.lastCancelState = isCancelPressed;
     }
 
     private selectDungeon(dungeonId: string) {

@@ -97,7 +97,7 @@ export class InputManager {
 
     // Navigation methods for inventory
     isNavigateUpPressed(): boolean {
-        if (this.keys['ArrowUp']) return true;
+        if (this.keys['ArrowUp'] || this.keys['KeyW']) return true;
 
         // Gamepad D-Pad Up or Left Stick Up
         if (this.gamepadIndex !== null) {
@@ -112,7 +112,7 @@ export class InputManager {
     }
 
     isNavigateDownPressed(): boolean {
-        if (this.keys['ArrowDown']) return true;
+        if (this.keys['ArrowDown'] || this.keys['KeyS']) return true;
 
         // Gamepad D-Pad Down or Left Stick Down
         if (this.gamepadIndex !== null) {
@@ -127,13 +127,26 @@ export class InputManager {
     }
 
     isSelectPressed(): boolean {
-        if (this.keys['Space']) return true;
+        if (this.keys['Space'] || this.keys['Enter']) return true;
 
         // Gamepad A button (button 0)
         if (this.gamepadIndex !== null) {
             const gp = navigator.getGamepads()[this.gamepadIndex];
             if (gp) {
                 if (gp.buttons[0]?.pressed) return true;
+            }
+        }
+        return false;
+    }
+
+    isCancelPressed(): boolean {
+        if (this.keys['Escape']) return true;
+
+        // Gamepad B button (button 1)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[1]?.pressed) return true;
             }
         }
         return false;

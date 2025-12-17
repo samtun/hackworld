@@ -33,6 +33,7 @@ export class Game {
 
     // Input State
     wasInventoryPressed: boolean = false;
+    lastPortalDestination: string | null = null;
 
     constructor() {
         // Setup Three.js
@@ -96,6 +97,8 @@ export class Game {
                         mesh.visible = this.debugMode;
                     });
                     console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'}`);
+                } else if (this.debugMode) {
+                    console.log(`[Debug] Key pressed: ${e.code}`);
                 }
             });
         }
@@ -182,16 +185,30 @@ export class Game {
 
         // Check Portal
         const destination = this.world.checkPortalInteraction(this.player.mesh.position);
-        if (destination && !this.dungeonSelection.isVisible) {
-            // If destination is 'selection', show dungeon selection UI
-            if (destination === 'selection') {
-                this.dungeonSelection.show((dungeonId: string) => {
-                    this.switchScene(dungeonId);
-                });
-            } else {
-                // Otherwise, directly switch to the destination
-                this.switchScene(destination);
+
+        if (destination) {
+            // Only trigger if we just entered the portal area (or switched to a new one)
+            if (destination !== this.lastPortalDestination) {
+                this.lastPortalDestination = destination;
+
+                if (!this.dungeonSelection.isVisible) {
+                    // If destination is 'selection', show dungeon selection UI
+                    if (destination === 'selection') {
+                        this.dungeonSelection.show((dungeonId: string) => {
+                            this.switchScene(dungeonId);
+                            // Reset lastPortalDestination so we can use portal again if we come back
+                            this.lastPortalDestination = null;
+                        });
+                    } else {
+                        // Otherwise, directly switch to the destination
+                        this.switchScene(destination);
+                        this.lastPortalDestination = null;
+                    }
+                }
             }
+        } else {
+            // Reset when leaving portal area
+            this.lastPortalDestination = null;
         }
 
         this.renderer.render(this.scene, this.camera);
