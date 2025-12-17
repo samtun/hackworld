@@ -90,10 +90,8 @@ export class Weapon {
             // Scale the model to appropriate size (adjust as needed)
             model.scale.set(0.5, 0.5, 0.5);
             
-            // Clear any existing children
-            while (this.mesh.children.length > 0) {
-                this.mesh.remove(this.mesh.children[0]);
-            }
+            // Clear any existing children and dispose resources
+            this.disposeChildren(this.mesh);
             
             // Add the loaded model to the weapon group
             this.mesh.add(model);
@@ -106,11 +104,36 @@ export class Weapon {
         }
     }
 
-    private createFallbackMesh(type: WeaponType): void {
-        // Clear any existing children
-        while (this.mesh.children.length > 0) {
-            this.mesh.remove(this.mesh.children[0]);
+    private disposeChildren(group: THREE.Group): void {
+        // Remove and dispose all children
+        while (group.children.length > 0) {
+            const child = group.children[0];
+            group.remove(child);
+            
+            // Dispose geometries and materials if it's a mesh
+            if (child instanceof THREE.Mesh) {
+                if (child.geometry) {
+                    child.geometry.dispose();
+                }
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(mat => mat.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            }
+            
+            // Recursively dispose children if it's a group
+            if (child instanceof THREE.Group) {
+                this.disposeChildren(child);
+            }
         }
+    }
+
+    private createFallbackMesh(type: WeaponType): void {
+        // Clear any existing children and dispose resources
+        this.disposeChildren(this.mesh);
         
         // Create a simple colored box as fallback
         const geometry = new THREE.BoxGeometry(0.1, 0.1, 1.0);
@@ -185,7 +208,10 @@ export class Weapon {
     }
 
     changeWeaponType(parent: THREE.Object3D, newType: WeaponType) {
-        // Remove old mesh
+        // Dispose of old mesh resources
+        this.disposeChildren(this.mesh);
+        
+        // Remove old mesh from parent
         parent.remove(this.mesh);
         
         // Update type and stats
