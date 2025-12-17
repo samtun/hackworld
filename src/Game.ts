@@ -5,6 +5,8 @@ import { World } from './World';
 import { InputManager } from './InputManager';
 import { UIManager } from './UIManager';
 import { InventoryManager } from './InventoryManager';
+import { DungeonSelectionManager } from './DungeonSelectionManager';
+import { AVAILABLE_DUNGEONS } from './stages';
 
 export class Game {
     scene: THREE.Scene;
@@ -18,6 +20,7 @@ export class Game {
     input: InputManager;
     ui: UIManager;
     inventory: InventoryManager;
+    dungeonSelection: DungeonSelectionManager;
 
     clock: THREE.Clock;
     currentScene: 'lobby' | 'dungeon' | 'dungeon2' = 'lobby';
@@ -67,6 +70,7 @@ export class Game {
         this.player = new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial);
         this.ui = new UIManager();
         this.inventory = new InventoryManager();
+        this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
         this.clock = new THREE.Clock();
 
         // Resize Handler
@@ -77,27 +81,10 @@ export class Game {
     }
 
     switchScene(destination?: string) {
-        // Determine the target scene
-        let targetScene: 'lobby' | 'dungeon' | 'dungeon2';
-        
+        // Use loadStage helper method
         if (destination) {
-            // Use the provided destination
-            targetScene = destination as 'lobby' | 'dungeon' | 'dungeon2';
-        } else {
-            // Legacy behavior: toggle between lobby and dungeon
-            targetScene = this.currentScene === 'lobby' ? 'dungeon' : 'lobby';
-        }
-
-        // Load the target scene
-        if (targetScene === 'lobby') {
-            this.currentScene = 'lobby';
-            this.world.loadLobby();
-        } else if (targetScene === 'dungeon') {
-            this.currentScene = 'dungeon';
-            this.world.loadDungeon();
-        } else if (targetScene === 'dungeon2') {
-            this.currentScene = 'dungeon2';
-            this.world.loadDungeon2();
+            this.world.loadStage(destination);
+            this.currentScene = destination as 'lobby' | 'dungeon' | 'dungeon2';
         }
 
         // Reset player position
@@ -131,8 +118,13 @@ export class Game {
             this.inventory.update(this.player, this.input);
         }
 
-        // Update Game Logic (only if inventory is closed)
-        if (!this.inventory.isVisible) {
+        // Update dungeon selection if visible
+        if (this.dungeonSelection.isVisible) {
+            this.dungeonSelection.update(this.input);
+        }
+
+        // Update Game Logic (only if inventory and dungeon selection are closed)
+        if (!this.inventory.isVisible && !this.dungeonSelection.isVisible) {
             // Step Physics
             this.physicsWorld.step(1 / 60, dt, 3);
 
@@ -154,8 +146,16 @@ export class Game {
 
         // Check Portal
         const destination = this.world.checkPortalInteraction(this.player.mesh.position);
-        if (destination) {
-            this.switchScene(destination);
+        if (destination && !this.dungeonSelection.isVisible) {
+            // If destination is 'selection', show dungeon selection UI
+            if (destination === 'selection') {
+                this.dungeonSelection.show((dungeonId: string) => {
+                    this.switchScene(dungeonId);
+                });
+            } else {
+                // Otherwise, directly switch to the destination
+                this.switchScene(destination);
+            }
         }
 
         this.renderer.render(this.scene, this.camera);
