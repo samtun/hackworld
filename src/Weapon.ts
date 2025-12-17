@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { AssetManager } from './AssetManager';
 
 export enum WeaponType {
     SWORD = 'sword',
@@ -60,11 +61,13 @@ export class Weapon {
     weaponType: WeaponType;
     stats: WeaponStats;
     private loader: GLTFLoader;
+    private assetManager: AssetManager;
 
     constructor(parent: THREE.Object3D, weaponType: WeaponType = WeaponType.SWORD) {
         this.weaponType = weaponType;
         this.stats = WEAPON_CONFIGS[weaponType];
         this.loader = new GLTFLoader();
+        this.assetManager = AssetManager.getInstance();
         
         // Create empty group initially
         this.mesh = new THREE.Group();
@@ -76,7 +79,7 @@ export class Weapon {
 
         parent.add(this.mesh);
         
-        // Load the weapon model asynchronously
+        // Load the weapon model (will use preloaded if available)
         this.loadWeaponModel(weaponType);
     }
 
@@ -84,8 +87,16 @@ export class Weapon {
         const modelPath = WEAPON_MODEL_PATHS[type];
         
         try {
-            const gltf = await this.loader.loadAsync(modelPath);
-            const model = gltf.scene;
+            // Try to use preloaded asset first
+            let gltf = this.assetManager.get(modelPath);
+            
+            if (!gltf) {
+                // Fallback to loading if not preloaded
+                console.log(`Weapon ${type} not preloaded, loading on-demand...`);
+                gltf = await this.loader.loadAsync(modelPath);
+            }
+            
+            const model = gltf.scene.clone(true);
             
             // Scale the model to appropriate size (1.5x larger than original 0.5 scale)
             model.scale.set(0.75, 0.75, 0.75);

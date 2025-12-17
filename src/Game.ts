@@ -20,7 +20,7 @@ export class Game {
     inventory: InventoryManager;
 
     clock: THREE.Clock;
-    currentScene: 'lobby' | 'dungeon' = 'lobby';
+    currentScene: 'lobby' | 'dungeon' | 'dungeon2' = 'lobby';
 
     // Input State
     wasInventoryPressed: boolean = false;
@@ -76,24 +76,36 @@ export class Game {
         this.animate();
     }
 
-    switchScene() {
-        if (this.currentScene === 'lobby') {
-            this.currentScene = 'dungeon';
-            this.world.loadDungeon();
-            // Reset player position
-            this.player.body.position.set(0, 5, 0);
-            this.player.body.velocity.set(0, 0, 0);
-            // Snap camera
-            this.camera.position.set(10, 15, 10);
+    switchScene(destination?: string) {
+        // Determine the target scene
+        let targetScene: 'lobby' | 'dungeon' | 'dungeon2';
+        
+        if (destination) {
+            // Use the provided destination
+            targetScene = destination as 'lobby' | 'dungeon' | 'dungeon2';
         } else {
+            // Legacy behavior: toggle between lobby and dungeon
+            targetScene = this.currentScene === 'lobby' ? 'dungeon' : 'lobby';
+        }
+
+        // Load the target scene
+        if (targetScene === 'lobby') {
             this.currentScene = 'lobby';
             this.world.loadLobby();
-            // Reset player position
-            this.player.body.position.set(0, 5, 0);
-            this.player.body.velocity.set(0, 0, 0);
-            // Snap camera
-            this.camera.position.set(10, 15, 10);
+        } else if (targetScene === 'dungeon') {
+            this.currentScene = 'dungeon';
+            this.world.loadDungeon();
+        } else if (targetScene === 'dungeon2') {
+            this.currentScene = 'dungeon2';
+            this.world.loadDungeon2();
         }
+
+        // Reset player position
+        this.player.body.position.set(0, 5, 0);
+        this.player.body.velocity.set(0, 0, 0);
+        
+        // Snap camera
+        this.camera.position.set(10, 15, 10);
     }
 
     onWindowResize() {
@@ -141,8 +153,9 @@ export class Game {
         this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
 
         // Check Portal
-        if (this.world.checkPortalInteraction(this.player.mesh.position)) {
-            this.switchScene();
+        const destination = this.world.checkPortalInteraction(this.player.mesh.position);
+        if (destination) {
+            this.switchScene(destination);
         }
 
         this.renderer.render(this.scene, this.camera);
