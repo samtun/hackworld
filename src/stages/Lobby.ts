@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { BaseDungeon } from './BaseDungeon';
+import { NPC } from '../NPC';
 
 export class Lobby extends BaseDungeon {
     id = 'lobby';
@@ -9,6 +10,9 @@ export class Lobby extends BaseDungeon {
     
     // Store trader position for interaction
     private traderPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, -5);
+    
+    // NPC
+    npc?: NPC;
 
     load(): void {
         this.clear();
@@ -22,6 +26,21 @@ export class Lobby extends BaseDungeon {
 
         // Add some walls or obstacles
         this.createBox(2, 2, 2, new CANNON.Vec3(-5, 1, -5));
+
+        // Create Nyleth NPC
+        const nylethDialogue = [
+            "Hey there, never seen you around. You look like you pack some punches. Interrested in joining our fight?",
+            "There are hordes of corrupted files running around our servers and we could really need some help with that.",
+            "If you are interrested, the teleporter to the south can take you to our main server."
+        ];
+        this.npc = new NPC(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            "Nyleth",
+            new CANNON.Vec3(-5, 0, 0),
+            nylethDialogue
+        );
 
         // Load Trader Model from cache
         const traderGltf = this.assetManager.get('models/trader_weapons.glb');
@@ -75,5 +94,26 @@ export class Lobby extends BaseDungeon {
             new THREE.Vector3(this.traderPosition.x, this.traderPosition.y, this.traderPosition.z)
         );
         return dist < 2.0; // Interaction range
+    }
+
+    /**
+     * Check if player is near NPC
+     */
+    checkNPCInteraction(playerPosition: THREE.Vector3): NPC | null {
+        if (this.npc && this.npc.isPlayerNearby(playerPosition)) {
+            return this.npc;
+        }
+        return null;
+    }
+
+    /**
+     * Override clear to also clean up NPC
+     */
+    clear(): void {
+        if (this.npc) {
+            this.npc.cleanup(this.scene, this.physicsWorld);
+            this.npc = undefined;
+        }
+        super.clear();
     }
 }
