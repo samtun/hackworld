@@ -9,8 +9,6 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Hack and slash gameplay
 - Hub based game world with multiple dungeon stages
 - Two unique dungeon stages accessible from the lobby
-- Portal/teleporter system with animated particle effects
-- Asset preloading system to prevent visual popping during scene transitions
 - Inventory system with looting mechanics
 
 ## Tech Stack
