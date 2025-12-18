@@ -199,8 +199,8 @@ export class TraderManager {
     private createWindow(): HTMLDivElement {
         const el = document.createElement('div');
         Object.assign(el.style, {
-            width: '900px',
-            height: '650px',
+            width: '92vw',
+            height: '92vh',
             backgroundColor: COLORS.WINDOW_BG,
             borderRadius: '15px',
             border: `2px solid ${COLORS.BORDER}`,

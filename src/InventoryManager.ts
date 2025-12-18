@@ -150,8 +150,8 @@ export class InventoryManager {
     private createWindow(): HTMLDivElement {
         const el = document.createElement('div');
         Object.assign(el.style, {
-            width: '800px',
-            height: '500px',
+            width: '92vw',
+            height: '92vh',
             backgroundColor: COLORS.WINDOW_BG,
             borderRadius: '15px',
             border: `2px solid ${COLORS.BORDER}`,
