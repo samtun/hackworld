@@ -26,7 +26,7 @@ export class Portal {
     private readonly RISE_SPEED = 1.2; // upward velocity
     private readonly SPIN_SPEED = 2.5; // radians per second
     private readonly TURBULENCE_STRENGTH = 0.2;
-    private readonly MAX_PARTICLE_SIZE = 0.25; // Maximum particle size
+    private readonly MAX_PARTICLE_SIZE = 0.35; // Maximum particle size (increased for better visibility)
     private time: number = 0;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, color: number, destination: string) {
@@ -124,13 +124,14 @@ export class Portal {
         this.particleSystem.positions[i3 + 1] = portalPos.y;
         this.particleSystem.positions[i3 + 2] = portalPos.z + Math.sin(angle) * radius;
         
-        // Set lifetime: full lifetime for respawn, staggered for initial spawn
+        // Set lifetime with variation to prevent synchronized spawning
         if (isInitialSpawn) {
             // Stagger initial particles throughout their lifetime for smooth startup
             this.particleSystem.lifetimes[index] = Math.random() * this.PARTICLE_LIFETIME;
         } else {
-            // Respawned particles always start with full lifetime to avoid flashing at bottom
-            this.particleSystem.lifetimes[index] = this.PARTICLE_LIFETIME;
+            // Respawned particles start with full lifetime plus small random variation
+            // This prevents all particles from dying at the same time and spawning in chunks
+            this.particleSystem.lifetimes[index] = this.PARTICLE_LIFETIME * (0.95 + Math.random() * 0.1);
         }
         
         // Initialize size to maximum
