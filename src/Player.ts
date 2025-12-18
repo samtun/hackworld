@@ -13,6 +13,9 @@ export class Player {
     speed: number = 6;
     currentWeaponType: WeaponType = WeaponType.SWORD;
 
+    // Ground detection threshold
+    private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
+
     // Stats
     maxHp: number = 100;
     hp: number = 100;
@@ -100,7 +103,7 @@ export class Player {
 
         // Ground detection: Check if player is on ground by velocity and position stability
         // Player is grounded if vertical velocity is very low (not falling or jumping)
-        this.isGrounded = Math.abs(this.body.velocity.y) < 0.1;
+        this.isGrounded = Math.abs(this.body.velocity.y) < Player.GROUND_VELOCITY_THRESHOLD;
 
         // Jump: Only allow jumping if player is grounded
         if (this.input.isJumpPressed() && this.isGrounded) {
