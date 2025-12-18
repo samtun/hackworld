@@ -10,6 +10,7 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Hub based game world with multiple dungeon stages
 - Two unique dungeon stages accessible from the lobby
 - Inventory system with looting mechanics
+- **Weapon drops** - Defeated enemies have a chance to drop weapons that can be picked up and added to your inventory
 - **Interactive trader** in the lobby - Buy and sell items, manage your bits
 
 ## Tech Stack
@@ -76,6 +77,14 @@ Hold the attack button for 1 second to charge a powerful dash attack:
 - During the dash, you deal **3x damage** to all enemies you touch
 - You are **invincible** during the dash
 - The dash covers approximately 4 meters at high speed
+
+#### Weapon Drops
+Defeated enemies have a chance to drop weapons:
+- **Regular enemies**: 2% drop chance
+- **Large enemies**: 10% drop chance
+- Dropped weapons float above the ground with their name displayed underneath
+- The drop favors your currently equipped weapon type (45% chance), with other types equally distributed
+- Walk up to a weapon drop and press **Enter / A** to pick it up and add it to your inventory
 
 ## Development
 
