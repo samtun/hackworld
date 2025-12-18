@@ -79,10 +79,15 @@ Hold the attack button for 1 second to charge a powerful dash attack:
 
 ## Development
 
-### Debug Mode
-The game includes a debug mode for visualizing physics colliders.
-- **Availability**: Development builds only (`npm run dev`)
-- **Toggle**: Press **F8** to show/hide colliders
+### Development Mode Features
+Development builds (`npm run dev`) include the following features:
+
+#### Start Screen
+- The "Press START" screen is automatically skipped in development mode
+- Production builds still show the start screen normally
+
+#### Debug Mode
+- Visualize physics colliders by pressing **F8**
 
 ## Deployment
 

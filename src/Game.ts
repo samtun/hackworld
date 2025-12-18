@@ -81,7 +81,13 @@ export class Game {
         this.ui = new UIManager();
         this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial, () => {
             this.ui.hideLoadingScreen();
-            this.ui.showStartScreen();
+            // Skip start screen in development mode
+            if (import.meta.env.DEV) {
+                this.currentScene = 'lobby';
+                this.clock.getDelta(); // Reset clock
+            } else {
+                this.ui.showStartScreen();
+            }
         });
         this.player = new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial);
         this.inventory = new InventoryManager();
