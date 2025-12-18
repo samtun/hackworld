@@ -74,4 +74,5 @@ Pull requests that are marked as "ready for review" automatically get preview de
 - Preview is deployed to a subdirectory in the `gh-pages` branch
 - A comment with the preview URL is automatically added to the PR
 - Preview updates automatically when new commits are pushed to the PR
+- **Preview is automatically deleted** when the PR is closed or merged
 - Preview URL format: `https://samtun.github.io/hackworld/pr-{number}/`
