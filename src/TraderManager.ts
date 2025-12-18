@@ -1,7 +1,8 @@
 import { Player } from './Player';
 import { InputManager } from './InputManager';
 import { Item } from './InventoryManager';
-import { WeaponType, WEAPON_CONFIGS } from './Weapon';
+import { ItemDetailsPanel } from './ItemDetailsPanel';
+import { WeaponType } from './Weapon';
 
 // --- Constants ---
 const COLORS = {
@@ -37,7 +38,7 @@ export class TraderManager {
     traderPanel!: HTMLDivElement; // Scrollable container for trader list
     playerPanel!: HTMLDivElement; // Scrollable container for player list
     playerMoneyText!: HTMLDivElement;
-    weaponStatsPanel!: HTMLDivElement;
+    itemDetailsPanel!: HTMLDivElement;
 
     // Navigation state
     selectedIndex: number = 0;
@@ -136,7 +137,7 @@ export class TraderManager {
         });
         windowDiv.appendChild(separatorDiv);
 
-        // Single Weapon Stats Panel (Bottom - spans both columns)
+        // Single Item Details Panel (Bottom - spans both columns)
         const statsPanel = this.createPanel(COLORS.WINDOW_BG, '4 / 5', '1 / 3');
         windowDiv.appendChild(statsPanel);
 
@@ -147,9 +148,9 @@ export class TraderManager {
         statsTitle.style.fontSize = '16px';
         statsPanel.appendChild(statsTitle);
 
-        this.weaponStatsPanel = document.createElement('div');
-        this.weaponStatsPanel.style.fontSize = '14px';
-        statsPanel.appendChild(this.weaponStatsPanel);
+        this.itemDetailsPanel = document.createElement('div');
+        this.itemDetailsPanel.style.fontSize = '14px';
+        statsPanel.appendChild(this.itemDetailsPanel);
 
         // Money Display (Bottom)
         const moneyDiv = document.createElement('div');
@@ -293,12 +294,12 @@ export class TraderManager {
             player
         );
 
-        // Update weapon stats panels
+        // Update item details panel
         const selectedItem = this.activePanel === 'trader' 
             ? this.traderInventory[this.selectedIndex]
             : player.inventory[this.selectedIndex];
         
-        this.weaponStatsPanel.innerHTML = this.generateWeaponStatsHTML(selectedItem);
+        this.itemDetailsPanel.innerHTML = ItemDetailsPanel.generateHTML(selectedItem);
     }
 
     private renderItemList(
@@ -500,41 +501,6 @@ export class TraderManager {
             };
             
             element.animate(keyframes, timing);
-        }
-    }
-
-    private generateWeaponStatsHTML(item?: Item): string {
-        if (!item || item.type !== 'weapon' || !item.weaponType) {
-            return ''; // Show nothing for non-weapon items
-        }
-
-        const weaponConfig = WEAPON_CONFIGS[item.weaponType];
-        const typeLabel = this.getWeaponTypeLabel(item.weaponType);
-
-        const stats = [
-            { label: 'Type', value: typeLabel },
-            { label: 'Damage', value: weaponConfig.damage }
-        ];
-
-        return stats.map(stat => `
-            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span>${stat.label}</span> <span>${stat.value}</span>
-            </div>
-        `).join(`<div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>`);
-    }
-
-    private getWeaponTypeLabel(weaponType: WeaponType): string {
-        switch (weaponType) {
-            case WeaponType.SWORD:
-                return 'Sword';
-            case WeaponType.DUAL_BLADE:
-                return 'Dual Blade';
-            case WeaponType.LANCE:
-                return 'Lance';
-            case WeaponType.HAMMER:
-                return 'Hammer';
-            default:
-                return 'Unknown';
         }
     }
 }
