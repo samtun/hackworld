@@ -147,7 +147,10 @@ export class Game {
         // Input Handling for UI
         const isInventoryPressed = this.input.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
-            this.inventory.toggle();
+            // Don't allow toggling inventory while trader UI is open
+            if (!this.trader.isVisible) {
+                this.inventory.toggle();
+            }
         }
         this.wasInventoryPressed = isInventoryPressed;
 

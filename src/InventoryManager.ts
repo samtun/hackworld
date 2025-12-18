@@ -292,6 +292,8 @@ export class InventoryManager {
             if (item && item.type === 'weapon' && item.weaponType) {
                 player.equipWeapon(item.id);
                 console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
+                // Trigger re-render to update equipped indicator immediately
+                this.needsRender = true;
             }
         }
         
