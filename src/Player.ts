@@ -12,6 +12,10 @@ export class Player {
     weapon: Weapon;
     speed: number = 6;
     currentWeaponType: WeaponType = WeaponType.SWORD;
+    
+    // Track enemies hit during current attack phase to prevent multiple hits
+    // For dual blade, this gets reset between phases to allow double-hitting
+    private enemiesHitThisPhase: Set<Enemy> = new Set();
 
     // Ground detection threshold
     private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
@@ -62,7 +66,7 @@ export class Player {
         world.addBody(this.body);
 
         // Weapon
-        this.weapon = new Weapon(this.mesh, this.currentWeaponType);
+        this.weapon = new Weapon(this.mesh, this.currentWeaponType, scene, world);
     }
 
     equipWeapon(weaponType: WeaponType) {
@@ -113,10 +117,26 @@ export class Player {
         // Combat
         if (this.input.isAttackPressed()) {
             if (this.weapon.attack()) {
-                this.checkAttackHits(enemies);
+                // Clear the list of enemies hit for this new attack
+                this.enemiesHitThisPhase.clear();
+                
+                // For dual blade, set up callback to reset hit tracking between phases
+                if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
+                    this.weapon.onDamageFrame = () => {
+                        // Reset hit tracking for the next phase
+                        this.enemiesHitThisPhase.clear();
+                    };
+                }
             }
         }
-        this.weapon.update(dt);
+        
+        // Update weapon (handles animation and hitbox positioning)
+        this.weapon.update(dt, this.mesh.position, this.mesh.quaternion);
+        
+        // Check for hits if weapon is attacking and has an active hitbox
+        if (this.weapon.isAttacking && this.weapon.attackBody) {
+            this.checkAttackHits(enemies);
+        }
 
         // Invulnerability Timer
         if (this.invulnerableTimer > 0) {
@@ -135,30 +155,78 @@ export class Player {
     }
 
     checkAttackHits(enemies: Enemy[]) {
-        // Use weapon stats for range and angle
-        const attackRange = this.weapon.stats.range;
-        const attackAngle = this.weapon.stats.attackAngle;
         const damage = this.weapon.stats.damage;
+        const attackBody = this.weapon.attackBody;
 
-        const playerPos = this.mesh.position;
-        const playerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+        // If we have a physics attack hitbox, use it for collision detection
+        if (attackBody) {
+            for (const enemy of enemies) {
+                if (enemy.isDead || enemy.isDying) continue;
+                
+                // Skip if we already hit this enemy during this attack phase
+                if (this.enemiesHitThisPhase.has(enemy)) continue;
 
-        for (const enemy of enemies) {
-            if (enemy.isDead || enemy.isDying) continue;
-
-            const enemyPos = enemy.mesh.position;
-            const dist = playerPos.distanceTo(enemyPos);
-
-            if (dist < attackRange) {
-                const dirToEnemy = enemyPos.clone().sub(playerPos).normalize();
-                const angle = playerForward.angleTo(dirToEnemy);
-
-                if (angle < attackAngle / 2) {
+                // Check if attack hitbox overlaps with enemy body
+                if (this.checkCollision(attackBody, enemy.body)) {
                     enemy.takeDamage(damage, this.mesh.position);
                     console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
+                    
+                    // Mark this enemy as hit for this attack phase
+                    this.enemiesHitThisPhase.add(enemy);
+                }
+            }
+        } else {
+            // Fallback to old range/angle based detection if no hitbox exists
+            const attackRange = this.weapon.stats.range;
+            const attackAngle = this.weapon.stats.attackAngle;
+            const playerPos = this.mesh.position;
+            const playerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+
+            for (const enemy of enemies) {
+                if (enemy.isDead || enemy.isDying) continue;
+                
+                // Skip if we already hit this enemy during this attack phase
+                if (this.enemiesHitThisPhase.has(enemy)) continue;
+
+                const enemyPos = enemy.mesh.position;
+                const dist = playerPos.distanceTo(enemyPos);
+
+                if (dist < attackRange) {
+                    const dirToEnemy = enemyPos.clone().sub(playerPos).normalize();
+                    const angle = playerForward.angleTo(dirToEnemy);
+
+                    if (angle < attackAngle / 2) {
+                        enemy.takeDamage(damage, this.mesh.position);
+                        console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
+                        
+                        // Mark this enemy as hit for this attack phase
+                        this.enemiesHitThisPhase.add(enemy);
+                    }
                 }
             }
         }
+    }
+
+    private checkCollision(body1: CANNON.Body, body2: CANNON.Body): boolean {
+        // Simple AABB (Axis-Aligned Bounding Box) collision check
+        const shape1 = body1.shapes[0];
+        const shape2 = body2.shapes[0];
+
+        if (shape1 instanceof CANNON.Box && shape2 instanceof CANNON.Box) {
+            const pos1 = body1.position;
+            const pos2 = body2.position;
+            const halfExtents1 = shape1.halfExtents;
+            const halfExtents2 = shape2.halfExtents;
+
+            // Check overlap on all three axes
+            const overlapX = Math.abs(pos1.x - pos2.x) < (halfExtents1.x + halfExtents2.x);
+            const overlapY = Math.abs(pos1.y - pos2.y) < (halfExtents1.y + halfExtents2.y);
+            const overlapZ = Math.abs(pos1.z - pos2.z) < (halfExtents1.z + halfExtents2.z);
+
+            return overlapX && overlapY && overlapZ;
+        }
+
+        return false;
     }
 
     takeDamage(amount: number) {
