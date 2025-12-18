@@ -60,7 +60,19 @@ The game includes a debug mode for visualizing physics colliders.
 
 ## Deployment
 
+Both production and PR preview deployments use the `gh-pages` branch to enable subdirectory-based previews without conflicts.
+
+### Production Deployment
 The game is automatically deployed to GitHub Pages when changes are pushed to the `main` branch. The deployment workflow:
 - Builds the project using Vite with base path `/hackworld/`
-- Uploads the build artifacts from the `dist` folder
-- Deploys to GitHub Pages at [https://samtun.github.io/hackworld/](https://samtun.github.io/hackworld/)
+- Deploys to the root of the `gh-pages` branch
+- Accessible at [https://samtun.github.io/hackworld/](https://samtun.github.io/hackworld/)
+
+### PR Preview Deployments
+Pull requests that are marked as "ready for review" automatically get preview deployments:
+- Each PR is built with a unique base path (e.g., `/hackworld/pr-123/`)
+- Preview is deployed to a subdirectory in the `gh-pages` branch
+- A comment with the preview URL is automatically added to the PR
+- Preview updates automatically when new commits are pushed to the PR
+- **Preview is automatically deleted** when the PR is closed or merged
+- Preview URL format: `https://samtun.github.io/hackworld/pr-{number}/`
