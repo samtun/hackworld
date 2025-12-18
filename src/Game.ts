@@ -166,8 +166,8 @@ export class Game {
         // Input Handling for UI
         const isInventoryPressed = this.input.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
-            // Don't allow toggling inventory while trader UI is open
-            if (!this.trader.isVisible) {
+            // Don't allow toggling inventory while any other UI is open
+            if (!this.trader.isVisible && !this.dungeonSelection.isVisible) {
                 this.inventory.toggle();
             }
         }
