@@ -284,9 +284,8 @@ export class TraderManager {
             // Check if player can afford (for buy mode)
             const canAfford = mode === 'sell' || (price !== undefined && player.money >= price);
 
-            // Add yellow dot for equipped items
-            const equippedDot = item.isEquipped ? '<span style="color: #ffd700; margin-right: 5px;">●</span>' : '';
-            itemDiv.innerHTML = `${equippedDot}${item.name}${priceText}`;
+            // Set item text without equipped indicator (triangle will be overlay)
+            itemDiv.innerText = `${item.name}${priceText}`;
 
             const isSelected = isActive && index === this.selectedIndex;
 
@@ -295,8 +294,22 @@ export class TraderManager {
                 backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
                 border: isSelected ? '2px solid #fff' : '2px solid transparent',
                 opacity: canAfford ? '1' : '0.5',
-                transition: 'transform 0.1s'
+                transition: 'transform 0.1s',
+                position: 'relative'
             });
+
+            // Add triangle overlay for equipped items
+            if (item.isEquipped) {
+                const triangle = document.createElement('div');
+                triangle.style.position = 'absolute';
+                triangle.style.top = '0';
+                triangle.style.left = '0';
+                triangle.style.width = '0';
+                triangle.style.height = '0';
+                triangle.style.borderLeft = '12px solid #ffd700';
+                triangle.style.borderBottom = '12px solid transparent';
+                itemDiv.appendChild(triangle);
+            }
 
             // Add separator between items
             if (index < items.length - 1) {
@@ -380,7 +393,17 @@ export class TraderManager {
                     player.money -= item.buyPrice;
                     const newItem = { ...item, id: `p${Date.now()}`, isEquipped: false }; // Give it a unique ID
                     player.inventory.push(newItem);
+                    
+                    // Remove item from trader inventory
+                    this.traderInventory.splice(this.selectedIndex, 1);
+                    
                     console.log(`Bought ${item.name} for ${item.buyPrice} bits`);
+                    
+                    // Adjust selection if needed
+                    if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) {
+                        this.selectedIndex--;
+                    }
+                    
                     this.needsRender = true;
                 } else {
                     console.log(`Not enough money to buy ${item.name}`);

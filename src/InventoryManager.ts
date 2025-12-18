@@ -232,17 +232,30 @@ export class InventoryManager {
             const itemDiv = document.createElement('div');
             const priceText = item.sellPrice !== undefined ? ` (${item.sellPrice} bits)` : '';
             
-            // Add yellow dot for equipped items
-            const equippedDot = item.isEquipped ? '<span style="color: #ffd700; margin-right: 5px;">●</span>' : '';
-            itemDiv.innerHTML = `${equippedDot}${item.name}${priceText}`;
+            // Set item text without equipped indicator (triangle will be overlay)
+            itemDiv.innerText = `${item.name}${priceText}`;
             
             const isSelected = index === this.selectedIndex;
             
             Object.assign(itemDiv.style, {
                 padding: '5px',
                 backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
-                border: isSelected ? '2px solid #fff' : '2px solid transparent'
+                border: isSelected ? '2px solid #fff' : '2px solid transparent',
+                position: 'relative'
             });
+
+            // Add triangle overlay for equipped items
+            if (item.isEquipped) {
+                const triangle = document.createElement('div');
+                triangle.style.position = 'absolute';
+                triangle.style.top = '0';
+                triangle.style.left = '0';
+                triangle.style.width = '0';
+                triangle.style.height = '0';
+                triangle.style.borderLeft = '12px solid #ffd700';
+                triangle.style.borderBottom = '12px solid transparent';
+                itemDiv.appendChild(triangle);
+            }
 
             // Add separator between items
             if (index < player.inventory.length - 1) {
