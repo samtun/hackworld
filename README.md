@@ -55,21 +55,15 @@ Play the game at: [https://samtun.github.io/hackworld/](https://samtun.github.io
 ## Gameplay
 
 ### Controls
-- **WASD / Arrow Keys**: Move player
-- **Space**: Jump
-- **Enter / K**: Attack
-- **I**: Toggle inventory
-- **Enter / A Button**: Interact with trader or portals
-- **ESC / B Button**: Close menus
 
-### Trading System
-In the lobby, approach the trader NPC to buy and sell items:
-- **Interact**: Press **Enter** or **A** (gamepad) when near the trader
-- **Navigate**: Use **Arrow Keys** or **WASD** to move between trader and player inventories
-- **Buy/Sell**: Press **Enter** or **A** to complete transactions
-- **Close**: Press **ESC** or **B** to exit the trading menu
-- All items display their buy and sell prices
-- Player starts with 500 bits
+The game is fully playable with keyboard and controller (tested with XBox controller).
+
+- **WASD / Arrow Keys / LStick**: Move player
+- **Space / A**: Jump
+- **Enter / X**: Attack
+- **I / Select**: Toggle inventory
+- **Enter / A**: Interact and select in menus
+- **ESC / B**: Close menus
 
 ## Development
 
