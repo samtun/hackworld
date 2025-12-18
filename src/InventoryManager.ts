@@ -332,7 +332,8 @@ export class InventoryManager {
             { label: 'HP', value: `${Math.ceil(player.hp)} / ${player.maxHp}` },
             { label: 'TP', value: `${Math.ceil(player.tp)} / ${player.maxTp}` },
             { label: 'Strength', value: player.strength },
-            { label: 'Defense', value: player.defense }
+            { label: 'Defense', value: player.defense },
+            { label: 'Bits', value: player.money }
         ];
 
         return stats.map(stat => `
