@@ -151,4 +151,17 @@ export class InputManager {
         }
         return false;
     }
+
+    isStartPressed(): boolean {
+        if (this.keys['Enter']) return true;
+
+        // Gamepad Start (Button 9 usually)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[9]?.pressed) return true;
+            }
+        }
+        return false;
+    }
 }

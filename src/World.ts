@@ -10,16 +10,16 @@ export class World {
     physicsWorld: CANNON.World;
     physicsMaterial: CANNON.Material;
     assetManager: AssetManager;
-    
+
     // Current active stage
     currentStage?: BaseDungeon;
-    
+
     // Stage instances
     private lobby: Lobby;
     private dungeon1: Dungeon1;
     private dungeon2: Dungeon2;
 
-    constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material) {
+    constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material, onLoadComplete?: () => void) {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
         this.physicsMaterial = physicsMaterial;
@@ -34,6 +34,7 @@ export class World {
         this.preloadAssets().then(() => {
             // Start in Lobby after assets are loaded
             this.loadLobby();
+            if (onLoadComplete) onLoadComplete();
         });
     }
 
