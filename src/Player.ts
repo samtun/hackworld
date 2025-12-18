@@ -12,6 +12,10 @@ export class Player {
     weapon: Weapon;
     speed: number = 6;
     currentWeaponType: WeaponType = WeaponType.SWORD;
+    
+    // Track enemies hit during current attack phase to prevent multiple hits
+    // For dual blade, this gets reset between phases to allow double-hitting
+    private enemiesHitThisPhase: Set<Enemy> = new Set();
 
     // Stats
     maxHp: number = 100;
@@ -103,18 +107,26 @@ export class Player {
         // Combat
         if (this.input.isAttackPressed()) {
             if (this.weapon.attack()) {
-                // For non-dual-blade weapons, check hits immediately
-                if (this.currentWeaponType !== WeaponType.DUAL_BLADE) {
-                    this.checkAttackHits(enemies);
-                } else {
-                    // For dual blade, set up the callback to check hits on each phase
+                // Clear the list of enemies hit for this new attack
+                this.enemiesHitThisPhase.clear();
+                
+                // For dual blade, set up callback to reset hit tracking between phases
+                if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
                     this.weapon.onDamageFrame = () => {
-                        this.checkAttackHits(enemies);
+                        // Reset hit tracking for the next phase
+                        this.enemiesHitThisPhase.clear();
                     };
                 }
             }
         }
+        
+        // Update weapon (handles animation and hitbox positioning)
         this.weapon.update(dt, this.mesh.position, this.mesh.quaternion);
+        
+        // Check for hits if weapon is attacking and has an active hitbox
+        if (this.weapon.isAttacking && this.weapon.attackBody) {
+            this.checkAttackHits(enemies);
+        }
 
         // Invulnerability Timer
         if (this.invulnerableTimer > 0) {
@@ -140,11 +152,17 @@ export class Player {
         if (attackBody) {
             for (const enemy of enemies) {
                 if (enemy.isDead || enemy.isDying) continue;
+                
+                // Skip if we already hit this enemy during this attack phase
+                if (this.enemiesHitThisPhase.has(enemy)) continue;
 
                 // Check if attack hitbox overlaps with enemy body
                 if (this.checkCollision(attackBody, enemy.body)) {
                     enemy.takeDamage(damage, this.mesh.position);
                     console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
+                    
+                    // Mark this enemy as hit for this attack phase
+                    this.enemiesHitThisPhase.add(enemy);
                 }
             }
         } else {
@@ -156,6 +174,9 @@ export class Player {
 
             for (const enemy of enemies) {
                 if (enemy.isDead || enemy.isDying) continue;
+                
+                // Skip if we already hit this enemy during this attack phase
+                if (this.enemiesHitThisPhase.has(enemy)) continue;
 
                 const enemyPos = enemy.mesh.position;
                 const dist = playerPos.distanceTo(enemyPos);
@@ -167,6 +188,9 @@ export class Player {
                     if (angle < attackAngle / 2) {
                         enemy.takeDamage(damage, this.mesh.position);
                         console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
+                        
+                        // Mark this enemy as hit for this attack phase
+                        this.enemiesHitThisPhase.add(enemy);
                     }
                 }
             }
