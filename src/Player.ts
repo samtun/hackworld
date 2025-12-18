@@ -32,7 +32,7 @@ export class Player {
     // Charged Attack
     private isChargingAttack: boolean = false;
     private chargeTimer: number = 0;
-    private readonly CHARGE_DURATION: number = 1.5;
+    private readonly CHARGE_DURATION: number = 1.0;
     private isDashing: boolean = false;
     private dashTimer: number = 0;
     private readonly DASH_DURATION: number = 0.4;
@@ -126,7 +126,7 @@ export class Player {
         if (this.isChargingAttack) {
             this.chargeTimer += dt;
             
-            // Update particle positions to follow player
+            // Update particle positions and height based on charge progress
             this.updateChargeParticles();
             
             // Check if attack button is released
@@ -140,22 +140,9 @@ export class Player {
                 }
             }
             
-            // Player can still move during charging
-            const inputVector = this.input.getMovementVector();
-            const angle = -Math.PI / 4;
-            const moveX = inputVector.x * Math.cos(angle) - inputVector.y * Math.sin(angle);
-            const moveZ = inputVector.x * Math.sin(angle) + inputVector.y * Math.cos(angle);
-            
-            this.body.velocity.x = moveX * this.speed;
-            this.body.velocity.z = moveZ * this.speed;
-            
-            // Rotation: Face movement direction
-            if (inputVector.length() > 0.1) {
-                const rotationAngle = Math.atan2(moveX, moveZ);
-                const targetQuaternion = new THREE.Quaternion();
-                targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationAngle);
-                this.mesh.quaternion.slerp(targetQuaternion, 15 * dt);
-            }
+            // Player cannot move during charging
+            this.body.velocity.x = 0;
+            this.body.velocity.z = 0;
             
             // Sync Mesh with Body
             this.mesh.position.copy(this.body.position as any);
@@ -402,10 +389,19 @@ export class Player {
     
     private updateChargeParticles() {
         // Particles are children of the player mesh, so they automatically follow
-        // We can add some animation effects here
+        // Add pulsing animation and raise height when fully charged
         const pulseScale = 1 + Math.sin(this.chargeTimer * 10) * 0.2;
+        
+        // When fully charged, raise particles higher
+        const isFullyCharged = this.chargeTimer >= this.CHARGE_DURATION;
+        const targetHeight = isFullyCharged ? 0.8 : 0.2;
+        
         this.chargeParticles.forEach(particle => {
             particle.scale.y = pulseScale;
+            
+            // Smoothly transition to target height
+            const currentHeight = particle.position.y;
+            particle.position.y += (targetHeight - currentHeight) * 0.15;
         });
     }
     

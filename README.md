@@ -60,7 +60,7 @@ The game is fully playable with keyboard and controller (tested with XBox contro
 
 - **WASD / Arrow Keys / LStick**: Move player
 - **Space / A**: Jump
-- **Enter / X**: Attack (tap for normal attack, hold for 1.5s then release for charged dash attack)
+- **Enter / X**: Attack (tap for normal attack, hold for 1s then release for charged dash attack)
 - **I / Select**: Toggle inventory
 - **Enter / A**: Interact and select in menus
 - **ESC / B**: Close menus
@@ -68,8 +68,10 @@ The game is fully playable with keyboard and controller (tested with XBox contro
 ### Combat Mechanics
 
 #### Charged Attack
-Hold the attack button for 1.5 seconds to charge a powerful dash attack:
+Hold the attack button for 1 second to charge a powerful dash attack:
 - While charging, a particle wall appears around your character in a teardrop pattern
+- Particles rise higher once the attack is fully charged
+- You cannot move while charging
 - Release the attack button after charging to execute a forward dash
 - During the dash, you deal **3x damage** to all enemies you touch
 - You are **invincible** during the dash
