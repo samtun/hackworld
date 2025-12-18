@@ -4,7 +4,6 @@ import { InputManager } from './InputManager';
 import { Weapon, WeaponType } from './Weapon';
 import { Enemy } from './Enemy';
 import { Item } from './InventoryManager';
-import { CoreType, CORE_CONFIGS } from './Core';
 
 export class Player {
     mesh: THREE.Mesh;
@@ -13,7 +12,6 @@ export class Player {
     weapon: Weapon;
     speed: number = 6;
     currentWeaponType: WeaponType = WeaponType.SWORD;
-    currentCoreType?: CoreType; // Currently equipped core
     
     // Track enemies hit during current attack phase to prevent multiple hits
     // For dual blade, this gets reset between phases to allow double-hitting
@@ -70,9 +68,9 @@ export class Player {
         this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER, buyPrice: 180, sellPrice: 90, isEquipped: false });
         
         // Initial Cores
-        this.inventory.push({ id: '5', name: 'Herald Core', type: 'core', coreType: CoreType.HERALD, buyPrice: 200, sellPrice: 100, isEquipped: false });
-        this.inventory.push({ id: '6', name: 'Swift Core', type: 'core', coreType: CoreType.SWIFT, buyPrice: 150, sellPrice: 75, isEquipped: false });
-        this.inventory.push({ id: '7', name: 'Defender Core', type: 'core', coreType: CoreType.DEFENDER, buyPrice: 180, sellPrice: 90, isEquipped: false });
+        this.inventory.push({ id: '5', name: 'Herald Core', type: 'core', coreStats: { strength: 32, defense: 2 }, buyPrice: 200, sellPrice: 100, isEquipped: false });
+        this.inventory.push({ id: '6', name: 'Swift Core', type: 'core', coreStats: { speed: 4, defense: -2 }, buyPrice: 150, sellPrice: 75, isEquipped: false });
+        this.inventory.push({ id: '7', name: 'Defender Core', type: 'core', coreStats: { strength: -1, defense: 4 }, buyPrice: 180, sellPrice: 90, isEquipped: false });
 
         // Visual Mesh
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -125,11 +123,8 @@ export class Player {
         
         // Equip the new core by ID
         const coreItem = this.inventory.find(item => item.id === itemId);
-        if (coreItem && coreItem.type === 'core' && coreItem.coreType) {
+        if (coreItem && coreItem.type === 'core' && coreItem.coreStats) {
             coreItem.isEquipped = true;
-            this.currentCoreType = coreItem.coreType;
-        } else {
-            this.currentCoreType = undefined;
         }
         
         // Recalculate stats with new core
@@ -143,11 +138,17 @@ export class Player {
         this.speed = this.baseSpeed;
         
         // Apply core modifiers if a core is equipped
-        if (this.currentCoreType) {
-            const coreStats = CORE_CONFIGS[this.currentCoreType];
-            this.strength += coreStats.strength;
-            this.defense += coreStats.defense;
-            this.speed += coreStats.speed;
+        const equippedCore = this.inventory.find(item => item.type === 'core' && item.isEquipped);
+        if (equippedCore && equippedCore.coreStats) {
+            if (equippedCore.coreStats.strength !== undefined) {
+                this.strength += equippedCore.coreStats.strength;
+            }
+            if (equippedCore.coreStats.defense !== undefined) {
+                this.defense += equippedCore.coreStats.defense;
+            }
+            if (equippedCore.coreStats.speed !== undefined) {
+                this.speed += equippedCore.coreStats.speed;
+            }
         }
     }
 
