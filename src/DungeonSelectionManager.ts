@@ -178,7 +178,6 @@ export class DungeonSelectionManager {
 
             const dungeonDiv = document.createElement('div');
             dungeonDiv.style.marginBottom = '10px';
-            dungeonDiv.style.cursor = 'pointer';
 
             const isSelected = index === this.selectedIndex;
 
@@ -208,23 +207,6 @@ export class DungeonSelectionManager {
             descDiv.style.fontSize = '14px';
             descDiv.style.color = '#ccc';
             dungeonDiv.appendChild(descDiv);
-
-            dungeonDiv.onmouseover = () => {
-                this.selectedIndex = index;
-                this.dungeonElements.forEach((el, i) => {
-                    if (i === index) {
-                        el.style.backgroundColor = COLORS.ITEM_SELECTED;
-                        el.style.border = '2px solid #fff';
-                    } else {
-                        el.style.backgroundColor = COLORS.TRANSPARENT;
-                        el.style.border = '2px solid transparent';
-                    }
-                });
-            };
-
-            dungeonDiv.onclick = () => {
-                this.selectDungeon(metadata.id);
-            };
 
             this.dungeonList.appendChild(dungeonDiv);
             this.dungeonElements.push(dungeonDiv);

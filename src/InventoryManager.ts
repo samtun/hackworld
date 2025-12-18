@@ -236,7 +236,6 @@ export class InventoryManager {
             
             Object.assign(itemDiv.style, {
                 padding: '5px',
-                cursor: 'pointer',
                 backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
                 border: isSelected ? '2px solid #fff' : '2px solid transparent'
             });
@@ -244,35 +243,6 @@ export class InventoryManager {
             // Add separator between items
             if (index < player.inventory.length - 1) {
                 itemDiv.style.borderBottom = `1px solid ${COLORS.SEPARATOR}`;
-            }
-
-            itemDiv.onmouseover = () => {
-                this.selectedIndex = index;
-                // Just update the visual style without re-rendering everything
-                this.itemElements.forEach((el, i) => {
-                    if (i === index) {
-                        el.style.backgroundColor = COLORS.ITEM_SELECTED;
-                        el.style.border = '2px solid #fff';
-                    } else {
-                        el.style.backgroundColor = COLORS.TRANSPARENT;
-                        el.style.border = '2px solid transparent';
-                    }
-                });
-            };
-            itemDiv.onmouseout = () => {
-                if (!isSelected) {
-                    itemDiv.style.backgroundColor = COLORS.TRANSPARENT;
-                }
-            };
-            
-            // Handle weapon equipping on click
-            if (item.type === 'weapon' && item.weaponType) {
-                itemDiv.onclick = () => {
-                    if (item.weaponType) {
-                        player.equipWeapon(item.weaponType);
-                        console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
-                    }
-                };
             }
             
             this.itemElements.push(itemDiv);

@@ -289,7 +289,6 @@ export class TraderManager {
 
             Object.assign(itemDiv.style, {
                 padding: '8px',
-                cursor: 'pointer',
                 backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
                 border: isSelected ? '2px solid #fff' : '2px solid transparent',
                 opacity: canAfford ? '1' : '0.5'
