@@ -82,7 +82,7 @@ export class NewEntity {
 - Document non-obvious logic with inline comments
 - Add JSDoc comments for public methods and classes
 - Explain the "why" not just the "what" in comments
-- Keep comments up-to-date when code changes, but do not describe the changes, rather refer to the status quo
+- Keep comments up-to-date when code changes, but do not describe the changes themselves, rather replace a comment with the new status quo
 
 #### README Updates
 **CRITICAL**: Always update the README.md when making changes that affect:
