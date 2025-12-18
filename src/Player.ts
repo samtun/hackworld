@@ -28,6 +28,18 @@ export class Player {
     strength: number = 14;
     defense: number = 17;
     invulnerableTimer: number = 0;
+    
+    // Charged Attack
+    private isChargingAttack: boolean = false;
+    private chargeTimer: number = 0;
+    private readonly CHARGE_DURATION: number = 1.5;
+    private isDashing: boolean = false;
+    private dashTimer: number = 0;
+    private readonly DASH_DURATION: number = 0.4;
+    private readonly DASH_SPEED: number = 30;
+    private dashDirection: THREE.Vector3 = new THREE.Vector3();
+    private chargeParticles: THREE.Mesh[] = [];
+    private dashHitEnemies: Set<Enemy> = new Set();
 
     // Ground contact tracking
     private isGrounded: boolean = false;
@@ -88,6 +100,70 @@ export class Player {
     }
 
     update(dt: number, enemies: Enemy[] = []) {
+        // Charged Attack: Handle dashing
+        if (this.isDashing) {
+            this.dashTimer += dt;
+            
+            // Move in dash direction at high speed
+            this.body.velocity.x = this.dashDirection.x * this.DASH_SPEED;
+            this.body.velocity.z = this.dashDirection.z * this.DASH_SPEED;
+            
+            // Check for enemy collisions during dash (3x damage)
+            this.checkDashHits(enemies);
+            
+            // End dash after duration
+            if (this.dashTimer >= this.DASH_DURATION) {
+                this.isDashing = false;
+                this.invulnerableTimer = 0; // End invincibility immediately when dash finishes
+                this.dashHitEnemies.clear();
+            }
+            
+            // Sync Mesh with Body
+            this.mesh.position.copy(this.body.position as any);
+            return; // Skip normal movement during dash
+        }
+        
+        // Charged Attack: Handle charging
+        if (this.isChargingAttack) {
+            this.chargeTimer += dt;
+            
+            // Update particle positions to follow player
+            this.updateChargeParticles();
+            
+            // Check if attack button is released
+            if (this.input.isAttackReleased()) {
+                if (this.chargeTimer >= this.CHARGE_DURATION) {
+                    // Fully charged, execute dash attack
+                    this.executeDashAttack();
+                } else {
+                    // Not fully charged, cancel
+                    this.cancelChargeAttack();
+                }
+            }
+            
+            // Player can still move during charging
+            const inputVector = this.input.getMovementVector();
+            const angle = -Math.PI / 4;
+            const moveX = inputVector.x * Math.cos(angle) - inputVector.y * Math.sin(angle);
+            const moveZ = inputVector.x * Math.sin(angle) + inputVector.y * Math.cos(angle);
+            
+            this.body.velocity.x = moveX * this.speed;
+            this.body.velocity.z = moveZ * this.speed;
+            
+            // Rotation: Face movement direction
+            if (inputVector.length() > 0.1) {
+                const rotationAngle = Math.atan2(moveX, moveZ);
+                const targetQuaternion = new THREE.Quaternion();
+                targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationAngle);
+                this.mesh.quaternion.slerp(targetQuaternion, 15 * dt);
+            }
+            
+            // Sync Mesh with Body
+            this.mesh.position.copy(this.body.position as any);
+            
+            return; // Skip normal combat and movement logic
+        }
+        
         // Movement
         const inputVector = this.input.getMovementVector();
 
@@ -128,19 +204,10 @@ export class Player {
         }
 
         // Combat
-        if (this.input.isAttackPressed()) {
-            if (this.weapon.attack()) {
-                // Clear the list of enemies hit for this new attack
-                this.enemiesHitThisPhase.clear();
-                
-                // For dual blade, set up callback to reset hit tracking between phases
-                if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
-                    this.weapon.onDamageFrame = () => {
-                        // Reset hit tracking for the next phase
-                        this.enemiesHitThisPhase.clear();
-                    };
-                }
-            }
+        // Check if attack button is being held (for charging)
+        if (this.input.isAttackHeld() && !this.weapon.isAttacking && !this.isChargingAttack) {
+            // Start charging attack if button is held and not currently attacking
+            this.startChargeAttack();
         }
         
         // Update weapon (handles animation and hitbox positioning)
@@ -243,12 +310,133 @@ export class Player {
     }
 
     takeDamage(amount: number) {
-        if (this.invulnerableTimer > 0) return;
+        if (this.invulnerableTimer > 0 || this.isDashing) return; // Invincible during dash
 
         this.hp -= amount;
         if (this.hp < 0) this.hp = 0;
 
         this.invulnerableTimer = 1.0; // 1 second invulnerability
         console.log(`Player took ${amount} damage. HP: ${this.hp}`);
+    }
+    
+    private startChargeAttack() {
+        this.isChargingAttack = true;
+        this.chargeTimer = 0;
+        this.createChargeParticles();
+        console.log('Started charging attack');
+    }
+    
+    private cancelChargeAttack() {
+        this.isChargingAttack = false;
+        const wasCharging = this.chargeTimer > 0;
+        this.chargeTimer = 0;
+        this.removeChargeParticles();
+        
+        // If we were charging but didn't complete, do a normal attack
+        if (wasCharging) {
+            if (this.weapon.attack()) {
+                // Clear the list of enemies hit for this new attack
+                this.enemiesHitThisPhase.clear();
+                
+                // For dual blade, set up callback to reset hit tracking between phases
+                if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
+                    this.weapon.onDamageFrame = () => {
+                        // Reset hit tracking for the next phase
+                        this.enemiesHitThisPhase.clear();
+                    };
+                }
+            }
+        }
+        
+        console.log('Cancelled charge attack, executing normal attack');
+    }
+    
+    private executeDashAttack() {
+        this.isChargingAttack = false;
+        this.isDashing = true;
+        this.dashTimer = 0;
+        this.dashHitEnemies.clear();
+        
+        // Set dash direction to player's facing direction
+        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+        this.dashDirection.copy(forward);
+        
+        // Remove charge particles
+        this.removeChargeParticles();
+        
+        // Set invulnerability during dash
+        this.invulnerableTimer = this.DASH_DURATION;
+        
+        console.log('Executing dash attack');
+    }
+    
+    private createChargeParticles() {
+        // Create teardrop/heart-shaped particle wall at 0.2m height
+        // The shape is based on the image provided
+        const particleCount = 40;
+        const particleGeometry = new THREE.BoxGeometry(0.1, 0.2, 0.1);
+        const particleMaterial = new THREE.MeshStandardMaterial({
+            color: 0x00ffff,
+            emissive: 0x00ffff,
+            emissiveIntensity: 0.5,
+            transparent: true,
+            opacity: 0.7
+        });
+        
+        // Create particles in a teardrop/heart pattern
+        for (let i = 0; i < particleCount; i++) {
+            const t = (i / particleCount) * Math.PI * 2;
+            
+            // Parametric equation for a heart/teardrop shape
+            // Modified cardioid equation
+            const r = 0.8 * (1 - Math.sin(t));
+            const x = r * Math.cos(t);
+            const z = r * Math.sin(t);
+            
+            const particle = new THREE.Mesh(particleGeometry, particleMaterial);
+            particle.position.set(x, 0.2, z);
+            
+            this.chargeParticles.push(particle);
+            this.mesh.add(particle);
+        }
+    }
+    
+    private updateChargeParticles() {
+        // Particles are children of the player mesh, so they automatically follow
+        // We can add some animation effects here
+        const pulseScale = 1 + Math.sin(this.chargeTimer * 10) * 0.2;
+        this.chargeParticles.forEach(particle => {
+            particle.scale.y = pulseScale;
+        });
+    }
+    
+    private removeChargeParticles() {
+        this.chargeParticles.forEach(particle => {
+            this.mesh.remove(particle);
+            particle.geometry.dispose();
+            (particle.material as THREE.Material).dispose();
+        });
+        this.chargeParticles = [];
+    }
+    
+    private checkDashHits(enemies: Enemy[]) {
+        // Check collision with player body during dash
+        for (const enemy of enemies) {
+            if (enemy.isDead || enemy.isDying) continue;
+            
+            // Skip if we already hit this enemy during this dash
+            if (this.dashHitEnemies.has(enemy)) continue;
+            
+            // Check if player body overlaps with enemy body
+            if (this.checkCollision(this.body, enemy.body)) {
+                // Deal 3x weapon damage
+                const damage = this.weapon.stats.damage * 3;
+                enemy.takeDamage(damage, this.mesh.position);
+                console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
+                
+                // Mark this enemy as hit during this dash
+                this.dashHitEnemies.add(enemy);
+            }
+        }
     }
 }
