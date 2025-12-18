@@ -34,15 +34,14 @@ export class TraderManager {
     // UI Elements
     traderList!: HTMLDivElement;
     playerList!: HTMLDivElement;
-    traderMoneyText!: HTMLDivElement;
     playerMoneyText!: HTMLDivElement;
-    
+
     // Navigation state
     selectedIndex: number = 0;
     activePanel: 'trader' | 'player' = 'trader';
     itemElements: HTMLDivElement[] = [];
     needsRender: boolean = false;
-    
+
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
     private lastNavigateDownState: boolean = false;
@@ -141,10 +140,6 @@ export class TraderManager {
         });
         windowDiv.appendChild(moneyDiv);
 
-        this.traderMoneyText = document.createElement('div');
-        this.traderMoneyText.style.color = COLORS.MONEY_COLOR;
-        moneyDiv.appendChild(this.traderMoneyText);
-
         const hintDiv = document.createElement('div');
         hintDiv.innerHTML = '<span class="key-icon">ENTER</span>/<span class="btn-icon xbox-a">A</span> Buy/Sell <span style="margin: 0 15px;"></span> <span class="key-icon">ESC</span>/<span class="btn-icon xbox-b">B</span> Close';
         hintDiv.style.fontSize = '14px';
@@ -234,7 +229,7 @@ export class TraderManager {
             const oldIndex = this.selectedIndex;
             const oldPanel = this.activePanel;
             this.handleNavigation(player, input);
-            
+
             // Mark for re-render if selection changed
             if (oldIndex !== this.selectedIndex || oldPanel !== this.activePanel) {
                 this.needsRender = true;
@@ -250,8 +245,7 @@ export class TraderManager {
 
     private render(player: Player) {
         // Update Money Display
-        this.traderMoneyText.innerText = ``; // Empty - remove "Trader" text
-        this.playerMoneyText.innerText = `Your Money: ${player.money} bits`;
+        this.playerMoneyText.innerText = `${player.money} BITS`;
 
         // Update Trader List
         this.renderItemList(
@@ -280,19 +274,19 @@ export class TraderManager {
         player: Player
     ) {
         container.innerHTML = '';
-        
+
         items.forEach((item, index) => {
             const itemDiv = document.createElement('div');
             const price = mode === 'buy' ? item.buyPrice : item.sellPrice;
             const priceText = price !== undefined ? ` (${price} bits)` : '';
-            
+
             // Check if player can afford (for buy mode)
             const canAfford = mode === 'sell' || (price !== undefined && player.money >= price);
-            
+
             itemDiv.innerText = `${item.name}${priceText}`; // No affordText
-            
+
             const isSelected = isActive && index === this.selectedIndex;
-            
+
             Object.assign(itemDiv.style, {
                 padding: '8px',
                 cursor: 'pointer',
@@ -317,7 +311,7 @@ export class TraderManager {
         const navigateRight = input.keys['ArrowRight'] || input.keys['KeyD'];
         const select = input.isSelectPressed();
         const cancel = input.isCancelPressed();
-        
+
         // Close on cancel
         if (cancel) {
             this.hide();
@@ -330,11 +324,11 @@ export class TraderManager {
                 this.selectedIndex--;
             }
         }
-        
+
         // Navigate down (with debouncing)
         if (navigateDown && !this.lastNavigateDownState) {
-            const maxIndex = this.activePanel === 'trader' 
-                ? this.traderInventory.length - 1 
+            const maxIndex = this.activePanel === 'trader'
+                ? this.traderInventory.length - 1
                 : player.inventory.length - 1;
             if (this.selectedIndex < maxIndex) {
                 this.selectedIndex++;
@@ -354,12 +348,12 @@ export class TraderManager {
                 this.selectedIndex = 0;
             }
         }
-        
+
         // Select/Buy/Sell item (with debouncing)
         if (select && !this.lastSelectState) {
             this.handleTransaction(player);
         }
-        
+
         // Update last states for debouncing
         this.lastNavigateUpState = navigateUp;
         this.lastNavigateDownState = navigateDown;
@@ -394,7 +388,7 @@ export class TraderManager {
                 this.traderInventory.push(soldItem); // Add to trader inventory
                 player.inventory.splice(this.selectedIndex, 1);
                 console.log(`Sold ${item.name} for ${item.sellPrice} bits`);
-                
+
                 // Adjust selection if needed
                 if (this.selectedIndex >= player.inventory.length && this.selectedIndex > 0) {
                     this.selectedIndex--;
