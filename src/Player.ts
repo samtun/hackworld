@@ -4,6 +4,7 @@ import { InputManager } from './InputManager';
 import { Weapon, WeaponType } from './Weapon';
 import { Enemy } from './Enemy';
 import { Item } from './InventoryManager';
+import { CoreType, CORE_CONFIGS } from './Core';
 
 export class Player {
     mesh: THREE.Mesh;
@@ -12,6 +13,7 @@ export class Player {
     weapon: Weapon;
     speed: number = 6;
     currentWeaponType: WeaponType = WeaponType.SWORD;
+    currentCoreType?: CoreType; // Currently equipped core
     
     // Track enemies hit during current attack phase to prevent multiple hits
     // For dual blade, this gets reset between phases to allow double-hitting
@@ -20,7 +22,14 @@ export class Player {
     // Ground detection threshold
     private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
 
-    // Stats
+    // Base Stats (without equipment modifiers)
+    private baseMaxHp: number = 100;
+    private baseMaxTp: number = 100;
+    private baseStrength: number = 14;
+    private baseDefense: number = 17;
+    private baseSpeed: number = 6;
+    
+    // Stats (with equipment modifiers applied)
     maxHp: number = 100;
     hp: number = 100;
     maxTp: number = 100;
@@ -61,7 +70,11 @@ export class Player {
         this.inventory.push({ id: '2', name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE, buyPrice: 150, sellPrice: 75, isEquipped: false });
         this.inventory.push({ id: '3', name: 'Fierce Lance', type: 'weapon', weaponType: WeaponType.LANCE, buyPrice: 120, sellPrice: 60, isEquipped: false });
         this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER, buyPrice: 180, sellPrice: 90, isEquipped: false });
-        this.inventory.push({ id: '5', name: 'Data Core α', type: 'core', buyPrice: 200, sellPrice: 100, isEquipped: false });
+        
+        // Initial Cores
+        this.inventory.push({ id: '5', name: 'Herald Core', type: 'core', coreType: CoreType.HERALD, buyPrice: 200, sellPrice: 100, isEquipped: false });
+        this.inventory.push({ id: '6', name: 'Swift Core', type: 'core', coreType: CoreType.SWIFT, buyPrice: 150, sellPrice: 75, isEquipped: false });
+        this.inventory.push({ id: '7', name: 'Defender Core', type: 'core', coreType: CoreType.DEFENDER, buyPrice: 180, sellPrice: 90, isEquipped: false });
 
         // Visual Mesh
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -102,6 +115,48 @@ export class Player {
             this.currentWeaponType = weaponItem.weaponType;
             this.weapon.changeWeaponType(this.mesh, weaponItem.weaponType);
         }
+    }
+
+    equipCore(itemId: string) {
+        // Unequip all cores first
+        this.inventory.forEach(item => {
+            if (item.type === 'core') {
+                item.isEquipped = false;
+            }
+        });
+        
+        // Equip the new core by ID
+        const coreItem = this.inventory.find(item => item.id === itemId);
+        if (coreItem && coreItem.type === 'core' && coreItem.coreType) {
+            coreItem.isEquipped = true;
+            this.currentCoreType = coreItem.coreType;
+        } else {
+            this.currentCoreType = undefined;
+        }
+        
+        // Recalculate stats with new core
+        this.recalculateStats();
+    }
+
+    private recalculateStats() {
+        // Start with base stats
+        this.strength = this.baseStrength;
+        this.defense = this.baseDefense;
+        this.speed = this.baseSpeed;
+        this.maxHp = this.baseMaxHp;
+        this.maxTp = this.baseMaxTp;
+        
+        // Apply core modifiers if a core is equipped
+        if (this.currentCoreType) {
+            const coreStats = CORE_CONFIGS[this.currentCoreType];
+            this.strength += coreStats.strength;
+            this.defense += coreStats.defense;
+            this.speed += coreStats.speed;
+        }
+        
+        // Ensure HP/TP don't exceed new maximums
+        if (this.hp > this.maxHp) this.hp = this.maxHp;
+        if (this.tp > this.maxTp) this.tp = this.maxTp;
     }
 
     update(dt: number, enemies: Enemy[] = []) {

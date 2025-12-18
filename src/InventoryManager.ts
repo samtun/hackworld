@@ -28,12 +28,14 @@ const STYLES = {
 };
 
 import { WeaponType } from './Weapon';
+import { CoreType } from './Core';
 
 export interface Item {
     id: string;
     name: string;
     type: 'weapon' | 'core' | 'chip';
     weaponType?: WeaponType; // For weapon items
+    coreType?: CoreType; // For core items
     stats?: {
         strength?: number;
         defense?: number;
@@ -292,6 +294,11 @@ export class InventoryManager {
             if (item && item.type === 'weapon' && item.weaponType) {
                 player.equipWeapon(item.id);
                 console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
+                // Trigger re-render to update equipped indicator immediately
+                this.needsRender = true;
+            } else if (item && item.type === 'core' && item.coreType) {
+                player.equipCore(item.id);
+                console.log(`Equipped core: ${item.name} (${item.coreType})`);
                 // Trigger re-render to update equipped indicator immediately
                 this.needsRender = true;
             }

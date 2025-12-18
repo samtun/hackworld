@@ -64,9 +64,8 @@ export class TraderManager {
             { id: 't2', name: 'Twin Daggers', type: 'weapon', weaponType: WeaponType.DUAL_BLADE, buyPrice: 120, sellPrice: 60 },
             { id: 't3', name: 'Steel Lance', type: 'weapon', weaponType: WeaponType.LANCE, buyPrice: 100, sellPrice: 50 },
             { id: 't4', name: 'War Hammer', type: 'weapon', weaponType: WeaponType.HAMMER, buyPrice: 150, sellPrice: 75 },
-            { id: 't5', name: 'Data Core β', type: 'core', buyPrice: 180, sellPrice: 90 },
-            { id: 't6', name: 'Power Chip', type: 'chip', buyPrice: 100, sellPrice: 50 },
-            { id: 't7', name: 'Defense Chip', type: 'chip', buyPrice: 100, sellPrice: 50 }
+            { id: 't5', name: 'Power Chip', type: 'chip', buyPrice: 100, sellPrice: 50 },
+            { id: 't6', name: 'Defense Chip', type: 'chip', buyPrice: 100, sellPrice: 50 }
         ];
     }
 
