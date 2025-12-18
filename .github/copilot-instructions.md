@@ -62,7 +62,8 @@ export class NewEntity {
 - Keep related functionality together in appropriate files
 - Use the existing file structure:
   - `Game.ts` - Main game loop and coordination
-  - `World.ts` - Scene/world management
+  - `World.ts` - Main world management
+  - Stage files (`Dungeon1.ts`, `Lobby.ts`) - Individual stages of the game
   - Entity files (`Player.ts`, `Enemy.ts`, etc.) - Individual game entities
   - Manager files (`InputManager.ts`, `UIManager.ts`, etc.) - System management
 - When adding new features, consider if they belong in an existing file or need a new module
@@ -85,7 +86,8 @@ export class NewEntity {
 
 #### README Updates
 **CRITICAL**: Always update the README.md when making changes that affect:
-- New features or gameplay mechanics
+- New features or gameplay mechanics that have impact on the general idea of the gameplay
+  - Do NOT include visual things, or technical descriptions of features. Users only need to learn the overall gist of the game mechanics in the readme
 - Installation or setup procedures
 - Build or development commands
 - Dependencies or tech stack
