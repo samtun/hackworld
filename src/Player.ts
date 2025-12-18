@@ -103,7 +103,15 @@ export class Player {
         // Combat
         if (this.input.isAttackPressed()) {
             if (this.weapon.attack()) {
-                this.checkAttackHits(enemies);
+                // For non-dual-blade weapons, check hits immediately
+                if (this.currentWeaponType !== WeaponType.DUAL_BLADE) {
+                    this.checkAttackHits(enemies);
+                } else {
+                    // For dual blade, set up the callback to check hits on each phase
+                    this.weapon.onDamageFrame = () => {
+                        this.checkAttackHits(enemies);
+                    };
+                }
             }
         }
         this.weapon.update(dt);

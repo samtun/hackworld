@@ -62,6 +62,8 @@ export class Weapon {
     stats: WeaponStats;
     private loader: GLTFLoader;
     private assetManager: AssetManager;
+    private attackPhase: number = 0; // For multi-phase attacks like dual blade
+    onDamageFrame?: () => void; // Callback for when damage should be dealt
 
     constructor(parent: THREE.Object3D, weaponType: WeaponType = WeaponType.SWORD) {
         this.weaponType = weaponType;
@@ -163,6 +165,7 @@ export class Weapon {
         if (this.isAttacking) return false;
         this.isAttacking = true;
         this.attackTimer = 0;
+        this.attackPhase = 0;
         return true;
     }
 
@@ -188,34 +191,180 @@ export class Weapon {
     private animateWeapon(progress: number) {
         switch (this.weaponType) {
             case WeaponType.SWORD:
-                // Standard swing
-                const swingAngle = Math.sin(progress * Math.PI) * 2;
-                this.mesh.rotation.x = this.baseRotation.x + swingAngle;
+                this.animateSword(progress);
                 break;
 
             case WeaponType.DUAL_BLADE:
-                // Fast spinning slash
-                const spinAngle = Math.sin(progress * Math.PI) * 2.5;
-                this.mesh.rotation.x = this.baseRotation.x + spinAngle;
-                this.mesh.rotation.y = this.baseRotation.y + spinAngle * 0.3;
+                this.animateDualBlade(progress);
                 break;
 
             case WeaponType.LANCE:
-                // Thrust forward
-                const thrustDistance = Math.sin(progress * Math.PI) * 0.8;
-                this.mesh.position.z = this.basePosition.z + thrustDistance;
+                this.animateLance(progress);
                 break;
 
             case WeaponType.HAMMER:
-                // Overhead smash
-                const smashAngle = Math.sin(progress * Math.PI) * 2.8;
-                this.mesh.rotation.x = this.baseRotation.x + smashAngle;
-                // Add slight pause at top
-                if (progress > 0.4 && progress < 0.6) {
-                    this.mesh.rotation.x = this.baseRotation.x + 2.5;
-                }
+                this.animateHammer(progress);
                 break;
         }
+    }
+
+    // Sword: Right to left sweep
+    private animateSword(progress: number) {
+        // Use a smooth curve for the sweep motion
+        const t = this.easeInOutCubic(progress);
+        
+        // Sweep from right to left horizontally
+        // Start position: right side (x: 0.8)
+        // End position: left side (x: -0.8)
+        const startX = 0.8;
+        const endX = -0.8;
+        const x = startX + (endX - startX) * t;
+        
+        // Slight arc forward during sweep
+        const arcZ = Math.sin(t * Math.PI) * 0.3;
+        
+        // Slight vertical arc
+        const arcY = Math.sin(t * Math.PI) * 0.2;
+        
+        this.mesh.position.set(x, this.basePosition.y + arcY, this.basePosition.z + arcZ);
+        
+        // Rotate weapon to follow the sweep
+        this.mesh.rotation.y = this.baseRotation.y - t * Math.PI * 0.8;
+        this.mesh.rotation.z = this.baseRotation.z + Math.sin(t * Math.PI) * 0.5;
+    }
+
+    // Dual Blade: Two separate sweeps, left then right
+    private animateDualBlade(progress: number) {
+        // Two phases: 0-0.5 is left blade, 0.5-1.0 is right blade
+        const phaseDuration = 0.5;
+        
+        if (progress < phaseDuration) {
+            // First phase: left blade sweeps from right to left
+            const phaseProgress = progress / phaseDuration;
+            const t = this.easeInOutCubic(phaseProgress);
+            
+            const startX = 0.8;
+            const endX = -0.8;
+            const x = startX + (endX - startX) * t;
+            
+            const arcZ = Math.sin(t * Math.PI) * 0.25;
+            const arcY = Math.sin(t * Math.PI) * 0.15;
+            
+            this.mesh.position.set(x, this.basePosition.y + arcY, this.basePosition.z + arcZ);
+            this.mesh.rotation.y = this.baseRotation.y - t * Math.PI * 0.7;
+            this.mesh.rotation.z = this.baseRotation.z + Math.sin(t * Math.PI) * 0.4;
+            
+            // Trigger damage callback in the middle of first sweep
+            if (phaseProgress > 0.4 && phaseProgress < 0.6 && this.attackPhase === 0) {
+                this.attackPhase = 1;
+                if (this.onDamageFrame) this.onDamageFrame();
+            }
+        } else {
+            // Second phase: right blade sweeps from right to left
+            const phaseProgress = (progress - phaseDuration) / phaseDuration;
+            const t = this.easeInOutCubic(phaseProgress);
+            
+            const startX = 0.8;
+            const endX = -0.8;
+            const x = startX + (endX - startX) * t;
+            
+            const arcZ = Math.sin(t * Math.PI) * 0.25;
+            const arcY = Math.sin(t * Math.PI) * 0.15 - 0.1; // Slightly lower
+            
+            this.mesh.position.set(x, this.basePosition.y + arcY, this.basePosition.z + arcZ);
+            this.mesh.rotation.y = this.baseRotation.y - t * Math.PI * 0.7;
+            this.mesh.rotation.z = this.baseRotation.z - Math.sin(t * Math.PI) * 0.4;
+            
+            // Trigger damage callback in the middle of second sweep
+            if (phaseProgress > 0.4 && phaseProgress < 0.6 && this.attackPhase === 1) {
+                this.attackPhase = 2;
+                if (this.onDamageFrame) this.onDamageFrame();
+            }
+        }
+    }
+
+    // Lance: Fast forward thrust
+    private animateLance(progress: number) {
+        // Faster thrust with more emphasis on forward motion
+        const t = this.easeInOutQuad(progress);
+        
+        // Strong forward thrust
+        const thrustDistance = Math.sin(t * Math.PI) * 1.5;
+        
+        // Slight upward arc at the end
+        const arcY = t > 0.5 ? (t - 0.5) * 0.2 : 0;
+        
+        this.mesh.position.set(
+            this.basePosition.x,
+            this.basePosition.y + arcY,
+            this.basePosition.z + thrustDistance
+        );
+        
+        // Minimal rotation, mostly forward motion
+        this.mesh.rotation.x = this.baseRotation.x - Math.sin(t * Math.PI) * 0.2;
+    }
+
+    // Hammer: 0.2s windup, then fast descent
+    private animateHammer(progress: number) {
+        const windupDuration = 0.2 / this.stats.attackSpeed; // Normalized to 0-1 range
+        
+        if (progress < windupDuration) {
+            // Windup: swing back
+            const t = progress / windupDuration;
+            const eased = this.easeInCubic(t);
+            
+            // Pull back and up
+            const backDistance = eased * 0.5;
+            const upDistance = eased * 0.8;
+            
+            this.mesh.position.set(
+                this.basePosition.x,
+                this.basePosition.y + upDistance,
+                this.basePosition.z - backDistance
+            );
+            
+            // Rotate back
+            this.mesh.rotation.x = this.baseRotation.x - eased * 1.5;
+        } else {
+            // Descent: fast downward smash
+            const descendProgress = (progress - windupDuration) / (1 - windupDuration);
+            const t = this.easeInQuad(descendProgress); // Fast acceleration
+            
+            // Descend from raised position
+            const startY = 0.8;
+            const endY = -0.3;
+            const y = startY + (endY - startY) * t;
+            
+            const startZ = -0.5;
+            const endZ = 0.5;
+            const z = startZ + (endZ - startZ) * t;
+            
+            this.mesh.position.set(
+                this.basePosition.x,
+                this.basePosition.y + y,
+                this.basePosition.z + z
+            );
+            
+            // Rotate forward during descent
+            this.mesh.rotation.x = this.baseRotation.x - 1.5 + t * 2.5;
+        }
+    }
+
+    // Easing functions for smooth animations
+    private easeInOutCubic(t: number): number {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    private easeInOutQuad(t: number): number {
+        return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    }
+
+    private easeInCubic(t: number): number {
+        return t * t * t;
+    }
+
+    private easeInQuad(t: number): number {
+        return t * t;
     }
 
     changeWeaponType(parent: THREE.Object3D, newType: WeaponType) {
