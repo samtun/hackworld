@@ -192,6 +192,7 @@ export class Game {
         }
 
         // Update NPC dialogue if visible
+        const wasDialogueVisible = this.npcDialogue.isVisible;
         if (this.npcDialogue.isVisible) {
             this.npcDialogue.update(this.input);
         }
@@ -232,8 +233,8 @@ export class Game {
             // Show NPC hint (prioritize NPC over trader)
             this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to ' + npcNearby.name);
 
-            // Check for interaction
-            if (isSelectPressed && !this.wasSelectPressed) {
+            // Check for interaction (but not if dialogue was just closed this frame)
+            if (isSelectPressed && !this.wasSelectPressed && !wasDialogueVisible) {
                 this.npcDialogue.show(npcNearby);
             }
         } else if (isNearTrader && !anyMenuOpen) {
