@@ -35,8 +35,7 @@ export class TraderManager {
     traderList!: HTMLDivElement;
     playerList!: HTMLDivElement;
     playerMoneyText!: HTMLDivElement;
-    traderStatsPanel!: HTMLDivElement;
-    playerStatsPanel!: HTMLDivElement;
+    weaponStatsPanel!: HTMLDivElement;
 
     // Navigation state
     selectedIndex: number = 0;
@@ -136,35 +135,20 @@ export class TraderManager {
         });
         windowDiv.appendChild(separatorDiv);
 
-        // Trader Stats Panel (Bottom Left)
-        const traderStatsPanel = this.createPanel(COLORS.PANEL_TRADER, '4 / 5', '1 / 2');
-        windowDiv.appendChild(traderStatsPanel);
+        // Single Weapon Stats Panel (Bottom - spans both columns)
+        const statsPanel = this.createPanel(COLORS.WINDOW_BG, '4 / 5', '1 / 3');
+        windowDiv.appendChild(statsPanel);
 
-        const traderStatsTitle = document.createElement('div');
-        traderStatsTitle.innerText = "Weapon Stats";
-        traderStatsTitle.style.marginBottom = '10px';
-        traderStatsTitle.style.fontWeight = 'bold';
-        traderStatsTitle.style.fontSize = '16px';
-        traderStatsPanel.appendChild(traderStatsTitle);
+        const statsTitle = document.createElement('div');
+        statsTitle.innerText = "Weapon Stats";
+        statsTitle.style.marginBottom = '10px';
+        statsTitle.style.fontWeight = 'bold';
+        statsTitle.style.fontSize = '16px';
+        statsPanel.appendChild(statsTitle);
 
-        this.traderStatsPanel = document.createElement('div');
-        this.traderStatsPanel.style.fontSize = '14px';
-        traderStatsPanel.appendChild(this.traderStatsPanel);
-
-        // Player Stats Panel (Bottom Right)
-        const playerStatsPanel = this.createPanel(COLORS.PANEL_PLAYER, '4 / 5', '2 / 3');
-        windowDiv.appendChild(playerStatsPanel);
-
-        const playerStatsTitle = document.createElement('div');
-        playerStatsTitle.innerText = "Weapon Stats";
-        playerStatsTitle.style.marginBottom = '10px';
-        playerStatsTitle.style.fontWeight = 'bold';
-        playerStatsTitle.style.fontSize = '16px';
-        playerStatsPanel.appendChild(playerStatsTitle);
-
-        this.playerStatsPanel = document.createElement('div');
-        this.playerStatsPanel.style.fontSize = '14px';
-        playerStatsPanel.appendChild(this.playerStatsPanel);
+        this.weaponStatsPanel = document.createElement('div');
+        this.weaponStatsPanel.style.fontSize = '14px';
+        statsPanel.appendChild(this.weaponStatsPanel);
 
         // Money Display (Bottom)
         const moneyDiv = document.createElement('div');
@@ -309,11 +293,11 @@ export class TraderManager {
         );
 
         // Update weapon stats panels
-        const traderSelectedItem = this.traderInventory[this.activePanel === 'trader' ? this.selectedIndex : -1];
-        const playerSelectedItem = player.inventory[this.activePanel === 'player' ? this.selectedIndex : -1];
+        const selectedItem = this.activePanel === 'trader' 
+            ? this.traderInventory[this.selectedIndex]
+            : player.inventory[this.selectedIndex];
         
-        this.traderStatsPanel.innerHTML = this.generateWeaponStatsHTML(traderSelectedItem);
-        this.playerStatsPanel.innerHTML = this.generateWeaponStatsHTML(playerSelectedItem);
+        this.weaponStatsPanel.innerHTML = this.generateWeaponStatsHTML(selectedItem);
     }
 
     private renderItemList(
