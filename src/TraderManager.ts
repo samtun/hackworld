@@ -306,8 +306,8 @@ export class TraderManager {
     private handleNavigation(player: Player, input: InputManager) {
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();
-        const navigateLeft = input.keys['ArrowLeft'] || input.keys['KeyA'];
-        const navigateRight = input.keys['ArrowRight'] || input.keys['KeyD'];
+        const navigateLeft = input.isNavigateLeftPressed();
+        const navigateRight = input.isNavigateRightPressed();
         const select = input.isSelectPressed();
         const cancel = input.isCancelPressed();
 

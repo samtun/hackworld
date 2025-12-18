@@ -126,6 +126,36 @@ export class InputManager {
         return false;
     }
 
+    isNavigateLeftPressed(): boolean {
+        if (this.keys['ArrowLeft'] || this.keys['KeyA']) return true;
+
+        // Gamepad D-Pad Left or Left Stick Left
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                // D-Pad Left (button 14) or Left Stick Left (axis 0 < -0.5)
+                if (gp.buttons[14]?.pressed) return true;
+                if (gp.axes[0] < -0.5) return true;
+            }
+        }
+        return false;
+    }
+
+    isNavigateRightPressed(): boolean {
+        if (this.keys['ArrowRight'] || this.keys['KeyD']) return true;
+
+        // Gamepad D-Pad Right or Left Stick Right
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                // D-Pad Right (button 15) or Left Stick Right (axis 0 > 0.5)
+                if (gp.buttons[15]?.pressed) return true;
+                if (gp.axes[0] > 0.5) return true;
+            }
+        }
+        return false;
+    }
+
     isSelectPressed(): boolean {
         if (this.keys['Enter']) return true;
 
