@@ -19,14 +19,14 @@ export class Portal {
     };
     color: THREE.Color;
     destination: string;
-    
+
     private readonly PARTICLE_COUNT = 150;
     private readonly RING_RADIUS = 1.0; // Match portal radius
     private readonly PARTICLE_LIFETIME = 3.0; // seconds
     private readonly RISE_SPEED = 1.2; // upward velocity
     private readonly SPIN_SPEED = 2.5; // radians per second
     private readonly TURBULENCE_STRENGTH = 0.2;
-    private readonly MAX_PARTICLE_SIZE = 0.35; // Maximum particle size (increased for better visibility)
+    private readonly MAX_PARTICLE_SIZE = 0.35; // Maximum particle size
     private time: number = 0;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, color: number, destination: string) {
@@ -35,10 +35,10 @@ export class Portal {
 
         // Create portal mesh
         const portalGeo = new THREE.CylinderGeometry(this.RING_RADIUS, this.RING_RADIUS, 0.1, 32);
-        const portalMat = new THREE.MeshBasicMaterial({ 
-            color, 
-            transparent: true, 
-            opacity: 0.5 
+        const portalMat = new THREE.MeshBasicMaterial({
+            color,
+            transparent: true,
+            opacity: 0.5
         });
         this.mesh = new THREE.Mesh(portalGeo, portalMat);
         this.mesh.position.set(position.x, position.y, position.z);
@@ -109,21 +109,21 @@ export class Portal {
      */
     private resetParticle(index: number, isInitialSpawn: boolean = false): void {
         const portalPos = this.mesh.position;
-        
+
         // Random angle around the circle
         const angle = Math.random() * Math.PI * 2;
         this.particleSystem.angles[index] = angle;
-        
+
         // Start at the outer edge of the ring (with slight variation)
         const radius = this.RING_RADIUS + (Math.random() - 0.5) * 0.1;
         this.particleSystem.radii[index] = radius;
-        
+
         // Position on the ring at portal height
         const i3 = index * 3;
         this.particleSystem.positions[i3] = portalPos.x + Math.cos(angle) * radius;
         this.particleSystem.positions[i3 + 1] = portalPos.y;
         this.particleSystem.positions[i3 + 2] = portalPos.z + Math.sin(angle) * radius;
-        
+
         // Set lifetime with variation to prevent synchronized spawning
         if (isInitialSpawn) {
             // Stagger initial particles throughout their lifetime for smooth startup
@@ -133,7 +133,7 @@ export class Portal {
             // This prevents all particles from dying at the same time and spawning in chunks
             this.particleSystem.lifetimes[index] = this.PARTICLE_LIFETIME * (0.95 + Math.random() * 0.1);
         }
-        
+
         // Initialize size to maximum
         this.particleSystem.sizes[index] = this.MAX_PARTICLE_SIZE;
     }
@@ -147,35 +147,35 @@ export class Portal {
 
         for (let i = 0; i < this.PARTICLE_COUNT; i++) {
             const i3 = i * 3;
-            
+
             // Update lifetime
             this.particleSystem.lifetimes[i] -= deltaTime;
-            
+
             // Reset if particle died
             if (this.particleSystem.lifetimes[i] <= 0) {
                 this.resetParticle(i);
                 continue;
             }
-            
+
             // Calculate age factor (0 = just spawned, 1 = about to die)
             const ageFactor = 1 - (this.particleSystem.lifetimes[i] / this.PARTICLE_LIFETIME);
-            
+
             // Spiral upward motion
             this.particleSystem.angles[i] += this.SPIN_SPEED * deltaTime;
             const angle = this.particleSystem.angles[i];
-            
+
             // Gradually expand radius as particle rises
             const currentRadius = this.particleSystem.radii[i] * (1 + ageFactor * 0.2);
-            
+
             // Add turbulence using sine waves
             const turbulenceX = Math.sin(this.time * 3 + i * 0.5) * this.TURBULENCE_STRENGTH * ageFactor;
             const turbulenceZ = Math.cos(this.time * 3 + i * 0.7) * this.TURBULENCE_STRENGTH * ageFactor;
-            
+
             // Update position - calculate Y based on age factor to avoid accumulation
             this.particleSystem.positions[i3] = portalPos.x + Math.cos(angle) * currentRadius + turbulenceX;
             this.particleSystem.positions[i3 + 1] = portalPos.y + (ageFactor * this.RISE_SPEED * this.PARTICLE_LIFETIME);
             this.particleSystem.positions[i3 + 2] = portalPos.z + Math.sin(angle) * currentRadius + turbulenceZ;
-            
+
             // Update size - decrease as particle ages (reaches 0 at the top)
             this.particleSystem.sizes[i] = this.MAX_PARTICLE_SIZE * (1 - ageFactor);
         }
@@ -183,7 +183,7 @@ export class Portal {
         // Update the geometry attributes
         const positionAttribute = this.particles.geometry.getAttribute('position');
         (positionAttribute as THREE.BufferAttribute).needsUpdate = true;
-        
+
         const sizeAttribute = this.particles.geometry.getAttribute('size');
         if (sizeAttribute) {
             (sizeAttribute as THREE.BufferAttribute).needsUpdate = true;
@@ -196,13 +196,13 @@ export class Portal {
     cleanup(scene: THREE.Scene): void {
         scene.remove(this.mesh);
         scene.remove(this.particles);
-        
+
         if (this.mesh.geometry) this.mesh.geometry.dispose();
         const meshMaterial = this.mesh.material as THREE.Material;
         if (meshMaterial) {
             meshMaterial.dispose();
         }
-        
+
         if (this.particles.geometry) this.particles.geometry.dispose();
         const particleMaterial = this.particles.material as THREE.ShaderMaterial;
         if (particleMaterial) {
