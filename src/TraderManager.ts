@@ -146,7 +146,7 @@ export class TraderManager {
         moneyDiv.appendChild(this.traderMoneyText);
 
         const hintDiv = document.createElement('div');
-        hintDiv.innerHTML = '<span class="key-icon">ENTER</span>/<span class="btn-icon xbox-a">A</span> Buy/Sell | <span class="key-icon">ESC</span>/<span class="btn-icon xbox-b">B</span> Close';
+        hintDiv.innerHTML = '<span class="key-icon">ENTER</span>/<span class="btn-icon xbox-a">A</span> Buy/Sell <span style="margin: 0 15px;"></span> <span class="key-icon">ESC</span>/<span class="btn-icon xbox-b">B</span> Close';
         hintDiv.style.fontSize = '14px';
         moneyDiv.appendChild(hintDiv);
 
@@ -250,8 +250,8 @@ export class TraderManager {
 
     private render(player: Player) {
         // Update Money Display
-        this.traderMoneyText.innerText = `Trader`;
-        this.playerMoneyText.innerText = `Your Money: ${player.money}G`;
+        this.traderMoneyText.innerText = ``; // Empty - remove "Trader" text
+        this.playerMoneyText.innerText = `Your Money: ${player.money} bits`;
 
         // Update Trader List
         this.renderItemList(
@@ -284,13 +284,12 @@ export class TraderManager {
         items.forEach((item, index) => {
             const itemDiv = document.createElement('div');
             const price = mode === 'buy' ? item.buyPrice : item.sellPrice;
-            const priceText = price !== undefined ? ` (${price}G)` : '';
+            const priceText = price !== undefined ? ` (${price} bits)` : '';
             
             // Check if player can afford (for buy mode)
             const canAfford = mode === 'sell' || (price !== undefined && player.money >= price);
-            const affordText = !canAfford ? ' [Can\'t Afford]' : '';
             
-            itemDiv.innerText = `${item.name}${priceText}${affordText}`;
+            itemDiv.innerText = `${item.name}${priceText}`; // No affordText
             
             const isSelected = isActive && index === this.selectedIndex;
             
@@ -379,7 +378,7 @@ export class TraderManager {
                     player.money -= item.buyPrice;
                     const newItem = { ...item, id: `p${Date.now()}` }; // Give it a unique ID
                     player.inventory.push(newItem);
-                    console.log(`Bought ${item.name} for ${item.buyPrice}G`);
+                    console.log(`Bought ${item.name} for ${item.buyPrice} bits`);
                     this.needsRender = true;
                 } else {
                     console.log(`Not enough money to buy ${item.name}`);
@@ -389,10 +388,12 @@ export class TraderManager {
             // Sell to trader
             const item = player.inventory[this.selectedIndex];
             if (item && item.sellPrice !== undefined) {
-                // Transfer money to player and remove item
+                // Transfer money to player and add item to trader inventory
                 player.money += item.sellPrice;
+                const soldItem = { ...item, id: `t${Date.now()}` }; // Give it a unique trader ID
+                this.traderInventory.push(soldItem); // Add to trader inventory
                 player.inventory.splice(this.selectedIndex, 1);
-                console.log(`Sold ${item.name} for ${item.sellPrice}G`);
+                console.log(`Sold ${item.name} for ${item.sellPrice} bits`);
                 
                 // Adjust selection if needed
                 if (this.selectedIndex >= player.inventory.length && this.selectedIndex > 0) {

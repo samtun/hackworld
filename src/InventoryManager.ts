@@ -229,7 +229,7 @@ export class InventoryManager {
         
         player.inventory.forEach((item, index) => {
             const itemDiv = document.createElement('div');
-            const priceText = item.sellPrice !== undefined ? ` (${item.sellPrice}G)` : '';
+            const priceText = item.sellPrice !== undefined ? ` (${item.sellPrice} bits)` : '';
             itemDiv.innerText = `${item.name}${priceText}`;
             
             const isSelected = index === this.selectedIndex;

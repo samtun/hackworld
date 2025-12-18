@@ -11,7 +11,7 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Two unique dungeon stages accessible from the lobby
 - Asset preloading system to prevent visual popping during scene transitions
 - Inventory system with looting mechanics
-- **Interactive trader** in the lobby - Buy and sell items, manage your gold
+- **Interactive trader** in the lobby - Buy and sell items, manage your bits
 
 ## Tech Stack
 
@@ -59,7 +59,7 @@ In the lobby, approach the trader NPC to buy and sell items:
 - **Buy/Sell**: Press **Enter** or **A** to complete transactions
 - **Close**: Press **ESC** or **B** to exit the trading menu
 - All items display their buy and sell prices
-- Player starts with 500 gold
+- Player starts with 500 bits
 
 ## Development
 
