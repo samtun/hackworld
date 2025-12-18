@@ -225,6 +225,7 @@ export class Game {
         // Check Trader Interaction (only if no menus are open)
         const isNearTrader = this.world.checkTraderInteraction(this.player.mesh.position);
         const npcNearby = this.world.checkNPCInteraction(this.player.mesh.position);
+        const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.mesh.position);
         const destination = this.world.checkPortalInteraction(this.player.mesh.position);
         const isSelectPressed = this.input.isSelectPressed();
         const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible;
@@ -236,6 +237,14 @@ export class Game {
             // Check for interaction (but not if dialogue was just closed this frame)
             if (isSelectPressed && !this.wasSelectPressed && !wasDialogueVisible) {
                 this.npcDialogue.show(npcNearby);
+            }
+        } else if (weaponDropNearby && !anyMenuOpen) {
+            // Show weapon drop hint (prioritize over trader and portal)
+            this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up ' + weaponDropNearby.weaponName);
+
+            // Check for interaction
+            if (isSelectPressed && !this.wasSelectPressed) {
+                this.world.pickupWeaponDrop(weaponDropNearby, this.player);
             }
         } else if (isNearTrader && !anyMenuOpen) {
             // Show trader hint

@@ -11,6 +11,9 @@ export class LargeEnemy extends Enemy {
         this.hp = 90;
         this.maxHp = 90;
         
+        // Override drop chance: 10% for large enemies
+        this.dropChance = 0.1;
+        
         // Make it larger
         const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
         const material = new THREE.MeshStandardMaterial({ color: 0x8b0000 }); // Dark red to distinguish
