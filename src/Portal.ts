@@ -69,15 +69,12 @@ export class Portal {
         // Custom shader material for per-particle size control
         const particleMaterial = new THREE.ShaderMaterial({
             uniforms: {
-                color: { value: this.color },
-                pointTexture: { value: null }
+                color: { value: this.color }
             },
             vertexShader: `
                 attribute float size;
-                varying vec3 vColor;
                 
                 void main() {
-                    vColor = vec3(1.0);
                     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
                     gl_PointSize = size * (300.0 / -mvPosition.z);
                     gl_Position = projectionMatrix * mvPosition;
@@ -85,7 +82,6 @@ export class Portal {
             `,
             fragmentShader: `
                 uniform vec3 color;
-                varying vec3 vColor;
                 
                 void main() {
                     float dist = length(gl_PointCoord - vec2(0.5));
@@ -94,7 +90,7 @@ export class Portal {
                     float alpha = 1.0 - (dist * 2.0);
                     alpha = alpha * alpha;
                     
-                    gl_FragColor = vec4(color * vColor, alpha * 0.9);
+                    gl_FragColor = vec4(color, alpha * 0.9);
                 }
             `,
             blending: THREE.AdditiveBlending,
