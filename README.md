@@ -77,6 +77,19 @@ Hold the attack button for 1 second to charge a powerful dash attack:
 - You are **invincible** during the dash
 - The dash covers approximately 4 meters at high speed
 
+#### Equipment System
+The game features an equipment system that allows you to customize your character:
+
+**Weapons**: Four weapon types are available, each with unique attack patterns and stats
+- Sword, Dual Blade, Lance, and Hammer
+
+**Cores**: Equippable items that modify your character's stats
+- **Herald Core**: +32 Strength, +2 Defense
+- **Swift Core**: +4 Speed, -2 Defense
+- **Defender Core**: -1 Strength, +4 Defense
+
+Cores and weapons can be equipped at any time through the inventory (press I/Select).
+
 ## Development
 
 ### Debug Mode
