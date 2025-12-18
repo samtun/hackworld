@@ -20,7 +20,12 @@ export class Player {
     // Ground detection threshold
     private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
 
-    // Stats
+    // Base Stats (without equipment modifiers)
+    private baseStrength: number = 14;
+    private baseDefense: number = 17;
+    private baseSpeed: number = 6;
+    
+    // Stats (with equipment modifiers applied)
     maxHp: number = 100;
     hp: number = 100;
     maxTp: number = 100;
@@ -61,7 +66,11 @@ export class Player {
         this.inventory.push({ id: '2', name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE, buyPrice: 150, sellPrice: 75, isEquipped: false });
         this.inventory.push({ id: '3', name: 'Fierce Lance', type: 'weapon', weaponType: WeaponType.LANCE, buyPrice: 120, sellPrice: 60, isEquipped: false });
         this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER, buyPrice: 180, sellPrice: 90, isEquipped: false });
-        this.inventory.push({ id: '5', name: 'Data Core α', type: 'core', buyPrice: 200, sellPrice: 100, isEquipped: false });
+        
+        // Initial Cores
+        this.inventory.push({ id: '5', name: 'Herald Core', type: 'core', coreStats: { strength: 3, defense: 2 }, buyPrice: 200, sellPrice: 100, isEquipped: false });
+        this.inventory.push({ id: '6', name: 'Swift Core', type: 'core', coreStats: { speed: 4, defense: -2 }, buyPrice: 150, sellPrice: 75, isEquipped: false });
+        this.inventory.push({ id: '7', name: 'Defender Core', type: 'core', coreStats: { strength: -1, defense: 4 }, buyPrice: 180, sellPrice: 90, isEquipped: false });
 
         // Visual Mesh
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -101,6 +110,45 @@ export class Player {
             weaponItem.isEquipped = true;
             this.currentWeaponType = weaponItem.weaponType;
             this.weapon.changeWeaponType(this.mesh, weaponItem.weaponType);
+        }
+    }
+
+    equipCore(itemId: string) {
+        // Unequip all cores first
+        this.inventory.forEach(item => {
+            if (item.type === 'core') {
+                item.isEquipped = false;
+            }
+        });
+        
+        // Equip the new core by ID
+        const coreItem = this.inventory.find(item => item.id === itemId);
+        if (coreItem && coreItem.type === 'core' && coreItem.coreStats) {
+            coreItem.isEquipped = true;
+        }
+        
+        // Recalculate stats with new core
+        this.recalculateStats();
+    }
+
+    private recalculateStats() {
+        // Start with base stats
+        this.strength = this.baseStrength;
+        this.defense = this.baseDefense;
+        this.speed = this.baseSpeed;
+        
+        // Apply core modifiers if a core is equipped
+        const equippedCore = this.inventory.find(item => item.type === 'core' && item.isEquipped);
+        if (equippedCore && equippedCore.coreStats) {
+            if (equippedCore.coreStats.strength !== undefined) {
+                this.strength += equippedCore.coreStats.strength;
+            }
+            if (equippedCore.coreStats.defense !== undefined) {
+                this.defense += equippedCore.coreStats.defense;
+            }
+            if (equippedCore.coreStats.speed !== undefined) {
+                this.speed += equippedCore.coreStats.speed;
+            }
         }
     }
 
