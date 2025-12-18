@@ -47,7 +47,7 @@ jobs:
         with:
           script: |
             const prNumber = context.payload.pull_request.number;
-            const previewUrl = `https://samtun.github.io/hackworld/pr-${prNumber}/`;
+            const previewUrl = 'https://samtun.github.io/hackworld/pr-' + prNumber + '/';
             
             // Find existing comment
             const comments = await github.rest.issues.listComments({
@@ -61,11 +61,7 @@ jobs:
               comment.body.includes('Preview deployment')
             );
             
-            const commentBody = `## 🚀 Preview deployment ready!
-
-Your changes are available at: ${previewUrl}
-
-This preview will be updated automatically when you push new commits to this PR.`;
+            const commentBody = '## 🚀 Preview deployment ready!\n\nYour changes are available at: ' + previewUrl + '\n\nThis preview will be updated automatically when you push new commits to this PR.';
             
             if (botComment) {
               // Update existing comment
