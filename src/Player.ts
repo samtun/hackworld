@@ -23,8 +23,6 @@ export class Player {
     private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
 
     // Base Stats (without equipment modifiers)
-    private baseMaxHp: number = 100;
-    private baseMaxTp: number = 100;
     private baseStrength: number = 14;
     private baseDefense: number = 17;
     private baseSpeed: number = 6;
@@ -143,8 +141,6 @@ export class Player {
         this.strength = this.baseStrength;
         this.defense = this.baseDefense;
         this.speed = this.baseSpeed;
-        this.maxHp = this.baseMaxHp;
-        this.maxTp = this.baseMaxTp;
         
         // Apply core modifiers if a core is equipped
         if (this.currentCoreType) {
@@ -153,10 +149,6 @@ export class Player {
             this.defense += coreStats.defense;
             this.speed += coreStats.speed;
         }
-        
-        // Ensure HP/TP don't exceed new maximums
-        if (this.hp > this.maxHp) this.hp = this.maxHp;
-        if (this.tp > this.maxTp) this.tp = this.maxTp;
     }
 
     update(dt: number, enemies: Enemy[] = []) {

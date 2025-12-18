@@ -28,10 +28,3 @@ export const CORE_CONFIGS: Record<CoreType, CoreStats> = {
         speed: 0
     }
 };
-
-// Display names for cores
-export const CORE_NAMES: Record<CoreType, string> = {
-    [CoreType.HERALD]: 'Herald Core',
-    [CoreType.SWIFT]: 'Swift Core',
-    [CoreType.DEFENDER]: 'Defender Core'
-};
