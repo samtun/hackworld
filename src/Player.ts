@@ -40,6 +40,11 @@ export class Player {
     private dashDirection: THREE.Vector3 = new THREE.Vector3();
     private chargeParticles: THREE.Mesh[] = [];
     private dashHitEnemies: Set<Enemy> = new Set();
+    
+    // Particle wall constants
+    private readonly PARTICLE_BASE_HEIGHT: number = 0.2;
+    private readonly PARTICLE_CHARGED_HEIGHT: number = 0.8;
+    private readonly PARTICLE_HEIGHT_TRANSITION_SPEED: number = 0.15;
 
     // Ground contact tracking
     private isGrounded: boolean = false;
@@ -380,7 +385,7 @@ export class Player {
             const z = r * Math.sin(t);
             
             const particle = new THREE.Mesh(particleGeometry, particleMaterial);
-            particle.position.set(x, 0.2, z);
+            particle.position.set(x, this.PARTICLE_BASE_HEIGHT, z);
             
             this.chargeParticles.push(particle);
             this.mesh.add(particle);
@@ -394,14 +399,14 @@ export class Player {
         
         // When fully charged, raise particles higher
         const isFullyCharged = this.chargeTimer >= this.CHARGE_DURATION;
-        const targetHeight = isFullyCharged ? 0.8 : 0.2;
+        const targetHeight = isFullyCharged ? this.PARTICLE_CHARGED_HEIGHT : this.PARTICLE_BASE_HEIGHT;
         
         this.chargeParticles.forEach(particle => {
             particle.scale.y = pulseScale;
             
             // Smoothly transition to target height
             const currentHeight = particle.position.y;
-            particle.position.y += (targetHeight - currentHeight) * 0.15;
+            particle.position.y += (targetHeight - currentHeight) * this.PARTICLE_HEIGHT_TRANSITION_SPEED;
         });
     }
     
