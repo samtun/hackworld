@@ -24,7 +24,6 @@ export class Player {
 
     // Ground contact tracking
     private isGrounded: boolean = false;
-    private hasBeenGroundedOnce: boolean = false;
 
     // Inventory
     inventory: Item[] = [];
@@ -102,12 +101,9 @@ export class Player {
         // Ground detection: Check if player is on ground by velocity and position stability
         // Player is grounded if vertical velocity is very low (not falling or jumping)
         this.isGrounded = Math.abs(this.body.velocity.y) < 0.1;
-        if (this.isGrounded) {
-            this.hasBeenGroundedOnce = true;
-        }
 
-        // Jump: Only allow jumping if player has touched ground at least once and is currently grounded
-        if (this.input.isJumpPressed() && this.isGrounded && this.hasBeenGroundedOnce) {
+        // Jump: Only allow jumping if player is grounded
+        if (this.input.isJumpPressed() && this.isGrounded) {
             this.body.velocity.y = 10;
         }
 
