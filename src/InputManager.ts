@@ -54,8 +54,8 @@ export class InputManager {
     }
 
     isAttackPressed(): boolean {
-        // Mouse click is handled separately usually, but we can map a key
-        if (this.keys['Enter'] || this.keys['KeyK']) return true;
+        // K key for keyboard attack
+        if (this.keys['KeyK']) return true;
 
         // Gamepad Button (X is button 2)
         if (this.gamepadIndex !== null) {

@@ -60,7 +60,7 @@ The game is fully playable with keyboard and controller (tested with XBox contro
 
 - **WASD / Arrow Keys / LStick**: Move player
 - **Space / A**: Jump
-- **Enter / X**: Attack
+- **K / X**: Attack
 - **I / Select**: Toggle inventory
 - **Enter / A**: Interact and select in menus
 - **ESC / B**: Close menus

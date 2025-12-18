@@ -197,11 +197,8 @@ export class Game {
             this.npcDialogue.update(this.input);
         }
 
-        // Update Game Logic (only if all menus are closed)
-        // Skip game logic if dialogue was visible at start of frame (wasDialogueVisible=true)
-        // This prevents input bleed-through: if dialogue closes this frame, we skip player input
-        // for this frame to allow the button to be released before processing attacks
-        if (!this.inventory.isVisible && !this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !wasDialogueVisible) {
+        // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)
+        if (!this.inventory.isVisible && !this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible) {
             // Step Physics
             this.physicsWorld.step(1 / 60, dt, 3);
 
