@@ -98,7 +98,7 @@ export class Weapon {
 
             const model = gltf.scene;
 
-            // Scale the model to appropriate size (1.5x larger than original 0.5 scale)
+            // Scale the model to appropriate size
             model.scale.set(0.75, 0.75, 0.75);
 
             // Clear any existing children and dispose resources
