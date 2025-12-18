@@ -4,6 +4,7 @@ import { Enemy } from './Enemy';
 import { Player } from './Player';
 import { AssetManager } from './AssetManager';
 import { BaseDungeon, Lobby, Dungeon1, Dungeon2 } from './stages';
+import { NPC } from './NPC';
 
 export class World {
     scene: THREE.Scene;
@@ -134,5 +135,13 @@ export class World {
             return this.currentStage.checkTraderInteraction(playerPosition);
         }
         return false;
+    }
+
+    checkNPCInteraction(playerPosition: THREE.Vector3): NPC | null {
+        // Only check NPC in lobby
+        if (this.currentStage instanceof Lobby) {
+            return this.currentStage.checkNPCInteraction(playerPosition);
+        }
+        return null;
     }
 }

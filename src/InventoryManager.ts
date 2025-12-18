@@ -27,7 +27,7 @@ const STYLES = {
     SLOT_GAP: '15px'
 };
 
-import { WeaponType } from './Weapon';
+import { WeaponType, WEAPON_CONFIGS } from './Weapon';
 import { CoreType } from './Core';
 
 export interface Item {
@@ -54,6 +54,8 @@ export class InventoryManager {
     // UI Elements
     statsText!: HTMLDivElement;
     lootList!: HTMLDivElement;
+    lootPanel!: HTMLDivElement; // Scrollable container for loot list
+    weaponStatsPanel!: HTMLDivElement;
     
     // Navigation state
     selectedIndex: number = 0;
@@ -101,23 +103,33 @@ export class InventoryManager {
         statsPanel.appendChild(this.statsText);
 
         // 3. Loot Panel (Top Right)
-        const lootPanel = this.createPanel(COLORS.PANEL_LOOT, '1 / 2', '2 / 3');
-        lootPanel.style.overflowY = 'auto';
-        windowDiv.appendChild(lootPanel);
+        this.lootPanel = this.createPanel(COLORS.PANEL_LOOT, '1 / 2', '2 / 3');
+        this.lootPanel.style.overflowY = 'auto';
+        windowDiv.appendChild(this.lootPanel);
 
         const lootTitle = document.createElement('div');
         lootTitle.innerText = "Collected loot";
         lootTitle.style.marginBottom = '10px';
         lootTitle.style.fontWeight = 'bold';
-        lootPanel.appendChild(lootTitle);
+        this.lootPanel.appendChild(lootTitle);
 
         this.lootList = document.createElement('div');
-        lootPanel.appendChild(this.lootList);
+        this.lootPanel.appendChild(this.lootList);
 
-        // 4. Extra Panel (Bottom Right)
+        // 4. Extra Panel (Bottom Right) - Item Details
         const extraPanel = this.createPanel(COLORS.PANEL_LOOT, '2 / 3', '2 / 3');
         extraPanel.style.position = 'relative';
         windowDiv.appendChild(extraPanel);
+
+        const weaponStatsTitle = document.createElement('div');
+        weaponStatsTitle.innerText = "Item Details";
+        weaponStatsTitle.style.marginBottom = '10px';
+        weaponStatsTitle.style.fontWeight = 'bold';
+        extraPanel.appendChild(weaponStatsTitle);
+
+        this.weaponStatsPanel = document.createElement('div');
+        this.weaponStatsPanel.style.fontSize = '16px';
+        extraPanel.appendChild(this.weaponStatsPanel);
     }
 
     private createOverlay(): HTMLDivElement {
@@ -226,6 +238,10 @@ export class InventoryManager {
         // Update Stats
         this.statsText.innerHTML = this.generateStatsHTML(player);
 
+        // Update Weapon Stats for selected item
+        const selectedItem = player.inventory[this.selectedIndex];
+        this.weaponStatsPanel.innerHTML = this.generateWeaponStatsHTML(selectedItem);
+
         // Update Loot List
         this.lootList.innerHTML = '';
         this.itemElements = [];
@@ -267,6 +283,14 @@ export class InventoryManager {
             this.itemElements.push(itemDiv);
             this.lootList.appendChild(itemDiv);
         });
+
+        // Scroll selected item into view
+        if (this.itemElements[this.selectedIndex]) {
+            this.itemElements[this.selectedIndex].scrollIntoView({
+                behavior: 'auto',
+                block: 'nearest'
+            });
+        }
     }
 
     private handleNavigation(player: Player, input: InputManager) {
@@ -323,5 +347,40 @@ export class InventoryManager {
                 <span>${stat.label}</span> <span>${stat.value}</span>
             </div>
         `).join(`<div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>`);
+    }
+
+    private generateWeaponStatsHTML(item?: Item): string {
+        if (!item || item.type !== 'weapon' || !item.weaponType) {
+            return ''; // Show nothing for non-weapon items
+        }
+
+        const weaponConfig = WEAPON_CONFIGS[item.weaponType];
+        const typeLabel = this.getWeaponTypeLabel(item.weaponType);
+
+        const stats = [
+            { label: 'Type', value: typeLabel },
+            { label: 'Damage', value: weaponConfig.damage }
+        ];
+
+        return stats.map(stat => `
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>${stat.label}</span> <span>${stat.value}</span>
+            </div>
+        `).join(`<div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>`);
+    }
+
+    private getWeaponTypeLabel(weaponType: WeaponType): string {
+        switch (weaponType) {
+            case WeaponType.SWORD:
+                return 'Sword';
+            case WeaponType.DUAL_BLADE:
+                return 'Dual Blade';
+            case WeaponType.LANCE:
+                return 'Lance';
+            case WeaponType.HAMMER:
+                return 'Hammer';
+            default:
+                return 'Unknown';
+        }
     }
 }

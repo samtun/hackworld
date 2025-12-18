@@ -60,7 +60,7 @@ The game is fully playable with keyboard and controller (tested with XBox contro
 
 - **WASD / Arrow Keys / LStick**: Move player
 - **Space / A**: Jump
-- **Enter / X**: Attack (tap for normal attack, hold for 1s then release for charged dash attack)
+- **K / X**: Attack (tap for normal attack, hold for 1s then release for charged dash attack)
 - **I / Select**: Toggle inventory
 - **Enter / A**: Interact and select in menus
 - **ESC / B**: Close menus
