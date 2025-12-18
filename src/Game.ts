@@ -198,7 +198,8 @@ export class Game {
         }
 
         // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)
-        if (!this.inventory.isVisible && !this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible) {
+        // Also skip if dialogue was just closed this frame to prevent input bleed-through
+        if (!this.inventory.isVisible && !this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !wasDialogueVisible) {
             // Step Physics
             this.physicsWorld.step(1 / 60, dt, 3);
 
