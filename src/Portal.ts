@@ -142,14 +142,19 @@ export class Portal {
      * Update particle positions and lifetimes
      */
     update(deltaTime: number): void {
-        this.time += deltaTime;
+        // Cap deltaTime to prevent synchronization issues when tab is inactive
+        // Large deltaTime spikes (e.g. from tab switching) would cause all particles
+        // to die simultaneously and respawn in chunks
+        const cappedDeltaTime = Math.min(deltaTime, 0.1); // Cap at 100ms (10 FPS)
+        
+        this.time += cappedDeltaTime;
         const portalPos = this.mesh.position;
 
         for (let i = 0; i < this.PARTICLE_COUNT; i++) {
             const i3 = i * 3;
 
             // Update lifetime
-            this.particleSystem.lifetimes[i] -= deltaTime;
+            this.particleSystem.lifetimes[i] -= cappedDeltaTime;
 
             // Reset if particle died
             if (this.particleSystem.lifetimes[i] <= 0) {
@@ -161,7 +166,7 @@ export class Portal {
             const ageFactor = 1 - (this.particleSystem.lifetimes[i] / this.PARTICLE_LIFETIME);
 
             // Spiral upward motion
-            this.particleSystem.angles[i] += this.SPIN_SPEED * deltaTime;
+            this.particleSystem.angles[i] += this.SPIN_SPEED * cappedDeltaTime;
             const angle = this.particleSystem.angles[i];
 
             // Gradually expand radius as particle rises
