@@ -114,7 +114,6 @@ export class Player {
             // End dash after duration
             if (this.dashTimer >= this.DASH_DURATION) {
                 this.isDashing = false;
-                this.invulnerableTimer = 0; // End invincibility immediately when dash finishes
                 this.dashHitEnemies.clear();
             }
             
@@ -232,6 +231,9 @@ export class Player {
             (this.mesh.material as THREE.MeshStandardMaterial).opacity = 1.0;
             (this.mesh.material as THREE.MeshStandardMaterial).transparent = false;
         }
+        
+        // Update input state tracking at end of frame
+        this.input.updateState();
     }
 
     checkAttackHits(enemies: Enemy[]) {
@@ -310,7 +312,7 @@ export class Player {
     }
 
     takeDamage(amount: number) {
-        if (this.invulnerableTimer > 0 || this.isDashing) return; // Invincible during dash
+        if (this.invulnerableTimer > 0 || this.isDashing) return;
 
         this.hp -= amount;
         if (this.hp < 0) this.hp = 0;
@@ -363,9 +365,6 @@ export class Player {
         
         // Remove charge particles
         this.removeChargeParticles();
-        
-        // Set invulnerability during dash
-        this.invulnerableTimer = this.DASH_DURATION;
         
         console.log('Executing dash attack');
     }

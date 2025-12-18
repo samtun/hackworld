@@ -24,6 +24,11 @@ export class InputManager {
             }
         });
     }
+    
+    // Call this at the end of each frame to update state tracking
+    updateState() {
+        this.previousAttackState = this.isAttackPressed();
+    }
 
     getMovementVector(): THREE.Vector2 {
         const move = new THREE.Vector2(0, 0);
@@ -78,7 +83,6 @@ export class InputManager {
     isAttackReleased(): boolean {
         const currentState = this.isAttackPressed();
         const wasReleased = this.previousAttackState && !currentState;
-        this.previousAttackState = currentState;
         return wasReleased;
     }
 
