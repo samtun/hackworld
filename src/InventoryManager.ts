@@ -52,6 +52,7 @@ export class InventoryManager {
     // UI Elements
     statsText!: HTMLDivElement;
     lootList!: HTMLDivElement;
+    lootPanel!: HTMLDivElement; // Scrollable container for loot list
     weaponStatsPanel!: HTMLDivElement;
     
     // Navigation state
@@ -100,26 +101,26 @@ export class InventoryManager {
         statsPanel.appendChild(this.statsText);
 
         // 3. Loot Panel (Top Right)
-        const lootPanel = this.createPanel(COLORS.PANEL_LOOT, '1 / 2', '2 / 3');
-        lootPanel.style.overflowY = 'auto';
-        windowDiv.appendChild(lootPanel);
+        this.lootPanel = this.createPanel(COLORS.PANEL_LOOT, '1 / 2', '2 / 3');
+        this.lootPanel.style.overflowY = 'auto';
+        windowDiv.appendChild(this.lootPanel);
 
         const lootTitle = document.createElement('div');
         lootTitle.innerText = "Collected loot";
         lootTitle.style.marginBottom = '10px';
         lootTitle.style.fontWeight = 'bold';
-        lootPanel.appendChild(lootTitle);
+        this.lootPanel.appendChild(lootTitle);
 
         this.lootList = document.createElement('div');
-        lootPanel.appendChild(this.lootList);
+        this.lootPanel.appendChild(this.lootList);
 
-        // 4. Extra Panel (Bottom Right) - Weapon Stats
+        // 4. Extra Panel (Bottom Right) - Item Details
         const extraPanel = this.createPanel(COLORS.PANEL_LOOT, '2 / 3', '2 / 3');
         extraPanel.style.position = 'relative';
         windowDiv.appendChild(extraPanel);
 
         const weaponStatsTitle = document.createElement('div');
-        weaponStatsTitle.innerText = "Weapon Stats";
+        weaponStatsTitle.innerText = "Item Details";
         weaponStatsTitle.style.marginBottom = '10px';
         weaponStatsTitle.style.fontWeight = 'bold';
         extraPanel.appendChild(weaponStatsTitle);
@@ -280,6 +281,14 @@ export class InventoryManager {
             this.itemElements.push(itemDiv);
             this.lootList.appendChild(itemDiv);
         });
+
+        // Scroll selected item into view
+        if (this.itemElements[this.selectedIndex]) {
+            this.itemElements[this.selectedIndex].scrollIntoView({
+                behavior: 'auto',
+                block: 'nearest'
+            });
+        }
     }
 
     private handleNavigation(player: Player, input: InputManager) {
@@ -335,7 +344,7 @@ export class InventoryManager {
 
     private generateWeaponStatsHTML(item?: Item): string {
         if (!item || item.type !== 'weapon' || !item.weaponType) {
-            return '<div style="color: #999;">No weapon selected</div>';
+            return ''; // Show nothing for non-weapon items
         }
 
         const weaponConfig = WEAPON_CONFIGS[item.weaponType];

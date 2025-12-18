@@ -34,6 +34,8 @@ export class TraderManager {
     // UI Elements
     traderList!: HTMLDivElement;
     playerList!: HTMLDivElement;
+    traderPanel!: HTMLDivElement; // Scrollable container for trader list
+    playerPanel!: HTMLDivElement; // Scrollable container for player list
     playerMoneyText!: HTMLDivElement;
     weaponStatsPanel!: HTMLDivElement;
 
@@ -96,34 +98,34 @@ export class TraderManager {
         windowDiv.appendChild(titleDiv);
 
         // Trader Panel (Left)
-        const traderPanel = this.createPanel(COLORS.PANEL_TRADER, '2 / 3', '1 / 2');
-        traderPanel.style.overflowY = 'auto';
-        windowDiv.appendChild(traderPanel);
+        this.traderPanel = this.createPanel(COLORS.PANEL_TRADER, '2 / 3', '1 / 2');
+        this.traderPanel.style.overflowY = 'auto';
+        windowDiv.appendChild(this.traderPanel);
 
         const traderTitle = document.createElement('div');
         traderTitle.innerText = "Trader's Goods";
         traderTitle.style.marginBottom = '10px';
         traderTitle.style.fontWeight = 'bold';
         traderTitle.style.fontSize = '20px';
-        traderPanel.appendChild(traderTitle);
+        this.traderPanel.appendChild(traderTitle);
 
         this.traderList = document.createElement('div');
-        traderPanel.appendChild(this.traderList);
+        this.traderPanel.appendChild(this.traderList);
 
         // Player Panel (Right)
-        const playerPanel = this.createPanel(COLORS.PANEL_PLAYER, '2 / 3', '2 / 3');
-        playerPanel.style.overflowY = 'auto';
-        windowDiv.appendChild(playerPanel);
+        this.playerPanel = this.createPanel(COLORS.PANEL_PLAYER, '2 / 3', '2 / 3');
+        this.playerPanel.style.overflowY = 'auto';
+        windowDiv.appendChild(this.playerPanel);
 
         const playerTitle = document.createElement('div');
         playerTitle.innerText = "Your Inventory";
         playerTitle.style.marginBottom = '10px';
         playerTitle.style.fontWeight = 'bold';
         playerTitle.style.fontSize = '20px';
-        playerPanel.appendChild(playerTitle);
+        this.playerPanel.appendChild(playerTitle);
 
         this.playerList = document.createElement('div');
-        playerPanel.appendChild(this.playerList);
+        this.playerPanel.appendChild(this.playerList);
 
         // Separator row for visual spacing
         const separatorDiv = document.createElement('div');
@@ -140,7 +142,7 @@ export class TraderManager {
         windowDiv.appendChild(statsPanel);
 
         const statsTitle = document.createElement('div');
-        statsTitle.innerText = "Weapon Stats";
+        statsTitle.innerText = "Item Details";
         statsTitle.style.marginBottom = '10px';
         statsTitle.style.fontWeight = 'bold';
         statsTitle.style.fontSize = '16px';
@@ -357,6 +359,14 @@ export class TraderManager {
 
             container.appendChild(itemDiv);
         });
+
+        // Scroll selected item into view
+        if (isActive && this.itemElements[this.selectedIndex]) {
+            this.itemElements[this.selectedIndex].scrollIntoView({
+                behavior: 'auto',
+                block: 'nearest'
+            });
+        }
     }
 
     private handleNavigation(player: Player, input: InputManager) {
@@ -496,7 +506,7 @@ export class TraderManager {
 
     private generateWeaponStatsHTML(item?: Item): string {
         if (!item || item.type !== 'weapon' || !item.weaponType) {
-            return '<div style="color: #999;">No weapon selected</div>';
+            return ''; // Show nothing for non-weapon items
         }
 
         const weaponConfig = WEAPON_CONFIGS[item.weaponType];
