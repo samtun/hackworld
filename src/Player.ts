@@ -22,6 +22,10 @@ export class Player {
     defense: number = 17;
     invulnerableTimer: number = 0;
 
+    // Ground contact tracking
+    private isGrounded: boolean = false;
+    private hasBeenGroundedOnce: boolean = false;
+
     // Inventory
     inventory: Item[] = [];
 
@@ -46,7 +50,7 @@ export class Player {
         const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
         this.body = new CANNON.Body({
             mass: 1, // Dynamic body
-            position: new CANNON.Vec3(0, 5, 0), // Start in air
+            position: new CANNON.Vec3(0, 0.5, 0), // Start on ground (0.5 = half height of 1-unit box)
             shape: shape,
             fixedRotation: true, // Prevent tipping over
             material: physicsMaterial
@@ -95,8 +99,15 @@ export class Player {
         // but if we wanted physics rotation we'd copy quaternion.
         // this.mesh.quaternion.copy(this.body.quaternion as any);
 
-        // Jump
-        if (this.input.isJumpPressed() && Math.abs(this.body.velocity.y) < 0.1) {
+        // Ground detection: Check if player is on ground by velocity and position stability
+        // Player is grounded if vertical velocity is very low (not falling or jumping)
+        this.isGrounded = Math.abs(this.body.velocity.y) < 0.1;
+        if (this.isGrounded) {
+            this.hasBeenGroundedOnce = true;
+        }
+
+        // Jump: Only allow jumping if player has touched ground at least once and is currently grounded
+        if (this.input.isJumpPressed() && this.isGrounded && this.hasBeenGroundedOnce) {
             this.body.velocity.y = 10;
         }
 

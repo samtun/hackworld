@@ -121,8 +121,8 @@ export class Game {
             this.currentScene = destination;
         }
 
-        // Reset player position
-        this.player.body.position.set(0, 5, 0);
+        // Reset player position to ground level (0.5 = half height of 1-unit box)
+        this.player.body.position.set(0, 0.5, 0);
         this.player.body.velocity.set(0, 0, 0);
 
         // Snap camera
