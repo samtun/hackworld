@@ -24,7 +24,7 @@ export class Game {
     dungeonSelection: DungeonSelectionManager;
 
     clock: THREE.Clock;
-    currentScene: string = 'lobby';
+    currentScene: string = 'startScreen';
 
     // Debug
     physicsDebugger: any;
@@ -34,6 +34,7 @@ export class Game {
     // Input State
     wasInventoryPressed: boolean = false;
     wasSelectPressed: boolean = false;
+    isTransitioning: boolean = false;
 
     constructor() {
         // Setup Three.js
@@ -73,9 +74,12 @@ export class Game {
 
         // Setup Game Objects
         this.input = new InputManager();
-        this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial);
-        this.player = new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial);
         this.ui = new UIManager();
+        this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial, () => {
+            this.ui.hideLoadingScreen();
+            this.ui.showStartScreen();
+        });
+        this.player = new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial);
         this.inventory = new InventoryManager();
         this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
         this.clock = new THREE.Clock();
@@ -133,6 +137,21 @@ export class Game {
 
     animate() {
         requestAnimationFrame(() => this.animate());
+
+        if (this.currentScene === 'startScreen') {
+            this.ui.showStartScreen();
+
+            if (!this.isTransitioning && this.input.isStartPressed()) {
+                this.isTransitioning = true;
+                this.ui.triggerStartTransition(() => {
+                    this.ui.hideStartScreen();
+                    this.currentScene = 'lobby';
+                    this.clock.getDelta(); // Reset clock
+                    this.isTransitioning = false;
+                });
+            }
+            return;
+        }
 
         const dt = this.clock.getDelta();
 
