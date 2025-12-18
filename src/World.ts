@@ -102,6 +102,9 @@ export class World {
     update(dt: number, player: Player) {
         if (!this.currentStage) return;
 
+        // Update stage (portals, etc.)
+        this.currentStage.update(dt);
+
         // Update mixers
         for (const mixer of this.currentStage.mixers) {
             mixer.update(dt);

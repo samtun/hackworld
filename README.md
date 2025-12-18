@@ -9,7 +9,6 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Hack and slash gameplay
 - Hub based game world with multiple dungeon stages
 - Two unique dungeon stages accessible from the lobby
-- Asset preloading system to prevent visual popping during scene transitions
 - Inventory system with looting mechanics
 - **Interactive trader** in the lobby - Buy and sell items, manage your bits
 
@@ -24,6 +23,17 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 ## Live Demo
 
 Play the game at: [https://samtun.github.io/hackworld/](https://samtun.github.io/hackworld/)
+
+## Inspiration & Goal
+
+- The game is a fan project trying to recreate the esthetic and reuse some of the mechanics of the 2005 game Digimon World 4
+- It attempts to improve some of the biggest issues the original game had:
+   - The hub is a single area without loading screens
+   - Loading screens in general are less common and finish quicker
+   - New equipment can be equipped at any time. No need to return to the hub
+   - The X-Data resource is meant to be implemented, however it should be dropped more frequent on earlier levels already
+   - The combat feels a bit more dynamic while keeping the original feel in many areas
+   - Tech (skills) is improved by reducing the amount of skills and using quick access button combinations to them rather than tedious switching via a menu
 
 ## Installation & Start
 

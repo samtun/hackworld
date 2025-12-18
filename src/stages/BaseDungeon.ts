@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { Enemy } from '../Enemy';
 import { LargeEnemy } from '../LargeEnemy';
 import { AssetManager } from '../AssetManager';
+import { Portal } from '../Portal';
 
 /**
  * Base class for all dungeon stages
@@ -23,7 +24,7 @@ export abstract class BaseDungeon {
     protected physicsMaterial: CANNON.Material;
     protected assetManager: AssetManager;
     
-    portalMesh?: THREE.Mesh;
+    portal?: Portal;
     bodies: CANNON.Body[] = [];
     meshes: (THREE.Mesh | THREE.Group | THREE.Object3D)[] = [];
     enemies: Enemy[] = [];
@@ -84,9 +85,9 @@ export abstract class BaseDungeon {
         this.meshes = [];
 
         // Remove portal if exists
-        if (this.portalMesh) {
-            this.scene.remove(this.portalMesh);
-            this.portalMesh = undefined;
+        if (this.portal) {
+            this.portal.cleanup(this.scene);
+            this.portal = undefined;
         }
     }
 
@@ -138,12 +139,7 @@ export abstract class BaseDungeon {
      * Create portal
      */
     protected createPortal(position: CANNON.Vec3, color: number, destination: string): void {
-        const portalGeo = new THREE.CylinderGeometry(1, 1, 0.1, 32);
-        const portalMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.5 });
-        this.portalMesh = new THREE.Mesh(portalGeo, portalMat);
-        this.portalMesh.position.set(position.x, position.y, position.z);
-        this.portalMesh.userData = { destination };
-        this.scene.add(this.portalMesh);
+        this.portal = new Portal(this.scene, position, color, destination);
     }
 
     /**
@@ -163,13 +159,22 @@ export abstract class BaseDungeon {
     }
 
     /**
+     * Update portal particles
+     */
+    update(deltaTime: number): void {
+        if (this.portal) {
+            this.portal.update(deltaTime);
+        }
+    }
+
+    /**
      * Check if player is near portal
      */
     checkPortalInteraction(playerPosition: THREE.Vector3): string | null {
-        if (this.portalMesh) {
-            const dist = playerPosition.distanceTo(this.portalMesh.position);
+        if (this.portal) {
+            const dist = playerPosition.distanceTo(this.portal.mesh.position);
             if (dist < 1.5) {
-                return this.portalMesh.userData.destination || null;
+                return this.portal.destination || null;
             }
         }
         return null;
