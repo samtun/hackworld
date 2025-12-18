@@ -3,6 +3,9 @@ import * as THREE from 'three';
 export class InputManager {
     keys: { [key: string]: boolean } = {};
     gamepadIndex: number | null = null;
+    
+    // Track previous attack button state for detecting release
+    private previousAttackState: boolean = false;
 
     constructor() {
         window.addEventListener('keydown', (e) => this.keys[e.code] = true);
@@ -20,6 +23,11 @@ export class InputManager {
                 this.gamepadIndex = null;
             }
         });
+    }
+    
+    // Call this at the end of each frame to update state tracking
+    updateState() {
+        this.previousAttackState = this.isAttackPressed();
     }
 
     getMovementVector(): THREE.Vector2 {
@@ -66,6 +74,16 @@ export class InputManager {
             }
         }
         return false;
+    }
+    
+    isAttackHeld(): boolean {
+        return this.isAttackPressed();
+    }
+    
+    isAttackReleased(): boolean {
+        const currentState = this.isAttackPressed();
+        const wasReleased = this.previousAttackState && !currentState;
+        return wasReleased;
     }
 
     isJumpPressed(): boolean {
