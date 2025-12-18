@@ -7,8 +7,15 @@ export class UIManager {
     hpText: HTMLDivElement;
     tpText: HTMLDivElement;
     interactionHint: HTMLDivElement;
+    startScreen: HTMLDivElement;
+    fadeOverlay: HTMLDivElement;
+    loadingScreen: HTMLDivElement;
 
     constructor() {
+        this.startScreen = document.getElementById('start-screen') as HTMLDivElement;
+        this.fadeOverlay = document.getElementById('fade-overlay') as HTMLDivElement;
+        this.loadingScreen = document.getElementById('loading-screen') as HTMLDivElement;
+
         this.container = document.createElement('div');
         this.container.style.position = 'absolute';
         this.container.style.bottom = '30px';
@@ -165,5 +172,39 @@ export class UIManager {
 
         const d = `M ${startX} ${startY} A ${r} ${r} 0 ${largeArc} ${sweep} ${endX} ${endY}`;
         path.setAttribute("d", d);
+    }
+
+    triggerStartTransition(callback: () => void) {
+        if (this.fadeOverlay) {
+            this.fadeOverlay.classList.add('active');
+            setTimeout(() => {
+                callback();
+            }, 2000);
+        } else {
+            callback();
+        }
+    }
+
+    showStartScreen() {
+        if (this.startScreen) {
+            this.startScreen.style.display = ''; // Remove display: none
+            this.startScreen.classList.remove('hidden');
+            const video = this.startScreen.querySelector('video');
+            if (video) video.play().catch(e => console.log("Video play failed", e));
+        }
+    }
+
+    hideStartScreen() {
+        if (this.startScreen) {
+            this.startScreen.classList.add('hidden');
+            const video = this.startScreen.querySelector('video');
+            if (video) video.pause();
+        }
+    }
+
+    hideLoadingScreen() {
+        if (this.loadingScreen) {
+            this.loadingScreen.style.display = 'none';
+        }
     }
 }
