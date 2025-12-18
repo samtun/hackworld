@@ -68,7 +68,7 @@ export class Player {
         this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER, buyPrice: 180, sellPrice: 90, isEquipped: false });
         
         // Initial Cores
-        this.inventory.push({ id: '5', name: 'Herald Core', type: 'core', coreStats: { strength: 32, defense: 2 }, buyPrice: 200, sellPrice: 100, isEquipped: false });
+        this.inventory.push({ id: '5', name: 'Herald Core', type: 'core', coreStats: { strength: 3, defense: 2 }, buyPrice: 200, sellPrice: 100, isEquipped: false });
         this.inventory.push({ id: '6', name: 'Swift Core', type: 'core', coreStats: { speed: 4, defense: -2 }, buyPrice: 150, sellPrice: 75, isEquipped: false });
         this.inventory.push({ id: '7', name: 'Defender Core', type: 'core', coreStats: { strength: -1, defense: 4 }, buyPrice: 180, sellPrice: 90, isEquipped: false });
 
