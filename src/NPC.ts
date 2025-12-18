@@ -53,9 +53,17 @@ export class NPC {
         scene.remove(this.mesh);
         world.removeBody(this.body);
         if (this.mesh.geometry) this.mesh.geometry.dispose();
-        const material = this.mesh.material as THREE.Material;
-        if (material && typeof material.dispose === 'function') {
-            material.dispose();
+        const material = this.mesh.material;
+        if (material) {
+            if (Array.isArray(material)) {
+                material.forEach((mat: THREE.Material) => {
+                    if (mat && typeof mat.dispose === 'function') {
+                        mat.dispose();
+                    }
+                });
+            } else if (typeof material.dispose === 'function') {
+                material.dispose();
+            }
         }
     }
 }

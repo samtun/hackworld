@@ -143,8 +143,6 @@ export class NPCDialogueManager {
         // Exit dialogue on cancel
         if (cancel && !this.lastCancelState) {
             this.hide();
-            this.lastCancelState = cancel;
-            return;
         }
 
         // Advance dialogue on select

@@ -29,9 +29,9 @@ export class Lobby extends BaseDungeon {
 
         // Create Nyleth NPC
         const nylethDialogue = [
-            "Hey there, never seen you around. You look like you pack some punches. Interrested in joining our fight?",
+            "Hey there, never seen you around. You look like you pack some punches. Interested in joining our fight?",
             "There are hordes of corrupted files running around our servers and we could really need some help with that.",
-            "If you are interrested, the teleporter to the south can take you to our main server."
+            "If you are interested, the teleporter to the south can take you to our main server."
         ];
         this.npc = new NPC(
             this.scene,
