@@ -82,9 +82,17 @@ Hold the attack button for 1 second to charge a powerful dash attack:
 Defeated enemies have a chance to drop weapons:
 - **Regular enemies**: 2% drop chance
 - **Large enemies**: 10% drop chance
-- Dropped weapons float above the ground with their name displayed underneath
 - The drop favors your currently equipped weapon type (45% chance), with other types equally distributed
-- Walk up to a weapon drop and press **Enter / A** to pick it up and add it to your inventory
+
+#### Equipment System
+The game features an equipment system that allows you to customize your character:
+
+**Weapons**: Four weapon types are available, each with unique attack patterns and stats
+- Sword, Dual Blade, Lance, and Hammer
+
+**Cores**: Equippable items that modify your character's stats
+
+Cores and weapons can be equipped at any time through the inventory (press I/Select).
 
 ## Development
 

@@ -27,13 +27,16 @@ const STYLES = {
     SLOT_GAP: '15px'
 };
 
-import { WeaponType, WEAPON_CONFIGS } from './Weapon';
+import { WeaponType } from './Weapon';
+import { CoreStats } from './Core';
+import { ItemDetailsPanel } from './ItemDetailsPanel';
 
 export interface Item {
     id: string;
     name: string;
     type: 'weapon' | 'core' | 'chip';
     weaponType?: WeaponType; // For weapon items
+    coreStats?: CoreStats; // For core items - stat modifiers applied when equipped
     stats?: {
         strength?: number;
         defense?: number;
@@ -53,7 +56,7 @@ export class InventoryManager {
     statsText!: HTMLDivElement;
     lootList!: HTMLDivElement;
     lootPanel!: HTMLDivElement; // Scrollable container for loot list
-    weaponStatsPanel!: HTMLDivElement;
+    itemDetailsPanel!: HTMLDivElement;
     
     // Navigation state
     selectedIndex: number = 0;
@@ -119,15 +122,15 @@ export class InventoryManager {
         extraPanel.style.position = 'relative';
         windowDiv.appendChild(extraPanel);
 
-        const weaponStatsTitle = document.createElement('div');
-        weaponStatsTitle.innerText = "Item Details";
-        weaponStatsTitle.style.marginBottom = '10px';
-        weaponStatsTitle.style.fontWeight = 'bold';
-        extraPanel.appendChild(weaponStatsTitle);
+        const itemDetailsTitle = document.createElement('div');
+        itemDetailsTitle.innerText = "Item Details";
+        itemDetailsTitle.style.marginBottom = '10px';
+        itemDetailsTitle.style.fontWeight = 'bold';
+        extraPanel.appendChild(itemDetailsTitle);
 
-        this.weaponStatsPanel = document.createElement('div');
-        this.weaponStatsPanel.style.fontSize = '16px';
-        extraPanel.appendChild(this.weaponStatsPanel);
+        this.itemDetailsPanel = document.createElement('div');
+        this.itemDetailsPanel.style.fontSize = '16px';
+        extraPanel.appendChild(this.itemDetailsPanel);
     }
 
     private createOverlay(): HTMLDivElement {
@@ -236,9 +239,9 @@ export class InventoryManager {
         // Update Stats
         this.statsText.innerHTML = this.generateStatsHTML(player);
 
-        // Update Weapon Stats for selected item
+        // Update Item Details for selected item
         const selectedItem = player.inventory[this.selectedIndex];
-        this.weaponStatsPanel.innerHTML = this.generateWeaponStatsHTML(selectedItem);
+        this.itemDetailsPanel.innerHTML = ItemDetailsPanel.generateHTML(selectedItem);
 
         // Update Loot List
         this.lootList.innerHTML = '';
@@ -318,6 +321,11 @@ export class InventoryManager {
                 console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
                 // Trigger re-render to update equipped indicator immediately
                 this.needsRender = true;
+            } else if (item && item.type === 'core' && item.coreStats) {
+                player.equipCore(item.id);
+                console.log(`Equipped core: ${item.name}`);
+                // Trigger re-render to update equipped indicator immediately
+                this.needsRender = true;
             }
         }
         
@@ -340,40 +348,5 @@ export class InventoryManager {
                 <span>${stat.label}</span> <span>${stat.value}</span>
             </div>
         `).join(`<div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>`);
-    }
-
-    private generateWeaponStatsHTML(item?: Item): string {
-        if (!item || item.type !== 'weapon' || !item.weaponType) {
-            return ''; // Show nothing for non-weapon items
-        }
-
-        const weaponConfig = WEAPON_CONFIGS[item.weaponType];
-        const typeLabel = this.getWeaponTypeLabel(item.weaponType);
-
-        const stats = [
-            { label: 'Type', value: typeLabel },
-            { label: 'Damage', value: weaponConfig.damage }
-        ];
-
-        return stats.map(stat => `
-            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span>${stat.label}</span> <span>${stat.value}</span>
-            </div>
-        `).join(`<div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>`);
-    }
-
-    private getWeaponTypeLabel(weaponType: WeaponType): string {
-        switch (weaponType) {
-            case WeaponType.SWORD:
-                return 'Sword';
-            case WeaponType.DUAL_BLADE:
-                return 'Dual Blade';
-            case WeaponType.LANCE:
-                return 'Lance';
-            case WeaponType.HAMMER:
-                return 'Hammer';
-            default:
-                return 'Unknown';
-        }
     }
 }
