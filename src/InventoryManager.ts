@@ -40,6 +40,9 @@ export interface Item {
         hp?: number;
         tp?: number;
     };
+    buyPrice?: number;  // Price to buy from trader
+    sellPrice?: number; // Price to sell to trader
+    isEquipped?: boolean; // Whether this item is currently equipped
 }
 
 export class InventoryManager {
@@ -227,49 +230,36 @@ export class InventoryManager {
         
         player.inventory.forEach((item, index) => {
             const itemDiv = document.createElement('div');
-            itemDiv.innerText = item.name;
+            const priceText = item.sellPrice !== undefined ? ` (${item.sellPrice} bits)` : '';
+            
+            // Set item text without equipped indicator (triangle will be overlay)
+            itemDiv.innerText = `${item.name}${priceText}`;
             
             const isSelected = index === this.selectedIndex;
             
             Object.assign(itemDiv.style, {
                 padding: '5px',
-                cursor: 'pointer',
                 backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
-                border: isSelected ? '2px solid #fff' : '2px solid transparent'
+                border: isSelected ? '2px solid #fff' : '2px solid transparent',
+                position: 'relative'
             });
+
+            // Add triangle overlay for equipped items
+            if (item.isEquipped) {
+                const triangle = document.createElement('div');
+                triangle.style.position = 'absolute';
+                triangle.style.top = '0';
+                triangle.style.left = '0';
+                triangle.style.width = '0';
+                triangle.style.height = '0';
+                triangle.style.borderLeft = '12px solid #ffd700';
+                triangle.style.borderBottom = '12px solid transparent';
+                itemDiv.appendChild(triangle);
+            }
 
             // Add separator between items
             if (index < player.inventory.length - 1) {
                 itemDiv.style.borderBottom = `1px solid ${COLORS.SEPARATOR}`;
-            }
-
-            itemDiv.onmouseover = () => {
-                this.selectedIndex = index;
-                // Just update the visual style without re-rendering everything
-                this.itemElements.forEach((el, i) => {
-                    if (i === index) {
-                        el.style.backgroundColor = COLORS.ITEM_SELECTED;
-                        el.style.border = '2px solid #fff';
-                    } else {
-                        el.style.backgroundColor = COLORS.TRANSPARENT;
-                        el.style.border = '2px solid transparent';
-                    }
-                });
-            };
-            itemDiv.onmouseout = () => {
-                if (!isSelected) {
-                    itemDiv.style.backgroundColor = COLORS.TRANSPARENT;
-                }
-            };
-            
-            // Handle weapon equipping on click
-            if (item.type === 'weapon' && item.weaponType) {
-                itemDiv.onclick = () => {
-                    if (item.weaponType) {
-                        player.equipWeapon(item.weaponType);
-                        console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
-                    }
-                };
             }
             
             this.itemElements.push(itemDiv);
@@ -300,8 +290,10 @@ export class InventoryManager {
         if (select && !this.lastSelectState) {
             const item = player.inventory[this.selectedIndex];
             if (item && item.type === 'weapon' && item.weaponType) {
-                player.equipWeapon(item.weaponType);
+                player.equipWeapon(item.id);
                 console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
+                // Trigger re-render to update equipped indicator immediately
+                this.needsRender = true;
             }
         }
         

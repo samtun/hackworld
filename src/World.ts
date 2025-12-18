@@ -127,4 +127,12 @@ export class World {
         if (!this.currentStage) return null;
         return this.currentStage.checkPortalInteraction(playerPosition);
     }
+
+    checkTraderInteraction(playerPosition: THREE.Vector3): boolean {
+        // Only check trader in lobby
+        if (this.currentStage instanceof Lobby) {
+            return this.currentStage.checkTraderInteraction(playerPosition);
+        }
+        return false;
+    }
 }
