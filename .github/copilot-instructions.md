@@ -82,7 +82,7 @@ export class NewEntity {
 - Document non-obvious logic with inline comments
 - Add JSDoc comments for public methods and classes
 - Explain the "why" not just the "what" in comments
-- Keep comments up-to-date when code changes
+- Keep comments up-to-date when code changes, but do not describe the changes, rather refer to the status quo
 
 #### README Updates
 **CRITICAL**: Always update the README.md when making changes that affect:
@@ -157,3 +157,4 @@ Use the existing state management patterns in Game.ts for scene transitions and 
 - ❌ Don't ignore TypeScript type errors
 - ❌ Don't leave excessive debug logging (use console.log sparingly for important events only)
 - ❌ Don't forget to dispose of resources (geometries, materials, bodies)
+- ❌ Don't add or change comments in the code to explain changes to previous versions
