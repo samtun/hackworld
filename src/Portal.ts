@@ -14,6 +14,7 @@ export class Portal {
         lifetimes: Float32Array;
         angles: Float32Array;
         radii: Float32Array;
+        sizes: Float32Array;
         count: number;
     };
     color: THREE.Color;
@@ -25,6 +26,7 @@ export class Portal {
     private readonly RISE_SPEED = 1.2; // upward velocity
     private readonly SPIN_SPEED = 2.5; // radians per second
     private readonly TURBULENCE_STRENGTH = 0.2;
+    private readonly MAX_PARTICLE_SIZE = 0.25; // Maximum particle size
     private time: number = 0;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, color: number, destination: string) {
@@ -50,26 +52,54 @@ export class Portal {
             lifetimes: new Float32Array(this.PARTICLE_COUNT),
             angles: new Float32Array(this.PARTICLE_COUNT),
             radii: new Float32Array(this.PARTICLE_COUNT),
+            sizes: new Float32Array(this.PARTICLE_COUNT),
             count: this.PARTICLE_COUNT
         };
 
-        // Initialize particles
+        // Initialize particles with staggered spawn times
         for (let i = 0; i < this.PARTICLE_COUNT; i++) {
-            this.resetParticle(i);
+            this.resetParticle(i, true);
         }
 
         // Create particle geometry and material
         const particleGeometry = new THREE.BufferGeometry();
         particleGeometry.setAttribute('position', new THREE.BufferAttribute(this.particleSystem.positions, 3));
+        particleGeometry.setAttribute('size', new THREE.BufferAttribute(this.particleSystem.sizes, 1));
 
-        const particleMaterial = new THREE.PointsMaterial({
-            color: this.color,
-            size: 0.2,
-            transparent: true,
-            opacity: 0.9,
+        // Custom shader material for per-particle size control
+        const particleMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                color: { value: this.color },
+                pointTexture: { value: null }
+            },
+            vertexShader: `
+                attribute float size;
+                varying vec3 vColor;
+                
+                void main() {
+                    vColor = vec3(1.0);
+                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
+                    gl_PointSize = size * (300.0 / -mvPosition.z);
+                    gl_Position = projectionMatrix * mvPosition;
+                }
+            `,
+            fragmentShader: `
+                uniform vec3 color;
+                varying vec3 vColor;
+                
+                void main() {
+                    float dist = length(gl_PointCoord - vec2(0.5));
+                    if (dist > 0.5) discard;
+                    
+                    float alpha = 1.0 - (dist * 2.0);
+                    alpha = alpha * alpha;
+                    
+                    gl_FragColor = vec4(color * vColor, alpha * 0.9);
+                }
+            `,
             blending: THREE.AdditiveBlending,
             depthWrite: false,
-            sizeAttenuation: true
+            transparent: true
         });
 
         this.particles = new THREE.Points(particleGeometry, particleMaterial);
@@ -78,8 +108,10 @@ export class Portal {
 
     /**
      * Reset a particle to its initial state on the outer ring
+     * @param index - Particle index
+     * @param isInitialSpawn - If true, staggers the spawn time for initial setup
      */
-    private resetParticle(index: number): void {
+    private resetParticle(index: number, isInitialSpawn: boolean = false): void {
         const portalPos = this.mesh.position;
         
         // Random angle around the circle
@@ -96,8 +128,17 @@ export class Portal {
         this.particleSystem.positions[i3 + 1] = portalPos.y;
         this.particleSystem.positions[i3 + 2] = portalPos.z + Math.sin(angle) * radius;
         
-        // Random lifetime for staggered respawn
-        this.particleSystem.lifetimes[index] = Math.random() * this.PARTICLE_LIFETIME;
+        // Set lifetime: full lifetime for respawn, staggered for initial spawn
+        if (isInitialSpawn) {
+            // Stagger initial particles throughout their lifetime for smooth startup
+            this.particleSystem.lifetimes[index] = Math.random() * this.PARTICLE_LIFETIME;
+        } else {
+            // Respawned particles always start with full lifetime to avoid flashing at bottom
+            this.particleSystem.lifetimes[index] = this.PARTICLE_LIFETIME;
+        }
+        
+        // Initialize size to maximum
+        this.particleSystem.sizes[index] = this.MAX_PARTICLE_SIZE;
     }
 
     /**
@@ -137,11 +178,19 @@ export class Portal {
             this.particleSystem.positions[i3] = portalPos.x + Math.cos(angle) * currentRadius + turbulenceX;
             this.particleSystem.positions[i3 + 1] = portalPos.y + (ageFactor * this.RISE_SPEED * this.PARTICLE_LIFETIME);
             this.particleSystem.positions[i3 + 2] = portalPos.z + Math.sin(angle) * currentRadius + turbulenceZ;
+            
+            // Update size - decrease as particle ages (reaches 0 at the top)
+            this.particleSystem.sizes[i] = this.MAX_PARTICLE_SIZE * (1 - ageFactor);
         }
 
-        // Update the geometry
+        // Update the geometry attributes
         const positionAttribute = this.particles.geometry.getAttribute('position');
         (positionAttribute as THREE.BufferAttribute).needsUpdate = true;
+        
+        const sizeAttribute = this.particles.geometry.getAttribute('size');
+        if (sizeAttribute) {
+            (sizeAttribute as THREE.BufferAttribute).needsUpdate = true;
+        }
     }
 
     /**
@@ -158,7 +207,7 @@ export class Portal {
         }
         
         if (this.particles.geometry) this.particles.geometry.dispose();
-        const particleMaterial = this.particles.material as THREE.Material;
+        const particleMaterial = this.particles.material as THREE.ShaderMaterial;
         if (particleMaterial) {
             particleMaterial.dispose();
         }
