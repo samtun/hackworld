@@ -20,12 +20,12 @@ export class Portal {
     color: THREE.Color;
     destination: string;
 
-    private readonly PARTICLE_COUNT = 150;
+    private readonly PARTICLE_COUNT = 600;
     private readonly RING_RADIUS = 1.0; // Match portal radius
     private readonly PARTICLE_LIFETIME = 3.0; // seconds
     private readonly RISE_SPEED = 1.2; // upward velocity
     private readonly SPIN_SPEED = 2.5; // radians per second
-    private readonly TURBULENCE_STRENGTH = 0.2;
+    private readonly TURBULENCE_STRENGTH = 0.6;
     private readonly MAX_PARTICLE_SIZE = 0.35; // Maximum particle size
     private time: number = 0;
 
@@ -146,7 +146,7 @@ export class Portal {
         // Large deltaTime spikes (e.g. from tab switching) would cause all particles
         // to die simultaneously and respawn in chunks
         const cappedDeltaTime = Math.min(deltaTime, 0.1); // Cap at 100ms (10 FPS)
-        
+
         this.time += cappedDeltaTime;
         const portalPos = this.mesh.position;
 
@@ -170,7 +170,7 @@ export class Portal {
             const angle = this.particleSystem.angles[i];
 
             // Gradually expand radius as particle rises
-            const currentRadius = this.particleSystem.radii[i] * (1 + ageFactor * 0.2);
+            const currentRadius = this.particleSystem.radii[i] * (1 + ageFactor * 0.8);
 
             // Add turbulence using sine waves
             const turbulenceX = Math.sin(this.time * 3 + i * 0.5) * this.TURBULENCE_STRENGTH * ageFactor;
