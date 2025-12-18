@@ -290,7 +290,7 @@ export class InventoryManager {
         if (select && !this.lastSelectState) {
             const item = player.inventory[this.selectedIndex];
             if (item && item.type === 'weapon' && item.weaponType) {
-                player.equipWeapon(item.weaponType);
+                player.equipWeapon(item.id);
                 console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
             }
         }

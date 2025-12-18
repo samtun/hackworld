@@ -60,7 +60,7 @@ export class Player {
         this.weapon = new Weapon(this.mesh, this.currentWeaponType);
     }
 
-    equipWeapon(weaponType: WeaponType) {
+    equipWeapon(itemId: string) {
         // Unequip all weapons first
         this.inventory.forEach(item => {
             if (item.type === 'weapon') {
@@ -68,14 +68,13 @@ export class Player {
             }
         });
         
-        // Equip the new weapon
-        const weaponItem = this.inventory.find(item => item.weaponType === weaponType);
-        if (weaponItem) {
+        // Equip the new weapon by ID
+        const weaponItem = this.inventory.find(item => item.id === itemId);
+        if (weaponItem && weaponItem.type === 'weapon' && weaponItem.weaponType) {
             weaponItem.isEquipped = true;
+            this.currentWeaponType = weaponItem.weaponType;
+            this.weapon.changeWeaponType(this.mesh, weaponItem.weaponType);
         }
-        
-        this.currentWeaponType = weaponType;
-        this.weapon.changeWeaponType(this.mesh, weaponType);
     }
 
     update(dt: number, enemies: Enemy[] = []) {
