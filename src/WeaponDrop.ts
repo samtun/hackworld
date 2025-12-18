@@ -77,7 +77,7 @@ export class WeaponDrop {
         this.mesh.add(textMesh);
         
         // Position the group
-        this.mesh.position.copy(position as any);
+        this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
         
         // Create physics body (sensor for detection)

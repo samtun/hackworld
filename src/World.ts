@@ -267,7 +267,7 @@ export class World {
     pickupWeaponDrop(drop: WeaponDrop, player: Player): void {
         // Add weapon to player inventory
         const newItem = {
-            id: Date.now().toString(), // Simple unique ID
+            id: crypto.randomUUID(),
             name: drop.weaponName,
             type: 'weapon' as const,
             weaponType: drop.weaponType,
