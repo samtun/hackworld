@@ -133,30 +133,66 @@ export class Player {
     }
 
     checkAttackHits(enemies: Enemy[]) {
-        // Use weapon stats for range and angle
-        const attackRange = this.weapon.stats.range;
-        const attackAngle = this.weapon.stats.attackAngle;
         const damage = this.weapon.stats.damage;
+        const attackBody = this.weapon.attackBody;
 
-        const playerPos = this.mesh.position;
-        const playerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+        // If we have a physics attack hitbox, use it for collision detection
+        if (attackBody) {
+            for (const enemy of enemies) {
+                if (enemy.isDead || enemy.isDying) continue;
 
-        for (const enemy of enemies) {
-            if (enemy.isDead || enemy.isDying) continue;
-
-            const enemyPos = enemy.mesh.position;
-            const dist = playerPos.distanceTo(enemyPos);
-
-            if (dist < attackRange) {
-                const dirToEnemy = enemyPos.clone().sub(playerPos).normalize();
-                const angle = playerForward.angleTo(dirToEnemy);
-
-                if (angle < attackAngle / 2) {
+                // Check if attack hitbox overlaps with enemy body
+                if (this.checkCollision(attackBody, enemy.body)) {
                     enemy.takeDamage(damage, this.mesh.position);
                     console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
                 }
             }
+        } else {
+            // Fallback to old range/angle based detection if no hitbox exists
+            const attackRange = this.weapon.stats.range;
+            const attackAngle = this.weapon.stats.attackAngle;
+            const playerPos = this.mesh.position;
+            const playerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+
+            for (const enemy of enemies) {
+                if (enemy.isDead || enemy.isDying) continue;
+
+                const enemyPos = enemy.mesh.position;
+                const dist = playerPos.distanceTo(enemyPos);
+
+                if (dist < attackRange) {
+                    const dirToEnemy = enemyPos.clone().sub(playerPos).normalize();
+                    const angle = playerForward.angleTo(dirToEnemy);
+
+                    if (angle < attackAngle / 2) {
+                        enemy.takeDamage(damage, this.mesh.position);
+                        console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
+                    }
+                }
+            }
         }
+    }
+
+    private checkCollision(body1: CANNON.Body, body2: CANNON.Body): boolean {
+        // Simple AABB (Axis-Aligned Bounding Box) collision check
+        const shape1 = body1.shapes[0];
+        const shape2 = body2.shapes[0];
+
+        if (shape1 instanceof CANNON.Box && shape2 instanceof CANNON.Box) {
+            const pos1 = body1.position;
+            const pos2 = body2.position;
+            const halfExtents1 = shape1.halfExtents;
+            const halfExtents2 = shape2.halfExtents;
+
+            // Check overlap on all three axes
+            const overlapX = Math.abs(pos1.x - pos2.x) < (halfExtents1.x + halfExtents2.x);
+            const overlapY = Math.abs(pos1.y - pos2.y) < (halfExtents1.y + halfExtents2.y);
+            const overlapZ = Math.abs(pos1.z - pos2.z) < (halfExtents1.z + halfExtents2.z);
+
+            return overlapX && overlapY && overlapZ;
+        }
+
+        return false;
     }
 
     takeDamage(amount: number) {
