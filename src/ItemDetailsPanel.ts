@@ -77,22 +77,21 @@ export class ItemDetailsPanel {
 
         const details: ItemDetail[] = [];
 
-        if (item.coreStats.strength !== undefined && item.coreStats.strength !== 0) {
-            const sign = item.coreStats.strength > 0 ? '+' : '';
-            details.push({ label: 'Strength', value: `${sign}${item.coreStats.strength}` });
-        }
-
-        if (item.coreStats.defense !== undefined && item.coreStats.defense !== 0) {
-            const sign = item.coreStats.defense > 0 ? '+' : '';
-            details.push({ label: 'Defense', value: `${sign}${item.coreStats.defense}` });
-        }
-
-        if (item.coreStats.speed !== undefined && item.coreStats.speed !== 0) {
-            const sign = item.coreStats.speed > 0 ? '+' : '';
-            details.push({ label: 'Speed', value: `${sign}${item.coreStats.speed}` });
-        }
+        this.addStatIfPresent(details, 'Strength', item.coreStats.strength);
+        this.addStatIfPresent(details, 'Defense', item.coreStats.defense);
+        this.addStatIfPresent(details, 'Speed', item.coreStats.speed);
 
         return details;
+    }
+
+    /**
+     * Helper method to add a stat to the details array if it's defined and non-zero
+     */
+    private static addStatIfPresent(details: ItemDetail[], label: string, value: number | undefined) {
+        if (value !== undefined && value !== 0) {
+            const sign = value > 0 ? '+' : '';
+            details.push({ label, value: `${sign}${value}` });
+        }
     }
 
     /**
