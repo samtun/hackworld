@@ -84,7 +84,7 @@ export class Game {
             // Skip start screen in development mode
             if (import.meta.env.DEV) {
                 this.currentScene = 'lobby';
-                this.clock.getDelta(); // Reset clock
+                this.clock.getDelta(); // Consume initial delta to prevent large jump
             } else {
                 this.ui.showStartScreen();
             }
