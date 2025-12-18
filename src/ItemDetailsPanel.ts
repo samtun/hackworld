@@ -98,7 +98,7 @@ export class ItemDetailsPanel {
     /**
      * Get details for chip items
      */
-    private static getChipDetails(item: Item): ItemDetail[] {
+    private static getChipDetails(_item: Item): ItemDetail[] {
         // Chips don't have details yet, but we can extend this in the future
         return [];
     }
