@@ -56,7 +56,7 @@ export class Player {
         world.addBody(this.body);
 
         // Weapon
-        this.weapon = new Weapon(this.mesh, this.currentWeaponType);
+        this.weapon = new Weapon(this.mesh, this.currentWeaponType, scene, world);
     }
 
     equipWeapon(weaponType: WeaponType) {
@@ -114,7 +114,7 @@ export class Player {
                 }
             }
         }
-        this.weapon.update(dt);
+        this.weapon.update(dt, this.mesh.position, this.mesh.quaternion);
 
         // Invulnerability Timer
         if (this.invulnerableTimer > 0) {
