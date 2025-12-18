@@ -274,6 +274,7 @@ export class TraderManager {
         player: Player
     ) {
         container.innerHTML = '';
+        this.itemElements = []; // Reset item elements
 
         items.forEach((item, index) => {
             const itemDiv = document.createElement('div');
@@ -283,7 +284,9 @@ export class TraderManager {
             // Check if player can afford (for buy mode)
             const canAfford = mode === 'sell' || (price !== undefined && player.money >= price);
 
-            itemDiv.innerText = `${item.name}${priceText}`; // No affordText
+            // Add yellow dot for equipped items
+            const equippedDot = item.isEquipped ? '<span style="color: #ffd700; margin-right: 5px;">●</span>' : '';
+            itemDiv.innerHTML = `${equippedDot}${item.name}${priceText}`;
 
             const isSelected = isActive && index === this.selectedIndex;
 
@@ -291,12 +294,18 @@ export class TraderManager {
                 padding: '8px',
                 backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
                 border: isSelected ? '2px solid #fff' : '2px solid transparent',
-                opacity: canAfford ? '1' : '0.5'
+                opacity: canAfford ? '1' : '0.5',
+                transition: 'transform 0.1s'
             });
 
             // Add separator between items
             if (index < items.length - 1) {
                 itemDiv.style.borderBottom = `1px solid ${COLORS.SEPARATOR}`;
+            }
+
+            // Store reference to the div for shake animation
+            if (isActive) {
+                this.itemElements.push(itemDiv);
             }
 
             container.appendChild(itemDiv);
@@ -369,7 +378,7 @@ export class TraderManager {
                 if (player.money >= item.buyPrice) {
                     // Transfer item to player
                     player.money -= item.buyPrice;
-                    const newItem = { ...item, id: `p${Date.now()}` }; // Give it a unique ID
+                    const newItem = { ...item, id: `p${Date.now()}`, isEquipped: false }; // Give it a unique ID
                     player.inventory.push(newItem);
                     console.log(`Bought ${item.name} for ${item.buyPrice} bits`);
                     this.needsRender = true;
@@ -381,9 +390,17 @@ export class TraderManager {
             // Sell to trader
             const item = player.inventory[this.selectedIndex];
             if (item && item.sellPrice !== undefined) {
+                // Check if item is equipped
+                if (item.isEquipped) {
+                    // Shake animation for equipped item
+                    console.log(`Cannot sell equipped item: ${item.name}`);
+                    this.shakeItem(this.selectedIndex);
+                    return;
+                }
+                
                 // Transfer money to player and add item to trader inventory
                 player.money += item.sellPrice;
-                const soldItem = { ...item, id: `t${Date.now()}` }; // Give it a unique trader ID
+                const soldItem = { ...item, id: `t${Date.now()}`, isEquipped: false }; // Give it a unique trader ID
                 this.traderInventory.push(soldItem); // Add to trader inventory
                 player.inventory.splice(this.selectedIndex, 1);
                 console.log(`Sold ${item.name} for ${item.sellPrice} bits`);
@@ -394,6 +411,29 @@ export class TraderManager {
                 }
                 this.needsRender = true;
             }
+        }
+    }
+
+    private shakeItem(index: number) {
+        if (this.itemElements[index]) {
+            const element = this.itemElements[index];
+            
+            // Apply shake animation using CSS keyframes
+            const keyframes = [
+                { transform: 'translateX(0px)' },
+                { transform: 'translateX(-5px)' },
+                { transform: 'translateX(5px)' },
+                { transform: 'translateX(-5px)' },
+                { transform: 'translateX(5px)' },
+                { transform: 'translateX(0px)' }
+            ];
+            
+            const timing = {
+                duration: 300,
+                iterations: 1
+            };
+            
+            element.animate(keyframes, timing);
         }
     }
 }

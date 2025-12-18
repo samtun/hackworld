@@ -42,6 +42,7 @@ export interface Item {
     };
     buyPrice?: number;  // Price to buy from trader
     sellPrice?: number; // Price to sell to trader
+    isEquipped?: boolean; // Whether this item is currently equipped
 }
 
 export class InventoryManager {
@@ -230,7 +231,10 @@ export class InventoryManager {
         player.inventory.forEach((item, index) => {
             const itemDiv = document.createElement('div');
             const priceText = item.sellPrice !== undefined ? ` (${item.sellPrice} bits)` : '';
-            itemDiv.innerText = `${item.name}${priceText}`;
+            
+            // Add yellow dot for equipped items
+            const equippedDot = item.isEquipped ? '<span style="color: #ffd700; margin-right: 5px;">●</span>' : '';
+            itemDiv.innerHTML = `${equippedDot}${item.name}${priceText}`;
             
             const isSelected = index === this.selectedIndex;
             

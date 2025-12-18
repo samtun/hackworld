@@ -30,11 +30,11 @@ export class Player {
         this.input = input;
 
         // Initial Loot - Four weapons with specific names (with prices)
-        this.inventory.push({ id: '1', name: 'Aegis Sword', type: 'weapon', weaponType: WeaponType.SWORD, buyPrice: 100, sellPrice: 50 });
-        this.inventory.push({ id: '2', name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE, buyPrice: 150, sellPrice: 75 });
-        this.inventory.push({ id: '3', name: 'Fierce Lance', type: 'weapon', weaponType: WeaponType.LANCE, buyPrice: 120, sellPrice: 60 });
-        this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER, buyPrice: 180, sellPrice: 90 });
-        this.inventory.push({ id: '5', name: 'Data Core α', type: 'core', buyPrice: 200, sellPrice: 100 });
+        this.inventory.push({ id: '1', name: 'Aegis Sword', type: 'weapon', weaponType: WeaponType.SWORD, buyPrice: 100, sellPrice: 50, isEquipped: true });
+        this.inventory.push({ id: '2', name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE, buyPrice: 150, sellPrice: 75, isEquipped: false });
+        this.inventory.push({ id: '3', name: 'Fierce Lance', type: 'weapon', weaponType: WeaponType.LANCE, buyPrice: 120, sellPrice: 60, isEquipped: false });
+        this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER, buyPrice: 180, sellPrice: 90, isEquipped: false });
+        this.inventory.push({ id: '5', name: 'Data Core α', type: 'core', buyPrice: 200, sellPrice: 100, isEquipped: false });
 
         // Visual Mesh
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -61,6 +61,19 @@ export class Player {
     }
 
     equipWeapon(weaponType: WeaponType) {
+        // Unequip all weapons first
+        this.inventory.forEach(item => {
+            if (item.type === 'weapon') {
+                item.isEquipped = false;
+            }
+        });
+        
+        // Equip the new weapon
+        const weaponItem = this.inventory.find(item => item.weaponType === weaponType);
+        if (weaponItem) {
+            weaponItem.isEquipped = true;
+        }
+        
         this.currentWeaponType = weaponType;
         this.weapon.changeWeaponType(this.mesh, weaponType);
     }
