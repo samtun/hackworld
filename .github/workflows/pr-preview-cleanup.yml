@@ -21,6 +21,7 @@ jobs:
           ref: gh-pages
       
       - name: Remove PR preview directory
+        id: cleanup
         run: |
           PR_DIR="pr-${{ github.event.pull_request.number }}"
           if [ -d "$PR_DIR" ]; then
@@ -30,11 +31,14 @@ jobs:
             git commit -m "cleanup: Remove preview for PR #${{ github.event.pull_request.number }}"
             git push origin gh-pages
             echo "Removed preview directory: $PR_DIR"
+            echo "cleaned=true" >> $GITHUB_OUTPUT
           else
             echo "Preview directory $PR_DIR does not exist, nothing to clean up"
+            echo "cleaned=false" >> $GITHUB_OUTPUT
           fi
       
       - name: Comment on PR about cleanup
+        if: steps.cleanup.outputs.cleaned == 'true'
         uses: actions/github-script@v7
         with:
           script: |
