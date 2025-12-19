@@ -18,6 +18,9 @@ export class LargeEnemy extends Enemy {
         // Override X-Data drop chance: 10% for large enemies
         this.xDataDropChance = 0.1;
 
+        // Override EXP amount: 30 EXP for large enemies (3x normal)
+        this.expAmount = 30;
+
         // Make it larger
         const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
         const material = new THREE.MeshStandardMaterial({ color: 0x8b0000 }); // Dark red to distinguish

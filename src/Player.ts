@@ -26,6 +26,13 @@ export class Player {
     private static readonly HP_TP_UPGRADE_AMOUNT = 5;
     private static readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
 
+    // Level system constants
+    private static readonly MAX_LEVEL = 999;
+    private static readonly LEVEL_STAT_MULTIPLIER = 0.002; // Stats increase by 1 + 0.002 * level
+    private static readonly EXP_BASE = 1000;
+    private static readonly EXP_LINEAR_FACTOR = 30;
+    private static readonly EXP_QUADRATIC_FACTOR = 0.07;
+
     // Base Stats (without equipment modifiers or upgrades)
     private baseStrength: number = 14;
     private baseDefense: number = 17;
@@ -33,6 +40,8 @@ export class Player {
 
     // Stats (with equipment modifiers applied)
     level: number = 1;
+    exp: number = 0;
+    expRequired: number = Player.EXP_BASE; // EXP needed for next level
     maxHp: number = 100;
     hp: number = 100;
     maxTp: number = 100;
@@ -68,6 +77,11 @@ export class Player {
     private readonly PARTICLE_BASE_HEIGHT: number = 0.2;
     private readonly PARTICLE_CHARGED_HEIGHT: number = 0.8;
     private readonly PARTICLE_HEIGHT_TRANSITION_SPEED: number = 0.15;
+
+    // Level up particle explosion
+    private levelUpParticles: Array<{mesh: THREE.Mesh, velocity: THREE.Vector3}> = [];
+    private levelUpParticleTimer: number = 0;
+    private readonly LEVEL_UP_PARTICLE_LIFETIME: number = 0.6; // 0.6 seconds for the explosion
 
     // Ground contact tracking
     private isGrounded: boolean = false;
@@ -158,10 +172,14 @@ export class Player {
     }
 
     private recalculateStats() {
-        // Start with base stats (including upgrades)
-        this.strength = Math.min(this.baseStrength + this.strengthUpgrades, Player.MAX_STAT_VALUE);
-        this.defense = Math.min(this.baseDefense + this.defenseUpgrades, Player.MAX_STAT_VALUE);
-        this.speed = this.baseSpeed;
+        // Calculate level multiplier
+        const levelMultiplier = this.getLevelMultiplier();
+
+        // Start with base stats (including upgrades) and apply level multiplier
+        // Note: HP and TP are not affected by level multiplier as they are upgraded separately via X-Data
+        this.strength = Math.min(Math.floor((this.baseStrength + this.strengthUpgrades) * levelMultiplier), Player.MAX_STAT_VALUE);
+        this.defense = Math.min(Math.floor((this.baseDefense + this.defenseUpgrades) * levelMultiplier), Player.MAX_STAT_VALUE);
+        this.speed = this.baseSpeed * levelMultiplier;
         this.maxHp = Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
         this.maxTp = Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
 
@@ -335,6 +353,9 @@ export class Player {
             (this.mesh.material as THREE.MeshStandardMaterial).opacity = 1.0;
             (this.mesh.material as THREE.MeshStandardMaterial).transparent = false;
         }
+
+        // Update level up particles if active
+        this.updateLevelUpParticles(dt);
 
         // Update input state tracking at end of frame
         this.input.updateState();
@@ -545,6 +566,99 @@ export class Player {
         this.chargeParticles = [];
     }
 
+    private createLevelUpParticles() {
+        // Create a burst of yellow particles that explode outward from the player
+        const particleCount = 30;
+        // Create shared geometry for all particles
+        const particleGeometry = new THREE.BoxGeometry(0.15, 0.15, 0.15);
+        const particleMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffff00, // Yellow
+            emissive: 0xffff00,
+            emissiveIntensity: 1.5, // Increased for brighter particles
+            transparent: true,
+            opacity: 1.0
+        });
+
+        // Create particles in all directions (spherical explosion)
+        for (let i = 0; i < particleCount; i++) {
+            // Random spherical coordinates for explosion direction
+            const theta = Math.random() * Math.PI * 2; // Azimuth angle (0 to 2π)
+            const phi = Math.random() * Math.PI; // Polar angle (0 to π)
+            
+            // Convert to Cartesian coordinates for velocity
+            const speed = 3 + Math.random() * 2; // Random speed between 3-5 units/sec
+            const vx = speed * Math.sin(phi) * Math.cos(theta);
+            const vy = speed * Math.sin(phi) * Math.sin(theta);
+            const vz = speed * Math.cos(phi);
+            
+            // Clone material for each particle (needed for independent opacity during fade)
+            const particle = new THREE.Mesh(particleGeometry, particleMaterial.clone());
+            particle.position.copy(this.mesh.position);
+            particle.position.y += 0.5; // Start at player center
+            
+            const velocity = new THREE.Vector3(vx, vy, vz);
+            
+            this.levelUpParticles.push({ mesh: particle, velocity });
+            this.mesh.parent?.add(particle); // Add to scene, not to player mesh
+        }
+        
+        // Reset timer
+        this.levelUpParticleTimer = 0;
+    }
+
+    private updateLevelUpParticles(dt: number) {
+        if (this.levelUpParticles.length === 0) return;
+        
+        this.levelUpParticleTimer += dt;
+        const progress = this.levelUpParticleTimer / this.LEVEL_UP_PARTICLE_LIFETIME;
+        
+        // Remove particles after lifetime expires
+        if (progress >= 1.0) {
+            this.removeLevelUpParticles();
+            return;
+        }
+        
+        // Update each particle
+        for (const particle of this.levelUpParticles) {
+            // Move particle based on velocity
+            particle.mesh.position.x += particle.velocity.x * dt;
+            particle.mesh.position.y += particle.velocity.y * dt;
+            particle.mesh.position.z += particle.velocity.z * dt;
+            
+            // Apply gravity to velocity
+            particle.velocity.y -= 9.8 * dt;
+            
+            // Fade out
+            const material = particle.mesh.material as THREE.MeshStandardMaterial;
+            material.opacity = 1.0 - progress;
+            
+            // Scale down
+            const scale = 1.0 - progress * 0.5;
+            particle.mesh.scale.set(scale, scale, scale);
+        }
+    }
+
+    private removeLevelUpParticles() {
+        // Dispose geometry only once (it's shared among all particles)
+        if (this.levelUpParticles.length > 0) {
+            const sharedGeometry = this.levelUpParticles[0].mesh.geometry;
+            
+            this.levelUpParticles.forEach(particle => {
+                if (particle.mesh.parent) {
+                    particle.mesh.parent.remove(particle.mesh);
+                }
+                // Dispose each particle's unique material
+                (particle.mesh.material as THREE.Material).dispose();
+            });
+            
+            // Dispose the shared geometry once
+            sharedGeometry.dispose();
+        }
+        
+        this.levelUpParticles = [];
+        this.levelUpParticleTimer = 0;
+    }
+
     private checkDashHits(enemies: Enemy[]) {
         // Check collision with player body during dash
         for (const enemy of enemies) {
@@ -572,6 +686,66 @@ export class Player {
     collectXData(amount: number): void {
         this.xData += amount;
         console.log(`Collected ${amount} X-Data. Total: ${this.xData}`);
+    }
+
+    /**
+     * Calculate EXP required for next level
+     * Formula: 1000 + level*30 + level^2 * 0.07
+     */
+    private calculateExpRequired(level: number): number {
+        return Math.floor(
+            Player.EXP_BASE + 
+            level * Player.EXP_LINEAR_FACTOR + 
+            Math.pow(level, 2) * Player.EXP_QUADRATIC_FACTOR
+        );
+    }
+
+    /**
+     * Gain EXP and handle level ups
+     * @param amount - Amount of EXP to gain
+     */
+    gainExp(amount: number): void {
+        if (this.level >= Player.MAX_LEVEL) {
+            console.log('Player is at max level');
+            return;
+        }
+
+        this.exp += amount;
+        console.log(`Gained ${amount} EXP. Current: ${this.exp}/${this.expRequired}`);
+
+        // Check for level up(s)
+        while (this.exp >= this.expRequired && this.level < Player.MAX_LEVEL) {
+            this.levelUp();
+        }
+    }
+
+    /**
+     * Level up the player
+     */
+    private levelUp(): void {
+        this.exp -= this.expRequired;
+        this.level++;
+
+        // Calculate new required EXP for next level
+        if (this.level < Player.MAX_LEVEL) {
+            this.expRequired = this.calculateExpRequired(this.level);
+        }
+
+        // Recalculate stats with level multiplier
+        this.recalculateStats();
+
+        // Trigger level up particle explosion
+        this.createLevelUpParticles();
+
+        console.log(`Level Up! Now level ${this.level}. Next level requires ${this.expRequired} EXP.`);
+    }
+
+    /**
+     * Get the level multiplier for stats
+     * Formula: 1 + 0.002 * level
+     */
+    private getLevelMultiplier(): number {
+        return 1 + Player.LEVEL_STAT_MULTIPLIER * this.level;
     }
 
     /**
