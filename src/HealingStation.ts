@@ -22,24 +22,22 @@ export class HealingStation {
     isHealing: boolean = false;
 
     private readonly PARTICLE_COUNT = 300;
-    private readonly RING_RADIUS = 1.0; // Match portal radius
-    private readonly PARTICLE_LIFETIME = 2.5; // seconds, lower than portal
-    private readonly NORMAL_RISE_SPEED = 0.6; // Slower than portal (1.2)
+    private readonly RING_RADIUS = 1.0; // Size
+    private readonly PARTICLE_LIFETIME = 1.5; // seconds
+    private readonly NORMAL_RISE_SPEED = 0.6; // Default rise speed
     private readonly HEALING_RISE_SPEED = 1.8; // Faster rise speed during healing
-    private readonly MAX_HEIGHT = 1.5; // Don't go as high as portal
-    private readonly MAX_PARTICLE_SIZE = 0.3;
+    private readonly MAX_PARTICLE_SIZE = 0.5;
     private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
     private time: number = 0;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, color: number = 0x00ff00) {
-        this.color = new THREE.Color(color);
+    constructor(scene: THREE.Scene, position: CANNON.Vec3) {
+        this.color = new THREE.Color(0x00ff00);
         this.position = position;
         this.positionVector = new THREE.Vector3(position.x, position.y, position.z);
 
         // Create healing station mesh (circle)
         const stationGeo = new THREE.CylinderGeometry(this.RING_RADIUS, this.RING_RADIUS, 0.1, 32);
         const stationMat = new THREE.MeshBasicMaterial({
-            color,
             transparent: true,
             opacity: 0.5
         });
@@ -165,11 +163,9 @@ export class HealingStation {
 
             // Straight upward motion (no spinning)
             const height = ageFactor * riseSpeed * this.PARTICLE_LIFETIME;
-            
-            // Only rise if below max height
-            if (height < this.MAX_HEIGHT) {
-                this.particleSystem.positions[i3 + 1] = stationPos.y + height;
-            }
+
+            // Rise up
+            this.particleSystem.positions[i3 + 1] = stationPos.y + height;
 
             // Update size - decrease as particle ages
             this.particleSystem.sizes[i] = this.MAX_PARTICLE_SIZE * (1 - ageFactor);
