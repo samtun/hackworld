@@ -41,7 +41,7 @@ export class Player {
     // Stats (with equipment modifiers applied)
     level: number = 1;
     exp: number = 0;
-    expRequired: number = 1000; // EXP needed for next level
+    expRequired: number = Player.EXP_BASE; // EXP needed for next level
     maxHp: number = 100;
     hp: number = 100;
     maxTp: number = 100;
