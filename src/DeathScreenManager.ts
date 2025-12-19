@@ -104,6 +104,7 @@ export class DeathScreenManager {
     }
 
     show() {
+        console.log('[DeathScreen] Showing death screen');
         this.isVisible = true;
         this.selectedIndex = 0;
         this.overlay.style.display = 'flex';
@@ -111,6 +112,7 @@ export class DeathScreenManager {
         // Fade in the overlay
         setTimeout(() => {
             this.overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)'; // 70% opacity
+            console.log('[DeathScreen] Overlay background set to black');
         }, 10);
 
         this.updateButtonStates();
