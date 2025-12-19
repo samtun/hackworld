@@ -2,7 +2,7 @@ import { Player } from './Player';
 import { InputManager } from './InputManager';
 import { Item } from './InventoryManager';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
-import { WeaponType } from './Weapon';
+import { WeaponRegistry } from './WeaponRegistry';
 
 // --- Constants ---
 const COLORS = {
@@ -62,17 +62,34 @@ export class TraderManager {
     }
 
     private initializeTraderInventory() {
-        // Trader sells various items
-        this.traderInventory = [
-            { id: crypto.randomUUID(), name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE, damage: 7, buyPrice: 150, sellPrice: 75, isEquipped: false },
-            { id: crypto.randomUUID(), name: 'Fierce Lance', type: 'weapon', weaponType: WeaponType.LANCE, damage: 12, buyPrice: 120, sellPrice: 60, isEquipped: false },
-            { id: crypto.randomUUID(), name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER, damage: 18, buyPrice: 180, sellPrice: 90, isEquipped: false },
+        // Trader sells weapons from registry (excluding Aegis Sword which player starts with)
+        const allWeapons = WeaponRegistry.getAllWeapons();
+        const traderWeapons = allWeapons.filter(w => w.id !== 'aegis_sword');
+        
+        this.traderInventory = [];
+        
+        // Add weapons from registry
+        for (const weaponDef of traderWeapons) {
+            this.traderInventory.push({
+                id: crypto.randomUUID(),
+                name: weaponDef.name,
+                type: 'weapon',
+                weaponType: weaponDef.type,
+                damage: weaponDef.baseDamage,
+                buyPrice: weaponDef.baseBuyPrice,
+                sellPrice: weaponDef.baseSellPrice,
+                isEquipped: false
+            });
+        }
+        
+        // Add cores
+        this.traderInventory.push(
             { id: crypto.randomUUID(), name: 'Herald Core', type: 'core', coreStats: { strength: 3, defense: 2 }, buyPrice: 200, sellPrice: 100, isEquipped: false },
             { id: crypto.randomUUID(), name: 'Swift Core', type: 'core', coreStats: { speed: 4, defense: -2 }, buyPrice: 150, sellPrice: 75, isEquipped: false },
             { id: crypto.randomUUID(), name: 'Defender Core', type: 'core', coreStats: { strength: -1, defense: 4 }, buyPrice: 180, sellPrice: 90, isEquipped: false },
             { id: crypto.randomUUID(), name: 'Power Chip', type: 'chip', buyPrice: 100, sellPrice: 50 },
-            { id: crypto.randomUUID(), name: 'Defense Chip', type: 'chip', buyPrice: 100, sellPrice: 50 },
-        ];
+            { id: crypto.randomUUID(), name: 'Defense Chip', type: 'chip', buyPrice: 100, sellPrice: 50 }
+        );
     }
 
     private createUI() {
