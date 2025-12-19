@@ -184,7 +184,7 @@ export class Player {
         }
     }
 
-    update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
+    update(dt: number, enemies: Enemy[] = []) {
         // Charged Attack: Handle dashing
         if (this.isDashing) {
             this.dashTimer += dt;
@@ -269,8 +269,8 @@ export class Player {
         // Player is grounded if vertical velocity is very low (not falling or jumping)
         this.isGrounded = Math.abs(this.body.velocity.y) < Player.GROUND_VELOCITY_THRESHOLD;
 
-        // Jump: Only allow jumping if player is grounded and not near an interactable
-        if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive) {
+        // Jump: Only allow jumping if player is grounded
+        if (this.input.isJumpPressed() && this.isGrounded) {
             this.body.velocity.y = 10;
         }
 
@@ -279,7 +279,7 @@ export class Player {
         if (this.input.isAttackHeld() && !this.weapon.isAttacking && !this.isChargingAttack) {
             // Increment delay timer
             this.chargeDelayTimer += dt;
-            
+
             // Only start charging attack after 0.2s delay
             if (this.chargeDelayTimer >= this.CHARGE_DELAY) {
                 this.startChargeAttack();
