@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { BaseDungeon } from './BaseDungeon';
 import { NPC } from '../NPC';
+import { HealingStation } from '../HealingStation';
 
 export class Lobby extends BaseDungeon {
     id = 'lobby';
@@ -18,6 +19,15 @@ export class Lobby extends BaseDungeon {
     npc?: NPC;
     fordNpc?: NPC;
     
+    // Healing Station
+    healingStation?: HealingStation;
+    private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
+    
+    // Healing state
+    private healingTimer: number = 0;
+    private readonly HEALING_INTERVAL: number = 0.5; // seconds between heals
+    private readonly HEALING_PERCENTAGE: number = 0.2; // 20% of max HP/TP per heal
+    
     // Callback for Ford interaction (set by Game)
     fordInteractionCallback?: () => void;
 
@@ -30,6 +40,9 @@ export class Lobby extends BaseDungeon {
 
         // Portal (single portal that will show selection UI)
         this.createPortal(new CANNON.Vec3(5, 0.05, 5), 0x00ff00, 'selection');
+
+        // Healing Station
+        this.healingStation = new HealingStation(this.scene, this.healingStationPosition, 0x00ffff);
 
         // Add some walls or obstacles
         this.createBox(2, 2, 2, new CANNON.Vec3(-5, 1, -5));
@@ -130,7 +143,53 @@ export class Lobby extends BaseDungeon {
     }
 
     /**
-     * Override clear to also clean up NPCs
+     * Update healing station and handle player healing
+     */
+    updateHealing(deltaTime: number, player: any): void {
+        if (!this.healingStation) return;
+
+        // Update healing station particles
+        this.healingStation.update(deltaTime);
+
+        // Check if player is in healing range
+        const inRange = this.healingStation.isPlayerInRange(player.mesh.position);
+        
+        if (inRange) {
+            // Set healing state (increases particle speed)
+            this.healingStation.setHealing(true);
+
+            // Update healing timer
+            this.healingTimer += deltaTime;
+
+            // Apply healing every 0.5 seconds
+            if (this.healingTimer >= this.HEALING_INTERVAL) {
+                this.healingTimer -= this.HEALING_INTERVAL;
+
+                // Calculate heal amounts (20% of max)
+                const hpHeal = Math.floor(player.maxHp * this.HEALING_PERCENTAGE);
+                const tpHeal = Math.floor(player.maxTp * this.HEALING_PERCENTAGE);
+
+                // Apply healing (don't exceed max)
+                const hpBefore = player.hp;
+                const tpBefore = player.tp;
+                
+                player.hp = Math.min(player.hp + hpHeal, player.maxHp);
+                player.tp = Math.min(player.tp + tpHeal, player.maxTp);
+
+                // Log healing if any was applied
+                if (player.hp > hpBefore || player.tp > tpBefore) {
+                    console.log(`Healing: +${player.hp - hpBefore} HP, +${player.tp - tpBefore} TP`);
+                }
+            }
+        } else {
+            // Reset healing state when player leaves
+            this.healingStation.setHealing(false);
+            this.healingTimer = 0;
+        }
+    }
+
+    /**
+     * Override clear to also clean up NPCs and healing station
      */
     clear(): void {
         if (this.npc) {
@@ -140,6 +199,10 @@ export class Lobby extends BaseDungeon {
         if (this.fordNpc) {
             this.fordNpc.cleanup(this.scene, this.physicsWorld);
             this.fordNpc = undefined;
+        }
+        if (this.healingStation) {
+            this.healingStation.cleanup(this.scene);
+            this.healingStation = undefined;
         }
         super.clear();
     }

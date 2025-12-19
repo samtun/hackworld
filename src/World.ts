@@ -133,6 +133,11 @@ export class World {
         // Update stage (portals, etc.)
         this.currentStage.update(dt);
 
+        // Update healing station in Lobby
+        if (this.currentStage instanceof Lobby) {
+            this.currentStage.updateHealing(dt, player);
+        }
+
         // Update mixers
         for (const mixer of this.currentStage.mixers) {
             mixer.update(dt);
