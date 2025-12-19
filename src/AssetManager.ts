@@ -11,6 +11,7 @@ export class AssetManager {
     private loader: GLTFLoader;
     private cache: Map<string, GLTF>;
     private loadingPromises: Map<string, Promise<GLTF>>;
+    private onProgressCallback?: (loaded: number, total: number) => void;
 
     private constructor() {
         this.loader = new GLTFLoader();
@@ -56,11 +57,36 @@ export class AssetManager {
     }
 
     /**
-     * Preload multiple models at once
+     * Set progress callback for tracking loading progress
+     */
+    setProgressCallback(callback: (loaded: number, total: number) => void) {
+        this.onProgressCallback = callback;
+    }
+
+    /**
+     * Preload multiple models at once with progress tracking
      */
     async preloadAll(paths: string[]): Promise<void> {
         console.log(`Preloading ${paths.length} assets...`);
-        await Promise.all(paths.map(path => this.preload(path)));
+        const total = paths.length;
+        let loaded = 0;
+
+        // Report initial progress
+        if (this.onProgressCallback) {
+            this.onProgressCallback(loaded, total);
+        }
+
+        // Load all assets in parallel but track progress
+        const promises = paths.map(path => 
+            this.preload(path).then(() => {
+                loaded++;
+                if (this.onProgressCallback) {
+                    this.onProgressCallback(loaded, total);
+                }
+            })
+        );
+
+        await Promise.all(promises);
         console.log(`✓ All ${paths.length} assets preloaded`);
     }
 
