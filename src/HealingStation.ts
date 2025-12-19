@@ -18,6 +18,7 @@ export class HealingStation {
     };
     color: THREE.Color;
     position: CANNON.Vec3;
+    positionVector: THREE.Vector3; // Cached Vector3 for range checks
     isHealing: boolean = false;
 
     private readonly PARTICLE_COUNT = 300;
@@ -27,11 +28,13 @@ export class HealingStation {
     private readonly HEALING_RISE_SPEED = 1.8; // Faster rise speed during healing
     private readonly MAX_HEIGHT = 1.5; // Don't go as high as portal
     private readonly MAX_PARTICLE_SIZE = 0.3;
+    private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
     private time: number = 0;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, color: number = 0x00ff00) {
         this.color = new THREE.Color(color);
         this.position = position;
+        this.positionVector = new THREE.Vector3(position.x, position.y, position.z);
 
         // Create healing station mesh (circle)
         const stationGeo = new THREE.CylinderGeometry(this.RING_RADIUS, this.RING_RADIUS, 0.1, 32);
@@ -137,7 +140,7 @@ export class HealingStation {
      */
     update(deltaTime: number): void {
         // Cap deltaTime to prevent synchronization issues when tab is inactive
-        const cappedDeltaTime = Math.min(deltaTime, 0.1); // Cap at 100ms (10 FPS)
+        const cappedDeltaTime = Math.min(deltaTime, this.MAX_DELTA_TIME);
 
         this.time += cappedDeltaTime;
         const stationPos = this.mesh.position;
@@ -193,9 +196,7 @@ export class HealingStation {
      * Check if player is within the healing circle
      */
     isPlayerInRange(playerPosition: THREE.Vector3): boolean {
-        const dist = playerPosition.distanceTo(
-            new THREE.Vector3(this.position.x, this.position.y, this.position.z)
-        );
+        const dist = playerPosition.distanceTo(this.positionVector);
         return dist < this.RING_RADIUS;
     }
 

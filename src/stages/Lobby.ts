@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { BaseDungeon } from './BaseDungeon';
 import { NPC } from '../NPC';
 import { HealingStation } from '../HealingStation';
+import { Player } from '../Player';
 
 export class Lobby extends BaseDungeon {
     id = 'lobby';
@@ -145,7 +146,7 @@ export class Lobby extends BaseDungeon {
     /**
      * Update healing station and handle player healing
      */
-    updateHealing(deltaTime: number, player: any): void {
+    updateHealing(deltaTime: number, player: Player): void {
         if (!this.healingStation) return;
 
         // Update healing station particles
@@ -165,9 +166,9 @@ export class Lobby extends BaseDungeon {
             if (this.healingTimer >= this.HEALING_INTERVAL) {
                 this.healingTimer -= this.HEALING_INTERVAL;
 
-                // Calculate heal amounts (20% of max)
-                const hpHeal = Math.floor(player.maxHp * this.HEALING_PERCENTAGE);
-                const tpHeal = Math.floor(player.maxTp * this.HEALING_PERCENTAGE);
+                // Calculate heal amounts (20% of max), ensure at least 1 point
+                const hpHeal = Math.max(1, Math.floor(player.maxHp * this.HEALING_PERCENTAGE));
+                const tpHeal = Math.max(1, Math.floor(player.maxTp * this.HEALING_PERCENTAGE));
 
                 // Apply healing (don't exceed max)
                 const hpBefore = player.hp;
