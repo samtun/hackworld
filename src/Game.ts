@@ -372,6 +372,7 @@ export class Game {
         const isNearInteractive = isNearTrader ||
             npcNearby != null ||
             weaponDropNearby != null ||
+            droppedItemsNearby ||
             destination != null;
 
         // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)

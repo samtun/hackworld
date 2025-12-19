@@ -1,4 +1,3 @@
-import { Player } from './Player';
 import { InputManager } from './InputManager';
 
 /**
@@ -127,8 +126,8 @@ export class DeathScreenManager {
         if (!this.isVisible) return;
 
         // Navigation
-        const isNavigateUp = input.isNavigateUp();
-        const isNavigateDown = input.isNavigateDown();
+        const isNavigateUp = input.isNavigateUpPressed();
+        const isNavigateDown = input.isNavigateDownPressed();
 
         if (isNavigateUp && !this.lastNavigateUpState) {
             this.selectedIndex = Math.max(0, this.selectedIndex - 1);
