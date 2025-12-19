@@ -11,6 +11,7 @@ import { WeaponRegistry } from './items/WeaponRegistry';
 import { XData } from './xdata/XData';
 import { XDataDropManager } from './xdata/XDataDropManager';
 import { EXPNumber } from './EXPNumber';
+import { DroppedItems } from './DroppedItems';
 
 export class World {
     scene: THREE.Scene;
@@ -35,6 +36,9 @@ export class World {
 
     // Weapon drops
     weaponDrops: WeaponDrop[] = [];
+
+    // Dropped items (from player death)
+    droppedItems?: DroppedItems;
 
     // X-Data drop manager
     private xDataDropManager: XDataDropManager;
@@ -190,6 +194,12 @@ export class World {
         for (const drop of this.weaponDrops) {
             drop.update(dt, cameraPosition, player.mesh.position);
         }
+
+        // Update dropped items (from player death)
+        if (this.droppedItems) {
+            this.droppedItems.update(dt);
+        }
+
         // Update X-Data entities
         for (let i = this.xDataEntities.length - 1; i >= 0; i--) {
             const xData = this.xDataEntities[i];
@@ -380,8 +390,9 @@ export class World {
 
     /**
      * Pick up a weapon drop
+     * @returns The ID of the item added to inventory
      */
-    pickupWeaponDrop(drop: WeaponDrop, player: Player): void {
+    pickupWeaponDrop(drop: WeaponDrop, player: Player): string {
         // Add weapon to player inventory
         const newItem = {
             id: crypto.randomUUID(),
@@ -403,6 +414,8 @@ export class World {
             drop.cleanup(this.scene, this.physicsWorld);
             this.weaponDrops.splice(index, 1);
         }
+
+        return newItem.id;
     }
 
     /**
@@ -413,5 +426,53 @@ export class World {
             drop.cleanup(this.scene, this.physicsWorld);
         }
         this.weaponDrops = [];
+    }
+
+    /**
+     * Create dropped items at player's death position
+     */
+    createDroppedItems(position: THREE.Vector3, itemIds: string[]): void {
+        // Remove any existing dropped items
+        if (this.droppedItems) {
+            this.droppedItems.cleanup(this.scene, this.physicsWorld);
+        }
+
+        // Create new dropped items
+        if (itemIds.length > 0) {
+            this.droppedItems = new DroppedItems(this.scene, this.physicsWorld, position, itemIds);
+            console.log(`Created dropped items bundle with ${itemIds.length} items at (${position.x}, ${position.y}, ${position.z})`);
+        }
+    }
+
+    /**
+     * Check if player is near dropped items
+     */
+    checkDroppedItemsInteraction(playerPosition: THREE.Vector3): boolean {
+        if (!this.droppedItems) return false;
+        return this.droppedItems.isPlayerNearby(playerPosition);
+    }
+
+    /**
+     * Pick up dropped items
+     */
+    pickupDroppedItems(): string[] {
+        if (!this.droppedItems) return [];
+
+        const itemIds = this.droppedItems.itemIds;
+        this.droppedItems.cleanup(this.scene, this.physicsWorld);
+        this.droppedItems = undefined;
+
+        console.log(`Picked up ${itemIds.length} dropped items`);
+        return itemIds;
+    }
+
+    /**
+     * Clear dropped items (when changing stages or returning to lobby)
+     */
+    clearDroppedItems(): void {
+        if (this.droppedItems) {
+            this.droppedItems.cleanup(this.scene, this.physicsWorld);
+            this.droppedItems = undefined;
+        }
     }
 }

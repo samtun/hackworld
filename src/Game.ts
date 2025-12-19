@@ -10,6 +10,7 @@ import { TraderManager } from './TraderManager';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NPCDialogueManager } from './NPCDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
+import { DeathScreenManager } from './DeathScreenManager';
 import { NPC } from './NPC';
 import { AVAILABLE_DUNGEONS } from './stages';
 import { DebugValueEditor } from './DebugValueEditor';
@@ -30,6 +31,7 @@ export class Game {
     dungeonSelection: DungeonSelectionManager;
     npcDialogue: NPCDialogueManager;
     xDataUpgrade: XDataUpgradeManager;
+    deathScreen: DeathScreenManager;
 
     clock: THREE.Clock;
     debugOutputFrequency: number = 1
@@ -99,12 +101,22 @@ export class Game {
         this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
         this.npcDialogue = new NPCDialogueManager();
         this.xDataUpgrade = new XDataUpgradeManager();
+        this.deathScreen = new DeathScreenManager();
         this.clock = new THREE.Clock();
 
         // Set up Ford NPC callback for X-Data upgrades
         this.world.setFordCallback(() => {
             this.xDataUpgrade.show();
         });
+
+        // Set up death screen callbacks
+        this.deathScreen.onRetry = () => {
+            this.handleRetry();
+        };
+
+        this.deathScreen.onReturnToLobby = () => {
+            this.handleReturnToLobby();
+        };
 
         // Debug Mode Setup
         if (import.meta.env.DEV) {
@@ -158,8 +170,72 @@ export class Game {
         this.player.body.position.set(0, 0.5, 0);
         this.player.body.velocity.set(0, 0, 0);
 
+        // Track last teleporter position for respawning
+        this.player.setLastTeleporter(new THREE.Vector3(0, 0.5, 0), this.currentScene);
+
+        // If entering lobby, clear collected items tracking
+        if (destination === 'lobby') {
+            this.player.clearCollectedItems();
+            this.world.clearDroppedItems();
+        }
+
         // Snap camera
         this.camera.position.set(10, 15, 10);
+    }
+
+    /**
+     * Handle retry after death - respawn at last teleporter with items dropped
+     */
+    handleRetry() {
+        // Get death position before respawn
+        const deathPosition = this.player.mesh.position.clone();
+
+        // Respawn player with full HP/TP
+        this.player.respawn(true);
+
+        // Switch back to last teleporter scene
+        if (this.currentScene !== this.player.lastTeleporterScene) {
+            this.world.loadStage(this.player.lastTeleporterScene);
+            this.currentScene = this.player.lastTeleporterScene;
+        }
+
+        // Drop items that were collected since last lobby visit
+        if (this.player.itemsCollectedSinceLastLobby.length > 0) {
+            this.world.createDroppedItems(deathPosition, this.player.itemsCollectedSinceLastLobby);
+        }
+
+        // Hide death screen
+        this.deathScreen.hide();
+
+        console.log(`Player retried - respawned at last teleporter in ${this.player.lastTeleporterScene}`);
+    }
+
+    /**
+     * Handle return to lobby after death - lose all collected items
+     */
+    handleReturnToLobby() {
+        // Remove items that were collected since last lobby visit from inventory
+        for (const itemId of this.player.itemsCollectedSinceLastLobby) {
+            const index = this.player.inventory.findIndex(item => item.id === itemId);
+            if (index !== -1) {
+                console.log(`Removing ${this.player.inventory[index].name} from inventory (lost on death)`);
+                this.player.inventory.splice(index, 1);
+            }
+        }
+
+        // Clear collected items tracking
+        this.player.clearCollectedItems();
+
+        // Respawn player with full HP/TP
+        this.player.respawn(true);
+
+        // Return to lobby
+        this.switchScene('lobby');
+
+        // Hide death screen
+        this.deathScreen.hide();
+
+        console.log('Player returned to lobby - lost all collected items since last visit');
     }
 
     onWindowResize() {
@@ -256,11 +332,30 @@ export class Game {
             this.xDataUpgrade.update(this.player, this.input);
         }
 
+        // Update death screen if visible
+        if (this.deathScreen.isVisible) {
+            this.deathScreen.update(this.input);
+        }
+
+        // Check for player death (only if not already dead and death screen not visible)
+        if (!this.player.isDead && !this.deathScreen.isVisible && this.player.hp <= 0) {
+            this.player.die();
+            // TODO: Despawn player mesh (hide it for now until death animation is added)
+            this.player.mesh.visible = false;
+            // Show death screen after a short delay
+            setTimeout(() => {
+                this.deathScreen.show();
+            }, 500);
+        }
+
         // Check if player is near any interactive entity (to prevent jumping while interacting)
-        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
+        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible || this.deathScreen.isVisible;
         const isNearTrader = !anyMenuOpen && this.world.checkTraderInteraction(this.player.mesh.position);
         const weaponDropNearby = !anyMenuOpen ? this.world.checkWeaponDropInteraction(this.player.mesh.position) : null;
         const destination = !anyMenuOpen ? this.world.checkPortalInteraction(this.player.mesh.position) : null;
+        
+        // Check dropped items (from player death)
+        const droppedItemsNearby = !anyMenuOpen && this.world.checkDroppedItemsInteraction(this.player.mesh.position);
         
         // Check NPCs
         let npcNearby: NPC | null = null;
@@ -325,13 +420,29 @@ export class Game {
                     this.npcDialogue.show(npcNearby);
                 }
             }
+        } else if (droppedItemsNearby && !anyMenuOpen) {
+            // Show dropped items hint (prioritize over weapon drops)
+            this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up Dropped Items');
+
+            // Check for interaction
+            if (isSelectPressed && !this.wasSelectPressed) {
+                const itemIds = this.world.pickupDroppedItems();
+                // Items are already in inventory, we just need to remove them from the "collected since lobby" list
+                // since we're picking them back up
+                this.player.itemsCollectedSinceLastLobby = this.player.itemsCollectedSinceLastLobby.filter(id => !itemIds.includes(id));
+                console.log(`Picked up ${itemIds.length} dropped items`);
+            }
         } else if (weaponDropNearby && !anyMenuOpen) {
                 // Show weapon drop hint (prioritize over trader and portal)
                 this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up ' + weaponDropNearby.weaponName);
 
                 // Check for interaction
                 if (isSelectPressed && !this.wasSelectPressed) {
-                    this.world.pickupWeaponDrop(weaponDropNearby, this.player);
+                    const itemId = this.world.pickupWeaponDrop(weaponDropNearby, this.player);
+                    // Track this item as collected since last lobby visit (unless we're in lobby)
+                    if (this.currentScene !== 'lobby' && itemId) {
+                        this.player.addCollectedItem(itemId);
+                    }
                 }
             } else if (isNearTrader) {
                 // Show trader hint

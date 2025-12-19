@@ -90,6 +90,12 @@ export class Player {
     inventory: Item[] = [];
     money: number = 500; // Starting money
 
+    // Death and respawn tracking
+    isDead: boolean = false;
+    lastTeleporterPosition: THREE.Vector3 = new THREE.Vector3(0, 0.5, 0);
+    lastTeleporterScene: string = 'lobby';
+    itemsCollectedSinceLastLobby: string[] = []; // Track item IDs collected since last lobby visit
+
     constructor(scene: THREE.Scene, world: CANNON.World, input: InputManager, physicsMaterial: CANNON.Material) {
         this.input = input;
 
@@ -203,6 +209,13 @@ export class Player {
     }
 
     update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
+        // Don't update if player is dead
+        if (this.isDead) {
+            // Sync Mesh with Body
+            this.mesh.position.copy(this.body.position as any);
+            return;
+        }
+
         // Charged Attack: Handle dashing
         if (this.isDashing) {
             this.dashTimer += dt;
@@ -437,13 +450,27 @@ export class Player {
     }
 
     takeDamage(amount: number) {
-        if (this.invulnerableTimer > 0 || this.isDashing) return;
+        if (this.invulnerableTimer > 0 || this.isDashing || this.isDead) return;
 
         this.hp -= amount;
         if (this.hp < 0) this.hp = 0;
 
         this.invulnerableTimer = 1.0; // 1 second invulnerability
         console.log(`Player took ${amount} damage. HP: ${this.hp}`);
+
+        // Check for death
+        if (this.hp <= 0) {
+            this.die();
+        }
+    }
+
+    /**
+     * Handle player death
+     */
+    die() {
+        this.isDead = true;
+        console.log('Player died');
+        // TODO: Add death animation
     }
 
     /**
@@ -846,5 +873,52 @@ export class Player {
             case 'tp':
                 return Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
         }
+    }
+
+    /**
+     * Set the last teleporter position for respawning
+     */
+    setLastTeleporter(position: THREE.Vector3, sceneName: string) {
+        this.lastTeleporterPosition.copy(position);
+        this.lastTeleporterScene = sceneName;
+        console.log(`Last teleporter set: ${sceneName} at (${position.x}, ${position.y}, ${position.z})`);
+    }
+
+    /**
+     * Track an item that was collected since last lobby visit
+     */
+    addCollectedItem(itemId: string) {
+        this.itemsCollectedSinceLastLobby.push(itemId);
+    }
+
+    /**
+     * Clear the list of collected items (called when returning to lobby)
+     */
+    clearCollectedItems() {
+        this.itemsCollectedSinceLastLobby = [];
+    }
+
+    /**
+     * Respawn the player at the last teleporter position
+     * @param fullHeal - Whether to fully heal HP and TP (default: true)
+     */
+    respawn(fullHeal: boolean = true) {
+        this.isDead = false;
+        this.mesh.visible = true; // Make mesh visible again
+        
+        if (fullHeal) {
+            this.hp = this.maxHp;
+            this.tp = this.maxTp;
+        }
+
+        // Reset position
+        this.body.position.set(
+            this.lastTeleporterPosition.x,
+            this.lastTeleporterPosition.y,
+            this.lastTeleporterPosition.z
+        );
+        this.body.velocity.set(0, 0, 0);
+
+        console.log(`Player respawned at (${this.lastTeleporterPosition.x}, ${this.lastTeleporterPosition.y}, ${this.lastTeleporterPosition.z})`);
     }
 }
