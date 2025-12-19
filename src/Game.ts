@@ -263,18 +263,15 @@ export class Game {
         // Handle interactions (only if no menus are open)
         const isSelectPressed = this.input.isSelectPressed();
 
-        if (!anyMenuOpen) {
-            // Check NPCs first (highest priority)
-            const allNPCs = this.world.getAllNPCs();
-            let nearbyNPC: NPC | null = null;
+        if (weaponDropNearby && !anyMenuOpen) {
+            // Show weapon drop hint (prioritize over trader and portal)
+            this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up ' + weaponDropNearby.weaponName);
 
-            for (const npc of allNPCs) {
-                if (npc.isPlayerNearby(this.player.mesh.position)) {
-                    nearbyNPC = npc;
-                    break;
-                }
+            // Check for interaction
+            if (isSelectPressed && !this.wasSelectPressed) {
+                this.world.pickupWeaponDrop(weaponDropNearby, this.player);
             }
-
+        } else if (isNearTrader && !anyMenuOpen) {
             if (nearbyNPC) {
                 // Show NPC hint
                 this.ui.showInteractionHint(true, nearbyNPC.getInteractionHint());
