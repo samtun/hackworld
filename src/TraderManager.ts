@@ -3,6 +3,7 @@ import { InputManager } from './InputManager';
 import { Item } from './InventoryManager';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { WeaponRegistry } from './WeaponRegistry';
+import { CoreRegistry } from './CoreRegistry';
 
 // --- Constants ---
 const COLORS = {
@@ -82,11 +83,22 @@ export class TraderManager {
             });
         }
         
-        // Add cores
+        // Add cores from registry
+        const allCores = CoreRegistry.getAllCores();
+        for (const coreDef of allCores) {
+            this.traderInventory.push({
+                id: crypto.randomUUID(),
+                name: coreDef.name,
+                type: 'core',
+                coreStats: coreDef.stats,
+                buyPrice: coreDef.buyPrice,
+                sellPrice: coreDef.sellPrice,
+                isEquipped: false
+            });
+        }
+        
+        // Add chips (these remain hardcoded for now as they don't have varying stats)
         this.traderInventory.push(
-            { id: crypto.randomUUID(), name: 'Herald Core', type: 'core', coreStats: { strength: 3, defense: 2 }, buyPrice: 200, sellPrice: 100, isEquipped: false },
-            { id: crypto.randomUUID(), name: 'Swift Core', type: 'core', coreStats: { speed: 4, defense: -2 }, buyPrice: 150, sellPrice: 75, isEquipped: false },
-            { id: crypto.randomUUID(), name: 'Defender Core', type: 'core', coreStats: { strength: -1, defense: 4 }, buyPrice: 180, sellPrice: 90, isEquipped: false },
             { id: crypto.randomUUID(), name: 'Power Chip', type: 'chip', buyPrice: 100, sellPrice: 50 },
             { id: crypto.randomUUID(), name: 'Defense Chip', type: 'chip', buyPrice: 100, sellPrice: 50 }
         );
