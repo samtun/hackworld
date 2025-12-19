@@ -29,7 +29,7 @@ export class HealingStation {
     private readonly HEALING_RISE_SPEED = 1.8; // Faster rise speed during healing
     private readonly MAX_PARTICLE_SIZE = 0.5;
     private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
-    private readonly HEALING_RATE = 40; // HP/TP per second
+    private readonly HEALING_DURATION = 2.5; // Time in seconds to heal from 0 to max (both HP and TP)
     private time: number = 0;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, color: number = 0x00ff00) {
@@ -155,10 +155,12 @@ export class HealingStation {
             // Set healing state (increases particle speed)
             this.isHealing = true;
 
-            // Calculate heal amounts based on deltaTime (framerate independent)
+            // Calculate heal amounts based on percentage of max (framerate independent)
+            // Heal to full in HEALING_DURATION seconds regardless of max values
             if (player.hp < player.maxHp || player.tp < player.maxTp) {
-                const hpHeal = this.HEALING_RATE * cappedDeltaTime;
-                const tpHeal = this.HEALING_RATE * cappedDeltaTime;
+                const healPercentage = cappedDeltaTime / this.HEALING_DURATION;
+                const hpHeal = player.maxHp * healPercentage;
+                const tpHeal = player.maxTp * healPercentage;
                 player.heal(hpHeal, tpHeal);
             }
         } else {
