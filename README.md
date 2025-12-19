@@ -11,6 +11,7 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Two unique dungeon stages accessible from the lobby
 - Inventory system with looting mechanics
 - **Interactive trader** in the lobby - Buy and sell items, manage your bits
+- **X-Data resource system** - Collect X-Data from defeated enemies and use it to permanently upgrade your stats with Ford in the lobby
 
 ## Tech Stack
 
@@ -31,7 +32,7 @@ Play the game at: [https://samtun.github.io/hackworld/](https://samtun.github.io
    - The hub is a single area without loading screens
    - Loading screens in general are less common and finish quicker
    - New equipment can be equipped at any time. No need to return to the hub
-   - The X-Data resource is meant to be implemented, however it should be dropped more frequent on earlier levels already
+   - The X-Data resource system is implemented with drops from enemies that can be used for permanent stat upgrades
    - The combat feels a bit more dynamic while keeping the original feel in many areas
    - Tech (skills) is improved by reducing the amount of skills and using quick access button combinations to them rather than tedious switching via a menu
 
@@ -89,6 +90,25 @@ The game features an equipment system that allows you to customize your characte
 - **Defender Core**: -1 Strength, +4 Defense
 
 Cores and weapons can be equipped at any time through the inventory (press I/Select).
+
+#### X-Data Resource System
+X-Data is a collectible resource that can be used for permanent character upgrades:
+
+**Collecting X-Data**:
+- Dropped by enemies upon defeat (appears as a floating cyan X)
+- Default enemies have a 1% drop rate
+- Large enemies have a 3% drop rate
+- Drop amounts vary: 94.5% chance for 1 unit, 5% chance for 5 units, 0.5% chance for 100 units
+- Automatically collected when you walk over it
+- Your X-Data total is visible in the inventory beneath your stats
+
+**Upgrading with X-Data**:
+- Visit Ford in the lobby (green NPC near the trader)
+- Use X-Data to permanently upgrade your stats
+- Available upgrades: Strength, Defense, HP, and TP
+- Each upgrade level costs progressively more X-Data (based on Fibonacci sequence: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144)
+- Effects per upgrade: +1 Strength/Defense or +5 HP/TP
+- Maximum 11 upgrade levels per stat
 
 ## Development
 

@@ -245,4 +245,3 @@ export class Enemy {
         return this.body.position.clone();
     }
 }
-}
