@@ -31,7 +31,7 @@ export class Player {
     private baseSpeed: number = 6;
 
     // Stats (with equipment modifiers applied)
-    level: number = 60;
+    level: number = 1;
     maxHp: number = 100;
     hp: number = 100;
     maxTp: number = 100;
@@ -599,7 +599,7 @@ export class Player {
             return false;
         }
     }
-    
+
     /**
      * Get base stat value without equipment modifiers (for UI display)
      * Returns base value + upgrades only, capped at 9999
