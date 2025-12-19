@@ -7,6 +7,7 @@ import { BaseDungeon, Lobby, Dungeon1, Dungeon2 } from './stages';
 import { NPC } from './NPC';
 import { WeaponDrop } from './WeaponDrop';
 import { WeaponType } from './Weapon';
+import { WeaponRegistry } from './WeaponRegistry';
 
 export class World {
     scene: THREE.Scene;
@@ -180,8 +181,12 @@ export class World {
         // Select random weapon type with weighted probability
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
 
-        // Get weapon info from predefined list
-        const weaponInfo = this.getWeaponInfo(weaponType);
+        // Get weapon definition from registry
+        const weaponDef = WeaponRegistry.getRandomWeaponOfType(weaponType);
+        if (!weaponDef) {
+            console.warn(`No weapon found for type ${weaponType}`);
+            return;
+        }
 
         // Calculate bonus using the formula: (1.16 * x - 0.5)^5 * 10
         // This creates a distribution where most weapons are close to base stats
@@ -190,12 +195,12 @@ export class World {
 
         // Apply bonus to base values
         const bonusMultiplier = 1 + bonusValue * 20 / 100;
-        const finalDamage = Math.round(weaponInfo.damage * bonusMultiplier);
+        const finalDamage = Math.round(weaponDef.baseDamage * bonusMultiplier);
 
         // Calculate factor for damage diff to avoid small bonus values to raise price without changing the damage
-        const damageFactor = finalDamage / weaponInfo.damage
-        const finalBuyPrice = Math.round(weaponInfo.buyPrice * damageFactor);
-        const finalSellPrice = Math.round(weaponInfo.sellPrice * damageFactor);
+        const damageFactor = finalDamage / weaponDef.baseDamage
+        const finalBuyPrice = Math.round(weaponDef.baseBuyPrice * damageFactor);
+        const finalSellPrice = Math.round(weaponDef.baseSellPrice * damageFactor);
 
         // Create weapon drop at enemy position
         const dropPosition = enemy.body.position.clone();
@@ -206,14 +211,14 @@ export class World {
             this.physicsWorld,
             dropPosition,
             weaponType,
-            weaponInfo.name,
+            weaponDef.name,
             finalDamage,
             finalBuyPrice,
             finalSellPrice
         );
 
         this.weaponDrops.push(weaponDrop);
-        console.log(`Enemy dropped ${weaponInfo.name} (${weaponType}) with ${bonusMultiplier.toFixed(2)}% bonus (from f(random) = ${bonusValue}) - Damage: ${finalDamage}, Buy: ${finalBuyPrice}, Sell: ${finalSellPrice}`);
+        console.log(`Enemy dropped ${weaponDef.name} (${weaponType}) with ${bonusMultiplier.toFixed(2)}% bonus (from f(random) = ${bonusValue}) - Damage: ${finalDamage}, Buy: ${finalBuyPrice}, Sell: ${finalSellPrice}`);
     }
 
     /**
@@ -239,22 +244,6 @@ export class World {
         const otherTypes = allTypes.filter(type => type !== currentWeaponType);
         const otherIndex = Math.floor((random - 0.45) / (0.55 / otherTypes.length));
         return otherTypes[Math.min(otherIndex, otherTypes.length - 1)];
-    }
-
-    /**
-     * Get weapon info from predefined list
-     */
-    private getWeaponInfo(weaponType: WeaponType): { name: string; damage: number; buyPrice: number; sellPrice: number } {
-        switch (weaponType) {
-            case WeaponType.SWORD:
-                return { name: 'Aegis Sword', damage: 10, buyPrice: 100, sellPrice: 50 };
-            case WeaponType.DUAL_BLADE:
-                return { name: 'Rune Blade', damage: 7, buyPrice: 150, sellPrice: 75 };
-            case WeaponType.LANCE:
-                return { name: 'Fierce Lance', damage: 12, buyPrice: 120, sellPrice: 60 };
-            case WeaponType.HAMMER:
-                return { name: 'Battle Hawk', damage: 18, buyPrice: 180, sellPrice: 90 };
-        }
     }
 
     /**

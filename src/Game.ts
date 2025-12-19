@@ -202,22 +202,19 @@ export class Game {
         }
 
         // Check if player is near any interactive entity (to prevent jumping while interacting)
-        const isNearTrader = this.world.checkTraderInteraction(this.player.mesh.position);
-        const npcNearby = this.world.checkNPCInteraction(this.player.mesh.position);
-        const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.mesh.position);
-        const destination = this.world.checkPortalInteraction(this.player.mesh.position);
+        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible;
+        const isNearTrader = !anyMenuOpen && this.world.checkTraderInteraction(this.player.mesh.position);
+        const npcNearby = !anyMenuOpen ? this.world.checkNPCInteraction(this.player.mesh.position) : null;
+        const weaponDropNearby = !anyMenuOpen ? this.world.checkWeaponDropInteraction(this.player.mesh.position) : null;
+        const destination = !anyMenuOpen ? this.world.checkPortalInteraction(this.player.mesh.position) : null;
 
-        const isNearInteractive = !this.inventory.isVisible &&
-            !this.trader.isVisible &&
-            !this.dungeonSelection.isVisible &&
-            !this.npcDialogue.isVisible &&
-            (isNearTrader ||
-                npcNearby != null ||
-                weaponDropNearby != null ||
-                destination != null);
+        const isNearInteractive = isNearTrader ||
+            npcNearby != null ||
+            weaponDropNearby != null ||
+            destination != null;
 
         // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)
-        if (!this.inventory.isVisible && !this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible) {
+        if (!anyMenuOpen) {
             // Step Physics
             this.physicsWorld.step(1 / 60, dt, 3);
 
@@ -242,7 +239,6 @@ export class Game {
         this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
 
         const isSelectPressed = this.input.isSelectPressed();
-        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible;
 
         if (npcNearby && !anyMenuOpen) {
             // Show NPC hint (prioritize NPC over trader)

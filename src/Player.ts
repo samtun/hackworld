@@ -4,6 +4,7 @@ import { InputManager } from './InputManager';
 import { Weapon, WeaponType } from './Weapon';
 import { Enemy } from './Enemy';
 import { Item } from './InventoryManager';
+import { WeaponRegistry } from './WeaponRegistry';
 
 export class Player {
     mesh: THREE.Mesh;
@@ -38,6 +39,8 @@ export class Player {
     private isChargingAttack: boolean = false;
     private chargeTimer: number = 0;
     private readonly CHARGE_DURATION: number = 1.0;
+    private readonly CHARGE_DELAY: number = 0.2; // Wait 0.2s before starting charge animation
+    private chargeDelayTimer: number = 0;
     private isDashing: boolean = false;
     private dashTimer: number = 0;
     private readonly DASH_DURATION: number = 0.4;
@@ -61,8 +64,22 @@ export class Player {
     constructor(scene: THREE.Scene, world: CANNON.World, input: InputManager, physicsMaterial: CANNON.Material) {
         this.input = input;
 
-        // Initial weapon
-        this.inventory.push({ id: '1', name: 'Aegis Sword', type: 'weapon', weaponType: WeaponType.SWORD, damage: 10, buyPrice: 100, sellPrice: 50, isEquipped: true });
+        // Initial weapons from registry
+        const allWeapons = WeaponRegistry.getAllWeapons();
+        let itemId = 1;
+        for (const weaponDef of allWeapons) {
+            this.inventory.push({
+                id: itemId.toString(),
+                name: weaponDef.name,
+                type: 'weapon',
+                weaponType: weaponDef.type,
+                damage: weaponDef.baseDamage,
+                buyPrice: weaponDef.baseBuyPrice,
+                sellPrice: weaponDef.baseSellPrice,
+                isEquipped: weaponDef.type === WeaponType.SWORD // Equip sword by default
+            });
+            itemId++;
+        }
 
         // Visual Mesh
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -239,8 +256,16 @@ export class Player {
         // Combat
         // Check if attack button is being held (for charging)
         if (this.input.isAttackHeld() && !this.weapon.isAttacking && !this.isChargingAttack) {
-            // Start charging attack if button is held and not currently attacking
-            this.startChargeAttack();
+            // Increment delay timer
+            this.chargeDelayTimer += dt;
+            
+            // Only start charging attack after 0.2s delay
+            if (this.chargeDelayTimer >= this.CHARGE_DELAY) {
+                this.startChargeAttack();
+            }
+        } else if (!this.input.isAttackHeld()) {
+            // Reset delay timer when button is released
+            this.chargeDelayTimer = 0;
         }
 
         // Update weapon (handles animation and hitbox positioning)
