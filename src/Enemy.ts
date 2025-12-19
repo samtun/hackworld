@@ -18,7 +18,7 @@ export class Enemy {
     deathDuration: number = 1.0;
     flashTimer: number = 0;
     stunTimer: number = 0;
-    dropChance: number = 1; // 2% chance to drop weapon
+    dropChance: number = 0.08; // 8% chance to drop weapon
 
     // Animation
     isAttacking: boolean = false;
@@ -45,7 +45,7 @@ export class Enemy {
         // Physics
         const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
         this.body = new CANNON.Body({
-            mass: 5, // Heavier than player?
+            mass: 5,
             material: physicsMaterial,
             fixedRotation: true
         });
