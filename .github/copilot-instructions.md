@@ -2,6 +2,51 @@
 
 ## Core Principles
 
+### 0. Commit Message Standards
+This project enforces **Conventional Commits** for all commit messages. Every commit must follow this format:
+
+```
+type: description
+```
+
+#### Required Format
+- **type**: One of the following (required):
+  - `feat`: New feature (triggers minor version bump)
+  - `fix`: Bug fix (triggers patch version bump)
+  - `docs`: Documentation changes
+  - `style`: Code style changes (formatting, missing semicolons, etc.)
+  - `refactor`: Code refactoring without feature or bug changes
+  - `perf`: Performance improvements
+  - `test`: Adding or updating tests
+  - `chore`: Build process, dependencies, or tooling changes
+  - `ci`: CI/CD configuration changes
+
+- **description**: Short summary in imperative mood (e.g., "add feature" not "added feature")
+
+#### Examples
+- ✅ `feat: add inventory sorting feature`
+- ✅ `fix: resolve player collision bug`
+- ✅ `docs: update installation instructions`
+- ✅ `chore: update dependencies`
+- ❌ `Initial plan` (missing type)
+- ❌ `added new feature` (missing type separator)
+- ❌ `WIP changes` (not conventional format)
+
+#### Breaking Changes
+For breaking changes, add `BREAKING CHANGE:` in the commit body or use `!` after the type:
+```
+feat!: redesign player movement system
+
+BREAKING CHANGE: Player movement now requires new input handling
+```
+
+#### Enforcement
+- **Local**: Husky commit-msg hook validates commits before creation
+- **CI**: Pull requests are checked to ensure all commits follow conventions
+- **Automated Releases**: Conventional commits drive semantic versioning and changelog generation
+
+**CRITICAL**: Always use conventional commit format for all commits. Non-compliant commits will fail CI checks.
+
 ### 1. Maintainability First
 - Write clean, readable, and self-documenting code
 - Follow consistent coding patterns throughout the codebase
