@@ -12,6 +12,7 @@ import { NPCDialogueManager } from './NPCDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
 import { NPC } from './NPC';
 import { AVAILABLE_DUNGEONS } from './stages';
+import { DebugValueEditor } from './DebugValueEditor';
 
 export class Game {
     scene: THREE.Scene;
@@ -39,10 +40,12 @@ export class Game {
     physicsDebugger: any;
     debugMode: boolean = false;
     debugMeshes: THREE.Mesh[] = [];
+    debugValueEditor?: DebugValueEditor;
 
     // Input State
     wasInventoryPressed: boolean = false;
     wasSelectPressed: boolean = false;
+    wasSelectAndStartPressed: boolean = false;
     isTransitioning: boolean = false;
 
     constructor() {
@@ -113,12 +116,23 @@ export class Game {
                 }
             });
 
+            // Create debug value editor
+            this.debugValueEditor = new DebugValueEditor();
+
             window.addEventListener('keydown', (e) => {
                 if (e.code === 'F8') {
                     this.debugMode = !this.debugMode;
                     this.debugMeshes.forEach(mesh => {
                         mesh.visible = this.debugMode;
                     });
+                    
+                    // Toggle debug value editor visibility
+                    if (this.debugMode) {
+                        this.debugValueEditor?.show();
+                    } else {
+                        this.debugValueEditor?.hide();
+                    }
+                    
                     console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'}`);
                 } else if (this.debugMode) {
                     console.log(`[Debug] Key pressed: ${e.code}`);
@@ -180,8 +194,35 @@ export class Game {
         }
 
         // Input Handling for UI
+        // Debug Mode: Check for Select+Start combination first (dev builds only)
+        // This needs to be checked before inventory to prevent conflict with Select button
+        let selectAndStartHandled = false;
+        if (import.meta.env.DEV) {
+            const isSelectAndStartPressed = this.input.isSelectAndStartPressed();
+            if (isSelectAndStartPressed && !this.wasSelectAndStartPressed) {
+                if (this.debugValueEditor) {
+                    if (this.debugValueEditor.isVisible) {
+                        // Toggle expanded/collapsed state
+                        this.debugValueEditor.toggle();
+                    } else {
+                        // Show and expand the editor
+                        this.debugMode = true;
+                        this.debugMeshes.forEach(mesh => {
+                            mesh.visible = this.debugMode;
+                        });
+                        this.debugValueEditor.show();
+                        this.debugValueEditor.expand();
+                        console.log('Debug Mode: ON (via controller)');
+                    }
+                }
+                selectAndStartHandled = true;
+            }
+            this.wasSelectAndStartPressed = isSelectAndStartPressed;
+        }
+
+        // Check inventory toggle (but not if Select+Start was just pressed)
         const isInventoryPressed = this.input.isInventoryPressed();
-        if (isInventoryPressed && !this.wasInventoryPressed) {
+        if (isInventoryPressed && !this.wasInventoryPressed && !selectAndStartHandled) {
             // Don't allow toggling inventory while any other UI is open
             if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible) {
                 this.inventory.toggle();
@@ -252,6 +293,11 @@ export class Game {
         }
 
         this.ui.update(this.player);
+
+        // Update debug value editor if visible
+        if (this.debugMode && this.debugValueEditor) {
+            this.debugValueEditor.update(this.player);
+        }
 
         // Camera Follow
         const targetX = this.player.mesh.position.x + 10;

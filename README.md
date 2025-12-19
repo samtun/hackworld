@@ -74,9 +74,21 @@ The game is fully playable with keyboard and controller (tested with XBox contro
 ## Development
 
 ### Debug Mode
-The game includes a debug mode for visualizing physics colliders.
+The game includes a comprehensive debug mode for development and testing.
 - **Availability**: Development builds only (`npm run dev`)
-- **Toggle**: Press **F8** to show/hide colliders
+- **Toggle**: Press **F8** to enable/disable debug mode
+
+#### Debug Features
+When debug mode is enabled (F8), you get access to:
+
+1. **Physics Colliders Visualization**: Red wireframe boxes show all physics collision boundaries
+2. **Debug Value Editor**: A powerful overlay for live editing and testing
+   - **Player Stats Editor**: Modify HP, TP, Strength, Defense, Speed, Level, X-Data, and Money in real-time
+   - **Add Weapons**: Add any weapon from the registry with custom damage values
+   - **Add Cores**: Add any core from the registry with their defined stats
+   - **Collapsible UI**: Click the arrow button (▼/▲) to expand or collapse the editor panel
+
+The debug value editor is positioned in the top-right corner and can be toggled between expanded and collapsed states for convenience during testing.
 
 ## Deployment
 
