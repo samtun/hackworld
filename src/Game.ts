@@ -190,16 +190,10 @@ export class Game {
         // Get death position before respawn
         const deathPosition = this.player.mesh.position.clone();
 
-        // Respawn player with full HP/TP
+        // Respawn player with full HP/TP at last teleporter
         this.player.respawn(true);
 
-        // Switch back to last teleporter scene
-        if (this.currentScene !== this.player.lastTeleporterScene) {
-            this.world.loadStage(this.player.lastTeleporterScene);
-            this.currentScene = this.player.lastTeleporterScene;
-        }
-
-        // Drop items that were collected since last lobby visit
+        // Drop items that were collected since last lobby visit at death position
         if (this.player.itemsCollectedSinceLastLobby.length > 0) {
             this.world.createDroppedItems(deathPosition, this.player.itemsCollectedSinceLastLobby);
         }
@@ -207,7 +201,7 @@ export class Game {
         // Hide death screen
         this.deathScreen.hide();
 
-        console.log(`Player retried - respawned at last teleporter in ${this.player.lastTeleporterScene}`);
+        console.log(`Player retried - respawned at last teleporter in ${this.currentScene}`);
     }
 
     /**
@@ -340,8 +334,6 @@ export class Game {
         // Check for player death (only if not already dead and death screen not visible)
         if (!this.player.isDead && !this.deathScreen.isVisible && this.player.hp <= 0) {
             this.player.die();
-            // TODO: Despawn player mesh (hide it for now until death animation is added)
-            this.player.mesh.visible = false;
             // Show death screen after a short delay
             setTimeout(() => {
                 this.deathScreen.show();
@@ -428,9 +420,8 @@ export class Game {
             // Check for interaction
             if (isSelectPressed && !this.wasSelectPressed) {
                 const itemIds = this.world.pickupDroppedItems();
-                // Items are already in inventory, we just need to remove them from the "collected since lobby" list
-                // since we're picking them back up
-                this.player.itemsCollectedSinceLastLobby = this.player.itemsCollectedSinceLastLobby.filter(id => !itemIds.includes(id));
+                // Remove items from the "collected since lobby" tracking list
+                this.player.removeCollectedItems(itemIds);
                 console.log(`Picked up ${itemIds.length} dropped items`);
             }
         } else if (weaponDropNearby && !anyMenuOpen) {

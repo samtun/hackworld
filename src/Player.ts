@@ -469,8 +469,19 @@ export class Player {
      */
     die() {
         this.isDead = true;
+        this.mesh.visible = false; // Hide player mesh
         console.log('Player died');
         // TODO: Add death animation
+    }
+
+    /**
+     * Remove collected items from the tracking list
+     * Used when picking up dropped items after death
+     */
+    removeCollectedItems(itemIds: string[]) {
+        this.itemsCollectedSinceLastLobby = this.itemsCollectedSinceLastLobby.filter(
+            id => !itemIds.includes(id)
+        );
     }
 
     /**
