@@ -10,6 +10,7 @@ import { WeaponType } from './items/Weapon';
 import { WeaponRegistry } from './items/WeaponRegistry';
 import { XData } from './xdata/XData';
 import { XDataDropManager } from './xdata/XDataDropManager';
+import { EXPNumber } from './EXPNumber';
 
 export class World {
     scene: THREE.Scene;
@@ -23,6 +24,9 @@ export class World {
 
     // X-Data entities
     xDataEntities: XData[] = [];
+
+    // EXP number entities
+    expNumbers: EXPNumber[] = [];
 
     // Stage instances
     private lobby: Lobby;
@@ -158,6 +162,12 @@ export class World {
             enemy.update(dt, player);
 
             if (enemy.isDead) {
+                // Grant EXP to player
+                player.gainExp(enemy.expAmount);
+
+                // Spawn EXP number visual
+                this.spawnEXPNumber(enemy.getDeathPosition(), enemy.expAmount);
+
                 // Check if enemy should drop weapon drop
                 if (this.tryDropWeapon(enemy, player)) {
                     // Proceed if weapon was dropped
@@ -192,6 +202,17 @@ export class World {
                 this.xDataEntities.splice(i, 1);
             }
         }
+
+        // Update EXP numbers
+        for (let i = this.expNumbers.length - 1; i >= 0; i--) {
+            const expNum = this.expNumbers[i];
+            const shouldRemove = expNum.update(dt, cameraPosition);
+
+            if (shouldRemove) {
+                expNum.cleanup(this.scene);
+                this.expNumbers.splice(i, 1);
+            }
+        }
     }
 
     /**
@@ -201,6 +222,15 @@ export class World {
         const xData = new XData(this.scene, this.physicsWorld, position, amount);
         this.xDataEntities.push(xData);
         console.log(`Spawned ${amount} X-Data at position (${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)})`);
+    }
+
+    /**
+     * Spawn EXP number visual at the given position
+     */
+    spawnEXPNumber(position: CANNON.Vec3, amount: number): void {
+        const expNumber = new EXPNumber(this.scene, position, amount);
+        this.expNumbers.push(expNumber);
+        console.log(`Spawned +${amount} EXP number at position (${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)})`);
     }
 
     /**
@@ -228,6 +258,12 @@ export class World {
             xData.cleanup(this.scene, this.physicsWorld);
         }
         this.xDataEntities = [];
+
+        // Also clear EXP numbers
+        for (const expNum of this.expNumbers) {
+            expNum.cleanup(this.scene);
+        }
+        this.expNumbers = [];
     }
 
     checkPortalInteraction(playerPosition: THREE.Vector3): string | null {

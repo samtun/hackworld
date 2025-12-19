@@ -33,6 +33,9 @@ export class Player {
 
     // Stats (with equipment modifiers applied)
     level: number = 1;
+    exp: number = 0;
+    expRequired: number = 1000; // EXP needed for next level
+    private static readonly MAX_LEVEL = 999;
     maxHp: number = 100;
     hp: number = 100;
     maxTp: number = 100;
@@ -158,10 +161,13 @@ export class Player {
     }
 
     private recalculateStats() {
-        // Start with base stats (including upgrades)
-        this.strength = Math.min(this.baseStrength + this.strengthUpgrades, Player.MAX_STAT_VALUE);
-        this.defense = Math.min(this.baseDefense + this.defenseUpgrades, Player.MAX_STAT_VALUE);
-        this.speed = this.baseSpeed;
+        // Calculate level multiplier
+        const levelMultiplier = this.getLevelMultiplier();
+
+        // Start with base stats (including upgrades) and apply level multiplier
+        this.strength = Math.min(Math.floor((this.baseStrength + this.strengthUpgrades) * levelMultiplier), Player.MAX_STAT_VALUE);
+        this.defense = Math.min(Math.floor((this.baseDefense + this.defenseUpgrades) * levelMultiplier), Player.MAX_STAT_VALUE);
+        this.speed = this.baseSpeed * levelMultiplier;
         this.maxHp = Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
         this.maxTp = Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
 
@@ -572,6 +578,59 @@ export class Player {
     collectXData(amount: number): void {
         this.xData += amount;
         console.log(`Collected ${amount} X-Data. Total: ${this.xData}`);
+    }
+
+    /**
+     * Calculate EXP required for next level
+     * Formula: 1000 + level*30 + level^2 * 0.07
+     */
+    private calculateExpRequired(level: number): number {
+        return Math.floor(1000 + level * 30 + Math.pow(level, 2) * 0.07);
+    }
+
+    /**
+     * Gain EXP and handle level ups
+     * @param amount - Amount of EXP to gain
+     */
+    gainExp(amount: number): void {
+        if (this.level >= Player.MAX_LEVEL) {
+            console.log('Player is at max level');
+            return;
+        }
+
+        this.exp += amount;
+        console.log(`Gained ${amount} EXP. Current: ${this.exp}/${this.expRequired}`);
+
+        // Check for level up(s)
+        while (this.exp >= this.expRequired && this.level < Player.MAX_LEVEL) {
+            this.levelUp();
+        }
+    }
+
+    /**
+     * Level up the player
+     */
+    private levelUp(): void {
+        this.exp -= this.expRequired;
+        this.level++;
+
+        // Calculate new required EXP for next level
+        if (this.level < Player.MAX_LEVEL) {
+            this.expRequired = this.calculateExpRequired(this.level);
+        }
+
+        // Recalculate stats with level multiplier
+        this.recalculateStats();
+
+        console.log(`Level Up! Now level ${this.level}. Next level requires ${this.expRequired} EXP.`);
+    }
+
+    /**
+     * Get the level multiplier for stats
+     * Formula: 1 + 0.002 * level
+     */
+    private getLevelMultiplier(): number {
+        return 1 + 0.002 * this.level;
     }
 
     /**

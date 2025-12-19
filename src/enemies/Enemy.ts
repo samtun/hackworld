@@ -20,6 +20,7 @@ export class Enemy {
     stunTimer: number = 0;
     weaponDropChance: number = 0.08; // 8% chance to drop weapon
     xDataDropChance: number = 0.05;
+    expAmount: number = 10; // EXP granted on defeat
 
     // Animation
     isAttacking: boolean = false;

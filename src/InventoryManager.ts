@@ -91,6 +91,16 @@ export class InventoryManager {
         equippedPanel.style.gap = STYLES.SLOT_GAP;
         windowDiv.appendChild(equippedPanel);
 
+        // Level display (top of equipped panel)
+        const levelDisplay = document.createElement('div');
+        levelDisplay.id = 'level-display';
+        levelDisplay.style.fontSize = '24px';
+        levelDisplay.style.fontWeight = 'bold';
+        levelDisplay.style.marginBottom = '10px';
+        levelDisplay.style.color = '#ffd700'; // Gold color
+        levelDisplay.style.textShadow = '2px 2px 0px #000';
+        equippedPanel.appendChild(levelDisplay);
+
         // Slots
         this.createSlot(equippedPanel, 'Core');
         this.createSlot(equippedPanel, 'Weapon');
@@ -237,6 +247,12 @@ export class InventoryManager {
     }
 
     private render(player: Player) {
+        // Update Level Display
+        const levelDisplay = document.getElementById('level-display');
+        if (levelDisplay) {
+            levelDisplay.innerText = `Level ${player.level}`;
+        }
+
         // Update Stats
         this.statsText.innerHTML = this.generateStatsHTML(player);
 
@@ -359,6 +375,14 @@ export class InventoryManager {
             </div>
         `;
 
-        return statsHTML + xDataHTML;
+        // Add EXP display
+        const expHTML = `
+            <div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span style="color: #ffaa00;">EXP to Next</span> <span style="color: #ffaa00;">${player.exp} / ${player.expRequired}</span>
+            </div>
+        `;
+
+        return statsHTML + xDataHTML + expHTML;
     }
 }
