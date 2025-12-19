@@ -207,7 +207,7 @@ export class Game {
             }
 
             this.player.update(dt, this.world.enemies);
-            this.world.update(dt, this.player);
+            this.world.update(dt, this.player, this.camera.position);
         }
 
         this.ui.update(this.player);

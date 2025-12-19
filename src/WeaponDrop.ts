@@ -11,11 +11,13 @@ export class WeaponDrop {
     body: CANNON.Body;
     weaponType: WeaponType;
     weaponName: string;
+    textMesh: THREE.Mesh | null = null;
     
     private floatTimer: number = 0;
     private baseHeight: number;
     private readonly FLOAT_SPEED: number = 1.5;
     private readonly FLOAT_AMPLITUDE: number = 0.15;
+    private readonly PICKUP_DISTANCE: number = 1.5;
     
     constructor(
         scene: THREE.Scene,
@@ -69,12 +71,16 @@ export class WeaponDrop {
         const textMaterial = new THREE.MeshBasicMaterial({ 
             map: texture,
             transparent: true,
-            side: THREE.DoubleSide
+            side: THREE.DoubleSide,
+            depthTest: false,
+            depthWrite: false
         });
         const textGeometry = new THREE.PlaneGeometry(2, 0.5);
-        const textMesh = new THREE.Mesh(textGeometry, textMaterial);
-        textMesh.position.y = 0;
-        this.mesh.add(textMesh);
+        this.textMesh = new THREE.Mesh(textGeometry, textMaterial);
+        this.textMesh.position.y = 0;
+        this.textMesh.renderOrder = 999;
+        this.textMesh.visible = false; // Start hidden
+        this.mesh.add(this.textMesh);
         
         // Position the group
         this.mesh.position.set(position.x, position.y, position.z);
@@ -97,7 +103,7 @@ export class WeaponDrop {
         world.addBody(this.body);
     }
     
-    update(deltaTime: number, cameraPosition: THREE.Vector3): void {
+    update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
         // Floating animation
         this.floatTimer += deltaTime;
         const floatOffset = Math.sin(this.floatTimer * this.FLOAT_SPEED) * this.FLOAT_AMPLITUDE;
@@ -106,14 +112,22 @@ export class WeaponDrop {
         // Rotate the weapon slowly
         this.mesh.children[0].rotation.y += deltaTime * 0.5;
         
-        // Make text label face camera (billboard effect)
-        if (this.mesh.children[1]) {
-            const textMesh = this.mesh.children[1];
-            const direction = new THREE.Vector3()
-                .subVectors(cameraPosition, this.mesh.position)
-                .normalize();
-            const angle = Math.atan2(direction.x, direction.z);
-            textMesh.rotation.y = angle;
+        // Calculate distance to player
+        const distanceToPlayer = this.mesh.position.distanceTo(playerPosition);
+        const isNearPlayer = distanceToPlayer < this.PICKUP_DISTANCE;
+        
+        // Show text only when player is close enough
+        if (this.textMesh) {
+            this.textMesh.visible = isNearPlayer;
+            
+            // Make text label face camera (billboard effect)
+            if (isNearPlayer) {
+                const direction = new THREE.Vector3()
+                    .subVectors(cameraPosition, this.mesh.position)
+                    .normalize();
+                const angle = Math.atan2(direction.x, direction.z);
+                this.textMesh.rotation.y = angle;
+            }
         }
         
         // Sync body position (mainly Y for floating)
