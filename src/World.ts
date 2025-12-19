@@ -134,6 +134,15 @@ export class World {
             if (enemy.isDead) {
                 // Check for weapon drop before removing enemy
                 this.tryDropWeapon(enemy, player);
+                this.tryDropWeapon(enemy, player);
+                this.tryDropWeapon(enemy, player);
+                this.tryDropWeapon(enemy, player);
+                this.tryDropWeapon(enemy, player);
+                this.tryDropWeapon(enemy, player);
+                this.tryDropWeapon(enemy, player);
+                this.tryDropWeapon(enemy, player);
+                this.tryDropWeapon(enemy, player);
+                this.tryDropWeapon(enemy, player);
 
                 this.scene.remove(enemy.mesh);
                 this.physicsWorld.removeBody(enemy.body);
@@ -183,28 +192,13 @@ export class World {
         // Get weapon info from predefined list
         const weaponInfo = this.getWeaponInfo(weaponType);
 
-        // Calculate bonus using the formula: (x-0.5)^5 * 30
+        // Calculate bonus using the formula: (1.16 * x - 0.5)^5 * 10
         // This creates a distribution where most weapons are close to base stats
         const random = Math.random();
-        const bonusValue = Math.pow(random - 0.5, 5) * 30;
-
-        // Map bonus value to percentage range: -10% to +20%
-        // value <= -0.5: -10%
-        // value > -0.5: value / 0.5 * 10
-        // value > 1: value * 20%
-        let bonusPercent: number;
-        if (bonusValue < -0.5) {
-            bonusPercent = -10;
-        } else if (bonusValue < 0) {
-            // Map [-0.5, 0] to [-10%, 0%]
-            bonusPercent = bonusValue / 0.5 * 10;
-        } else {
-            // Map [0, 1] to [0%, 20%]
-            bonusPercent = bonusValue * 20;
-        }
+        const bonusValue = Math.pow(1.16 * random - 0.5, 5) * 10;
 
         // Apply bonus to base values
-        const bonusMultiplier = 1 + (bonusPercent / 100);
+        const bonusMultiplier = 1 + bonusValue * 20 / 100;
         const finalDamage = Math.round(weaponInfo.damage * bonusMultiplier);
 
         // Calculate factor for damage diff to avoid small bonus values to raise price without changing the damage
@@ -228,7 +222,7 @@ export class World {
         );
 
         this.weaponDrops.push(weaponDrop);
-        console.log(`Enemy dropped ${weaponInfo.name} (${weaponType}) with ${bonusPercent.toFixed(1)}% bonus - Damage: ${finalDamage}, Buy: ${finalBuyPrice}, Sell: ${finalSellPrice}`);
+        console.log(`Enemy dropped ${weaponInfo.name} (${weaponType}) with ${bonusMultiplier.toFixed(2)}% bonus (from f(random) = ${bonusValue}) - Damage: ${finalDamage}, Buy: ${finalBuyPrice}, Sell: ${finalSellPrice}`);
     }
 
     /**
