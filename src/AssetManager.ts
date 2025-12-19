@@ -76,15 +76,17 @@ export class AssetManager {
             this.onProgressCallback(loaded, total);
         }
 
-        // Load each asset sequentially to track progress accurately
-        for (const path of paths) {
-            await this.preload(path);
-            loaded++;
-            if (this.onProgressCallback) {
-                this.onProgressCallback(loaded, total);
-            }
-        }
+        // Load all assets in parallel but track progress
+        const promises = paths.map(path => 
+            this.preload(path).then(() => {
+                loaded++;
+                if (this.onProgressCallback) {
+                    this.onProgressCallback(loaded, total);
+                }
+            })
+        );
 
+        await Promise.all(promises);
         console.log(`✓ All ${paths.length} assets preloaded`);
     }
 
