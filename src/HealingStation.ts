@@ -30,14 +30,15 @@ export class HealingStation {
     private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
     private time: number = 0;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3) {
-        this.color = new THREE.Color(0x00ff00);
+    constructor(scene: THREE.Scene, position: CANNON.Vec3, color: number = 0x00ff00) {
+        this.color = new THREE.Color(color);
         this.position = position;
         this.positionVector = new THREE.Vector3(position.x, position.y, position.z);
 
         // Create healing station mesh (circle)
         const stationGeo = new THREE.CylinderGeometry(this.RING_RADIUS, this.RING_RADIUS, 0.1, 32);
         const stationMat = new THREE.MeshBasicMaterial({
+            color,
             transparent: true,
             opacity: 0.5
         });

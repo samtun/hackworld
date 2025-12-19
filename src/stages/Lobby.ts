@@ -24,10 +24,8 @@ export class Lobby extends BaseDungeon {
     healingStation?: HealingStation;
     private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
     
-    // Healing state
-    private healingTimer: number = 0;
-    private readonly HEALING_INTERVAL: number = 0.5; // seconds between heals
-    private readonly HEALING_PERCENTAGE: number = 0.2; // 20% of max HP/TP per heal
+    // Healing rate (HP/TP per second)
+    private readonly HEALING_RATE: number = 40; // 40 HP/TP per second
     
     // Callback for Ford interaction (set by Game)
     fordInteractionCallback?: () => void;
@@ -159,33 +157,18 @@ export class Lobby extends BaseDungeon {
             // Set healing state (increases particle speed)
             this.healingStation.setHealing(true);
 
-            // Update healing timer
-            this.healingTimer += deltaTime;
+            // Calculate heal amounts based on deltaTime (framerate independent)
+            const hpHeal = this.HEALING_RATE * deltaTime;
+            const tpHeal = this.HEALING_RATE * deltaTime;
 
-            // Apply healing every 0.5 seconds
-            if (this.healingTimer >= this.HEALING_INTERVAL) {
-                this.healingTimer -= this.HEALING_INTERVAL;
-
-                // Calculate heal amounts (20% of max), ensure at least 1 point
-                const hpHeal = Math.max(1, Math.floor(player.maxHp * this.HEALING_PERCENTAGE));
-                const tpHeal = Math.max(1, Math.floor(player.maxTp * this.HEALING_PERCENTAGE));
-
-                // Apply healing (don't exceed max)
-                const hpBefore = player.hp;
-                const tpBefore = player.tp;
-                
+            // Apply healing (don't exceed max)
+            if (player.hp < player.maxHp || player.tp < player.maxTp) {
                 player.hp = Math.min(player.hp + hpHeal, player.maxHp);
                 player.tp = Math.min(player.tp + tpHeal, player.maxTp);
-
-                // Log healing if any was applied
-                if (player.hp > hpBefore || player.tp > tpBefore) {
-                    console.log(`Healing: +${player.hp - hpBefore} HP, +${player.tp - tpBefore} TP`);
-                }
             }
         } else {
             // Reset healing state when player leaves
             this.healingStation.setHealing(false);
-            this.healingTimer = 0;
         }
     }
 
