@@ -61,11 +61,11 @@ export class Player {
     constructor(scene: THREE.Scene, world: CANNON.World, input: InputManager, physicsMaterial: CANNON.Material) {
         this.input = input;
 
-        // Initial Loot - Four weapons with specific names (with prices)
-        this.inventory.push({ id: '1', name: 'Aegis Sword', type: 'weapon', weaponType: WeaponType.SWORD, buyPrice: 100, sellPrice: 50, isEquipped: true });
-        this.inventory.push({ id: '2', name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE, buyPrice: 150, sellPrice: 75, isEquipped: false });
-        this.inventory.push({ id: '3', name: 'Fierce Lance', type: 'weapon', weaponType: WeaponType.LANCE, buyPrice: 120, sellPrice: 60, isEquipped: false });
-        this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER, buyPrice: 180, sellPrice: 90, isEquipped: false });
+        // Initial Loot - Four weapons with specific names (with prices and damage)
+        this.inventory.push({ id: '1', name: 'Aegis Sword', type: 'weapon', weaponType: WeaponType.SWORD, damage: 10, buyPrice: 100, sellPrice: 50, isEquipped: true });
+        this.inventory.push({ id: '2', name: 'Rune Blade', type: 'weapon', weaponType: WeaponType.DUAL_BLADE, damage: 7, buyPrice: 150, sellPrice: 75, isEquipped: false });
+        this.inventory.push({ id: '3', name: 'Fierce', type: 'weapon', weaponType: WeaponType.LANCE, damage: 12, buyPrice: 120, sellPrice: 60, isEquipped: false });
+        this.inventory.push({ id: '4', name: 'Battle Hawk', type: 'weapon', weaponType: WeaponType.HAMMER, damage: 18, buyPrice: 180, sellPrice: 90, isEquipped: false });
         
         // Initial Cores
         this.inventory.push({ id: '5', name: 'Herald Core', type: 'core', coreStats: { strength: 3, defense: 2 }, buyPrice: 200, sellPrice: 100, isEquipped: false });
@@ -92,8 +92,10 @@ export class Player {
         this.body.linearDamping = 0.9;
         world.addBody(this.body);
 
-        // Weapon
-        this.weapon = new Weapon(this.mesh, this.currentWeaponType, scene, world);
+        // Weapon - get damage from the equipped weapon item
+        const equippedWeapon = this.inventory.find(item => item.type === 'weapon' && item.isEquipped);
+        const weaponDamage = equippedWeapon?.damage || 10;
+        this.weapon = new Weapon(this.mesh, this.currentWeaponType, weaponDamage, scene, world);
     }
 
     equipWeapon(itemId: string) {
@@ -106,10 +108,10 @@ export class Player {
         
         // Equip the new weapon by ID
         const weaponItem = this.inventory.find(item => item.id === itemId);
-        if (weaponItem && weaponItem.type === 'weapon' && weaponItem.weaponType) {
+        if (weaponItem && weaponItem.type === 'weapon' && weaponItem.weaponType && weaponItem.damage !== undefined) {
             weaponItem.isEquipped = true;
             this.currentWeaponType = weaponItem.weaponType;
-            this.weapon.changeWeaponType(this.mesh, weaponItem.weaponType);
+            this.weapon.changeWeaponType(this.mesh, weaponItem.weaponType, weaponItem.damage);
         }
     }
 
@@ -277,7 +279,7 @@ export class Player {
     }
 
     checkAttackHits(enemies: Enemy[]) {
-        const damage = this.weapon.stats.damage;
+        const damage = this.weapon.damage;
         const attackBody = this.weapon.attackBody;
 
         // If we have a physics attack hitbox, use it for collision detection
@@ -478,7 +480,7 @@ export class Player {
             // Check if player body overlaps with enemy body
             if (this.checkCollision(this.body, enemy.body)) {
                 // Deal 3x weapon damage
-                const damage = this.weapon.stats.damage * 3;
+                const damage = this.weapon.damage * 3;
                 enemy.takeDamage(damage, this.mesh.position);
                 console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
                 

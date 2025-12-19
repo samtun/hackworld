@@ -19,34 +19,29 @@ const WEAPON_MODEL_PATHS: Record<WeaponType, string> = {
 };
 
 export interface WeaponStats {
-    damage: number;
     attackSpeed: number; // Duration in seconds
     range: number;
     attackAngle: number; // In radians
 }
 
-// Weapon type configurations
+// Weapon type configurations (damage is per-item, not per-type)
 export const WEAPON_CONFIGS: Record<WeaponType, WeaponStats> = {
     [WeaponType.SWORD]: {
-        damage: 10,
         attackSpeed: 0.3,
         range: 2.0,
         attackAngle: Math.PI / 2 // 90 degrees
     },
     [WeaponType.DUAL_BLADE]: {
-        damage: 7,
         attackSpeed: 0.2,
         range: 1.5,
         attackAngle: Math.PI / 3 // 60 degrees
     },
     [WeaponType.LANCE]: {
-        damage: 12,
         attackSpeed: 0.5,
         range: 3.0,
         attackAngle: Math.PI / 4 // 45 degrees
     },
     [WeaponType.HAMMER]: {
-        damage: 18,
         attackSpeed: 0.7,
         range: 1.8,
         attackAngle: Math.PI / 2 // 90 degrees
@@ -65,6 +60,7 @@ export class Weapon {
     private rightBasePosition?: THREE.Vector3; // For dual blade right weapon
     weaponType: WeaponType;
     stats: WeaponStats;
+    damage: number; // Actual damage value for this weapon instance
     private loader: GLTFLoader;
     private assetManager: AssetManager;
     private attackPhase: number = 0; // For multi-phase attacks like dual blade
@@ -75,9 +71,10 @@ export class Weapon {
     private physicsWorld?: CANNON.World;
     private scene?: THREE.Scene;
 
-    constructor(parent: THREE.Object3D, weaponType: WeaponType = WeaponType.SWORD, scene?: THREE.Scene, world?: CANNON.World) {
+    constructor(parent: THREE.Object3D, weaponType: WeaponType = WeaponType.SWORD, damage: number = 10, scene?: THREE.Scene, world?: CANNON.World) {
         this.weaponType = weaponType;
         this.stats = WEAPON_CONFIGS[weaponType];
+        this.damage = damage;
         this.loader = new GLTFLoader();
         this.assetManager = AssetManager.getInstance();
         this.scene = scene;
@@ -536,7 +533,7 @@ export class Weapon {
         return t * t;
     }
 
-    changeWeaponType(parent: THREE.Object3D, newType: WeaponType) {
+    changeWeaponType(parent: THREE.Object3D, newType: WeaponType, newDamage: number) {
         // Dispose of old mesh resources
         this.disposeChildren(this.mesh);
         
@@ -561,9 +558,10 @@ export class Weapon {
             this.attackBody = undefined;
         }
 
-        // Update type and stats
+        // Update type, stats, and damage
         this.weaponType = newType;
         this.stats = WEAPON_CONFIGS[newType];
+        this.damage = newDamage;
 
         // Create new empty group(s)
         this.mesh = new THREE.Group();

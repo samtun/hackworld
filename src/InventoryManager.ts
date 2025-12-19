@@ -36,6 +36,7 @@ export interface Item {
     name: string;
     type: 'weapon' | 'core' | 'chip';
     weaponType?: WeaponType; // For weapon items
+    damage?: number; // For weapon items - actual damage value
     coreStats?: CoreStats; // For core items - stat modifiers applied when equipped
     stats?: {
         strength?: number;

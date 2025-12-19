@@ -162,7 +162,7 @@ export class World {
     }
 
     /**
-     * Randomly drop a weapon from defeated enemy
+     * Generate a weapon drop with random bonus
      */
     private tryDropWeapon(enemy: Enemy, player: Player): void {
         // Roll for drop
@@ -173,8 +173,36 @@ export class World {
         // Select random weapon type with weighted probability
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
 
-        // Generate weapon name
-        const weaponName = this.generateWeaponName(weaponType);
+        // Get weapon info from predefined list
+        const weaponInfo = this.getWeaponInfo(weaponType);
+
+        // Calculate bonus using the formula: (x-0.5)^5 * 30
+        // This creates a distribution where most weapons are close to base stats
+        const random = Math.random();
+        const bonusValue = Math.pow(random - 0.5, 5) * 30;
+
+        // Map bonus value to percentage range: -10% to +20%
+        // When x=0: bonusValue ≈ -0.9375 → -10%
+        // When x=0.5: bonusValue = 0 → 0%
+        // When x=1: bonusValue ≈ 0.9375 → +20%
+        let bonusPercent: number;
+        if (bonusValue <= -0.9375) {
+            bonusPercent = -10;
+        } else if (bonusValue >= 0.9375) {
+            bonusPercent = 20;
+        } else if (bonusValue < 0) {
+            // Map [-0.9375, 0] to [-10%, 0%]
+            bonusPercent = (bonusValue / 0.9375) * 10;
+        } else {
+            // Map [0, 0.9375] to [0%, 20%]
+            bonusPercent = (bonusValue / 0.9375) * 20;
+        }
+
+        // Apply bonus to base values
+        const bonusMultiplier = 1 + (bonusPercent / 100);
+        const finalDamage = Math.round(weaponInfo.damage * bonusMultiplier);
+        const finalBuyPrice = Math.round(weaponInfo.buyPrice * bonusMultiplier);
+        const finalSellPrice = Math.round(weaponInfo.sellPrice * bonusMultiplier);
 
         // Create weapon drop at enemy position
         const dropPosition = enemy.body.position.clone();
@@ -185,11 +213,16 @@ export class World {
             this.physicsWorld,
             dropPosition,
             weaponType,
-            weaponName
+            weaponInfo.name
         );
 
         this.weaponDrops.push(weaponDrop);
-        console.log(`Enemy dropped ${weaponName} (${weaponType})`);
+        console.log(`Enemy dropped ${weaponInfo.name} (${weaponType}) with ${bonusPercent.toFixed(1)}% bonus - Damage: ${finalDamage}, Buy: ${finalBuyPrice}, Sell: ${finalSellPrice}`);
+
+        // Store bonus info in the drop for pickup
+        (weaponDrop as any).damage = finalDamage;
+        (weaponDrop as any).buyPrice = finalBuyPrice;
+        (weaponDrop as any).sellPrice = finalSellPrice;
     }
 
     /**
@@ -218,34 +251,19 @@ export class World {
     }
 
     /**
-     * Generate a random name for a weapon
+     * Get weapon info from predefined list
      */
-    private generateWeaponName(weaponType: WeaponType): string {
-        const prefixes = ['Ancient', 'Mystic', 'Steel', 'Crystal', 'Shadow', 'Flame', 'Ice', 'Thunder'];
-        const swordNames = ['Blade', 'Sword', 'Edge', 'Saber'];
-        const dualBladeNames = ['Twin Blades', 'Dual Edge', 'Double Sword'];
-        const lanceNames = ['Lance', 'Spear', 'Pike', 'Halberd'];
-        const hammerNames = ['Hammer', 'Mace', 'Maul', 'Crusher'];
-
-        const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-
-        let suffix: string;
+    private getWeaponInfo(weaponType: WeaponType): { name: string; damage: number; buyPrice: number; sellPrice: number } {
         switch (weaponType) {
             case WeaponType.SWORD:
-                suffix = swordNames[Math.floor(Math.random() * swordNames.length)];
-                break;
+                return { name: 'Aegis Sword', damage: 10, buyPrice: 100, sellPrice: 50 };
             case WeaponType.DUAL_BLADE:
-                suffix = dualBladeNames[Math.floor(Math.random() * dualBladeNames.length)];
-                break;
+                return { name: 'Rune Blade', damage: 7, buyPrice: 150, sellPrice: 75 };
             case WeaponType.LANCE:
-                suffix = lanceNames[Math.floor(Math.random() * lanceNames.length)];
-                break;
+                return { name: 'Fierce', damage: 12, buyPrice: 120, sellPrice: 60 };
             case WeaponType.HAMMER:
-                suffix = hammerNames[Math.floor(Math.random() * hammerNames.length)];
-                break;
+                return { name: 'Battle Hawk', damage: 18, buyPrice: 180, sellPrice: 90 };
         }
-
-        return `${prefix} ${suffix}`;
     }
 
     /**
@@ -265,19 +283,25 @@ export class World {
      * Pick up a weapon drop
      */
     pickupWeaponDrop(drop: WeaponDrop, player: Player): void {
+        // Get stored values from the drop
+        const damage = (drop as any).damage || 10;
+        const buyPrice = (drop as any).buyPrice || 100;
+        const sellPrice = (drop as any).sellPrice || 50;
+        
         // Add weapon to player inventory
         const newItem = {
             id: crypto.randomUUID(),
             name: drop.weaponName,
             type: 'weapon' as const,
             weaponType: drop.weaponType,
-            buyPrice: 100,
-            sellPrice: 50,
+            damage: damage,
+            buyPrice: buyPrice,
+            sellPrice: sellPrice,
             isEquipped: false
         };
 
         player.inventory.push(newItem);
-        console.log(`Picked up ${drop.weaponName}`);
+        console.log(`Picked up ${drop.weaponName} (Damage: ${damage})`);
 
         // Remove drop from world
         const index = this.weaponDrops.indexOf(drop);

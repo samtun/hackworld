@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { WeaponType } from './Weapon';
-import { cameraPosition } from 'three/examples/jsm/nodes/Nodes.js';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
