@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Player } from './Player';
+import { Player } from '../Player';
 
 export class Enemy {
     mesh: THREE.Mesh;
@@ -18,6 +18,7 @@ export class Enemy {
     deathDuration: number = 1.0;
     flashTimer: number = 0;
     stunTimer: number = 0;
+    weaponDropChance: number = 0.08; // 8% chance to drop weapon
     xDataDropChance: number = 0.05;
 
     // Animation
@@ -45,7 +46,7 @@ export class Enemy {
         // Physics
         const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
         this.body = new CANNON.Body({
-            mass: 5, // Heavier than player?
+            mass: 5,
             material: physicsMaterial,
             fixedRotation: true
         });

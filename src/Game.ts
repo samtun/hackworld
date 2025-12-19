@@ -31,6 +31,8 @@ export class Game {
     xDataUpgrade: XDataUpgradeManager;
 
     clock: THREE.Clock;
+    debugOutputFrequency: number = 1
+    debugOutputDelta: number = 0
     currentScene: string = 'startScreen';
 
     // Debug
@@ -213,8 +215,31 @@ export class Game {
             this.xDataUpgrade.update(this.player, this.input);
         }
 
-        // Update Game Logic (only if all UIs are closed)
-        if (!this.inventory.isVisible && !this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible) {
+        // Check if player is near any interactive entity (to prevent jumping while interacting)
+        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
+        const isNearTrader = !anyMenuOpen && this.world.checkTraderInteraction(this.player.mesh.position);
+        const weaponDropNearby = !anyMenuOpen ? this.world.checkWeaponDropInteraction(this.player.mesh.position) : null;
+        const destination = !anyMenuOpen ? this.world.checkPortalInteraction(this.player.mesh.position) : null;
+        
+        // Check NPCs
+        let npcNearby: NPC | null = null;
+        if (!anyMenuOpen) {
+            const allNPCs = this.world.getAllNPCs();
+            for (const npc of allNPCs) {
+                if (npc.isPlayerNearby(this.player.mesh.position)) {
+                    npcNearby = npc;
+                    break;
+                }
+            }
+        }
+
+        const isNearInteractive = isNearTrader ||
+            npcNearby != null ||
+            weaponDropNearby != null ||
+            destination != null;
+
+        // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)
+        if (!anyMenuOpen) {
             // Step Physics
             this.physicsWorld.step(1 / 60, dt, 3);
 
@@ -222,8 +247,8 @@ export class Game {
                 this.physicsDebugger.update();
             }
 
-            this.player.update(dt, this.world.enemies);
-            this.world.update(dt, this.player);
+            this.player.update(dt, this.world.enemies, isNearInteractive);
+            this.world.update(dt, this.player, this.camera.position);
         }
 
         this.ui.update(this.player);
@@ -238,37 +263,31 @@ export class Game {
         this.camera.position.y += (targetY - this.camera.position.y) * lerpFactor;
         this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
 
-        // Handle interactions (only if no menus are open)
+        // Handle interactions (use variables we already calculated)
         const isSelectPressed = this.input.isSelectPressed();
-        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
 
-        if (!anyMenuOpen) {
-            // Check NPCs first (highest priority)
-            const allNPCs = this.world.getAllNPCs();
-            let nearbyNPC: NPC | null = null;
+        if (npcNearby) {
+            this.ui.showInteractionHint(true, npcNearby.getInteractionHint());
 
-            for (const npc of allNPCs) {
-                if (npc.isPlayerNearby(this.player.mesh.position)) {
-                    nearbyNPC = npc;
-                    break;
+            // Check for interaction (but not if dialogue was just closed this frame)
+            if (isSelectPressed && !this.wasSelectPressed && !wasDialogueVisible) {
+                // Check if NPC has a callback (like Ford's upgrade UI)
+                if (npcNearby.interactionCallback) {
+                    npcNearby.interact();
+                } else {
+                    // Default behavior: show dialogue
+                    this.npcDialogue.show(npcNearby);
                 }
             }
+        } else if (weaponDropNearby && !anyMenuOpen) {
+                // Show weapon drop hint (prioritize over trader and portal)
+                this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up ' + weaponDropNearby.weaponName);
 
-            if (nearbyNPC) {
-                // Show NPC hint
-                this.ui.showInteractionHint(true, nearbyNPC.getInteractionHint());
-
-                // Check for interaction (but not if dialogue was just closed this frame)
-                if (isSelectPressed && !this.wasSelectPressed && !wasDialogueVisible) {
-                    // Check if NPC has a callback (like Ford's upgrade UI)
-                    if (nearbyNPC.interactionCallback) {
-                        nearbyNPC.interact();
-                    } else {
-                        // Default behavior: show dialogue
-                        this.npcDialogue.show(nearbyNPC);
-                    }
+                // Check for interaction
+                if (isSelectPressed && !this.wasSelectPressed) {
+                    this.world.pickupWeaponDrop(weaponDropNearby, this.player);
                 }
-            } else if (this.world.checkTraderInteraction(this.player.mesh.position)) {
+            } else if (isNearTrader) {
                 // Show trader hint
                 this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Trader');
 
@@ -276,28 +295,34 @@ export class Game {
                 if (isSelectPressed && !this.wasSelectPressed) {
                     this.trader.show();
                 }
-            } else {
-                const destination = this.world.checkPortalInteraction(this.player.mesh.position);
-                if (destination) {
-                    // Show portal hint
-                    this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Enter Portal');
+            } else if (destination) {
+                // Show portal hint
+                this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Enter Portal');
 
-                    // Check for portal interaction
-                    if (isSelectPressed && !this.wasSelectPressed) {
-                        // If destination is 'selection', show dungeon selection UI
-                        if (destination === 'selection') {
-                            this.dungeonSelection.show((dungeonId: string) => {
-                                this.switchScene(dungeonId);
-                            });
-                        } else {
-                            // Otherwise, directly switch to the destination
-                            this.switchScene(destination);
-                        }
+                // Check for portal interaction
+                if (isSelectPressed && !this.wasSelectPressed) {
+                    // If destination is 'selection', show dungeon selection UI
+                    if (destination === 'selection') {
+                        this.dungeonSelection.show((dungeonId: string) => {
+                            this.switchScene(dungeonId);
+                        });
+                    } else {
+                        // Otherwise, directly switch to the destination
+                        this.switchScene(destination);
                     }
-                } else {
-                    // Hide hint if not near anything interactive
-                    this.ui.showInteractionHint(false);
                 }
+            } else {
+                // Hide hint if not near anything interactive
+                this.ui.showInteractionHint(false);
+            }
+
+        // Handle extra debug outputs
+        if (this.debugMode) {
+            if (this.debugOutputDelta >= this.debugOutputFrequency) {
+                console.log("Player position: " + this.player.body.position);
+                this.debugOutputDelta = 0;
+            } else {
+                this.debugOutputDelta += dt;
             }
         }
 

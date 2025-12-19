@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Enemy } from '../Enemy';
-import { LargeEnemy } from '../LargeEnemy';
+import { Enemy } from '../enemies/Enemy';
+import { LargeEnemy } from '../enemies/LargeEnemy';
 import { AssetManager } from '../AssetManager';
 import { Portal } from '../Portal';
 
@@ -23,7 +23,7 @@ export abstract class BaseDungeon {
     protected physicsWorld: CANNON.World;
     protected physicsMaterial: CANNON.Material;
     protected assetManager: AssetManager;
-    
+
     portal?: Portal;
     bodies: CANNON.Body[] = [];
     meshes: (THREE.Mesh | THREE.Group | THREE.Object3D)[] = [];

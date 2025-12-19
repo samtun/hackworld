@@ -1,5 +1,5 @@
 import { Item } from './InventoryManager';
-import { WeaponType, WEAPON_CONFIGS } from './Weapon';
+import { WeaponType } from './items/Weapon';
 
 interface ItemDetail {
     label: string;
@@ -22,7 +22,7 @@ export class ItemDetailsPanel {
         }
 
         const details = this.getItemDetails(item);
-        
+
         if (details.length === 0) {
             return '';
         }
@@ -58,12 +58,12 @@ export class ItemDetailsPanel {
             return [];
         }
 
-        const weaponConfig = WEAPON_CONFIGS[item.weaponType];
         const typeLabel = this.getWeaponTypeLabel(item.weaponType);
+        const damage = item.damage || 10; // Use item's damage value
 
         return [
             { label: 'Type', value: typeLabel },
-            { label: 'Damage', value: weaponConfig.damage }
+            { label: 'Damage', value: damage }
         ];
     }
 

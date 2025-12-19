@@ -1,4 +1,4 @@
-import { Enemy } from "../Enemy";
+import { Enemy } from "../enemies/Enemy";
 import { Player } from "../Player";
 
 export class XDataDropManager {

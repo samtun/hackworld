@@ -4,8 +4,9 @@ export class InputManager {
     keys: { [key: string]: boolean } = {};
     gamepadIndex: number | null = null;
     
-    // Track previous attack button state for detecting release
+    // Track previous button states for detecting press and release
     private previousAttackState: boolean = false;
+    private previousSelectState: boolean = false;
 
     constructor() {
         window.addEventListener('keydown', (e) => this.keys[e.code] = true);
@@ -28,6 +29,7 @@ export class InputManager {
     // Call this at the end of each frame to update state tracking
     updateState() {
         this.previousAttackState = this.isAttackPressed();
+        this.previousSelectState = this.isSelectPressed();
     }
 
     getMovementVector(): THREE.Vector2 {
@@ -84,6 +86,12 @@ export class InputManager {
         const currentState = this.isAttackPressed();
         const wasReleased = this.previousAttackState && !currentState;
         return wasReleased;
+    }
+    
+    isAttackJustPressed(): boolean {
+        const currentState = this.isAttackPressed();
+        const justPressed = !this.previousAttackState && currentState;
+        return justPressed;
     }
 
     isJumpPressed(): boolean {
@@ -185,6 +193,11 @@ export class InputManager {
             }
         }
         return false;
+    }
+    
+    isSelectJustPressed(): boolean {
+        const currentState = this.isSelectPressed();
+        return !this.previousSelectState && currentState;
     }
 
     isCancelPressed(): boolean {

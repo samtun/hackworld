@@ -1,17 +1,22 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Enemy } from './Enemy';
-import { Player } from './Player';
+import { Player } from '../Player';
 
 export class LargeEnemy extends Enemy {
-    xDataDropChance = 0.1;
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
         super(scene, world, position, physicsMaterial);
 
-        // Override HP: 3x normal (90 instead of 30)
+        // Override HP
         this.hp = 90;
         this.maxHp = 90;
+
+        // Override weapon drop chance: 15% for large enemies
+        this.weaponDropChance = 0.15;
+
+        // Override X-Data drop chance: 10% for large enemies
+        this.xDataDropChance = 0.1;
 
         // Make it larger
         const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
@@ -45,6 +50,6 @@ export class LargeEnemy extends Enemy {
         this.attackAnimTimer = 0;
 
         console.log("Large Enemy attacks player!");
-        player.takeDamage(13); // 1.3x damage (10 * 1.3 = 13)
+        player.takeDamage(13);
     }
 }

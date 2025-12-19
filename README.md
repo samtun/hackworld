@@ -10,6 +10,7 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Hub based game world with multiple dungeon stages
 - Two unique dungeon stages accessible from the lobby
 - Inventory system with looting mechanics
+- **Weapon drops** - Defeated enemies have a chance to drop weapons that can be picked up and added to your inventory
 - **Interactive trader** in the lobby - Buy and sell items, manage your bits
 - **X-Data resource system** - Collect X-Data from defeated enemies and use it to permanently upgrade your stats with Ford in the lobby
 
@@ -65,31 +66,6 @@ The game is fully playable with keyboard and controller (tested with XBox contro
 - **I / Select**: Toggle inventory
 - **Enter / A**: Interact and select in menus
 - **ESC / B**: Close menus
-
-### Combat Mechanics
-
-#### Charged Attack
-Hold the attack button for 1 second to charge a powerful dash attack:
-- While charging, a particle wall appears around your character in a teardrop pattern
-- Particles rise higher once the attack is fully charged
-- You cannot move while charging
-- Release the attack button after charging to execute a forward dash
-- During the dash, you deal **3x damage** to all enemies you touch
-- You are **invincible** during the dash
-- The dash covers approximately 4 meters at high speed
-
-#### Equipment System
-The game features an equipment system that allows you to customize your character:
-
-**Weapons**: Four weapon types are available, each with unique attack patterns and stats
-- Sword, Dual Blade, Lance, and Hammer
-
-**Cores**: Equippable items that modify your character's stats
-- **Herald Core**: +32 Strength, +2 Defense
-- **Swift Core**: +4 Speed, -2 Defense
-- **Defender Core**: -1 Strength, +4 Defense
-
-Cores and weapons can be equipped at any time through the inventory (press I/Select).
 
 ## Development
 

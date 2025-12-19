@@ -2,7 +2,8 @@ import { Player } from './Player';
 import { InputManager } from './InputManager';
 import { Item } from './InventoryManager';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
-import { WeaponType } from './Weapon';
+import { WeaponRegistry } from './items/WeaponRegistry';
+import { CoreRegistry } from './items/CoreRegistry';
 
 // --- Constants ---
 const COLORS = {
@@ -62,15 +63,45 @@ export class TraderManager {
     }
 
     private initializeTraderInventory() {
-        // Trader sells various items
-        this.traderInventory = [
-            { id: 't1', name: 'Iron Sword', type: 'weapon', weaponType: WeaponType.SWORD, buyPrice: 80, sellPrice: 40 },
-            { id: 't2', name: 'Twin Daggers', type: 'weapon', weaponType: WeaponType.DUAL_BLADE, buyPrice: 120, sellPrice: 60 },
-            { id: 't3', name: 'Steel Lance', type: 'weapon', weaponType: WeaponType.LANCE, buyPrice: 100, sellPrice: 50 },
-            { id: 't4', name: 'War Hammer', type: 'weapon', weaponType: WeaponType.HAMMER, buyPrice: 150, sellPrice: 75 },
-            { id: 't5', name: 'Power Chip', type: 'chip', buyPrice: 100, sellPrice: 50 },
-            { id: 't6', name: 'Defense Chip', type: 'chip', buyPrice: 100, sellPrice: 50 }
-        ];
+        // Trader sells weapons from registry (excluding Aegis Sword which player starts with)
+        const allWeapons = WeaponRegistry.getAllWeapons();
+        const traderWeapons = allWeapons.filter(w => w.id !== 'aegis_sword');
+
+        this.traderInventory = [];
+
+        // Add weapons from registry
+        for (const weaponDef of traderWeapons) {
+            this.traderInventory.push({
+                id: crypto.randomUUID(),
+                name: weaponDef.name,
+                type: 'weapon',
+                weaponType: weaponDef.type,
+                damage: weaponDef.baseDamage,
+                buyPrice: weaponDef.baseBuyPrice,
+                sellPrice: weaponDef.baseSellPrice,
+                isEquipped: false
+            });
+        }
+
+        // Add cores from registry
+        const allCores = CoreRegistry.getAllCores();
+        for (const coreDef of allCores) {
+            this.traderInventory.push({
+                id: crypto.randomUUID(),
+                name: coreDef.name,
+                type: 'core',
+                coreStats: coreDef.stats,
+                buyPrice: coreDef.buyPrice,
+                sellPrice: coreDef.sellPrice,
+                isEquipped: false
+            });
+        }
+
+        // Add chips (these remain hardcoded for now as they don't have varying stats)
+        this.traderInventory.push(
+            { id: crypto.randomUUID(), name: 'Power Chip', type: 'chip', buyPrice: 100, sellPrice: 50 },
+            { id: crypto.randomUUID(), name: 'Defense Chip', type: 'chip', buyPrice: 100, sellPrice: 50 }
+        );
     }
 
     private createUI() {
@@ -295,10 +326,10 @@ export class TraderManager {
         );
 
         // Update item details panel
-        const selectedItem = this.activePanel === 'trader' 
+        const selectedItem = this.activePanel === 'trader'
             ? this.traderInventory[this.selectedIndex]
             : player.inventory[this.selectedIndex];
-        
+
         this.itemDetailsPanel.innerHTML = ItemDetailsPanel.generateHTML(selectedItem);
     }
 
@@ -437,17 +468,17 @@ export class TraderManager {
                     player.money -= item.buyPrice;
                     const newItem = { ...item, id: `p${Date.now()}`, isEquipped: false }; // Give it a unique ID
                     player.inventory.push(newItem);
-                    
+
                     // Remove item from trader inventory
                     this.traderInventory.splice(this.selectedIndex, 1);
-                    
+
                     console.log(`Bought ${item.name} for ${item.buyPrice} bits`);
-                    
+
                     // Adjust selection if needed
                     if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) {
                         this.selectedIndex--;
                     }
-                    
+
                     this.needsRender = true;
                 } else {
                     console.log(`Not enough money to buy ${item.name}`);
@@ -464,7 +495,7 @@ export class TraderManager {
                     this.shakeItem(this.selectedIndex);
                     return;
                 }
-                
+
                 // Transfer money to player and add item to trader inventory
                 player.money += item.sellPrice;
                 const soldItem = { ...item, id: `t${Date.now()}`, isEquipped: false }; // Give it a unique trader ID
@@ -484,7 +515,7 @@ export class TraderManager {
     private shakeItem(index: number) {
         if (this.itemElements[index]) {
             const element = this.itemElements[index];
-            
+
             // Apply shake animation using CSS keyframes
             const keyframes = [
                 { transform: 'translateX(0px)' },
@@ -494,12 +525,12 @@ export class TraderManager {
                 { transform: 'translateX(5px)' },
                 { transform: 'translateX(0px)' }
             ];
-            
+
             const timing = {
                 duration: 300,
                 iterations: 1
             };
-            
+
             element.animate(keyframes, timing);
         }
     }
