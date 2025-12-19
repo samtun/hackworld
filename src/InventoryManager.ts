@@ -379,7 +379,7 @@ export class InventoryManager {
         const expHTML = `
             <div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
             <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span style="color: #ffaa00;">EXP to Next</span> <span style="color: #ffaa00;">${player.exp} / ${player.expRequired}</span>
+                <span style="color: #ffaa00;">EXP to Next</span> <span style="color: #ffaa00;">${player.expRequired - player.exp}</span>
             </div>
         `;
 
