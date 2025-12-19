@@ -26,6 +26,13 @@ export class Player {
     private static readonly HP_TP_UPGRADE_AMOUNT = 5;
     private static readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
 
+    // Level system constants
+    private static readonly MAX_LEVEL = 999;
+    private static readonly LEVEL_STAT_MULTIPLIER = 0.002; // Stats increase by 1 + 0.002 * level
+    private static readonly EXP_BASE = 1000;
+    private static readonly EXP_LINEAR_FACTOR = 30;
+    private static readonly EXP_QUADRATIC_FACTOR = 0.07;
+
     // Base Stats (without equipment modifiers or upgrades)
     private baseStrength: number = 14;
     private baseDefense: number = 17;
@@ -35,7 +42,6 @@ export class Player {
     level: number = 1;
     exp: number = 0;
     expRequired: number = 1000; // EXP needed for next level
-    private static readonly MAX_LEVEL = 999;
     maxHp: number = 100;
     hp: number = 100;
     maxTp: number = 100;
@@ -165,6 +171,7 @@ export class Player {
         const levelMultiplier = this.getLevelMultiplier();
 
         // Start with base stats (including upgrades) and apply level multiplier
+        // Note: HP and TP are not affected by level multiplier as they are upgraded separately via X-Data
         this.strength = Math.min(Math.floor((this.baseStrength + this.strengthUpgrades) * levelMultiplier), Player.MAX_STAT_VALUE);
         this.defense = Math.min(Math.floor((this.baseDefense + this.defenseUpgrades) * levelMultiplier), Player.MAX_STAT_VALUE);
         this.speed = this.baseSpeed * levelMultiplier;
@@ -585,7 +592,11 @@ export class Player {
      * Formula: 1000 + level*30 + level^2 * 0.07
      */
     private calculateExpRequired(level: number): number {
-        return Math.floor(1000 + level * 30 + Math.pow(level, 2) * 0.07);
+        return Math.floor(
+            Player.EXP_BASE + 
+            level * Player.EXP_LINEAR_FACTOR + 
+            Math.pow(level, 2) * Player.EXP_QUADRATIC_FACTOR
+        );
     }
 
     /**
@@ -630,7 +641,7 @@ export class Player {
      * Formula: 1 + 0.002 * level
      */
     private getLevelMultiplier(): number {
-        return 1 + 0.002 * this.level;
+        return 1 + Player.LEVEL_STAT_MULTIPLIER * this.level;
     }
 
     /**
