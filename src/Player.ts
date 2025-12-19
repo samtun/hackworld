@@ -20,9 +20,10 @@ export class Player {
     // Ground detection threshold
     private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
     
-    // Stat caps
+    // Stat caps and upgrade amounts
     private static readonly MAX_STAT_VALUE = 9999;
     private static readonly HP_TP_UPGRADE_AMOUNT = 5;
+    private static readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
 
     // Base Stats (without equipment modifiers or upgrades)
     private baseStrength: number = 14;
@@ -557,7 +558,9 @@ export class Player {
         }
         
         // Check if stat would exceed 9999 cap
-        const upgradeAmount = (statType === 'hp' || statType === 'tp') ? Player.HP_TP_UPGRADE_AMOUNT : 1;
+        const upgradeAmount = (statType === 'hp' || statType === 'tp') 
+            ? Player.HP_TP_UPGRADE_AMOUNT 
+            : Player.STRENGTH_DEFENSE_UPGRADE_AMOUNT;
         if (currentValue + upgradeAmount > Player.MAX_STAT_VALUE) {
             console.log(`${statType} is already at max value (${Player.MAX_STAT_VALUE})`);
             return false;
