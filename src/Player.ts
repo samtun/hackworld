@@ -74,7 +74,7 @@ export class Player {
         // Physics Body
         const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
         this.body = new CANNON.Body({
-            mass: 1, // Dynamic body
+            mass: 3, // Dynamic body
             position: new CANNON.Vec3(0, 0.5, 0), // Start on ground (0.5 = half height of 1-unit box)
             shape: shape,
             fixedRotation: true, // Prevent tipping over
@@ -146,7 +146,7 @@ export class Player {
         }
     }
 
-    update(dt: number, enemies: Enemy[] = [], isNearInteractable: boolean = false) {
+    update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
         // Charged Attack: Handle dashing
         if (this.isDashing) {
             this.dashTimer += dt;
@@ -232,7 +232,7 @@ export class Player {
         this.isGrounded = Math.abs(this.body.velocity.y) < Player.GROUND_VELOCITY_THRESHOLD;
 
         // Jump: Only allow jumping if player is grounded and not near an interactable
-        if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractable) {
+        if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive) {
             this.body.velocity.y = 10;
         }
 
