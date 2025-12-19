@@ -200,16 +200,21 @@ export class Game {
         if (this.npcDialogue.isVisible) {
             this.npcDialogue.update(this.input);
         }
-        
-        // Check if player is near any interactable (to prevent jumping while interacting)
-        const isNearInteractable = !this.inventory.isVisible && 
-                                   !this.trader.isVisible && 
-                                   !this.dungeonSelection.isVisible && 
-                                   !this.npcDialogue.isVisible &&
-                                   (this.world.checkTraderInteraction(this.player.mesh.position) ||
-                                    this.world.checkNPCInteraction(this.player.mesh.position) !== null ||
-                                    this.world.checkWeaponDropInteraction(this.player.mesh.position) !== null ||
-                                    this.world.checkPortalInteraction(this.player.mesh.position) !== null);
+
+        // Check if player is near any interactive entity (to prevent jumping while interacting)
+        const isNearTrader = this.world.checkTraderInteraction(this.player.mesh.position);
+        const npcNearby = this.world.checkNPCInteraction(this.player.mesh.position);
+        const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.mesh.position);
+        const destination = this.world.checkPortalInteraction(this.player.mesh.position);
+
+        const isNearInteractive = !this.inventory.isVisible &&
+            !this.trader.isVisible &&
+            !this.dungeonSelection.isVisible &&
+            !this.npcDialogue.isVisible &&
+            (isNearTrader ||
+                npcNearby != null ||
+                weaponDropNearby != null ||
+                destination != null);
 
         // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)
         if (!this.inventory.isVisible && !this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible) {
@@ -220,7 +225,7 @@ export class Game {
                 this.physicsDebugger.update();
             }
 
-            this.player.update(dt, this.world.enemies, isNearInteractable);
+            this.player.update(dt, this.world.enemies, isNearInteractive);
             this.world.update(dt, this.player, this.camera.position);
         }
 
@@ -236,11 +241,6 @@ export class Game {
         this.camera.position.y += (targetY - this.camera.position.y) * lerpFactor;
         this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
 
-        // Check Trader Interaction (only if no menus are open)
-        const isNearTrader = this.world.checkTraderInteraction(this.player.mesh.position);
-        const npcNearby = this.world.checkNPCInteraction(this.player.mesh.position);
-        const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.mesh.position);
-        const destination = this.world.checkPortalInteraction(this.player.mesh.position);
         const isSelectPressed = this.input.isSelectPressed();
         const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible;
 
