@@ -28,7 +28,7 @@ export class Game {
     npcDialogue: NPCDialogueManager;
 
     clock: THREE.Clock;
-    currentScene: string = 'startScreen';
+    currentScene: string = import.meta.env.DEV ? 'lobby' : 'startScreen';
 
     // Debug
     physicsDebugger: any;
