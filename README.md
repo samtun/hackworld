@@ -67,48 +67,6 @@ The game is fully playable with keyboard and controller (tested with XBox contro
 - **Enter / A**: Interact and select in menus
 - **ESC / B**: Close menus
 
-### Combat Mechanics
-
-#### Charged Attack
-Hold the attack button for 1 second to charge a powerful dash attack:
-- While charging, a particle wall appears around your character in a teardrop pattern
-- Particles rise higher once the attack is fully charged
-- You cannot move while charging
-- Release the attack button after charging to execute a forward dash
-- During the dash, you deal **3x damage** to all enemies you touch
-- You are **invincible** during the dash
-- The dash covers approximately 4 meters at high speed
-
-#### Weapon Drops
-Defeated enemies have a chance to drop weapons:
-- **Regular enemies**: 2% drop chance
-- **Large enemies**: 10% drop chance
-- The drop favors your currently equipped weapon type (45% chance), with other types equally distributed
-- Dropped weapons have random bonus stats (-10% to +20%), with most drops close to base stats
-- Weapons float above the ground with their name displayed, visible when you get close
-
-#### Equipment System
-The game features an equipment system that allows you to customize your character:
-
-**Weapons**: Four weapon types are available, each with unique attack patterns and stats
-- **Aegis Sword** (Sword) - Balanced weapon with 10 base damage
-- **Rune Blade** (Dual Blade) - Fast dual-wielding weapon with 7 base damage
-- **Fierce** (Lance) - Long-range weapon with 12 base damage
-- **Battle Hawk** (Hammer) - Heavy weapon with 18 base damage
-
-**Cores**: Equippable items that modify your character's stats
-- **Herald Core** - Strength +3, Defense +2
-- **Swift Core** - Speed +4, Defense -2
-- **Defender Core** - Strength -1, Defense +4
-
-Cores and weapons can be equipped at any time through the inventory (press I/Select).
-
-### Item Registry System
-The game uses a centralized registry pattern for managing items:
-- **WeaponRegistry**: Single source of truth for all weapons. Weapons have random bonus stats on drops.
-- **CoreRegistry**: Single source of truth for all cores. Core stats are always fixed.
-- Both registries are extensible, allowing new items to be added dynamically via `registerWeapon()` and `registerCore()` methods.
-
 ## Development
 
 ### Debug Mode

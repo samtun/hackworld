@@ -59,7 +59,7 @@ export class NewEntity {
 ```
 
 ### 3. Code Organization
-- Keep related functionality together in appropriate files
+- Keep related functionality together in appropriate files and split into new files as responsibilities shift into another entity
 - Use the existing file structure:
   - `Game.ts` - Main game loop and coordination
   - `World.ts` - Main world management
@@ -85,9 +85,7 @@ export class NewEntity {
 - Keep comments up-to-date when code changes, but do not describe the changes themselves, rather replace a comment with the new status quo
 
 #### README Updates
-**CRITICAL**: Always update the README.md when making changes that affect:
-- New features or gameplay mechanics that have impact on the general idea of the gameplay
-  - Do NOT include visual things, or technical descriptions of features. Users only need to learn the overall gist of the game mechanics in the readme
+**CRITICAL**: Always update the README.md when making changes that change high level game behavior. Also edit the readme for changes that include the following:
 - Installation or setup procedures
 - Build or development commands
 - Dependencies or tech stack
@@ -152,7 +150,7 @@ Use the existing state management patterns in Game.ts for scene transitions and 
 - ❌ Don't create monolithic classes with too many responsibilities
 - ❌ Don't bypass the entity-based architecture
 - ❌ Don't add entity logic directly to Game.ts or World.ts
-- ❌ Don't forget to update README.md when adding features
+- ❌ Don't forget to update README.md when changing high level features
 - ❌ Don't create tightly coupled components
 - ❌ Don't ignore TypeScript type errors
 - ❌ Don't leave excessive debug logging (use console.log sparingly for important events only)
