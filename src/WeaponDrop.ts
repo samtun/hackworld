@@ -114,7 +114,7 @@ export class WeaponDrop {
         world.addBody(this.body);
     }
 
-    update(deltaTime: number, playerPosition: THREE.Vector3): void {
+    update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
         // Floating animation
         this.floatTimer += deltaTime;
         const floatOffset = Math.sin(this.floatTimer * this.FLOAT_SPEED) * this.FLOAT_AMPLITUDE;
@@ -131,10 +131,10 @@ export class WeaponDrop {
         if (this.textMesh) {
             this.textMesh.visible = isNearPlayer;
 
-            // Make text label face downward
+            // Make text label face camera (billboard effect)
             if (isNearPlayer) {
                 const direction = new THREE.Vector3()
-                    .subVectors(this.mesh.position.clone().add(new THREE.Vector3(1, 0, 1)), this.mesh.position)
+                    .subVectors(cameraPosition, this.mesh.position)
                     .normalize();
                 const angle = Math.atan2(direction.x, direction.z);
                 this.textMesh.rotation.y = angle;

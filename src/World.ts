@@ -116,7 +116,7 @@ export class World {
         return this.currentStage?.enemies || [];
     }
 
-    update(dt: number, player: Player) {
+    update(dt: number, player: Player, cameraPosition: THREE.Vector3) {
         if (!this.currentStage) return;
 
         // Update stage (portals, etc.)
@@ -143,7 +143,7 @@ export class World {
 
         // Update weapon drops
         for (const drop of this.weaponDrops) {
-            drop.update(dt, player.mesh.position);
+            drop.update(dt, cameraPosition, player.mesh.position);
         }
     }
 
