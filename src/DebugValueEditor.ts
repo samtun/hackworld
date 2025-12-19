@@ -240,7 +240,8 @@ export class DebugValueEditor {
             if (weaponId && !isNaN(damage) && this.player) {
                 const weapon = WeaponRegistry.getWeaponById(weaponId);
                 if (weapon) {
-                    const newId = (this.player.inventory.length + 1).toString();
+                    // Generate unique ID using timestamp and random number
+                    const newId = `debug_weapon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                     this.player.inventory.push({
                         id: newId,
                         name: weapon.name,
@@ -314,7 +315,8 @@ export class DebugValueEditor {
             if (coreId && this.player) {
                 const core = CoreRegistry.getCoreById(coreId);
                 if (core) {
-                    const newId = (this.player.inventory.length + 1).toString();
+                    // Generate unique ID using timestamp and random number
+                    const newId = `debug_core_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
                     this.player.inventory.push({
                         id: newId,
                         name: core.name,
