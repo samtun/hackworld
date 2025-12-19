@@ -599,4 +599,21 @@ export class Player {
             return false;
         }
     }
+    
+    /**
+     * Get base stat value without equipment modifiers (for UI display)
+     * Returns base value + upgrades only, capped at 9999
+     */
+    getBaseStatValue(statType: 'strength' | 'defense' | 'hp' | 'tp'): number {
+        switch (statType) {
+            case 'strength':
+                return Math.min(this.baseStrength + this.strengthUpgrades, Player.MAX_STAT_VALUE);
+            case 'defense':
+                return Math.min(this.baseDefense + this.defenseUpgrades, Player.MAX_STAT_VALUE);
+            case 'hp':
+                return Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
+            case 'tp':
+                return Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
+        }
+    }
 }
