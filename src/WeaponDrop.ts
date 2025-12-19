@@ -12,6 +12,11 @@ export class WeaponDrop {
     weaponType: WeaponType;
     weaponName: string;
     textMesh: THREE.Mesh | null = null;
+    
+    // Weapon stats with bonus applied
+    damage: number;
+    buyPrice: number;
+    sellPrice: number;
 
     private floatTimer: number = 0;
     private baseHeight: number;
@@ -24,10 +29,16 @@ export class WeaponDrop {
         world: CANNON.World,
         position: CANNON.Vec3,
         weaponType: WeaponType,
-        weaponName: string
+        weaponName: string,
+        damage: number,
+        buyPrice: number,
+        sellPrice: number
     ) {
         this.weaponType = weaponType;
         this.weaponName = weaponName;
+        this.damage = damage;
+        this.buyPrice = buyPrice;
+        this.sellPrice = sellPrice;
         this.baseHeight = position.y;
 
         // Create visual group

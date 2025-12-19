@@ -213,16 +213,14 @@ export class World {
             this.physicsWorld,
             dropPosition,
             weaponType,
-            weaponInfo.name
+            weaponInfo.name,
+            finalDamage,
+            finalBuyPrice,
+            finalSellPrice
         );
 
         this.weaponDrops.push(weaponDrop);
         console.log(`Enemy dropped ${weaponInfo.name} (${weaponType}) with ${bonusPercent.toFixed(1)}% bonus - Damage: ${finalDamage}, Buy: ${finalBuyPrice}, Sell: ${finalSellPrice}`);
-
-        // Store bonus info in the drop for pickup
-        (weaponDrop as any).damage = finalDamage;
-        (weaponDrop as any).buyPrice = finalBuyPrice;
-        (weaponDrop as any).sellPrice = finalSellPrice;
     }
 
     /**
@@ -283,25 +281,20 @@ export class World {
      * Pick up a weapon drop
      */
     pickupWeaponDrop(drop: WeaponDrop, player: Player): void {
-        // Get stored values from the drop
-        const damage = (drop as any).damage || 10;
-        const buyPrice = (drop as any).buyPrice || 100;
-        const sellPrice = (drop as any).sellPrice || 50;
-        
         // Add weapon to player inventory
         const newItem = {
             id: crypto.randomUUID(),
             name: drop.weaponName,
             type: 'weapon' as const,
             weaponType: drop.weaponType,
-            damage: damage,
-            buyPrice: buyPrice,
-            sellPrice: sellPrice,
+            damage: drop.damage,
+            buyPrice: drop.buyPrice,
+            sellPrice: drop.sellPrice,
             isEquipped: false
         };
 
         player.inventory.push(newItem);
-        console.log(`Picked up ${drop.weaponName} (Damage: ${damage})`);
+        console.log(`Picked up ${drop.weaponName} (Damage: ${drop.damage})`);
 
         // Remove drop from world
         const index = this.weaponDrops.indexOf(drop);
