@@ -271,11 +271,17 @@ export class Player {
 
         // Jump: Only allow jumping if player is grounded, not near an interactable, and not pressing select
         // This prevents jumping when using A button (gamepad) or Enter to interact with objects
-        if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && !this.input.isSelectJustPressed()) {
+        if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive) {
             this.body.velocity.y = 10;
         }
 
         // Combat
+        // Track attack button state for charge timing
+        if (this.input.isAttackJustPressed()) {
+            // Button was just pressed - reset charge timer
+            this.chargeDelayTimer = 0;
+        }
+        
         // Check for immediate attack on button press (only trigger once per press)
         if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
             // Execute immediate attack
@@ -293,13 +299,13 @@ export class Player {
             }
         }
         
-        // Check if attack button is being held (for charging) - only start after weapon finishes attacking
-        if (this.input.isAttackHeld() && !this.weapon.isAttacking && !this.isChargingAttack) {
-            // Increment delay timer
+        // Check if attack button is being held (for charging)
+        // Charge timer increments while button is held, regardless of attack state
+        if (this.input.isAttackHeld() && !this.isChargingAttack) {
             this.chargeDelayTimer += dt;
 
-            // Only start charging attack after 0.2s delay
-            if (this.chargeDelayTimer >= this.CHARGE_DELAY) {
+            // Only start charging attack after 0.2s delay AND when weapon is not attacking
+            if (this.chargeDelayTimer >= this.CHARGE_DELAY && !this.weapon.isAttacking) {
                 this.startChargeAttack();
             }
         } else if (!this.input.isAttackHeld()) {
