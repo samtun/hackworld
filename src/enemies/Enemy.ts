@@ -18,7 +18,7 @@ export class Enemy {
     deathDuration: number = 1.0;
     flashTimer: number = 0;
     stunTimer: number = 0;
-    dropChance: number = 0.08; // 8% chance to drop weapon
+    weaponDropChance: number = 0.08; // 8% chance to drop weapon
     xDataDropChance: number = 0.05;
 
     // Animation

@@ -213,20 +213,28 @@ export class Game {
         // Update X-Data upgrade if visible
         if (this.xDataUpgrade.isVisible) {
             this.xDataUpgrade.update(this.player, this.input);
-        }  
-      
+        }
+
         // Check if player is near any interactive entity (to prevent jumping while interacting)
-        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible;
+        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
         const isNearTrader = !anyMenuOpen && this.world.checkTraderInteraction(this.player.mesh.position);
-        const npcNearby = !anyMenuOpen ? this.world.checkNPCInteraction(this.player.mesh.position) : null;
         const weaponDropNearby = !anyMenuOpen ? this.world.checkWeaponDropInteraction(this.player.mesh.position) : null;
         const destination = !anyMenuOpen ? this.world.checkPortalInteraction(this.player.mesh.position) : null;
+        const allNPCs = this.world.getAllNPCs();
+        let nearbyNPC: NPC | null = null;
+
+        for (const npc of allNPCs) {
+            if (npc.isPlayerNearby(this.player.mesh.position)) {
+                nearbyNPC = npc;
+                break;
+            }
+        }
 
         const isNearInteractive = isNearTrader ||
-            npcNearby != null ||
+            nearbyNPC != null ||
             weaponDropNearby != null ||
             destination != null;
-      
+
         // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)
         if (!anyMenuOpen) {
             // Step Physics
@@ -254,7 +262,6 @@ export class Game {
 
         // Handle interactions (only if no menus are open)
         const isSelectPressed = this.input.isSelectPressed();
-        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
 
         if (!anyMenuOpen) {
             // Check NPCs first (highest priority)
@@ -267,17 +274,6 @@ export class Game {
                     break;
                 }
             }
-        } else if (weaponDropNearby && !anyMenuOpen) {
-            // Show weapon drop hint (prioritize over trader and portal)
-            this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up ' + weaponDropNearby.weaponName);
-
-            // Check for interaction
-            if (isSelectPressed && !this.wasSelectPressed) {
-                this.world.pickupWeaponDrop(weaponDropNearby, this.player);
-            }
-        } else if (isNearTrader && !anyMenuOpen) {
-            // Show trader hint
-            this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Trader');
 
             if (nearbyNPC) {
                 // Show NPC hint

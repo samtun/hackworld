@@ -31,7 +31,7 @@ export class World {
 
     // Weapon drops
     weaponDrops: WeaponDrop[] = [];
-    
+
     // X-Data drop manager
     private xDataDropManager: XDataDropManager;
 
@@ -153,8 +153,12 @@ export class World {
             enemy.update(dt, player);
 
             if (enemy.isDead) {
-                // Check for weapon drop before removing enemy
-                this.tryDropWeapon(enemy, player);
+                // Check if enemy should drop weapon drop
+                if (this.tryDropWeapon(enemy, player)) {
+                    // Proceed if weapon was dropped
+                    return;
+                }
+
                 // Check if enemy should drop X-Data
                 const xDataAmount = this.xDataDropManager.rollDrop(player, enemy);
                 if (xDataAmount > 0) {
@@ -245,10 +249,10 @@ export class World {
     /**
      * Generate a weapon drop with random bonus
      */
-    private tryDropWeapon(enemy: Enemy, player: Player): void {
+    private tryDropWeapon(enemy: Enemy, player: Player): boolean {
         // Roll for drop
-        if (Math.random() > enemy.dropChance) {
-            return; // No drop
+        if (Math.random() > enemy.weaponDropChance) {
+            return false; // No drop
         }
 
         // Select random weapon type with weighted probability
@@ -258,7 +262,7 @@ export class World {
         const weaponDef = WeaponRegistry.getRandomWeaponOfType(weaponType);
         if (!weaponDef) {
             console.warn(`No weapon found for type ${weaponType}`);
-            return;
+            return false;
         }
 
         // Calculate bonus using the formula: (1.16 * x - 0.5)^5 * 10
@@ -292,6 +296,7 @@ export class World {
 
         this.weaponDrops.push(weaponDrop);
         console.log(`Enemy dropped ${weaponDef.name} (${weaponType}) with ${bonusMultiplier.toFixed(2)}% bonus (from f(random) = ${bonusValue}) - Damage: ${finalDamage}, Buy: ${finalBuyPrice}, Sell: ${finalSellPrice}`);
+        return true;
     }
 
     /**
