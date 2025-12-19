@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Player } from './Player';
+import { Player } from '../Player';
 
 export class Enemy {
     mesh: THREE.Mesh;

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { InputManager } from './InputManager';
 import { Weapon, WeaponType } from './Weapon';
-import { Enemy } from './Enemy';
+import { Enemy } from './enemies/Enemy';
 import { Item } from './InventoryManager';
 import { WeaponRegistry } from './WeaponRegistry';
 
@@ -184,7 +184,7 @@ export class Player {
         }
     }
 
-    update(dt: number, enemies: Enemy[] = []) {
+    update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
         // Charged Attack: Handle dashing
         if (this.isDashing) {
             this.dashTimer += dt;
@@ -269,13 +269,31 @@ export class Player {
         // Player is grounded if vertical velocity is very low (not falling or jumping)
         this.isGrounded = Math.abs(this.body.velocity.y) < Player.GROUND_VELOCITY_THRESHOLD;
 
-        // Jump: Only allow jumping if player is grounded
-        if (this.input.isJumpPressed() && this.isGrounded) {
+        // Jump: Only allow jumping if player is grounded, not near an interactable, and not pressing select
+        // This prevents jumping when using A button (gamepad) or Enter to interact with objects
+        if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && !this.input.isSelectJustPressed()) {
             this.body.velocity.y = 10;
         }
 
         // Combat
-        // Check if attack button is being held (for charging)
+        // Check for immediate attack on button press (only trigger once per press)
+        if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
+            // Execute immediate attack
+            if (this.weapon.attack()) {
+                // Clear the list of enemies hit for this new attack
+                this.enemiesHitThisPhase.clear();
+
+                // For dual blade, set up callback to reset hit tracking between phases
+                if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
+                    this.weapon.onDamageFrame = () => {
+                        // Reset hit tracking for the next phase
+                        this.enemiesHitThisPhase.clear();
+                    };
+                }
+            }
+        }
+        
+        // Check if attack button is being held (for charging) - only start after weapon finishes attacking
         if (this.input.isAttackHeld() && !this.weapon.isAttacking && !this.isChargingAttack) {
             // Increment delay timer
             this.chargeDelayTimer += dt;

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Enemy } from './Enemy';
+import { Enemy } from './enemies/Enemy';
 import { Player } from './Player';
 import { AssetManager } from './AssetManager';
 import { BaseDungeon, Lobby, Dungeon1, Dungeon2 } from './stages';
