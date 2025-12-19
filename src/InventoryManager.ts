@@ -153,8 +153,8 @@ export class InventoryManager {
     private createWindow(): HTMLDivElement {
         const el = document.createElement('div');
         Object.assign(el.style, {
-            width: '800px',
-            height: '500px',
+            width: '92vw',
+            height: '92vh',
             backgroundColor: COLORS.WINDOW_BG,
             borderRadius: '15px',
             border: `2px solid ${COLORS.BORDER}`,
@@ -340,7 +340,8 @@ export class InventoryManager {
             { label: 'HP', value: `${Math.ceil(player.hp)} / ${player.maxHp}` },
             { label: 'TP', value: `${Math.ceil(player.tp)} / ${player.maxTp}` },
             { label: 'Strength', value: player.strength },
-            { label: 'Defense', value: player.defense }
+            { label: 'Defense', value: player.defense },
+            { label: 'Bits', value: player.money }
         ];
 
         return stats.map(stat => `
