@@ -91,25 +91,6 @@ The game features an equipment system that allows you to customize your characte
 
 Cores and weapons can be equipped at any time through the inventory (press I/Select).
 
-#### X-Data Resource System
-X-Data is a collectible resource that can be used for permanent character upgrades:
-
-**Collecting X-Data**:
-- Dropped by enemies upon defeat (appears as a floating cyan X)
-- Default enemies have a 1% drop rate
-- Large enemies have a 3% drop rate
-- Drop amounts vary: 94.5% chance for 1 unit, 5% chance for 5 units, 0.5% chance for 100 units
-- Automatically collected when you walk over it
-- Your X-Data total is visible in the inventory beneath your stats
-
-**Upgrading with X-Data**:
-- Visit Ford in the lobby (green NPC near the trader)
-- Use X-Data to permanently upgrade your stats
-- Available upgrades: Strength, Defense, HP, and TP
-- Each upgrade level costs progressively more X-Data (based on Fibonacci sequence: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144)
-- Effects per upgrade: +1 Strength/Defense or +5 HP/TP
-- Maximum 11 upgrade levels per stat
-
 ## Development
 
 ### Debug Mode

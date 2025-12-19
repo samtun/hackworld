@@ -17,6 +17,9 @@ export class Lobby extends BaseDungeon {
     // NPCs
     npc?: NPC;
     fordNpc?: NPC;
+    
+    // Callback for Ford interaction (set by Game)
+    fordInteractionCallback?: () => void;
 
     load(): void {
         this.clear();
@@ -58,7 +61,8 @@ export class Lobby extends BaseDungeon {
             this.physicsMaterial,
             "Ford",
             this.fordPosition,
-            fordDialogue
+            fordDialogue,
+            this.fordInteractionCallback
         );
 
         // Load Trader Model from cache
@@ -116,23 +120,13 @@ export class Lobby extends BaseDungeon {
     }
 
     /**
-     * Check if player is near NPC
+     * Get all NPCs in the lobby
      */
-    checkNPCInteraction(playerPosition: THREE.Vector3): NPC | null {
-        if (this.npc && this.npc.isPlayerNearby(playerPosition)) {
-            return this.npc;
-        }
-        return null;
-    }
-    
-    /**
-     * Check if player is near Ford
-     */
-    checkFordInteraction(playerPosition: THREE.Vector3): boolean {
-        const dist = playerPosition.distanceTo(
-            new THREE.Vector3(this.fordPosition.x, this.fordPosition.y, this.fordPosition.z)
-        );
-        return dist < 2.5; // Interaction range
+    getAllNPCs(): NPC[] {
+        const npcs: NPC[] = [];
+        if (this.npc) npcs.push(this.npc);
+        if (this.fordNpc) npcs.push(this.fordNpc);
+        return npcs;
     }
 
     /**

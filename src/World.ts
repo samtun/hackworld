@@ -68,6 +68,13 @@ export class World {
         this.currentStage = this.lobby;
         this.lobby.load();
     }
+    
+    /**
+     * Set callback for Ford NPC interaction
+     */
+    setFordCallback(callback: () => void) {
+        this.lobby.fordInteractionCallback = callback;
+    }
 
     loadDungeon() {
         if (this.currentStage) {
@@ -199,19 +206,11 @@ export class World {
         return false;
     }
 
-    checkNPCInteraction(playerPosition: THREE.Vector3): NPC | null {
-        // Only check NPC in lobby
+    getAllNPCs(): NPC[] {
+        // Get all NPCs from current stage
         if (this.currentStage instanceof Lobby) {
-            return this.currentStage.checkNPCInteraction(playerPosition);
+            return this.currentStage.getAllNPCs();
         }
-        return null;
-    }
-    
-    checkFordInteraction(playerPosition: THREE.Vector3): boolean {
-        // Only check Ford in lobby
-        if (this.currentStage instanceof Lobby) {
-            return this.currentStage.checkFordInteraction(playerPosition);
-        }
-        return false;
+        return [];
     }
 }

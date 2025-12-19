@@ -19,13 +19,15 @@ export class Player {
 
     // Ground detection threshold
     private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
+    
+    // Stat caps
+    private static readonly MAX_STAT_VALUE = 9999;
+    private static readonly HP_TP_UPGRADE_AMOUNT = 5;
 
     // Base Stats (without equipment modifiers or upgrades)
     private baseStrength: number = 14;
     private baseDefense: number = 17;
     private baseSpeed: number = 6;
-    private baseHp: number = 100;
-    private baseTp: number = 100;
     
     // Stats (with equipment modifiers applied)
     maxHp: number = 100;
@@ -144,11 +146,11 @@ export class Player {
 
     private recalculateStats() {
         // Start with base stats (including upgrades)
-        this.strength = this.baseStrength + this.strengthUpgrades;
-        this.defense = this.baseDefense + this.defenseUpgrades;
+        this.strength = Math.min(this.baseStrength + this.strengthUpgrades, Player.MAX_STAT_VALUE);
+        this.defense = Math.min(this.baseDefense + this.defenseUpgrades, Player.MAX_STAT_VALUE);
         this.speed = this.baseSpeed;
-        this.maxHp = this.baseHp + (this.hpUpgrades * 5);
-        this.maxTp = this.baseTp + (this.tpUpgrades * 5);
+        this.maxHp = Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
+        this.maxTp = Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
         
         // Ensure current HP/TP don't exceed new max
         if (this.hp > this.maxHp) this.hp = this.maxHp;
@@ -158,10 +160,10 @@ export class Player {
         const equippedCore = this.inventory.find(item => item.type === 'core' && item.isEquipped);
         if (equippedCore && equippedCore.coreStats) {
             if (equippedCore.coreStats.strength !== undefined) {
-                this.strength += equippedCore.coreStats.strength;
+                this.strength = Math.min(this.strength + equippedCore.coreStats.strength, Player.MAX_STAT_VALUE);
             }
             if (equippedCore.coreStats.defense !== undefined) {
-                this.defense += equippedCore.coreStats.defense;
+                this.defense = Math.min(this.defense + equippedCore.coreStats.defense, Player.MAX_STAT_VALUE);
             }
             if (equippedCore.coreStats.speed !== undefined) {
                 this.speed += equippedCore.coreStats.speed;
@@ -529,29 +531,35 @@ export class Player {
     
     /**
      * Upgrade a stat using X-Data
-     * Returns true if upgrade was successful, false if not enough X-Data or max level reached
+     * Returns true if upgrade was successful, false if not enough X-Data or stat is at max (9999)
      */
     upgradeWithXData(statType: 'strength' | 'defense' | 'hp' | 'tp'): boolean {
         let currentLevel = 0;
+        let currentValue = 0;
         
         switch (statType) {
             case 'strength':
                 currentLevel = this.strengthUpgrades;
+                currentValue = this.baseStrength + this.strengthUpgrades;
                 break;
             case 'defense':
                 currentLevel = this.defenseUpgrades;
+                currentValue = this.baseDefense + this.defenseUpgrades;
                 break;
             case 'hp':
                 currentLevel = this.hpUpgrades;
+                currentValue = 100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT);
                 break;
             case 'tp':
                 currentLevel = this.tpUpgrades;
+                currentValue = 100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT);
                 break;
         }
         
-        // Check if at max level (11 upgrade levels = max level 10, index 10 in fibonacci array)
-        if (currentLevel >= 11) {
-            console.log(`${statType} is already at max level`);
+        // Check if stat would exceed 9999 cap
+        const upgradeAmount = (statType === 'hp' || statType === 'tp') ? Player.HP_TP_UPGRADE_AMOUNT : 1;
+        if (currentValue + upgradeAmount > Player.MAX_STAT_VALUE) {
+            console.log(`${statType} is already at max value (${Player.MAX_STAT_VALUE})`);
             return false;
         }
         
@@ -570,12 +578,12 @@ export class Player {
                 case 'hp':
                     this.hpUpgrades++;
                     // Heal player when upgrading HP
-                    this.hp += 5;
+                    this.hp += Player.HP_TP_UPGRADE_AMOUNT;
                     break;
                 case 'tp':
                     this.tpUpgrades++;
                     // Restore TP when upgrading
-                    this.tp += 5;
+                    this.tp += Player.HP_TP_UPGRADE_AMOUNT;
                     break;
             }
             
