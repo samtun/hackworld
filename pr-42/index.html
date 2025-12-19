@@ -16,13 +16,20 @@
             display: block;
         }
     </style>
-  <script type="module" crossorigin src="/hackworld/pr-42/assets/index-DuatFfex.js"></script>
+  <script type="module" crossorigin src="/hackworld/pr-42/assets/index-FMkeFK8R.js"></script>
   <link rel="stylesheet" crossorigin href="/hackworld/pr-42/assets/index-DZt73q-2.css">
 </head>
 
 <body>
     <div id="loading-screen"
         style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: #000; z-index: 2000;">
+        <!-- Progress bar container in center -->
+        <div id="progress-container" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 60%; max-width: 800px;">
+            <div id="progress-bar-bg" style="width: 100%; height: 40px; background-color: transparent; border: 2px solid #fff; border-radius: 4px; overflow: hidden;">
+                <div id="progress-bar-fill" style="width: 0%; height: 100%; background-color: #fff; transition: width 0.3s ease;"></div>
+            </div>
+        </div>
+        <!-- Loading text and animation at bottom right -->
         <div style="position: absolute; bottom: 30px; right: 30px; display: flex; align-items: center; gap: 15px;">
             <video autoplay muted loop style="width: 50px; height: 50px;">
                 <source src="/hackworld/pr-42/video/loading_animation.mp4" type="video/mp4">
