@@ -1,5 +1,5 @@
-import { Player } from './Player';
-import { InputManager } from './InputManager';
+import { Player } from '../Player';
+import { InputManager } from '../InputManager';
 
 // --- Constants ---
 const COLORS = {
@@ -42,17 +42,17 @@ export class XDataUpgradeManager {
     xDataDisplay!: HTMLDivElement;
     statList!: HTMLDivElement;
     itemElements: HTMLDivElement[] = [];
-    
+
     // Navigation state
     selectedIndex: number = 0;
     needsRender: boolean = false;
-    
+
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
     private lastNavigateDownState: boolean = false;
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
-    
+
     // Stat options
     private stats: StatInfo[] = [
         { type: 'strength', label: 'Strength', description: 'Increases weapon damage', upgradeEffect: '+1 per upgrade' },
@@ -88,7 +88,7 @@ export class XDataUpgradeManager {
             marginBottom: '15px'
         });
         windowDiv.appendChild(titleDiv);
-        
+
         // Subtitle (Ford's message)
         const subtitleDiv = document.createElement('div');
         subtitleDiv.innerText = 'Welcome! I can help you unlock your potential with X-Data.';
@@ -247,12 +247,12 @@ export class XDataUpgradeManager {
 
         this.stats.forEach((stat, index) => {
             const statDiv = document.createElement('div');
-            
+
             // Get current level, value, and check if at max (9999)
             let currentLevel = 0;
             let currentValue = 0;
             let isMaxed = false;
-            
+
             switch (stat.type) {
                 case 'strength':
                     currentLevel = player.strengthUpgrades;
@@ -275,11 +275,11 @@ export class XDataUpgradeManager {
                     isMaxed = currentValue >= 9999;
                     break;
             }
-            
+
             const cost = player.getUpgradeCost(currentLevel);
             const canAfford = player.xData >= cost;
             const isSelected = index === this.selectedIndex;
-            
+
             // Build the stat display
             let statusText = '';
             if (isMaxed) {
@@ -288,7 +288,7 @@ export class XDataUpgradeManager {
                 const costColor = canAfford ? COLORS.COST_COLOR : COLORS.MAXED_COLOR;
                 statusText = `<span style="color: ${costColor};">Cost: ${cost} X-Data</span>`;
             }
-            
+
             statDiv.innerHTML = `
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -358,7 +358,7 @@ export class XDataUpgradeManager {
         if (select && !this.lastSelectState) {
             const selectedStat = this.stats[this.selectedIndex];
             const success = player.upgradeWithXData(selectedStat.type);
-            
+
             if (success) {
                 // Trigger re-render to update display
                 this.needsRender = true;
@@ -378,7 +378,7 @@ export class XDataUpgradeManager {
     private shakeItem(index: number) {
         if (this.itemElements[index]) {
             const element = this.itemElements[index];
-            
+
             // Apply shake animation using CSS keyframes
             const keyframes = [
                 { transform: 'translateX(0px)' },
@@ -388,12 +388,12 @@ export class XDataUpgradeManager {
                 { transform: 'translateX(5px)' },
                 { transform: 'translateX(0px)' }
             ];
-            
+
             const timing = {
                 duration: 300,
                 iterations: 1
             };
-            
+
             element.animate(keyframes, timing);
         }
     }

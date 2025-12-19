@@ -9,7 +9,7 @@ import { InventoryManager } from './InventoryManager';
 import { TraderManager } from './TraderManager';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NPCDialogueManager } from './NPCDialogueManager';
-import { XDataUpgradeManager } from './XDataUpgradeManager';
+import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
 import { NPC } from './NPC';
 import { AVAILABLE_DUNGEONS } from './stages';
 
@@ -95,7 +95,7 @@ export class Game {
         this.npcDialogue = new NPCDialogueManager();
         this.xDataUpgrade = new XDataUpgradeManager();
         this.clock = new THREE.Clock();
-        
+
         // Set up Ford NPC callback for X-Data upgrades
         this.world.setFordCallback(() => {
             this.xDataUpgrade.show();
@@ -207,7 +207,7 @@ export class Game {
         if (this.npcDialogue.isVisible) {
             this.npcDialogue.update(this.input);
         }
-        
+
         // Update X-Data upgrade if visible
         if (this.xDataUpgrade.isVisible) {
             this.xDataUpgrade.update(this.player, this.input);
@@ -246,18 +246,18 @@ export class Game {
             // Check NPCs first (highest priority)
             const allNPCs = this.world.getAllNPCs();
             let nearbyNPC: NPC | null = null;
-            
+
             for (const npc of allNPCs) {
                 if (npc.isPlayerNearby(this.player.mesh.position)) {
                     nearbyNPC = npc;
                     break;
                 }
             }
-            
+
             if (nearbyNPC) {
                 // Show NPC hint
                 this.ui.showInteractionHint(true, nearbyNPC.getInteractionHint());
-                
+
                 // Check for interaction (but not if dialogue was just closed this frame)
                 if (isSelectPressed && !this.wasSelectPressed && !wasDialogueVisible) {
                     // Check if NPC has a callback (like Ford's upgrade UI)
