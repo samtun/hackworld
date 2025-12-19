@@ -78,6 +78,11 @@ export class Player {
     private readonly PARTICLE_CHARGED_HEIGHT: number = 0.8;
     private readonly PARTICLE_HEIGHT_TRANSITION_SPEED: number = 0.15;
 
+    // Level up particle explosion
+    private levelUpParticles: Array<{mesh: THREE.Mesh, velocity: THREE.Vector3}> = [];
+    private levelUpParticleTimer: number = 0;
+    private readonly LEVEL_UP_PARTICLE_LIFETIME: number = 0.6; // 0.6 seconds for the explosion
+
     // Ground contact tracking
     private isGrounded: boolean = false;
 
@@ -349,6 +354,9 @@ export class Player {
             (this.mesh.material as THREE.MeshStandardMaterial).transparent = false;
         }
 
+        // Update level up particles if active
+        this.updateLevelUpParticles(dt);
+
         // Update input state tracking at end of frame
         this.input.updateState();
     }
@@ -558,6 +566,88 @@ export class Player {
         this.chargeParticles = [];
     }
 
+    private createLevelUpParticles() {
+        // Create a burst of yellow particles that explode outward from the player
+        const particleCount = 30;
+        const particleGeometry = new THREE.BoxGeometry(0.15, 0.15, 0.15);
+        const particleMaterial = new THREE.MeshStandardMaterial({
+            color: 0xffff00, // Yellow
+            emissive: 0xffff00,
+            emissiveIntensity: 1.5, // Increased for brighter particles
+            transparent: true,
+            opacity: 1.0
+        });
+
+        // Create particles in all directions (spherical explosion)
+        for (let i = 0; i < particleCount; i++) {
+            // Random spherical coordinates for explosion direction
+            const theta = Math.random() * Math.PI * 2; // Azimuth angle (0 to 2π)
+            const phi = Math.random() * Math.PI; // Polar angle (0 to π)
+            
+            // Convert to Cartesian coordinates for velocity
+            const speed = 3 + Math.random() * 2; // Random speed between 3-5 units/sec
+            const vx = speed * Math.sin(phi) * Math.cos(theta);
+            const vy = speed * Math.sin(phi) * Math.sin(theta);
+            const vz = speed * Math.cos(phi);
+            
+            const particle = new THREE.Mesh(particleGeometry, particleMaterial.clone());
+            particle.position.copy(this.mesh.position);
+            particle.position.y += 0.5; // Start at player center
+            
+            const velocity = new THREE.Vector3(vx, vy, vz);
+            
+            this.levelUpParticles.push({ mesh: particle, velocity });
+            this.mesh.parent?.add(particle); // Add to scene, not to player mesh
+        }
+        
+        // Reset timer
+        this.levelUpParticleTimer = 0;
+    }
+
+    private updateLevelUpParticles(dt: number) {
+        if (this.levelUpParticles.length === 0) return;
+        
+        this.levelUpParticleTimer += dt;
+        const progress = this.levelUpParticleTimer / this.LEVEL_UP_PARTICLE_LIFETIME;
+        
+        // Remove particles after lifetime expires
+        if (progress >= 1.0) {
+            this.removeLevelUpParticles();
+            return;
+        }
+        
+        // Update each particle
+        for (const particle of this.levelUpParticles) {
+            // Move particle based on velocity
+            particle.mesh.position.x += particle.velocity.x * dt;
+            particle.mesh.position.y += particle.velocity.y * dt;
+            particle.mesh.position.z += particle.velocity.z * dt;
+            
+            // Apply gravity to velocity
+            particle.velocity.y -= 9.8 * dt;
+            
+            // Fade out
+            const material = particle.mesh.material as THREE.MeshStandardMaterial;
+            material.opacity = 1.0 - progress;
+            
+            // Scale down
+            const scale = 1.0 - progress * 0.5;
+            particle.mesh.scale.set(scale, scale, scale);
+        }
+    }
+
+    private removeLevelUpParticles() {
+        this.levelUpParticles.forEach(particle => {
+            if (particle.mesh.parent) {
+                particle.mesh.parent.remove(particle.mesh);
+            }
+            particle.mesh.geometry.dispose();
+            (particle.mesh.material as THREE.Material).dispose();
+        });
+        this.levelUpParticles = [];
+        this.levelUpParticleTimer = 0;
+    }
+
     private checkDashHits(enemies: Enemy[]) {
         // Check collision with player body during dash
         for (const enemy of enemies) {
@@ -632,6 +722,9 @@ export class Player {
 
         // Recalculate stats with level multiplier
         this.recalculateStats();
+
+        // Trigger level up particle explosion
+        this.createLevelUpParticles();
 
         console.log(`Level Up! Now level ${this.level}. Next level requires ${this.expRequired} EXP.`);
     }
