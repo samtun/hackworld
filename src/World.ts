@@ -182,27 +182,28 @@ export class World {
         const bonusValue = Math.pow(random - 0.5, 5) * 30;
 
         // Map bonus value to percentage range: -10% to +20%
-        // When x=0: bonusValue ≈ -0.9375 → -10%
-        // When x=0.5: bonusValue = 0 → 0%
-        // When x=1: bonusValue ≈ 0.9375 → +20%
+        // value <= -0.5: -10%
+        // value > -0.5: value / 0.5 * 10
+        // value > 1: value * 20%
         let bonusPercent: number;
-        if (bonusValue <= -0.9375) {
+        if (bonusValue < -0.5) {
             bonusPercent = -10;
-        } else if (bonusValue >= 0.9375) {
-            bonusPercent = 20;
         } else if (bonusValue < 0) {
-            // Map [-0.9375, 0] to [-10%, 0%]
-            bonusPercent = (bonusValue / 0.9375) * 10;
+            // Map [-0.5, 0] to [-10%, 0%]
+            bonusPercent = bonusValue / 0.5 * 10;
         } else {
-            // Map [0, 0.9375] to [0%, 20%]
-            bonusPercent = (bonusValue / 0.9375) * 20;
+            // Map [0, 1] to [0%, 20%]
+            bonusPercent = bonusValue * 20;
         }
 
         // Apply bonus to base values
         const bonusMultiplier = 1 + (bonusPercent / 100);
         const finalDamage = Math.round(weaponInfo.damage * bonusMultiplier);
-        const finalBuyPrice = Math.round(weaponInfo.buyPrice * bonusMultiplier);
-        const finalSellPrice = Math.round(weaponInfo.sellPrice * bonusMultiplier);
+
+        // Calculate factor for damage diff to avoid small bonus values to raise price without changing the damage
+        const damageFactor = finalDamage / weaponInfo.damage
+        const finalBuyPrice = Math.round(weaponInfo.buyPrice * damageFactor);
+        const finalSellPrice = Math.round(weaponInfo.sellPrice * damageFactor);
 
         // Create weapon drop at enemy position
         const dropPosition = enemy.body.position.clone();
