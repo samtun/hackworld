@@ -241,7 +241,7 @@ export class DebugValueEditor {
                 const weapon = WeaponRegistry.getWeaponById(weaponId);
                 if (weapon) {
                     // Generate unique ID using timestamp and random number
-                    const newId = `debug_weapon_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    const newId = `debug_weapon_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
                     this.player.inventory.push({
                         id: newId,
                         name: weapon.name,
@@ -316,7 +316,7 @@ export class DebugValueEditor {
                 const core = CoreRegistry.getCoreById(coreId);
                 if (core) {
                     // Generate unique ID using timestamp and random number
-                    const newId = `debug_core_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                    const newId = `debug_core_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
                     this.player.inventory.push({
                         id: newId,
                         name: core.name,
