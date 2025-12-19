@@ -569,6 +569,7 @@ export class Player {
     private createLevelUpParticles() {
         // Create a burst of yellow particles that explode outward from the player
         const particleCount = 30;
+        // Create shared geometry for all particles
         const particleGeometry = new THREE.BoxGeometry(0.15, 0.15, 0.15);
         const particleMaterial = new THREE.MeshStandardMaterial({
             color: 0xffff00, // Yellow
@@ -590,6 +591,7 @@ export class Player {
             const vy = speed * Math.sin(phi) * Math.sin(theta);
             const vz = speed * Math.cos(phi);
             
+            // Clone material for each particle (needed for independent opacity during fade)
             const particle = new THREE.Mesh(particleGeometry, particleMaterial.clone());
             particle.position.copy(this.mesh.position);
             particle.position.y += 0.5; // Start at player center
@@ -637,13 +639,22 @@ export class Player {
     }
 
     private removeLevelUpParticles() {
-        this.levelUpParticles.forEach(particle => {
-            if (particle.mesh.parent) {
-                particle.mesh.parent.remove(particle.mesh);
-            }
-            particle.mesh.geometry.dispose();
-            (particle.mesh.material as THREE.Material).dispose();
-        });
+        // Dispose geometry only once (it's shared among all particles)
+        if (this.levelUpParticles.length > 0) {
+            const sharedGeometry = this.levelUpParticles[0].mesh.geometry;
+            
+            this.levelUpParticles.forEach(particle => {
+                if (particle.mesh.parent) {
+                    particle.mesh.parent.remove(particle.mesh);
+                }
+                // Dispose each particle's unique material
+                (particle.mesh.material as THREE.Material).dispose();
+            });
+            
+            // Dispose the shared geometry once
+            sharedGeometry.dispose();
+        }
+        
         this.levelUpParticles = [];
         this.levelUpParticleTimer = 0;
     }
