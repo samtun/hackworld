@@ -333,10 +333,8 @@ export class Game {
 
         // Check for player death (only if not already dead and death screen not visible)
         if (!this.player.isDead && !this.deathScreen.isVisible && this.player.hp <= 0) {
-            console.log('[Game] Player died, triggering death sequence');
             this.player.die();
             // Show death screen immediately
-            console.log('[Game] Showing death screen immediately');
             this.deathScreen.show();
         }
 
