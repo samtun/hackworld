@@ -248,31 +248,31 @@ export class XDataUpgradeManager {
         this.stats.forEach((stat, index) => {
             const statDiv = document.createElement('div');
             
-            // Get current level, value, and check if at max (9999)
+            // Get current level and base value (without equipment modifiers)
             let currentLevel = 0;
-            let currentValue = 0;
+            let baseValue = 0;
             let isMaxed = false;
             
             switch (stat.type) {
                 case 'strength':
                     currentLevel = player.strengthUpgrades;
-                    currentValue = player.strength;
-                    isMaxed = currentValue >= 9999;
+                    baseValue = player.getBaseStatValue('strength');
+                    isMaxed = baseValue >= 9999;
                     break;
                 case 'defense':
                     currentLevel = player.defenseUpgrades;
-                    currentValue = player.defense;
-                    isMaxed = currentValue >= 9999;
+                    baseValue = player.getBaseStatValue('defense');
+                    isMaxed = baseValue >= 9999;
                     break;
                 case 'hp':
                     currentLevel = player.hpUpgrades;
-                    currentValue = player.maxHp;
-                    isMaxed = currentValue >= 9999;
+                    baseValue = player.getBaseStatValue('hp');
+                    isMaxed = baseValue >= 9999;
                     break;
                 case 'tp':
                     currentLevel = player.tpUpgrades;
-                    currentValue = player.maxTp;
-                    isMaxed = currentValue >= 9999;
+                    baseValue = player.getBaseStatValue('tp');
+                    isMaxed = baseValue >= 9999;
                     break;
             }
             
@@ -293,7 +293,7 @@ export class XDataUpgradeManager {
                 <div style="display: flex; flex-direction: column; gap: 5px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-weight: bold; font-size: 18px;">${stat.label}</span>
-                        <span style="font-size: 16px;">Current: ${currentValue}</span>
+                        <span style="font-size: 16px;">Current: ${baseValue}</span>
                     </div>
                     <div style="font-size: 14px; opacity: 0.8;">${stat.description}</div>
                     <div style="display: flex; justify-content: space-between; font-size: 14px;">
