@@ -15,7 +15,11 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
   - EXP requirements scale with level
 - Inventory system with looting mechanics
 - **Weapon drops** - Defeated enemies have a chance to drop weapons that can be picked up and added to your inventory
-- **Interactive trader** in the lobby - Buy and sell items, manage your bits
+- **Interactive trader** in the lobby - Buy and sell weapons and cores, manage your bits
+- **Chip system** - Equip chips to modify player behavior and weapon properties
+  - **Firewire** - Increases weapon range by 10%
+  - **Overclock** - Increases walk speed by 10%
+  - Chips can be purchased from the chip trader in the lobby
 - **X-Data resource system** - Collect X-Data from defeated enemies and use it to permanently upgrade your stats with Ford in the lobby
 
 ## Tech Stack
