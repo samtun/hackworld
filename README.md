@@ -73,6 +73,41 @@ The game is fully playable with keyboard and controller (tested with XBox contro
 
 ## Development
 
+### Commit Conventions
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) to ensure consistent commit messages and enable automated versioning.
+
+#### Commit Message Format
+All commit messages must follow this format:
+```
+type: description
+```
+
+Common types:
+- **feat**: A new feature (triggers minor version bump)
+- **fix**: A bug fix (triggers patch version bump)
+- **docs**: Documentation changes
+- **style**: Code style changes (formatting, missing semicolons, etc.)
+- **refactor**: Code changes that neither fix a bug nor add a feature
+- **perf**: Performance improvements
+- **test**: Adding or updating tests
+- **chore**: Changes to build process or auxiliary tools
+
+Examples:
+- `feat: add inventory sorting feature`
+- `fix: resolve player collision bug`
+- `docs: update installation instructions`
+
+#### Local Enforcement
+Commit messages are validated locally via Husky hooks. Invalid commits will be rejected before they reach the repository.
+
+#### Automated Releases
+When code is merged to the `main` branch:
+- Semantic versioning is automatically applied based on commit types
+- A `CHANGELOG.md` is generated with all changes
+- A GitHub Release is created with the new version tag
+- The `package.json` version is updated automatically
+
 ### Debug Mode
 The game includes a comprehensive debug mode for development and testing.
 - **Availability**: Development builds only (`npm run dev`)
@@ -93,6 +128,19 @@ The debug value editor is positioned in the top-right corner and can be toggled 
 ## Deployment
 
 Both production and PR preview deployments use the `gh-pages` branch to enable subdirectory-based previews without conflicts.
+
+### CI/CD Workflows
+
+#### Commit Linting
+Pull requests are automatically checked to ensure all commits follow the conventional commit format. This ensures consistent commit history and enables automated releases.
+
+#### Automated Releases
+When changes are merged to `main`:
+1. **semantic-release** analyzes commits since the last release
+2. Determines the next version number (major, minor, or patch)
+3. Updates `package.json` and `package-lock.json`
+4. Generates/updates `CHANGELOG.md`
+5. Creates a Git tag and GitHub Release
 
 ### Production Deployment
 The game is automatically deployed to GitHub Pages when changes are pushed to the `main` branch. The deployment workflow:
