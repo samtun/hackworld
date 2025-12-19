@@ -13,6 +13,12 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
   - Each level increases strength, defense, and speed
   - Max level is 999
   - EXP requirements scale with level
+- **Death and respawn system** - When reaching 0 HP:
+  - Choose to retry at the last teleporter you used (entry of the dungeon)
+  - Or return to the lobby
+  - Items collected since leaving the lobby are dropped at your death location when retrying (retrievable)
+  - Items are lost permanently when returning to the lobby
+  - Full HP and TP restoration on respawn
 - Inventory system with looting mechanics
 - **Weapon drops** - Defeated enemies have a chance to drop weapons that can be picked up and added to your inventory
 - **Interactive trader** in the lobby - Buy and sell items, manage your bits
