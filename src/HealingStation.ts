@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { Player } from './Player';
 
 /**
  * HealingStation entity with upward-moving particle effects
@@ -28,6 +29,7 @@ export class HealingStation {
     private readonly HEALING_RISE_SPEED = 1.8; // Faster rise speed during healing
     private readonly MAX_PARTICLE_SIZE = 0.5;
     private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
+    private readonly HEALING_RATE = 40; // HP/TP per second
     private time: number = 0;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, color: number = 0x00ff00) {
@@ -135,14 +137,34 @@ export class HealingStation {
     }
 
     /**
-     * Update particle positions and lifetimes
+     * Update particle positions, lifetimes, and handle player healing
+     * @param deltaTime - Time elapsed since last frame
+     * @param player - Player to check for healing
      */
-    update(deltaTime: number): void {
+    update(deltaTime: number, player: Player): void {
         // Cap deltaTime to prevent synchronization issues when tab is inactive
         const cappedDeltaTime = Math.min(deltaTime, this.MAX_DELTA_TIME);
 
         this.time += cappedDeltaTime;
         const stationPos = this.mesh.position;
+
+        // Check if player is in range and handle healing
+        const inRange = this.isPlayerInRange(player.mesh.position);
+        
+        if (inRange) {
+            // Set healing state (increases particle speed)
+            this.isHealing = true;
+
+            // Calculate heal amounts based on deltaTime (framerate independent)
+            if (player.hp < player.maxHp || player.tp < player.maxTp) {
+                const hpHeal = this.HEALING_RATE * cappedDeltaTime;
+                const tpHeal = this.HEALING_RATE * cappedDeltaTime;
+                player.heal(hpHeal, tpHeal);
+            }
+        } else {
+            // Reset healing state when player leaves
+            this.isHealing = false;
+        }
 
         // Choose rise speed based on healing state
         const riseSpeed = this.isHealing ? this.HEALING_RISE_SPEED : this.NORMAL_RISE_SPEED;
@@ -183,16 +205,9 @@ export class HealingStation {
     }
 
     /**
-     * Set healing state (changes particle rise speed)
-     */
-    setHealing(healing: boolean): void {
-        this.isHealing = healing;
-    }
-
-    /**
      * Check if player is within the healing circle
      */
-    isPlayerInRange(playerPosition: THREE.Vector3): boolean {
+    private isPlayerInRange(playerPosition: THREE.Vector3): boolean {
         const dist = playerPosition.distanceTo(this.positionVector);
         return dist < this.RING_RADIUS;
     }

@@ -382,6 +382,20 @@ export class Player {
         console.log(`Player took ${amount} damage. HP: ${this.hp}`);
     }
 
+    /**
+     * Heal the player by the specified amounts
+     * @param hpAmount - Amount of HP to restore
+     * @param tpAmount - Amount of TP to restore
+     */
+    heal(hpAmount: number, tpAmount: number = 0): void {
+        if (hpAmount > 0) {
+            this.hp = Math.min(this.hp + hpAmount, this.maxHp);
+        }
+        if (tpAmount > 0) {
+            this.tp = Math.min(this.tp + tpAmount, this.maxTp);
+        }
+    }
+
     private startChargeAttack() {
         this.isChargingAttack = true;
         this.chargeTimer = 0;

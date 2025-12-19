@@ -24,9 +24,6 @@ export class Lobby extends BaseDungeon {
     healingStation?: HealingStation;
     private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
     
-    // Healing rate (HP/TP per second)
-    private readonly HEALING_RATE: number = 40; // 40 HP/TP per second
-    
     // Callback for Ford interaction (set by Game)
     fordInteractionCallback?: () => void;
 
@@ -142,34 +139,11 @@ export class Lobby extends BaseDungeon {
     }
 
     /**
-     * Update healing station and handle player healing
+     * Update healing station
      */
     updateHealing(deltaTime: number, player: Player): void {
         if (!this.healingStation) return;
-
-        // Update healing station particles
-        this.healingStation.update(deltaTime);
-
-        // Check if player is in healing range
-        const inRange = this.healingStation.isPlayerInRange(player.mesh.position);
-        
-        if (inRange) {
-            // Set healing state (increases particle speed)
-            this.healingStation.setHealing(true);
-
-            // Calculate heal amounts based on deltaTime (framerate independent)
-            const hpHeal = this.HEALING_RATE * deltaTime;
-            const tpHeal = this.HEALING_RATE * deltaTime;
-
-            // Apply healing (don't exceed max)
-            if (player.hp < player.maxHp || player.tp < player.maxTp) {
-                player.hp = Math.min(player.hp + hpHeal, player.maxHp);
-                player.tp = Math.min(player.tp + tpHeal, player.maxTp);
-            }
-        } else {
-            // Reset healing state when player leaves
-            this.healingStation.setHealing(false);
-        }
+        this.healingStation.update(deltaTime, player);
     }
 
     /**
