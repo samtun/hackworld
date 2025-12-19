@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { BaseDungeon } from './BaseDungeon';
 import { NPC } from '../NPC';
+import { HealingStation } from '../HealingStation';
+import { Player } from '../Player';
 
 export class Lobby extends BaseDungeon {
     id = 'lobby';
@@ -18,6 +20,10 @@ export class Lobby extends BaseDungeon {
     npc?: NPC;
     fordNpc?: NPC;
     
+    // Healing Station
+    healingStation?: HealingStation;
+    private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
+    
     // Callback for Ford interaction (set by Game)
     fordInteractionCallback?: () => void;
 
@@ -30,6 +36,9 @@ export class Lobby extends BaseDungeon {
 
         // Portal (single portal that will show selection UI)
         this.createPortal(new CANNON.Vec3(5, 0.05, 5), 0x00ff00, 'selection');
+
+        // Healing Station
+        this.healingStation = new HealingStation(this.scene, this.healingStationPosition, 0x00ffff);
 
         // Add some walls or obstacles
         this.createBox(2, 2, 2, new CANNON.Vec3(-5, 1, -5));
@@ -130,7 +139,15 @@ export class Lobby extends BaseDungeon {
     }
 
     /**
-     * Override clear to also clean up NPCs
+     * Update healing station
+     */
+    updateHealing(deltaTime: number, player: Player): void {
+        if (!this.healingStation) return;
+        this.healingStation.update(deltaTime, player);
+    }
+
+    /**
+     * Override clear to also clean up NPCs and healing station
      */
     clear(): void {
         if (this.npc) {
@@ -140,6 +157,10 @@ export class Lobby extends BaseDungeon {
         if (this.fordNpc) {
             this.fordNpc.cleanup(this.scene, this.physicsWorld);
             this.fordNpc = undefined;
+        }
+        if (this.healingStation) {
+            this.healingStation.cleanup(this.scene);
+            this.healingStation = undefined;
         }
         super.clear();
     }
