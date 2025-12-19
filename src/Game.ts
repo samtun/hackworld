@@ -194,16 +194,9 @@ export class Game {
         }
 
         // Input Handling for UI
-        const isInventoryPressed = this.input.isInventoryPressed();
-        if (isInventoryPressed && !this.wasInventoryPressed) {
-            // Don't allow toggling inventory while any other UI is open
-            if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible) {
-                this.inventory.toggle();
-            }
-        }
-        this.wasInventoryPressed = isInventoryPressed;
-
-        // Debug Mode: Check for Select+Start combination to toggle debug editor (dev builds only)
+        // Debug Mode: Check for Select+Start combination first (dev builds only)
+        // This needs to be checked before inventory to prevent conflict with Select button
+        let selectAndStartHandled = false;
         if (import.meta.env.DEV) {
             const isSelectAndStartPressed = this.input.isSelectAndStartPressed();
             if (isSelectAndStartPressed && !this.wasSelectAndStartPressed) {
@@ -222,9 +215,20 @@ export class Game {
                         console.log('Debug Mode: ON (via controller)');
                     }
                 }
+                selectAndStartHandled = true;
             }
             this.wasSelectAndStartPressed = isSelectAndStartPressed;
         }
+
+        // Check inventory toggle (but not if Select+Start was just pressed)
+        const isInventoryPressed = this.input.isInventoryPressed();
+        if (isInventoryPressed && !this.wasInventoryPressed && !selectAndStartHandled) {
+            // Don't allow toggling inventory while any other UI is open
+            if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible) {
+                this.inventory.toggle();
+            }
+        }
+        this.wasInventoryPressed = isInventoryPressed;
 
         // Update inventory if visible (pass input for navigation)
         if (this.inventory.isVisible) {
