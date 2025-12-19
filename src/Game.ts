@@ -45,6 +45,7 @@ export class Game {
     // Input State
     wasInventoryPressed: boolean = false;
     wasSelectPressed: boolean = false;
+    wasSelectAndStartPressed: boolean = false;
     isTransitioning: boolean = false;
 
     constructor() {
@@ -201,6 +202,29 @@ export class Game {
             }
         }
         this.wasInventoryPressed = isInventoryPressed;
+
+        // Debug Mode: Check for Select+Start combination to toggle debug editor (dev builds only)
+        if (import.meta.env.DEV) {
+            const isSelectAndStartPressed = this.input.isSelectAndStartPressed();
+            if (isSelectAndStartPressed && !this.wasSelectAndStartPressed) {
+                if (this.debugValueEditor) {
+                    if (this.debugValueEditor.isVisible) {
+                        // Toggle expanded/collapsed state
+                        this.debugValueEditor.toggle();
+                    } else {
+                        // Show and expand the editor
+                        this.debugMode = true;
+                        this.debugMeshes.forEach(mesh => {
+                            mesh.visible = this.debugMode;
+                        });
+                        this.debugValueEditor.show();
+                        this.debugValueEditor.expand();
+                        console.log('Debug Mode: ON (via controller)');
+                    }
+                }
+            }
+            this.wasSelectAndStartPressed = isSelectAndStartPressed;
+        }
 
         // Update inventory if visible (pass input for navigation)
         if (this.inventory.isVisible) {

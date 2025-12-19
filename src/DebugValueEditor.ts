@@ -337,7 +337,7 @@ export class DebugValueEditor {
         parent.appendChild(addButton);
     }
 
-    private toggle(): void {
+    toggle(): void {
         this.isExpanded = !this.isExpanded;
         
         if (this.isExpanded) {
@@ -347,6 +347,12 @@ export class DebugValueEditor {
             this.contentPanel.style.display = 'none';
             this.toggleButton.innerHTML = '▼';
         }
+    }
+
+    expand(): void {
+        this.isExpanded = true;
+        this.contentPanel.style.display = 'block';
+        this.toggleButton.innerHTML = '▲';
     }
 
     show(): void {

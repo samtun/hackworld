@@ -225,4 +225,15 @@ export class InputManager {
         }
         return false;
     }
+
+    isSelectAndStartPressed(): boolean {
+        // Only for gamepad - Select (Button 8) + Start (Button 9) pressed together
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[8]?.pressed && gp.buttons[9]?.pressed) return true;
+            }
+        }
+        return false;
+    }
 }
