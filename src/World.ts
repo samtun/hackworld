@@ -259,7 +259,7 @@ export class World {
             case WeaponType.DUAL_BLADE:
                 return { name: 'Rune Blade', damage: 7, buyPrice: 150, sellPrice: 75 };
             case WeaponType.LANCE:
-                return { name: 'Fierce', damage: 12, buyPrice: 120, sellPrice: 60 };
+                return { name: 'Fierce Lance', damage: 12, buyPrice: 120, sellPrice: 60 };
             case WeaponType.HAMMER:
                 return { name: 'Battle Hawk', damage: 18, buyPrice: 180, sellPrice: 90 };
         }
