@@ -13,6 +13,7 @@ export class World {
     physicsWorld: CANNON.World;
     physicsMaterial: CANNON.Material;
     assetManager: AssetManager;
+    onLoadProgressCallback?: (loaded: number, total: number) => void;
 
     // Current active stage
     currentStage?: BaseDungeon;
@@ -25,16 +26,22 @@ export class World {
     // Weapon drops
     weaponDrops: WeaponDrop[] = [];
 
-    constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material, onLoadComplete?: () => void) {
+    constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material, onLoadComplete?: () => void, onLoadProgress?: (loaded: number, total: number) => void) {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
         this.physicsMaterial = physicsMaterial;
         this.assetManager = AssetManager.getInstance();
+        this.onLoadProgressCallback = onLoadProgress;
 
         // Initialize stage instances
         this.lobby = new Lobby(scene, physicsWorld, physicsMaterial);
         this.dungeon1 = new Dungeon1(scene, physicsWorld, physicsMaterial);
         this.dungeon2 = new Dungeon2(scene, physicsWorld, physicsMaterial);
+
+        // Setup progress callback for asset manager
+        if (this.onLoadProgressCallback) {
+            this.assetManager.setProgressCallback(this.onLoadProgressCallback);
+        }
 
         // Preload all assets before starting
         this.preloadAssets().then(() => {
@@ -109,7 +116,7 @@ export class World {
         return this.currentStage?.enemies || [];
     }
 
-    update(dt: number, player: Player) {
+    update(dt: number, player: Player, cameraPosition: THREE.Vector3) {
         if (!this.currentStage) return;
 
         // Update stage (portals, etc.)
@@ -136,7 +143,7 @@ export class World {
 
         // Update weapon drops
         for (const drop of this.weaponDrops) {
-            drop.update(dt, player.mesh.position);
+            drop.update(dt, cameraPosition, player.mesh.position);
         }
     }
 
