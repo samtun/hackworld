@@ -12,6 +12,7 @@ import { NPCDialogueManager } from './NPCDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
 import { NPC } from './NPC';
 import { AVAILABLE_DUNGEONS } from './stages';
+import { DebugValueEditor } from './DebugValueEditor';
 
 export class Game {
     scene: THREE.Scene;
@@ -39,6 +40,7 @@ export class Game {
     physicsDebugger: any;
     debugMode: boolean = false;
     debugMeshes: THREE.Mesh[] = [];
+    debugValueEditor?: DebugValueEditor;
 
     // Input State
     wasInventoryPressed: boolean = false;
@@ -113,12 +115,23 @@ export class Game {
                 }
             });
 
+            // Create debug value editor
+            this.debugValueEditor = new DebugValueEditor();
+
             window.addEventListener('keydown', (e) => {
                 if (e.code === 'F8') {
                     this.debugMode = !this.debugMode;
                     this.debugMeshes.forEach(mesh => {
                         mesh.visible = this.debugMode;
                     });
+                    
+                    // Toggle debug value editor visibility
+                    if (this.debugMode) {
+                        this.debugValueEditor?.show();
+                    } else {
+                        this.debugValueEditor?.hide();
+                    }
+                    
                     console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'}`);
                 } else if (this.debugMode) {
                     console.log(`[Debug] Key pressed: ${e.code}`);
@@ -252,6 +265,11 @@ export class Game {
         }
 
         this.ui.update(this.player);
+
+        // Update debug value editor if visible
+        if (this.debugMode && this.debugValueEditor) {
+            this.debugValueEditor.update(this.player);
+        }
 
         // Camera Follow
         const targetX = this.player.mesh.position.x + 10;
