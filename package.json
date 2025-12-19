@@ -1,21 +1,30 @@
 {
-    "name": "hackworld-prototype",
-    "private": true,
-    "version": "0.0.0",
-    "type": "module",
-    "scripts": {
-        "dev": "vite",
-        "build": "tsc && vite build",
-        "preview": "vite preview"
-    },
-    "devDependencies": {
-        "cannon-es-debugger": "^1.0.0",
-        "typescript": "^5.2.2",
-        "vite": "^5.0.0"
-    },
-    "dependencies": {
-        "@types/three": "^0.160.0",
-        "cannon-es": "^0.20.0",
-        "three": "^0.160.0"
-    }
+  "name": "hackworld-prototype",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/cli": "^20.2.0",
+    "@commitlint/config-conventional": "^20.2.0",
+    "@semantic-release/changelog": "^6.0.3",
+    "@semantic-release/git": "^10.0.1",
+    "@semantic-release/github": "^11.0.6",
+    "@semantic-release/npm": "^12.0.2",
+    "cannon-es-debugger": "^1.0.0",
+    "husky": "^9.1.7",
+    "semantic-release": "^24.2.9",
+    "typescript": "^5.2.2",
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "@types/three": "^0.160.0",
+    "cannon-es": "^0.20.0",
+    "three": "^0.160.0"
+  }
 }
