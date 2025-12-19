@@ -11,6 +11,7 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Two unique dungeon stages accessible from the lobby
 - Inventory system with looting mechanics
 - **Interactive trader** in the lobby - Buy and sell items, manage your bits
+- **X-Data resource system** - Collect X-Data from defeated enemies and use it to permanently upgrade your stats with Ford in the lobby
 
 ## Tech Stack
 
@@ -31,7 +32,7 @@ Play the game at: [https://samtun.github.io/hackworld/](https://samtun.github.io
    - The hub is a single area without loading screens
    - Loading screens in general are less common and finish quicker
    - New equipment can be equipped at any time. No need to return to the hub
-   - The X-Data resource is meant to be implemented, however it should be dropped more frequent on earlier levels already
+   - The X-Data resource system is implemented with drops from enemies that can be used for permanent stat upgrades
    - The combat feels a bit more dynamic while keeping the original feel in many areas
    - Tech (skills) is improved by reducing the amount of skills and using quick access button combinations to them rather than tedious switching via a menu
 

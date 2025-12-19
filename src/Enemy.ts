@@ -18,6 +18,7 @@ export class Enemy {
     deathDuration: number = 1.0;
     flashTimer: number = 0;
     stunTimer: number = 0;
+    xDataDropChance: number = 0.05;
 
     // Animation
     isAttacking: boolean = false;
@@ -201,5 +202,12 @@ export class Enemy {
         this.isDying = true;
         this.deathTimer = 0;
         // Keep physics enabled for knockback
+    }
+
+    /**
+     * Get the position where X-Data should spawn (at enemy's death location)
+     */
+    getDeathPosition(): CANNON.Vec3 {
+        return this.body.position.clone();
     }
 }

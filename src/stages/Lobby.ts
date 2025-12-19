@@ -11,8 +11,15 @@ export class Lobby extends BaseDungeon {
     // Store trader position for interaction
     private traderPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, -5);
     
-    // NPC
+    // Store Ford position for interaction
+    private fordPosition: CANNON.Vec3 = new CANNON.Vec3(5, 0, -5);
+    
+    // NPCs
     npc?: NPC;
+    fordNpc?: NPC;
+    
+    // Callback for Ford interaction (set by Game)
+    fordInteractionCallback?: () => void;
 
     load(): void {
         this.clear();
@@ -40,6 +47,22 @@ export class Lobby extends BaseDungeon {
             "Nyleth",
             new CANNON.Vec3(-5, 0, 0),
             nylethDialogue
+        );
+        
+        // Create Ford NPC (X-Data Manager)
+        const fordDialogue = [
+            "Welcome! I'm Ford, the X-Data Manager.",
+            "I can help you unlock your potential using the X-Data you collect from enemies.",
+            "Step closer if you'd like to upgrade your stats!"
+        ];
+        this.fordNpc = new NPC(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            "Ford",
+            this.fordPosition,
+            fordDialogue,
+            this.fordInteractionCallback
         );
 
         // Load Trader Model from cache
@@ -97,22 +120,26 @@ export class Lobby extends BaseDungeon {
     }
 
     /**
-     * Check if player is near NPC
+     * Get all NPCs in the lobby
      */
-    checkNPCInteraction(playerPosition: THREE.Vector3): NPC | null {
-        if (this.npc && this.npc.isPlayerNearby(playerPosition)) {
-            return this.npc;
-        }
-        return null;
+    getAllNPCs(): NPC[] {
+        const npcs: NPC[] = [];
+        if (this.npc) npcs.push(this.npc);
+        if (this.fordNpc) npcs.push(this.fordNpc);
+        return npcs;
     }
 
     /**
-     * Override clear to also clean up NPC
+     * Override clear to also clean up NPCs
      */
     clear(): void {
         if (this.npc) {
             this.npc.cleanup(this.scene, this.physicsWorld);
             this.npc = undefined;
+        }
+        if (this.fordNpc) {
+            this.fordNpc.cleanup(this.scene, this.physicsWorld);
+            this.fordNpc = undefined;
         }
         super.clear();
     }
