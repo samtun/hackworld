@@ -15,6 +15,9 @@ export class DebugValueEditor {
 
     // Track input elements for updating
     private inputElements: Map<string, HTMLInputElement> = new Map();
+    
+    // Store player reference for button callbacks
+    private player: Player | null = null;
 
     constructor() {
         this.container = this.createContainer();
@@ -234,29 +237,25 @@ export class DebugValueEditor {
             const weaponId = select.value;
             const damage = parseInt(damageInput.value);
             
-            if (weaponId && !isNaN(damage)) {
+            if (weaponId && !isNaN(damage) && this.player) {
                 const weapon = WeaponRegistry.getWeaponById(weaponId);
                 if (weapon) {
-                    // Get player reference from window (set in update method)
-                    const player = (window as any).__debugPlayer as Player;
-                    if (player) {
-                        const newId = (player.inventory.length + 1).toString();
-                        player.inventory.push({
-                            id: newId,
-                            name: weapon.name,
-                            type: 'weapon',
-                            weaponType: weapon.type,
-                            damage: damage,
-                            buyPrice: weapon.baseBuyPrice,
-                            sellPrice: weapon.baseSellPrice,
-                            isEquipped: false
-                        });
-                        console.log(`Added weapon: ${weapon.name} with ${damage} damage`);
-                        
-                        // Reset selection
-                        select.value = '';
-                        damageInput.value = '10';
-                    }
+                    const newId = (this.player.inventory.length + 1).toString();
+                    this.player.inventory.push({
+                        id: newId,
+                        name: weapon.name,
+                        type: 'weapon',
+                        weaponType: weapon.type,
+                        damage: damage,
+                        buyPrice: weapon.baseBuyPrice,
+                        sellPrice: weapon.baseSellPrice,
+                        isEquipped: false
+                    });
+                    console.log(`Added weapon: ${weapon.name} with ${damage} damage`);
+                    
+                    // Reset selection
+                    select.value = '';
+                    damageInput.value = '10';
                 }
             }
         });
@@ -312,27 +311,23 @@ export class DebugValueEditor {
         addButton.addEventListener('click', () => {
             const coreId = select.value;
             
-            if (coreId) {
+            if (coreId && this.player) {
                 const core = CoreRegistry.getCoreById(coreId);
                 if (core) {
-                    // Get player reference from window (set in update method)
-                    const player = (window as any).__debugPlayer as Player;
-                    if (player) {
-                        const newId = (player.inventory.length + 1).toString();
-                        player.inventory.push({
-                            id: newId,
-                            name: core.name,
-                            type: 'core',
-                            coreStats: core.stats,
-                            buyPrice: core.buyPrice,
-                            sellPrice: core.sellPrice,
-                            isEquipped: false
-                        });
-                        console.log(`Added core: ${core.name}`);
-                        
-                        // Reset selection
-                        select.value = '';
-                    }
+                    const newId = (this.player.inventory.length + 1).toString();
+                    this.player.inventory.push({
+                        id: newId,
+                        name: core.name,
+                        type: 'core',
+                        coreStats: core.stats,
+                        buyPrice: core.buyPrice,
+                        sellPrice: core.sellPrice,
+                        isEquipped: false
+                    });
+                    console.log(`Added core: ${core.name}`);
+                    
+                    // Reset selection
+                    select.value = '';
                 }
             }
         });
@@ -369,7 +364,7 @@ export class DebugValueEditor {
         if (!this.isVisible || !this.isExpanded) return;
 
         // Store player reference for button callbacks
-        (window as any).__debugPlayer = player;
+        this.player = player;
 
         // Update all input values from player
         this.updateInputValue('hp', player.hp);
