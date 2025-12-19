@@ -5,9 +5,9 @@ import { Player } from './Player';
 import { AssetManager } from './AssetManager';
 import { BaseDungeon, Lobby, Dungeon1, Dungeon2 } from './stages';
 import { NPC } from './NPC';
-import { WeaponDrop } from './WeaponDrop';
-import { WeaponType } from './Weapon';
-import { WeaponRegistry } from './WeaponRegistry';
+import { WeaponDrop } from './items/WeaponDrop';
+import { WeaponType } from './items/Weapon';
+import { WeaponRegistry } from './items/WeaponRegistry';
 import { XData } from './xdata/XData';
 import { XDataDropManager } from './xdata/XDataDropManager';
 

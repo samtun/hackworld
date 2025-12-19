@@ -27,8 +27,8 @@ const STYLES = {
     SLOT_GAP: '15px'
 };
 
-import { WeaponType } from './Weapon';
-import { CoreStats } from './Core';
+import { WeaponType } from './items/Weapon';
+import { CoreStats } from './items/Core';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
 
 export interface Item {
@@ -58,12 +58,12 @@ export class InventoryManager {
     lootList!: HTMLDivElement;
     lootPanel!: HTMLDivElement; // Scrollable container for loot list
     itemDetailsPanel!: HTMLDivElement;
-    
+
     // Navigation state
     selectedIndex: number = 0;
     itemElements: HTMLDivElement[] = [];
     needsRender: boolean = false;
-    
+
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
     private lastNavigateDownState: boolean = false;
@@ -207,7 +207,7 @@ export class InventoryManager {
     toggle() {
         this.isVisible = !this.isVisible;
         this.container.style.display = this.isVisible ? 'flex' : 'none';
-        
+
         // Reset selection when opening inventory
         if (this.isVisible) {
             this.selectedIndex = 0;
@@ -222,7 +222,7 @@ export class InventoryManager {
         if (input) {
             const oldIndex = this.selectedIndex;
             this.handleNavigation(player, input);
-            
+
             // Mark for re-render if selection changed
             if (oldIndex !== this.selectedIndex) {
                 this.needsRender = true;
@@ -247,16 +247,16 @@ export class InventoryManager {
         // Update Loot List
         this.lootList.innerHTML = '';
         this.itemElements = [];
-        
+
         player.inventory.forEach((item, index) => {
             const itemDiv = document.createElement('div');
             const priceText = item.sellPrice !== undefined ? ` (${item.sellPrice} bits)` : '';
-            
+
             // Set item text without equipped indicator (triangle will be overlay)
             itemDiv.innerText = `${item.name}${priceText}`;
-            
+
             const isSelected = index === this.selectedIndex;
-            
+
             Object.assign(itemDiv.style, {
                 padding: '5px',
                 backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
@@ -281,7 +281,7 @@ export class InventoryManager {
             if (index < player.inventory.length - 1) {
                 itemDiv.style.borderBottom = `1px solid ${COLORS.SEPARATOR}`;
             }
-            
+
             this.itemElements.push(itemDiv);
             this.lootList.appendChild(itemDiv);
         });
@@ -299,21 +299,21 @@ export class InventoryManager {
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();
         const select = input.isSelectPressed();
-        
+
         // Navigate up (with debouncing)
         if (navigateUp && !this.lastNavigateUpState) {
             if (this.selectedIndex > 0) {
                 this.selectedIndex--;
             }
         }
-        
+
         // Navigate down (with debouncing)
         if (navigateDown && !this.lastNavigateDownState) {
             if (this.selectedIndex < player.inventory.length - 1) {
                 this.selectedIndex++;
             }
         }
-        
+
         // Select/Equip item (with debouncing)
         if (select && !this.lastSelectState) {
             const item = player.inventory[this.selectedIndex];
@@ -329,7 +329,7 @@ export class InventoryManager {
                 this.needsRender = true;
             }
         }
-        
+
         // Update last states for debouncing
         this.lastNavigateUpState = navigateUp;
         this.lastNavigateDownState = navigateDown;
@@ -350,7 +350,7 @@ export class InventoryManager {
                 <span>${stat.label}</span> <span>${stat.value}</span>
             </div>
         `).join(`<div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>`);
-        
+
         // Add X-Data display
         const xDataHTML = `
             <div style="height: 2px; background-color: ${COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
@@ -358,7 +358,7 @@ export class InventoryManager {
                 <span style="color: #00ffff;">X-Data</span> <span style="color: #00ffff;">${player.xData}</span>
             </div>
         `;
-        
+
         return statsHTML + xDataHTML;
     }
 }

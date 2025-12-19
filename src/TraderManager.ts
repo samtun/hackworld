@@ -2,8 +2,8 @@ import { Player } from './Player';
 import { InputManager } from './InputManager';
 import { Item } from './InventoryManager';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
-import { WeaponRegistry } from './WeaponRegistry';
-import { CoreRegistry } from './CoreRegistry';
+import { WeaponRegistry } from './items/WeaponRegistry';
+import { CoreRegistry } from './items/CoreRegistry';
 
 // --- Constants ---
 const COLORS = {
@@ -66,9 +66,9 @@ export class TraderManager {
         // Trader sells weapons from registry (excluding Aegis Sword which player starts with)
         const allWeapons = WeaponRegistry.getAllWeapons();
         const traderWeapons = allWeapons.filter(w => w.id !== 'aegis_sword');
-        
+
         this.traderInventory = [];
-        
+
         // Add weapons from registry
         for (const weaponDef of traderWeapons) {
             this.traderInventory.push({
@@ -82,7 +82,7 @@ export class TraderManager {
                 isEquipped: false
             });
         }
-        
+
         // Add cores from registry
         const allCores = CoreRegistry.getAllCores();
         for (const coreDef of allCores) {
@@ -96,7 +96,7 @@ export class TraderManager {
                 isEquipped: false
             });
         }
-        
+
         // Add chips (these remain hardcoded for now as they don't have varying stats)
         this.traderInventory.push(
             { id: crypto.randomUUID(), name: 'Power Chip', type: 'chip', buyPrice: 100, sellPrice: 50 },

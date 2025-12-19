@@ -1,5 +1,5 @@
 import { Item } from './InventoryManager';
-import { WeaponType } from './Weapon';
+import { WeaponType } from './items/Weapon';
 
 interface ItemDetail {
     label: string;
@@ -22,7 +22,7 @@ export class ItemDetailsPanel {
         }
 
         const details = this.getItemDetails(item);
-        
+
         if (details.length === 0) {
             return '';
         }

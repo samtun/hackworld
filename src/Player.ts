@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { InputManager } from './InputManager';
-import { Weapon, WeaponType } from './Weapon';
+import { Weapon, WeaponType } from './items/Weapon';
 import { Enemy } from './enemies/Enemy';
 import { Item } from './InventoryManager';
-import { WeaponRegistry } from './WeaponRegistry';
+import { WeaponRegistry } from './items/WeaponRegistry';
 
 export class Player {
     mesh: THREE.Mesh;
@@ -281,7 +281,7 @@ export class Player {
             // Button was just pressed - reset charge timer
             this.chargeDelayTimer = 0;
         }
-        
+
         // Check for immediate attack on button press (only trigger once per press)
         if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
             // Execute immediate attack
@@ -298,7 +298,7 @@ export class Player {
                 }
             }
         }
-        
+
         // Check if attack button is being held (for charging)
         // Charge timer increments while button is held, regardless of attack state
         if (this.input.isAttackHeld() && !this.isChargingAttack) {
