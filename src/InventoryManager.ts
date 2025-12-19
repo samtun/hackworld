@@ -345,10 +345,20 @@ export class InventoryManager {
             { label: 'Bits', value: player.money }
         ];
 
-        return stats.map(stat => `
+        const statsHTML = stats.map(stat => `
             <div style="display:flex; justify-content:space-between; padding: 5px 0;">
                 <span>${stat.label}</span> <span>${stat.value}</span>
             </div>
         `).join(`<div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>`);
+        
+        // Add X-Data display
+        const xDataHTML = `
+            <div style="height: 2px; background-color: ${COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span style="color: #00ffff;">X-Data</span> <span style="color: #00ffff;">${player.xData}</span>
+            </div>
+        `;
+        
+        return statsHTML + xDataHTML;
     }
 }

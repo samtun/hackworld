@@ -9,6 +9,8 @@ import { InventoryManager } from './InventoryManager';
 import { TraderManager } from './TraderManager';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NPCDialogueManager } from './NPCDialogueManager';
+import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
+import { NPC } from './NPC';
 import { AVAILABLE_DUNGEONS } from './stages';
 
 export class Game {
@@ -26,6 +28,7 @@ export class Game {
     trader: TraderManager;
     dungeonSelection: DungeonSelectionManager;
     npcDialogue: NPCDialogueManager;
+    xDataUpgrade: XDataUpgradeManager;
 
     clock: THREE.Clock;
     debugOutputFrequency: number = 1
@@ -92,7 +95,13 @@ export class Game {
         this.trader = new TraderManager();
         this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
         this.npcDialogue = new NPCDialogueManager();
+        this.xDataUpgrade = new XDataUpgradeManager();
         this.clock = new THREE.Clock();
+
+        // Set up Ford NPC callback for X-Data upgrades
+        this.world.setFordCallback(() => {
+            this.xDataUpgrade.show();
+        });
 
         // Debug Mode Setup
         if (import.meta.env.DEV) {
@@ -174,7 +183,7 @@ export class Game {
         const isInventoryPressed = this.input.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
             // Don't allow toggling inventory while any other UI is open
-            if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible) {
+            if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible) {
                 this.inventory.toggle();
             }
         }
@@ -201,6 +210,11 @@ export class Game {
             this.npcDialogue.update(this.input);
         }
 
+        // Update X-Data upgrade if visible
+        if (this.xDataUpgrade.isVisible) {
+            this.xDataUpgrade.update(this.player, this.input);
+        }  
+      
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible;
         const isNearTrader = !anyMenuOpen && this.world.checkTraderInteraction(this.player.mesh.position);
@@ -212,7 +226,7 @@ export class Game {
             npcNearby != null ||
             weaponDropNearby != null ||
             destination != null;
-
+      
         // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)
         if (!anyMenuOpen) {
             // Step Physics
@@ -238,15 +252,20 @@ export class Game {
         this.camera.position.y += (targetY - this.camera.position.y) * lerpFactor;
         this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
 
+        // Handle interactions (only if no menus are open)
         const isSelectPressed = this.input.isSelectPressed();
+        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
 
-        if (npcNearby && !anyMenuOpen) {
-            // Show NPC hint (prioritize NPC over trader)
-            this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to ' + npcNearby.name);
+        if (!anyMenuOpen) {
+            // Check NPCs first (highest priority)
+            const allNPCs = this.world.getAllNPCs();
+            let nearbyNPC: NPC | null = null;
 
-            // Check for interaction (but not if dialogue was just closed this frame)
-            if (isSelectPressed && !this.wasSelectPressed && !wasDialogueVisible) {
-                this.npcDialogue.show(npcNearby);
+            for (const npc of allNPCs) {
+                if (npc.isPlayerNearby(this.player.mesh.position)) {
+                    nearbyNPC = npc;
+                    break;
+                }
             }
         } else if (weaponDropNearby && !anyMenuOpen) {
             // Show weapon drop hint (prioritize over trader and portal)
@@ -260,29 +279,51 @@ export class Game {
             // Show trader hint
             this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Trader');
 
-            // Check for interaction
-            if (isSelectPressed && !this.wasSelectPressed) {
-                this.trader.show();
-            }
-        } else if (destination && !anyMenuOpen) {
-            // Show portal hint (only if not at trader or any menu)
-            this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Enter Portal');
+            if (nearbyNPC) {
+                // Show NPC hint
+                this.ui.showInteractionHint(true, nearbyNPC.getInteractionHint());
 
-            // Check for portal interaction
-            if (isSelectPressed && !this.wasSelectPressed) {
-                // If destination is 'selection', show dungeon selection UI
-                if (destination === 'selection') {
-                    this.dungeonSelection.show((dungeonId: string) => {
-                        this.switchScene(dungeonId);
-                    });
+                // Check for interaction (but not if dialogue was just closed this frame)
+                if (isSelectPressed && !this.wasSelectPressed && !wasDialogueVisible) {
+                    // Check if NPC has a callback (like Ford's upgrade UI)
+                    if (nearbyNPC.interactionCallback) {
+                        nearbyNPC.interact();
+                    } else {
+                        // Default behavior: show dialogue
+                        this.npcDialogue.show(nearbyNPC);
+                    }
+                }
+            } else if (this.world.checkTraderInteraction(this.player.mesh.position)) {
+                // Show trader hint
+                this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Trader');
+
+                // Check for interaction
+                if (isSelectPressed && !this.wasSelectPressed) {
+                    this.trader.show();
+                }
+            } else {
+                const destination = this.world.checkPortalInteraction(this.player.mesh.position);
+                if (destination) {
+                    // Show portal hint
+                    this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Enter Portal');
+
+                    // Check for portal interaction
+                    if (isSelectPressed && !this.wasSelectPressed) {
+                        // If destination is 'selection', show dungeon selection UI
+                        if (destination === 'selection') {
+                            this.dungeonSelection.show((dungeonId: string) => {
+                                this.switchScene(dungeonId);
+                            });
+                        } else {
+                            // Otherwise, directly switch to the destination
+                            this.switchScene(destination);
+                        }
+                    }
                 } else {
-                    // Otherwise, directly switch to the destination
-                    this.switchScene(destination);
+                    // Hide hint if not near anything interactive
+                    this.ui.showInteractionHint(false);
                 }
             }
-        } else if (!anyMenuOpen) {
-            // Hide hint if not near anything interactive and no menus are open
-            this.ui.showInteractionHint(false);
         }
 
         // Handle extra debug outputs

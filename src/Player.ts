@@ -21,12 +21,18 @@ export class Player {
     // Ground detection threshold
     private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
 
-    // Base Stats (without equipment modifiers)
+    // Stat caps and upgrade amounts
+    private static readonly MAX_STAT_VALUE = 9999;
+    private static readonly HP_TP_UPGRADE_AMOUNT = 5;
+    private static readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
+
+    // Base Stats (without equipment modifiers or upgrades)
     private baseStrength: number = 14;
     private baseDefense: number = 17;
     private baseSpeed: number = 6;
 
     // Stats (with equipment modifiers applied)
+    level: number = 1;
     maxHp: number = 100;
     hp: number = 100;
     maxTp: number = 100;
@@ -34,6 +40,15 @@ export class Player {
     strength: number = 14;
     defense: number = 17;
     invulnerableTimer: number = 0;
+
+    // X-Data resource
+    xData: number = 0;
+
+    // Upgrade levels for X-Data upgrades
+    strengthUpgrades: number = 0;
+    defenseUpgrades: number = 0;
+    hpUpgrades: number = 0;
+    tpUpgrades: number = 0;
 
     // Charged Attack
     private isChargingAttack: boolean = false;
@@ -143,19 +158,25 @@ export class Player {
     }
 
     private recalculateStats() {
-        // Start with base stats
-        this.strength = this.baseStrength;
-        this.defense = this.baseDefense;
+        // Start with base stats (including upgrades)
+        this.strength = Math.min(this.baseStrength + this.strengthUpgrades, Player.MAX_STAT_VALUE);
+        this.defense = Math.min(this.baseDefense + this.defenseUpgrades, Player.MAX_STAT_VALUE);
         this.speed = this.baseSpeed;
+        this.maxHp = Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
+        this.maxTp = Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
+
+        // Ensure current HP/TP don't exceed new max
+        if (this.hp > this.maxHp) this.hp = this.maxHp;
+        if (this.tp > this.maxTp) this.tp = this.maxTp;
 
         // Apply core modifiers if a core is equipped
         const equippedCore = this.inventory.find(item => item.type === 'core' && item.isEquipped);
         if (equippedCore && equippedCore.coreStats) {
             if (equippedCore.coreStats.strength !== undefined) {
-                this.strength += equippedCore.coreStats.strength;
+                this.strength = Math.min(this.strength + equippedCore.coreStats.strength, Player.MAX_STAT_VALUE);
             }
             if (equippedCore.coreStats.defense !== undefined) {
-                this.defense += equippedCore.coreStats.defense;
+                this.defense = Math.min(this.defense + equippedCore.coreStats.defense, Player.MAX_STAT_VALUE);
             }
             if (equippedCore.coreStats.speed !== undefined) {
                 this.speed += equippedCore.coreStats.speed;
@@ -504,6 +525,114 @@ export class Player {
                 // Mark this enemy as hit during this dash
                 this.dashHitEnemies.add(enemy);
             }
+        }
+    }
+
+    /**
+     * Collect X-Data
+     */
+    collectXData(amount: number): void {
+        this.xData += amount;
+        console.log(`Collected ${amount} X-Data. Total: ${this.xData}`);
+    }
+
+    /**
+     * Calculate the cost for the next upgrade using Fibonacci numbers
+     * Fibonacci sequence: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144
+     * Multiplied by upgrade level to get cost
+     */
+    getUpgradeCost(currentLevel: number): number {
+        // Fibonacci sequence up to 144
+        const fibonacci = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
+
+        // Cap at index 11 (144)
+        const index = Math.min(currentLevel, fibonacci.length - 1);
+        return fibonacci[index];
+    }
+
+    /**
+     * Upgrade a stat using X-Data
+     * Returns true if upgrade was successful, false if not enough X-Data or stat is at max (9999)
+     */
+    upgradeWithXData(statType: 'strength' | 'defense' | 'hp' | 'tp'): boolean {
+        let currentLevel = 0;
+        let currentValue = 0;
+
+        switch (statType) {
+            case 'strength':
+                currentLevel = this.strengthUpgrades;
+                currentValue = this.baseStrength + this.strengthUpgrades;
+                break;
+            case 'defense':
+                currentLevel = this.defenseUpgrades;
+                currentValue = this.baseDefense + this.defenseUpgrades;
+                break;
+            case 'hp':
+                currentLevel = this.hpUpgrades;
+                currentValue = 100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT);
+                break;
+            case 'tp':
+                currentLevel = this.tpUpgrades;
+                currentValue = 100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT);
+                break;
+        }
+
+        // Check if stat would exceed 9999 cap
+        const upgradeAmount = (statType === 'hp' || statType === 'tp')
+            ? Player.HP_TP_UPGRADE_AMOUNT
+            : Player.STRENGTH_DEFENSE_UPGRADE_AMOUNT;
+        if (currentValue + upgradeAmount > Player.MAX_STAT_VALUE) {
+            console.log(`${statType} is already at max value (${Player.MAX_STAT_VALUE})`);
+            return false;
+        }
+
+        const cost = this.getUpgradeCost(currentLevel);
+
+        if (this.xData >= cost) {
+            this.xData -= cost;
+
+            switch (statType) {
+                case 'strength':
+                    this.strengthUpgrades++;
+                    break;
+                case 'defense':
+                    this.defenseUpgrades++;
+                    break;
+                case 'hp':
+                    this.hpUpgrades++;
+                    // Heal player when upgrading HP
+                    this.hp += Player.HP_TP_UPGRADE_AMOUNT;
+                    break;
+                case 'tp':
+                    this.tpUpgrades++;
+                    // Restore TP when upgrading
+                    this.tp += Player.HP_TP_UPGRADE_AMOUNT;
+                    break;
+            }
+
+            this.recalculateStats();
+            console.log(`Upgraded ${statType} for ${cost} X-Data. Remaining: ${this.xData}`);
+            return true;
+        } else {
+            console.log(`Not enough X-Data to upgrade ${statType}. Need ${cost}, have ${this.xData}`);
+            return false;
+        }
+    }
+
+    /**
+     * Get base stat value without equipment modifiers (for UI display)
+     * Returns base value + upgrades only, capped at 9999
+     */
+    getBaseStatValue(statType: 'strength' | 'defense' | 'hp' | 'tp'): number {
+        switch (statType) {
+            case 'strength':
+                return Math.min(this.baseStrength + this.strengthUpgrades, Player.MAX_STAT_VALUE);
+            case 'defense':
+                return Math.min(this.baseDefense + this.defenseUpgrades, Player.MAX_STAT_VALUE);
+            case 'hp':
+                return Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
+            case 'tp':
+                return Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
         }
     }
 }

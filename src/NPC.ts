@@ -7,6 +7,7 @@ export class NPC {
     name: string;
     position: CANNON.Vec3;
     dialogue: string[];
+    interactionCallback?: () => void;
 
     constructor(
         scene: THREE.Scene,
@@ -14,11 +15,13 @@ export class NPC {
         physicsMaterial: CANNON.Material,
         name: string,
         position: CANNON.Vec3,
-        dialogue: string[]
+        dialogue: string[],
+        interactionCallback?: () => void
     ) {
         this.name = name;
         this.position = position;
         this.dialogue = dialogue;
+        this.interactionCallback = interactionCallback;
 
         // Visual Mesh - Simple cube as requested
         const geometry = new THREE.BoxGeometry(1, 2, 1);
@@ -47,6 +50,22 @@ export class NPC {
             new THREE.Vector3(this.position.x, this.position.y, this.position.z)
         );
         return dist < 2.5; // Interaction range
+    }
+    
+    /**
+     * Get interaction hint text
+     */
+    getInteractionHint(): string {
+        return `<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to ${this.name}`;
+    }
+    
+    /**
+     * Handle interaction
+     */
+    interact(): void {
+        if (this.interactionCallback) {
+            this.interactionCallback();
+        }
     }
 
     cleanup(scene: THREE.Scene, world: CANNON.World): void {

@@ -4,6 +4,8 @@ import { Enemy } from './Enemy';
 import { Player } from './Player';
 
 export class LargeEnemy extends Enemy {
+    xDataDropChance = 0.1;
+
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
         super(scene, world, position, physicsMaterial);
 
