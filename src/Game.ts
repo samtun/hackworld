@@ -11,7 +11,6 @@ import { ChipTraderManager } from './ChipTraderManager';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NPCDialogueManager } from './NPCDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
-import { NPC } from './NPC';
 import { AVAILABLE_DUNGEONS } from './stages';
 import { DebugValueEditor } from './DebugValueEditor';
 
@@ -48,6 +47,7 @@ export class Game {
     wasInventoryPressed: boolean = false;
     wasSelectPressed: boolean = false;
     wasSelectAndStartPressed: boolean = false;
+    wasTraderJustOpened: boolean = false; // Prevent immediate action when opening trader
     isTransitioning: boolean = false;
 
     constructor() {
@@ -266,28 +266,98 @@ export class Game {
 
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.chipTrader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
-        const isNearTrader = !anyMenuOpen && this.world.checkTraderInteraction(this.player.mesh.position);
-        const isNearChipTrader = !anyMenuOpen && this.world.checkChipTraderInteraction(this.player.mesh.position);
-        const weaponDropNearby = !anyMenuOpen ? this.world.checkWeaponDropInteraction(this.player.mesh.position) : null;
-        const destination = !anyMenuOpen ? this.world.checkPortalInteraction(this.player.mesh.position) : null;
         
-        // Check NPCs
-        let npcNearby: NPC | null = null;
+        // Define interactive entity types
+        interface InteractiveEntity {
+            type: 'npc' | 'trader' | 'chipTrader' | 'weaponDrop' | 'portal';
+            data?: any;
+            hint: string;
+            action: () => void;
+        }
+        
+        let nearbyInteractive: InteractiveEntity | null = null;
+        
         if (!anyMenuOpen) {
+            // Check NPCs (including dialogue NPCs and Ford)
             const allNPCs = this.world.getAllNPCs();
             for (const npc of allNPCs) {
                 if (npc.isPlayerNearby(this.player.mesh.position)) {
-                    npcNearby = npc;
+                    nearbyInteractive = {
+                        type: 'npc',
+                        data: npc,
+                        hint: npc.getInteractionHint(),
+                        action: () => {
+                            if (npc.interactionCallback) {
+                                npc.interact();
+                            } else {
+                                this.npcDialogue.show(npc);
+                            }
+                        }
+                    };
                     break;
+                }
+            }
+            
+            // Check weapon drop (higher priority than traders)
+            if (!nearbyInteractive) {
+                const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.mesh.position);
+                if (weaponDropNearby) {
+                    nearbyInteractive = {
+                        type: 'weaponDrop',
+                        data: weaponDropNearby,
+                        hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up ' + weaponDropNearby.weaponName,
+                        action: () => {
+                            this.world.pickupWeaponDrop(weaponDropNearby, this.player);
+                        }
+                    };
+                }
+            }
+            
+            // Check weapon trader
+            if (!nearbyInteractive && this.world.checkTraderInteraction(this.player.mesh.position)) {
+                nearbyInteractive = {
+                    type: 'trader',
+                    hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Trader',
+                    action: () => {
+                        this.trader.show();
+                    }
+                };
+            }
+            
+            // Check chip trader
+            if (!nearbyInteractive && this.world.checkChipTraderInteraction(this.player.mesh.position)) {
+                nearbyInteractive = {
+                    type: 'chipTrader',
+                    hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Chip Trader',
+                    action: () => {
+                        this.chipTrader.show();
+                    }
+                };
+            }
+            
+            // Check portal
+            if (!nearbyInteractive) {
+                const destination = this.world.checkPortalInteraction(this.player.mesh.position);
+                if (destination) {
+                    nearbyInteractive = {
+                        type: 'portal',
+                        data: destination,
+                        hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Enter Portal',
+                        action: () => {
+                            if (destination === 'selection') {
+                                this.dungeonSelection.show((dungeonId: string) => {
+                                    this.switchScene(dungeonId);
+                                });
+                            } else {
+                                this.switchScene(destination);
+                            }
+                        }
+                    };
                 }
             }
         }
 
-        const isNearInteractive = isNearTrader ||
-            isNearChipTrader ||
-            npcNearby != null ||
-            weaponDropNearby != null ||
-            destination != null;
+        const isNearInteractive = nearbyInteractive !== null;
 
         // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)
         if (!anyMenuOpen) {
@@ -322,63 +392,30 @@ export class Game {
         // Handle interactions (use variables we already calculated)
         const isSelectPressed = this.input.isSelectPressed();
 
-        if (npcNearby) {
-            this.ui.showInteractionHint(true, npcNearby.getInteractionHint());
+        if (nearbyInteractive) {
+            this.ui.showInteractionHint(true, nearbyInteractive.hint);
 
-            // Check for interaction (but not if dialogue was just closed this frame)
-            if (isSelectPressed && !this.wasSelectPressed && !wasDialogueVisible) {
-                // Check if NPC has a callback (like Ford's upgrade UI)
-                if (npcNearby.interactionCallback) {
-                    npcNearby.interact();
-                } else {
-                    // Default behavior: show dialogue
-                    this.npcDialogue.show(npcNearby);
+            // Check for interaction - prevent if just opened a menu or dialogue was just closed
+            const shouldPreventInteraction = this.wasTraderJustOpened || 
+                                           (nearbyInteractive.type === 'npc' && wasDialogueVisible);
+            
+            if (isSelectPressed && !this.wasSelectPressed && !shouldPreventInteraction) {
+                nearbyInteractive.action();
+                
+                // Set flag if we just opened a trader to prevent immediate action
+                if (nearbyInteractive.type === 'trader' || nearbyInteractive.type === 'chipTrader') {
+                    this.wasTraderJustOpened = true;
                 }
             }
-        } else if (weaponDropNearby && !anyMenuOpen) {
-                // Show weapon drop hint (prioritize over trader and portal)
-                this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up ' + weaponDropNearby.weaponName);
-
-                // Check for interaction
-                if (isSelectPressed && !this.wasSelectPressed) {
-                    this.world.pickupWeaponDrop(weaponDropNearby, this.player);
-                }
-            } else if (isNearTrader) {
-                // Show trader hint
-                this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Trader');
-
-                // Check for interaction
-                if (isSelectPressed && !this.wasSelectPressed) {
-                    this.trader.show();
-                }
-            } else if (isNearChipTrader) {
-                // Show chip trader hint
-                this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Chip Trader');
-
-                // Check for interaction
-                if (isSelectPressed && !this.wasSelectPressed) {
-                    this.chipTrader.show();
-                }
-            } else if (destination) {
-                // Show portal hint
-                this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Enter Portal');
-
-                // Check for portal interaction
-                if (isSelectPressed && !this.wasSelectPressed) {
-                    // If destination is 'selection', show dungeon selection UI
-                    if (destination === 'selection') {
-                        this.dungeonSelection.show((dungeonId: string) => {
-                            this.switchScene(dungeonId);
-                        });
-                    } else {
-                        // Otherwise, directly switch to the destination
-                        this.switchScene(destination);
-                    }
-                }
-            } else {
-                // Hide hint if not near anything interactive
-                this.ui.showInteractionHint(false);
-            }
+        } else {
+            // Hide hint if not near anything interactive
+            this.ui.showInteractionHint(false);
+        }
+        
+        // Reset trader just opened flag when select is released
+        if (!isSelectPressed && this.wasTraderJustOpened) {
+            this.wasTraderJustOpened = false;
+        }
 
         // Handle extra debug outputs
         if (this.debugMode) {

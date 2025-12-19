@@ -160,7 +160,7 @@ export class Lobby extends BaseDungeon {
     }
 
     /**
-     * Get all NPCs in the lobby
+     * Get all NPCs in the lobby (dialogue NPCs only, traders are handled separately)
      */
     getAllNPCs(): NPC[] {
         const npcs: NPC[] = [];

@@ -260,6 +260,8 @@ export class TraderManager {
         this.selectedIndex = 0;
         this.activePanel = 'trader';
         this.needsRender = true;
+        // Reset input states to prevent immediate action on open
+        this.lastSelectState = true;
     }
 
     hide() {
