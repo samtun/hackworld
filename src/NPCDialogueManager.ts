@@ -102,6 +102,8 @@ export class NPCDialogueManager {
         this.currentLineIndex = 0;
         this.container.style.display = 'flex';
         this.updateDialogue();
+        // Reset input state to prevent immediate action on open
+        this.lastSelectState = true;
     }
 
     /**
