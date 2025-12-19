@@ -29,6 +29,7 @@ const STYLES = {
 
 import { WeaponType } from './items/Weapon';
 import { CoreStats } from './items/Core';
+import { ChipType, ChipStats } from './items/Chip';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
 
 export interface Item {
@@ -38,6 +39,8 @@ export interface Item {
     weaponType?: WeaponType; // For weapon items
     damage?: number; // For weapon items - actual damage value
     coreStats?: CoreStats; // For core items - stat modifiers applied when equipped
+    chipType?: ChipType; // For chip items
+    chipStats?: ChipStats; // For chip items - modifiers applied when equipped
     stats?: {
         strength?: number;
         defense?: number;
@@ -341,6 +344,11 @@ export class InventoryManager {
             } else if (item && item.type === 'core' && item.coreStats) {
                 player.equipCore(item.id);
                 console.log(`Equipped core: ${item.name}`);
+                // Trigger re-render to update equipped indicator immediately
+                this.needsRender = true;
+            } else if (item && item.type === 'chip' && item.chipStats) {
+                player.equipChip(item.id);
+                console.log(`Equipped chip: ${item.name}`);
                 // Trigger re-render to update equipped indicator immediately
                 this.needsRender = true;
             }

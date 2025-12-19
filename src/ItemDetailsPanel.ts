@@ -97,9 +97,24 @@ export class ItemDetailsPanel {
     /**
      * Get details for chip items
      */
-    private static getChipDetails(_item: Item): ItemDetail[] {
-        // Chips don't have details yet, but we can extend this in the future
-        return [];
+    private static getChipDetails(item: Item): ItemDetail[] {
+        if (!item.chipStats) {
+            return [];
+        }
+
+        const details: ItemDetail[] = [];
+
+        if (item.chipStats.weaponRangeMultiplier !== undefined) {
+            const percentIncrease = ((item.chipStats.weaponRangeMultiplier - 1) * 100).toFixed(0);
+            details.push({ label: 'Weapon Range', value: `+${percentIncrease}%` });
+        }
+
+        if (item.chipStats.walkSpeedMultiplier !== undefined) {
+            const percentIncrease = ((item.chipStats.walkSpeedMultiplier - 1) * 100).toFixed(0);
+            details.push({ label: 'Walk Speed', value: `+${percentIncrease}%` });
+        }
+
+        return details;
     }
 
     /**

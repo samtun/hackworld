@@ -13,6 +13,9 @@ export class Lobby extends BaseDungeon {
     // Store trader position for interaction
     private traderPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, -5);
     
+    // Store chip trader position for interaction
+    private chipTraderPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0, -5);
+    
     // Store Ford position for interaction
     private fordPosition: CANNON.Vec3 = new CANNON.Vec3(5, 0, -5);
     
@@ -116,6 +119,24 @@ export class Lobby extends BaseDungeon {
         } else {
             console.warn('Trader model not preloaded');
         }
+
+        // Add Chip Trader - use a simple colored cube for now
+        const chipTraderGeometry = new THREE.BoxGeometry(1, 2, 1);
+        const chipTraderMaterial = new THREE.MeshStandardMaterial({ color: 0x00ffaa });
+        const chipTraderMesh = new THREE.Mesh(chipTraderGeometry, chipTraderMaterial);
+        chipTraderMesh.position.set(this.chipTraderPosition.x, this.chipTraderPosition.y + 1, this.chipTraderPosition.z);
+        chipTraderMesh.castShadow = true;
+        chipTraderMesh.receiveShadow = true;
+        this.scene.add(chipTraderMesh);
+        this.meshes.push(chipTraderMesh);
+
+        // Chip Trader Physics Body
+        const chipTraderShape = new CANNON.Box(new CANNON.Vec3(0.5, 1, 0.5));
+        const chipTraderBody = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+        chipTraderBody.addShape(chipTraderShape);
+        chipTraderBody.position.set(this.chipTraderPosition.x, this.chipTraderPosition.y + 1, this.chipTraderPosition.z);
+        this.physicsWorld.addBody(chipTraderBody);
+        this.bodies.push(chipTraderBody);
     }
 
     /**
@@ -124,6 +145,16 @@ export class Lobby extends BaseDungeon {
     checkTraderInteraction(playerPosition: THREE.Vector3): boolean {
         const dist = playerPosition.distanceTo(
             new THREE.Vector3(this.traderPosition.x, this.traderPosition.y, this.traderPosition.z)
+        );
+        return dist < 2.0; // Interaction range
+    }
+
+    /**
+     * Check if player is near chip trader
+     */
+    checkChipTraderInteraction(playerPosition: THREE.Vector3): boolean {
+        const dist = playerPosition.distanceTo(
+            new THREE.Vector3(this.chipTraderPosition.x, this.chipTraderPosition.y, this.chipTraderPosition.z)
         );
         return dist < 2.0; // Interaction range
     }

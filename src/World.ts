@@ -279,6 +279,14 @@ export class World {
         return false;
     }
 
+    checkChipTraderInteraction(playerPosition: THREE.Vector3): boolean {
+        // Only check chip trader in lobby
+        if (this.currentStage instanceof Lobby) {
+            return this.currentStage.checkChipTraderInteraction(playerPosition);
+        }
+        return false;
+    }
+
     getAllNPCs(): NPC[] {
         // Get all NPCs from current stage
         if (this.currentStage instanceof Lobby) {

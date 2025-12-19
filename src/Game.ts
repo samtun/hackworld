@@ -7,6 +7,7 @@ import { InputManager } from './InputManager';
 import { UIManager } from './UIManager';
 import { InventoryManager } from './InventoryManager';
 import { TraderManager } from './TraderManager';
+import { ChipTraderManager } from './ChipTraderManager';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NPCDialogueManager } from './NPCDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
@@ -27,6 +28,7 @@ export class Game {
     ui: UIManager;
     inventory: InventoryManager;
     trader: TraderManager;
+    chipTrader: ChipTraderManager;
     dungeonSelection: DungeonSelectionManager;
     npcDialogue: NPCDialogueManager;
     xDataUpgrade: XDataUpgradeManager;
@@ -96,6 +98,7 @@ export class Game {
         this.player = new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial);
         this.inventory = new InventoryManager();
         this.trader = new TraderManager();
+        this.chipTrader = new ChipTraderManager();
         this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
         this.npcDialogue = new NPCDialogueManager();
         this.xDataUpgrade = new XDataUpgradeManager();
@@ -256,9 +259,15 @@ export class Game {
             this.xDataUpgrade.update(this.player, this.input);
         }
 
+        // Update chip trader if visible
+        if (this.chipTrader.isVisible) {
+            this.chipTrader.update(this.player, this.input);
+        }
+
         // Check if player is near any interactive entity (to prevent jumping while interacting)
-        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
+        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.chipTrader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
         const isNearTrader = !anyMenuOpen && this.world.checkTraderInteraction(this.player.mesh.position);
+        const isNearChipTrader = !anyMenuOpen && this.world.checkChipTraderInteraction(this.player.mesh.position);
         const weaponDropNearby = !anyMenuOpen ? this.world.checkWeaponDropInteraction(this.player.mesh.position) : null;
         const destination = !anyMenuOpen ? this.world.checkPortalInteraction(this.player.mesh.position) : null;
         
@@ -275,6 +284,7 @@ export class Game {
         }
 
         const isNearInteractive = isNearTrader ||
+            isNearChipTrader ||
             npcNearby != null ||
             weaponDropNearby != null ||
             destination != null;
@@ -340,6 +350,14 @@ export class Game {
                 // Check for interaction
                 if (isSelectPressed && !this.wasSelectPressed) {
                     this.trader.show();
+                }
+            } else if (isNearChipTrader) {
+                // Show chip trader hint
+                this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Chip Trader');
+
+                // Check for interaction
+                if (isSelectPressed && !this.wasSelectPressed) {
+                    this.chipTrader.show();
                 }
             } else if (destination) {
                 // Show portal hint
