@@ -12,6 +12,7 @@ export class World {
     physicsWorld: CANNON.World;
     physicsMaterial: CANNON.Material;
     assetManager: AssetManager;
+    onLoadProgressCallback?: (loaded: number, total: number) => void;
 
     // Current active stage
     currentStage?: BaseDungeon;
@@ -24,16 +25,22 @@ export class World {
     private dungeon1: Dungeon1;
     private dungeon2: Dungeon2;
 
-    constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material, onLoadComplete?: () => void) {
+    constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material, onLoadComplete?: () => void, onLoadProgress?: (loaded: number, total: number) => void) {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
         this.physicsMaterial = physicsMaterial;
         this.assetManager = AssetManager.getInstance();
+        this.onLoadProgressCallback = onLoadProgress;
 
         // Initialize stage instances
         this.lobby = new Lobby(scene, physicsWorld, physicsMaterial);
         this.dungeon1 = new Dungeon1(scene, physicsWorld, physicsMaterial);
         this.dungeon2 = new Dungeon2(scene, physicsWorld, physicsMaterial);
+
+        // Setup progress callback for asset manager
+        if (this.onLoadProgressCallback) {
+            this.assetManager.setProgressCallback(this.onLoadProgressCallback);
+        }
 
         // Preload all assets before starting
         this.preloadAssets().then(() => {
