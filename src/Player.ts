@@ -20,10 +20,12 @@ export class Player {
     // Ground detection threshold
     private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
 
-    // Base Stats (without equipment modifiers)
+    // Base Stats (without equipment modifiers or upgrades)
     private baseStrength: number = 14;
     private baseDefense: number = 17;
     private baseSpeed: number = 6;
+    private baseHp: number = 100;
+    private baseTp: number = 100;
     
     // Stats (with equipment modifiers applied)
     maxHp: number = 100;
@@ -33,6 +35,15 @@ export class Player {
     strength: number = 14;
     defense: number = 17;
     invulnerableTimer: number = 0;
+    
+    // X-Data resource
+    xData: number = 0;
+    
+    // Upgrade levels for X-Data upgrades
+    strengthUpgrades: number = 0;
+    defenseUpgrades: number = 0;
+    hpUpgrades: number = 0;
+    tpUpgrades: number = 0;
     
     // Charged Attack
     private isChargingAttack: boolean = false;
@@ -132,10 +143,16 @@ export class Player {
     }
 
     private recalculateStats() {
-        // Start with base stats
-        this.strength = this.baseStrength;
-        this.defense = this.baseDefense;
+        // Start with base stats (including upgrades)
+        this.strength = this.baseStrength + this.strengthUpgrades;
+        this.defense = this.baseDefense + this.defenseUpgrades;
         this.speed = this.baseSpeed;
+        this.maxHp = this.baseHp + (this.hpUpgrades * 5);
+        this.maxTp = this.baseTp + (this.tpUpgrades * 5);
+        
+        // Ensure current HP/TP don't exceed new max
+        if (this.hp > this.maxHp) this.hp = this.maxHp;
+        if (this.tp > this.maxTp) this.tp = this.maxTp;
         
         // Apply core modifiers if a core is equipped
         const equippedCore = this.inventory.find(item => item.type === 'core' && item.isEquipped);
@@ -485,6 +502,89 @@ export class Player {
                 // Mark this enemy as hit during this dash
                 this.dashHitEnemies.add(enemy);
             }
+        }
+    }
+    
+    /**
+     * Collect X-Data
+     */
+    collectXData(amount: number): void {
+        this.xData += amount;
+        console.log(`Collected ${amount} X-Data. Total: ${this.xData}`);
+    }
+    
+    /**
+     * Calculate the cost for the next upgrade using Fibonacci numbers
+     * Fibonacci sequence: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144
+     * Multiplied by upgrade level to get cost
+     */
+    getUpgradeCost(currentLevel: number): number {
+        // Fibonacci sequence up to 144
+        const fibonacci = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
+        
+        // Cap at index 11 (144)
+        const index = Math.min(currentLevel, fibonacci.length - 1);
+        return fibonacci[index];
+    }
+    
+    /**
+     * Upgrade a stat using X-Data
+     * Returns true if upgrade was successful, false if not enough X-Data or max level reached
+     */
+    upgradeWithXData(statType: 'strength' | 'defense' | 'hp' | 'tp'): boolean {
+        let currentLevel = 0;
+        
+        switch (statType) {
+            case 'strength':
+                currentLevel = this.strengthUpgrades;
+                break;
+            case 'defense':
+                currentLevel = this.defenseUpgrades;
+                break;
+            case 'hp':
+                currentLevel = this.hpUpgrades;
+                break;
+            case 'tp':
+                currentLevel = this.tpUpgrades;
+                break;
+        }
+        
+        // Check if at max level (12 upgrades = index 11 in fibonacci)
+        if (currentLevel >= 11) {
+            console.log(`${statType} is already at max level`);
+            return false;
+        }
+        
+        const cost = this.getUpgradeCost(currentLevel);
+        
+        if (this.xData >= cost) {
+            this.xData -= cost;
+            
+            switch (statType) {
+                case 'strength':
+                    this.strengthUpgrades++;
+                    break;
+                case 'defense':
+                    this.defenseUpgrades++;
+                    break;
+                case 'hp':
+                    this.hpUpgrades++;
+                    // Heal player when upgrading HP
+                    this.hp += 5;
+                    break;
+                case 'tp':
+                    this.tpUpgrades++;
+                    // Restore TP when upgrading
+                    this.tp += 5;
+                    break;
+            }
+            
+            this.recalculateStats();
+            console.log(`Upgraded ${statType} for ${cost} X-Data. Remaining: ${this.xData}`);
+            return true;
+        } else {
+            console.log(`Not enough X-Data to upgrade ${statType}. Need ${cost}, have ${this.xData}`);
+            return false;
         }
     }
 }

@@ -11,8 +11,12 @@ export class Lobby extends BaseDungeon {
     // Store trader position for interaction
     private traderPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, -5);
     
-    // NPC
+    // Store Ford position for interaction
+    private fordPosition: CANNON.Vec3 = new CANNON.Vec3(5, 0, -5);
+    
+    // NPCs
     npc?: NPC;
+    fordNpc?: NPC;
 
     load(): void {
         this.clear();
@@ -40,6 +44,21 @@ export class Lobby extends BaseDungeon {
             "Nyleth",
             new CANNON.Vec3(-5, 0, 0),
             nylethDialogue
+        );
+        
+        // Create Ford NPC (X-Data Manager)
+        const fordDialogue = [
+            "Welcome! I'm Ford, the X-Data Manager.",
+            "I can help you unlock your potential using the X-Data you collect from enemies.",
+            "Step closer if you'd like to upgrade your stats!"
+        ];
+        this.fordNpc = new NPC(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            "Ford",
+            this.fordPosition,
+            fordDialogue
         );
 
         // Load Trader Model from cache
@@ -105,14 +124,28 @@ export class Lobby extends BaseDungeon {
         }
         return null;
     }
+    
+    /**
+     * Check if player is near Ford
+     */
+    checkFordInteraction(playerPosition: THREE.Vector3): boolean {
+        const dist = playerPosition.distanceTo(
+            new THREE.Vector3(this.fordPosition.x, this.fordPosition.y, this.fordPosition.z)
+        );
+        return dist < 2.5; // Interaction range
+    }
 
     /**
-     * Override clear to also clean up NPC
+     * Override clear to also clean up NPCs
      */
     clear(): void {
         if (this.npc) {
             this.npc.cleanup(this.scene, this.physicsWorld);
             this.npc = undefined;
+        }
+        if (this.fordNpc) {
+            this.fordNpc.cleanup(this.scene, this.physicsWorld);
+            this.fordNpc = undefined;
         }
         super.clear();
     }

@@ -202,4 +202,47 @@ export class Enemy {
         this.deathTimer = 0;
         // Keep physics enabled for knockback
     }
+    
+    /**
+     * Roll for X-Data drop
+     * Default Enemy: 1% chance
+     * Returns the amount of X-Data to drop (0 if no drop)
+     */
+    rollXDataDrop(): number {
+        const dropChance = Math.random();
+        
+        // 1% chance to drop X-Data
+        if (dropChance < 0.01) {
+            return this.determineXDataAmount();
+        }
+        
+        return 0;
+    }
+    
+    /**
+     * Determine the amount of X-Data dropped
+     * 5% chance for 5 units, 0.5% chance for 100 units, otherwise 1 unit
+     */
+    protected determineXDataAmount(): number {
+        const amountRoll = Math.random();
+        
+        if (amountRoll < 0.005) {
+            // 0.5% chance for 100 units
+            return 100;
+        } else if (amountRoll < 0.055) {
+            // 5% chance for 5 units (0.5% + 5% = 5.5% total, so check < 0.055)
+            return 5;
+        } else {
+            // Otherwise 1 unit
+            return 1;
+        }
+    }
+    
+    /**
+     * Get the position where X-Data should spawn (at enemy's death location)
+     */
+    getDeathPosition(): CANNON.Vec3 {
+        return this.body.position.clone();
+    }
+}
 }

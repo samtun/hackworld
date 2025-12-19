@@ -9,6 +9,7 @@ import { InventoryManager } from './InventoryManager';
 import { TraderManager } from './TraderManager';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NPCDialogueManager } from './NPCDialogueManager';
+import { XDataUpgradeManager } from './XDataUpgradeManager';
 import { AVAILABLE_DUNGEONS } from './stages';
 
 export class Game {
@@ -26,6 +27,7 @@ export class Game {
     trader: TraderManager;
     dungeonSelection: DungeonSelectionManager;
     npcDialogue: NPCDialogueManager;
+    xDataUpgrade: XDataUpgradeManager;
 
     clock: THREE.Clock;
     currentScene: string = 'startScreen';
@@ -88,6 +90,7 @@ export class Game {
         this.trader = new TraderManager();
         this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
         this.npcDialogue = new NPCDialogueManager();
+        this.xDataUpgrade = new XDataUpgradeManager();
         this.clock = new THREE.Clock();
 
         // Debug Mode Setup
@@ -170,7 +173,7 @@ export class Game {
         const isInventoryPressed = this.input.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
             // Don't allow toggling inventory while any other UI is open
-            if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible) {
+            if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible) {
                 this.inventory.toggle();
             }
         }
@@ -196,9 +199,14 @@ export class Game {
         if (this.npcDialogue.isVisible) {
             this.npcDialogue.update(this.input);
         }
+        
+        // Update X-Data upgrade if visible
+        if (this.xDataUpgrade.isVisible) {
+            this.xDataUpgrade.update(this.player, this.input);
+        }
 
-        // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)
-        if (!this.inventory.isVisible && !this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible) {
+        // Update Game Logic (only if all UIs are closed)
+        if (!this.inventory.isVisible && !this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible) {
             // Step Physics
             this.physicsWorld.step(1 / 60, dt, 3);
 
@@ -225,17 +233,26 @@ export class Game {
         // Check Trader Interaction (only if no menus are open)
         const isNearTrader = this.world.checkTraderInteraction(this.player.mesh.position);
         const npcNearby = this.world.checkNPCInteraction(this.player.mesh.position);
+        const isNearFord = this.world.checkFordInteraction(this.player.mesh.position);
         const destination = this.world.checkPortalInteraction(this.player.mesh.position);
         const isSelectPressed = this.input.isSelectPressed();
-        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible;
+        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
 
         if (npcNearby && !anyMenuOpen) {
-            // Show NPC hint (prioritize NPC over trader)
+            // Show NPC hint (prioritize NPC over trader/Ford)
             this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to ' + npcNearby.name);
 
             // Check for interaction (but not if dialogue was just closed this frame)
             if (isSelectPressed && !this.wasSelectPressed && !wasDialogueVisible) {
                 this.npcDialogue.show(npcNearby);
+            }
+        } else if (isNearFord && !anyMenuOpen) {
+            // Show Ford hint (prioritize over trader)
+            this.ui.showInteractionHint(true, '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Ford');
+
+            // Check for interaction
+            if (isSelectPressed && !this.wasSelectPressed) {
+                this.xDataUpgrade.show();
             }
         } else if (isNearTrader && !anyMenuOpen) {
             // Show trader hint

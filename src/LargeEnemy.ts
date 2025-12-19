@@ -45,4 +45,18 @@ export class LargeEnemy extends Enemy {
         console.log("Large Enemy attacks player!");
         player.takeDamage(13); // 1.3x damage (10 * 1.3 = 13)
     }
+    
+    /**
+     * Override X-Data drop rate for Large Enemy: 3% chance
+     */
+    rollXDataDrop(): number {
+        const dropChance = Math.random();
+        
+        // 3% chance to drop X-Data
+        if (dropChance < 0.03) {
+            return this.determineXDataAmount();
+        }
+        
+        return 0;
+    }
 }

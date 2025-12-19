@@ -5,6 +5,7 @@ import { Player } from './Player';
 import { AssetManager } from './AssetManager';
 import { BaseDungeon, Lobby, Dungeon1, Dungeon2 } from './stages';
 import { NPC } from './NPC';
+import { XData } from './XData';
 
 export class World {
     scene: THREE.Scene;
@@ -14,6 +15,9 @@ export class World {
 
     // Current active stage
     currentStage?: BaseDungeon;
+    
+    // X-Data entities
+    xDataEntities: XData[] = [];
 
     // Stage instances
     private lobby: Lobby;
@@ -60,6 +64,7 @@ export class World {
         if (this.currentStage) {
             this.currentStage.clear();
         }
+        this.clearXData();
         this.currentStage = this.lobby;
         this.lobby.load();
     }
@@ -68,6 +73,7 @@ export class World {
         if (this.currentStage) {
             this.currentStage.clear();
         }
+        this.clearXData();
         this.currentStage = this.dungeon1;
         this.dungeon1.load();
     }
@@ -76,6 +82,7 @@ export class World {
         if (this.currentStage) {
             this.currentStage.clear();
         }
+        this.clearXData();
         this.currentStage = this.dungeon2;
         this.dungeon2.load();
     }
@@ -117,11 +124,66 @@ export class World {
             enemy.update(dt, player);
 
             if (enemy.isDead) {
+                // Check if enemy should drop X-Data
+                const xDataAmount = enemy.rollXDataDrop();
+                if (xDataAmount > 0) {
+                    this.spawnXData(enemy.getDeathPosition(), xDataAmount);
+                }
+                
                 this.scene.remove(enemy.mesh);
                 this.physicsWorld.removeBody(enemy.body);
                 this.currentStage.enemies.splice(i, 1);
             }
         }
+        
+        // Update X-Data entities
+        for (let i = this.xDataEntities.length - 1; i >= 0; i--) {
+            const xData = this.xDataEntities[i];
+            xData.update(dt);
+            
+            // Check for collision with player
+            if (this.checkXDataCollision(xData, player)) {
+                player.collectXData(xData.amount);
+                xData.cleanup(this.scene, this.physicsWorld);
+                this.xDataEntities.splice(i, 1);
+            }
+        }
+    }
+    
+    /**
+     * Spawn X-Data at the given position
+     */
+    spawnXData(position: CANNON.Vec3, amount: number): void {
+        const xData = new XData(this.scene, this.physicsWorld, position, amount);
+        this.xDataEntities.push(xData);
+        console.log(`Spawned ${amount} X-Data at position (${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)})`);
+    }
+    
+    /**
+     * Check collision between X-Data and player
+     */
+    private checkXDataCollision(xData: XData, player: Player): boolean {
+        const playerPos = player.body.position;
+        const xDataPos = xData.body.position;
+        
+        const dx = playerPos.x - xDataPos.x;
+        const dy = playerPos.y - xDataPos.y;
+        const dz = playerPos.z - xDataPos.z;
+        const distSq = dx * dx + dy * dy + dz * dz;
+        
+        // Collection radius of 1.5 units
+        const collectionRadius = 1.5;
+        return distSq < (collectionRadius * collectionRadius);
+    }
+    
+    /**
+     * Clear all X-Data entities
+     */
+    private clearXData(): void {
+        for (const xData of this.xDataEntities) {
+            xData.cleanup(this.scene, this.physicsWorld);
+        }
+        this.xDataEntities = [];
     }
 
     checkPortalInteraction(playerPosition: THREE.Vector3): string | null {
@@ -143,5 +205,13 @@ export class World {
             return this.currentStage.checkNPCInteraction(playerPosition);
         }
         return null;
+    }
+    
+    checkFordInteraction(playerPosition: THREE.Vector3): boolean {
+        // Only check Ford in lobby
+        if (this.currentStage instanceof Lobby) {
+            return this.currentStage.checkFordInteraction(playerPosition);
+        }
+        return false;
     }
 }
