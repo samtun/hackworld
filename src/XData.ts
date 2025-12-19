@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
 export class XData {
-    mesh: THREE.Mesh;
+    mesh: THREE.Object3D;
     body: CANNON.Body;
     amount: number;
     private bobTimer: number = 0;
@@ -37,7 +37,9 @@ export class XData {
         // Position the group
         group.position.set(position.x, position.y, position.z);
         scene.add(group);
-        this.mesh = group as any; // Treat group as mesh for convenience
+        
+        // Store the group as Object3D (base class of both Mesh and Group)
+        this.mesh = group;
         
         // Physics Body (small trigger body)
         const shape = new CANNON.Box(new CANNON.Vec3(0.2, 0.2, 0.2));

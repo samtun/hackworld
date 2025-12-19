@@ -229,8 +229,8 @@ export class Enemy {
         if (amountRoll < 0.005) {
             // 0.5% chance for 100 units
             return 100;
-        } else if (amountRoll < 0.055) {
-            // 5% chance for 5 units (0.5% + 5% = 5.5% total, so check < 0.055)
+        } else if (amountRoll < 0.05) {
+            // 5% chance for 5 units (checked after 100-unit case, so 0.005 to 0.05 = 4.5% remaining + 0.5% = 5%)
             return 5;
         } else {
             // Otherwise 1 unit

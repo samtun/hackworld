@@ -549,7 +549,7 @@ export class Player {
                 break;
         }
         
-        // Check if at max level (12 upgrades = index 11 in fibonacci)
+        // Check if at max level (11 upgrade levels = max level 10, index 10 in fibonacci array)
         if (currentLevel >= 11) {
             console.log(`${statType} is already at max level`);
             return false;
