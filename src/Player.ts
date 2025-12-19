@@ -29,7 +29,7 @@ export class Player {
     // Level system constants
     private static readonly MAX_LEVEL = 999;
     private static readonly LEVEL_STAT_MULTIPLIER = 0.002; // Stats increase by 1 + 0.002 * level
-    private static readonly EXP_BASE = 150;
+    private static readonly EXP_BASE = 1000;
     private static readonly EXP_LINEAR_FACTOR = 30;
     private static readonly EXP_QUADRATIC_FACTOR = 0.07;
 
@@ -41,7 +41,7 @@ export class Player {
     // Stats (with equipment modifiers applied)
     level: number = 1;
     exp: number = 0;
-    expRequired: number = 150; // EXP needed for next level
+    expRequired: number = 1000; // EXP needed for next level
     maxHp: number = 100;
     hp: number = 100;
     maxTp: number = 100;
