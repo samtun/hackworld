@@ -28,6 +28,8 @@ export class Game {
     npcDialogue: NPCDialogueManager;
 
     clock: THREE.Clock;
+    debugOutputFrequency: number = 1
+    debugOutputDelta: number = 0
     currentScene: string = 'startScreen';
 
     // Debug
@@ -207,7 +209,7 @@ export class Game {
             }
 
             this.player.update(dt, this.world.enemies);
-            this.world.update(dt, this.player, this.camera.position);
+            this.world.update(dt, this.player);
         }
 
         this.ui.update(this.player);
@@ -273,6 +275,16 @@ export class Game {
         } else if (!anyMenuOpen) {
             // Hide hint if not near anything interactive and no menus are open
             this.ui.showInteractionHint(false);
+        }
+
+        // Handle extra debug outputs
+        if (this.debugMode) {
+            if (this.debugOutputDelta >= this.debugOutputFrequency) {
+                console.log("Player position: " + this.player.body.position);
+                this.debugOutputDelta = 0;
+            } else {
+                this.debugOutputDelta += dt;
+            }
         }
 
         this.wasSelectPressed = isSelectPressed;

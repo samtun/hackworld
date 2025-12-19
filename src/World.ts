@@ -21,7 +21,7 @@ export class World {
     private lobby: Lobby;
     private dungeon1: Dungeon1;
     private dungeon2: Dungeon2;
-    
+
     // Weapon drops
     weaponDrops: WeaponDrop[] = [];
 
@@ -109,7 +109,7 @@ export class World {
         return this.currentStage?.enemies || [];
     }
 
-    update(dt: number, player: Player, cameraPosition: THREE.Vector3) {
+    update(dt: number, player: Player) {
         if (!this.currentStage) return;
 
         // Update stage (portals, etc.)
@@ -127,16 +127,16 @@ export class World {
             if (enemy.isDead) {
                 // Check for weapon drop before removing enemy
                 this.tryDropWeapon(enemy, player);
-                
+
                 this.scene.remove(enemy.mesh);
                 this.physicsWorld.removeBody(enemy.body);
                 this.currentStage.enemies.splice(i, 1);
             }
         }
-        
+
         // Update weapon drops
         for (const drop of this.weaponDrops) {
-            drop.update(dt, cameraPosition, player.mesh.position);
+            drop.update(dt, player.mesh.position);
         }
     }
 
@@ -160,7 +160,7 @@ export class World {
         }
         return null;
     }
-    
+
     /**
      * Randomly drop a weapon from defeated enemy
      */
@@ -169,17 +169,17 @@ export class World {
         if (Math.random() > enemy.dropChance) {
             return; // No drop
         }
-        
+
         // Select random weapon type with weighted probability
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
-        
+
         // Generate weapon name
         const weaponName = this.generateWeaponName(weaponType);
-        
+
         // Create weapon drop at enemy position
         const dropPosition = enemy.body.position.clone();
         dropPosition.y = 0.5; // Slightly above ground
-        
+
         const weaponDrop = new WeaponDrop(
             this.scene,
             this.physicsWorld,
@@ -187,11 +187,11 @@ export class World {
             weaponType,
             weaponName
         );
-        
+
         this.weaponDrops.push(weaponDrop);
         console.log(`Enemy dropped ${weaponName} (${weaponType})`);
     }
-    
+
     /**
      * Select random weapon type with weighted probability
      * Current weapon type gets 45% chance, others split the remaining 55%
@@ -203,20 +203,20 @@ export class World {
             WeaponType.LANCE,
             WeaponType.HAMMER
         ];
-        
+
         const random = Math.random();
-        
+
         // 45% chance for current weapon type
         if (random < 0.45) {
             return currentWeaponType;
         }
-        
+
         // 55% chance split among other weapon types (13.75% each)
         const otherTypes = allTypes.filter(type => type !== currentWeaponType);
         const otherIndex = Math.floor((random - 0.45) / (0.55 / otherTypes.length));
         return otherTypes[Math.min(otherIndex, otherTypes.length - 1)];
     }
-    
+
     /**
      * Generate a random name for a weapon
      */
@@ -226,9 +226,9 @@ export class World {
         const dualBladeNames = ['Twin Blades', 'Dual Edge', 'Double Sword'];
         const lanceNames = ['Lance', 'Spear', 'Pike', 'Halberd'];
         const hammerNames = ['Hammer', 'Mace', 'Maul', 'Crusher'];
-        
+
         const prefix = prefixes[Math.floor(Math.random() * prefixes.length)];
-        
+
         let suffix: string;
         switch (weaponType) {
             case WeaponType.SWORD:
@@ -244,10 +244,10 @@ export class World {
                 suffix = hammerNames[Math.floor(Math.random() * hammerNames.length)];
                 break;
         }
-        
+
         return `${prefix} ${suffix}`;
     }
-    
+
     /**
      * Check if player is near a weapon drop
      */
@@ -260,7 +260,7 @@ export class World {
         }
         return null;
     }
-    
+
     /**
      * Pick up a weapon drop
      */
@@ -275,10 +275,10 @@ export class World {
             sellPrice: 50,
             isEquipped: false
         };
-        
+
         player.inventory.push(newItem);
         console.log(`Picked up ${drop.weaponName}`);
-        
+
         // Remove drop from world
         const index = this.weaponDrops.indexOf(drop);
         if (index > -1) {
@@ -286,7 +286,7 @@ export class World {
             this.weaponDrops.splice(index, 1);
         }
     }
-    
+
     /**
      * Clear all weapon drops (when changing stages)
      */
