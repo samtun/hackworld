@@ -134,15 +134,6 @@ export class World {
             if (enemy.isDead) {
                 // Check for weapon drop before removing enemy
                 this.tryDropWeapon(enemy, player);
-                this.tryDropWeapon(enemy, player);
-                this.tryDropWeapon(enemy, player);
-                this.tryDropWeapon(enemy, player);
-                this.tryDropWeapon(enemy, player);
-                this.tryDropWeapon(enemy, player);
-                this.tryDropWeapon(enemy, player);
-                this.tryDropWeapon(enemy, player);
-                this.tryDropWeapon(enemy, player);
-                this.tryDropWeapon(enemy, player);
 
                 this.scene.remove(enemy.mesh);
                 this.physicsWorld.removeBody(enemy.body);
