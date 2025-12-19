@@ -84,6 +84,8 @@ export class Game {
         this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial, () => {
             this.ui.hideLoadingScreen();
             this.ui.showStartScreen();
+        }, (loaded, total) => {
+            this.ui.updateLoadingProgress(loaded, total);
         });
         this.player = new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial);
         this.inventory = new InventoryManager();

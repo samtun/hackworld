@@ -10,11 +10,13 @@ export class UIManager {
     startScreen: HTMLDivElement;
     fadeOverlay: HTMLDivElement;
     loadingScreen: HTMLDivElement;
+    progressBarFill: HTMLDivElement;
 
     constructor() {
         this.startScreen = document.getElementById('start-screen') as HTMLDivElement;
         this.fadeOverlay = document.getElementById('fade-overlay') as HTMLDivElement;
         this.loadingScreen = document.getElementById('loading-screen') as HTMLDivElement;
+        this.progressBarFill = document.getElementById('progress-bar-fill') as HTMLDivElement;
 
         this.container = document.createElement('div');
         this.container.style.position = 'absolute';
@@ -205,6 +207,13 @@ export class UIManager {
     hideLoadingScreen() {
         if (this.loadingScreen) {
             this.loadingScreen.style.display = 'none';
+        }
+    }
+
+    updateLoadingProgress(loaded: number, total: number) {
+        if (this.progressBarFill) {
+            const percentage = total > 0 ? (loaded / total) * 100 : 0;
+            this.progressBarFill.style.width = `${percentage}%`;
         }
     }
 }
