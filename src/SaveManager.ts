@@ -116,11 +116,11 @@ export class SaveManager {
                     y: player.body.position.y,
                     z: player.body.position.z
                 },
-                inventory: JSON.parse(JSON.stringify(player.inventory)) // Deep clone
+                inventory: structuredClone(player.inventory)
             },
             traders: {
-                weaponTrader: JSON.parse(JSON.stringify(traderInventory)),
-                chipTrader: JSON.parse(JSON.stringify(chipTraderInventory))
+                weaponTrader: structuredClone(traderInventory),
+                chipTrader: structuredClone(chipTraderInventory)
             }
         };
 

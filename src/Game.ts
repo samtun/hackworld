@@ -250,6 +250,19 @@ export class Game {
         this.camera.position.set(10, 15, 10);
     }
 
+    /**
+     * Check if any UI menu is currently open
+     */
+    private isAnyMenuOpen(): boolean {
+        return this.inventory.isVisible || 
+               this.trader.isVisible || 
+               this.chipTrader.isVisible || 
+               this.dungeonSelection.isVisible || 
+               this.npcDialogue.isVisible || 
+               this.xDataUpgrade.isVisible || 
+               this.saveManagerUI.isVisible;
+    }
+
     onWindowResize() {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
@@ -277,9 +290,7 @@ export class Game {
         const dt = this.clock.getDelta();
 
         // Update playtime (only when not on start screen and not paused by menus)
-        if (!this.inventory.isVisible && !this.trader.isVisible && !this.chipTrader.isVisible && 
-            !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && 
-            !this.xDataUpgrade.isVisible && !this.saveManagerUI.isVisible) {
+        if (!this.isAnyMenuOpen()) {
             this.saveManager.updatePlaytime(dt);
         }
 
@@ -338,7 +349,7 @@ export class Game {
         const isInventoryPressed = this.input.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
             // Don't allow toggling inventory while any other UI is open
-            if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible && !this.saveManagerUI.isVisible) {
+            if (!this.isAnyMenuOpen() || this.inventory.isVisible) {
                 this.inventory.toggle();
             }
         }
@@ -381,7 +392,7 @@ export class Game {
         }
 
         // Check if player is near any interactive entity (to prevent jumping while interacting)
-        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.chipTrader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible || this.saveManagerUI.isVisible;
+        const anyMenuOpen = this.isAnyMenuOpen();
         
         // Define interactive entity types
         interface InteractiveEntity {

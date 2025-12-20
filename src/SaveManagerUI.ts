@@ -21,6 +21,7 @@ export class SaveManagerUI {
     private lastNavigateLeftState: boolean = false;
     private lastNavigateRightState: boolean = false;
     private lastCancelState: boolean = false;
+    private autoCloseTimer?: number;
 
     constructor() {
         this.createUI();
@@ -172,6 +173,12 @@ export class SaveManagerUI {
         this.isVisible = false;
         this.container.style.display = 'none';
         this.saveCallback = undefined;
+        
+        // Clear auto-close timer if it exists
+        if (this.autoCloseTimer !== undefined) {
+            clearTimeout(this.autoCloseTimer);
+            this.autoCloseTimer = undefined;
+        }
     }
 
     /**
@@ -207,7 +214,7 @@ export class SaveManagerUI {
                     this.saveCallback();
                     this.showSaveSuccess();
                     // Auto-close after showing success message
-                    setTimeout(() => {
+                    this.autoCloseTimer = window.setTimeout(() => {
                         this.hide();
                     }, 1500);
                 }
