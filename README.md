@@ -10,9 +10,6 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Hub based game world with multiple dungeon stages
 - Two unique dungeon stages accessible from the lobby
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
-  - Each level increases strength, defense, and speed
-  - Max level is 999
-  - EXP requirements scale with level
 - Inventory system with looting mechanics
 - **Weapon drops** - Defeated enemies have a chance to drop weapons that can be picked up and added to your inventory
 - **Interactive trader** in the lobby - Buy and sell weapons and cores, manage your bits
