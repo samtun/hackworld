@@ -273,9 +273,8 @@ export class Game {
                         // Spawn player at lobby spawn position
                         this.player.respawn(Game.LOBBY_SPAWN_POSITION);
                         
-                        // Reset camera
+                        // Reset camera position (lookAt will be handled by game loop)
                         this.camera.position.set(10, 15, 10);
-                        this.camera.lookAt(0, 0, 0);
                         
                         this.isTransitioning = false;
                     }).catch(err => {
@@ -509,6 +508,9 @@ export class Game {
         this.camera.position.x += (targetX - this.camera.position.x) * lerpFactor;
         this.camera.position.y += (targetY - this.camera.position.y) * lerpFactor;
         this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
+        
+        // Make camera look at player
+        this.camera.lookAt(this.player.mesh.position);
 
         // Handle interactions (use variables we already calculated)
         const isSelectPressed = this.input.isSelectPressed();
