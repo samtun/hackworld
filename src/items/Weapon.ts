@@ -233,17 +233,17 @@ export class Weapon {
         switch (this.weaponType) {
             case WeaponType.SWORD:
                 // Wide arc hitbox
-                shape = new CANNON.Box(new CANNON.Vec3(1.2 * rangeMultiplier, 0.3, 0.3));
+                shape = new CANNON.Box(new CANNON.Vec3(1.2 * rangeMultiplier, 0.3, 0.3 * rangeMultiplier));
                 offset.set(0, 0, 1.0 * rangeMultiplier);
                 break;
             case WeaponType.DUAL_BLADE:
                 // Aa wider single box for simplicity
-                shape = new CANNON.Box(new CANNON.Vec3(1.5 * rangeMultiplier, 0.3, 0.3));
+                shape = new CANNON.Box(new CANNON.Vec3(1.5 * rangeMultiplier, 0.3, 0.3 * rangeMultiplier));
                 offset.set(0, 0, 1.0 * rangeMultiplier);
                 break;
             case WeaponType.LANCE:
                 // Long forward hitbox
-                shape = new CANNON.Box(new CANNON.Vec3(0.3, 0.3, 2.0 * rangeMultiplier));
+                shape = new CANNON.Box(new CANNON.Vec3(0.3 * rangeMultiplier, 0.3, 2.0 * rangeMultiplier));
                 offset.set(0, 0, 2.0 * rangeMultiplier);
                 break;
             case WeaponType.HAMMER:
