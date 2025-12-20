@@ -236,4 +236,26 @@ export class InputManager {
         }
         return false;
     }
+
+    isL3Pressed(): boolean {
+        // L3 is typically button 10 (left thumbstick press)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[10]?.pressed) return true;
+            }
+        }
+        return false;
+    }
+
+    isR3Pressed(): boolean {
+        // R3 is typically button 11 (right thumbstick press)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[11]?.pressed) return true;
+            }
+        }
+        return false;
+    }
 }

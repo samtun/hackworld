@@ -171,6 +171,24 @@ export class Player {
         this.recalculateStats();
     }
 
+    equipChip(itemId: string) {
+        // Unequip all chips first
+        this.inventory.forEach(item => {
+            if (item.type === 'chip') {
+                item.isEquipped = false;
+            }
+        });
+
+        // Equip the new chip by ID
+        const chipItem = this.inventory.find(item => item.id === itemId);
+        if (chipItem && chipItem.type === 'chip' && chipItem.chipStats) {
+            chipItem.isEquipped = true;
+        }
+
+        // Recalculate stats with new chip
+        this.recalculateStats();
+    }
+
     private recalculateStats() {
         // Calculate level multiplier
         const levelMultiplier = this.getLevelMultiplier();
@@ -200,6 +218,22 @@ export class Player {
                 this.speed += equippedCore.coreStats.speed;
             }
         }
+
+        // Apply chip modifiers if a chip is equipped
+        const equippedChip = this.inventory.find(item => item.type === 'chip' && item.isEquipped);
+        if (equippedChip && equippedChip.chipStats) {
+            if (equippedChip.chipStats.walkSpeedMultiplier !== undefined) {
+                this.speed *= equippedChip.chipStats.walkSpeedMultiplier;
+            }
+        }
+    }
+
+    getWeaponRangeMultiplier(): number {
+        const equippedChip = this.inventory.find(item => item.type === 'chip' && item.isEquipped);
+        if (equippedChip && equippedChip.chipStats && equippedChip.chipStats.weaponRangeMultiplier !== undefined) {
+            return equippedChip.chipStats.weaponRangeMultiplier;
+        }
+        return 1.0; // Default: no multiplier
     }
 
     update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
@@ -302,8 +336,8 @@ export class Player {
 
         // Check for immediate attack on button press (only trigger once per press)
         if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
-            // Execute immediate attack
-            if (this.weapon.attack()) {
+            // Execute immediate attack with range multiplier from chip
+            if (this.weapon.attack(this.getWeaponRangeMultiplier())) {
                 // Clear the list of enemies hit for this new attack
                 this.enemiesHitThisPhase.clear();
 
@@ -475,7 +509,7 @@ export class Player {
 
         // If we were charging but didn't complete, do a normal attack
         if (wasCharging) {
-            if (this.weapon.attack()) {
+            if (this.weapon.attack(this.getWeaponRangeMultiplier())) {
                 // Clear the list of enemies hit for this new attack
                 this.enemiesHitThisPhase.clear();
 

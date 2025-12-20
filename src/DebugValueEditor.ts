@@ -1,6 +1,7 @@
 import { Player } from './Player';
 import { WeaponRegistry } from './items/WeaponRegistry';
 import { CoreRegistry } from './items/CoreRegistry';
+import { ChipRegistry } from './items/ChipRegistry';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -113,6 +114,11 @@ export class DebugValueEditor {
         const coresSection = this.createSection('Add Core');
         this.createCoreSelector(coresSection);
         panel.appendChild(coresSection);
+
+        // Chips Section
+        const chipsSection = this.createSection('Add Chip');
+        this.createChipSelector(chipsSection);
+        panel.appendChild(chipsSection);
 
         return panel;
     }
@@ -327,6 +333,88 @@ export class DebugValueEditor {
                         isEquipped: false
                     });
                     console.log(`Added core: ${core.name}`);
+                    
+                    // Reset selection
+                    select.value = '';
+                }
+            }
+        });
+
+        parent.appendChild(addButton);
+    }
+
+    private createChipSelector(parent: HTMLElement): void {
+        const chips = ChipRegistry.getAllChips();
+
+        const select = document.createElement('select');
+        select.style.width = '100%';
+        select.style.padding = '8px';
+        select.style.marginBottom = '10px';
+        select.style.backgroundColor = '#222';
+        select.style.border = '1px solid #666';
+        select.style.borderRadius = '3px';
+        select.style.color = '#fff';
+        select.style.fontSize = '14px';
+        select.style.fontFamily = 'inherit';
+
+        const defaultOption = document.createElement('option');
+        defaultOption.value = '';
+        defaultOption.textContent = '-- Select Chip --';
+        select.appendChild(defaultOption);
+
+        chips.forEach(chip => {
+            const option = document.createElement('option');
+            option.value = chip.id;
+            const effectsStr = Object.entries(chip.stats)
+                .map(([key, val]) => {
+                    if (key === 'weaponRangeMultiplier') {
+                        return `Weapon Range: +${((val - 1) * 100).toFixed(0)}%`;
+                    } else if (key === 'walkSpeedMultiplier') {
+                        return `Walk Speed: +${((val - 1) * 100).toFixed(0)}%`;
+                    }
+                    return '';
+                })
+                .filter(str => str !== '')
+                .join(', ');
+            option.textContent = `${chip.name} (${effectsStr})`;
+            select.appendChild(option);
+        });
+
+        parent.appendChild(select);
+
+        // Add button
+        const addButton = document.createElement('button');
+        addButton.textContent = 'Add Chip';
+        addButton.style.width = '100%';
+        addButton.style.padding = '10px';
+        addButton.style.backgroundColor = '#FF9800';
+        addButton.style.border = 'none';
+        addButton.style.borderRadius = '5px';
+        addButton.style.color = '#fff';
+        addButton.style.fontSize = '14px';
+        addButton.style.fontWeight = 'bold';
+        addButton.style.cursor = 'pointer';
+        addButton.style.fontFamily = 'inherit';
+
+        addButton.addEventListener('click', () => {
+            const chipId = select.value;
+            
+            if (chipId && this.player) {
+                const chip = ChipRegistry.getChipById(chipId);
+                if (chip) {
+                    // Generate unique ID using timestamp and random number
+                    const newId = `debug_chip_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+                    this.player.inventory.push({
+                        id: newId,
+                        name: chip.name,
+                        type: 'chip',
+                        chipType: chip.type,
+                        chipStats: chip.stats,
+                        buyPrice: chip.buyPrice,
+                        sellPrice: chip.sellPrice,
+                        isEquipped: false
+                    });
+                    console.log(`Added chip: ${chip.name}`);
                     
                     // Reset selection
                     select.value = '';

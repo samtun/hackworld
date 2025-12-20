@@ -2,8 +2,7 @@ import { Player } from './Player';
 import { InputManager } from './InputManager';
 import { Item } from './InventoryManager';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
-import { WeaponRegistry } from './items/WeaponRegistry';
-import { CoreRegistry } from './items/CoreRegistry';
+import { ChipRegistry } from './items/ChipRegistry';
 
 // --- Constants ---
 const COLORS = {
@@ -11,7 +10,7 @@ const COLORS = {
     WINDOW_BG: '#333',
     BORDER: '#000',
     TEXT: '#fff',
-    PANEL_TRADER: '#4a3520',
+    PANEL_TRADER: '#204a3a',
     PANEL_PLAYER: '#203a4a',
     ITEM_HOVER: '#666',
     ITEM_SELECTED: '#888',
@@ -29,7 +28,7 @@ const STYLES = {
     GRID_GAP: '2px'
 };
 
-export class TraderManager {
+export class ChipTraderManager {
     container!: HTMLDivElement;
     isVisible: boolean = false;
 
@@ -63,36 +62,19 @@ export class TraderManager {
     }
 
     private initializeTraderInventory() {
-        // Trader sells weapons from registry (excluding Aegis Sword which player starts with)
-        const allWeapons = WeaponRegistry.getAllWeapons();
-        const traderWeapons = allWeapons.filter(w => w.id !== 'aegis_sword');
-
         this.traderInventory = [];
 
-        // Add weapons from registry
-        for (const weaponDef of traderWeapons) {
+        // Add chips from registry
+        const allChips = ChipRegistry.getAllChips();
+        for (const chipDef of allChips) {
             this.traderInventory.push({
                 id: crypto.randomUUID(),
-                name: weaponDef.name,
-                type: 'weapon',
-                weaponType: weaponDef.type,
-                damage: weaponDef.baseDamage,
-                buyPrice: weaponDef.baseBuyPrice,
-                sellPrice: weaponDef.baseSellPrice,
-                isEquipped: false
-            });
-        }
-
-        // Add cores from registry
-        const allCores = CoreRegistry.getAllCores();
-        for (const coreDef of allCores) {
-            this.traderInventory.push({
-                id: crypto.randomUUID(),
-                name: coreDef.name,
-                type: 'core',
-                coreStats: coreDef.stats,
-                buyPrice: coreDef.buyPrice,
-                sellPrice: coreDef.sellPrice,
+                name: chipDef.name,
+                type: 'chip',
+                chipType: chipDef.type,
+                chipStats: chipDef.stats,
+                buyPrice: chipDef.buyPrice,
+                sellPrice: chipDef.sellPrice,
                 isEquipped: false
             });
         }
@@ -109,7 +91,7 @@ export class TraderManager {
 
         // Title
         const titleDiv = document.createElement('div');
-        titleDiv.innerText = 'TRADER';
+        titleDiv.innerText = 'CHIP TRADER';
         Object.assign(titleDiv.style, {
             gridColumn: '1 / 3',
             textAlign: 'center',
@@ -128,7 +110,7 @@ export class TraderManager {
         windowDiv.appendChild(this.traderPanel);
 
         const traderTitle = document.createElement('div');
-        traderTitle.innerText = "Trader's Goods";
+        traderTitle.innerText = "Chip Trader's Goods";
         traderTitle.style.marginBottom = '10px';
         traderTitle.style.fontWeight = 'bold';
         traderTitle.style.fontSize = '20px';
@@ -312,10 +294,11 @@ export class TraderManager {
             player
         );
 
-        // Update Player List
+        // Update Player List - only show chips
+        const playerChips = player.inventory.filter(item => item.type === 'chip');
         this.renderItemList(
             this.playerList,
-            player.inventory,
+            playerChips,
             this.activePanel === 'player',
             'sell',
             player
@@ -324,7 +307,7 @@ export class TraderManager {
         // Update item details panel
         const selectedItem = this.activePanel === 'trader'
             ? this.traderInventory[this.selectedIndex]
-            : player.inventory[this.selectedIndex];
+            : playerChips[this.selectedIndex];
 
         this.itemDetailsPanel.innerHTML = ItemDetailsPanel.generateHTML(selectedItem);
     }
@@ -419,9 +402,10 @@ export class TraderManager {
 
         // Navigate down (with debouncing)
         if (navigateDown && !this.lastNavigateDownState) {
+            const playerChips = player.inventory.filter(item => item.type === 'chip');
             const maxIndex = this.activePanel === 'trader'
                 ? this.traderInventory.length - 1
-                : player.inventory.length - 1;
+                : playerChips.length - 1;
             if (this.selectedIndex < maxIndex) {
                 this.selectedIndex++;
             }
@@ -482,7 +466,8 @@ export class TraderManager {
             }
         } else {
             // Sell to trader
-            const item = player.inventory[this.selectedIndex];
+            const playerChips = player.inventory.filter(item => item.type === 'chip');
+            const item = playerChips[this.selectedIndex];
             if (item && item.sellPrice !== undefined) {
                 // Check if item is equipped
                 if (item.isEquipped) {
@@ -496,11 +481,17 @@ export class TraderManager {
                 player.money += item.sellPrice;
                 const soldItem = { ...item, id: `t${Date.now()}`, isEquipped: false }; // Give it a unique trader ID
                 this.traderInventory.push(soldItem); // Add to trader inventory
-                player.inventory.splice(this.selectedIndex, 1);
+                
+                // Find and remove the item from player's full inventory
+                const itemIndex = player.inventory.findIndex(i => i.id === item.id);
+                if (itemIndex !== -1) {
+                    player.inventory.splice(itemIndex, 1);
+                }
+                
                 console.log(`Sold ${item.name} for ${item.sellPrice} bits`);
 
                 // Adjust selection if needed
-                if (this.selectedIndex >= player.inventory.length && this.selectedIndex > 0) {
+                if (this.selectedIndex >= playerChips.length - 1 && this.selectedIndex > 0) {
                     this.selectedIndex--;
                 }
                 this.needsRender = true;

@@ -205,19 +205,19 @@ export class Weapon {
         this.mesh.add(mesh);
     }
 
-    attack(): boolean {
+    attack(rangeMultiplier: number = 1.0): boolean {
         if (this.isAttacking) return false;
         this.isAttacking = true;
         this.attackTimer = 0;
         this.attackPhase = 0;
 
-        // Create attack hitbox collider
-        this.createAttackHitbox();
+        // Create attack hitbox collider with range multiplier
+        this.createAttackHitbox(rangeMultiplier);
 
         return true;
     }
 
-    private createAttackHitbox() {
+    private createAttackHitbox(rangeMultiplier: number = 1.0) {
         if (!this.physicsWorld || !this.scene) return;
 
         // Remove old attack body if it exists
@@ -233,26 +233,26 @@ export class Weapon {
         switch (this.weaponType) {
             case WeaponType.SWORD:
                 // Wide arc hitbox
-                shape = new CANNON.Box(new CANNON.Vec3(1.2, 0.3, 0.3));
-                offset.set(0, 0, 1.0);
+                shape = new CANNON.Box(new CANNON.Vec3(1.2 * rangeMultiplier, 0.3, 0.3 * rangeMultiplier));
+                offset.set(0, 0, 1.0 * rangeMultiplier);
                 break;
             case WeaponType.DUAL_BLADE:
                 // Aa wider single box for simplicity
-                shape = new CANNON.Box(new CANNON.Vec3(1.5, 0.3, 0.3));
-                offset.set(0, 0, 1.0);
+                shape = new CANNON.Box(new CANNON.Vec3(1.5 * rangeMultiplier, 0.3, 0.3 * rangeMultiplier));
+                offset.set(0, 0, 1.0 * rangeMultiplier);
                 break;
             case WeaponType.LANCE:
                 // Long forward hitbox
-                shape = new CANNON.Box(new CANNON.Vec3(0.3, 0.3, 2.0));
-                offset.set(0, 0, 2.0);
+                shape = new CANNON.Box(new CANNON.Vec3(0.3 * rangeMultiplier, 0.3, 2.0 * rangeMultiplier));
+                offset.set(0, 0, 2.0 * rangeMultiplier);
                 break;
             case WeaponType.HAMMER:
                 // Downward striking hitbox
-                shape = new CANNON.Box(new CANNON.Vec3(0.6, 0.6, 0.6));
-                offset.set(0, 0, 1.2);
+                shape = new CANNON.Box(new CANNON.Vec3(0.6 * rangeMultiplier, 0.6 * rangeMultiplier, 0.6 * rangeMultiplier));
+                offset.set(0, 0, 1.2 * rangeMultiplier);
                 break;
             default:
-                shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+                shape = new CANNON.Box(new CANNON.Vec3(0.5 * rangeMultiplier, 0.5 * rangeMultiplier, 0.5 * rangeMultiplier));
         }
 
         this.attackBody = new CANNON.Body({
