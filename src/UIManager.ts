@@ -18,6 +18,12 @@ export class UIManager {
         this.loadingScreen = document.getElementById('loading-screen') as HTMLDivElement;
         this.progressBarFill = document.getElementById('progress-bar-fill') as HTMLDivElement;
 
+        // Set version text
+        const versionBox = document.getElementById('version-box');
+        if (versionBox) {
+            versionBox.textContent = `v${__APP_VERSION__}`;
+        }
+
         this.container = document.createElement('div');
         this.container.style.position = 'absolute';
         this.container.style.bottom = '30px';
