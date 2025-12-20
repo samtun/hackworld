@@ -1,3 +1,11 @@
+## [1.5.1](https://github.com/samtun/hackworld/compare/v1.5.0...v1.5.1) (2025-12-20)
+
+
+### Bug Fixes
+
+* add proper type annotations for weapon drop methods ([1b5bb82](https://github.com/samtun/hackworld/commit/1b5bb8260a725b1ebbb32c53d2d1f75ae02d6c8a))
+* make high drop chance behavior consistent ([a60e1ed](https://github.com/samtun/hackworld/commit/a60e1ed8641ba22d66a0a680f19ee8329c4412c8))
+
 # [1.5.0](https://github.com/samtun/hackworld/compare/v1.4.0...v1.5.0) (2025-12-20)
 
 
