@@ -51,13 +51,21 @@ export class World {
             this.assetManager.setProgressCallback(this.onLoadProgressCallback);
         }
 
-        // Preload common assets before starting
-        this.preloadCommonAssets().then(() => {
-            // Start in Lobby after assets are loaded
-            this.loadStageById('lobby').then(() => {
-                if (onLoadComplete) onLoadComplete();
-            });
-        });
+        // Preload common assets and start in Lobby
+        this.initializeWorld(onLoadComplete);
+    }
+
+    /**
+     * Initialize the world by preloading common assets and loading the lobby
+     */
+    private async initializeWorld(onLoadComplete?: () => void): Promise<void> {
+        try {
+            await this.preloadCommonAssets();
+            await this.loadStageById('lobby');
+            if (onLoadComplete) onLoadComplete();
+        } catch (error) {
+            console.error('Failed to initialize world:', error);
+        }
     }
 
     /**
@@ -152,10 +160,15 @@ export class World {
         return this.loadStageById('dungeon2');
     }
 
-    // Helper method to load stage by ID (synchronous wrapper for backward compatibility)
-    loadStage(stageId: string) {
+    // Helper method to load stage by ID (wrapper for backward compatibility)
+    // Errors are logged but not propagated to maintain backward compatibility
+    loadStage(stageId: string): void {
         this.loadStageById(stageId).catch(err => {
             console.error(`Error loading stage ${stageId}:`, err);
+            // Hide loading screen on error
+            if (this.onStageLoadCompleteCallback) {
+                this.onStageLoadCompleteCallback();
+            }
         });
     }
 
