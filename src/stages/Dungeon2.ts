@@ -25,7 +25,6 @@ export class Dungeon2 extends BaseDungeon {
         this.createPortal(new CANNON.Vec3(12, 0.05, 12), 0x0000ff, 'lobby');
 
         // Different dungeon layout with more obstacles
-        this.createBox(2, 3, 2, new CANNON.Vec3(0, 1.5, 0));
         this.createBox(3, 2, 3, new CANNON.Vec3(-8, 1, -8));
         this.createBox(2, 2, 5, new CANNON.Vec3(8, 1, -8));
         this.createBox(5, 1, 2, new CANNON.Vec3(-8, 0.5, 8));

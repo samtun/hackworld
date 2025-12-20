@@ -31,7 +31,7 @@ export class EXPNumber {
 
         // Add outline for better visibility
         context.strokeStyle = '#000000';
-        context.lineWidth = 4;
+        context.lineWidth = 1;
         context.strokeText(`+${expAmount}`, canvas.width / 2, canvas.height / 2);
 
         // Create texture from canvas
@@ -49,7 +49,7 @@ export class EXPNumber {
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.set(position.x, position.y, position.z);
-        
+
         // Make the mesh always face the camera (billboard effect will be applied in update)
         scene.add(this.mesh);
     }

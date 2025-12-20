@@ -52,6 +52,12 @@ export class Game {
     wasTraderJustOpened: boolean = false; // Prevent immediate action when opening trader
     isTransitioning: boolean = false;
 
+    // Spawn position constants
+    private static readonly LOBBY_SPAWN_POSITION = new CANNON.Vec3(0, 0.5, 0);
+
+    // Last teleporter position for respawn (starts at lobby spawn)
+    lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
+
     constructor() {
         // Setup Three.js
         this.scene = new THREE.Scene();
@@ -111,6 +117,11 @@ export class Game {
             this.xDataUpgrade.show();
         });
 
+        // Set up player death callback
+        this.player.setDeathCallback(() => {
+            this.handlePlayerDeath();
+        });
+
         // Debug Mode Setup
         if (import.meta.env.DEV) {
             this.physicsDebugger = CannonDebugger(this.scene, this.physicsWorld, {
@@ -163,7 +174,59 @@ export class Game {
         this.player.body.position.set(0, 0.5, 0);
         this.player.body.velocity.set(0, 0, 0);
 
+        // Update last teleporter position when entering a stage via portal
+        // This is used as the respawn point if the player dies
+        this.lastTeleporterPosition.copy(this.player.body.position);
+
         // Snap camera
+        this.camera.position.set(10, 15, 10);
+    }
+
+    /**
+     * Handle player death
+     */
+    handlePlayerDeath() {
+        console.log('Game: Handling player death');
+        this.ui.showDeathOverlay(
+            () => this.respawnPlayer(),
+            () => this.returnToLobby()
+        );
+    }
+
+    /**
+     * Respawn the player at the last teleporter position
+     * Fully reloads the current stage to reset enemies
+     */
+    respawnPlayer() {
+        console.log('Game: Respawning player at last teleporter');
+        this.ui.hideDeathOverlay();
+        
+        // Fully reload the current stage to reset enemies and environment
+        if (this.currentScene !== 'startScreen' && this.currentScene !== 'lobby') {
+            this.world.loadStage(this.currentScene);
+        }
+        
+        // Respawn player at last teleporter position
+        this.player.respawn(this.lastTeleporterPosition);
+    }
+
+    /**
+     * Return player to the lobby
+     */
+    returnToLobby() {
+        console.log('Game: Returning to lobby');
+        this.ui.hideDeathOverlay();
+        
+        // Respawn player at lobby spawn point without updating lastTeleporterPosition
+        // We don't update lastTeleporterPosition here because death returns shouldn't
+        // change the respawn point for future deaths
+        this.player.respawn(Game.LOBBY_SPAWN_POSITION);
+        
+        // Switch to lobby (but don't update lastTeleporterPosition for death returns)
+        this.world.loadStage('lobby');
+        this.currentScene = 'lobby';
+        
+        // Reset camera
         this.camera.position.set(10, 15, 10);
     }
 
@@ -394,6 +457,9 @@ export class Game {
         }
 
         this.ui.update(this.player);
+
+        // Handle death overlay input
+        this.ui.handleDeathOverlayInput(this.input);
 
         // Update debug value editor if visible
         if (this.debugMode && this.debugValueEditor) {
