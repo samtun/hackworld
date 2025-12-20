@@ -98,6 +98,13 @@ export class World {
         this.lobby.fordInteractionCallback = callback;
     }
 
+    /**
+     * Set callback for Save Manager NPC interaction
+     */
+    setSaveManagerCallback(callback: () => void) {
+        this.lobby.saveManagerInteractionCallback = callback;
+    }
+
     loadDungeon() {
         if (this.currentStage) {
             this.currentStage.clear();

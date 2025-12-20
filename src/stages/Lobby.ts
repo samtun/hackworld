@@ -19,9 +19,13 @@ export class Lobby extends BaseDungeon {
     // Store Ford position for interaction
     private fordPosition: CANNON.Vec3 = new CANNON.Vec3(5, 0, -5);
 
+    // Store Save Manager position for interaction
+    private saveManagerPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, 5);
+
     // NPCs
     npc?: NPC;
     fordNpc?: NPC;
+    saveManagerNpc?: NPC;
 
     // Healing Station
     healingStation?: HealingStation;
@@ -29,6 +33,9 @@ export class Lobby extends BaseDungeon {
 
     // Callback for Ford interaction (set by Game)
     fordInteractionCallback?: () => void;
+
+    // Callback for Save Manager interaction (set by Game)
+    saveManagerInteractionCallback?: () => void;
 
     load(): void {
         this.clear();
@@ -40,7 +47,7 @@ export class Lobby extends BaseDungeon {
         // Portal (single portal that will show selection UI)
         this.createPortal(new CANNON.Vec3(5, 0.05, 5), 0x00ff00, 'selection');
 
-        // Healing Station
+        // Healing Station (moved to avoid conflict with Save Manager)
         this.healingStation = new HealingStation(this.scene, this.healingStationPosition, 0x00ffff);
 
         // Create Nyleth NPC
@@ -72,6 +79,23 @@ export class Lobby extends BaseDungeon {
             this.fordPosition,
             fordDialogue,
             this.fordInteractionCallback
+        );
+
+        // Create Save Manager NPC
+        const saveManagerDialogue = [
+            "Hello! I'm the Save Manager.",
+            "I can help you save your current game progress to a file.",
+            "This includes your stats, inventory, playtime, and trader inventories.",
+            "Come closer when you're ready to save!"
+        ];
+        this.saveManagerNpc = new NPC(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            "Save Manager",
+            this.saveManagerPosition,
+            saveManagerDialogue,
+            this.saveManagerInteractionCallback
         );
 
         // Load Trader Model from cache

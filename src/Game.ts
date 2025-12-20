@@ -13,6 +13,8 @@ import { NPCDialogueManager } from './NPCDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
 import { AVAILABLE_DUNGEONS } from './stages';
 import { DebugValueEditor } from './DebugValueEditor';
+import { SaveManager } from './SaveManager';
+import { SaveManagerUI } from './SaveManagerUI';
 
 export class Game {
     scene: THREE.Scene;
@@ -31,6 +33,8 @@ export class Game {
     dungeonSelection: DungeonSelectionManager;
     npcDialogue: NPCDialogueManager;
     xDataUpgrade: XDataUpgradeManager;
+    saveManager: SaveManager;
+    saveManagerUI: SaveManagerUI;
 
     clock: THREE.Clock;
     debugOutputFrequency: number = 1
@@ -110,11 +114,27 @@ export class Game {
         this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
         this.npcDialogue = new NPCDialogueManager();
         this.xDataUpgrade = new XDataUpgradeManager();
+        this.saveManager = new SaveManager();
+        this.saveManagerUI = new SaveManagerUI();
         this.clock = new THREE.Clock();
 
         // Set up Ford NPC callback for X-Data upgrades
         this.world.setFordCallback(() => {
             this.xDataUpgrade.show();
+        });
+
+        // Set up Save Manager NPC callback
+        this.world.setSaveManagerCallback(() => {
+            this.saveManagerUI.show(
+                this.saveManager.getFormattedPlaytime(),
+                () => {
+                    this.saveManager.save(
+                        this.player,
+                        this.trader.traderInventory,
+                        this.chipTrader.traderInventory
+                    );
+                }
+            );
         });
 
         // Set up player death callback
@@ -256,6 +276,13 @@ export class Game {
 
         const dt = this.clock.getDelta();
 
+        // Update playtime (only when not on start screen and not paused by menus)
+        if (!this.inventory.isVisible && !this.trader.isVisible && !this.chipTrader.isVisible && 
+            !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && 
+            !this.xDataUpgrade.isVisible && !this.saveManagerUI.isVisible) {
+            this.saveManager.updatePlaytime(dt);
+        }
+
         // Clean up debug meshes list occasionally (e.g. every frame is fine for small lists, or check length)
         if (this.debugMeshes.length > 0) {
             this.debugMeshes = this.debugMeshes.filter(m => m.parent !== null);
@@ -311,7 +338,7 @@ export class Game {
         const isInventoryPressed = this.input.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
             // Don't allow toggling inventory while any other UI is open
-            if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible) {
+            if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible && !this.saveManagerUI.isVisible) {
                 this.inventory.toggle();
             }
         }
@@ -348,8 +375,13 @@ export class Game {
             this.chipTrader.update(this.player, this.input);
         }
 
+        // Update save manager if visible
+        if (this.saveManagerUI.isVisible) {
+            this.saveManagerUI.update(this.input);
+        }
+
         // Check if player is near any interactive entity (to prevent jumping while interacting)
-        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.chipTrader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
+        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.chipTrader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible || this.saveManagerUI.isVisible;
         
         // Define interactive entity types
         interface InteractiveEntity {
