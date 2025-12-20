@@ -47,7 +47,8 @@ export class Game {
     wasInventoryPressed: boolean = false;
     wasSelectPressed: boolean = false;
     wasSelectAndStartPressed: boolean = false;
-    wasL3Pressed: boolean = false; // Track L3 button for debug mode toggle
+    wasL3Pressed: boolean = false; // Track L3 button for debug value editor toggle
+    wasR3Pressed: boolean = false; // Track R3 button for debug mode toggle
     wasTraderJustOpened: boolean = false; // Prevent immediate action when opening trader
     isTransitioning: boolean = false;
 
@@ -199,8 +200,10 @@ export class Game {
 
         // Input Handling for UI
         // Debug Mode: Check for L3 (left thumbstick press) for dev builds only
-        // This needs to be checked before other inputs to prevent conflicts
+        // L3 toggles the debug value editor (expand/collapse)
+        // R3 toggles debug mode completely (like F8)
         if (import.meta.env.DEV) {
+            // L3: Toggle debug value editor
             const isL3Pressed = this.input.isL3Pressed();
             if (isL3Pressed && !this.wasL3Pressed) {
                 if (this.debugValueEditor) {
@@ -220,6 +223,25 @@ export class Game {
                 }
             }
             this.wasL3Pressed = isL3Pressed;
+
+            // R3: Full debug mode toggle (like F8)
+            const isR3Pressed = this.input.isR3Pressed();
+            if (isR3Pressed && !this.wasR3Pressed) {
+                this.debugMode = !this.debugMode;
+                this.debugMeshes.forEach(mesh => {
+                    mesh.visible = this.debugMode;
+                });
+                
+                // Toggle debug value editor visibility
+                if (this.debugMode) {
+                    this.debugValueEditor?.show();
+                } else {
+                    this.debugValueEditor?.hide();
+                }
+                
+                console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'} (via R3 button)`);
+            }
+            this.wasR3Pressed = isR3Pressed;
         }
 
         // Check inventory toggle
