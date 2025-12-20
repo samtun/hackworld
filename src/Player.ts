@@ -92,6 +92,7 @@ export class Player {
 
     // Death and respawn tracking
     isDead: boolean = false;
+    deathPosition: THREE.Vector3 = new THREE.Vector3(0, 0.5, 0); // Position where player died
     lastTeleporterPosition: THREE.Vector3 = new THREE.Vector3(0, 0.5, 0);
     lastTeleporterScene: string = 'lobby';
     itemsCollectedSinceLastLobby: string[] = []; // Track item IDs collected since last lobby visit
@@ -466,6 +467,7 @@ export class Player {
      */
     die() {
         this.isDead = true;
+        this.deathPosition.copy(this.mesh.position); // Save death position
         this.mesh.visible = false; // Hide player mesh
         console.log('Player died');
         // TODO: Add death animation

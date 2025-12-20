@@ -187,8 +187,8 @@ export class Game {
      * Handle retry after death - respawn at last teleporter with items dropped
      */
     handleRetry() {
-        // Get death position before respawn
-        const deathPosition = this.player.mesh.position.clone();
+        // Use the saved death position (captured when player died)
+        const deathPosition = this.player.deathPosition.clone();
 
         // Respawn player with full HP/TP at last teleporter
         this.player.respawn(true);
