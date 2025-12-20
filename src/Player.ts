@@ -457,11 +457,8 @@ export class Player {
 
         this.invulnerableTimer = 1.0; // 1 second invulnerability
         console.log(`Player took ${amount} damage. HP: ${this.hp}`);
-
-        // Check for death
-        if (this.hp <= 0) {
-            this.die();
-        }
+        
+        // Note: Death is handled in Game.ts animate loop to properly show death screen
     }
 
     /**
