@@ -257,11 +257,24 @@ export class Game {
 
             if (!this.isTransitioning && (this.input.isStartPressed() || import.meta.env.DEV)) {
                 this.isTransitioning = true;
+                
+                // Show loading screen before loading lobby assets
+                this.ui.showLoadingScreen();
+                
                 this.ui.triggerStartTransition(() => {
                     this.ui.hideStartScreen();
-                    this.currentScene = 'lobby';
-                    this.clock.getDelta(); // Reset clock
-                    this.isTransitioning = false;
+                    
+                    // Load the first stage (lobby) with its assets
+                    this.world.initializeFirstStage().then(() => {
+                        this.ui.hideLoadingScreen();
+                        this.currentScene = 'lobby';
+                        this.clock.getDelta(); // Reset clock
+                        this.isTransitioning = false;
+                    }).catch(err => {
+                        console.error('Failed to initialize first stage:', err);
+                        this.ui.hideLoadingScreen();
+                        this.isTransitioning = false;
+                    });
                 });
             }
             return;

@@ -51,23 +51,31 @@ export class World {
             this.assetManager.setProgressCallback(this.onLoadProgressCallback);
         }
 
-        // Preload common assets and start in Lobby
-        this.initializeWorld(onLoadComplete);
+        // Preload only common assets initially
+        this.initializeCommonAssets(onLoadComplete);
     }
 
     /**
-     * Initialize the world by preloading common assets and loading the lobby
+     * Initialize the world by preloading only common assets
+     * Stage-specific assets will be loaded when the stage is first loaded
      */
-    private async initializeWorld(onLoadComplete?: () => void): Promise<void> {
+    private async initializeCommonAssets(onLoadComplete?: () => void): Promise<void> {
         try {
             await this.preloadCommonAssets();
-            await this.loadStageById('lobby');
         } catch (error) {
-            console.error('Failed to initialize world:', error);
+            console.error('Failed to initialize common assets:', error);
         } finally {
             // Always call onLoadComplete to ensure UI updates
             if (onLoadComplete) onLoadComplete();
         }
+    }
+
+    /**
+     * Initialize the first stage (lobby)
+     * Should be called after the start screen is dismissed
+     */
+    async initializeFirstStage(): Promise<void> {
+        await this.loadStageById('lobby');
     }
 
     /**
