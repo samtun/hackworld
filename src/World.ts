@@ -62,9 +62,11 @@ export class World {
         try {
             await this.preloadCommonAssets();
             await this.loadStageById('lobby');
-            if (onLoadComplete) onLoadComplete();
         } catch (error) {
             console.error('Failed to initialize world:', error);
+        } finally {
+            // Always call onLoadComplete to ensure UI updates
+            if (onLoadComplete) onLoadComplete();
         }
     }
 
@@ -102,48 +104,49 @@ export class World {
      * Load a stage by ID with asset preloading
      */
     async loadStageById(stageId: string): Promise<void> {
-        // Notify start of stage loading
-        if (this.onStageLoadStartCallback) {
-            this.onStageLoadStartCallback();
-        }
+        try {
+            // Notify start of stage loading
+            if (this.onStageLoadStartCallback) {
+                this.onStageLoadStartCallback();
+            }
 
-        // Clear current stage
-        if (this.currentStage) {
-            this.currentStage.clear();
-            this.currentStage = undefined;
-        }
-        this.weaponDropManager.clear(this.scene, this.physicsWorld);
-        this.clearXData();
+            // Clear current stage
+            if (this.currentStage) {
+                this.currentStage.clear();
+                this.currentStage = undefined;
+            }
+            this.weaponDropManager.clear(this.scene, this.physicsWorld);
+            this.clearXData();
 
-        // Create new stage instance
-        const newStage = createStage(stageId, this.scene, this.physicsWorld, this.physicsMaterial);
-        if (!newStage) {
-            console.error(`Failed to create stage: ${stageId}`);
+            // Create new stage instance
+            const newStage = createStage(stageId, this.scene, this.physicsWorld, this.physicsMaterial);
+            if (!newStage) {
+                throw new Error(`Failed to create stage: ${stageId}`);
+            }
+
+            // Load stage-specific assets
+            const requiredAssets = newStage.getRequiredAssets();
+            if (requiredAssets.length > 0) {
+                await this.assetManager.preloadAll(requiredAssets);
+            }
+
+            // Set Ford callback for Lobby stage
+            if (stageId === 'lobby' && this.fordInteractionCallback) {
+                const lobby = newStage as Lobby;
+                lobby.fordInteractionCallback = this.fordInteractionCallback;
+            }
+
+            // Load the stage
+            this.currentStage = newStage;
+            this.currentStage.load();
+        } catch (error) {
+            console.error(`Error loading stage ${stageId}:`, error);
+            throw error; // Re-throw to allow caller to handle
+        } finally {
+            // Always notify completion to hide loading screen
             if (this.onStageLoadCompleteCallback) {
                 this.onStageLoadCompleteCallback();
             }
-            return;
-        }
-
-        // Load stage-specific assets
-        const requiredAssets = newStage.getRequiredAssets();
-        if (requiredAssets.length > 0) {
-            await this.assetManager.preloadAll(requiredAssets);
-        }
-
-        // Set Ford callback for Lobby stage
-        if (stageId === 'lobby' && this.fordInteractionCallback) {
-            const lobby = newStage as Lobby;
-            lobby.fordInteractionCallback = this.fordInteractionCallback;
-        }
-
-        // Load the stage
-        this.currentStage = newStage;
-        this.currentStage.load();
-
-        // Notify completion of stage loading
-        if (this.onStageLoadCompleteCallback) {
-            this.onStageLoadCompleteCallback();
         }
     }
 
