@@ -1,3 +1,11 @@
+# [1.3.0](https://github.com/samtun/hackworld/compare/v1.2.0...v1.3.0) (2025-12-20)
+
+
+### Features
+
+* add controller navigation to death overlay and reload stage on retry ([d31afe4](https://github.com/samtun/hackworld/commit/d31afe47be1e7da80c25ace34711a8da9ac7541c))
+* implement player death system with respawn and lobby return ([b47e6ee](https://github.com/samtun/hackworld/commit/b47e6ee6ca27fbee0d424cdda4a508b81993a582))
+
 # [1.2.0](https://github.com/samtun/hackworld/compare/v1.1.0...v1.2.0) (2025-12-20)
 
 
