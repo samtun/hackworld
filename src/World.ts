@@ -6,6 +6,7 @@ import { AssetManager } from './AssetManager';
 import { BaseDungeon, Lobby, Dungeon1, Dungeon2 } from './stages';
 import { NPC } from './NPC';
 import { WeaponDropManager } from './items/WeaponDropManager';
+import { WeaponDrop } from './items/WeaponDrop';
 import { XData } from './xdata/XData';
 import { XDataDropManager } from './xdata/XDataDropManager';
 import { EXPNumber } from './EXPNumber';
@@ -294,14 +295,14 @@ export class World {
     /**
      * Check if player is near a weapon drop
      */
-    checkWeaponDropInteraction(playerPosition: THREE.Vector3) {
+    checkWeaponDropInteraction(playerPosition: THREE.Vector3): WeaponDrop | null {
         return this.weaponDropManager.checkInteraction(playerPosition);
     }
 
     /**
      * Pick up a weapon drop
      */
-    pickupWeaponDrop(drop: any, player: Player): void {
+    pickupWeaponDrop(drop: WeaponDrop, player: Player): void {
         this.weaponDropManager.pickup(this.scene, this.physicsWorld, drop, player);
     }
 }
