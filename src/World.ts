@@ -167,15 +167,11 @@ export class World {
                 this.spawnEXPNumber(enemy.getDeathPosition(), enemy.expAmount);
 
                 // Check if enemy should drop weapon drop
-                if (this.weaponDropManager.tryDropWeapon(this.scene, this.physicsWorld, enemy, player)) {
-                    // Proceed if weapon was dropped
-                    return;
-                }
-
-                // Check if enemy should drop X-Data
-                const xDataAmount = this.xDataDropManager.rollDrop(player, enemy);
-                if (xDataAmount > 0) {
-                    this.spawnXData(enemy.getDeathPosition(), xDataAmount);
+                if (!this.weaponDropManager.tryDropWeapon(this.scene, this.physicsWorld, enemy, player)) {
+                    const xDataAmount = this.xDataDropManager.rollDrop(player, enemy);
+                    if (xDataAmount > 0) {
+                        this.spawnXData(enemy.getDeathPosition(), xDataAmount);
+                    }
                 }
 
                 this.scene.remove(enemy.mesh);
