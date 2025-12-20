@@ -28,7 +28,9 @@ export class Player {
 
     // Level system constants
     private static readonly MAX_LEVEL = 999;
-    private static readonly LEVEL_STAT_MULTIPLIER = 0.002; // Stats increase by 1 + 0.002 * level
+    private static readonly LEVEL_STAT_MULTIPLIER = 1.002; // Stats increase by (1 + 0.002) * level
+    private static readonly LEVEL_HP_MULTIPLIER = 10.01; // HP increase by (10 + 0.01) * level
+    private static readonly LEVEL_TP_MULTIPLIER = 5.005; // TP increase by (5 + 0.005) * level
     private static readonly EXP_BASE = 350;
     private static readonly EXP_LINEAR_FACTOR = 30;
     private static readonly EXP_QUADRATIC_FACTOR = 0.07;
@@ -36,7 +38,6 @@ export class Player {
     // Base Stats (without equipment modifiers or upgrades)
     private baseStrength: number = 14;
     private baseDefense: number = 17;
-    private baseSpeed: number = 6;
 
     // Stats (with equipment modifiers applied)
     level: number = 1;
@@ -67,8 +68,8 @@ export class Player {
     private chargeDelayTimer: number = 0;
     private isDashing: boolean = false;
     private dashTimer: number = 0;
-    private readonly DASH_DURATION: number = 0.4;
-    private readonly DASH_SPEED: number = 30;
+    private readonly DASH_DURATION: number = 0.3;
+    private readonly DASH_SPEED: number = 25;
     private dashDirection: THREE.Vector3 = new THREE.Vector3();
     private chargeParticles: THREE.Mesh[] = [];
     private dashHitEnemies: Set<Enemy> = new Set();
@@ -195,15 +196,15 @@ export class Player {
 
     private recalculateStats() {
         // Calculate level multiplier
-        const levelMultiplier = this.getLevelMultiplier();
+        const levelStatBonus = this.getLevelStatBonus();
+        const levelHpBonus = this.getLevelHpBonus();
+        const levelTpBonus = this.getLevelTpBonus();
 
         // Start with base stats (including upgrades) and apply level multiplier
-        // Note: HP and TP are not affected by level multiplier as they are upgraded separately via X-Data
-        this.strength = Math.min(Math.floor((this.baseStrength + this.strengthUpgrades) * levelMultiplier), Player.MAX_STAT_VALUE);
-        this.defense = Math.min(Math.floor((this.baseDefense + this.defenseUpgrades) * levelMultiplier), Player.MAX_STAT_VALUE);
-        this.speed = this.baseSpeed * levelMultiplier;
-        this.maxHp = Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
-        this.maxTp = Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
+        this.strength = Math.min(Math.floor((this.baseStrength + this.strengthUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
+        this.defense = Math.min(Math.floor((this.baseDefense + this.defenseUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
+        this.maxHp = Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, Player.MAX_STAT_VALUE);
+        this.maxTp = Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, Player.MAX_STAT_VALUE);
 
         // Ensure current HP/TP don't exceed new max
         if (this.hp > this.maxHp) this.hp = this.maxHp;
@@ -499,12 +500,12 @@ export class Player {
     private die(): void {
         this.isDead = true;
         console.log('Player died');
-        
+
         // TODO: Add death animation here (placeholder for future implementation)
-        
+
         // Hide player mesh
         this.mesh.visible = false;
-        
+
         // Trigger death callback if set
         if (this.deathCallback) {
             this.deathCallback();
@@ -526,14 +527,14 @@ export class Player {
         this.hp = this.maxHp;
         this.tp = this.maxTp;
         this.invulnerableTimer = 2.0; // 2 seconds invulnerability after respawn
-        
+
         // Reset position and velocity
         this.body.position.copy(position);
         this.body.velocity.set(0, 0, 0);
-        
+
         // Make player visible again
         this.mesh.visible = true;
-        
+
         console.log('Player respawned at', position);
     }
 
@@ -828,15 +829,31 @@ export class Player {
         // Trigger level up particle explosion
         this.createLevelUpParticles();
 
+        // Heal player up to max HP and TP
+        this.heal(this.maxHp, this.maxTp);
+
         console.log(`Level Up! Now level ${this.level}. Next level requires ${this.expRequired} EXP.`);
     }
 
     /**
-     * Get the level multiplier for stats
-     * Formula: 1 + 0.002 * level
+     * Get the level bonus for stats
      */
-    private getLevelMultiplier(): number {
-        return 1 + Player.LEVEL_STAT_MULTIPLIER * this.level;
+    private getLevelStatBonus(): number {
+        return Math.floor(Player.LEVEL_STAT_MULTIPLIER * (this.level - 1));
+    }
+
+    /**
+     * Get the level bonus for HP
+     */
+    private getLevelHpBonus(): number {
+        return Math.floor(Player.LEVEL_HP_MULTIPLIER * (this.level - 1));
+    }
+
+    /**
+     * Get the level bonus for TP
+     */
+    private getLevelTpBonus(): number {
+        return Math.floor(Player.LEVEL_TP_MULTIPLIER * (this.level - 1));
     }
 
     /**
