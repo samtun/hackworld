@@ -187,6 +187,7 @@ export class Lobby extends BaseDungeon {
         const npcs: NPC[] = [];
         if (this.npc) npcs.push(this.npc);
         if (this.fordNpc) npcs.push(this.fordNpc);
+        if (this.saveManagerNpc) npcs.push(this.saveManagerNpc);
         return npcs;
     }
 
@@ -209,6 +210,10 @@ export class Lobby extends BaseDungeon {
         if (this.fordNpc) {
             this.fordNpc.cleanup(this.scene, this.physicsWorld);
             this.fordNpc = undefined;
+        }
+        if (this.saveManagerNpc) {
+            this.saveManagerNpc.cleanup(this.scene, this.physicsWorld);
+            this.saveManagerNpc = undefined;
         }
         if (this.healingStation) {
             this.healingStation.cleanup(this.scene);
