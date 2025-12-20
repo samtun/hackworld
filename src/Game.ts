@@ -205,14 +205,16 @@ export class Game {
         console.log('Game: Returning to lobby');
         this.ui.hideDeathOverlay();
         
-        // Restore full HP and TP
-        this.player.hp = this.player.maxHp;
-        this.player.tp = this.player.maxTp;
-        this.player.isDead = false;
-        this.player.mesh.visible = true;
+        // Respawn player at lobby spawn point without updating lastTeleporterPosition
+        const lobbySpawnPoint = new CANNON.Vec3(0, 0.5, 0);
+        this.player.respawn(lobbySpawnPoint);
         
-        // Switch to lobby
-        this.switchScene('lobby');
+        // Switch to lobby (but don't update lastTeleporterPosition for death returns)
+        this.world.loadStage('lobby');
+        this.currentScene = 'lobby';
+        
+        // Reset camera
+        this.camera.position.set(10, 15, 10);
     }
 
     onWindowResize() {
