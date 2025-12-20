@@ -52,7 +52,10 @@ export class Game {
     wasTraderJustOpened: boolean = false; // Prevent immediate action when opening trader
     isTransitioning: boolean = false;
 
-    // Last teleporter position for respawn
+    // Spawn position constants
+    private static readonly LOBBY_SPAWN_POSITION = new CANNON.Vec3(0, 0.5, 0);
+
+    // Last teleporter position for respawn (starts at lobby spawn)
     lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
 
     constructor() {
@@ -171,7 +174,8 @@ export class Game {
         this.player.body.position.set(0, 0.5, 0);
         this.player.body.velocity.set(0, 0, 0);
 
-        // Update last teleporter position when entering a dungeon or lobby
+        // Update last teleporter position when entering a stage via portal
+        // This is used as the respawn point if the player dies
         this.lastTeleporterPosition.copy(this.player.body.position);
 
         // Snap camera
@@ -206,8 +210,9 @@ export class Game {
         this.ui.hideDeathOverlay();
         
         // Respawn player at lobby spawn point without updating lastTeleporterPosition
-        const lobbySpawnPoint = new CANNON.Vec3(0, 0.5, 0);
-        this.player.respawn(lobbySpawnPoint);
+        // We don't update lastTeleporterPosition here because death returns shouldn't
+        // change the respawn point for future deaths
+        this.player.respawn(Game.LOBBY_SPAWN_POSITION);
         
         // Switch to lobby (but don't update lastTeleporterPosition for death returns)
         this.world.loadStage('lobby');
