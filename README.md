@@ -18,6 +18,11 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
   - **Overclock** - Increases walk speed by 10%
   - Chips can be purchased from the chip trader in the lobby
 - **X-Data resource system** - Collect X-Data from defeated enemies and use it to permanently upgrade your stats with Ford in the lobby
+- **Save system** - Save your game progress to a JSON file through the Save Manager NPC in the lobby
+  - Saves player stats (HP, TP, level, EXP, strength, defense, speed, money, X-Data)
+  - Saves player upgrades and inventory
+  - Tracks and saves playtime
+  - Saves trader inventories
 
 ## Tech Stack
 
