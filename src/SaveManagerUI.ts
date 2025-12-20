@@ -164,6 +164,9 @@ export class SaveManagerUI {
         this.playtimeDisplay.textContent = `Playtime: ${playtime}`;
         this.saveStatusText.style.display = 'none';
         this.updateButtonHighlight();
+        // Reset input states to prevent immediate action on open
+        this.lastSelectState = true;
+        this.lastCancelState = true;
     }
 
     /**
