@@ -14,6 +14,9 @@ export class UIManager {
     deathOverlay: HTMLDivElement;
     private retryCallback?: () => void;
     private lobbyCallback?: () => void;
+    private retryButton?: HTMLButtonElement;
+    private lobbyButton?: HTMLButtonElement;
+    private deathOverlaySelectedIndex: number = 0; // 0 = Retry, 1 = Return to Lobby
 
     constructor() {
         this.startScreen = document.getElementById('start-screen') as HTMLDivElement;
@@ -162,60 +165,52 @@ export class UIManager {
         buttonContainer.style.gap = '30px';
 
         // Retry button
-        const retryButton = document.createElement('button');
-        retryButton.textContent = 'Retry';
-        retryButton.style.padding = '15px 40px';
-        retryButton.style.fontSize = '28px';
-        retryButton.style.fontFamily = '"Share Tech", Arial, sans-serif';
-        retryButton.style.fontWeight = 'bold';
-        retryButton.style.color = '#fff';
-        retryButton.style.backgroundColor = '#444';
-        retryButton.style.border = '3px solid #fff';
-        retryButton.style.borderRadius = '8px';
-        retryButton.style.cursor = 'pointer';
-        retryButton.style.transition = 'all 0.2s';
-        retryButton.onmouseover = () => {
-            retryButton.style.backgroundColor = '#666';
-            retryButton.style.transform = 'scale(1.05)';
+        this.retryButton = document.createElement('button');
+        this.retryButton.textContent = 'Retry';
+        this.retryButton.style.padding = '15px 40px';
+        this.retryButton.style.fontSize = '28px';
+        this.retryButton.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        this.retryButton.style.fontWeight = 'bold';
+        this.retryButton.style.color = '#fff';
+        this.retryButton.style.backgroundColor = '#444';
+        this.retryButton.style.border = '3px solid #fff';
+        this.retryButton.style.borderRadius = '8px';
+        this.retryButton.style.cursor = 'pointer';
+        this.retryButton.style.transition = 'all 0.2s';
+        this.retryButton.onmouseover = () => {
+            this.deathOverlaySelectedIndex = 0;
+            this.updateDeathOverlaySelection();
         };
-        retryButton.onmouseout = () => {
-            retryButton.style.backgroundColor = '#444';
-            retryButton.style.transform = 'scale(1)';
-        };
-        retryButton.onclick = () => {
+        this.retryButton.onclick = () => {
             if (this.retryCallback) {
                 this.retryCallback();
             }
         };
-        buttonContainer.appendChild(retryButton);
+        buttonContainer.appendChild(this.retryButton);
 
         // Return to Lobby button
-        const lobbyButton = document.createElement('button');
-        lobbyButton.textContent = 'Return to Lobby';
-        lobbyButton.style.padding = '15px 40px';
-        lobbyButton.style.fontSize = '28px';
-        lobbyButton.style.fontFamily = '"Share Tech", Arial, sans-serif';
-        lobbyButton.style.fontWeight = 'bold';
-        lobbyButton.style.color = '#fff';
-        lobbyButton.style.backgroundColor = '#444';
-        lobbyButton.style.border = '3px solid #fff';
-        lobbyButton.style.borderRadius = '8px';
-        lobbyButton.style.cursor = 'pointer';
-        lobbyButton.style.transition = 'all 0.2s';
-        lobbyButton.onmouseover = () => {
-            lobbyButton.style.backgroundColor = '#666';
-            lobbyButton.style.transform = 'scale(1.05)';
+        this.lobbyButton = document.createElement('button');
+        this.lobbyButton.textContent = 'Return to Lobby';
+        this.lobbyButton.style.padding = '15px 40px';
+        this.lobbyButton.style.fontSize = '28px';
+        this.lobbyButton.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        this.lobbyButton.style.fontWeight = 'bold';
+        this.lobbyButton.style.color = '#fff';
+        this.lobbyButton.style.backgroundColor = '#444';
+        this.lobbyButton.style.border = '3px solid #fff';
+        this.lobbyButton.style.borderRadius = '8px';
+        this.lobbyButton.style.cursor = 'pointer';
+        this.lobbyButton.style.transition = 'all 0.2s';
+        this.lobbyButton.onmouseover = () => {
+            this.deathOverlaySelectedIndex = 1;
+            this.updateDeathOverlaySelection();
         };
-        lobbyButton.onmouseout = () => {
-            lobbyButton.style.backgroundColor = '#444';
-            lobbyButton.style.transform = 'scale(1)';
-        };
-        lobbyButton.onclick = () => {
+        this.lobbyButton.onclick = () => {
             if (this.lobbyCallback) {
                 this.lobbyCallback();
             }
         };
-        buttonContainer.appendChild(lobbyButton);
+        buttonContainer.appendChild(this.lobbyButton);
 
         this.deathOverlay.appendChild(buttonContainer);
         document.body.appendChild(this.deathOverlay);
@@ -323,15 +318,84 @@ export class UIManager {
     showDeathOverlay(onRetry: () => void, onReturnToLobby: () => void) {
         this.retryCallback = onRetry;
         this.lobbyCallback = onReturnToLobby;
+        this.deathOverlaySelectedIndex = 0; // Reset to first button
         
         if (this.deathOverlay) {
             this.deathOverlay.style.display = 'flex';
             // Trigger fade-in after a small delay to ensure display change is applied
             setTimeout(() => {
                 this.deathOverlay.style.opacity = '1';
+                this.updateDeathOverlaySelection();
             }, 10);
         }
     }
+
+    /**
+     * Update death overlay button selection visual
+     */
+    private updateDeathOverlaySelection() {
+        if (!this.retryButton || !this.lobbyButton) return;
+        
+        // Update retry button
+        if (this.deathOverlaySelectedIndex === 0) {
+            this.retryButton.style.backgroundColor = '#666';
+            this.retryButton.style.transform = 'scale(1.05)';
+        } else {
+            this.retryButton.style.backgroundColor = '#444';
+            this.retryButton.style.transform = 'scale(1)';
+        }
+        
+        // Update lobby button
+        if (this.deathOverlaySelectedIndex === 1) {
+            this.lobbyButton.style.backgroundColor = '#666';
+            this.lobbyButton.style.transform = 'scale(1.05)';
+        } else {
+            this.lobbyButton.style.backgroundColor = '#444';
+            this.lobbyButton.style.transform = 'scale(1)';
+        }
+    }
+
+    /**
+     * Handle death overlay controller input
+     */
+    handleDeathOverlayInput(input: any): void {
+        if (!this.deathOverlay || this.deathOverlay.style.display === 'none') return;
+        
+        // Navigate left (previous button)
+        const navigateLeft = input.isNavigateLeftPressed();
+        if (navigateLeft && !this.lastNavigateLeftState) {
+            if (this.deathOverlaySelectedIndex > 0) {
+                this.deathOverlaySelectedIndex--;
+                this.updateDeathOverlaySelection();
+            }
+        }
+        this.lastNavigateLeftState = navigateLeft;
+        
+        // Navigate right (next button)
+        const navigateRight = input.isNavigateRightPressed();
+        if (navigateRight && !this.lastNavigateRightState) {
+            if (this.deathOverlaySelectedIndex < 1) {
+                this.deathOverlaySelectedIndex++;
+                this.updateDeathOverlaySelection();
+            }
+        }
+        this.lastNavigateRightState = navigateRight;
+        
+        // Select button
+        const select = input.isSelectPressed();
+        if (select && !this.lastSelectState) {
+            if (this.deathOverlaySelectedIndex === 0 && this.retryCallback) {
+                this.retryCallback();
+            } else if (this.deathOverlaySelectedIndex === 1 && this.lobbyCallback) {
+                this.lobbyCallback();
+            }
+        }
+        this.lastSelectState = select;
+    }
+
+    private lastNavigateLeftState: boolean = false;
+    private lastNavigateRightState: boolean = false;
+    private lastSelectState: boolean = false;
 
     /**
      * Hide the death overlay with fade-out animation

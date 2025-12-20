@@ -195,10 +195,18 @@ export class Game {
 
     /**
      * Respawn the player at the last teleporter position
+     * Fully reloads the current stage to reset enemies
      */
     respawnPlayer() {
         console.log('Game: Respawning player at last teleporter');
         this.ui.hideDeathOverlay();
+        
+        // Fully reload the current stage to reset enemies and environment
+        if (this.currentScene !== 'startScreen' && this.currentScene !== 'lobby') {
+            this.world.loadStage(this.currentScene);
+        }
+        
+        // Respawn player at last teleporter position
         this.player.respawn(this.lastTeleporterPosition);
     }
 
@@ -449,6 +457,9 @@ export class Game {
         }
 
         this.ui.update(this.player);
+
+        // Handle death overlay input
+        this.ui.handleDeathOverlayInput(this.input);
 
         // Update debug value editor if visible
         if (this.debugMode && this.debugValueEditor) {
