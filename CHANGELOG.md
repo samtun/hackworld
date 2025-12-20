@@ -1,3 +1,11 @@
+# [1.4.0](https://github.com/samtun/hackworld/compare/v1.3.0...v1.4.0) (2025-12-20)
+
+
+### Features
+
+* minor fixes ([ed24699](https://github.com/samtun/hackworld/commit/ed246991fc83cbf5e0fc828b228b06a77e30d4f5))
+* remove center obstacle from second dungeon ([b083be5](https://github.com/samtun/hackworld/commit/b083be5c27c7b52d566e0bd14d8d0e89f70f6d55))
+
 # [1.3.0](https://github.com/samtun/hackworld/compare/v1.2.0...v1.3.0) (2025-12-20)
 
 
