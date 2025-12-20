@@ -1,24 +1,20 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-
-export { BaseDungeon } from './BaseDungeon';
-export { Lobby } from './Lobby';
-export { Dungeon1 } from './Dungeon1';
-export { Dungeon2 } from './Dungeon2';
-
-// For stage selection UI
+import { BaseDungeon } from './BaseDungeon';
+import { Lobby } from './Lobby';
 import { Dungeon1 } from './Dungeon1';
 import { Dungeon2 } from './Dungeon2';
 
+// Re-export for convenience
+export { BaseDungeon, Lobby, Dungeon1, Dungeon2 };
+
+// Registry of all available dungeons for selection UI
 export const AVAILABLE_DUNGEONS = [
     Dungeon1,
     Dungeon2
 ];
 
-// Stage factory types
-import { BaseDungeon } from './BaseDungeon';
-import { Lobby } from './Lobby';
-
+// Stage factory type
 type StageConstructor = new (
     scene: THREE.Scene,
     physicsWorld: CANNON.World,
