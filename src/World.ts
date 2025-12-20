@@ -155,6 +155,13 @@ export class World {
         return this.loadStageById('lobby');
     }
 
+    /**
+     * Set callback for Save Manager NPC interaction
+     */
+    setSaveManagerCallback(callback: () => void) {
+        this.lobby.saveManagerInteractionCallback = callback;
+    }
+
     loadDungeon() {
         return this.loadStageById('dungeon');
     }

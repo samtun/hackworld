@@ -28,9 +28,13 @@ export class Lobby extends BaseDungeon {
     // Store Ford position for interaction
     private fordPosition: CANNON.Vec3 = new CANNON.Vec3(5, 0, -5);
 
+    // Store Save Manager position for interaction
+    private saveManagerPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, 5);
+
     // NPCs
     npc?: NPC;
     fordNpc?: NPC;
+    saveManagerNpc?: NPC;
 
     // Healing Station
     healingStation?: HealingStation;
@@ -38,6 +42,9 @@ export class Lobby extends BaseDungeon {
 
     // Callback for Ford interaction (set by Game)
     fordInteractionCallback?: () => void;
+
+    // Callback for Save Manager interaction (set by Game)
+    saveManagerInteractionCallback?: () => void;
 
     load(): void {
         this.clear();
@@ -49,7 +56,7 @@ export class Lobby extends BaseDungeon {
         // Portal (single portal that will show selection UI)
         this.createPortal(new CANNON.Vec3(5, 0.05, 5), 0x00ff00, 'selection');
 
-        // Healing Station
+        // Healing Station (moved to avoid conflict with Save Manager)
         this.healingStation = new HealingStation(this.scene, this.healingStationPosition, 0x00ffff);
 
         // Create Nyleth NPC
@@ -81,6 +88,23 @@ export class Lobby extends BaseDungeon {
             this.fordPosition,
             fordDialogue,
             this.fordInteractionCallback
+        );
+
+        // Create Save Manager NPC
+        const saveManagerDialogue = [
+            "Hello! I'm the Save Manager.",
+            "I can help you save your current game progress to a file.",
+            "This includes your stats, inventory, playtime, and trader inventories.",
+            "Come closer when you're ready to save!"
+        ];
+        this.saveManagerNpc = new NPC(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            "Grant",
+            this.saveManagerPosition,
+            saveManagerDialogue,
+            this.saveManagerInteractionCallback
         );
 
         // Load Trader Model from cache
@@ -166,12 +190,23 @@ export class Lobby extends BaseDungeon {
     }
 
     /**
+     * Check if player is near save manager
+     */
+    checkSaveManagerInteraction(playerPosition: THREE.Vector3): boolean {
+        const dist = playerPosition.distanceTo(
+            new THREE.Vector3(this.saveManagerPosition.x, this.saveManagerPosition.y, this.saveManagerPosition.z)
+        );
+        return dist < 2.0; // Interaction range
+    }
+
+    /**
      * Get all NPCs in the lobby (dialogue NPCs only, traders are handled separately)
      */
     getAllNPCs(): NPC[] {
         const npcs: NPC[] = [];
         if (this.npc) npcs.push(this.npc);
         if (this.fordNpc) npcs.push(this.fordNpc);
+        if (this.saveManagerNpc) npcs.push(this.saveManagerNpc);
         return npcs;
     }
 
@@ -194,6 +229,10 @@ export class Lobby extends BaseDungeon {
         if (this.fordNpc) {
             this.fordNpc.cleanup(this.scene, this.physicsWorld);
             this.fordNpc = undefined;
+        }
+        if (this.saveManagerNpc) {
+            this.saveManagerNpc.cleanup(this.scene, this.physicsWorld);
+            this.saveManagerNpc = undefined;
         }
         if (this.healingStation) {
             this.healingStation.cleanup(this.scene);

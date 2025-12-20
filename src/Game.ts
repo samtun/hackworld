@@ -13,6 +13,8 @@ import { NPCDialogueManager } from './NPCDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
 import { AVAILABLE_DUNGEONS } from './stages';
 import { DebugValueEditor } from './DebugValueEditor';
+import { SaveManager } from './SaveManager';
+import { SaveManagerUI } from './SaveManagerUI';
 
 export class Game {
     scene: THREE.Scene;
@@ -31,6 +33,8 @@ export class Game {
     dungeonSelection: DungeonSelectionManager;
     npcDialogue: NPCDialogueManager;
     xDataUpgrade: XDataUpgradeManager;
+    saveManager: SaveManager;
+    saveManagerUI: SaveManagerUI;
 
     clock: THREE.Clock;
     debugOutputFrequency: number = 1
@@ -123,11 +127,27 @@ export class Game {
         this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
         this.npcDialogue = new NPCDialogueManager();
         this.xDataUpgrade = new XDataUpgradeManager();
+        this.saveManager = new SaveManager();
+        this.saveManagerUI = new SaveManagerUI();
         this.clock = new THREE.Clock();
 
         // Set up Ford NPC callback for X-Data upgrades
         this.world.setFordCallback(() => {
             this.xDataUpgrade.show();
+        });
+
+        // Set up Save Manager NPC callback
+        this.world.setSaveManagerCallback(() => {
+            this.saveManagerUI.show(
+                this.saveManager.getFormattedPlaytime(),
+                () => {
+                    this.saveManager.save(
+                        this.player,
+                        this.trader.traderInventory,
+                        this.chipTrader.traderInventory
+                    );
+                }
+            );
         });
 
         // Set up player death callback
@@ -154,14 +174,14 @@ export class Game {
                     this.debugMeshes.forEach(mesh => {
                         mesh.visible = this.debugMode;
                     });
-                    
+
                     // Toggle debug value editor visibility
                     if (this.debugMode) {
                         this.debugValueEditor?.show();
                     } else {
                         this.debugValueEditor?.hide();
                     }
-                    
+
                     console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'}`);
                 } else if (this.debugMode) {
                     console.log(`[Debug] Key pressed: ${e.code}`);
@@ -213,12 +233,12 @@ export class Game {
     respawnPlayer() {
         console.log('Game: Respawning player at last teleporter');
         this.ui.hideDeathOverlay();
-        
+
         // Fully reload the current stage to reset enemies and environment
         if (this.currentScene !== 'startScreen' && this.currentScene !== 'lobby') {
             this.world.loadStage(this.currentScene);
         }
-        
+
         // Respawn player at last teleporter position
         this.player.respawn(this.lastTeleporterPosition);
     }
@@ -229,18 +249,31 @@ export class Game {
     returnToLobby() {
         console.log('Game: Returning to lobby');
         this.ui.hideDeathOverlay();
-        
+
         // Respawn player at lobby spawn point without updating lastTeleporterPosition
         // We don't update lastTeleporterPosition here because death returns shouldn't
         // change the respawn point for future deaths
         this.player.respawn(Game.LOBBY_SPAWN_POSITION);
-        
+
         // Switch to lobby (but don't update lastTeleporterPosition for death returns)
         this.world.loadStage('lobby');
         this.currentScene = 'lobby';
-        
+
         // Reset camera
         this.camera.position.set(10, 15, 10);
+    }
+
+    /**
+     * Check if any UI menu is currently open
+     */
+    private isAnyMenuOpen(): boolean {
+        return this.inventory.isVisible ||
+            this.trader.isVisible ||
+            this.chipTrader.isVisible ||
+            this.dungeonSelection.isVisible ||
+            this.npcDialogue.isVisible ||
+            this.xDataUpgrade.isVisible ||
+            this.saveManagerUI.isVisible;
     }
 
     onWindowResize() {
@@ -268,6 +301,11 @@ export class Game {
         }
 
         const dt = this.clock.getDelta();
+
+        // Update playtime (only when not on start screen and not paused by menus)
+        if (!this.isAnyMenuOpen()) {
+            this.saveManager.updatePlaytime(dt);
+        }
 
         // Clean up debug meshes list occasionally (e.g. every frame is fine for small lists, or check length)
         if (this.debugMeshes.length > 0) {
@@ -307,14 +345,14 @@ export class Game {
                 this.debugMeshes.forEach(mesh => {
                     mesh.visible = this.debugMode;
                 });
-                
+
                 // Toggle debug value editor visibility
                 if (this.debugMode) {
                     this.debugValueEditor?.show();
                 } else {
                     this.debugValueEditor?.hide();
                 }
-                
+
                 console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'} (via R3 button)`);
             }
             this.wasR3Pressed = isR3Pressed;
@@ -324,7 +362,7 @@ export class Game {
         const isInventoryPressed = this.input.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
             // Don't allow toggling inventory while any other UI is open
-            if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible) {
+            if (!this.isAnyMenuOpen() || this.inventory.isVisible) {
                 this.inventory.toggle();
             }
         }
@@ -361,19 +399,24 @@ export class Game {
             this.chipTrader.update(this.player, this.input);
         }
 
+        // Update save manager if visible
+        if (this.saveManagerUI.isVisible) {
+            this.saveManagerUI.update(this.input);
+        }
+
         // Check if player is near any interactive entity (to prevent jumping while interacting)
-        const anyMenuOpen = this.inventory.isVisible || this.trader.isVisible || this.chipTrader.isVisible || this.dungeonSelection.isVisible || this.npcDialogue.isVisible || this.xDataUpgrade.isVisible;
-        
+        const anyMenuOpen = this.isAnyMenuOpen();
+
         // Define interactive entity types
         interface InteractiveEntity {
-            type: 'npc' | 'trader' | 'chipTrader' | 'weaponDrop' | 'portal';
+            type: 'npc' | 'trader' | 'chipTrader' | 'weaponDrop' | 'portal' | 'saveManager';
             data?: any;
             hint: string;
             action: () => void;
         }
-        
+
         let nearbyInteractive: InteractiveEntity | null = null;
-        
+
         if (!anyMenuOpen) {
             // Check NPCs (including dialogue NPCs and Ford)
             const allNPCs = this.world.getAllNPCs();
@@ -394,7 +437,7 @@ export class Game {
                     break;
                 }
             }
-            
+
             // Check weapon drop (higher priority than traders)
             if (!nearbyInteractive) {
                 const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.mesh.position);
@@ -409,7 +452,7 @@ export class Game {
                     };
                 }
             }
-            
+
             // Check weapon trader
             if (!nearbyInteractive && this.world.checkTraderInteraction(this.player.mesh.position)) {
                 nearbyInteractive = {
@@ -420,7 +463,7 @@ export class Game {
                     }
                 };
             }
-            
+
             // Check chip trader
             if (!nearbyInteractive && this.world.checkChipTraderInteraction(this.player.mesh.position)) {
                 nearbyInteractive = {
@@ -431,7 +474,7 @@ export class Game {
                     }
                 };
             }
-            
+
             // Check portal
             if (!nearbyInteractive) {
                 const destination = this.world.checkPortalInteraction(this.player.mesh.position);
@@ -456,7 +499,7 @@ export class Game {
 
         const isNearInteractive = nearbyInteractive !== null;
 
-        // Update Game Logic (only if inventory, trader, dungeon selection, and NPC dialogue are closed)
+        // Update Game Logic (only if no menu is open)
         if (!anyMenuOpen) {
             // Step Physics
             this.physicsWorld.step(1 / 60, dt, 3);
@@ -496,12 +539,12 @@ export class Game {
             this.ui.showInteractionHint(true, nearbyInteractive.hint);
 
             // Check for interaction - prevent if just opened a menu or dialogue was just closed
-            const shouldPreventInteraction = this.wasTraderJustOpened || 
-                                           (nearbyInteractive.type === 'npc' && wasDialogueVisible);
-            
+            const shouldPreventInteraction = this.wasTraderJustOpened ||
+                (nearbyInteractive.type === 'npc' && wasDialogueVisible);
+
             if (isSelectPressed && !this.wasSelectPressed && !shouldPreventInteraction) {
                 nearbyInteractive.action();
-                
+
                 // Set flag if we just opened a trader to prevent immediate action
                 if (nearbyInteractive.type === 'trader' || nearbyInteractive.type === 'chipTrader') {
                     this.wasTraderJustOpened = true;
@@ -511,7 +554,7 @@ export class Game {
             // Hide hint if not near anything interactive
             this.ui.showInteractionHint(false);
         }
-        
+
         // Reset trader just opened flag when select is released
         if (!isSelectPressed && this.wasTraderJustOpened) {
             this.wasTraderJustOpened = false;
