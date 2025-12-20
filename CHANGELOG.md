@@ -1,3 +1,17 @@
+# [1.6.0](https://github.com/samtun/hackworld/compare/v1.5.1...v1.6.0) (2025-12-20)
+
+
+### Bug Fixes
+
+* add save manager NPC to cleanup and interaction list ([8e09c30](https://github.com/samtun/hackworld/commit/8e09c30d3d07a3fce67a73081c69b134d2fe3835))
+* prevent instant save execution when opening Save Manager UI ([f1cff83](https://github.com/samtun/hackworld/commit/f1cff838e76b71d5e0d36b2832dbf665e03a0acf))
+
+
+### Features
+
+* add save manager system with NPC and UI ([8fb6c57](https://github.com/samtun/hackworld/commit/8fb6c57d1b8c1e57a5d6dd86553b417c8305b063))
+* add savemanager to interactable entities ([7807c3d](https://github.com/samtun/hackworld/commit/7807c3df07cda52ca46033a3c49ab35f75f673fe))
+
 ## [1.5.1](https://github.com/samtun/hackworld/compare/v1.5.0...v1.5.1) (2025-12-20)
 
 
