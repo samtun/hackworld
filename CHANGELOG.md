@@ -1,3 +1,15 @@
+# [1.5.0](https://github.com/samtun/hackworld/compare/v1.4.0...v1.5.0) (2025-12-20)
+
+
+### Bug Fixes
+
+* use actual maxHp/maxTp values in XData UI instead of calculated values ([66d544e](https://github.com/samtun/hackworld/commit/66d544ec0293f18d657441cbca41922fc6af81d9))
+
+
+### Features
+
+* make level up heal player and increase HP and TP ([d18d19a](https://github.com/samtun/hackworld/commit/d18d19aa83000e7c50687ccf45564a38f22c0470))
+
 # [1.4.0](https://github.com/samtun/hackworld/compare/v1.3.0...v1.4.0) (2025-12-20)
 
 
