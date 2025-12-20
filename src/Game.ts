@@ -190,13 +190,33 @@ export class Game {
         // Use the saved death position (captured when player died)
         const deathPosition = this.player.deathPosition.clone();
 
-        // Respawn player with full HP/TP at last teleporter
-        this.player.respawn(true);
-
         // Drop items that were collected since last lobby visit at death position
         if (this.player.itemsCollectedSinceLastLobby.length > 0) {
-            this.world.createDroppedItems(deathPosition, this.player.itemsCollectedSinceLastLobby);
+            // Get the actual item objects to drop
+            const itemsToDrop: any[] = [];
+            
+            // Remove these items from inventory and collect them for dropping
+            for (const itemId of this.player.itemsCollectedSinceLastLobby) {
+                const index = this.player.inventory.findIndex(item => item.id === itemId);
+                if (index !== -1) {
+                    const item = this.player.inventory[index];
+                    console.log(`Dropping ${item.name} at death location`);
+                    itemsToDrop.push(item);
+                    this.player.inventory.splice(index, 1);
+                }
+            }
+            
+            // Create the dropped items bundle at death position
+            if (itemsToDrop.length > 0) {
+                this.world.createDroppedItems(deathPosition, itemsToDrop);
+            }
         }
+
+        // Clear the collected items tracking list (items are now dropped, not "collected since lobby")
+        this.player.clearCollectedItems();
+
+        // Respawn player with full HP/TP at last teleporter
+        this.player.respawn(true);
 
         // Hide death screen
         this.deathScreen.hide();
@@ -417,10 +437,15 @@ export class Game {
 
             // Check for interaction
             if (isSelectPressed && !this.wasSelectPressed) {
-                const itemIds = this.world.pickupDroppedItems();
-                // Remove items from the "collected since lobby" tracking list
-                this.player.removeCollectedItems(itemIds);
-                console.log(`Picked up ${itemIds.length} dropped items`);
+                const items = this.world.pickupDroppedItems();
+                
+                // Add items back to inventory
+                for (const item of items) {
+                    this.player.inventory.push(item);
+                    console.log(`Recovered ${item.name} from dropped items`);
+                }
+                
+                console.log(`Picked up ${items.length} dropped items and added to inventory`);
             }
         } else if (weaponDropNearby && !anyMenuOpen) {
                 // Show weapon drop hint (prioritize over trader and portal)

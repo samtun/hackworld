@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { Item } from './InventoryManager';
 
 /**
  * Represents a collectible bundle of dropped items at the player's death position
@@ -7,12 +8,12 @@ import * as CANNON from 'cannon-es';
 export class DroppedItems {
     mesh: THREE.Mesh;
     body: CANNON.Body;
-    itemIds: string[]; // IDs of items that were dropped
+    items: Item[]; // Full item objects that were dropped
     private floatTimer: number = 0;
     private baseY: number;
 
-    constructor(scene: THREE.Scene, world: CANNON.World, position: THREE.Vector3, itemIds: string[]) {
-        this.itemIds = itemIds;
+    constructor(scene: THREE.Scene, world: CANNON.World, position: THREE.Vector3, items: Item[]) {
+        this.items = items;
         this.baseY = position.y;
 
         // Create visual mesh - a glowing purple/magenta box

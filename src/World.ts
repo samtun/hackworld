@@ -12,6 +12,7 @@ import { XData } from './xdata/XData';
 import { XDataDropManager } from './xdata/XDataDropManager';
 import { EXPNumber } from './EXPNumber';
 import { DroppedItems } from './DroppedItems';
+import { Item } from './InventoryManager';
 
 export class World {
     scene: THREE.Scene;
@@ -431,16 +432,16 @@ export class World {
     /**
      * Create dropped items at player's death position
      */
-    createDroppedItems(position: THREE.Vector3, itemIds: string[]): void {
+    createDroppedItems(position: THREE.Vector3, items: Item[]): void {
         // Remove any existing dropped items
         if (this.droppedItems) {
             this.droppedItems.cleanup(this.scene, this.physicsWorld);
         }
 
         // Create new dropped items
-        if (itemIds.length > 0) {
-            this.droppedItems = new DroppedItems(this.scene, this.physicsWorld, position, itemIds);
-            console.log(`Created dropped items bundle with ${itemIds.length} items at (${position.x}, ${position.y}, ${position.z})`);
+        if (items.length > 0) {
+            this.droppedItems = new DroppedItems(this.scene, this.physicsWorld, position, items);
+            console.log(`Created dropped items bundle with ${items.length} items at (${position.x}, ${position.y}, ${position.z})`);
         }
     }
 
@@ -455,15 +456,15 @@ export class World {
     /**
      * Pick up dropped items
      */
-    pickupDroppedItems(): string[] {
+    pickupDroppedItems(): Item[] {
         if (!this.droppedItems) return [];
 
-        const itemIds = this.droppedItems.itemIds;
+        const items = this.droppedItems.items;
         this.droppedItems.cleanup(this.scene, this.physicsWorld);
         this.droppedItems = undefined;
 
-        console.log(`Picked up ${itemIds.length} dropped items`);
-        return itemIds;
+        console.log(`Picked up ${items.length} dropped items`);
+        return items;
     }
 
     /**
