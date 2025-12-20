@@ -42,6 +42,14 @@ export abstract class BaseDungeon {
     }
 
     /**
+     * Get list of assets required by this stage
+     * To be implemented by each stage
+     */
+    getRequiredAssets(): string[] {
+        return [];
+    }
+
+    /**
      * Load the dungeon - to be implemented by each stage
      */
     abstract load(): void;

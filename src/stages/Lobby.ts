@@ -10,6 +10,15 @@ export class Lobby extends BaseDungeon {
     name = 'Lobby';
     description = 'Safe hub area';
 
+    /**
+     * Get assets required by lobby
+     */
+    getRequiredAssets(): string[] {
+        return [
+            'models/trader_weapons.glb'
+        ];
+    }
+
     // Store trader position for interaction
     private traderPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, -5);
 

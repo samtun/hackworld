@@ -3,7 +3,7 @@ import * as CANNON from 'cannon-es';
 import { Enemy } from './enemies/Enemy';
 import { Player } from './Player';
 import { AssetManager } from './AssetManager';
-import { BaseDungeon, Lobby, Dungeon1, Dungeon2 } from './stages';
+import { BaseDungeon, Lobby, createStage } from './stages';
 import { NPC } from './NPC';
 import { WeaponDropManager } from './items/WeaponDropManager';
 import { WeaponDrop } from './items/WeaponDrop';
@@ -17,6 +17,8 @@ export class World {
     physicsMaterial: CANNON.Material;
     assetManager: AssetManager;
     onLoadProgressCallback?: (loaded: number, total: number) => void;
+    onStageLoadStartCallback?: () => void;
+    onStageLoadCompleteCallback?: () => void;
 
     // Current active stage
     currentStage?: BaseDungeon;
@@ -27,14 +29,12 @@ export class World {
     // EXP number entities
     expNumbers: EXPNumber[] = [];
 
-    // Stage instances
-    private lobby: Lobby;
-    private dungeon1: Dungeon1;
-    private dungeon2: Dungeon2;
-
     // Drop managers
     private weaponDropManager: WeaponDropManager;
     private xDataDropManager: XDataDropManager;
+
+    // Ford interaction callback (set by Game)
+    private fordInteractionCallback?: () => void;
 
     constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material, onLoadComplete?: () => void, onLoadProgress?: (loaded: number, total: number) => void) {
         this.scene = scene;
@@ -42,11 +42,6 @@ export class World {
         this.physicsMaterial = physicsMaterial;
         this.assetManager = AssetManager.getInstance();
         this.onLoadProgressCallback = onLoadProgress;
-
-        // Initialize stage instances
-        this.lobby = new Lobby(scene, physicsWorld, physicsMaterial);
-        this.dungeon1 = new Dungeon1(scene, physicsWorld, physicsMaterial);
-        this.dungeon2 = new Dungeon2(scene, physicsWorld, physicsMaterial);
 
         this.weaponDropManager = new WeaponDropManager();
         this.xDataDropManager = new XDataDropManager();
@@ -56,83 +51,111 @@ export class World {
             this.assetManager.setProgressCallback(this.onLoadProgressCallback);
         }
 
-        // Preload all assets before starting
-        this.preloadAssets().then(() => {
+        // Preload common assets before starting
+        this.preloadCommonAssets().then(() => {
             // Start in Lobby after assets are loaded
-            this.loadLobby();
-            if (onLoadComplete) onLoadComplete();
+            this.loadStageById('lobby').then(() => {
+                if (onLoadComplete) onLoadComplete();
+            });
         });
     }
 
     /**
-     * Preload all assets used in all scenes
+     * Preload common assets used across multiple scenes
      */
-    async preloadAssets(): Promise<void> {
-        const assetsToPreload = [
-            'models/trader_weapons.glb',
-            'models/monster.glb',
-            // Weapon models (used by player)
+    async preloadCommonAssets(): Promise<void> {
+        const commonAssets = [
+            // Weapon models (used by player across all stages)
             'models/sword.glb',
             'models/double_sword.glb',
             'models/lance.glb',
             'models/hammer.glb'
         ];
 
-        await this.assetManager.preloadAll(assetsToPreload);
-    }
-
-    loadLobby() {
-        if (this.currentStage) {
-            this.currentStage.clear();
-        }
-        this.weaponDropManager.clear(this.scene, this.physicsWorld);
-        this.clearXData();
-        this.currentStage = this.lobby;
-        this.lobby.load();
+        await this.assetManager.preloadAll(commonAssets);
     }
 
     /**
      * Set callback for Ford NPC interaction
      */
     setFordCallback(callback: () => void) {
-        this.lobby.fordInteractionCallback = callback;
+        this.fordInteractionCallback = callback;
+    }
+
+    /**
+     * Set callbacks for stage loading
+     */
+    setStageLoadCallbacks(onStart?: () => void, onComplete?: () => void) {
+        this.onStageLoadStartCallback = onStart;
+        this.onStageLoadCompleteCallback = onComplete;
+    }
+
+    /**
+     * Load a stage by ID with asset preloading
+     */
+    async loadStageById(stageId: string): Promise<void> {
+        // Notify start of stage loading
+        if (this.onStageLoadStartCallback) {
+            this.onStageLoadStartCallback();
+        }
+
+        // Clear current stage
+        if (this.currentStage) {
+            this.currentStage.clear();
+            this.currentStage = undefined;
+        }
+        this.weaponDropManager.clear(this.scene, this.physicsWorld);
+        this.clearXData();
+
+        // Create new stage instance
+        const newStage = createStage(stageId, this.scene, this.physicsWorld, this.physicsMaterial);
+        if (!newStage) {
+            console.error(`Failed to create stage: ${stageId}`);
+            if (this.onStageLoadCompleteCallback) {
+                this.onStageLoadCompleteCallback();
+            }
+            return;
+        }
+
+        // Load stage-specific assets
+        const requiredAssets = newStage.getRequiredAssets();
+        if (requiredAssets.length > 0) {
+            await this.assetManager.preloadAll(requiredAssets);
+        }
+
+        // Set Ford callback for Lobby stage
+        if (stageId === 'lobby' && this.fordInteractionCallback) {
+            (newStage as any).fordInteractionCallback = this.fordInteractionCallback;
+        }
+
+        // Load the stage
+        this.currentStage = newStage;
+        this.currentStage.load();
+
+        // Notify completion of stage loading
+        if (this.onStageLoadCompleteCallback) {
+            this.onStageLoadCompleteCallback();
+        }
+    }
+
+    // Legacy methods for backward compatibility
+    loadLobby() {
+        return this.loadStageById('lobby');
     }
 
     loadDungeon() {
-        if (this.currentStage) {
-            this.currentStage.clear();
-        }
-        this.weaponDropManager.clear(this.scene, this.physicsWorld);
-        this.clearXData();
-        this.currentStage = this.dungeon1;
-        this.dungeon1.load();
+        return this.loadStageById('dungeon');
     }
 
     loadDungeon2() {
-        if (this.currentStage) {
-            this.currentStage.clear();
-        }
-        this.weaponDropManager.clear(this.scene, this.physicsWorld);
-        this.clearXData();
-        this.currentStage = this.dungeon2;
-        this.dungeon2.load();
+        return this.loadStageById('dungeon2');
     }
 
-    // Helper method to load stage by ID
+    // Helper method to load stage by ID (synchronous wrapper for backward compatibility)
     loadStage(stageId: string) {
-        switch (stageId) {
-            case 'lobby':
-                this.loadLobby();
-                break;
-            case 'dungeon':
-                this.loadDungeon();
-                break;
-            case 'dungeon2':
-                this.loadDungeon2();
-                break;
-            default:
-                console.warn(`Unknown stage: ${stageId}`);
-        }
+        this.loadStageById(stageId).catch(err => {
+            console.error(`Error loading stage ${stageId}:`, err);
+        });
     }
 
     get enemies(): Enemy[] {

@@ -103,6 +103,19 @@ export class Game {
         }, (loaded, total) => {
             this.ui.updateLoadingProgress(loaded, total);
         });
+
+        // Set up stage loading callbacks
+        this.world.setStageLoadCallbacks(
+            () => {
+                // On stage load start - show loading screen
+                this.ui.showLoadingScreen();
+            },
+            () => {
+                // On stage load complete - hide loading screen
+                this.ui.hideLoadingScreen();
+            }
+        );
+
         this.player = new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial);
         this.inventory = new InventoryManager();
         this.trader = new TraderManager();
