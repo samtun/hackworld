@@ -266,12 +266,12 @@ export class XDataUpgradeManager {
                     break;
                 case 'hp':
                     currentLevel = player.hpUpgrades;
-                    baseValue = player.getBaseStatValue('hp');
+                    baseValue = player.maxHp;
                     isMaxed = baseValue >= 9999;
                     break;
                 case 'tp':
                     currentLevel = player.tpUpgrades;
-                    baseValue = player.getBaseStatValue('tp');
+                    baseValue = player.maxTp;
                     isMaxed = baseValue >= 9999;
                     break;
             }
