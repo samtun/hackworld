@@ -158,19 +158,6 @@ export class World {
         }
     }
 
-    // Legacy methods for backward compatibility
-    loadLobby() {
-        return this.loadStageById('lobby');
-    }
-
-    loadDungeon() {
-        return this.loadStageById('dungeon');
-    }
-
-    loadDungeon2() {
-        return this.loadStageById('dungeon2');
-    }
-
     // Helper method to load stage by ID (wrapper for backward compatibility)
     // Errors are logged but not propagated to maintain backward compatibility
     loadStage(stageId: string): void {
