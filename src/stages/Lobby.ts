@@ -92,7 +92,7 @@ export class Lobby extends BaseDungeon {
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,
-            "Save Manager",
+            "Grant",
             this.saveManagerPosition,
             saveManagerDialogue,
             this.saveManagerInteractionCallback
@@ -176,6 +176,16 @@ export class Lobby extends BaseDungeon {
     checkChipTraderInteraction(playerPosition: THREE.Vector3): boolean {
         const dist = playerPosition.distanceTo(
             new THREE.Vector3(this.chipTraderPosition.x, this.chipTraderPosition.y, this.chipTraderPosition.z)
+        );
+        return dist < 2.0; // Interaction range
+    }
+
+    /**
+     * Check if player is near save manager
+     */
+    checkSaveManagerInteraction(playerPosition: THREE.Vector3): boolean {
+        const dist = playerPosition.distanceTo(
+            new THREE.Vector3(this.saveManagerPosition.x, this.saveManagerPosition.y, this.saveManagerPosition.z)
         );
         return dist < 2.0; // Interaction range
     }
