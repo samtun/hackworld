@@ -265,11 +265,15 @@ export class XDataUpgradeManager {
                     isMaxed = baseValue >= 9999;
                     break;
                 case 'hp':
+                    // Use actual maxHp instead of getBaseStatValue() to show current value
+                    // (important for debug tools and to avoid confusion when viewing stats)
                     currentLevel = player.hpUpgrades;
                     baseValue = player.maxHp;
                     isMaxed = baseValue >= 9999;
                     break;
                 case 'tp':
+                    // Use actual maxTp instead of getBaseStatValue() to show current value
+                    // (important for debug tools and to avoid confusion when viewing stats)
                     currentLevel = player.tpUpgrades;
                     baseValue = player.maxTp;
                     isMaxed = baseValue >= 9999;
