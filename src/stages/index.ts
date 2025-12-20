@@ -6,9 +6,7 @@ export { Lobby } from './Lobby';
 export { Dungeon1 } from './Dungeon1';
 export { Dungeon2 } from './Dungeon2';
 
-// Registry of all available dungeons
-import { BaseDungeon } from './BaseDungeon';
-import { Lobby } from './Lobby';
+// For stage selection UI
 import { Dungeon1 } from './Dungeon1';
 import { Dungeon2 } from './Dungeon2';
 
@@ -17,7 +15,10 @@ export const AVAILABLE_DUNGEONS = [
     Dungeon2
 ];
 
-// Stage factory type
+// Stage factory types
+import { BaseDungeon } from './BaseDungeon';
+import { Lobby } from './Lobby';
+
 type StageConstructor = new (
     scene: THREE.Scene,
     physicsWorld: CANNON.World,

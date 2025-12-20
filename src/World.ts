@@ -125,7 +125,8 @@ export class World {
 
         // Set Ford callback for Lobby stage
         if (stageId === 'lobby' && this.fordInteractionCallback) {
-            (newStage as any).fordInteractionCallback = this.fordInteractionCallback;
+            const lobby = newStage as Lobby;
+            lobby.fordInteractionCallback = this.fordInteractionCallback;
         }
 
         // Load the stage
