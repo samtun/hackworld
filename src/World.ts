@@ -17,7 +17,7 @@ export class World {
     physicsMaterial: CANNON.Material;
     assetManager: AssetManager;
     onLoadProgressCallback?: (loaded: number, total: number) => void;
-    onStageLoadStartCallback?: () => void;
+    onStageLoadStartCallback?: (stageName: string) => void;
     onStageLoadCompleteCallback?: () => void;
 
     // Current active stage
@@ -103,7 +103,7 @@ export class World {
     /**
      * Set callbacks for stage loading
      */
-    setStageLoadCallbacks(onStart?: () => void, onComplete?: () => void) {
+    setStageLoadCallbacks(onStart?: (stageName: string) => void, onComplete?: () => void) {
         this.onStageLoadStartCallback = onStart;
         this.onStageLoadCompleteCallback = onComplete;
     }
@@ -113,9 +113,15 @@ export class World {
      */
     async loadStageById(stageId: string): Promise<void> {
         try {
-            // Notify start of stage loading
+            // Create new stage instance first to get its name
+            const newStage = createStage(stageId, this.scene, this.physicsWorld, this.physicsMaterial);
+            if (!newStage) {
+                throw new Error(`Failed to create stage: ${stageId}`);
+            }
+
+            // Notify start of stage loading with stage name
             if (this.onStageLoadStartCallback) {
-                this.onStageLoadStartCallback();
+                this.onStageLoadStartCallback(newStage.name);
             }
 
             // Clear current stage
@@ -125,12 +131,6 @@ export class World {
             }
             this.weaponDropManager.clear(this.scene, this.physicsWorld);
             this.clearXData();
-
-            // Create new stage instance
-            const newStage = createStage(stageId, this.scene, this.physicsWorld, this.physicsMaterial);
-            if (!newStage) {
-                throw new Error(`Failed to create stage: ${stageId}`);
-            }
 
             // Load stage-specific assets
             const requiredAssets = newStage.getRequiredAssets();

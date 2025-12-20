@@ -11,6 +11,7 @@ export class UIManager {
     fadeOverlay: HTMLDivElement;
     loadingScreen: HTMLDivElement;
     progressBarFill: HTMLDivElement;
+    loadingStageText: HTMLDivElement;
     deathOverlay: HTMLDivElement;
     private retryCallback?: () => void;
     private lobbyCallback?: () => void;
@@ -23,6 +24,24 @@ export class UIManager {
         this.fadeOverlay = document.getElementById('fade-overlay') as HTMLDivElement;
         this.loadingScreen = document.getElementById('loading-screen') as HTMLDivElement;
         this.progressBarFill = document.getElementById('progress-bar-fill') as HTMLDivElement;
+        
+        // Create stage name text element for loading screen
+        this.loadingStageText = document.createElement('div');
+        this.loadingStageText.id = 'loading-stage-text';
+        this.loadingStageText.style.cssText = `
+            position: absolute;
+            top: calc(50% + 44px);
+            left: 50%;
+            transform: translate(-50%, 0);
+            color: #fff;
+            font-family: "Share Tech", Arial, sans-serif;
+            font-size: 28px;
+            text-align: center;
+            letter-spacing: 1px;
+        `;
+        if (this.loadingScreen) {
+            this.loadingScreen.appendChild(this.loadingStageText);
+        }
 
         // Set version text
         const versionBox = document.getElementById('version-box');
@@ -305,13 +324,17 @@ export class UIManager {
         }
     }
 
-    showLoadingScreen() {
+    showLoadingScreen(stageName?: string) {
         if (this.loadingScreen) {
             this.loadingScreen.style.display = 'flex';
         }
         // Reset progress bar
         if (this.progressBarFill) {
             this.progressBarFill.style.width = '0%';
+        }
+        // Update stage name text
+        if (this.loadingStageText) {
+            this.loadingStageText.textContent = stageName || '';
         }
     }
 

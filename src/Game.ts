@@ -106,9 +106,9 @@ export class Game {
 
         // Set up stage loading callbacks
         this.world.setStageLoadCallbacks(
-            () => {
-                // On stage load start - show loading screen
-                this.ui.showLoadingScreen();
+            (stageName: string) => {
+                // On stage load start - show loading screen with stage name
+                this.ui.showLoadingScreen(stageName);
             },
             () => {
                 // On stage load complete - hide loading screen
@@ -258,8 +258,8 @@ export class Game {
             if (!this.isTransitioning && (this.input.isStartPressed() || import.meta.env.DEV)) {
                 this.isTransitioning = true;
                 
-                // Show loading screen before loading lobby assets
-                this.ui.showLoadingScreen();
+                // Show loading screen before loading lobby assets with stage name
+                this.ui.showLoadingScreen('Lobby');
                 
                 this.ui.triggerStartTransition(() => {
                     this.ui.hideStartScreen();
@@ -269,6 +269,14 @@ export class Game {
                         this.ui.hideLoadingScreen();
                         this.currentScene = 'lobby';
                         this.clock.getDelta(); // Reset clock
+                        
+                        // Spawn player at lobby spawn position
+                        this.player.respawn(Game.LOBBY_SPAWN_POSITION);
+                        
+                        // Reset camera
+                        this.camera.position.set(10, 15, 10);
+                        this.camera.lookAt(0, 0, 0);
+                        
                         this.isTransitioning = false;
                     }).catch(err => {
                         console.error('Failed to initialize first stage:', err);
