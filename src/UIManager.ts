@@ -11,6 +11,9 @@ export class UIManager {
     fadeOverlay: HTMLDivElement;
     loadingScreen: HTMLDivElement;
     progressBarFill: HTMLDivElement;
+    deathOverlay: HTMLDivElement;
+    private retryCallback?: () => void;
+    private lobbyCallback?: () => void;
 
     constructor() {
         this.startScreen = document.getElementById('start-screen') as HTMLDivElement;
@@ -125,6 +128,97 @@ export class UIManager {
         this.interactionHint.style.display = 'none';
         this.interactionHint.innerText = '[ENTER] / (A) Interact';
         document.body.appendChild(this.interactionHint);
+
+        // Death Overlay
+        this.deathOverlay = document.createElement('div');
+        this.deathOverlay.style.position = 'fixed';
+        this.deathOverlay.style.top = '0';
+        this.deathOverlay.style.left = '0';
+        this.deathOverlay.style.width = '100%';
+        this.deathOverlay.style.height = '100%';
+        this.deathOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        this.deathOverlay.style.display = 'none';
+        this.deathOverlay.style.zIndex = '1500';
+        this.deathOverlay.style.opacity = '0';
+        this.deathOverlay.style.transition = 'opacity 1s ease-in-out';
+        this.deathOverlay.style.flexDirection = 'column';
+        this.deathOverlay.style.justifyContent = 'center';
+        this.deathOverlay.style.alignItems = 'center';
+        this.deathOverlay.style.fontFamily = '"Share Tech", Arial, sans-serif';
+
+        // "Compilation failed" text
+        const deathText = document.createElement('div');
+        deathText.style.fontSize = '72px';
+        deathText.style.fontWeight = 'bold';
+        deathText.style.color = '#8B0000'; // Dark red
+        deathText.style.marginBottom = '50px';
+        deathText.style.textShadow = '4px 4px 8px rgba(0, 0, 0, 0.8)';
+        deathText.textContent = 'Compilation failed';
+        this.deathOverlay.appendChild(deathText);
+
+        // Button container
+        const buttonContainer = document.createElement('div');
+        buttonContainer.style.display = 'flex';
+        buttonContainer.style.gap = '30px';
+
+        // Retry button
+        const retryButton = document.createElement('button');
+        retryButton.textContent = 'Retry';
+        retryButton.style.padding = '15px 40px';
+        retryButton.style.fontSize = '28px';
+        retryButton.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        retryButton.style.fontWeight = 'bold';
+        retryButton.style.color = '#fff';
+        retryButton.style.backgroundColor = '#444';
+        retryButton.style.border = '3px solid #fff';
+        retryButton.style.borderRadius = '8px';
+        retryButton.style.cursor = 'pointer';
+        retryButton.style.transition = 'all 0.2s';
+        retryButton.onmouseover = () => {
+            retryButton.style.backgroundColor = '#666';
+            retryButton.style.transform = 'scale(1.05)';
+        };
+        retryButton.onmouseout = () => {
+            retryButton.style.backgroundColor = '#444';
+            retryButton.style.transform = 'scale(1)';
+        };
+        retryButton.onclick = () => {
+            if (this.retryCallback) {
+                this.retryCallback();
+            }
+        };
+        buttonContainer.appendChild(retryButton);
+
+        // Return to Lobby button
+        const lobbyButton = document.createElement('button');
+        lobbyButton.textContent = 'Return to Lobby';
+        lobbyButton.style.padding = '15px 40px';
+        lobbyButton.style.fontSize = '28px';
+        lobbyButton.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        lobbyButton.style.fontWeight = 'bold';
+        lobbyButton.style.color = '#fff';
+        lobbyButton.style.backgroundColor = '#444';
+        lobbyButton.style.border = '3px solid #fff';
+        lobbyButton.style.borderRadius = '8px';
+        lobbyButton.style.cursor = 'pointer';
+        lobbyButton.style.transition = 'all 0.2s';
+        lobbyButton.onmouseover = () => {
+            lobbyButton.style.backgroundColor = '#666';
+            lobbyButton.style.transform = 'scale(1.05)';
+        };
+        lobbyButton.onmouseout = () => {
+            lobbyButton.style.backgroundColor = '#444';
+            lobbyButton.style.transform = 'scale(1)';
+        };
+        lobbyButton.onclick = () => {
+            if (this.lobbyCallback) {
+                this.lobbyCallback();
+            }
+        };
+        buttonContainer.appendChild(lobbyButton);
+
+        this.deathOverlay.appendChild(buttonContainer);
+        document.body.appendChild(this.deathOverlay);
     }
 
     update(player: Player) {
@@ -220,6 +314,35 @@ export class UIManager {
         if (this.progressBarFill) {
             const percentage = total > 0 ? (loaded / total) * 100 : 0;
             this.progressBarFill.style.width = `${percentage}%`;
+        }
+    }
+
+    /**
+     * Show the death overlay with fade-in animation
+     */
+    showDeathOverlay(onRetry: () => void, onReturnToLobby: () => void) {
+        this.retryCallback = onRetry;
+        this.lobbyCallback = onReturnToLobby;
+        
+        if (this.deathOverlay) {
+            this.deathOverlay.style.display = 'flex';
+            // Trigger fade-in after a small delay to ensure display change is applied
+            setTimeout(() => {
+                this.deathOverlay.style.opacity = '1';
+            }, 10);
+        }
+    }
+
+    /**
+     * Hide the death overlay with fade-out animation
+     */
+    hideDeathOverlay() {
+        if (this.deathOverlay) {
+            this.deathOverlay.style.opacity = '0';
+            // Hide after fade-out animation completes
+            setTimeout(() => {
+                this.deathOverlay.style.display = 'none';
+            }, 1000);
         }
     }
 }

@@ -52,6 +52,9 @@ export class Game {
     wasTraderJustOpened: boolean = false; // Prevent immediate action when opening trader
     isTransitioning: boolean = false;
 
+    // Last teleporter position for respawn
+    lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
+
     constructor() {
         // Setup Three.js
         this.scene = new THREE.Scene();
@@ -111,6 +114,11 @@ export class Game {
             this.xDataUpgrade.show();
         });
 
+        // Set up player death callback
+        this.player.setDeathCallback(() => {
+            this.handlePlayerDeath();
+        });
+
         // Debug Mode Setup
         if (import.meta.env.DEV) {
             this.physicsDebugger = CannonDebugger(this.scene, this.physicsWorld, {
@@ -163,8 +171,48 @@ export class Game {
         this.player.body.position.set(0, 0.5, 0);
         this.player.body.velocity.set(0, 0, 0);
 
+        // Update last teleporter position when entering a dungeon or lobby
+        this.lastTeleporterPosition.copy(this.player.body.position);
+
         // Snap camera
         this.camera.position.set(10, 15, 10);
+    }
+
+    /**
+     * Handle player death
+     */
+    handlePlayerDeath() {
+        console.log('Game: Handling player death');
+        this.ui.showDeathOverlay(
+            () => this.respawnPlayer(),
+            () => this.returnToLobby()
+        );
+    }
+
+    /**
+     * Respawn the player at the last teleporter position
+     */
+    respawnPlayer() {
+        console.log('Game: Respawning player at last teleporter');
+        this.ui.hideDeathOverlay();
+        this.player.respawn(this.lastTeleporterPosition);
+    }
+
+    /**
+     * Return player to the lobby
+     */
+    returnToLobby() {
+        console.log('Game: Returning to lobby');
+        this.ui.hideDeathOverlay();
+        
+        // Restore full HP and TP
+        this.player.hp = this.player.maxHp;
+        this.player.tp = this.player.maxTp;
+        this.player.isDead = false;
+        this.player.mesh.visible = true;
+        
+        // Switch to lobby
+        this.switchScene('lobby');
     }
 
     onWindowResize() {

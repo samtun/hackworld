@@ -86,6 +86,10 @@ export class Player {
     // Ground contact tracking
     private isGrounded: boolean = false;
 
+    // Death state
+    isDead: boolean = false;
+    private deathCallback?: () => void;
+
     // Inventory
     inventory: Item[] = [];
     money: number = 500; // Starting money
@@ -237,6 +241,11 @@ export class Player {
     }
 
     update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
+        // Skip all updates if player is dead
+        if (this.isDead) {
+            return;
+        }
+
         // Charged Attack: Handle dashing
         if (this.isDashing) {
             this.dashTimer += dt;
@@ -471,13 +480,61 @@ export class Player {
     }
 
     takeDamage(amount: number) {
-        if (this.invulnerableTimer > 0 || this.isDashing) return;
+        if (this.invulnerableTimer > 0 || this.isDashing || this.isDead) return;
 
         this.hp -= amount;
-        if (this.hp < 0) this.hp = 0;
+        if (this.hp <= 0) {
+            this.hp = 0;
+            this.die();
+            return;
+        }
 
         this.invulnerableTimer = 1.0; // 1 second invulnerability
         console.log(`Player took ${amount} damage. HP: ${this.hp}`);
+    }
+
+    /**
+     * Handle player death
+     */
+    private die(): void {
+        this.isDead = true;
+        console.log('Player died');
+        
+        // TODO: Add death animation here (placeholder for future implementation)
+        
+        // Hide player mesh
+        this.mesh.visible = false;
+        
+        // Trigger death callback if set
+        if (this.deathCallback) {
+            this.deathCallback();
+        }
+    }
+
+    /**
+     * Set the callback to be called when player dies
+     */
+    setDeathCallback(callback: () => void): void {
+        this.deathCallback = callback;
+    }
+
+    /**
+     * Respawn the player at specified position
+     */
+    respawn(position: CANNON.Vec3): void {
+        this.isDead = false;
+        this.hp = this.maxHp;
+        this.tp = this.maxTp;
+        this.invulnerableTimer = 2.0; // 2 seconds invulnerability after respawn
+        
+        // Reset position and velocity
+        this.body.position.copy(position);
+        this.body.velocity.set(0, 0, 0);
+        
+        // Make player visible again
+        this.mesh.visible = true;
+        
+        console.log('Player respawned at', position);
     }
 
     /**
