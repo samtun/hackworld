@@ -47,6 +47,7 @@ export class Game {
     wasInventoryPressed: boolean = false;
     wasSelectPressed: boolean = false;
     wasSelectAndStartPressed: boolean = false;
+    wasL3Pressed: boolean = false; // Track L3 button for debug mode toggle
     wasTraderJustOpened: boolean = false; // Prevent immediate action when opening trader
     isTransitioning: boolean = false;
 
@@ -197,12 +198,11 @@ export class Game {
         }
 
         // Input Handling for UI
-        // Debug Mode: Check for Select+Start combination first (dev builds only)
-        // This needs to be checked before inventory to prevent conflict with Select button
-        let selectAndStartHandled = false;
+        // Debug Mode: Check for L3 (left thumbstick press) for dev builds only
+        // This needs to be checked before other inputs to prevent conflicts
         if (import.meta.env.DEV) {
-            const isSelectAndStartPressed = this.input.isSelectAndStartPressed();
-            if (isSelectAndStartPressed && !this.wasSelectAndStartPressed) {
+            const isL3Pressed = this.input.isL3Pressed();
+            if (isL3Pressed && !this.wasL3Pressed) {
                 if (this.debugValueEditor) {
                     if (this.debugValueEditor.isVisible) {
                         // Toggle expanded/collapsed state
@@ -215,17 +215,16 @@ export class Game {
                         });
                         this.debugValueEditor.show();
                         this.debugValueEditor.expand();
-                        console.log('Debug Mode: ON (via controller)');
+                        console.log('Debug Mode: ON (via L3 button)');
                     }
                 }
-                selectAndStartHandled = true;
             }
-            this.wasSelectAndStartPressed = isSelectAndStartPressed;
+            this.wasL3Pressed = isL3Pressed;
         }
 
-        // Check inventory toggle (but not if Select+Start was just pressed)
+        // Check inventory toggle
         const isInventoryPressed = this.input.isInventoryPressed();
-        if (isInventoryPressed && !this.wasInventoryPressed && !selectAndStartHandled) {
+        if (isInventoryPressed && !this.wasInventoryPressed) {
             // Don't allow toggling inventory while any other UI is open
             if (!this.trader.isVisible && !this.dungeonSelection.isVisible && !this.npcDialogue.isVisible && !this.xDataUpgrade.isVisible) {
                 this.inventory.toggle();
