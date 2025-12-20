@@ -9,24 +9,24 @@ export class Lobby extends BaseDungeon {
     id = 'lobby';
     name = 'Lobby';
     description = 'Safe hub area';
-    
+
     // Store trader position for interaction
     private traderPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, -5);
-    
+
     // Store chip trader position for interaction
     private chipTraderPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0, -5);
-    
+
     // Store Ford position for interaction
     private fordPosition: CANNON.Vec3 = new CANNON.Vec3(5, 0, -5);
-    
+
     // NPCs
     npc?: NPC;
     fordNpc?: NPC;
-    
+
     // Healing Station
     healingStation?: HealingStation;
     private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
-    
+
     // Callback for Ford interaction (set by Game)
     fordInteractionCallback?: () => void;
 
@@ -43,9 +43,6 @@ export class Lobby extends BaseDungeon {
         // Healing Station
         this.healingStation = new HealingStation(this.scene, this.healingStationPosition, 0x00ffff);
 
-        // Add some walls or obstacles
-        this.createBox(2, 2, 2, new CANNON.Vec3(-5, 1, -5));
-
         // Create Nyleth NPC
         const nylethDialogue = [
             "Hey there, never seen you around. You look like you pack some punches. Interested in joining our fight?",
@@ -60,7 +57,7 @@ export class Lobby extends BaseDungeon {
             new CANNON.Vec3(-5, 0, 0),
             nylethDialogue
         );
-        
+
         // Create Ford NPC (X-Data Manager)
         const fordDialogue = [
             "Welcome! I'm Ford, the X-Data Manager.",

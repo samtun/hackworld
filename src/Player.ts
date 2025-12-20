@@ -29,7 +29,7 @@ export class Player {
     // Level system constants
     private static readonly MAX_LEVEL = 999;
     private static readonly LEVEL_STAT_MULTIPLIER = 0.002; // Stats increase by 1 + 0.002 * level
-    private static readonly EXP_BASE = 1000;
+    private static readonly EXP_BASE = 350;
     private static readonly EXP_LINEAR_FACTOR = 30;
     private static readonly EXP_QUADRATIC_FACTOR = 0.07;
 
@@ -79,7 +79,7 @@ export class Player {
     private readonly PARTICLE_HEIGHT_TRANSITION_SPEED: number = 0.15;
 
     // Level up particle explosion
-    private levelUpParticles: Array<{mesh: THREE.Mesh, velocity: THREE.Vector3}> = [];
+    private levelUpParticles: Array<{ mesh: THREE.Mesh, velocity: THREE.Vector3 }> = [];
     private levelUpParticleTimer: number = 0;
     private readonly LEVEL_UP_PARTICLE_LIFETIME: number = 0.6; // 0.6 seconds for the explosion
 
@@ -675,54 +675,54 @@ export class Player {
             // Random spherical coordinates for explosion direction
             const theta = Math.random() * Math.PI * 2; // Azimuth angle (0 to 2π)
             const phi = Math.random() * Math.PI; // Polar angle (0 to π)
-            
+
             // Convert to Cartesian coordinates for velocity
             const speed = 3 + Math.random() * 2; // Random speed between 3-5 units/sec
             const vx = speed * Math.sin(phi) * Math.cos(theta);
             const vy = speed * Math.sin(phi) * Math.sin(theta);
             const vz = speed * Math.cos(phi);
-            
+
             // Clone material for each particle (needed for independent opacity during fade)
             const particle = new THREE.Mesh(particleGeometry, particleMaterial.clone());
             particle.position.copy(this.mesh.position);
             particle.position.y += 0.5; // Start at player center
-            
+
             const velocity = new THREE.Vector3(vx, vy, vz);
-            
+
             this.levelUpParticles.push({ mesh: particle, velocity });
             this.mesh.parent?.add(particle); // Add to scene, not to player mesh
         }
-        
+
         // Reset timer
         this.levelUpParticleTimer = 0;
     }
 
     private updateLevelUpParticles(dt: number) {
         if (this.levelUpParticles.length === 0) return;
-        
+
         this.levelUpParticleTimer += dt;
         const progress = this.levelUpParticleTimer / this.LEVEL_UP_PARTICLE_LIFETIME;
-        
+
         // Remove particles after lifetime expires
         if (progress >= 1.0) {
             this.removeLevelUpParticles();
             return;
         }
-        
+
         // Update each particle
         for (const particle of this.levelUpParticles) {
             // Move particle based on velocity
             particle.mesh.position.x += particle.velocity.x * dt;
             particle.mesh.position.y += particle.velocity.y * dt;
             particle.mesh.position.z += particle.velocity.z * dt;
-            
+
             // Apply gravity to velocity
             particle.velocity.y -= 9.8 * dt;
-            
+
             // Fade out
             const material = particle.mesh.material as THREE.MeshStandardMaterial;
             material.opacity = 1.0 - progress;
-            
+
             // Scale down
             const scale = 1.0 - progress * 0.5;
             particle.mesh.scale.set(scale, scale, scale);
@@ -733,7 +733,7 @@ export class Player {
         // Dispose geometry only once (it's shared among all particles)
         if (this.levelUpParticles.length > 0) {
             const sharedGeometry = this.levelUpParticles[0].mesh.geometry;
-            
+
             this.levelUpParticles.forEach(particle => {
                 if (particle.mesh.parent) {
                     particle.mesh.parent.remove(particle.mesh);
@@ -741,11 +741,11 @@ export class Player {
                 // Dispose each particle's unique material
                 (particle.mesh.material as THREE.Material).dispose();
             });
-            
+
             // Dispose the shared geometry once
             sharedGeometry.dispose();
         }
-        
+
         this.levelUpParticles = [];
         this.levelUpParticleTimer = 0;
     }
@@ -785,8 +785,8 @@ export class Player {
      */
     private calculateExpRequired(level: number): number {
         return Math.floor(
-            Player.EXP_BASE + 
-            level * Player.EXP_LINEAR_FACTOR + 
+            Player.EXP_BASE +
+            level * Player.EXP_LINEAR_FACTOR +
             Math.pow(level, 2) * Player.EXP_QUADRATIC_FACTOR
         );
     }
