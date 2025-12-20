@@ -48,7 +48,7 @@ export class WeaponDropManager {
         const finalDamage = Math.round(weaponDef.baseDamage * bonusMultiplier);
 
         // Calculate factor for damage diff to avoid small bonus values to raise price without changing the damage
-        const damageFactor = finalDamage / weaponDef.baseDamage
+        const damageFactor = finalDamage / weaponDef.baseDamage;
         const finalBuyPrice = Math.round(weaponDef.baseBuyPrice * damageFactor);
         const finalSellPrice = Math.round(weaponDef.baseSellPrice * damageFactor);
 
