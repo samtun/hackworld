@@ -11,7 +11,7 @@ import { ChipTraderManager } from './ChipTraderManager';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NPCDialogueManager } from './NPCDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
-import { AVAILABLE_DUNGEONS } from './stages';
+import { AVAILABLE_DUNGEONS, Lobby } from './stages';
 import { DebugValueEditor } from './DebugValueEditor';
 import { SaveManager } from './SaveManager';
 import { SaveManagerUI } from './SaveManagerUI';
@@ -235,7 +235,7 @@ export class Game {
         this.ui.hideDeathOverlay();
 
         // Fully reload the current stage to reset enemies and environment
-        if (this.currentScene !== 'startScreen' && this.currentScene !== 'lobby') {
+        if (this.currentScene !== 'startScreen' && this.currentScene !== Lobby.getMetadata().id) {
             this.world.loadStage(this.currentScene);
         }
 
@@ -256,8 +256,8 @@ export class Game {
         this.player.respawn(Game.LOBBY_SPAWN_POSITION);
 
         // Switch to lobby (but don't update lastTeleporterPosition for death returns)
-        this.world.loadStage('lobby');
-        this.currentScene = 'lobby';
+        this.currentScene = Lobby.getMetadata().id;
+        this.world.loadStage(this.currentScene);
 
         // Reset camera
         this.camera.position.set(10, 15, 10);
@@ -292,7 +292,7 @@ export class Game {
                 this.isTransitioning = true;
                 this.ui.triggerStartTransition(() => {
                     this.ui.hideStartScreen();
-                    this.currentScene = 'lobby';
+                    this.currentScene = Lobby.getMetadata().id;
                     this.clock.getDelta(); // Reset clock
                     this.isTransitioning = false;
                 });

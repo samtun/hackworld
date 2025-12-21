@@ -64,7 +64,7 @@ export class World {
     private async initializeWorld(onLoadComplete?: () => void): Promise<void> {
         try {
             await this.preloadCommonAssets();
-            await this.loadStageById('lobby');
+            await this.loadStageById(Lobby.getMetadata().id);
         } catch (error) {
             console.error('Failed to initialize world:', error);
         } finally {
@@ -78,11 +78,11 @@ export class World {
      */
     async preloadCommonAssets(): Promise<void> {
         const commonAssets = [
-            // Weapon models (used by player across all stages)
             'models/sword.glb',
             'models/double_sword.glb',
             'models/lance.glb',
-            'models/hammer.glb'
+            'models/hammer.glb',
+            'models/trader_weapons.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);
@@ -141,7 +141,7 @@ export class World {
             }
 
             // Add callbacks for lobby
-            if (stageId === 'lobby') {
+            if (stageId === Lobby.getMetadata().id) {
                 const lobby = newStage as Lobby;
                 if (this.fordInteractionCallback) {
                     lobby.fordInteractionCallback = this.fordInteractionCallback;

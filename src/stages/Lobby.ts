@@ -10,12 +10,19 @@ export class Lobby extends BaseDungeon {
     name = 'Lobby';
     description = 'Safe hub area';
 
+    static getMetadata() {
+        return {
+            id: 'lobby',
+            name: 'Lobby',
+            description: 'Safe hub area'
+        };
+    }
     /**
      * Get assets required by lobby
      */
     getRequiredAssets(): string[] {
         return [
-            'models/trader_weapons.glb'
+            // Keep empty - add lobby assets to the common assets in the World to make sure the lobby is always ready at game start
         ];
     }
 

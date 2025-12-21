@@ -1,14 +1,14 @@
 import * as CANNON from 'cannon-es';
 import { BaseDungeon } from './BaseDungeon';
 
-export class Dungeon1 extends BaseDungeon {
-    id = 'dungeon';
+export class CrimsonDepths extends BaseDungeon {
+    id = 'crimsonDepths';
     name = 'Crimson Depths';
     description = 'A dark dungeon with red hues';
 
     static getMetadata() {
         return {
-            id: 'dungeon',
+            id: 'crimsonDepths',
             name: 'Crimson Depths',
             description: 'A dark dungeon with red hues'
         };
@@ -25,13 +25,13 @@ export class Dungeon1 extends BaseDungeon {
 
     load(): void {
         this.clear();
-        console.log("Loading Dungeon 1...");
+        console.log("Loading Crimson Depths...");
 
         // Darker Floor - Dark Red
         this.createFloor(40, 0x330000);
 
         // Portal back to Lobby
-        this.createPortal(new CANNON.Vec3(-10, 0.05, -10), 0x0000ff, 'lobby');
+        this.createPortal(new CANNON.Vec3(-10, 0.05, -10), 0x0000ff, Lobby.getMetadata().id);
 
         // Dungeon Obstacles
         this.createBox(4, 1, 4, new CANNON.Vec3(5, 0.5, 5));
