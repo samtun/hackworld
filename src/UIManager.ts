@@ -305,6 +305,16 @@ export class UIManager {
         }
     }
 
+    showLoadingScreen() {
+        if (this.loadingScreen) {
+            this.loadingScreen.style.display = 'flex';
+        }
+        // Reset progress bar
+        if (this.progressBarFill) {
+            this.progressBarFill.style.width = '0%';
+        }
+    }
+
     updateLoadingProgress(loaded: number, total: number) {
         if (this.progressBarFill) {
             const percentage = total > 0 ? (loaded / total) * 100 : 0;

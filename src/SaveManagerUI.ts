@@ -11,17 +11,10 @@ export class SaveManagerUI {
 
     // UI Elements
     private confirmButton!: HTMLDivElement;
-    private cancelButton!: HTMLDivElement;
     private playtimeDisplay!: HTMLDivElement;
     private saveStatusText!: HTMLDivElement;
-
-    // Navigation state
-    private selectedIndex: number = 0; // 0 = confirm, 1 = cancel
-    private lastSelectState: boolean = false;
-    private lastNavigateLeftState: boolean = false;
-    private lastNavigateRightState: boolean = false;
-    private lastCancelState: boolean = false;
     private autoCloseTimer?: number;
+    private lastSelectState: boolean = false;
 
     constructor() {
         this.createUI();
@@ -87,9 +80,6 @@ export class SaveManagerUI {
 
         // Button container
         const buttonContainer = document.createElement('div');
-        buttonContainer.style.display = 'flex';
-        buttonContainer.style.justifyContent = 'center';
-        buttonContainer.style.gap = '20px';
         buttonContainer.style.marginTop = '20px';
 
         // Confirm button
@@ -104,18 +94,6 @@ export class SaveManagerUI {
         this.confirmButton.style.textAlign = 'center';
         buttonContainer.appendChild(this.confirmButton);
 
-        // Cancel button
-        this.cancelButton = document.createElement('div');
-        this.cancelButton.textContent = 'Cancel';
-        this.cancelButton.style.padding = '10px 20px';
-        this.cancelButton.style.backgroundColor = '#666';
-        this.cancelButton.style.border = '2px solid #fff';
-        this.cancelButton.style.borderRadius = '5px';
-        this.cancelButton.style.cursor = 'pointer';
-        this.cancelButton.style.fontSize = '16px';
-        this.cancelButton.style.textAlign = 'center';
-        buttonContainer.appendChild(this.cancelButton);
-
         window.appendChild(buttonContainer);
 
         // Instructions
@@ -129,26 +107,6 @@ export class SaveManagerUI {
 
         this.container.appendChild(window);
         document.body.appendChild(this.container);
-
-        // Update button highlighting
-        this.updateButtonHighlight();
-    }
-
-    /**
-     * Update button highlighting based on selection
-     */
-    private updateButtonHighlight(): void {
-        if (this.selectedIndex === 0) {
-            this.confirmButton.style.backgroundColor = '#66BB6A';
-            this.confirmButton.style.transform = 'scale(1.05)';
-            this.cancelButton.style.backgroundColor = '#666';
-            this.cancelButton.style.transform = 'scale(1.0)';
-        } else {
-            this.confirmButton.style.backgroundColor = '#4CAF50';
-            this.confirmButton.style.transform = 'scale(1.0)';
-            this.cancelButton.style.backgroundColor = '#888';
-            this.cancelButton.style.transform = 'scale(1.05)';
-        }
     }
 
     /**
@@ -160,13 +118,11 @@ export class SaveManagerUI {
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.saveCallback = onSave;
-        this.selectedIndex = 0;
         this.playtimeDisplay.textContent = `Playtime: ${playtime}`;
         this.saveStatusText.style.display = 'none';
-        this.updateButtonHighlight();
+
         // Reset input states to prevent immediate action on open
         this.lastSelectState = true;
-        this.lastCancelState = true;
     }
 
     /**
@@ -176,7 +132,7 @@ export class SaveManagerUI {
         this.isVisible = false;
         this.container.style.display = 'none';
         this.saveCallback = undefined;
-        
+
         // Clear auto-close timer if it exists
         if (this.autoCloseTimer !== undefined) {
             clearTimeout(this.autoCloseTimer);
@@ -191,49 +147,25 @@ export class SaveManagerUI {
     update(input: InputManager): void {
         if (!this.isVisible) return;
 
-        // Navigation
-        const isNavigateLeft = input.isNavigateLeftPressed();
-        const isNavigateRight = input.isNavigateRightPressed();
-
-        if (isNavigateLeft && !this.lastNavigateLeftState) {
-            this.selectedIndex = Math.max(0, this.selectedIndex - 1);
-            this.updateButtonHighlight();
-        }
-
-        if (isNavigateRight && !this.lastNavigateRightState) {
-            this.selectedIndex = Math.min(1, this.selectedIndex + 1);
-            this.updateButtonHighlight();
-        }
-
-        this.lastNavigateLeftState = isNavigateLeft;
-        this.lastNavigateRightState = isNavigateRight;
 
         // Selection
         const isSelectPressed = input.isSelectPressed();
-        if (isSelectPressed && !this.lastSelectState) {
-            if (this.selectedIndex === 0) {
-                // Confirm - execute save
-                if (this.saveCallback) {
-                    this.saveCallback();
-                    this.showSaveSuccess();
-                    // Auto-close after showing success message
-                    this.autoCloseTimer = window.setTimeout(() => {
-                        this.hide();
-                    }, 1500);
-                }
-            } else {
-                // Cancel
+        if (isSelectPressed && !this.lastSelectState && this.saveCallback) {
+            this.saveCallback();
+            this.showSaveSuccess();
+            // Auto-close after showing success message
+            this.autoCloseTimer = window.setTimeout(() => {
                 this.hide();
-            }
+            }, 1500);
         }
+
         this.lastSelectState = isSelectPressed;
 
         // Cancel with ESC/B button
         const isCancelPressed = input.isCancelPressed();
-        if (isCancelPressed && !this.lastCancelState) {
+        if (isCancelPressed) {
             this.hide();
         }
-        this.lastCancelState = isCancelPressed;
     }
 
     /**

@@ -14,6 +14,15 @@ export class Dungeon2 extends BaseDungeon {
         };
     }
 
+    /**
+     * Get assets required by this dungeon
+     */
+    getRequiredAssets(): string[] {
+        return [
+            'models/monster.glb'
+        ];
+    }
+
     load(): void {
         this.clear();
         console.log("Loading Dungeon 2...");
