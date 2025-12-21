@@ -1,3 +1,10 @@
+## [1.6.2](https://github.com/samtun/hackworld/compare/v1.6.1...v1.6.2) (2025-12-21)
+
+
+### Bug Fixes
+
+* fix Lobby references in dungeons ([8f7123a](https://github.com/samtun/hackworld/commit/8f7123a9ca55189b0aedae1acf5008d24e462e85))
+
 ## [1.6.1](https://github.com/samtun/hackworld/compare/v1.6.0...v1.6.1) (2025-12-21)
 
 
