@@ -1,14 +1,15 @@
 import * as CANNON from 'cannon-es';
 import { BaseDungeon } from './BaseDungeon';
+import { Lobby } from './Lobby';
 
-export class Dungeon2 extends BaseDungeon {
-    id = 'dungeon2';
+export class VioletAbyss extends BaseDungeon {
+    id = 'violetAbyss';
     name = 'Violet Abyss';
     description = 'A mysterious purple realm';
 
     static getMetadata() {
         return {
-            id: 'dungeon2',
+            id: 'violetAbyss',
             name: 'Violet Abyss',
             description: 'A mysterious purple realm'
         };
@@ -31,7 +32,7 @@ export class Dungeon2 extends BaseDungeon {
         this.createFloor(50, 0x1a0033);
 
         // Portal back to Lobby
-        this.createPortal(new CANNON.Vec3(12, 0.05, 12), 0x0000ff, 'lobby');
+        this.createPortal(new CANNON.Vec3(12, 0.05, 12), 0x0000ff, Lobby.getMetadata().id);
 
         // Different dungeon layout with more obstacles
         this.createBox(3, 2, 3, new CANNON.Vec3(-8, 1, -8));

@@ -2,16 +2,16 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { BaseDungeon } from './BaseDungeon';
 import { Lobby } from './Lobby';
-import { Dungeon1 } from './Dungeon1';
-import { Dungeon2 } from './Dungeon2';
+import { CrimsonDepths } from './CrimsonDepths';
+import { VioletAbyss } from './VioletAbyss';
 
 // Re-export for convenience
-export { BaseDungeon, Lobby, Dungeon1, Dungeon2 };
+export { BaseDungeon, Lobby, CrimsonDepths, VioletAbyss };
 
 // Registry of all available dungeons for selection UI
 export const AVAILABLE_DUNGEONS = [
-    Dungeon1,
-    Dungeon2
+    CrimsonDepths,
+    VioletAbyss
 ];
 
 // Stage factory type
@@ -23,9 +23,9 @@ type StageConstructor = new (
 
 // Stage registry mapping stage IDs to their constructors
 const stageRegistry: Map<string, StageConstructor> = new Map([
-    ['lobby', Lobby],
-    ['dungeon', Dungeon1],
-    ['dungeon2', Dungeon2]
+    [Lobby.getMetadata().id, Lobby],
+    [CrimsonDepths.getMetadata().id, CrimsonDepths],
+    [VioletAbyss.getMetadata().id, VioletAbyss]
 ]);
 
 /**
