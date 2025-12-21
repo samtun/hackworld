@@ -36,6 +36,9 @@ export class World {
     // Ford interaction callback (set by Game)
     private fordInteractionCallback?: () => void;
 
+    // Ford interaction callback (set by Game)
+    private saveManagerInteractionCallback?: () => void;
+
     constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material, onLoadComplete?: () => void, onLoadProgress?: (loaded: number, total: number) => void) {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
@@ -93,6 +96,13 @@ export class World {
     }
 
     /**
+     * Set callback for Save Manager NPC interaction
+     */
+    setSaveManagerCallback(callback: () => void) {
+        this.saveManagerInteractionCallback = callback;
+    }
+
+    /**
      * Set callbacks for stage loading
      */
     setStageLoadCallbacks(onStart?: () => void, onComplete?: () => void) {
@@ -130,10 +140,15 @@ export class World {
                 await this.assetManager.preloadAll(requiredAssets);
             }
 
-            // Set Ford callback for Lobby stage
-            if (stageId === 'lobby' && this.fordInteractionCallback) {
+            // Add callbacks for lobby
+            if (stageId === 'lobby') {
                 const lobby = newStage as Lobby;
-                lobby.fordInteractionCallback = this.fordInteractionCallback;
+                if (this.fordInteractionCallback) {
+                    lobby.fordInteractionCallback = this.fordInteractionCallback;
+                }
+                if (this.fordInteractionCallback) {
+                    lobby.saveManagerInteractionCallback = this.saveManagerInteractionCallback;
+                }
             }
 
             // Load the stage
@@ -148,26 +163,6 @@ export class World {
                 this.onStageLoadCompleteCallback();
             }
         }
-    }
-
-    // Legacy methods for backward compatibility
-    loadLobby() {
-        return this.loadStageById('lobby');
-    }
-
-    /**
-     * Set callback for Save Manager NPC interaction
-     */
-    setSaveManagerCallback(callback: () => void) {
-        this.lobby.saveManagerInteractionCallback = callback;
-    }
-
-    loadDungeon() {
-        return this.loadStageById('dungeon');
-    }
-
-    loadDungeon2() {
-        return this.loadStageById('dungeon2');
     }
 
     // Helper method to load stage by ID (wrapper for backward compatibility)
