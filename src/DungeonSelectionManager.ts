@@ -1,5 +1,5 @@
 import { InputManager } from './InputManager';
-import { BaseDungeon } from './stages';
+import { AVAILABLE_DUNGEONS, BaseDungeon } from './stages';
 
 // --- Constants (matching InventoryManager style) ---
 const COLORS = {
@@ -23,6 +23,8 @@ const STYLES = {
 };
 
 export class DungeonSelectionManager {
+    static _instance: DungeonSelectionManager; // Singleton
+
     container!: HTMLDivElement;
     isVisible: boolean = false;
     private dungeonClasses: (typeof BaseDungeon)[] = [];
@@ -43,9 +45,13 @@ export class DungeonSelectionManager {
     private waitForRelease: boolean = false;
     private onDungeonSelected?: (dungeonId: string) => void;
 
-    constructor(dungeonClasses: (typeof BaseDungeon)[]) {
+    private constructor(dungeonClasses: (typeof BaseDungeon)[]) {
         this.dungeonClasses = dungeonClasses;
         this.createUI();
+    }
+
+    public static get Instance(): DungeonSelectionManager {
+        return this._instance || (this._instance = new this(AVAILABLE_DUNGEONS));
     }
 
     private createUI() {

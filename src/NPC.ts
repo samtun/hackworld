@@ -12,6 +12,7 @@ export class NPC {
     constructor(
         scene: THREE.Scene,
         world: CANNON.World,
+        mesh: THREE.Mesh,
         physicsMaterial: CANNON.Material,
         name: string,
         position: CANNON.Vec3,
@@ -24,13 +25,12 @@ export class NPC {
         this.interactionCallback = interactionCallback;
 
         // Visual Mesh - Simple cube as requested
-        const geometry = new THREE.BoxGeometry(1, 2, 1);
-        const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-        this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh = mesh;
         this.mesh.castShadow = true;
-        this.mesh.position.set(position.x, position.y + 1, position.z); // +1 to sit on ground
+        this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
 
+        // TODO change physics shape
         // Physics Body
         const shape = new CANNON.Box(new CANNON.Vec3(0.5, 1, 0.5));
         this.body = new CANNON.Body({
@@ -51,14 +51,14 @@ export class NPC {
         );
         return dist < 2.5; // Interaction range
     }
-    
+
     /**
      * Get interaction hint text
      */
     getInteractionHint(): string {
         return `<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to ${this.name}`;
     }
-    
+
     /**
      * Handle interaction
      */

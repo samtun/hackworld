@@ -30,6 +30,8 @@ const STYLES = {
 };
 
 export class TraderManager {
+    static _instance: TraderManager // Singleton
+
     container!: HTMLDivElement;
     isVisible: boolean = false;
 
@@ -57,9 +59,13 @@ export class TraderManager {
     // Trader inventory
     traderInventory: Item[] = [];
 
-    constructor() {
+    private constructor() {
         this.initializeTraderInventory();
         this.createUI();
+    }
+
+    public static get Instance(): TraderManager {
+        return this._instance || (this._instance = new this());
     }
 
     private initializeTraderInventory() {

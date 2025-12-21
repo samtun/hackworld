@@ -5,6 +5,8 @@ import { InputManager } from './InputManager';
  * Provides an interface for confirming and executing save operations
  */
 export class SaveManagerUI {
+    private static instance: SaveManagerUI; // Singleton
+
     container!: HTMLDivElement;
     isVisible: boolean = false;
     private saveCallback?: () => void;
@@ -16,8 +18,12 @@ export class SaveManagerUI {
     private autoCloseTimer?: number;
     private lastSelectState: boolean = false;
 
-    constructor() {
+    private constructor() {
         this.createUI();
+    }
+
+    public static get Instance(): SaveManagerUI {
+        return this.instance || (this.instance = new this());
     }
 
     private createUI(): void {

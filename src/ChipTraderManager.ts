@@ -29,6 +29,8 @@ const STYLES = {
 };
 
 export class ChipTraderManager {
+    private static instance: ChipTraderManager; // Singleton
+
     container!: HTMLDivElement;
     isVisible: boolean = false;
 
@@ -56,9 +58,13 @@ export class ChipTraderManager {
     // Trader inventory
     traderInventory: Item[] = [];
 
-    constructor() {
+    private constructor() {
         this.initializeTraderInventory();
         this.createUI();
+    }
+
+    public static get Instance(): ChipTraderManager {
+        return this.instance || (this.instance = new this());
     }
 
     private initializeTraderInventory() {
@@ -481,13 +487,13 @@ export class ChipTraderManager {
                 player.money += item.sellPrice;
                 const soldItem = { ...item, id: `t${Date.now()}`, isEquipped: false }; // Give it a unique trader ID
                 this.traderInventory.push(soldItem); // Add to trader inventory
-                
+
                 // Find and remove the item from player's full inventory
                 const itemIndex = player.inventory.findIndex(i => i.id === item.id);
                 if (itemIndex !== -1) {
                     player.inventory.splice(itemIndex, 1);
                 }
-                
+
                 console.log(`Sold ${item.name} for ${item.sellPrice} bits`);
 
                 // Adjust selection if needed

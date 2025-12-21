@@ -5,16 +5,17 @@ import { Player } from './Player';
 import { World } from './World';
 import { InputManager } from './InputManager';
 import { UIManager } from './UIManager';
+import { Lobby } from './stages';
 import { InventoryManager } from './InventoryManager';
 import { TraderManager } from './TraderManager';
 import { ChipTraderManager } from './ChipTraderManager';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NPCDialogueManager } from './NPCDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
-import { AVAILABLE_DUNGEONS, Lobby } from './stages';
 import { DebugValueEditor } from './DebugValueEditor';
 import { SaveManager } from './SaveManager';
 import { SaveManagerUI } from './SaveManagerUI';
+import { PlayerRegistry } from './PlayerRegistry';
 
 export class Game {
     scene: THREE.Scene;
@@ -34,7 +35,7 @@ export class Game {
     npcDialogue: NPCDialogueManager;
     xDataUpgrade: XDataUpgradeManager;
     saveManager: SaveManager;
-    saveManagerUI: SaveManagerUI;
+    playerRegistry: PlayerRegistry;
 
     clock: THREE.Clock;
     debugOutputFrequency: number = 1
@@ -119,41 +120,27 @@ export class Game {
                 this.ui.hideLoadingScreen();
             }
         );
+        this.playerRegistry = PlayerRegistry.Instance;
+        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial));
+        this.player = this.playerRegistry.activePlayers[0];
 
-        this.player = new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial);
-        this.inventory = new InventoryManager();
-        this.trader = new TraderManager();
-        this.chipTrader = new ChipTraderManager();
-        this.dungeonSelection = new DungeonSelectionManager(AVAILABLE_DUNGEONS);
+        this.inventory = InventoryManager.Instance;
+        this.trader = TraderManager.Instance;
+        this.chipTrader = ChipTraderManager.Instance;
+        this.dungeonSelection = DungeonSelectionManager.Instance;
         this.npcDialogue = new NPCDialogueManager();
-        this.xDataUpgrade = new XDataUpgradeManager();
-        this.saveManager = new SaveManager();
-        this.saveManagerUI = new SaveManagerUI();
+        this.xDataUpgrade = XDataUpgradeManager.Instance;
+        this.saveManager = SaveManager.Instance;
         this.clock = new THREE.Clock();
 
         // Set up Ford NPC callback for X-Data upgrades
-        this.world.setFordCallback(() => {
-            this.xDataUpgrade.show();
-        });
+        this.world.setFordCallback(() => this.xDataUpgrade.show());
 
         // Set up Save Manager NPC callback
-        this.world.setSaveManagerCallback(() => {
-            this.saveManagerUI.show(
-                this.saveManager.getFormattedPlaytime(),
-                () => {
-                    this.saveManager.save(
-                        this.player,
-                        this.trader.traderInventory,
-                        this.chipTrader.traderInventory
-                    );
-                }
-            );
-        });
+        this.world.setSaveManagerCallback(() => this.saveManager.save());
 
         // Set up player death callback
-        this.player.setDeathCallback(() => {
-            this.handlePlayerDeath();
-        });
+        this.player.setDeathCallback(() => this.handlePlayerDeath());
 
         // Debug Mode Setup
         if (import.meta.env.DEV) {
@@ -273,7 +260,7 @@ export class Game {
             this.dungeonSelection.isVisible ||
             this.npcDialogue.isVisible ||
             this.xDataUpgrade.isVisible ||
-            this.saveManagerUI.isVisible;
+            this.saveManager.isVisible;
     }
 
     onWindowResize() {
@@ -400,8 +387,8 @@ export class Game {
         }
 
         // Update save manager if visible
-        if (this.saveManagerUI.isVisible) {
-            this.saveManagerUI.update(this.input);
+        if (this.saveManager.isVisible) {
+            this.saveManager.update(this.input);
         }
 
         // Check if player is near any interactive entity (to prevent jumping while interacting)

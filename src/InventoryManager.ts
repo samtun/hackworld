@@ -53,6 +53,8 @@ export interface Item {
 }
 
 export class InventoryManager {
+    private static instance: InventoryManager; // Singleton
+
     container!: HTMLDivElement;
     isVisible: boolean = false;
 
@@ -72,8 +74,12 @@ export class InventoryManager {
     private lastNavigateDownState: boolean = false;
     private lastSelectState: boolean = false;
 
-    constructor() {
+    private constructor() {
         this.createUI();
+    }
+
+    public static get Instance(): InventoryManager {
+        return this.instance || (this.instance = new this());
     }
 
     private createUI() {

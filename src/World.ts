@@ -146,7 +146,7 @@ export class World {
                 if (this.fordInteractionCallback) {
                     lobby.fordInteractionCallback = this.fordInteractionCallback;
                 }
-                if (this.fordInteractionCallback) {
+                if (this.saveManagerInteractionCallback) {
                     lobby.saveManagerInteractionCallback = this.saveManagerInteractionCallback;
                 }
             }

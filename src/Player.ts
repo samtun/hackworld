@@ -7,6 +7,7 @@ import { Item } from './InventoryManager';
 import { WeaponRegistry } from './items/WeaponRegistry';
 
 export class Player {
+    id: string;
     mesh: THREE.Mesh;
     body: CANNON.Body;
     input: InputManager;
@@ -96,6 +97,7 @@ export class Player {
     money: number = 500; // Starting money
 
     constructor(scene: THREE.Scene, world: CANNON.World, input: InputManager, physicsMaterial: CANNON.Material) {
+        this.id = crypto.randomUUID();
         this.input = input;
 
         // Initial weapons from registry
