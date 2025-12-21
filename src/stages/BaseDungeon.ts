@@ -4,6 +4,7 @@ import { Enemy } from '../enemies/Enemy';
 import { LargeEnemy } from '../enemies/LargeEnemy';
 import { AssetManager } from '../AssetManager';
 import { Portal } from '../Portal';
+import { Player } from '../Player';
 
 /**
  * Base class for all dungeon stages
@@ -169,9 +170,14 @@ export abstract class BaseDungeon {
     /**
      * Update portal particles
      */
-    update(deltaTime: number): void {
+    update(dt: number, _: Player): void {
         if (this.portal) {
-            this.portal.update(deltaTime);
+            this.portal.update(dt);
+        }
+
+        // Update mixers
+        for (const mixer of this.mixers) {
+            mixer.update(dt);
         }
     }
 

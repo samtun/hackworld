@@ -185,17 +185,7 @@ export class World {
         if (!this.currentStage) return;
 
         // Update stage (portals, etc.)
-        this.currentStage.update(dt);
-
-        // Update healing station in Lobby
-        if (this.currentStage instanceof Lobby) {
-            this.currentStage.updateHealing(dt, player);
-        }
-
-        // Update mixers
-        for (const mixer of this.currentStage.mixers) {
-            mixer.update(dt);
-        }
+        this.currentStage.update(dt, player);
 
         for (let i = this.currentStage.enemies.length - 1; i >= 0; i--) {
             const enemy = this.currentStage.enemies[i];
