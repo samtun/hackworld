@@ -1,5 +1,6 @@
 import * as CANNON from 'cannon-es';
 import { BaseDungeon } from './BaseDungeon';
+import { Lobby } from './Lobby';
 
 export class VioletAbyss extends BaseDungeon {
     id = 'violetAbyss';
