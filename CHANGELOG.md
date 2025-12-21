@@ -1,3 +1,12 @@
+## [1.6.1](https://github.com/samtun/hackworld/compare/v1.6.0...v1.6.1) (2025-12-21)
+
+
+### Bug Fixes
+
+* address code review feedback ([031c3fe](https://github.com/samtun/hackworld/commit/031c3fee45029e3e9663e8f207936b8775e9a106))
+* enhance error handling for stage loading ([e2c8a88](https://github.com/samtun/hackworld/commit/e2c8a8812e8681195556f6e9240ecbf1a2483d29))
+* fix saveManager select state on show ([764735b](https://github.com/samtun/hackworld/commit/764735bb061151a31b7e7d483616c3d359e0a7b9))
+
 # [1.6.0](https://github.com/samtun/hackworld/compare/v1.5.1...v1.6.0) (2025-12-20)
 
 
