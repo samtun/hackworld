@@ -217,12 +217,14 @@ export class Lobby extends BaseDungeon {
         return npcs;
     }
 
-    /**
-     * Update healing station
+    /*
+     * Override BaseDungeon update method to include healing station
      */
-    updateHealing(deltaTime: number, player: Player): void {
+    update(dt: number, player: Player) {
+        super.update(dt, player);
+
         if (!this.healingStation) return;
-        this.healingStation.update(deltaTime, player);
+        this.healingStation.update(dt, player);
     }
 
     /**
