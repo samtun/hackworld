@@ -33,10 +33,10 @@ export class World {
     private weaponDropManager: WeaponDropManager;
     private xDataDropManager: XDataDropManager;
 
-    // Ford interaction callback (set by Game)
-    private fordInteractionCallback?: () => void;
+    // XData interaction callback (set by Game)
+    private xDataInteractionCallback?: () => void;
 
-    // Ford interaction callback (set by Game)
+    // Save manager interaction callback (set by Game)
     private saveManagerInteractionCallback?: () => void;
 
     constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material, onLoadComplete?: () => void, onLoadProgress?: (loaded: number, total: number) => void) {
@@ -91,8 +91,8 @@ export class World {
     /**
      * Set callback for Ford NPC interaction
      */
-    setFordCallback(callback: () => void) {
-        this.fordInteractionCallback = callback;
+    setXDataCallback(callback: () => void) {
+        this.xDataInteractionCallback = callback;
     }
 
     /**
@@ -143,8 +143,8 @@ export class World {
             // Add callbacks for lobby
             if (stageId === Lobby.getMetadata().id) {
                 const lobby = newStage as Lobby;
-                if (this.fordInteractionCallback) {
-                    lobby.fordInteractionCallback = this.fordInteractionCallback;
+                if (this.xDataInteractionCallback) {
+                    lobby.xDataInteractionCallback = this.xDataInteractionCallback;
                 }
                 if (this.saveManagerInteractionCallback) {
                     lobby.saveManagerInteractionCallback = this.saveManagerInteractionCallback;

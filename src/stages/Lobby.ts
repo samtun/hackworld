@@ -52,7 +52,7 @@ export class Lobby extends BaseDungeon {
     private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
 
     // Callback for Ford interaction (set by Game)
-    fordInteractionCallback?: () => void;
+    xDataInteractionCallback?: () => void;
 
     // Callback for Save Manager interaction (set by Game)
     saveManagerInteractionCallback?: () => void;

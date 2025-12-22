@@ -58,7 +58,10 @@ export class ChipTraderManager {
     // Trader inventory
     traderInventory: Item[] = [];
 
+    private chipRegistry: ChipRegistry;
+
     private constructor() {
+        this.chipRegistry = ChipRegistry.Instance;
         this.initializeTraderInventory();
         this.createUI();
     }
@@ -71,7 +74,7 @@ export class ChipTraderManager {
         this.traderInventory = [];
 
         // Add chips from registry
-        const allChips = ChipRegistry.getAllChips();
+        const allChips = this.chipRegistry.getAllChips();
         for (const chipDef of allChips) {
             this.traderInventory.push({
                 id: crypto.randomUUID(),

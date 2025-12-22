@@ -133,8 +133,8 @@ export class Game {
         this.saveManager = SaveManager.Instance;
         this.clock = new THREE.Clock();
 
-        // Set up Ford NPC callback for X-Data upgrades
-        this.world.setFordCallback(() => this.xDataUpgrade.show());
+        // Set up xData NPC callback
+        this.world.setXDataCallback(() => this.xDataUpgrade.show());
 
         // Set up Save Manager NPC callback
         this.world.setSaveManagerCallback(() => this.saveManager.save());

@@ -15,6 +15,8 @@ export class Player {
     speed: number = 6;
     currentWeaponType: WeaponType = WeaponType.SWORD;
 
+    private weaponRegistry: WeaponRegistry;
+
     // Track enemies hit during current attack phase to prevent multiple hits
     // For dual blade, this gets reset between phases to allow double-hitting
     private enemiesHitThisPhase: Set<Enemy> = new Set();
@@ -99,9 +101,10 @@ export class Player {
     constructor(scene: THREE.Scene, world: CANNON.World, input: InputManager, physicsMaterial: CANNON.Material) {
         this.id = crypto.randomUUID();
         this.input = input;
+        this.weaponRegistry = WeaponRegistry.Instance;
 
         // Initial weapons from registry
-        const allWeapons = WeaponRegistry.getAllWeapons();
+        const allWeapons = this.weaponRegistry.getAllWeapons();
         let itemId = 1;
         for (const weaponDef of allWeapons) {
             this.inventory.push({

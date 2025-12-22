@@ -30,7 +30,7 @@ const STYLES = {
 };
 
 export class TraderManager {
-    static _instance: TraderManager // Singleton
+    static instance: TraderManager // Singleton
 
     container!: HTMLDivElement;
     isVisible: boolean = false;
@@ -59,18 +59,24 @@ export class TraderManager {
     // Trader inventory
     traderInventory: Item[] = [];
 
+    private weaponRegistry: WeaponRegistry;
+    private coreRegistry: CoreRegistry;
+
     private constructor() {
+        this.weaponRegistry = WeaponRegistry.Instance;
+        this.coreRegistry = CoreRegistry.Instance;
+
         this.initializeTraderInventory();
         this.createUI();
     }
 
     public static get Instance(): TraderManager {
-        return this._instance || (this._instance = new this());
+        return this.instance || (this.instance = new this());
     }
 
     private initializeTraderInventory() {
         // Trader sells weapons from registry (excluding Aegis Sword which player starts with)
-        const allWeapons = WeaponRegistry.getAllWeapons();
+        const allWeapons = this.weaponRegistry.getAllWeapons();
         const traderWeapons = allWeapons.filter(w => w.id !== 'aegis_sword');
 
         this.traderInventory = [];
@@ -90,7 +96,7 @@ export class TraderManager {
         }
 
         // Add cores from registry
-        const allCores = CoreRegistry.getAllCores();
+        const allCores = this.coreRegistry.getAllCores();
         for (const coreDef of allCores) {
             this.traderInventory.push({
                 id: crypto.randomUUID(),

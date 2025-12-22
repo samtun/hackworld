@@ -16,7 +16,8 @@ export interface CoreDefinition {
  * Unlike weapons, core stats are fixed and don't have random bonuses
  */
 export class CoreRegistry {
-    private static cores: CoreDefinition[] = [
+    private static instance: CoreRegistry;
+    private cores: CoreDefinition[] = [
         {
             id: 'herald_core',
             name: 'Herald Core',
@@ -40,24 +41,31 @@ export class CoreRegistry {
         }
     ];
 
+    private constructor() {
+    }
+
+    public static get Instance(): CoreRegistry {
+        return this.instance || (this.instance = new this());
+    }
+
     /**
      * Get all cores
      */
-    static getAllCores(): CoreDefinition[] {
+    getAllCores(): CoreDefinition[] {
         return [...this.cores];
     }
 
     /**
      * Get core by ID
      */
-    static getCoreById(id: string): CoreDefinition | undefined {
+    getCoreById(id: string): CoreDefinition | undefined {
         return this.cores.find(c => c.id === id);
     }
 
     /**
      * Get a random core
      */
-    static getRandomCore(): CoreDefinition | undefined {
+    getRandomCore(): CoreDefinition | undefined {
         if (this.cores.length === 0) return undefined;
         return this.cores[Math.floor(Math.random() * this.cores.length)];
     }
@@ -65,7 +73,7 @@ export class CoreRegistry {
     /**
      * Register a new core (for extensibility)
      */
-    static registerCore(core: CoreDefinition): void {
+    registerCore(core: CoreDefinition): void {
         // Check if core with same ID already exists
         const existingIndex = this.cores.findIndex(c => c.id === core.id);
         if (existingIndex >= 0) {
