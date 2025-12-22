@@ -6,9 +6,7 @@ import { HealingStation } from '../HealingStation';
 import { Player } from '../Player';
 import { ChipTraderManager } from '../ChipTraderManager';
 import { SaveManager } from '../SaveManager';
-import { TraderManager } from '../TraderManager';
 import { XDataUpgradeManager } from '../xdata/XDataUpgradeManager';
-import { PlayerRegistry } from '../PlayerRegistry';
 
 export class Lobby extends BaseDungeon {
     id = 'lobby';
@@ -42,7 +40,6 @@ export class Lobby extends BaseDungeon {
     chipTraderNpc?: NPC;
 
     // Managers
-    private tradeManager?: TraderManager;
     private chipTraderManager?: ChipTraderManager;
     private saveManager?: SaveManager;
     private xDataUpgradeManager?: XDataUpgradeManager;
