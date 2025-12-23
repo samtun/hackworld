@@ -19,11 +19,8 @@ export class AssetManager {
         this.loadingPromises = new Map();
     }
 
-    static getInstance(): AssetManager {
-        if (!AssetManager.instance) {
-            AssetManager.instance = new AssetManager();
-        }
-        return AssetManager.instance;
+    public static get Instance(): AssetManager {
+        return this.instance || (this.instance = new this());
     }
 
     /**
@@ -77,7 +74,7 @@ export class AssetManager {
         }
 
         // Load all assets in parallel but track progress
-        const promises = paths.map(path => 
+        const promises = paths.map(path =>
             this.preload(path).then(() => {
                 loaded++;
                 if (this.onProgressCallback) {
@@ -93,9 +90,9 @@ export class AssetManager {
     /**
      * Get a preloaded model (clone it to allow multiple instances)
      */
-    get(path: string): GLTF | null {
+    get(path: string): GLTF {
         const cached = this.cache.get(path);
-        if (!cached) return null;
+        if (!cached) throw new Error(`Model ${path} was not preloaded. Add it to the preload assets.`);
 
         // We must clone the scene using SkeletonUtils to ensure SkinnedMeshes
         // are correctly cloned and have their own unique skeletons.

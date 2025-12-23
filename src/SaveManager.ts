@@ -1,4 +1,4 @@
-import { Item } from './InventoryManager';
+import { Item } from './items/InventoryManager';
 import { SaveManagerUI } from './SaveManagerUI';
 import { PlayerRegistry } from './PlayerRegistry';
 import { InputManager } from './InputManager';

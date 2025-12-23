@@ -1,4 +1,4 @@
-import { Item } from './InventoryManager';
+import { Item } from './items/InventoryManager';
 import { WeaponType } from './items/Weapon';
 
 interface ItemDetail {

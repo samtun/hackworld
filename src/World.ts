@@ -4,7 +4,7 @@ import { Enemy } from './enemies/Enemy';
 import { Player } from './Player';
 import { AssetManager } from './AssetManager';
 import { BaseDungeon, Lobby, createStage } from './stages';
-import { NPC } from './NPC';
+import { Npc } from './npcs/Npc';
 import { WeaponDropManager } from './items/WeaponDropManager';
 import { WeaponDrop } from './items/WeaponDrop';
 import { XData } from './xdata/XData';
@@ -43,7 +43,7 @@ export class World {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
         this.physicsMaterial = physicsMaterial;
-        this.assetManager = AssetManager.getInstance();
+        this.assetManager = AssetManager.Instance;
         this.onLoadProgressCallback = onLoadProgress;
 
         this.weaponDropManager = new WeaponDropManager();
@@ -77,29 +77,18 @@ export class World {
      * Preload common assets used across multiple scenes
      */
     async preloadCommonAssets(): Promise<void> {
+        console.log("Preloading common assets ...");
         const commonAssets = [
             'models/sword.glb',
             'models/double_sword.glb',
             'models/lance.glb',
             'models/hammer.glb',
             'models/trader_weapons.glb',
+            'models/npc_placeholder.glb',
+            'models/healing_station.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);
-    }
-
-    /**
-     * Set callback for Ford NPC interaction
-     */
-    setXDataCallback(callback: () => void) {
-        this.xDataInteractionCallback = callback;
-    }
-
-    /**
-     * Set callback for Save Manager NPC interaction
-     */
-    setSaveManagerCallback(callback: () => void) {
-        this.saveManagerInteractionCallback = callback;
     }
 
     /**
@@ -296,26 +285,10 @@ export class World {
         return this.currentStage.checkPortalInteraction(playerPosition);
     }
 
-    checkTraderInteraction(playerPosition: THREE.Vector3): boolean {
-        // Only check trader in lobby
-        if (this.currentStage instanceof Lobby) {
-            return this.currentStage.checkTraderInteraction(playerPosition);
-        }
-        return false;
-    }
-
-    checkChipTraderInteraction(playerPosition: THREE.Vector3): boolean {
-        // Only check chip trader in lobby
-        if (this.currentStage instanceof Lobby) {
-            return this.currentStage.checkChipTraderInteraction(playerPosition);
-        }
-        return false;
-    }
-
-    getAllNPCs(): NPC[] {
+    getAllNpcs(): Npc[] {
         // Get all NPCs from current stage
         if (this.currentStage instanceof Lobby) {
-            return this.currentStage.getAllNPCs();
+            return this.currentStage.getAllNpcs();
         }
         return [];
     }

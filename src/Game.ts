@@ -6,15 +6,14 @@ import { World } from './World';
 import { InputManager } from './InputManager';
 import { UIManager } from './UIManager';
 import { Lobby } from './stages';
-import { InventoryManager } from './InventoryManager';
-import { TraderManager } from './TraderManager';
-import { ChipTraderManager } from './ChipTraderManager';
+import { InventoryManager } from './items/InventoryManager';
+import { TraderManager } from './items/TraderManager';
+import { ChipTraderManager } from './items/ChipTraderManager';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
-import { NPCDialogueManager } from './NPCDialogueManager';
+import { NpcDialogueManager } from './npcs/NpcDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
 import { DebugValueEditor } from './DebugValueEditor';
 import { SaveManager } from './SaveManager';
-import { SaveManagerUI } from './SaveManagerUI';
 import { PlayerRegistry } from './PlayerRegistry';
 
 export class Game {
@@ -32,7 +31,7 @@ export class Game {
     trader: TraderManager;
     chipTrader: ChipTraderManager;
     dungeonSelection: DungeonSelectionManager;
-    npcDialogue: NPCDialogueManager;
+    npcDialogue: NpcDialogueManager;
     xDataUpgrade: XDataUpgradeManager;
     saveManager: SaveManager;
     playerRegistry: PlayerRegistry;
@@ -54,7 +53,7 @@ export class Game {
     wasSelectAndStartPressed: boolean = false;
     wasL3Pressed: boolean = false; // Track L3 button for debug value editor toggle
     wasR3Pressed: boolean = false; // Track R3 button for debug mode toggle
-    wasTraderJustOpened: boolean = false; // Prevent immediate action when opening trader
+    wasNpcJustInteractedWith: boolean = false; // Prevent immediate action when opening trader
     isTransitioning: boolean = false;
 
     // Spawn position constants
@@ -105,6 +104,10 @@ export class Game {
         this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial, () => {
             this.ui.hideLoadingScreen();
             this.ui.showStartScreen();
+            this.initializeEntities();
+
+            // Start Loop
+            this.animate();
         }, (loaded, total) => {
             this.ui.updateLoadingProgress(loaded, total);
         });
@@ -120,27 +123,9 @@ export class Game {
                 this.ui.hideLoadingScreen();
             }
         );
-        this.playerRegistry = PlayerRegistry.Instance;
-        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, this.input, this.defaultMaterial));
-        this.player = this.playerRegistry.activePlayers[0];
 
-        this.inventory = InventoryManager.Instance;
-        this.trader = TraderManager.Instance;
-        this.chipTrader = ChipTraderManager.Instance;
-        this.dungeonSelection = DungeonSelectionManager.Instance;
-        this.npcDialogue = new NPCDialogueManager();
-        this.xDataUpgrade = XDataUpgradeManager.Instance;
-        this.saveManager = SaveManager.Instance;
-        this.clock = new THREE.Clock();
-
-        // Set up xData NPC callback
-        this.world.setXDataCallback(() => this.xDataUpgrade.show());
-
-        // Set up Save Manager NPC callback
-        this.world.setSaveManagerCallback(() => this.saveManager.save());
-
-        // Set up player death callback
-        this.player.setDeathCallback(() => this.handlePlayerDeath());
+        // Resize Handler
+        window.addEventListener('resize', () => this.onWindowResize(), false);
 
         // Debug Mode Setup
         if (import.meta.env.DEV) {
@@ -175,12 +160,23 @@ export class Game {
                 }
             });
         }
+    }
 
-        // Resize Handler
-        window.addEventListener('resize', () => this.onWindowResize(), false);
+    initializeEntities() {
+        this.inventory = InventoryManager.Instance;
+        this.npcDialogue = NpcDialogueManager.Instance;
+        this.xDataUpgrade = XDataUpgradeManager.Instance;
+        this.chipTrader = ChipTraderManager.Instance;
+        this.dungeonSelection = DungeonSelectionManager.Instance;
+        this.trader = TraderManager.Instance
+        this.saveManager = SaveManager.Instance;
+        this.clock = new THREE.Clock();
 
-        // Start Loop
-        this.animate();
+        // Set up player
+        this.playerRegistry = PlayerRegistry.Instance;
+        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, Game.LOBBY_SPAWN_POSITION, this.input, this.defaultMaterial));
+        this.player = this.playerRegistry.activePlayers[0];
+        this.player.setDeathCallback(() => this.handlePlayerDeath());
     }
 
     switchScene(destination?: string) {
@@ -311,12 +307,9 @@ export class Game {
                     if (this.debugValueEditor.isVisible) {
                         // Toggle expanded/collapsed state
                         this.debugValueEditor.toggle();
+                        this.debugValueEditor.hide();
                     } else {
                         // Show and expand the editor
-                        this.debugMode = true;
-                        this.debugMeshes.forEach(mesh => {
-                            mesh.visible = this.debugMode;
-                        });
                         this.debugValueEditor.show();
                         this.debugValueEditor.expand();
                         console.log('Debug Mode: ON (via L3 button)');
@@ -332,13 +325,6 @@ export class Game {
                 this.debugMeshes.forEach(mesh => {
                     mesh.visible = this.debugMode;
                 });
-
-                // Toggle debug value editor visibility
-                if (this.debugMode) {
-                    this.debugValueEditor?.show();
-                } else {
-                    this.debugValueEditor?.hide();
-                }
 
                 console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'} (via R3 button)`);
             }
@@ -396,7 +382,7 @@ export class Game {
 
         // Define interactive entity types
         interface InteractiveEntity {
-            type: 'npc' | 'trader' | 'chipTrader' | 'weaponDrop' | 'portal' | 'saveManager';
+            type: 'npc' | 'weaponDrop' | 'portal';
             data?: any;
             hint: string;
             action: () => void;
@@ -406,9 +392,9 @@ export class Game {
 
         if (!anyMenuOpen) {
             // Check NPCs (including dialogue NPCs and Ford)
-            const allNPCs = this.world.getAllNPCs();
-            for (const npc of allNPCs) {
-                if (npc.isPlayerNearby(this.player.mesh.position)) {
+            const allNpcs = this.world.getAllNpcs();
+            for (const npc of allNpcs) {
+                if (npc.isPlayerNearby(this.player.position)) {
                     nearbyInteractive = {
                         type: 'npc',
                         data: npc,
@@ -427,12 +413,12 @@ export class Game {
 
             // Check weapon drop (higher priority than traders)
             if (!nearbyInteractive) {
-                const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.mesh.position);
+                const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.position);
                 if (weaponDropNearby) {
                     nearbyInteractive = {
                         type: 'weaponDrop',
                         data: weaponDropNearby,
-                        hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up ' + weaponDropNearby.weaponName,
+                        hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
                         action: () => {
                             this.world.pickupWeaponDrop(weaponDropNearby, this.player);
                         }
@@ -440,31 +426,9 @@ export class Game {
                 }
             }
 
-            // Check weapon trader
-            if (!nearbyInteractive && this.world.checkTraderInteraction(this.player.mesh.position)) {
-                nearbyInteractive = {
-                    type: 'trader',
-                    hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Trader',
-                    action: () => {
-                        this.trader.show();
-                    }
-                };
-            }
-
-            // Check chip trader
-            if (!nearbyInteractive && this.world.checkChipTraderInteraction(this.player.mesh.position)) {
-                nearbyInteractive = {
-                    type: 'chipTrader',
-                    hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Talk to Chip Trader',
-                    action: () => {
-                        this.chipTrader.show();
-                    }
-                };
-            }
-
             // Check portal
             if (!nearbyInteractive) {
-                const destination = this.world.checkPortalInteraction(this.player.mesh.position);
+                const destination = this.world.checkPortalInteraction(this.player.position);
                 if (destination) {
                     nearbyInteractive = {
                         type: 'portal',
@@ -510,9 +474,9 @@ export class Game {
         }
 
         // Camera Follow
-        const targetX = this.player.mesh.position.x + 10;
-        const targetY = this.player.mesh.position.y + 10;
-        const targetZ = this.player.mesh.position.z + 10;
+        const targetX = this.player.position.x + 10;
+        const targetY = this.player.position.y + 10;
+        const targetZ = this.player.position.z + 10;
 
         const lerpFactor = Math.min(5 * dt, 1);
         this.camera.position.x += (targetX - this.camera.position.x) * lerpFactor;
@@ -526,16 +490,14 @@ export class Game {
             this.ui.showInteractionHint(true, nearbyInteractive.hint);
 
             // Check for interaction - prevent if just opened a menu or dialogue was just closed
-            const shouldPreventInteraction = this.wasTraderJustOpened ||
+            const shouldPreventInteraction = this.wasNpcJustInteractedWith ||
                 (nearbyInteractive.type === 'npc' && wasDialogueVisible);
 
             if (isSelectPressed && !this.wasSelectPressed && !shouldPreventInteraction) {
                 nearbyInteractive.action();
 
-                // Set flag if we just opened a trader to prevent immediate action
-                if (nearbyInteractive.type === 'trader' || nearbyInteractive.type === 'chipTrader') {
-                    this.wasTraderJustOpened = true;
-                }
+                // Set flag if we just interacted to prevent immediate action
+                this.wasNpcJustInteractedWith = true;
             }
         } else {
             // Hide hint if not near anything interactive
@@ -543,8 +505,8 @@ export class Game {
         }
 
         // Reset trader just opened flag when select is released
-        if (!isSelectPressed && this.wasTraderJustOpened) {
-            this.wasTraderJustOpened = false;
+        if (!isSelectPressed && this.wasNpcJustInteractedWith) {
+            this.wasNpcJustInteractedWith = false;
         }
 
         // Handle extra debug outputs

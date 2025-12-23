@@ -1,14 +1,14 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Player } from './Player';
+import { BaseMesh } from './BaseMesh';
 
 /**
  * HealingStation entity with upward-moving particle effects
  * Particles rise straight up (not spinning) at a slower speed
  * Particle speed increases during healing
  */
-export class HealingStation {
-    mesh: THREE.Mesh;
+export class HealingStation extends BaseMesh {
     particles: THREE.Points;
     particleSystem: {
         positions: Float32Array;
@@ -23,7 +23,7 @@ export class HealingStation {
     isHealing: boolean = false;
 
     private readonly PARTICLE_COUNT = 300;
-    private readonly RING_RADIUS = 1.0; // Size
+    private readonly RING_RADIUS = 1.3; // Size
     private readonly PARTICLE_LIFETIME = 1.5; // seconds
     private readonly NORMAL_RISE_SPEED = 0.6; // Default rise speed
     private readonly HEALING_RISE_SPEED = 1.8; // Faster rise speed during healing
@@ -32,19 +32,12 @@ export class HealingStation {
     private readonly HEALING_DURATION = 2.5; // Time in seconds to heal from 0 to max (both HP and TP)
     private time: number = 0;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, color: number = 0x00ff00) {
-        this.color = new THREE.Color(color);
+    constructor(scene: THREE.Scene, position: CANNON.Vec3) {
+        super('models/healing_station.glb');
+        this.color = new THREE.Color(0x00ff00);
         this.position = position;
         this.positionVector = new THREE.Vector3(position.x, position.y, position.z);
 
-        // Create healing station mesh (circle)
-        const stationGeo = new THREE.CylinderGeometry(this.RING_RADIUS, this.RING_RADIUS, 0.1, 32);
-        const stationMat = new THREE.MeshBasicMaterial({
-            color,
-            transparent: true,
-            opacity: 0.5
-        });
-        this.mesh = new THREE.Mesh(stationGeo, stationMat);
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
 
@@ -149,8 +142,8 @@ export class HealingStation {
         const stationPos = this.mesh.position;
 
         // Check if player is in range and handle healing
-        const inRange = this.isPlayerInRange(player.mesh.position);
-        
+        const inRange = this.isPlayerInRange(player.position);
+
         if (inRange) {
             // Set healing state (increases particle speed)
             this.isHealing = true;
@@ -221,11 +214,7 @@ export class HealingStation {
         scene.remove(this.mesh);
         scene.remove(this.particles);
 
-        if (this.mesh.geometry) this.mesh.geometry.dispose();
-        const meshMaterial = this.mesh.material as THREE.Material;
-        if (meshMaterial) {
-            meshMaterial.dispose();
-        }
+        this.disposeMesh();
 
         if (this.particles.geometry) this.particles.geometry.dispose();
         const particleMaterial = this.particles.material as THREE.ShaderMaterial;

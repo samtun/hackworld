@@ -1,5 +1,5 @@
-import { Player } from './Player';
-import { InputManager } from './InputManager';
+import { Player } from '../Player';
+import { InputManager } from '../InputManager';
 
 // --- Constants ---
 const COLORS = {
@@ -27,10 +27,10 @@ const STYLES = {
     SLOT_GAP: '15px'
 };
 
-import { WeaponType } from './items/Weapon';
-import { CoreStats } from './items/Core';
-import { ChipType, ChipStats } from './items/Chip';
-import { ItemDetailsPanel } from './ItemDetailsPanel';
+import { WeaponType } from './Weapon';
+import { CoreStats } from './Core';
+import { ChipType, ChipStats } from './Chip';
+import { ItemDetailsPanel } from '../ItemDetailsPanel';
 
 export interface Item {
     id: string;

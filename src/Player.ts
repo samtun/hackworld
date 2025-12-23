@@ -3,17 +3,19 @@ import * as CANNON from 'cannon-es';
 import { InputManager } from './InputManager';
 import { Weapon, WeaponType } from './items/Weapon';
 import { Enemy } from './enemies/Enemy';
-import { Item } from './InventoryManager';
+import { Item } from './items/InventoryManager';
 import { WeaponRegistry } from './items/WeaponRegistry';
+import { BaseMesh } from './BaseMesh';
 
-export class Player {
+export class Player extends BaseMesh {
     id: string;
-    mesh: THREE.Mesh;
     body: CANNON.Body;
     input: InputManager;
     weapon: Weapon;
     speed: number = 6;
     currentWeaponType: WeaponType = WeaponType.SWORD;
+    innerMesh?: THREE.Mesh;
+    position: THREE.Vector3;
 
     private weaponRegistry: WeaponRegistry;
 
@@ -98,10 +100,12 @@ export class Player {
     inventory: Item[] = [];
     money: number = 500; // Starting money
 
-    constructor(scene: THREE.Scene, world: CANNON.World, input: InputManager, physicsMaterial: CANNON.Material) {
+    constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
+        super('models/npc_placeholder.glb');
         this.id = crypto.randomUUID();
         this.input = input;
         this.weaponRegistry = WeaponRegistry.Instance;
+        this.position = position.clone() as any;
 
         // Initial weapons from registry
         const allWeapons = this.weaponRegistry.getAllWeapons();
@@ -121,21 +125,33 @@ export class Player {
         }
 
         // Visual Mesh
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshStandardMaterial({ color: 0x0000ff });
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.castShadow = true;
+        this.mesh.traverse(obj => {
+            if (obj instanceof THREE.Mesh) {
+                this.innerMesh = obj;
+            }
+        });
+
+        this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
 
         // Physics Body
-        const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+        const box = new THREE.Box3().setFromObject(this.mesh);
+        const size = new THREE.Vector3();
+        box.getSize(size);
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+
+        const halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
+        const shape = new CANNON.Box(halfExtents);
+
         this.body = new CANNON.Body({
-            mass: 3, // Dynamic body
-            position: new CANNON.Vec3(0, 0.5, 0), // Start on ground (0.5 = half height of 1-unit box)
+            mass: 3, // Static body
+            position: new CANNON.Vec3(position.x, halfExtents.y, position.z),
             shape: shape,
-            fixedRotation: true, // Prevent tipping over
+            fixedRotation: true,
             material: physicsMaterial
         });
+
         // Damping to stop sliding
         this.body.linearDamping = 0.9;
         world.addBody(this.body);
@@ -143,7 +159,7 @@ export class Player {
         // Weapon - get damage from the equipped weapon item
         const equippedWeapon = this.inventory.find(item => item.type === 'weapon' && item.isEquipped);
         const weaponDamage = equippedWeapon?.damage || 10;
-        this.weapon = new Weapon(this.mesh, this.currentWeaponType, weaponDamage, scene, world);
+        this.weapon = new Weapon('models/sword.glb', this.currentWeaponType, weaponDamage, scene, world);
     }
 
     equipWeapon(itemId: string) {
@@ -270,7 +286,7 @@ export class Player {
             }
 
             // Sync Mesh with Body
-            this.mesh.position.copy(this.body.position as any);
+            this.syncPosition();
             return; // Skip normal movement during dash
         }
 
@@ -297,7 +313,7 @@ export class Player {
             this.body.velocity.z = 0;
 
             // Sync Mesh with Body
-            this.mesh.position.copy(this.body.position as any);
+            this.syncPosition();
 
             return; // Skip normal combat and movement logic
         }
@@ -327,7 +343,8 @@ export class Player {
         }
 
         // Sync Mesh with Body
-        this.mesh.position.copy(this.body.position as any);
+        this.syncPosition();
+
         // We handle rotation manually for the character facing, 
         // but if we wanted physics rotation we'd copy quaternion.
         // this.mesh.quaternion.copy(this.body.quaternion as any);
@@ -381,10 +398,10 @@ export class Player {
         }
 
         // Update weapon (handles animation and hitbox positioning)
-        this.weapon.update(dt, this.mesh.position, this.mesh.quaternion);
+        this.weapon.update(dt, this.position, this.mesh.quaternion);
 
         // Check for hits if weapon is attacking and has an active hitbox
-        if (this.weapon.isAttacking && this.weapon.attackBody) {
+        if (this.weapon.isAttacking && this.weapon.body) {
             this.checkAttackHits(enemies);
         }
 
@@ -393,14 +410,14 @@ export class Player {
             this.invulnerableTimer -= dt;
             // Flash effect
             if (Math.floor(this.invulnerableTimer * 10) % 2 === 0) {
-                (this.mesh.material as THREE.MeshStandardMaterial).opacity = 0.5;
-                (this.mesh.material as THREE.MeshStandardMaterial).transparent = true;
+                (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 0.5;
+                (this.innerMesh?.material as THREE.MeshStandardMaterial).transparent = true;
             } else {
-                (this.mesh.material as THREE.MeshStandardMaterial).opacity = 1.0;
+                (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 1.0;
             }
         } else {
-            (this.mesh.material as THREE.MeshStandardMaterial).opacity = 1.0;
-            (this.mesh.material as THREE.MeshStandardMaterial).transparent = false;
+            (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 1.0;
+            (this.innerMesh?.material as THREE.MeshStandardMaterial).transparent = false;
         }
 
         // Update level up particles if active
@@ -410,12 +427,18 @@ export class Player {
         this.input.updateState();
     }
 
+    private syncPosition() {
+        const newPosition = new THREE.Vector3(this.body.position.x, this.body.position.y - this.body.aabb.upperBound.y / 2, this.body.position.z);
+        this.position.copy(newPosition);
+        this.mesh.position.copy(newPosition);
+    }
+
     checkAttackHits(enemies: Enemy[]) {
         const damage = this.weapon.damage;
-        const attackBody = this.weapon.attackBody;
+        const attackBody = this.weapon.body;
 
-        // If we have a physics attack hitbox, use it for collision detection
         if (attackBody) {
+            attackBody.position.set(attackBody.position.x, this.position.y + 1.0, attackBody.position.z);
             for (const enemy of enemies) {
                 if (enemy.isDead || enemy.isDying) continue;
 
@@ -424,40 +447,11 @@ export class Player {
 
                 // Check if attack hitbox overlaps with enemy body
                 if (this.checkCollision(attackBody, enemy.body)) {
-                    enemy.takeDamage(damage, this.mesh.position);
+                    enemy.takeDamage(damage, this.position);
                     console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
                     // Mark this enemy as hit for this attack phase
                     this.enemiesHitThisPhase.add(enemy);
-                }
-            }
-        } else {
-            // Fallback to old range/angle based detection if no hitbox exists
-            const attackRange = this.weapon.stats.range;
-            const attackAngle = this.weapon.stats.attackAngle;
-            const playerPos = this.mesh.position;
-            const playerForward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-
-            for (const enemy of enemies) {
-                if (enemy.isDead || enemy.isDying) continue;
-
-                // Skip if we already hit this enemy during this attack phase
-                if (this.enemiesHitThisPhase.has(enemy)) continue;
-
-                const enemyPos = enemy.mesh.position;
-                const dist = playerPos.distanceTo(enemyPos);
-
-                if (dist < attackRange) {
-                    const dirToEnemy = enemyPos.clone().sub(playerPos).normalize();
-                    const angle = playerForward.angleTo(dirToEnemy);
-
-                    if (angle < attackAngle / 2) {
-                        enemy.takeDamage(damage, this.mesh.position);
-                        console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
-
-                        // Mark this enemy as hit for this attack phase
-                        this.enemiesHitThisPhase.add(enemy);
-                    }
                 }
             }
         }
@@ -768,7 +762,7 @@ export class Player {
             if (this.checkCollision(this.body, enemy.body)) {
                 // Deal 3x weapon damage
                 const damage = this.weapon.damage * 3;
-                enemy.takeDamage(damage, this.mesh.position);
+                enemy.takeDamage(damage, this.position);
                 console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
 
                 // Mark this enemy as hit during this dash

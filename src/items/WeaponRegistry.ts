@@ -90,9 +90,8 @@ export class WeaponRegistry {
     /**
      * Get a random weapon of a specific type
      */
-    getRandomWeaponOfType(type: WeaponType): WeaponDefinition | undefined {
+    getRandomWeaponOfType(type: WeaponType): WeaponDefinition {
         const weaponsOfType = this.getWeaponsByType(type);
-        if (weaponsOfType.length === 0) return undefined;
         return weaponsOfType[Math.floor(Math.random() * weaponsOfType.length)];
     }
 

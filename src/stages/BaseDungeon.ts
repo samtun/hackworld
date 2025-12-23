@@ -39,7 +39,7 @@ export abstract class BaseDungeon {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
         this.physicsMaterial = physicsMaterial;
-        this.assetManager = AssetManager.getInstance();
+        this.assetManager = AssetManager.Instance;
     }
 
     /**

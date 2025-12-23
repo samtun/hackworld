@@ -1,5 +1,5 @@
-import { InputManager } from './InputManager';
-import { NPC } from './NPC';
+import { InputManager } from '../InputManager';
+import { Npc } from './Npc';
 
 const COLORS = {
     OVERLAY: 'rgba(0, 0, 0, 0.85)',
@@ -12,10 +12,11 @@ const STYLES = {
     FONT_FAMILY: '"Share Tech", Arial, sans-serif'
 };
 
-export class NPCDialogueManager {
+export class NpcDialogueManager {
+    private static instance: NpcDialogueManager; // Singleton
     container!: HTMLDivElement;
     isVisible: boolean = false;
-    currentNPC: NPC | null = null;
+    currentNpc: Npc | null = null;
     currentLineIndex: number = 0;
 
     // UI Elements
@@ -27,7 +28,11 @@ export class NPCDialogueManager {
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
 
-    constructor() {
+    public static get Instance(): NpcDialogueManager {
+        return this.instance || (this.instance = new this());
+    }
+
+    private constructor() {
         this.createUI();
     }
 
@@ -96,9 +101,9 @@ export class NPCDialogueManager {
     /**
      * Show dialogue with an NPC
      */
-    show(npc: NPC) {
+    show(npc: Npc) {
         this.isVisible = true;
-        this.currentNPC = npc;
+        this.currentNpc = npc;
         this.currentLineIndex = 0;
         this.container.style.display = 'flex';
         this.updateDialogue();
@@ -111,7 +116,7 @@ export class NPCDialogueManager {
      */
     hide() {
         this.isVisible = false;
-        this.currentNPC = null;
+        this.currentNpc = null;
         this.currentLineIndex = 0;
         this.container.style.display = 'none';
     }
@@ -120,13 +125,13 @@ export class NPCDialogueManager {
      * Update dialogue display
      */
     private updateDialogue() {
-        if (!this.currentNPC) return;
+        if (!this.currentNpc) return;
 
-        this.nameBox.innerText = this.currentNPC.name;
-        this.dialogueText.innerText = this.currentNPC.dialogue[this.currentLineIndex];
+        this.nameBox.innerText = this.currentNpc.name;
+        this.dialogueText.innerText = this.currentNpc.dialogue[this.currentLineIndex];
 
         // Update continue hint
-        if (this.currentLineIndex < this.currentNPC.dialogue.length - 1) {
+        if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
             this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Continue | <span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Exit';
         } else {
             this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Close | <span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Exit';
@@ -149,9 +154,9 @@ export class NPCDialogueManager {
 
         // Advance dialogue on select
         if (select && !this.lastSelectState) {
-            if (this.currentNPC) {
+            if (this.currentNpc) {
                 this.currentLineIndex++;
-                if (this.currentLineIndex >= this.currentNPC.dialogue.length) {
+                if (this.currentLineIndex >= this.currentNpc.dialogue.length) {
                     // End of dialogue
                     this.hide();
                 } else {

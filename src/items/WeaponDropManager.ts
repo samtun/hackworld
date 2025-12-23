@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { WeaponDrop } from './WeaponDrop';
 import { WeaponType } from './Weapon';
-import { WeaponRegistry } from './WeaponRegistry';
+import { WeaponDefinition, WeaponRegistry } from './WeaponRegistry';
 import { Enemy } from '../enemies/Enemy';
 import { Player } from '../Player';
 
@@ -32,7 +32,7 @@ export class WeaponDropManager {
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
 
         // Get weapon definition from registry
-        const weaponDef = WeaponRegistry.getRandomWeaponOfType(weaponType);
+        const weaponDef: WeaponDefinition = WeaponRegistry.Instance.getRandomWeaponOfType(weaponType);
         if (!weaponDef) {
             console.warn(`No weapon found for type ${weaponType}`);
             return false;
