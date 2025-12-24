@@ -186,8 +186,8 @@ export class Game {
             this.currentScene = destination;
         }
 
-        // Reset player position to ground level (0.5 = half height of 1-unit box)
-        this.player.body.position.set(0, 0.5, 0);
+        // Reset player position to ground level
+        this.player.move(new CANNON.Vec3(0, 0.5, 0));
         this.player.body.velocity.set(0, 0, 0);
 
         // Update last teleporter position when entering a stage via portal

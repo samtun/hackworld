@@ -433,6 +433,11 @@ export class Player extends BaseMesh {
         this.mesh.position.copy(newPosition);
     }
 
+    move(position: CANNON.Vec3): void {
+        this.body.position.copy(position);
+        this.syncPosition();
+    }
+
     checkAttackHits(enemies: Enemy[]) {
         const damage = this.weapon.damage;
         const attackBody = this.weapon.body;
