@@ -8,9 +8,6 @@ export abstract class BaseMesh {
     constructor(modelAsset: string) {
         // Load model from assets
         const gltfModel = AssetManager.Instance.get(modelAsset);
-        if (!gltfModel) {
-            throw new Error(`BaseMesh: The model ${modelAsset} could not be loaded successfully.`);
-        }
 
         this.mesh = gltfModel.scene;
 
