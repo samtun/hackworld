@@ -106,7 +106,7 @@ export class NewEntity {
 If the entity defines a mesh extend the `DisposableMesh` class and use its disposeMesh method inside of the `cleanup` method like this:
 
 ```
-this.disposeMesh(this.mesh);
+this.disposeMesh();
 ```
 
 ### 3. Code Organization

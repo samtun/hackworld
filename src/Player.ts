@@ -7,7 +7,6 @@ import { Item } from './items/Item';
 import { WeaponItem } from './items/WeaponItem';
 import { CoreItem } from './items/CoreItem';
 import { ChipItem } from './items/ChipItem';
-import { EquippableItem } from './items/EquippableItem';
 import { WeaponDefinition, WeaponRegistry } from './items/WeaponRegistry';
 import { BaseMesh } from './BaseMesh';
 
@@ -170,7 +169,7 @@ export class Player extends BaseMesh {
         const shape = new CANNON.Box(halfExtents);
 
         this.body = new CANNON.Body({
-            mass: 3, // Static body
+            mass: 3, // Dynamic body
             position: new CANNON.Vec3(position.x, halfExtents.y, position.z),
             shape: shape,
             fixedRotation: true,
