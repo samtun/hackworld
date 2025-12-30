@@ -23,20 +23,20 @@ export class Game {
     physicsWorld: CANNON.World;
     defaultMaterial: CANNON.Material;
 
-    player: Player;
+    player!: Player;
     world: World;
     input: InputManager;
     ui: UIManager;
-    inventory: InventoryManager;
-    trader: TraderManager;
-    chipTrader: ChipTraderManager;
-    dungeonSelection: DungeonSelectionManager;
-    npcDialogue: NpcDialogueManager;
-    xDataUpgrade: XDataUpgradeManager;
-    saveManager: SaveManager;
-    playerRegistry: PlayerRegistry;
+    inventory!: InventoryManager;
+    trader!: TraderManager;
+    chipTrader!: ChipTraderManager;
+    dungeonSelection!: DungeonSelectionManager;
+    npcDialogue!: NpcDialogueManager;
+    xDataUpgrade!: XDataUpgradeManager;
+    saveManager!: SaveManager;
+    playerRegistry!: PlayerRegistry;
 
-    clock: THREE.Clock;
+    clock!: THREE.Clock;
     debugOutputFrequency: number = 1
     debugOutputDelta: number = 0
     currentScene: string = 'startScreen';
