@@ -252,7 +252,7 @@ export class ChipTraderManager {
         this.activePanel = 'trader';
         this.needsRender = true;
         // Reset input states to prevent immediate action on open
-        this.lastSelectState = true;
+        import('../ui/UiUtils').then(m => m.resetInputDebounce(this as any));
     }
 
     hide() {

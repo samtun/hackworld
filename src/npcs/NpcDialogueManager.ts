@@ -108,7 +108,7 @@ export class NpcDialogueManager {
         this.container.style.display = 'flex';
         this.updateDialogue();
         // Reset input state to prevent immediate action on open
-        this.lastSelectState = true;
+        import('../ui/UiUtils').then(m => m.resetInputDebounce(this as any));
     }
 
     /**

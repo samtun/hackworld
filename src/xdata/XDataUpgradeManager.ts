@@ -1,5 +1,6 @@
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
+import { resetInputDebounce } from '../ui/UiUtils';
 
 // --- Constants ---
 const COLORS = {
@@ -207,6 +208,8 @@ export class XDataUpgradeManager {
         this.container.style.display = 'flex';
         this.selectedIndex = 0;
         this.needsRender = true;
+        // Reset input debounce state to ignore lingering button presses
+        resetInputDebounce(this as any);
     }
 
     hide() {

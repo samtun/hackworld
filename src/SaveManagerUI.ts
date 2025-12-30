@@ -128,7 +128,7 @@ export class SaveManagerUI {
         this.saveStatusText.style.display = 'none';
 
         // Reset input states to prevent immediate action on open
-        this.lastSelectState = true;
+        import('./ui/UiUtils').then(m => m.resetInputDebounce(this as any));
     }
 
     /**
