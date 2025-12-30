@@ -414,7 +414,17 @@ export class Player extends BaseMesh {
     }
 
     private syncPosition() {
-        const newPosition = new THREE.Vector3(this.body.position.x, this.body.position.y - this.body.aabb.upperBound.y / 2, this.body.position.z);
+        // Align the visual mesh with the physics body using the body's shape dimensions,
+        // not the world-space AABB, to avoid incorrect offsets as the player moves.
+        let y = this.body.position.y;
+        const primaryShape = this.body.shapes[0];
+
+        if (primaryShape instanceof CANNON.Box) {
+            // Place the mesh origin at the bottom of the box by subtracting half the height.
+            y = this.body.position.y - primaryShape.halfExtents.y;
+        }
+
+        const newPosition = new THREE.Vector3(this.body.position.x, y, this.body.position.z);
         this.position.copy(newPosition);
         this.mesh.position.copy(newPosition);
     }
