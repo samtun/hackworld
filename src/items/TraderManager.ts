@@ -1,6 +1,9 @@
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
-import { Item } from './InventoryManager';
+import { Item } from './Item';
+import { WeaponItem } from './WeaponItem';
+import { CoreItem } from './CoreItem';
+import { EquippableItem } from './EquippableItem';
 import { ItemDetailsPanel } from '../ItemDetailsPanel';
 import { WeaponRegistry } from './WeaponRegistry';
 import { CoreRegistry } from './CoreRegistry';
@@ -83,30 +86,27 @@ export class TraderManager {
 
         // Add weapons from registry
         for (const weaponDef of traderWeapons) {
-            this.traderInventory.push({
-                id: crypto.randomUUID(),
-                name: weaponDef.name,
-                type: 'weapon',
-                weaponType: weaponDef.type,
-                damage: weaponDef.baseDamage,
-                buyPrice: weaponDef.baseBuyPrice,
-                sellPrice: weaponDef.baseSellPrice,
-                isEquipped: false
-            });
+            this.traderInventory.push(new WeaponItem(
+                crypto.randomUUID(),
+                weaponDef.name,
+                weaponDef.baseBuyPrice,
+                weaponDef.baseSellPrice,
+                weaponDef.type,
+                weaponDef.baseDamage,
+                weaponDef.model
+            ));
         }
 
         // Add cores from registry
         const allCores = this.coreRegistry.getAllCores();
         for (const coreDef of allCores) {
-            this.traderInventory.push({
-                id: crypto.randomUUID(),
-                name: coreDef.name,
-                type: 'core',
-                coreStats: coreDef.stats,
-                buyPrice: coreDef.buyPrice,
-                sellPrice: coreDef.sellPrice,
-                isEquipped: false
-            });
+            this.traderInventory.push(new CoreItem(
+                crypto.randomUUID(),
+                coreDef.name,
+                coreDef.buyPrice,
+                coreDef.sellPrice,
+                coreDef.stats
+            ));
         }
     }
 
@@ -374,7 +374,7 @@ export class TraderManager {
             });
 
             // Add triangle overlay for equipped items
-            if (item.isEquipped) {
+            if (item instanceof EquippableItem && item.isEquipped) {
                 const triangle = document.createElement('div');
                 triangle.style.position = 'absolute';
                 triangle.style.top = '0';
@@ -474,7 +474,8 @@ export class TraderManager {
                 if (player.money >= item.buyPrice) {
                     // Transfer item to player
                     player.money -= item.buyPrice;
-                    const newItem = { ...item, id: `p${Date.now()}`, isEquipped: false }; // Give it a unique ID
+                    const newItem = item.clone(`p${Date.now()}`);
+                    if (newItem instanceof EquippableItem) newItem.isEquipped = false;
                     player.inventory.push(newItem);
 
                     // Remove item from trader inventory
@@ -497,7 +498,7 @@ export class TraderManager {
             const item = player.inventory[this.selectedIndex];
             if (item && item.sellPrice !== undefined) {
                 // Check if item is equipped
-                if (item.isEquipped) {
+                if (item instanceof EquippableItem && item.isEquipped) {
                     // Shake animation for equipped item
                     console.log(`Cannot sell equipped item: ${item.name}`);
                     this.shakeItem(this.selectedIndex);
@@ -506,7 +507,8 @@ export class TraderManager {
 
                 // Transfer money to player and add item to trader inventory
                 player.money += item.sellPrice;
-                const soldItem = { ...item, id: `t${Date.now()}`, isEquipped: false }; // Give it a unique trader ID
+                const soldItem = item.clone(`t${Date.now()}`);
+                if (soldItem instanceof EquippableItem) soldItem.isEquipped = false;
                 this.traderInventory.push(soldItem); // Add to trader inventory
                 player.inventory.splice(this.selectedIndex, 1);
                 console.log(`Sold ${item.name} for ${item.sellPrice} bits`);

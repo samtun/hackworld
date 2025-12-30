@@ -5,6 +5,7 @@ import { WeaponType } from './Weapon';
 import { WeaponDefinition, WeaponRegistry } from './WeaponRegistry';
 import { Enemy } from '../enemies/Enemy';
 import { Player } from '../Player';
+import { WeaponItem } from './WeaponItem';
 
 /**
  * WeaponDropManager - manages all weapon drops in the world
@@ -128,17 +129,20 @@ export class WeaponDropManager {
         drop: WeaponDrop,
         player: Player
     ): void {
+        // Get model from registry (WeaponDrop doesn't store model path currently)
+        const weaponDef = WeaponRegistry.Instance.getWeaponByType(drop.weaponType);
+        const model = weaponDef ? weaponDef.model : 'models/sword.glb'; // Fallback
+
         // Add weapon to player inventory
-        const newItem = {
-            id: crypto.randomUUID(),
-            name: drop.weaponName,
-            type: 'weapon' as const,
-            weaponType: drop.weaponType,
-            damage: drop.damage,
-            buyPrice: drop.buyPrice,
-            sellPrice: drop.sellPrice,
-            isEquipped: false
-        };
+        const newItem = new WeaponItem(
+            crypto.randomUUID(),
+            drop.weaponName,
+            drop.buyPrice,
+            drop.sellPrice,
+            drop.weaponType,
+            drop.damage,
+            model
+        );
 
         player.inventory.push(newItem);
         console.log(`Picked up ${drop.weaponName} (Damage: ${drop.damage})`);

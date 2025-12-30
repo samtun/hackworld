@@ -31,26 +31,14 @@ import { WeaponType } from './Weapon';
 import { CoreStats } from './Core';
 import { ChipType, ChipStats } from './Chip';
 import { ItemDetailsPanel } from '../ItemDetailsPanel';
+import { Item } from './Item';
+import { EquippableItem } from './EquippableItem';
+import { WeaponItem } from './WeaponItem';
+import { CoreItem } from './CoreItem';
+import { ChipItem } from './ChipItem';
 
-export interface Item {
-    id: string;
-    name: string;
-    type: 'weapon' | 'core' | 'chip';
-    weaponType?: WeaponType; // For weapon items
-    damage?: number; // For weapon items - actual damage value
-    coreStats?: CoreStats; // For core items - stat modifiers applied when equipped
-    chipType?: ChipType; // For chip items
-    chipStats?: ChipStats; // For chip items - modifiers applied when equipped
-    stats?: {
-        strength?: number;
-        defense?: number;
-        hp?: number;
-        tp?: number;
-    };
-    buyPrice?: number;  // Price to buy from trader
-    sellPrice?: number; // Price to sell to trader
-    isEquipped?: boolean; // Whether this item is currently equipped
-}
+export { Item }; // Re-export Item for other files that might import it from here
+
 
 export class InventoryManager {
     private static instance: InventoryManager; // Singleton
@@ -290,7 +278,7 @@ export class InventoryManager {
             });
 
             // Add triangle overlay for equipped items
-            if (item.isEquipped) {
+            if (item instanceof EquippableItem && item.isEquipped) {
                 const triangle = document.createElement('div');
                 triangle.style.position = 'absolute';
                 triangle.style.top = '0';
@@ -342,19 +330,9 @@ export class InventoryManager {
         // Select/Equip item (with debouncing)
         if (select && !this.lastSelectState) {
             const item = player.inventory[this.selectedIndex];
-            if (item && item.type === 'weapon' && item.weaponType) {
-                player.equipWeapon(item.id);
-                console.log(`Equipped weapon: ${item.name} (${item.weaponType})`);
-                // Trigger re-render to update equipped indicator immediately
-                this.needsRender = true;
-            } else if (item && item.type === 'core' && item.coreStats) {
-                player.equipCore(item.id);
-                console.log(`Equipped core: ${item.name}`);
-                // Trigger re-render to update equipped indicator immediately
-                this.needsRender = true;
-            } else if (item && item.type === 'chip' && item.chipStats) {
-                player.equipChip(item.id);
-                console.log(`Equipped chip: ${item.name}`);
+            if (item instanceof EquippableItem) {
+                item.equip(player);
+                console.log(`Equipped item: ${item.name}`);
                 // Trigger re-render to update equipped indicator immediately
                 this.needsRender = true;
             }

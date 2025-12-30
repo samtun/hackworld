@@ -6,6 +6,7 @@ import { WeaponType } from './Weapon';
 export interface WeaponDefinition {
     id: string;
     name: string;
+    model: string;
     type: WeaponType;
     baseDamage: number;
     baseBuyPrice: number;
@@ -21,6 +22,7 @@ export class WeaponRegistry {
         {
             id: 'aegis_sword',
             name: 'Aegis Sword',
+            model: 'models/sword.glb',
             type: WeaponType.SWORD,
             baseDamage: 10,
             baseBuyPrice: 100,
@@ -29,6 +31,7 @@ export class WeaponRegistry {
         {
             id: 'rune_blade',
             name: 'Rune Blade',
+            model: 'models/double_sword.glb',
             type: WeaponType.DUAL_BLADE,
             baseDamage: 7,
             baseBuyPrice: 150,
@@ -37,6 +40,7 @@ export class WeaponRegistry {
         {
             id: 'fierce_lance',
             name: 'Fierce Lance',
+            model: 'models/lance.glb',
             type: WeaponType.LANCE,
             baseDamage: 12,
             baseBuyPrice: 120,
@@ -45,6 +49,7 @@ export class WeaponRegistry {
         {
             id: 'battle_hawk',
             name: 'Battle Hawk',
+            model: 'models/hammer.glb',
             type: WeaponType.HAMMER,
             baseDamage: 18,
             baseBuyPrice: 180,

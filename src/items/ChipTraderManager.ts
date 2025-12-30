@@ -1,6 +1,8 @@
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
-import { Item } from './InventoryManager';
+import { Item } from './Item';
+import { ChipItem } from './ChipItem';
+import { EquippableItem } from './EquippableItem';
 import { ItemDetailsPanel } from '../ItemDetailsPanel';
 import { ChipRegistry } from './ChipRegistry';
 
@@ -76,16 +78,14 @@ export class ChipTraderManager {
         // Add chips from registry
         const allChips = this.chipRegistry.getAllChips();
         for (const chipDef of allChips) {
-            this.traderInventory.push({
-                id: crypto.randomUUID(),
-                name: chipDef.name,
-                type: 'chip',
-                chipType: chipDef.type,
-                chipStats: chipDef.stats,
-                buyPrice: chipDef.buyPrice,
-                sellPrice: chipDef.sellPrice,
-                isEquipped: false
-            });
+            this.traderInventory.push(new ChipItem(
+                crypto.randomUUID(),
+                chipDef.name,
+                chipDef.buyPrice,
+                chipDef.sellPrice,
+                chipDef.type,
+                chipDef.stats
+            ));
         }
     }
 
@@ -304,7 +304,7 @@ export class ChipTraderManager {
         );
 
         // Update Player List - only show chips
-        const playerChips = player.inventory.filter(item => item.type === 'chip');
+        const playerChips = player.inventory.filter(item => item instanceof ChipItem);
         this.renderItemList(
             this.playerList,
             playerChips,
@@ -354,7 +354,7 @@ export class ChipTraderManager {
             });
 
             // Add triangle overlay for equipped items
-            if (item.isEquipped) {
+            if (item instanceof EquippableItem && item.isEquipped) {
                 const triangle = document.createElement('div');
                 triangle.style.position = 'absolute';
                 triangle.style.top = '0';
@@ -411,7 +411,7 @@ export class ChipTraderManager {
 
         // Navigate down (with debouncing)
         if (navigateDown && !this.lastNavigateDownState) {
-            const playerChips = player.inventory.filter(item => item.type === 'chip');
+            const playerChips = player.inventory.filter(item => item instanceof ChipItem);
             const maxIndex = this.activePanel === 'trader'
                 ? this.traderInventory.length - 1
                 : playerChips.length - 1;
@@ -455,7 +455,8 @@ export class ChipTraderManager {
                 if (player.money >= item.buyPrice) {
                     // Transfer item to player
                     player.money -= item.buyPrice;
-                    const newItem = { ...item, id: `p${Date.now()}`, isEquipped: false }; // Give it a unique ID
+                    const newItem = item.clone(`p${Date.now()}`);
+                    if (newItem instanceof EquippableItem) newItem.isEquipped = false;
                     player.inventory.push(newItem);
 
                     // Remove item from trader inventory
@@ -475,11 +476,11 @@ export class ChipTraderManager {
             }
         } else {
             // Sell to trader
-            const playerChips = player.inventory.filter(item => item.type === 'chip');
+            const playerChips = player.inventory.filter(item => item instanceof ChipItem);
             const item = playerChips[this.selectedIndex];
             if (item && item.sellPrice !== undefined) {
                 // Check if item is equipped
-                if (item.isEquipped) {
+                if (item instanceof EquippableItem && item.isEquipped) {
                     // Shake animation for equipped item
                     console.log(`Cannot sell equipped item: ${item.name}`);
                     this.shakeItem(this.selectedIndex);
@@ -488,7 +489,8 @@ export class ChipTraderManager {
 
                 // Transfer money to player and add item to trader inventory
                 player.money += item.sellPrice;
-                const soldItem = { ...item, id: `t${Date.now()}`, isEquipped: false }; // Give it a unique trader ID
+                const soldItem = item.clone(`t${Date.now()}`);
+                if (soldItem instanceof EquippableItem) soldItem.isEquipped = false;
                 this.traderInventory.push(soldItem); // Add to trader inventory
 
                 // Find and remove the item from player's full inventory

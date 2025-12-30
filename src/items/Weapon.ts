@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { AssetManager } from '../AssetManager.ts';
 import { BaseMesh } from '../BaseMesh.ts';
 
