@@ -33,7 +33,7 @@ export class WeaponDropManager {
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
 
         // Get weapon definition from registry
-        const weaponDef: WeaponDefinition = WeaponRegistry.Instance.getRandomWeaponOfType(weaponType);
+        const weaponDef = WeaponRegistry.Instance.getRandomWeaponOfType(weaponType);
         if (!weaponDef) {
             console.warn(`No weapon found for type ${weaponType}`);
             return false;

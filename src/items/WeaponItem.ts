@@ -32,7 +32,7 @@ export class WeaponItem extends EquippableItem {
         this.isEquipped = true;
     }
 
-    unequip(player: Player): void {
+    unequip(_: Player): void {
         this.isEquipped = false;
         // Logic to unequip is handled by equipping another weapon or explicitly removing
     }

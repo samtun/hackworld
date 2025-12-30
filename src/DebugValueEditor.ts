@@ -2,6 +2,11 @@ import { Player } from './Player';
 import { WeaponRegistry } from './items/WeaponRegistry';
 import { CoreRegistry } from './items/CoreRegistry';
 import { ChipRegistry } from './items/ChipRegistry';
+import { Item } from './items/InventoryManager';
+import { WeaponItem } from './items/WeaponItem';
+import { WeaponType } from './items/Weapon';
+import { CoreItem } from './items/CoreItem';
+import { ChipItem } from './items/ChipItem';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -256,16 +261,8 @@ export class DebugValueEditor {
                 if (weapon) {
                     // Generate unique ID using timestamp and random number
                     const newId = `debug_weapon_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    this.player.inventory.push({
-                        id: newId,
-                        name: weapon.name,
-                        type: 'weapon',
-                        weaponType: weapon.type,
-                        damage: damage,
-                        buyPrice: weapon.baseBuyPrice,
-                        sellPrice: weapon.baseSellPrice,
-                        isEquipped: false
-                    });
+                    const newItem = new WeaponItem(newId, weapon.name, weapon.baseBuyPrice, weapon.baseSellPrice, weapon.type, weapon.baseDamage, weapon.model);
+                    this.player.inventory.push(newItem);
                     console.log(`Added weapon: ${weapon.name} with ${damage} damage`);
 
                     // Reset selection
@@ -331,15 +328,8 @@ export class DebugValueEditor {
                 if (core) {
                     // Generate unique ID using timestamp and random number
                     const newId = `debug_core_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    this.player.inventory.push({
-                        id: newId,
-                        name: core.name,
-                        type: 'core',
-                        coreStats: core.stats,
-                        buyPrice: core.buyPrice,
-                        sellPrice: core.sellPrice,
-                        isEquipped: false
-                    });
+                    const newCore = new CoreItem(newId, core.name, core.buyPrice, core.sellPrice, core.stats);
+                    this.player.inventory.push(newCore);
                     console.log(`Added core: ${core.name}`);
 
                     // Reset selection
@@ -412,16 +402,8 @@ export class DebugValueEditor {
                 if (chip) {
                     // Generate unique ID using timestamp and random number
                     const newId = `debug_chip_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    this.player.inventory.push({
-                        id: newId,
-                        name: chip.name,
-                        type: 'chip',
-                        chipType: chip.type,
-                        chipStats: chip.stats,
-                        buyPrice: chip.buyPrice,
-                        sellPrice: chip.sellPrice,
-                        isEquipped: false
-                    });
+                    const newChip = new ChipItem(newId, chip.name, chip.buyPrice, chip.sellPrice, chip.type, chip.stats);
+                    this.player.inventory.push(newChip);
                     console.log(`Added chip: ${chip.name}`);
 
                     // Reset selection
