@@ -7,7 +7,7 @@ import { Item } from './items/Item';
 import { WeaponItem } from './items/WeaponItem';
 import { CoreItem } from './items/CoreItem';
 import { ChipItem } from './items/ChipItem';
-import { WeaponDefinition, WeaponRegistry } from './items/WeaponRegistry';
+import { WeaponRegistry } from './items/WeaponRegistry';
 import { BaseMesh } from './BaseMesh';
 
 export class Player extends BaseMesh {

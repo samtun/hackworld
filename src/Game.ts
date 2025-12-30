@@ -168,7 +168,7 @@ export class Game {
         this.xDataUpgrade = XDataUpgradeManager.Instance;
         this.chipTrader = ChipTraderManager.Instance;
         this.dungeonSelection = DungeonSelectionManager.Instance;
-        this.trader = TraderManager.Instance
+        this.trader = TraderManager.Instance;
         this.saveManager = SaveManager.Instance;
         this.clock = new THREE.Clock();
 

@@ -1,6 +1,6 @@
 import { EquippableItem } from './EquippableItem';
 import { Player } from '../Player';
-import { WeaponType, Weapon } from './Weapon';
+import { WeaponType } from './Weapon';
 
 export class WeaponItem extends EquippableItem {
     weaponType: WeaponType;
