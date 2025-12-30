@@ -163,7 +163,7 @@ export class Player extends BaseMesh {
         const shape = new CANNON.Box(halfExtents);
 
         this.body = new CANNON.Body({
-            mass: 3, // Static body
+            mass: 3, // Dynamic body
             position: new CANNON.Vec3(position.x, halfExtents.y, position.z),
             shape: shape,
             fixedRotation: true,
