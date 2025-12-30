@@ -149,6 +149,13 @@ export class Player extends BaseMesh {
             }
         });
 
+        if (!this.innerMesh) {
+            // Log a warning so missing effects are not silent failures.
+            console.warn(
+                '[Player] No THREE.Mesh found in player model hierarchy; some visual effects may not render.'
+            );
+        }
+
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
 
