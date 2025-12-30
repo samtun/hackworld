@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { WeaponDrop } from './WeaponDrop';
 import { WeaponType } from './Weapon';
-import { WeaponDefinition, WeaponRegistry } from './WeaponRegistry';
+import { WeaponRegistry } from './WeaponRegistry';
 import { Enemy } from '../enemies/Enemy';
 import { Player } from '../Player';
 import { WeaponItem } from './WeaponItem';

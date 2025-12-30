@@ -2,9 +2,7 @@ import { Player } from './Player';
 import { WeaponRegistry } from './items/WeaponRegistry';
 import { CoreRegistry } from './items/CoreRegistry';
 import { ChipRegistry } from './items/ChipRegistry';
-import { Item } from './items/InventoryManager';
 import { WeaponItem } from './items/WeaponItem';
-import { WeaponType } from './items/Weapon';
 import { CoreItem } from './items/CoreItem';
 import { ChipItem } from './items/ChipItem';
 
