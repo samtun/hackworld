@@ -27,18 +27,11 @@ const STYLES = {
     SLOT_GAP: '15px'
 };
 
-import { WeaponType } from './Weapon';
-import { CoreStats } from './Core';
-import { ChipType, ChipStats } from './Chip';
 import { ItemDetailsPanel } from '../ItemDetailsPanel';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
-import { WeaponItem } from './WeaponItem';
-import { CoreItem } from './CoreItem';
-import { ChipItem } from './ChipItem';
 
 export { Item }; // Re-export Item for other files that might import it from here
-
 
 export class InventoryManager {
     private static instance: InventoryManager; // Singleton
