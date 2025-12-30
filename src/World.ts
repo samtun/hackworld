@@ -202,7 +202,7 @@ export class World {
         }
 
         // Update weapon drops
-        this.weaponDropManager.update(dt, cameraPosition, player.mesh.position);
+        this.weaponDropManager.update(dt, cameraPosition, player.position);
 
         // Update X-Data entities
         for (let i = this.xDataEntities.length - 1; i >= 0; i--) {
