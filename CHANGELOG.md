@@ -1,3 +1,16 @@
+## [1.6.3](https://github.com/samtun/hackworld/compare/v1.6.2...v1.6.3) (2025-12-31)
+
+
+### Bug Fixes
+
+* fix comment in src/Player.ts ([1b3c552](https://github.com/samtun/hackworld/commit/1b3c552f1b42254324f419b1050e0af415dff8d1))
+* fix double interaction on XDataManager ([af20c61](https://github.com/samtun/hackworld/commit/af20c612ab67747a268e56e1e1743da618d4ae97))
+* fix errors in code ([77149c9](https://github.com/samtun/hackworld/commit/77149c979dec0d53d0102cc4730f4456874baadf))
+* make uninitialized properties in Game.ts force initialized ([4cf17b3](https://github.com/samtun/hackworld/commit/4cf17b3cd3a9d50b8cf1e320cdfe7b9d54f2ca99))
+* remove unused imports ([f85f1f3](https://github.com/samtun/hackworld/commit/f85f1f3ae201ac592c1e78c8f5a93be05a72f3f8))
+* Update src/items/WeaponRegistry.ts ([638752a](https://github.com/samtun/hackworld/commit/638752a5c6bf9356e76b1c9d878de7aaaa01d57e))
+* use improved position calculation for player ([95feb23](https://github.com/samtun/hackworld/commit/95feb2389abc15af73889af70544447e6de5de6a))
+
 ## [1.6.2](https://github.com/samtun/hackworld/compare/v1.6.1...v1.6.2) (2025-12-21)
 
 
