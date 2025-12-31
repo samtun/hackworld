@@ -1,5 +1,6 @@
 import { InputManager } from '../InputManager';
 import { Npc } from './Npc';
+import { resetInputDebounce } from '../ui/UiUtils';
 
 const COLORS = {
     OVERLAY: 'rgba(0, 0, 0, 0.85)',
@@ -108,7 +109,7 @@ export class NpcDialogueManager {
         this.container.style.display = 'flex';
         this.updateDialogue();
         // Reset input state to prevent immediate action on open
-        import('../ui/UiUtils').then(m => m.resetInputDebounce(this as any));
+        resetInputDebounce(this as any);
     }
 
     /**

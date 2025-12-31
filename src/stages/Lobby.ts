@@ -5,7 +5,7 @@ import { Player } from '../Player';
 import { ChipTraderManager } from '../items/ChipTraderManager';
 import { SaveManager } from '../SaveManager';
 import { XDataUpgradeManager } from '../xdata/XDataUpgradeManager';
-import { TraderManager } from '../items/TraderManager';
+import { WeaponTrader } from '../items/WeaponTrader';
 import { Npc } from '../npcs/Npc';
 
 export class Lobby extends BaseDungeon {
@@ -37,7 +37,7 @@ export class Lobby extends BaseDungeon {
     chipTraderNpc?: Npc;
 
     // Managers
-    private weaponTraderManager?: TraderManager;
+    private weaponTraderManager?: WeaponTrader;
     private chipTraderManager?: ChipTraderManager;
     private saveManager?: SaveManager;
     private xDataUpgradeManager?: XDataUpgradeManager;
@@ -151,7 +151,7 @@ export class Lobby extends BaseDungeon {
             "Have a look at my fine collection of weapons."
         ];
 
-        this.weaponTraderManager = TraderManager.Instance;
+        this.weaponTraderManager = WeaponTrader.Instance;
         this.weaponTraderNpc = new Npc(
             this.scene,
             this.physicsWorld,
