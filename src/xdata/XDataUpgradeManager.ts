@@ -1,5 +1,6 @@
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
+import { resetInputDebounce } from '../ui/UiUtils';
 
 // --- Constants ---
 const COLORS = {
@@ -35,6 +36,8 @@ interface StatInfo {
 }
 
 export class XDataUpgradeManager {
+    private static instance: XDataUpgradeManager // Singleton
+
     container!: HTMLDivElement;
     isVisible: boolean = false;
 
@@ -61,8 +64,12 @@ export class XDataUpgradeManager {
         { type: 'tp', label: 'TP', description: 'Increases max tech points', upgradeEffect: '+5 per upgrade' }
     ];
 
-    constructor() {
+    private constructor() {
         this.createUI();
+    }
+
+    public static get Instance(): XDataUpgradeManager {
+        return this.instance || (this.instance = new this());
     }
 
     private createUI() {
@@ -201,6 +208,8 @@ export class XDataUpgradeManager {
         this.container.style.display = 'flex';
         this.selectedIndex = 0;
         this.needsRender = true;
+        // Reset input debounce state to ignore lingering button presses
+        resetInputDebounce(this as any);
     }
 
     hide() {

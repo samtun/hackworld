@@ -2,6 +2,9 @@ import { Player } from './Player';
 import { WeaponRegistry } from './items/WeaponRegistry';
 import { CoreRegistry } from './items/CoreRegistry';
 import { ChipRegistry } from './items/ChipRegistry';
+import { WeaponItem } from './items/WeaponItem';
+import { CoreItem } from './items/CoreItem';
+import { ChipItem } from './items/ChipItem';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -16,15 +19,23 @@ export class DebugValueEditor {
 
     // Track input elements for updating
     private inputElements: Map<string, HTMLInputElement> = new Map();
-    
+
     // Store player reference for button callbacks
     private player: Player | null = null;
 
+    private weaponRegistry: WeaponRegistry;
+    private chipRegistry: ChipRegistry;
+    private coreRegistry: CoreRegistry;
+
     constructor() {
+        this.weaponRegistry = WeaponRegistry.Instance;
+        this.chipRegistry = ChipRegistry.Instance;
+        this.coreRegistry = CoreRegistry.Instance;
+
         this.container = this.createContainer();
         this.toggleButton = this.createToggleButton();
         this.contentPanel = this.createContentPanel();
-        
+
         this.container.appendChild(this.toggleButton);
         this.container.appendChild(this.contentPanel);
         document.body.appendChild(this.container);
@@ -60,9 +71,9 @@ export class DebugValueEditor {
         button.style.fontWeight = 'bold';
         button.style.userSelect = 'none';
         button.innerHTML = '▼';
-        
+
         button.addEventListener('click', () => this.toggle());
-        
+
         return button;
     }
 
@@ -168,7 +179,7 @@ export class DebugValueEditor {
     }
 
     private createWeaponSelector(parent: HTMLElement): void {
-        const weapons = WeaponRegistry.getAllWeapons();
+        const weapons = this.weaponRegistry.getAllWeapons();
 
         const selectRow = document.createElement('div');
         selectRow.style.marginBottom = '10px';
@@ -242,24 +253,16 @@ export class DebugValueEditor {
         addButton.addEventListener('click', () => {
             const weaponId = select.value;
             const damage = parseInt(damageInput.value);
-            
+
             if (weaponId && !isNaN(damage) && this.player) {
-                const weapon = WeaponRegistry.getWeaponById(weaponId);
+                const weapon = this.weaponRegistry.getWeaponById(weaponId);
                 if (weapon) {
                     // Generate unique ID using timestamp and random number
                     const newId = `debug_weapon_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    this.player.inventory.push({
-                        id: newId,
-                        name: weapon.name,
-                        type: 'weapon',
-                        weaponType: weapon.type,
-                        damage: damage,
-                        buyPrice: weapon.baseBuyPrice,
-                        sellPrice: weapon.baseSellPrice,
-                        isEquipped: false
-                    });
+                    const newItem = new WeaponItem(newId, weapon.name, weapon.baseBuyPrice, weapon.baseSellPrice, weapon.type, weapon.baseDamage, weapon.model);
+                    this.player.inventory.push(newItem);
                     console.log(`Added weapon: ${weapon.name} with ${damage} damage`);
-                    
+
                     // Reset selection
                     select.value = '';
                     damageInput.value = '10';
@@ -271,7 +274,7 @@ export class DebugValueEditor {
     }
 
     private createCoreSelector(parent: HTMLElement): void {
-        const cores = CoreRegistry.getAllCores();
+        const cores = this.coreRegistry.getAllCores();
 
         const select = document.createElement('select');
         select.style.width = '100%';
@@ -317,23 +320,16 @@ export class DebugValueEditor {
 
         addButton.addEventListener('click', () => {
             const coreId = select.value;
-            
+
             if (coreId && this.player) {
-                const core = CoreRegistry.getCoreById(coreId);
+                const core = this.coreRegistry.getCoreById(coreId);
                 if (core) {
                     // Generate unique ID using timestamp and random number
                     const newId = `debug_core_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    this.player.inventory.push({
-                        id: newId,
-                        name: core.name,
-                        type: 'core',
-                        coreStats: core.stats,
-                        buyPrice: core.buyPrice,
-                        sellPrice: core.sellPrice,
-                        isEquipped: false
-                    });
+                    const newCore = new CoreItem(newId, core.name, core.buyPrice, core.sellPrice, core.stats);
+                    this.player.inventory.push(newCore);
                     console.log(`Added core: ${core.name}`);
-                    
+
                     // Reset selection
                     select.value = '';
                 }
@@ -344,7 +340,7 @@ export class DebugValueEditor {
     }
 
     private createChipSelector(parent: HTMLElement): void {
-        const chips = ChipRegistry.getAllChips();
+        const chips = this.chipRegistry.getAllChips();
 
         const select = document.createElement('select');
         select.style.width = '100%';
@@ -398,24 +394,16 @@ export class DebugValueEditor {
 
         addButton.addEventListener('click', () => {
             const chipId = select.value;
-            
+
             if (chipId && this.player) {
-                const chip = ChipRegistry.getChipById(chipId);
+                const chip = this.chipRegistry.getChipById(chipId);
                 if (chip) {
                     // Generate unique ID using timestamp and random number
                     const newId = `debug_chip_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    this.player.inventory.push({
-                        id: newId,
-                        name: chip.name,
-                        type: 'chip',
-                        chipType: chip.type,
-                        chipStats: chip.stats,
-                        buyPrice: chip.buyPrice,
-                        sellPrice: chip.sellPrice,
-                        isEquipped: false
-                    });
+                    const newChip = new ChipItem(newId, chip.name, chip.buyPrice, chip.sellPrice, chip.type, chip.stats);
+                    this.player.inventory.push(newChip);
                     console.log(`Added chip: ${chip.name}`);
-                    
+
                     // Reset selection
                     select.value = '';
                 }
@@ -427,7 +415,7 @@ export class DebugValueEditor {
 
     toggle(): void {
         this.isExpanded = !this.isExpanded;
-        
+
         if (this.isExpanded) {
             this.contentPanel.style.display = 'block';
             this.toggleButton.innerHTML = '▲';

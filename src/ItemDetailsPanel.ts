@@ -1,4 +1,7 @@
-import { Item } from './InventoryManager';
+import { Item } from './items/Item';
+import { WeaponItem } from './items/WeaponItem';
+import { CoreItem } from './items/CoreItem';
+import { ChipItem } from './items/ChipItem';
 import { WeaponType } from './items/Weapon';
 
 interface ItemDetail {
@@ -38,28 +41,22 @@ export class ItemDetailsPanel {
      * Get item details as an array of label-value pairs
      */
     private static getItemDetails(item: Item): ItemDetail[] {
-        switch (item.type) {
-            case 'weapon':
-                return this.getWeaponDetails(item);
-            case 'core':
-                return this.getCoreDetails(item);
-            case 'chip':
-                return this.getChipDetails(item);
-            default:
-                return [];
+        if (item instanceof WeaponItem) {
+            return this.getWeaponDetails(item);
+        } else if (item instanceof CoreItem) {
+            return this.getCoreDetails(item);
+        } else if (item instanceof ChipItem) {
+            return this.getChipDetails(item);
         }
+        return [];
     }
 
     /**
      * Get details for weapon items
      */
-    private static getWeaponDetails(item: Item): ItemDetail[] {
-        if (!item.weaponType) {
-            return [];
-        }
-
+    private static getWeaponDetails(item: WeaponItem): ItemDetail[] {
         const typeLabel = this.getWeaponTypeLabel(item.weaponType);
-        const damage = item.damage || 10; // Use item's damage value
+        const damage = item.damage;
 
         return [
             { label: 'Type', value: typeLabel },
@@ -70,16 +67,12 @@ export class ItemDetailsPanel {
     /**
      * Get details for core items
      */
-    private static getCoreDetails(item: Item): ItemDetail[] {
-        if (!item.coreStats) {
-            return [];
-        }
-
+    private static getCoreDetails(item: CoreItem): ItemDetail[] {
         const details: ItemDetail[] = [];
 
-        this.addStatIfPresent(details, 'Strength', item.coreStats.strength);
-        this.addStatIfPresent(details, 'Defense', item.coreStats.defense);
-        this.addStatIfPresent(details, 'Speed', item.coreStats.speed);
+        this.addStatIfPresent(details, 'Strength', item.stats.strength);
+        this.addStatIfPresent(details, 'Defense', item.stats.defense);
+        this.addStatIfPresent(details, 'Speed', item.stats.speed);
 
         return details;
     }
@@ -97,20 +90,16 @@ export class ItemDetailsPanel {
     /**
      * Get details for chip items
      */
-    private static getChipDetails(item: Item): ItemDetail[] {
-        if (!item.chipStats) {
-            return [];
-        }
-
+    private static getChipDetails(item: ChipItem): ItemDetail[] {
         const details: ItemDetail[] = [];
 
-        if (item.chipStats.weaponRangeMultiplier !== undefined) {
-            const percentIncrease = ((item.chipStats.weaponRangeMultiplier - 1) * 100).toFixed(0);
+        if (item.stats.weaponRangeMultiplier !== undefined) {
+            const percentIncrease = ((item.stats.weaponRangeMultiplier - 1) * 100).toFixed(0);
             details.push({ label: 'Weapon Range', value: `+${percentIncrease}%` });
         }
 
-        if (item.chipStats.walkSpeedMultiplier !== undefined) {
-            const percentIncrease = ((item.chipStats.walkSpeedMultiplier - 1) * 100).toFixed(0);
+        if (item.stats.walkSpeedMultiplier !== undefined) {
+            const percentIncrease = ((item.stats.walkSpeedMultiplier - 1) * 100).toFixed(0);
             details.push({ label: 'Walk Speed', value: `+${percentIncrease}%` });
         }
 

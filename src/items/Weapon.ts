@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
-import { AssetManager } from '../AssetManager';
+import { AssetManager } from '../AssetManager.ts';
+import { BaseMesh } from '../BaseMesh.ts';
 
 export enum WeaponType {
     SWORD = 'sword',
@@ -48,10 +48,8 @@ export const WEAPON_CONFIGS: Record<WeaponType, WeaponStats> = {
     }
 };
 
-export class Weapon {
-    mesh: THREE.Group;
-    leftMesh?: THREE.Group; // For dual blade - left hand weapon
-    rightMesh?: THREE.Group; // For dual blade - right hand weapon
+export class Weapon extends BaseMesh {
+    body?: CANNON.Body;
     isAttacking: boolean = false;
     private attackTimer: number = 0;
     private baseRotation: THREE.Euler;
@@ -61,52 +59,28 @@ export class Weapon {
     weaponType: WeaponType;
     stats: WeaponStats;
     damage: number; // Actual damage value for this weapon instance
-    private loader: GLTFLoader;
+
     private assetManager: AssetManager;
     private attackPhase: number = 0; // For multi-phase attacks like dual blade
     onDamageFrame?: () => void; // Callback for when damage should be dealt
 
     // Physics bodies for attack hitboxes
-    attackBody?: CANNON.Body;
     private physicsWorld?: CANNON.World;
     private scene?: THREE.Scene;
 
-    constructor(parent: THREE.Object3D, weaponType: WeaponType = WeaponType.SWORD, damage: number = 10, scene?: THREE.Scene, world?: CANNON.World) {
+    constructor(
+        modelAsset: string,
+        weaponType: WeaponType = WeaponType.SWORD,
+        damage: number = 10,
+        scene: THREE.Scene,
+        world?: CANNON.World) {
+        super(modelAsset);
         this.weaponType = weaponType;
         this.stats = WEAPON_CONFIGS[weaponType];
         this.damage = damage;
-        this.loader = new GLTFLoader();
-        this.assetManager = AssetManager.getInstance();
+        this.assetManager = AssetManager.Instance;
         this.scene = scene;
         this.physicsWorld = world;
-
-        // Create empty group initially
-        this.mesh = new THREE.Group();
-
-        // Position relative to player (held in hand)
-        if (weaponType === WeaponType.DUAL_BLADE) {
-            // For dual blade, create two separate weapon meshes
-            this.leftMesh = new THREE.Group();
-            this.rightMesh = new THREE.Group();
-
-            // Left hand position (negative x)
-            this.leftMesh.position.set(-0.6, 0, 0.5);
-            this.leftBasePosition = this.leftMesh.position.clone();
-
-            // Right hand position (positive x)
-            this.rightMesh.position.set(0.6, 0, 0.5);
-            this.rightBasePosition = this.rightMesh.position.clone();
-
-            parent.add(this.leftMesh);
-            parent.add(this.rightMesh);
-
-            // Main mesh still used for positioning reference
-            this.mesh.position.set(0, 0, 0.5);
-        } else {
-            // Single weapon in right hand
-            this.mesh.position.set(0.6, 0, 0.5);
-            parent.add(this.mesh);
-        }
 
         this.baseRotation = this.mesh.rotation.clone();
         this.basePosition = this.mesh.position.clone();
@@ -121,37 +95,13 @@ export class Weapon {
         try {
             // Try to use preloaded asset first
             let gltf = this.assetManager.get(modelPath);
-
-            if (!gltf) {
-                // Fallback to loading if not preloaded
-                console.log(`Weapon ${type} not preloaded, loading on-demand...`);
-                gltf = await this.loader.loadAsync(modelPath);
-            }
-
             const model = gltf.scene.clone();
 
-            // Scale the model to appropriate size
-            model.scale.set(0.75, 0.75, 0.75);
+            // Clear any existing children and dispose resources
+            this.disposeMesh();
 
-            if (type === WeaponType.DUAL_BLADE && this.leftMesh && this.rightMesh) {
-                // Load model for both hands
-                const leftModel = model.clone();
-                const rightModel = model.clone();
-
-                // Clear any existing children and dispose resources
-                this.disposeChildren(this.leftMesh);
-                this.disposeChildren(this.rightMesh);
-
-                // Add models to respective hands
-                this.leftMesh.add(leftModel);
-                this.rightMesh.add(rightModel);
-            } else {
-                // Clear any existing children and dispose resources
-                this.disposeChildren(this.mesh);
-
-                // Add the loaded model to the weapon group
-                this.mesh.add(model);
-            }
+            // Add the loaded model to the weapon group
+            this.mesh.add(model);
 
             console.log(`Loaded weapon model: ${type}`);
         } catch (error) {
@@ -161,36 +111,9 @@ export class Weapon {
         }
     }
 
-    private disposeChildren(group: THREE.Group): void {
-        // Remove and dispose all children
-        while (group.children.length > 0) {
-            const child = group.children[0];
-            group.remove(child);
-
-            // Dispose geometries and materials if it's a mesh
-            if (child instanceof THREE.Mesh) {
-                if (child.geometry) {
-                    child.geometry.dispose();
-                }
-                if (child.material) {
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(mat => mat.dispose());
-                    } else {
-                        child.material.dispose();
-                    }
-                }
-            }
-
-            // Recursively dispose children if it's a group
-            if (child instanceof THREE.Group) {
-                this.disposeChildren(child);
-            }
-        }
-    }
-
     private createFallbackMesh(type: WeaponType): void {
         // Clear any existing children and dispose resources
-        this.disposeChildren(this.mesh);
+        this.disposeMesh();
 
         // Create a simple colored box as fallback
         const geometry = new THREE.BoxGeometry(0.1, 0.1, 1.0);
@@ -221,9 +144,8 @@ export class Weapon {
         if (!this.physicsWorld || !this.scene) return;
 
         // Remove old attack body if it exists
-        if (this.attackBody) {
-            this.physicsWorld.removeBody(this.attackBody);
-            this.attackBody = undefined;
+        if (this.body) {
+            this.physicsWorld.removeBody(this.body);
         }
 
         // Create a sensor body (no collision response, just for detection)
@@ -234,28 +156,28 @@ export class Weapon {
             case WeaponType.SWORD:
                 // Wide arc hitbox
                 shape = new CANNON.Box(new CANNON.Vec3(1.2 * rangeMultiplier, 0.3, 0.3 * rangeMultiplier));
-                offset.set(0, 0, 1.0 * rangeMultiplier);
+                offset.set(0, 0, 1.0);
                 break;
             case WeaponType.DUAL_BLADE:
                 // Aa wider single box for simplicity
                 shape = new CANNON.Box(new CANNON.Vec3(1.5 * rangeMultiplier, 0.3, 0.3 * rangeMultiplier));
-                offset.set(0, 0, 1.0 * rangeMultiplier);
+                offset.set(0, 0, 1.0);
                 break;
             case WeaponType.LANCE:
                 // Long forward hitbox
                 shape = new CANNON.Box(new CANNON.Vec3(0.3 * rangeMultiplier, 0.3, 2.0 * rangeMultiplier));
-                offset.set(0, 0, 2.0 * rangeMultiplier);
+                offset.set(0, 0, 2.0);
                 break;
             case WeaponType.HAMMER:
                 // Downward striking hitbox
-                shape = new CANNON.Box(new CANNON.Vec3(0.6 * rangeMultiplier, 0.6 * rangeMultiplier, 0.6 * rangeMultiplier));
-                offset.set(0, 0, 1.2 * rangeMultiplier);
+                shape = new CANNON.Box(new CANNON.Vec3(0.6 * rangeMultiplier, 1.0 * rangeMultiplier, 0.6 * rangeMultiplier));
+                offset.set(0, 0, 1.2);
                 break;
             default:
                 shape = new CANNON.Box(new CANNON.Vec3(0.5 * rangeMultiplier, 0.5 * rangeMultiplier, 0.5 * rangeMultiplier));
         }
 
-        this.attackBody = new CANNON.Body({
+        this.body = new CANNON.Body({
             mass: 0, // Static/sensor body
             isTrigger: true,
             collisionResponse: false,
@@ -263,21 +185,22 @@ export class Weapon {
         });
 
         // Position will be updated in the update method
-        this.attackBody.position.set(offset.x, offset.y, offset.z);
+        this.body.position.set(offset.x, offset.y, offset.z);
 
         // Add a custom property to identify this as an attack hitbox
-        (this.attackBody as any).isAttackHitbox = true;
-        (this.attackBody as any).weaponType = this.weaponType;
+        (this.body as any).isAttackHitbox = true;
+        (this.body as any).weaponType = this.weaponType;
 
-        this.physicsWorld.addBody(this.attackBody);
+        this.physicsWorld.addBody(this.body);
     }
 
     private updateAttackHitbox(playerPosition: THREE.Vector3, playerQuaternion: THREE.Quaternion) {
-        if (!this.attackBody) return;
+        if (!this.body) return;
 
         // Update hitbox position based on player position and weapon animation
         const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(playerQuaternion);
         const right = new THREE.Vector3(1, 0, 0).applyQuaternion(playerQuaternion);
+        const up = new THREE.Vector3(0, 1, 0).applyQuaternion(playerQuaternion);
 
         let hitboxPos = new THREE.Vector3();
 
@@ -286,24 +209,28 @@ export class Weapon {
                 // Position in front and to the side based on animation progress
                 hitboxPos.copy(playerPosition)
                     .add(forward.multiplyScalar(1.0))
+                    .add(up.multiplyScalar(1.0))
                     .add(right.multiplyScalar(this.mesh.position.x * 0.5));
                 break;
             case WeaponType.DUAL_BLADE:
                 hitboxPos.copy(playerPosition)
+                    .add(up.multiplyScalar(1.0))
                     .add(forward.multiplyScalar(1.0));
                 break;
             case WeaponType.LANCE:
                 hitboxPos.copy(playerPosition)
+                    .add(up.multiplyScalar(1.0))
                     .add(forward.multiplyScalar(2.0));
                 break;
             case WeaponType.HAMMER:
                 hitboxPos.copy(playerPosition)
+                    .add(up.multiplyScalar(1.0))
                     .add(forward.multiplyScalar(1.2));
                 break;
         }
 
-        this.attackBody.position.copy(hitboxPos as any);
-        this.attackBody.quaternion.copy(playerQuaternion as any);
+        this.body.position.copy(hitboxPos as any);
+        this.body.quaternion.copy(playerQuaternion as any);
     }
 
     update(dt: number, playerPosition?: THREE.Vector3, playerQuaternion?: THREE.Quaternion) {
@@ -319,18 +246,9 @@ export class Weapon {
             this.mesh.rotation.copy(this.baseRotation);
             this.mesh.position.copy(this.basePosition);
 
-            // Reset dual blade positions
-            if (this.weaponType === WeaponType.DUAL_BLADE && this.leftMesh && this.rightMesh && this.leftBasePosition && this.rightBasePosition) {
-                this.leftMesh.position.copy(this.leftBasePosition);
-                this.leftMesh.rotation.set(0, 0, 0);
-                this.rightMesh.position.copy(this.rightBasePosition);
-                this.rightMesh.rotation.set(0, 0, 0);
-            }
-
             // Remove attack hitbox
-            if (this.attackBody && this.physicsWorld) {
-                this.physicsWorld.removeBody(this.attackBody);
-                this.attackBody = undefined;
+            if (this.body && this.physicsWorld) {
+                this.physicsWorld.removeBody(this.body);
             }
             return;
         }
@@ -389,63 +307,28 @@ export class Weapon {
 
     // Dual Blade: Two separate sweeps, left then right
     private animateDualBlade(progress: number) {
-        if (!this.leftMesh || !this.rightMesh || !this.leftBasePosition || !this.rightBasePosition) {
+        if (!this.leftBasePosition || !this.rightBasePosition) {
             return;
         }
 
-        // Two phases: 0-0.5 is left blade, 0.5-1.0 is right blade
-        const phaseDuration = 0.5;
+        // First phase: left blade sweeps from right to left
+        const t = this.easeInOutCubic(progress);
 
-        if (progress < phaseDuration) {
-            // First phase: left blade sweeps from right to left
-            const phaseProgress = progress / phaseDuration;
-            const t = this.easeInOutCubic(phaseProgress);
+        // Left blade sweeps from right to left
+        const sweepOffset = (t - 0.5) * 1.4; // Sweep across
+        const leftX = this.leftBasePosition.x + sweepOffset;
 
-            // Left blade sweeps from right to left
-            const sweepOffset = (t - 0.5) * 1.4; // Sweep across
-            const leftX = this.leftBasePosition.x + sweepOffset;
+        const arcZ = Math.sin(t * Math.PI) * 0.3;
+        const arcY = Math.sin(t * Math.PI) * 0.15;
 
-            const arcZ = Math.sin(t * Math.PI) * 0.3;
-            const arcY = Math.sin(t * Math.PI) * 0.15;
+        this.mesh.position.set(leftX, this.leftBasePosition.y + arcY, this.leftBasePosition.z + arcZ);
+        this.mesh.rotation.y = -t * Math.PI * 0.6;
+        this.mesh.rotation.z = Math.sin(t * Math.PI) * 0.4;
 
-            this.leftMesh.position.set(leftX, this.leftBasePosition.y + arcY, this.leftBasePosition.z + arcZ);
-            this.leftMesh.rotation.y = -t * Math.PI * 0.6;
-            this.leftMesh.rotation.z = Math.sin(t * Math.PI) * 0.4;
-
-            // Right blade stays in base position
-            this.rightMesh.position.copy(this.rightBasePosition);
-            this.rightMesh.rotation.set(0, 0, 0);
-
-            // Trigger damage callback in the middle of first sweep
-            if (phaseProgress > 0.4 && phaseProgress < 0.6 && this.attackPhase === 0) {
-                this.attackPhase = 1;
-                if (this.onDamageFrame) this.onDamageFrame();
-            }
-        } else {
-            // Second phase: right blade sweeps from right to left
-            const phaseProgress = (progress - phaseDuration) / phaseDuration;
-            const t = this.easeInOutCubic(phaseProgress);
-
-            // Right blade sweeps from right to left
-            const sweepOffset = (t - 0.5) * 1.4;
-            const rightX = this.rightBasePosition.x + sweepOffset;
-
-            const arcZ = Math.sin(t * Math.PI) * 0.3;
-            const arcY = Math.sin(t * Math.PI) * 0.15;
-
-            this.rightMesh.position.set(rightX, this.rightBasePosition.y + arcY, this.rightBasePosition.z + arcZ);
-            this.rightMesh.rotation.y = -t * Math.PI * 0.6;
-            this.rightMesh.rotation.z = -Math.sin(t * Math.PI) * 0.4;
-
-            // Left blade returns to base position
-            this.leftMesh.position.copy(this.leftBasePosition);
-            this.leftMesh.rotation.set(0, 0, 0);
-
-            // Trigger damage callback in the middle of second sweep
-            if (phaseProgress > 0.4 && phaseProgress < 0.6 && this.attackPhase === 1) {
-                this.attackPhase = 2;
-                if (this.onDamageFrame) this.onDamageFrame();
-            }
+        // Trigger damage callback in the middle of first sweep
+        if (progress > 0.4 && progress < 0.6 && this.attackPhase === 0) {
+            this.attackPhase = 1;
+            if (this.onDamageFrame) this.onDamageFrame();
         }
     }
 
@@ -535,27 +418,14 @@ export class Weapon {
 
     changeWeaponType(parent: THREE.Object3D, newType: WeaponType, newDamage: number) {
         // Dispose of old mesh resources
-        this.disposeChildren(this.mesh);
+        this.disposeMesh();
 
         // Remove old meshes from parent
         parent.remove(this.mesh);
-        if (this.leftMesh) {
-            this.disposeChildren(this.leftMesh);
-            parent.remove(this.leftMesh);
-            this.leftMesh = undefined;
-            this.leftBasePosition = undefined;
-        }
-        if (this.rightMesh) {
-            this.disposeChildren(this.rightMesh);
-            parent.remove(this.rightMesh);
-            this.rightMesh = undefined;
-            this.rightBasePosition = undefined;
-        }
 
         // Remove any existing attack body
-        if (this.attackBody && this.physicsWorld) {
-            this.physicsWorld.removeBody(this.attackBody);
-            this.attackBody = undefined;
+        if (this.body && this.physicsWorld) {
+            this.physicsWorld.removeBody(this.body);
         }
 
         // Update type, stats, and damage
@@ -566,29 +436,9 @@ export class Weapon {
         // Create new empty group(s)
         this.mesh = new THREE.Group();
 
-        if (newType === WeaponType.DUAL_BLADE) {
-            // For dual blade, create two separate weapon meshes
-            this.leftMesh = new THREE.Group();
-            this.rightMesh = new THREE.Group();
-
-            // Left hand position (negative x)
-            this.leftMesh.position.set(-0.6, 0, 0.5);
-            this.leftBasePosition = this.leftMesh.position.clone();
-
-            // Right hand position (positive x)
-            this.rightMesh.position.set(0.6, 0, 0.5);
-            this.rightBasePosition = this.rightMesh.position.clone();
-
-            parent.add(this.leftMesh);
-            parent.add(this.rightMesh);
-
-            // Main mesh still used for positioning reference
-            this.mesh.position.set(0, 0, 0.5);
-        } else {
-            // Single weapon in right hand
-            this.mesh.position.set(0.6, 0, 0.5);
-            parent.add(this.mesh);
-        }
+        // Single weapon in right hand
+        this.mesh.position.set(0.6, 0, 0.5);
+        parent.add(this.mesh);
 
         this.baseRotation = this.mesh.rotation.clone();
         this.basePosition = this.mesh.position.clone();
