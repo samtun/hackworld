@@ -7,7 +7,7 @@ import { InputManager } from './InputManager';
 import { UIManager } from './UIManager';
 import { Lobby } from './stages';
 import { InventoryManager } from './items/InventoryManager';
-import { TraderManager } from './items/TraderManager';
+import { WeaponTrader } from './items/WeaponTrader';
 import { ChipTraderManager } from './items/ChipTraderManager';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NpcDialogueManager } from './npcs/NpcDialogueManager';
@@ -28,7 +28,7 @@ export class Game {
     input: InputManager;
     ui: UIManager;
     inventory!: InventoryManager;
-    trader!: TraderManager;
+    trader!: WeaponTrader;
     chipTrader!: ChipTraderManager;
     dungeonSelection!: DungeonSelectionManager;
     npcDialogue!: NpcDialogueManager;
@@ -168,7 +168,7 @@ export class Game {
         this.xDataUpgrade = XDataUpgradeManager.Instance;
         this.chipTrader = ChipTraderManager.Instance;
         this.dungeonSelection = DungeonSelectionManager.Instance;
-        this.trader = TraderManager.Instance;
+        this.trader = WeaponTrader.Instance;
         this.saveManager = SaveManager.Instance;
         this.clock = new THREE.Clock();
 

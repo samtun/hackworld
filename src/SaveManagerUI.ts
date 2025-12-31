@@ -1,4 +1,5 @@
 import { InputManager } from './InputManager';
+import { resetInputDebounce } from './ui/UiUtils';
 
 /**
  * UI Manager for the save system
@@ -128,7 +129,7 @@ export class SaveManagerUI {
         this.saveStatusText.style.display = 'none';
 
         // Reset input states to prevent immediate action on open
-        import('./ui/UiUtils').then(m => m.resetInputDebounce(this as any));
+        resetInputDebounce(this as any);
     }
 
     /**
