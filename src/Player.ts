@@ -286,6 +286,9 @@ export class Player extends BaseMesh {
         if (this.isChargingAttack) {
             this.chargeTimer += dt;
 
+            // Reset invulnerability timer to make sure damage can still be taken
+            this.invulnerableTimer = 0;
+
             // Update particle positions and height based on charge progress
             this.updateChargeParticles();
 
@@ -306,8 +309,6 @@ export class Player extends BaseMesh {
 
             // Sync Mesh with Body
             this.syncPosition();
-
-            return; // Skip normal combat and movement logic
         }
 
         // Movement
@@ -319,11 +320,6 @@ export class Player extends BaseMesh {
         const moveX = inputVector.x * Math.cos(angle) - inputVector.y * Math.sin(angle);
         const moveZ = inputVector.x * Math.sin(angle) + inputVector.y * Math.cos(angle);
 
-        // Apply velocity based on input
-        // We set velocity directly for responsive controls, but keep Y velocity (gravity)
-        this.body.velocity.x = moveX * this.speed;
-        this.body.velocity.z = moveZ * this.speed;
-
         // Rotation: Face movement direction
         if (inputVector.length() > 0.1) {
             const rotationAngle = Math.atan2(moveX, moveZ);
@@ -334,6 +330,16 @@ export class Player extends BaseMesh {
             this.mesh.quaternion.slerp(targetQuaternion, 15 * dt);
         }
 
+        if (this.isChargingAttack) {
+            // Skip movement while charging the dash attack
+            return;
+        }
+
+        // Apply velocity based on input
+        // We set velocity directly for responsive controls, but keep Y velocity (gravity)
+        this.body.velocity.x = moveX * this.speed;
+        this.body.velocity.z = moveZ * this.speed;
+        
         // Sync Mesh with Body
         this.syncPosition();
 
@@ -487,8 +493,10 @@ export class Player extends BaseMesh {
     }
 
     takeDamage(amount: number) {
+        console.log(`Player taking ${amount} damage. Timer: ${this.invulnerableTimer}`);
         if (this.invulnerableTimer > 0 || this.isDashing || this.isDead) return;
 
+        console.log("Applying damage...");
         this.hp -= amount;
         if (this.hp <= 0) {
             this.hp = 0;
