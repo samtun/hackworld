@@ -1,8 +1,8 @@
 import * as CANNON from 'cannon-es';
-import { BaseDungeon } from './BaseDungeon';
+import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 
-export class VioletAbyss extends BaseDungeon {
+export class VioletAbyss extends BaseStage {
     id = 'violetAbyss';
     name = 'Violet Abyss';
     description = 'A mysterious purple realm';

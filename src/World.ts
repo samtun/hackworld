@@ -3,7 +3,7 @@ import * as CANNON from 'cannon-es';
 import { Enemy } from './enemies/Enemy';
 import { Player } from './Player';
 import { AssetManager } from './AssetManager';
-import { BaseDungeon, Lobby, createStage } from './stages';
+import { BaseStage, Lobby, createStage } from './stages';
 import { Npc } from './npcs/Npc';
 import { WeaponDropManager } from './items/WeaponDropManager';
 import { WeaponDrop } from './items/WeaponDrop';
@@ -21,7 +21,7 @@ export class World {
     onStageLoadCompleteCallback?: () => void;
 
     // Current active stage
-    currentStage?: BaseDungeon;
+    currentStage?: BaseStage;
 
     // X-Data entities
     xDataEntities: XData[] = [];
@@ -286,11 +286,10 @@ export class World {
     }
 
     getAllNpcs(): Npc[] {
+        if (!this.currentStage) return [];
+
         // Get all NPCs from current stage
-        if (this.currentStage instanceof Lobby) {
-            return this.currentStage.getAllNpcs();
-        }
-        return [];
+        return this.currentStage.getAllNpcs();
     }
 
     /**

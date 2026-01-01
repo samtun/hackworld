@@ -5,12 +5,13 @@ import { LargeEnemy } from '../enemies/LargeEnemy';
 import { AssetManager } from '../AssetManager';
 import { Portal } from '../Portal';
 import { Player } from '../Player';
+import { Npc } from '../npcs/Npc';
 
 /**
  * Base class for all dungeon stages
  * Each dungeon stage should extend this and implement the load() method
  */
-export abstract class BaseDungeon {
+export abstract class BaseStage {
     abstract id: string;
     abstract name: string;
     abstract description: string;
@@ -30,6 +31,7 @@ export abstract class BaseDungeon {
     meshes: (THREE.Mesh | THREE.Group | THREE.Object3D)[] = [];
     enemies: Enemy[] = [];
     mixers: THREE.AnimationMixer[] = [];
+    npcs: Set<Npc> = new Set<Npc>();
 
     constructor(
         scene: THREE.Scene,
@@ -51,9 +53,14 @@ export abstract class BaseDungeon {
     }
 
     /**
-     * Load the dungeon - to be implemented by each stage
+     * Load the stage - to be implemented by each stage
      */
     abstract load(): void;
+
+    /**
+     * Get all NPCs in this stage
+     */
+    abstract getAllNpcs(): Npc[];
 
     /**
      * Clean up all resources
@@ -92,6 +99,10 @@ export abstract class BaseDungeon {
             }
         }
         this.meshes = [];
+
+        for (const npc of this.getAllNpcs()) {
+            npc.cleanup(this.scene, this.physicsWorld);
+        }
 
         // Remove portal if exists
         if (this.portal) {
@@ -176,6 +187,10 @@ export abstract class BaseDungeon {
         }
 
         // Update mixers
+        for (const npc of this.npcs) {
+            npc.update(dt);
+        }
+        
         for (const mixer of this.mixers) {
             mixer.update(dt);
         }
