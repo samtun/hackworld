@@ -2,7 +2,7 @@ import * as CANNON from 'cannon-es';
 import { BaseDungeon } from './BaseDungeon';
 import { HealingStation } from '../HealingStation';
 import { Player } from '../Player';
-import { ChipTraderManager } from '../items/ChipTraderManager';
+import { ChipTrader } from '../items/ChipTrader';
 import { SaveManager } from '../SaveManager';
 import { XDataUpgradeManager } from '../xdata/XDataUpgradeManager';
 import { WeaponTrader } from '../items/WeaponTrader';
@@ -38,7 +38,7 @@ export class Lobby extends BaseDungeon {
 
     // Managers
     private weaponTraderManager?: WeaponTrader;
-    private chipTraderManager?: ChipTraderManager;
+    private chipTrader?: ChipTrader;
     private saveManager?: SaveManager;
     private xDataUpgradeManager?: XDataUpgradeManager;
 
@@ -131,7 +131,7 @@ export class Lobby extends BaseDungeon {
             "I've got all the chips you need."
         ];
 
-        this.chipTraderManager = ChipTraderManager.Instance;
+        this.chipTrader = ChipTrader.Instance;
         this.chipTraderNpc = new Npc(
             this.scene,
             this.physicsWorld,
@@ -141,7 +141,7 @@ export class Lobby extends BaseDungeon {
             "Trade Chips",
             new CANNON.Vec3(-5, 0, -5),
             chipTraderDialogue,
-            () => this.chipTraderManager?.show()
+            () => this.chipTrader?.show()
         );
 
         // Load Trader Model from cache

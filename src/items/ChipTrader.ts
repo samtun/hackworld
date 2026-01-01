@@ -19,8 +19,8 @@ const COLORS = {
     MONEY_COLOR: '#ffd700'
 };
 
-export class ChipTraderManager extends BaseTrader {
-    private static instance: ChipTraderManager; // Singleton
+export class ChipTrader extends BaseTrader {
+    private static instance: ChipTrader; // Singleton
 
     private chipRegistry: ChipRegistry;
 
@@ -43,7 +43,7 @@ export class ChipTraderManager extends BaseTrader {
         this.initializeTraderInventory();
     }
 
-    public static get Instance(): ChipTraderManager {
+    public static get Instance(): ChipTrader {
         return this.instance || (this.instance = new this());
     }
 

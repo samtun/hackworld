@@ -8,7 +8,7 @@ import { UIManager } from './UIManager';
 import { Lobby } from './stages';
 import { InventoryManager } from './items/InventoryManager';
 import { WeaponTrader } from './items/WeaponTrader';
-import { ChipTraderManager } from './items/ChipTraderManager';
+import { ChipTrader } from './items/ChipTrader';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NpcDialogueManager } from './npcs/NpcDialogueManager';
 import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
@@ -29,7 +29,7 @@ export class Game {
     ui: UIManager;
     inventory!: InventoryManager;
     trader!: WeaponTrader;
-    chipTrader!: ChipTraderManager;
+    chipTrader!: ChipTrader;
     dungeonSelection!: DungeonSelectionManager;
     npcDialogue!: NpcDialogueManager;
     xDataUpgrade!: XDataUpgradeManager;
@@ -166,7 +166,7 @@ export class Game {
         this.inventory = InventoryManager.Instance;
         this.npcDialogue = NpcDialogueManager.Instance;
         this.xDataUpgrade = XDataUpgradeManager.Instance;
-        this.chipTrader = ChipTraderManager.Instance;
+        this.chipTrader = ChipTrader.Instance;
         this.dungeonSelection = DungeonSelectionManager.Instance;
         this.trader = WeaponTrader.Instance;
         this.saveManager = SaveManager.Instance;
