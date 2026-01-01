@@ -9,11 +9,11 @@ export class LargeEnemy extends Enemy {
         super(scene, world, position, physicsMaterial);
 
         // Adjust stats for LargeEnemy
-        this.hp = 90;
-        this.maxHp = 90;
+        this.hp = 150;
+        this.maxHp = 150;
         this.weaponDropChance = 0.08;
         this.xDataDropChance = 0.04;
-        this.expAmount = 30;
+        this.expAmount = 25;
 
         const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
         const material = new THREE.MeshStandardMaterial({ color: 0x8b0000 }); // Dark red

@@ -6,8 +6,8 @@ export class Enemy {
     mesh: THREE.Mesh;
     weaponMesh: THREE.Mesh;
     body: CANNON.Body;
-    hp: number = 30;
-    maxHp: number = 30;
+    hp: number = 60;
+    maxHp: number = 60;
     speed: number = 3;
     attackRange: number = 1.5;
     attackCooldown: number = 1.0;
