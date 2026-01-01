@@ -64,6 +64,9 @@ export class Game {
     // Last teleporter position for respawn (starts at lobby spawn)
     lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
 
+    // Camera follow offset
+    cameraOffset: THREE.Vector3 = new THREE.Vector3(10, 10, 10);
+
     constructor() {
         // Setup Three.js
         this.scene = new THREE.Scene();
@@ -71,7 +74,7 @@ export class Game {
 
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
         // Isometric-ish view
-        this.camera.position.set(10, 10, 10);
+        this.camera.position.copy(this.cameraOffset);
         this.camera.lookAt(0, 0, 0);
 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -110,21 +113,10 @@ export class Game {
 
             // Start Loop
             this.animate();
-        }, (loaded, total) => {
-            this.ui.updateLoadingProgress(loaded, total);
-        });
-
-        // Set up stage loading callbacks
-        this.world.setStageLoadCallbacks(
-            () => {
-                // On stage load start - show loading screen
-                this.ui.showLoadingScreen();
-            },
-            () => {
-                // On stage load complete - hide loading screen
-                this.ui.hideLoadingScreen();
-            }
-        );
+        },
+        (loaded, total) => this.ui.updateLoadingProgress(loaded, total),
+        () => this.ui.showLoadingScreen(),
+        () => this.ui.hideLoadingScreen());
 
         // Resize Handler
         window.addEventListener('resize', () => this.onWindowResize(), false);
@@ -185,18 +177,31 @@ export class Game {
     switchScene(destination: string) {
         // Use loadStage helper method
         this.world.loadStageById(destination).then(() => {
-            // Reset player position to ground level
-            this.player.move(new CANNON.Vec3(0, 2.0, 0));
+            // Place player safely on the ground to avoid penetration/bounce.
+            // Compute half-height from player's collision shape if available.
+            let halfHeight = 0.5;
+            const primaryShape: any = this.player.body.shapes && this.player.body.shapes[0];
+            if (primaryShape && primaryShape.halfExtents && typeof primaryShape.halfExtents.y === 'number') {
+                halfHeight = primaryShape.halfExtents.y;
+            }
+
+            // Small epsilon above the ground to avoid initial penetration
+            const safeY = halfHeight + 0.01;
+            const targetPos = new CANNON.Vec3(0, safeY, 0);
+
+            // Move player and clear velocities/rotation to prevent any impulse from previous physics steps
+            this.player.move(targetPos);
             this.player.body.velocity.set(0, 0, 0);
+            if (this.player.body.angularVelocity) this.player.body.angularVelocity.set(0, 0, 0);
 
             // Update last teleporter position when entering a stage via portal
             // This is used as the respawn point if the player dies
             this.lastTeleporterPosition.copy(this.player.body.position);
 
             // Snap camera
-            this.camera.position.set(10, 15, 10);
+            this.resetCameraPosition()
+            this.currentScene = destination;
         });
-        this.currentScene = destination;
     }
 
     /**
@@ -243,7 +248,11 @@ export class Game {
         this.switchScene(Lobby.getMetadata().id);
 
         // Reset camera
-        this.camera.position.set(10, 15, 10);
+        this.resetCameraPosition();
+    }
+
+    private resetCameraPosition() {
+        this.camera.position.copy(this.cameraOffset.add(this.player.position));
     }
 
     /**

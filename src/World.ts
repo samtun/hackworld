@@ -17,9 +17,9 @@ export class World {
     physicsWorld: CANNON.World;
     physicsMaterial: CANNON.Material;
     assetManager: AssetManager;
-    onLoadProgressCallback?: (loaded: number, total: number) => void;
-    onStageLoadStartCallback?: () => void;
-    onStageLoadCompleteCallback?: () => void;
+    onLoadProgressCallback: (loaded: number, total: number) => void;
+    onStageLoadStartCallback: () => void;
+    onStageLoadCompleteCallback: () => void;
 
     // Current active stage
     currentStage?: BaseStage;
@@ -40,7 +40,14 @@ export class World {
     // Save manager interaction callback (set by Game)
     private saveManagerInteractionCallback?: () => void;
 
-    constructor(scene: THREE.Scene, physicsWorld: CANNON.World, physicsMaterial: CANNON.Material, onLoadComplete?: () => void, onLoadProgress?: (loaded: number, total: number) => void) {
+    constructor(
+        scene: THREE.Scene,
+        physicsWorld: CANNON.World,
+        physicsMaterial: CANNON.Material,
+        onLoadComplete: () => void,
+        onLoadProgress: (loaded: number, total: number) => void,
+        onStart: () => void,
+        onComplete: () => void,){
         this.scene = scene;
         this.physicsWorld = physicsWorld;
         this.physicsMaterial = physicsMaterial;
@@ -55,6 +62,9 @@ export class World {
             this.assetManager.setProgressCallback(this.onLoadProgressCallback);
         }
 
+        this.onStageLoadStartCallback = onStart;
+        this.onStageLoadCompleteCallback = onComplete;
+
         // Preload common assets and start in Lobby
         this.initializeWorld(onLoadComplete);
     }
@@ -62,7 +72,7 @@ export class World {
     /**
      * Initialize the world by preloading common assets and loading the lobby
      */
-    private async initializeWorld(onLoadComplete?: () => void): Promise<void> {
+    private async initializeWorld(onLoadComplete: () => void): Promise<void> {
         try {
             await this.preloadCommonAssets();
             await this.loadStageById(Lobby.getMetadata().id);
@@ -70,7 +80,7 @@ export class World {
             console.error('Failed to initialize world:', error);
         } finally {
             // Always call onLoadComplete to ensure UI updates
-            if (onLoadComplete) onLoadComplete();
+            onLoadComplete();
         }
     }
 
@@ -90,14 +100,6 @@ export class World {
         ];
 
         await this.assetManager.preloadAll(commonAssets);
-    }
-
-    /**
-     * Set callbacks for stage loading
-     */
-    setStageLoadCallbacks(onStart?: () => void, onComplete?: () => void) {
-        this.onStageLoadStartCallback = onStart;
-        this.onStageLoadCompleteCallback = onComplete;
     }
 
     /**
