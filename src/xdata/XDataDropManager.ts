@@ -2,6 +2,14 @@ import { Enemy } from "../enemies/Enemy";
 import { Player } from "../Player";
 
 export class XDataDropManager {
+    private static instance: XDataDropManager;
+
+    private constructor() {}
+
+    public static get Instance(): XDataDropManager {
+        return this.instance || (this.instance = new this());
+    }
+
     rollDrop(player: Player, enemy: Enemy): number {
         // Low level players should not get any X-Data yet
         if (player.level < 10) return 0;

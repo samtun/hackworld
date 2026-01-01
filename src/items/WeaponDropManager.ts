@@ -12,7 +12,14 @@ import { WeaponItem } from './WeaponItem';
  * Handles drop generation, updates, interaction, and cleanup
  */
 export class WeaponDropManager {
+    private static instance: WeaponDropManager;
     private weaponDrops: WeaponDrop[] = [];
+
+    private constructor() {}
+
+    public static get Instance(): WeaponDropManager {
+        return this.instance || (this.instance = new this());
+    }
 
     /**
      * Try to generate a weapon drop from a defeated enemy

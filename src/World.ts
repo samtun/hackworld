@@ -54,8 +54,8 @@ export class World {
         this.assetManager = AssetManager.Instance;
         this.onLoadProgressCallback = onLoadProgress;
 
-        this.weaponDropManager = new WeaponDropManager();
-        this.xDataDropManager = new XDataDropManager();
+        this.weaponDropManager = WeaponDropManager.Instance;
+        this.xDataDropManager = XDataDropManager.Instance;
 
         // Setup progress callback for asset manager
         if (this.onLoadProgressCallback) {
