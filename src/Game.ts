@@ -15,6 +15,7 @@ import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
 import { DebugValueEditor } from './DebugValueEditor';
 import { SaveManager } from './SaveManager';
 import { PlayerRegistry } from './PlayerRegistry';
+import { CoreTrader } from './items/CoreTrader';
 
 export class Game {
     scene: THREE.Scene;
@@ -30,6 +31,7 @@ export class Game {
     inventory!: InventoryManager;
     trader!: WeaponTrader;
     chipTrader!: ChipTrader;
+    coreTrader!: CoreTrader;
     dungeonSelection!: DungeonSelectionManager;
     npcDialogue!: NpcDialogueManager;
     xDataUpgrade!: XDataUpgradeManager;
@@ -167,6 +169,7 @@ export class Game {
         this.npcDialogue = NpcDialogueManager.Instance;
         this.xDataUpgrade = XDataUpgradeManager.Instance;
         this.chipTrader = ChipTrader.Instance;
+        this.coreTrader = CoreTrader.Instance;
         this.dungeonSelection = DungeonSelectionManager.Instance;
         this.trader = WeaponTrader.Instance;
         this.saveManager = SaveManager.Instance;
@@ -253,6 +256,7 @@ export class Game {
         return this.inventory.isVisible ||
             this.trader.isVisible ||
             this.chipTrader.isVisible ||
+            this.coreTrader.isVisible ||
             this.dungeonSelection.isVisible ||
             this.npcDialogue.isVisible ||
             this.xDataUpgrade.isVisible ||
@@ -372,11 +376,16 @@ export class Game {
             this.chipTrader.update(this.player, this.input);
         }
 
+        // Update core trader if visible
+        if (this.coreTrader.isVisible) {
+            this.coreTrader.update(this.player, this.input);
+        }
+
         // Update save manager if visible
         if (this.saveManager.isVisible) {
             this.saveManager.update(this.input);
         }
-
+        
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.isAnyMenuOpen();
 
