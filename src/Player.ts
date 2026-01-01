@@ -88,6 +88,7 @@ export class Player extends BaseMesh {
     private dashDirection: THREE.Vector3 = new THREE.Vector3();
     private chargeParticles: THREE.Mesh[] = [];
     private dashHitEnemies: Set<Enemy> = new Set();
+    private attackLockedUntilRelease: boolean = false;
 
     // Particle wall constants
     private readonly PARTICLE_BASE_HEIGHT: number = 0.2;
@@ -326,8 +327,6 @@ export class Player extends BaseMesh {
             this.body.velocity.x *= 0.9;
             this.body.velocity.z *= 0.9;
 
-            console.log(`Player is stunned for ${this.stunTimer.toFixed(2)} more seconds.`);
-
             // Sync Mesh with Body
             this.syncPosition();
         } else if (!this.weapon.isAttacking) {
@@ -374,49 +373,56 @@ export class Player extends BaseMesh {
         this.syncPosition();
 
         // Combat
-        // Track attack button state for charge timing
-        if (this.input.isAttackJustPressed()) {
-            // Button was just pressed - reset charge timer
-            this.chargeDelayTimer = 0;
-        }
+        if (!this.attackLockedUntilRelease) {
+            // Track attack button state for charge timing
+            if (this.input.isAttackJustPressed()) {
+                // Button was just pressed - reset charge timer
+                this.chargeDelayTimer = 0;
+            }
 
-        // Check for immediate attack on button press (only trigger once per press)
-        if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
-            // Execute immediate attack with range multiplier from chip
-            if (this.weapon.attack(this.getWeaponRangeMultiplier())) {
-                // Clear the list of enemies hit for this new attack
-                this.enemiesHitThisPhase.clear();
+            // Check for immediate attack on button press (only trigger once per press)
+            if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
+                // Execute immediate attack with range multiplier from chip
+                if (this.weapon.attack(this.getWeaponRangeMultiplier())) {
+                    // Clear the list of enemies hit for this new attack
+                    this.enemiesHitThisPhase.clear();
 
-                // For dual blade, set up callback to reset hit tracking between phases
-                if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
-                    this.weapon.onDamageFrame = () => {
-                        // Reset hit tracking for the next phase
-                        this.enemiesHitThisPhase.clear();
-                    };
+                    // For dual blade, set up callback to reset hit tracking between phases
+                    if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
+                        this.weapon.onDamageFrame = () => {
+                            // Reset hit tracking for the next phase
+                            this.enemiesHitThisPhase.clear();
+                        };
+                    }
                 }
             }
-        }
 
-        // Check if attack button is being held (for charging)
-        // Charge timer increments while button is held, regardless of attack state
-        if (this.input.isAttackHeld() && !this.isChargingAttack) {
-            this.chargeDelayTimer += dt;
+            // Check if attack button is being held (for charging)
+            // Charge timer increments while button is held, regardless of attack state
+            if (this.input.isAttackHeld() && !this.isChargingAttack) {
+                this.chargeDelayTimer += dt;
 
-            // Only start charging attack after 0.2s delay AND when weapon is not attacking
-            if (this.chargeDelayTimer >= this.CHARGE_DELAY && !this.weapon.isAttacking) {
-                this.startChargeAttack();
+                // Only start charging attack after 0.2s delay AND when weapon is not attacking
+                if (this.chargeDelayTimer >= this.CHARGE_DELAY && !this.weapon.isAttacking) {
+                    this.startChargeAttack();
+                }
+            } else if (!this.input.isAttackHeld()) {
+                // Reset delay timer when button is released
+                this.chargeDelayTimer = 0;
             }
-        } else if (!this.input.isAttackHeld()) {
-            // Reset delay timer when button is released
-            this.chargeDelayTimer = 0;
+            
+            // Update weapon (handles animation and hitbox positioning)
+            this.weapon.update(dt, this.position, this.mesh.quaternion);
+
+            // Check for hits if weapon is attacking and has an active hitbox
+            if (this.weapon.isAttacking && this.weapon.body) {
+                this.checkAttackHits(enemies);
+            }
         }
 
-        // Update weapon (handles animation and hitbox positioning)
-        this.weapon.update(dt, this.position, this.mesh.quaternion);
-
-        // Check for hits if weapon is attacking and has an active hitbox
-        if (this.weapon.isAttacking && this.weapon.body) {
-            this.checkAttackHits(enemies);
+        // If attack was locked due to a damage-cancelled charge, clear lock when player releases the button
+        if (this.input.isAttackReleased()) {
+            this.attackLockedUntilRelease = false;
         }
 
         // Invulnerability Timer
@@ -534,7 +540,7 @@ export class Player extends BaseMesh {
             }
         }
 
-        // Cancel charging attack if taking damage
+        // Cancel charging attack if taking damage and suppress immediate follow-up attack
         if (this.isChargingAttack) this.cancelChargeAttack()
             
         console.log(`Player took ${amount} damage. HP: ${this.hp}`);
@@ -607,27 +613,11 @@ export class Player extends BaseMesh {
 
     private cancelChargeAttack() {
         this.isChargingAttack = false;
-        const wasCharging = this.chargeTimer > 0;
         this.chargeTimer = 0;
         this.removeChargeParticles();
+        this.attackLockedUntilRelease = true;
 
-        // If we were charging but didn't complete, do a normal attack
-        if (wasCharging) {
-            if (this.weapon.attack(this.getWeaponRangeMultiplier())) {
-                // Clear the list of enemies hit for this new attack
-                this.enemiesHitThisPhase.clear();
-
-                // For dual blade, set up callback to reset hit tracking between phases
-                if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
-                    this.weapon.onDamageFrame = () => {
-                        // Reset hit tracking for the next phase
-                        this.enemiesHitThisPhase.clear();
-                    };
-                }
-            }
-        }
-
-        console.log('Cancelled charge attack, executing normal attack');
+        console.log('Cancelled charge attack');
     }
 
     private executeDashAttack() {
