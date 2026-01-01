@@ -33,6 +33,9 @@ export class Player extends BaseMesh {
     // Ground detection threshold
     private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
 
+    // Knockback strength
+    private static readonly KNOCKBACK_FORCE = 120;
+
     // Stat caps and upgrade amounts
     private static readonly MAX_STAT_VALUE = 9999;
     private static readonly HP_TP_UPGRADE_AMOUNT = 5;
@@ -98,6 +101,7 @@ export class Player extends BaseMesh {
 
     // Ground contact tracking
     private isGrounded: boolean = false;
+    private stunTimer: number = 0;
 
     // Death state
     isDead: boolean = false;
@@ -316,7 +320,17 @@ export class Player extends BaseMesh {
         // Movement
         const inputVector = this.input.getMovementVector();
 
-        if (!this.weapon.isAttacking) {
+        if (this.stunTimer > 0) {
+            // While stunned, apply friction and skip movement input to preserve knockback
+            this.stunTimer -= dt;
+            this.body.velocity.x *= 0.9;
+            this.body.velocity.z *= 0.9;
+
+            console.log(`Player is stunned for ${this.stunTimer.toFixed(2)} more seconds.`);
+
+            // Sync Mesh with Body
+            this.syncPosition();
+        } else if (!this.weapon.isAttacking) {
             // Rotate movement to match isometric camera (45 degrees)
             const angle = -Math.PI / 4;
             const moveX = inputVector.x * Math.cos(angle) - inputVector.y * Math.sin(angle);
@@ -462,7 +476,7 @@ export class Player extends BaseMesh {
 
                 // Check if attack hitbox overlaps with enemy body
                 if (this.checkCollision(attackBody, enemy.body)) {
-                    enemy.takeDamage(damage, this.position);
+                    enemy.takeDamage(damage, this.body.position);
                     console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
                     // Mark this enemy as hit for this attack phase
@@ -494,7 +508,7 @@ export class Player extends BaseMesh {
         return false;
     }
 
-    takeDamage(amount: number) {
+    takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
         console.log(`Player taking ${amount} damage. Timer: ${this.invulnerableTimer}`);
         if (this.invulnerableTimer > 0 || this.isDashing || this.isDead) return;
 
@@ -506,7 +520,23 @@ export class Player extends BaseMesh {
             return;
         }
 
+        // Apply brief invulnerability
         this.invulnerableTimer = 1.0; // 1 second invulnerability
+
+        // Knockback: push player away from source horizontally and give small upward impulse
+        if (sourcePos) {
+            this.stunTimer = 0.3; // 0.3 seconds stun
+            const knockDir = this.body.position.vsub(sourcePos);
+            knockDir.y = 0;
+            if (knockDir.length() > 0) {
+                knockDir.normalize();
+                this.body.applyImpulse(new CANNON.Vec3(knockDir.x * Player.KNOCKBACK_FORCE, 5, knockDir.z * Player.KNOCKBACK_FORCE), knockDir);
+            }
+        }
+
+        // Cancel charging attack if taking damage
+        if (this.isChargingAttack) this.cancelChargeAttack()
+            
         console.log(`Player took ${amount} damage. HP: ${this.hp}`);
     }
 
@@ -779,7 +809,7 @@ export class Player extends BaseMesh {
             if (this.checkCollision(this.body, enemy.body)) {
                 // Deal 3x weapon damage
                 const damage = this.weapon.damage * 3;
-                enemy.takeDamage(damage, this.position);
+                enemy.takeDamage(damage, this.body.position);
                 console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
 
                 // Mark this enemy as hit during this dash

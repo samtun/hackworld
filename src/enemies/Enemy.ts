@@ -170,10 +170,10 @@ export class Enemy {
         this.attackAnimTimer = 0;
 
         console.log("Enemy attacks player!");
-        player.takeDamage(10);
+        player.takeDamage(10, this.body.position);
     }
 
-    takeDamage(amount: number, sourcePos?: THREE.Vector3) {
+    takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
         if (this.isDying || this.isDead) return;
 
         this.hp -= amount;
@@ -185,7 +185,7 @@ export class Enemy {
 
         // Knockback
         if (sourcePos) {
-            const knockbackDir = this.body.position.vsub(new CANNON.Vec3(sourcePos.x, sourcePos.y, sourcePos.z));
+            const knockbackDir = this.body.position.vsub(sourcePos);
             knockbackDir.y = 0; // Keep it horizontal
             if (knockbackDir.length() > 0) {
                 knockbackDir.normalize();

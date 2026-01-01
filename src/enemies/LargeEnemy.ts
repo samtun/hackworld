@@ -46,6 +46,6 @@ export class LargeEnemy extends Enemy {
         this.attackAnimTimer = 0;
 
         console.log("Large Enemy attacks player!");
-        player.takeDamage(13);
+        player.takeDamage(13, this.body.position);
     }
 }
