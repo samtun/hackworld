@@ -1,5 +1,5 @@
 import * as CANNON from 'cannon-es';
-import { BaseDungeon } from './BaseDungeon';
+import { BaseStage } from './BaseStage';
 import { HealingStation } from '../HealingStation';
 import { Player } from '../Player';
 import { ChipTrader } from '../items/ChipTrader';
@@ -9,7 +9,7 @@ import { WeaponTrader } from '../items/WeaponTrader';
 import { Npc } from '../npcs/Npc';
 import { CoreTrader } from '../items/CoreTrader';
 
-export class Lobby extends BaseDungeon {
+export class Lobby extends BaseStage {
     id = 'lobby';
     name = 'Lobby';
     description = 'Safe hub area';
@@ -85,6 +85,7 @@ export class Lobby extends BaseDungeon {
             new CANNON.Vec3(-5, 0, 0),
             nylethDialogue
         );
+        this.npcs.add(this.nylethNpc);
 
         // Create XData Manager NPC
         const xDataManagerDialogue = [
@@ -105,6 +106,7 @@ export class Lobby extends BaseDungeon {
             xDataManagerDialogue,
             () => this.xDataUpgradeManager?.show()
         );
+        this.npcs.add(this.xDataManagerNpc);
 
         // Create Save Manager NPC
         const saveManagerDialogue = [
@@ -126,6 +128,7 @@ export class Lobby extends BaseDungeon {
             saveManagerDialogue,
             () => this.saveManager?.show(),
         );
+        this.npcs.add(this.saveManagerNpc);
 
         // Create Chip Trader NPC
         const chipTraderDialogue = [
@@ -146,6 +149,7 @@ export class Lobby extends BaseDungeon {
             chipTraderDialogue,
             () => this.chipTrader?.show()
         );
+        this.npcs.add(this.chipTraderNpc);
 
         // Create Core Trader NPC
         const coreTraderDialogue = [
@@ -166,6 +170,8 @@ export class Lobby extends BaseDungeon {
             () => this.coreTrader?.show()
         );
 
+        this.npcs.add(this.coreTraderNpc);
+
         // Create Weapon Trader NPC
         const weaponTraderDialogue = [
             "Looking for some new gear?",
@@ -185,60 +191,24 @@ export class Lobby extends BaseDungeon {
             weaponTraderDialogue,
             () => this.weaponTraderManager?.show()
         );
-    }
 
-    /**
-     * Get all NPCs in the lobby (dialogue NPCs only, traders are handled separately)
-     */
-    getAllNpcs(): Npc[] {
-        const npcs: Npc[] = [];
-        if (this.nylethNpc) npcs.push(this.nylethNpc);
-        if (this.xDataManagerNpc) npcs.push(this.xDataManagerNpc);
-        if (this.saveManagerNpc) npcs.push(this.saveManagerNpc);
-        if (this.weaponTraderNpc) npcs.push(this.weaponTraderNpc);
-        if (this.chipTraderNpc) npcs.push(this.chipTraderNpc);
-        if (this.coreTraderNpc) npcs.push(this.coreTraderNpc);
-        return npcs;
+        this.npcs.add(this.weaponTraderNpc);
     }
 
     /*
-     * Override BaseDungeon update method to include healing station
+     * Override BaseStage update method to include healing station
      */
     update(dt: number, player: Player) {
         super.update(dt, player);
 
         if (!this.healingStation) return;
-        this.healingStation.update(dt, player);
+        this.healingStation.update(dt);
     }
 
     /**
      * Override clear to also clean up NPCs and healing station
      */
     clear(): void {
-        if (this.nylethNpc) {
-            this.nylethNpc.cleanup(this.scene, this.physicsWorld);
-            this.nylethNpc = undefined;
-        }
-        if (this.xDataManagerNpc) {
-            this.xDataManagerNpc.cleanup(this.scene, this.physicsWorld);
-            this.xDataManagerNpc = undefined;
-        }
-        if (this.saveManagerNpc) {
-            this.saveManagerNpc.cleanup(this.scene, this.physicsWorld);
-            this.saveManagerNpc = undefined;
-        }
-        if (this.weaponTraderNpc) {
-            this.weaponTraderNpc.cleanup(this.scene, this.physicsWorld);
-            this.weaponTraderNpc = undefined;
-        }
-        if (this.chipTraderNpc) {
-            this.chipTraderNpc.cleanup(this.scene, this.physicsWorld);
-            this.chipTraderNpc = undefined;
-        }
-        if (this.coreTraderNpc) {
-            this.coreTraderNpc.cleanup(this.scene, this.physicsWorld);
-            this.coreTraderNpc = undefined;
-        }
         if (this.healingStation) {
             this.healingStation.cleanup(this.scene);
             this.healingStation = undefined;

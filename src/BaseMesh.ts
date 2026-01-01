@@ -50,4 +50,10 @@ export abstract class BaseMesh {
     protected disposeMesh(): void {
         this.disposeMeshRecursive(this.mesh);
     }
+
+    public update(deltaTime: number): void {
+        for (const mixer of this.mixers) {
+            mixer.update(deltaTime);
+        }
+    }
 }

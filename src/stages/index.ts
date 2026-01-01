@@ -1,12 +1,12 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { BaseDungeon } from './BaseDungeon';
+import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { CrimsonDepths } from './CrimsonDepths';
 import { VioletAbyss } from './VioletAbyss';
 
 // Re-export for convenience
-export { BaseDungeon, Lobby, CrimsonDepths, VioletAbyss };
+export { BaseStage, Lobby, CrimsonDepths, VioletAbyss };
 
 // Registry of all available dungeons for selection UI
 export const AVAILABLE_DUNGEONS = [
@@ -19,7 +19,7 @@ type StageConstructor = new (
     scene: THREE.Scene,
     physicsWorld: CANNON.World,
     physicsMaterial: CANNON.Material
-) => BaseDungeon;
+) => BaseStage;
 
 // Stage registry mapping stage IDs to their constructors
 const stageRegistry: Map<string, StageConstructor> = new Map([
@@ -36,7 +36,7 @@ export function createStage(
     scene: THREE.Scene,
     physicsWorld: CANNON.World,
     physicsMaterial: CANNON.Material
-): BaseDungeon | null {
+): BaseStage | null {
     const StageClass = stageRegistry.get(stageId);
     if (!StageClass) {
         console.warn(`Unknown stage ID: ${stageId}`);

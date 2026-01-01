@@ -3,13 +3,14 @@ import * as CANNON from 'cannon-es';
 import { Enemy } from './enemies/Enemy';
 import { Player } from './Player';
 import { AssetManager } from './AssetManager';
-import { BaseDungeon, Lobby, createStage } from './stages';
+import { BaseStage, Lobby, createStage } from './stages';
 import { Npc } from './npcs/Npc';
 import { WeaponDropManager } from './items/WeaponDropManager';
 import { WeaponDrop } from './items/WeaponDrop';
 import { XData } from './xdata/XData';
 import { XDataDropManager } from './xdata/XDataDropManager';
 import { EXPNumber } from './EXPNumber';
+import { HealingSystem } from './systems/HealingSystem';
 
 export class World {
     scene: THREE.Scene;
@@ -21,7 +22,7 @@ export class World {
     onStageLoadCompleteCallback?: () => void;
 
     // Current active stage
-    currentStage?: BaseDungeon;
+    currentStage?: BaseStage;
 
     // X-Data entities
     xDataEntities: XData[] = [];
@@ -176,6 +177,9 @@ export class World {
         // Update stage (portals, etc.)
         this.currentStage.update(dt, player);
 
+        // Update systems that operate across stages (healing, etc.)
+        HealingSystem.Instance.update(dt);
+
         for (let i = this.currentStage.enemies.length - 1; i >= 0; i--) {
             const enemy = this.currentStage.enemies[i];
             enemy.update(dt, player);
@@ -285,12 +289,11 @@ export class World {
         return this.currentStage.checkPortalInteraction(playerPosition);
     }
 
-    getAllNpcs(): Npc[] {
+    getAllNpcs(): Set<Npc> {
+        if (!this.currentStage) return new Set<Npc>();
+
         // Get all NPCs from current stage
-        if (this.currentStage instanceof Lobby) {
-            return this.currentStage.getAllNpcs();
-        }
-        return [];
+        return this.currentStage.npcs;
     }
 
     /**

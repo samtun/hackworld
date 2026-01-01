@@ -1,8 +1,8 @@
 import * as CANNON from 'cannon-es';
-import { BaseDungeon } from './BaseDungeon';
+import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 
-export class CrimsonDepths extends BaseDungeon {
+export class CrimsonDepths extends BaseStage {
     id = 'crimsonDepths';
     name = 'Crimson Depths';
     description = 'A dark dungeon with red hues';
