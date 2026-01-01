@@ -3,20 +3,7 @@ import { BaseTrader, TraderUIConfig } from './BaseTrader';
 import { CoreRegistry } from './CoreRegistry';
 import { Player } from '../Player';
 import { Item } from './Item';
-
-const COLORS = {
-    OVERLAY: 'rgba(0, 0, 0, 0.8)',
-    WINDOW_BG: '#333',
-    BORDER: '#000',
-    TEXT: '#fff',
-    PANEL_TRADER: '#2a204a',
-    PANEL_PLAYER: '#203a4a',
-    ITEM_HOVER: '#666',
-    ITEM_SELECTED: '#888',
-    TRANSPARENT: 'transparent',
-    SEPARATOR: '#BBBBBB',
-    MONEY_COLOR: '#ffd700'
-};
+import { TRADER_UI_COLORS } from './TraderUIConstants';
 
 export class CoreTrader extends BaseTrader {
     private static instance: CoreTrader; // Singleton
@@ -29,13 +16,13 @@ export class CoreTrader extends BaseTrader {
             traderTitle: "Core Trader's Goods",
             playerTitle: 'Your Inventory',
             colors: {
-                panelTrader: COLORS.PANEL_TRADER,
-                panelPlayer: COLORS.PANEL_PLAYER,
-                windowBg: COLORS.WINDOW_BG,
-                overlay: COLORS.OVERLAY,
-                separator: COLORS.SEPARATOR,
-                moneyColor: COLORS.MONEY_COLOR,
-                text: COLORS.TEXT
+                panelTrader: TRADER_UI_COLORS.PANEL_TRADER,
+                panelPlayer: TRADER_UI_COLORS.PANEL_PLAYER,
+                windowBg: TRADER_UI_COLORS.WINDOW_BG,
+                overlay: TRADER_UI_COLORS.OVERLAY,
+                separator: TRADER_UI_COLORS.SEPARATOR,
+                moneyColor: TRADER_UI_COLORS.MONEY_COLOR,
+                text: TRADER_UI_COLORS.TEXT
             }
         };
         super(cfg);
