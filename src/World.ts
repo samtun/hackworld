@@ -285,11 +285,11 @@ export class World {
         return this.currentStage.checkPortalInteraction(playerPosition);
     }
 
-    getAllNpcs(): Npc[] {
-        if (!this.currentStage) return [];
+    getAllNpcs(): Set<Npc> {
+        if (!this.currentStage) return new Set<Npc>();
 
         // Get all NPCs from current stage
-        return this.currentStage.getAllNpcs();
+        return this.currentStage.npcs;
     }
 
     /**

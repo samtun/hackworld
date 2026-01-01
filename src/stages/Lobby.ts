@@ -195,20 +195,6 @@ export class Lobby extends BaseStage {
         this.npcs.add(this.weaponTraderNpc);
     }
 
-    /**
-     * Get all NPCs in the lobby (dialogue NPCs only, traders are handled separately)
-     */
-    getAllNpcs(): Npc[] {
-        const npcs: Npc[] = [];
-        if (this.nylethNpc) npcs.push(this.nylethNpc);
-        if (this.xDataManagerNpc) npcs.push(this.xDataManagerNpc);
-        if (this.saveManagerNpc) npcs.push(this.saveManagerNpc);
-        if (this.weaponTraderNpc) npcs.push(this.weaponTraderNpc);
-        if (this.chipTraderNpc) npcs.push(this.chipTraderNpc);
-        if (this.coreTraderNpc) npcs.push(this.coreTraderNpc);
-        return npcs;
-    }
-
     /*
      * Override BaseStage update method to include healing station
      */

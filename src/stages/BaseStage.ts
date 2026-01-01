@@ -58,11 +58,6 @@ export abstract class BaseStage {
     abstract load(): void;
 
     /**
-     * Get all NPCs in this stage
-     */
-    abstract getAllNpcs(): Npc[];
-
-    /**
      * Clean up all resources
      */
     clear(): void {
@@ -100,7 +95,7 @@ export abstract class BaseStage {
         }
         this.meshes = [];
 
-        for (const npc of this.getAllNpcs()) {
+        for (const npc of this.npcs) {
             npc.cleanup(this.scene, this.physicsWorld);
         }
 
@@ -190,7 +185,7 @@ export abstract class BaseStage {
         for (const npc of this.npcs) {
             npc.update(dt);
         }
-        
+
         for (const mixer of this.mixers) {
             mixer.update(dt);
         }
