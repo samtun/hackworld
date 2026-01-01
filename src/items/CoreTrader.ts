@@ -1,22 +1,19 @@
-import { WeaponItem } from './WeaponItem';
 import { CoreItem } from './CoreItem';
 import { BaseTrader, TraderUIConfig } from './BaseTrader';
-import { WeaponRegistry } from './WeaponRegistry';
 import { CoreRegistry } from './CoreRegistry';
 import { Player } from '../Player';
 import { Item } from './Item';
 import { TRADER_UI_COLORS } from './TraderUIConstants';
 
-export class WeaponTrader extends BaseTrader {
-    static instance: WeaponTrader; // Singleton
+export class CoreTrader extends BaseTrader {
+    private static instance: CoreTrader; // Singleton
 
-    private weaponRegistry: WeaponRegistry;
     private coreRegistry: CoreRegistry;
 
     private constructor() {
         const cfg: TraderUIConfig = {
-            title: 'TRADER',
-            traderTitle: "Trader's Goods",
+            title: 'CORE TRADER',
+            traderTitle: "Core Trader's Goods",
             playerTitle: 'Your Inventory',
             colors: {
                 panelTrader: TRADER_UI_COLORS.PANEL_TRADER,
@@ -29,32 +26,16 @@ export class WeaponTrader extends BaseTrader {
             }
         };
         super(cfg);
-        this.weaponRegistry = WeaponRegistry.Instance;
         this.coreRegistry = CoreRegistry.Instance;
         this.initializeTraderInventory();
     }
 
-    public static get Instance(): WeaponTrader {
+    public static get Instance(): CoreTrader {
         return this.instance || (this.instance = new this());
     }
 
     protected initializeTraderInventory() {
-        const allWeapons = this.weaponRegistry.getAllWeapons();
-        const traderWeapons = allWeapons.filter(w => w.id !== 'aegis_sword');
-
         this.traderInventory = [];
-
-        for (const weaponDef of traderWeapons) {
-            this.traderInventory.push(new WeaponItem(
-                crypto.randomUUID(),
-                weaponDef.name,
-                weaponDef.baseBuyPrice,
-                weaponDef.baseSellPrice,
-                weaponDef.type,
-                weaponDef.baseDamage,
-                weaponDef.model
-            ));
-        }
 
         const allCores = this.coreRegistry.getAllCores();
         for (const coreDef of allCores) {
@@ -69,6 +50,6 @@ export class WeaponTrader extends BaseTrader {
     }
 
     protected filterPlayerInventory(player: Player): Item[] {
-        return player.inventory.filter(item => item instanceof WeaponItem);
+        return player.inventory.filter(item => item instanceof CoreItem);
     }
 }

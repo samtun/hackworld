@@ -2,11 +2,12 @@ import * as CANNON from 'cannon-es';
 import { BaseDungeon } from './BaseDungeon';
 import { HealingStation } from '../HealingStation';
 import { Player } from '../Player';
-import { ChipTraderManager } from '../items/ChipTraderManager';
+import { ChipTrader } from '../items/ChipTrader';
 import { SaveManager } from '../SaveManager';
 import { XDataUpgradeManager } from '../xdata/XDataUpgradeManager';
 import { WeaponTrader } from '../items/WeaponTrader';
 import { Npc } from '../npcs/Npc';
+import { CoreTrader } from '../items/CoreTrader';
 
 export class Lobby extends BaseDungeon {
     id = 'lobby';
@@ -35,10 +36,12 @@ export class Lobby extends BaseDungeon {
     saveManagerNpc?: Npc;
     weaponTraderNpc?: Npc;
     chipTraderNpc?: Npc;
+    coreTraderNpc?: Npc;
 
     // Managers
     private weaponTraderManager?: WeaponTrader;
-    private chipTraderManager?: ChipTraderManager;
+    private chipTrader?: ChipTrader;
+    private coreTrader?: CoreTrader;
     private saveManager?: SaveManager;
     private xDataUpgradeManager?: XDataUpgradeManager;
 
@@ -131,7 +134,7 @@ export class Lobby extends BaseDungeon {
             "I've got all the chips you need."
         ];
 
-        this.chipTraderManager = ChipTraderManager.Instance;
+        this.chipTrader = ChipTrader.Instance;
         this.chipTraderNpc = new Npc(
             this.scene,
             this.physicsWorld,
@@ -141,10 +144,29 @@ export class Lobby extends BaseDungeon {
             "Trade Chips",
             new CANNON.Vec3(-5, 0, -5),
             chipTraderDialogue,
-            () => this.chipTraderManager?.show()
+            () => this.chipTrader?.show()
         );
 
-        // Load Trader Model from cache
+        // Create Core Trader NPC
+        const coreTraderDialogue = [
+            "Hey you. You look like you could use some upgrades for your systems.",
+            "I've got just what you need."
+        ];
+
+        this.coreTrader = CoreTrader.Instance;
+        this.coreTraderNpc = new Npc(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            "models/npc_placeholder.glb",
+            "Hank",
+            "Trade Cores",
+            new CANNON.Vec3(5, 0, 0),
+            coreTraderDialogue,
+            () => this.coreTrader?.show()
+        );
+
+        // Create Weapon Trader NPC
         const weaponTraderDialogue = [
             "Looking for some new gear?",
             "Trying to inflict some serious damage?",
@@ -175,6 +197,7 @@ export class Lobby extends BaseDungeon {
         if (this.saveManagerNpc) npcs.push(this.saveManagerNpc);
         if (this.weaponTraderNpc) npcs.push(this.weaponTraderNpc);
         if (this.chipTraderNpc) npcs.push(this.chipTraderNpc);
+        if (this.coreTraderNpc) npcs.push(this.coreTraderNpc);
         return npcs;
     }
 
@@ -211,6 +234,10 @@ export class Lobby extends BaseDungeon {
         if (this.chipTraderNpc) {
             this.chipTraderNpc.cleanup(this.scene, this.physicsWorld);
             this.chipTraderNpc = undefined;
+        }
+        if (this.coreTraderNpc) {
+            this.coreTraderNpc.cleanup(this.scene, this.physicsWorld);
+            this.coreTraderNpc = undefined;
         }
         if (this.healingStation) {
             this.healingStation.cleanup(this.scene);
