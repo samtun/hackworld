@@ -10,6 +10,7 @@ import { WeaponDrop } from './items/WeaponDrop';
 import { XData } from './xdata/XData';
 import { XDataDropManager } from './xdata/XDataDropManager';
 import { EXPNumber } from './EXPNumber';
+import { HealingSystem } from './systems/HealingSystem';
 
 export class World {
     scene: THREE.Scene;
@@ -175,6 +176,9 @@ export class World {
 
         // Update stage (portals, etc.)
         this.currentStage.update(dt, player);
+
+        // Update systems that operate across stages (healing, etc.)
+        HealingSystem.Instance.update(dt);
 
         for (let i = this.currentStage.enemies.length - 1; i >= 0; i--) {
             const enemy = this.currentStage.enemies[i];

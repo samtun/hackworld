@@ -202,7 +202,7 @@ export class Lobby extends BaseStage {
         super.update(dt, player);
 
         if (!this.healingStation) return;
-        this.healingStation.update(dt, player);
+        this.healingStation.update(dt);
     }
 
     /**

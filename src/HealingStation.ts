@@ -1,14 +1,15 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Player } from './Player';
 import { BaseMesh } from './BaseMesh';
+import { HealingSystem } from './systems/HealingSystem';
+import { IHealingStation } from './systems/IHealingStation';
 
 /**
  * HealingStation entity with upward-moving particle effects
  * Particles rise straight up (not spinning) at a slower speed
  * Particle speed increases during healing
  */
-export class HealingStation extends BaseMesh {
+export class HealingStation extends BaseMesh implements IHealingStation {
     particles: THREE.Points;
     particleSystem: {
         positions: Float32Array;
@@ -18,8 +19,6 @@ export class HealingStation extends BaseMesh {
         count: number;
     };
     color: THREE.Color;
-    position: CANNON.Vec3;
-    positionVector: THREE.Vector3; // Cached Vector3 for range checks
     isHealing: boolean = false;
 
     private readonly PARTICLE_COUNT = 300;
@@ -29,15 +28,11 @@ export class HealingStation extends BaseMesh {
     private readonly HEALING_RISE_SPEED = 1.8; // Faster rise speed during healing
     private readonly MAX_PARTICLE_SIZE = 0.5;
     private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
-    private readonly HEALING_DURATION = 2.5; // Time in seconds to heal from 0 to max (both HP and TP)
     private time: number = 0;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3) {
         super('models/healing_station.glb');
         this.color = new THREE.Color(0x00ff00);
-        this.position = position;
-        this.positionVector = new THREE.Vector3(position.x, position.y, position.z);
-
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
 
@@ -94,6 +89,9 @@ export class HealingStation extends BaseMesh {
 
         this.particles = new THREE.Points(particleGeometry, particleMaterial);
         scene.add(this.particles);
+
+        // Register with healing system so it can manage player healing
+        HealingSystem.Instance.register(this);
     }
 
     /**
@@ -134,34 +132,18 @@ export class HealingStation extends BaseMesh {
      * @param deltaTime - Time elapsed since last frame
      * @param player - Player to check for healing
      */
-    update(deltaTime: number, player: Player): void {
+    update(deltaTime: number): void {
         // Cap deltaTime to prevent synchronization issues when tab is inactive
         const cappedDeltaTime = Math.min(deltaTime, this.MAX_DELTA_TIME);
 
         this.time += cappedDeltaTime;
+
+        // Let BaseMesh handle mixer/animation updates
+        super.update(cappedDeltaTime);
+
         const stationPos = this.mesh.position;
 
-        // Check if player is in range and handle healing
-        const inRange = this.isPlayerInRange(player.position);
-
-        if (inRange) {
-            // Set healing state (increases particle speed)
-            this.isHealing = true;
-
-            // Calculate heal amounts based on percentage of max (framerate independent)
-            // Heal to full in HEALING_DURATION seconds regardless of max values
-            if (player.hp < player.maxHp || player.tp < player.maxTp) {
-                const healPercentage = cappedDeltaTime / this.HEALING_DURATION;
-                const hpHeal = player.maxHp * healPercentage;
-                const tpHeal = player.maxTp * healPercentage;
-                player.heal(hpHeal, tpHeal);
-            }
-        } else {
-            // Reset healing state when player leaves
-            this.isHealing = false;
-        }
-
-        // Choose rise speed based on healing state
+        // Choose rise speed based on healing state (managed by HealingSystem)
         const riseSpeed = this.isHealing ? this.HEALING_RISE_SPEED : this.NORMAL_RISE_SPEED;
 
         for (let i = 0; i < this.PARTICLE_COUNT; i++) {
@@ -200,17 +182,12 @@ export class HealingStation extends BaseMesh {
     }
 
     /**
-     * Check if player is within the healing circle
-     */
-    private isPlayerInRange(playerPosition: THREE.Vector3): boolean {
-        const dist = playerPosition.distanceTo(this.positionVector);
-        return dist < this.RING_RADIUS;
-    }
-
-    /**
      * Clean up resources
      */
     cleanup(scene: THREE.Scene): void {
+        // Unregister from healing system
+        HealingSystem.Instance.unregister(this);
+
         scene.remove(this.mesh);
         scene.remove(this.particles);
 
@@ -221,5 +198,18 @@ export class HealingStation extends BaseMesh {
         if (particleMaterial) {
             particleMaterial.dispose();
         }
+    }
+
+    // IHealingStation implementation
+    getPosition(): THREE.Vector3 {
+        return this.mesh.position;
+    }
+
+    getRadius(): number {
+        return this.RING_RADIUS;
+    }
+
+    setHealing(isHealing: boolean): void {
+        this.isHealing = isHealing;
     }
 }
