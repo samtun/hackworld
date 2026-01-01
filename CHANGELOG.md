@@ -1,3 +1,11 @@
+# [1.7.0](https://github.com/samtun/hackworld/compare/v1.6.3...v1.7.0) (2026-01-01)
+
+
+### Features
+
+* add core trader npc to lobby ([ebfee71](https://github.com/samtun/hackworld/commit/ebfee71105e85622304d15c8524ff17b2b05c4c5))
+* unify trader ui colors ([7df0c9b](https://github.com/samtun/hackworld/commit/7df0c9b45ddaaa370c3d3f5aa44dfe28135c7b30))
+
 ## [1.6.3](https://github.com/samtun/hackworld/compare/v1.6.2...v1.6.3) (2025-12-31)
 
 
