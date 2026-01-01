@@ -182,23 +182,21 @@ export class Game {
         this.player.setDeathCallback(() => this.handlePlayerDeath());
     }
 
-    switchScene(destination?: string) {
+    switchScene(destination: string) {
         // Use loadStage helper method
-        if (destination) {
-            this.world.loadStage(destination);
-            this.currentScene = destination;
-        }
+        this.world.loadStageById(destination).then(() => {
+            // Reset player position to ground level
+            this.player.move(new CANNON.Vec3(0, 2.0, 0));
+            this.player.body.velocity.set(0, 0, 0);
 
-        // Reset player position to ground level
-        this.player.move(new CANNON.Vec3(0, 0.5, 0));
-        this.player.body.velocity.set(0, 0, 0);
+            // Update last teleporter position when entering a stage via portal
+            // This is used as the respawn point if the player dies
+            this.lastTeleporterPosition.copy(this.player.body.position);
 
-        // Update last teleporter position when entering a stage via portal
-        // This is used as the respawn point if the player dies
-        this.lastTeleporterPosition.copy(this.player.body.position);
-
-        // Snap camera
-        this.camera.position.set(10, 15, 10);
+            // Snap camera
+            this.camera.position.set(10, 15, 10);
+        });
+        this.currentScene = destination;
     }
 
     /**
@@ -222,7 +220,7 @@ export class Game {
 
         // Fully reload the current stage to reset enemies and environment
         if (this.currentScene !== 'startScreen' && this.currentScene !== Lobby.getMetadata().id) {
-            this.world.loadStage(this.currentScene);
+            this.switchScene(this.currentScene);
         }
 
         // Respawn player at last teleporter position
@@ -241,9 +239,8 @@ export class Game {
         // change the respawn point for future deaths
         this.player.respawn(Game.LOBBY_SPAWN_POSITION);
 
-        // Switch to lobby (but don't update lastTeleporterPosition for death returns)
-        this.currentScene = Lobby.getMetadata().id;
-        this.world.loadStage(this.currentScene);
+        // Switch to lobby
+        this.switchScene(Lobby.getMetadata().id);
 
         // Reset camera
         this.camera.position.set(10, 15, 10);

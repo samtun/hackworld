@@ -155,18 +155,6 @@ export class World {
         }
     }
 
-    // Helper method to load stage by ID (wrapper for backward compatibility)
-    // Errors are logged but not propagated to maintain backward compatibility
-    loadStage(stageId: string): void {
-        this.loadStageById(stageId).catch(err => {
-            console.error(`Error loading stage ${stageId}:`, err);
-            // Hide loading screen on error
-            if (this.onStageLoadCompleteCallback) {
-                this.onStageLoadCompleteCallback();
-            }
-        });
-    }
-
     get enemies(): Enemy[] {
         return this.currentStage?.enemies || [];
     }
