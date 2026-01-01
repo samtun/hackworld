@@ -55,7 +55,7 @@ export class Game {
     wasSelectAndStartPressed: boolean = false;
     wasL3Pressed: boolean = false; // Track L3 button for debug value editor toggle
     wasR3Pressed: boolean = false; // Track R3 button for debug mode toggle
-    wasNpcJustInteractedWith: boolean = false; // Prevent immediate action when opening trader
+    wasJustInteracted: boolean = false; // Prevent immediate action (e.g. pickup or NPC interaction)
     isTransitioning: boolean = false;
 
     // Spawn position constants
@@ -474,7 +474,9 @@ export class Game {
                 this.physicsDebugger.update();
             }
 
-            this.player.update(dt, this.world.enemies, isNearInteractive);
+            // Prevent jumping in the frame(s) immediately after interacting
+            const preventJump = isNearInteractive || this.wasJustInteracted;
+            this.player.update(dt, this.world.enemies, preventJump);
             this.world.update(dt, this.player, this.camera.position);
         }
 
@@ -505,14 +507,14 @@ export class Game {
             this.ui.showInteractionHint(true, nearbyInteractive.hint);
 
             // Check for interaction - prevent if just opened a menu or dialogue was just closed
-            const shouldPreventInteraction = this.wasNpcJustInteractedWith ||
+            const shouldPreventInteraction = this.wasJustInteracted ||
                 (nearbyInteractive.type === 'npc' && wasDialogueVisible);
 
             if (isSelectPressed && !this.wasSelectPressed && !shouldPreventInteraction) {
                 nearbyInteractive.action();
 
                 // Set flag if we just interacted to prevent immediate action
-                this.wasNpcJustInteractedWith = true;
+                this.wasJustInteracted = true;
             }
         } else {
             // Hide hint if not near anything interactive
@@ -520,8 +522,8 @@ export class Game {
         }
 
         // Reset trader just opened flag when select is released
-        if (!isSelectPressed && this.wasNpcJustInteractedWith) {
-            this.wasNpcJustInteractedWith = false;
+        if (!isSelectPressed && this.wasJustInteracted) {
+            this.wasJustInteracted = false;
         }
 
         // Handle extra debug outputs
