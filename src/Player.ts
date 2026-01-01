@@ -55,10 +55,10 @@ export class Player extends BaseMesh {
     level: number = 1;
     exp: number = 0;
     expRequired: number = Player.EXP_BASE; // EXP needed for next level
-    maxHp: number = 100;
-    hp: number = 100;
-    maxTp: number = 100;
-    tp: number = 100;
+    maxHp: number = 170;
+    hp: number = 170;
+    maxTp: number = 60;
+    tp: number = 60;
     strength: number = 14;
     defense: number = 17;
     invulnerableTimer: number = 0;
@@ -309,53 +309,55 @@ export class Player extends BaseMesh {
 
             // Sync Mesh with Body
             this.syncPosition();
+
+            return; // Skip normal movement while charging
         }
 
         // Movement
         const inputVector = this.input.getMovementVector();
 
-        // Rotate movement to match isometric camera (45 degrees)
-        // Camera is at (10, 10, 10), so we rotate input by -45 degrees
-        const angle = -Math.PI / 4;
-        const moveX = inputVector.x * Math.cos(angle) - inputVector.y * Math.sin(angle);
-        const moveZ = inputVector.x * Math.sin(angle) + inputVector.y * Math.cos(angle);
+        if (!this.weapon.isAttacking) {
+            // Rotate movement to match isometric camera (45 degrees)
+            const angle = -Math.PI / 4;
+            const moveX = inputVector.x * Math.cos(angle) - inputVector.y * Math.sin(angle);
+            const moveZ = inputVector.x * Math.sin(angle) + inputVector.y * Math.cos(angle);
 
-        // Rotation: Face movement direction
-        if (inputVector.length() > 0.1) {
-            const rotationAngle = Math.atan2(moveX, moveZ);
+            // Rotation: Face movement direction
+            if (inputVector.length() > 0.1) {
+                const rotationAngle = Math.atan2(moveX, moveZ);
 
-            // Smooth rotation using Quaternion slerp
-            const targetQuaternion = new THREE.Quaternion();
-            targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationAngle);
-            this.mesh.quaternion.slerp(targetQuaternion, 15 * dt);
-        }
+                // Smooth rotation using Quaternion slerp
+                const targetQuaternion = new THREE.Quaternion();
+                targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationAngle);
+                this.mesh.quaternion.slerp(targetQuaternion, 15 * dt);
+            }
 
-        if (this.isChargingAttack) {
-            // Skip movement while charging the dash attack
-            return;
-        }
-
-        // Apply velocity based on input
-        // We set velocity directly for responsive controls, but keep Y velocity (gravity)
-        this.body.velocity.x = moveX * this.speed;
-        this.body.velocity.z = moveZ * this.speed;
+            // Apply velocity based on input
+            // We set velocity directly for responsive controls, but keep Y velocity (gravity)
+            this.body.velocity.x = moveX * this.speed;
+            this.body.velocity.z = moveZ * this.speed;
         
+            // We handle rotation manually for the character facing, 
+            // but if we wanted physics rotation we'd copy quaternion.
+            // this.mesh.quaternion.copy(this.body.quaternion as any);
+
+            // Ground detection: Check if player is on ground by velocity and position stability
+            // Player is grounded if vertical velocity is very low (not falling or jumping)
+            this.isGrounded = Math.abs(this.body.velocity.y) < Player.GROUND_VELOCITY_THRESHOLD;
+
+            // Jump: Only allow jumping if player is grounded, not near an interactable, and not pressing select
+            // This prevents jumping when using A button (gamepad) or Enter to interact with objects
+            if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive) {
+                this.body.velocity.y = 10;
+            }
+        } else {
+            // If attacking, gradually reduce horizontal velocity to zero (friction)
+            this.body.velocity.x *= 0.8;
+            this.body.velocity.z *= 0.8;
+        }
+
         // Sync Mesh with Body
         this.syncPosition();
-
-        // We handle rotation manually for the character facing, 
-        // but if we wanted physics rotation we'd copy quaternion.
-        // this.mesh.quaternion.copy(this.body.quaternion as any);
-
-        // Ground detection: Check if player is on ground by velocity and position stability
-        // Player is grounded if vertical velocity is very low (not falling or jumping)
-        this.isGrounded = Math.abs(this.body.velocity.y) < Player.GROUND_VELOCITY_THRESHOLD;
-
-        // Jump: Only allow jumping if player is grounded, not near an interactable, and not pressing select
-        // This prevents jumping when using A button (gamepad) or Enter to interact with objects
-        if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive) {
-            this.body.velocity.y = 10;
-        }
 
         // Combat
         // Track attack button state for charge timing
