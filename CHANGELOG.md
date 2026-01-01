@@ -1,3 +1,12 @@
+## [1.7.1](https://github.com/samtun/hackworld/compare/v1.7.0...v1.7.1) (2026-01-01)
+
+
+### Bug Fixes
+
+* fix call ([cc9222b](https://github.com/samtun/hackworld/commit/cc9222b4606b7ead4c0688ddef61e54c6664c306))
+* healingstation code ([8b6af57](https://github.com/samtun/hackworld/commit/8b6af57437fa5195ae171f8fb216db445c14c9c2))
+* update animations of meshes ([782abc1](https://github.com/samtun/hackworld/commit/782abc10e72b4c0c23bab522ca319798cdea2aa6))
+
 # [1.7.0](https://github.com/samtun/hackworld/compare/v1.6.3...v1.7.0) (2026-01-01)
 
 
