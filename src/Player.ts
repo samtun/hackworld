@@ -78,7 +78,7 @@ export class Player extends BaseMesh {
     // Charged Attack
     private isChargingAttack: boolean = false;
     private chargeTimer: number = 0;
-    private readonly CHARGE_DURATION: number = 1.0;
+    private readonly CHARGE_DURATION: number = 0.8;
     private readonly CHARGE_DELAY: number = 0.2; // Wait 0.2s before starting charge animation
     private chargeDelayTimer: number = 0;
     private isDashing: boolean = false;
@@ -261,174 +261,131 @@ export class Player extends BaseMesh {
 
     update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
         // Skip all updates if player is dead
-        if (this.isDead) {
-            return;
+        if (this.isDead) return;
+
+        // Handle dash and charging (these short-circuit the rest of the update)
+        if (this.handleDash(dt, enemies)) return;
+        if (this.handleCharging(dt)) return;
+
+        // Movement and physics sync
+        this.handleMovement(dt, isNearInteractive);
+        this.syncPosition();
+
+        // Combat (attacks / charge start / weapon updates)
+        this.handleCombat(dt, enemies);
+
+        // Clear attack lock when button released
+        if (this.input.isAttackReleased()) this.attackLockedUntilRelease = false;
+
+        // Invulnerability flash and timers
+        this.handleInvulnerability(dt);
+
+        // Update level-up particles and input state
+        this.updateLevelUpParticles(dt);
+        this.input.updateState();
+    }
+
+    private handleDash(dt: number, enemies: Enemy[]): boolean {
+        if (!this.isDashing) return false;
+        this.dashTimer += dt;
+        this.body.velocity.x = this.dashDirection.x * this.DASH_SPEED;
+        this.body.velocity.z = this.dashDirection.z * this.DASH_SPEED;
+        this.checkDashHits(enemies);
+        if (this.dashTimer >= this.DASH_DURATION) {
+            this.isDashing = false;
+            this.dashHitEnemies.clear();
         }
+        this.syncPosition();
+        return true;
+    }
 
-        // Charged Attack: Handle dashing
-        if (this.isDashing) {
-            this.dashTimer += dt;
+    private handleCharging(dt: number): boolean {
+        if (!this.isChargingAttack) return false;
+        this.chargeTimer += dt;
+        this.invulnerableTimer = 0; // allow damage while charging
+        this.updateChargeParticles();
 
-            // Move in dash direction at high speed
-            this.body.velocity.x = this.dashDirection.x * this.DASH_SPEED;
-            this.body.velocity.z = this.dashDirection.z * this.DASH_SPEED;
-
-            // Check for enemy collisions during dash (3x damage)
-            this.checkDashHits(enemies);
-
-            // End dash after duration
-            if (this.dashTimer >= this.DASH_DURATION) {
-                this.isDashing = false;
-                this.dashHitEnemies.clear();
+        if (this.input.isAttackReleased()) {
+            if (this.chargeTimer >= this.CHARGE_DURATION) {
+                this.executeDashAttack();
+            } else {
+                this.cancelChargeAttack();
             }
-
-            // Sync Mesh with Body
-            this.syncPosition();
-            return; // Skip normal movement during dash
         }
 
-        // Charged Attack: Handle charging
-        if (this.isChargingAttack) {
-            this.chargeTimer += dt;
+        this.body.velocity.x = 0;
+        this.body.velocity.z = 0;
+        this.syncPosition();
+        return true;
+    }
 
-            // Reset invulnerability timer to make sure damage can still be taken
-            this.invulnerableTimer = 0;
-
-            // Update particle positions and height based on charge progress
-            this.updateChargeParticles();
-
-            // Check if attack button is released
-            if (this.input.isAttackReleased()) {
-                if (this.chargeTimer >= this.CHARGE_DURATION) {
-                    // Fully charged, execute dash attack
-                    this.executeDashAttack();
-                } else {
-                    // Not fully charged, cancel
-                    this.cancelChargeAttack();
-                }
-            }
-
-            // Player cannot move during charging
-            this.body.velocity.x = 0;
-            this.body.velocity.z = 0;
-
-            // Sync Mesh with Body
-            this.syncPosition();
-
-            return; // Skip normal movement while charging
-        }
-
-        // Movement
+    private handleMovement(dt: number, isNearInteractive: boolean) {
         const inputVector = this.input.getMovementVector();
 
         if (this.stunTimer > 0) {
-            // While stunned, apply friction and skip movement input to preserve knockback
             this.stunTimer -= dt;
             this.body.velocity.x *= 0.9;
             this.body.velocity.z *= 0.9;
+            return;
+        }
 
-            // Sync Mesh with Body
-            this.syncPosition();
-        } else if (!this.weapon.isAttacking) {
-            // Rotate movement to match isometric camera (45 degrees)
+        if (!this.weapon.isAttacking) {
             const angle = -Math.PI / 4;
             const moveX = inputVector.x * Math.cos(angle) - inputVector.y * Math.sin(angle);
             const moveZ = inputVector.x * Math.sin(angle) + inputVector.y * Math.cos(angle);
 
-            // Rotation: Face movement direction
             if (inputVector.length() > 0.1) {
                 const rotationAngle = Math.atan2(moveX, moveZ);
-
-                // Smooth rotation using Quaternion slerp
                 const targetQuaternion = new THREE.Quaternion();
                 targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), rotationAngle);
                 this.mesh.quaternion.slerp(targetQuaternion, 15 * dt);
             }
 
-            // Apply velocity based on input
-            // We set velocity directly for responsive controls, but keep Y velocity (gravity)
             this.body.velocity.x = moveX * this.speed;
             this.body.velocity.z = moveZ * this.speed;
-        
-            // We handle rotation manually for the character facing, 
-            // but if we wanted physics rotation we'd copy quaternion.
-            // this.mesh.quaternion.copy(this.body.quaternion as any);
 
-            // Ground detection: Check if player is on ground by velocity and position stability
-            // Player is grounded if vertical velocity is very low (not falling or jumping)
             this.isGrounded = Math.abs(this.body.velocity.y) < Player.GROUND_VELOCITY_THRESHOLD;
-
-            // Jump: Only allow jumping if player is grounded, not near an interactable, and not pressing select
-            // This prevents jumping when using A button (gamepad) or Enter to interact with objects
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive) {
                 this.body.velocity.y = 10;
             }
         } else {
-            // If attacking, gradually reduce horizontal velocity to zero (friction)
             this.body.velocity.x *= 0.8;
             this.body.velocity.z *= 0.8;
         }
+    }
 
-        // Sync Mesh with Body
-        this.syncPosition();
+    private handleCombat(dt: number, enemies: Enemy[]) {
+        if (this.attackLockedUntilRelease) return;
 
-        // Combat
-        if (!this.attackLockedUntilRelease) {
-            // Track attack button state for charge timing
-            if (this.input.isAttackJustPressed()) {
-                // Button was just pressed - reset charge timer
-                this.chargeDelayTimer = 0;
-            }
+        // Track attack press for charge timer
+        if (this.input.isAttackJustPressed()) this.chargeDelayTimer = 0;
 
-            // Check for immediate attack on button press (only trigger once per press)
-            if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
-                // Execute immediate attack with range multiplier from chip
-                if (this.weapon.attack(this.getWeaponRangeMultiplier())) {
-                    // Clear the list of enemies hit for this new attack
-                    this.enemiesHitThisPhase.clear();
-
-                    // For dual blade, set up callback to reset hit tracking between phases
-                    if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
-                        this.weapon.onDamageFrame = () => {
-                            // Reset hit tracking for the next phase
-                            this.enemiesHitThisPhase.clear();
-                        };
-                    }
+        // Immediate attack (requires fresh press and not charging)
+        if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
+            if (this.weapon.attack(this.getWeaponRangeMultiplier())) {
+                this.enemiesHitThisPhase.clear();
+                if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
+                    this.weapon.onDamageFrame = () => this.enemiesHitThisPhase.clear();
                 }
-            }
-
-            // Check if attack button is being held (for charging)
-            // Charge timer increments while button is held, regardless of attack state
-            if (this.input.isAttackHeld() && !this.isChargingAttack) {
-                this.chargeDelayTimer += dt;
-
-                // Only start charging attack after 0.2s delay AND when weapon is not attacking
-                if (this.chargeDelayTimer >= this.CHARGE_DELAY && !this.weapon.isAttacking) {
-                    this.startChargeAttack();
-                }
-            } else if (!this.input.isAttackHeld()) {
-                // Reset delay timer when button is released
-                this.chargeDelayTimer = 0;
-            }
-            
-            // Update weapon (handles animation and hitbox positioning)
-            this.weapon.update(dt, this.position, this.mesh.quaternion);
-
-            // Check for hits if weapon is attacking and has an active hitbox
-            if (this.weapon.isAttacking && this.weapon.body) {
-                this.checkAttackHits(enemies);
             }
         }
 
-        // If attack was locked due to a damage-cancelled charge, clear lock when player releases the button
-        if (this.input.isAttackReleased()) {
-            this.attackLockedUntilRelease = false;
+        // Charging
+        if (this.input.isAttackHeld() && !this.isChargingAttack) {
+            this.chargeDelayTimer += dt;
+            if (this.chargeDelayTimer >= this.CHARGE_DELAY && !this.weapon.isAttacking) this.startChargeAttack();
+        } else if (!this.input.isAttackHeld()) {
+            this.chargeDelayTimer = 0;
         }
 
-        // Invulnerability Timer
+        // Weapon update & hit checks
+        this.weapon.update(dt, this.position, this.mesh.quaternion);
+        if (this.weapon.isAttacking && this.weapon.body) this.checkAttackHits(enemies);
+    }
+
+    private handleInvulnerability(dt: number) {
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= dt;
-            // Flash effect
             if (Math.floor(this.invulnerableTimer * 10) % 2 === 0) {
                 (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 0.5;
                 (this.innerMesh?.material as THREE.MeshStandardMaterial).transparent = true;
@@ -439,12 +396,6 @@ export class Player extends BaseMesh {
             (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 1.0;
             (this.innerMesh?.material as THREE.MeshStandardMaterial).transparent = false;
         }
-
-        // Update level up particles if active
-        this.updateLevelUpParticles(dt);
-
-        // Update input state tracking at end of frame
-        this.input.updateState();
     }
 
     private syncPosition() {
