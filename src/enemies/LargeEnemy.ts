@@ -8,22 +8,15 @@ export class LargeEnemy extends Enemy {
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
         super(scene, world, position, physicsMaterial);
 
-        // Override HP
+        // Adjust stats for LargeEnemy
         this.hp = 90;
         this.maxHp = 90;
-
-        // Override weapon drop chance: 15% for large enemies
-        this.weaponDropChance = 0.15;
-
-        // Override X-Data drop chance: 10% for large enemies
-        this.xDataDropChance = 0.1;
-
-        // Override EXP amount: 30 EXP for large enemies (3x normal)
+        this.weaponDropChance = 0.08;
+        this.xDataDropChance = 0.04;
         this.expAmount = 30;
 
-        // Make it larger
         const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
-        const material = new THREE.MeshStandardMaterial({ color: 0x8b0000 }); // Dark red to distinguish
+        const material = new THREE.MeshStandardMaterial({ color: 0x8b0000 }); // Dark red
 
         // Replace the mesh
         scene.remove(this.mesh);
