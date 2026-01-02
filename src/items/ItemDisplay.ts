@@ -1,12 +1,11 @@
 import { Item } from './Item';
 import { WeaponItem } from './weapons/WeaponItem';
-import { Weapon } from './weapons/Weapon';
 
 // Return an HTML-safe label for an item, including price text if provided.
 export function formatItemLabel(item: Item, priceText: string = ''): string {
     if (item instanceof WeaponItem) {
         // Show the weapon's own fixed level as greek character
-        const char = Weapon.getLevelChar(item.level);
+        const char = item.getLevelChar();
         return `${escapeHtml(item.name)} <i style="font-style:italic;">${escapeHtml(char)}</i>${escapeHtml(priceText)}`;
     }
     return `${escapeHtml(item.name)}${escapeHtml(priceText)}`;

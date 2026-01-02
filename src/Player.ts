@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { InputManager } from './InputManager';
-import { Weapon, WeaponType } from './items/weapons/Weapon';
+import { Weapon } from './items/weapons/Weapon';
+import { WeaponType } from './items/weapons/WeaponType';
 import { Enemy } from './enemies/Enemy';
 import { Item } from './items/Item';
 import { WeaponItem } from './items/weapons/WeaponItem';
@@ -283,8 +284,12 @@ export class Player extends BaseMesh {
     private getHitDamage(baseMultiplier: number = 1): number {
         // Determine multiplier from equipped weapon's fixed level
         const equipped = this.inventory.find(i => i instanceof WeaponItem && i.isEquipped) as WeaponItem | undefined;
-        const levelNum = equipped ? equipped.level : 1;
-        const levelMultiplier = Weapon.getDamageMultiplierFromLevelNumber(levelNum);
+        if (!equipped) {
+            return 0;
+        }
+        
+        const levelNum = equipped.level;
+        const levelMultiplier = equipped.getDamageMultiplierFromLevelNumber(levelNum);
         return Math.floor(this.weapon.damage * baseMultiplier * levelMultiplier);
     }
 

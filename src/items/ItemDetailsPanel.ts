@@ -2,7 +2,7 @@ import { Item } from './Item';
 import { WeaponItem } from './weapons/WeaponItem';
 import { CoreItem } from './cores/CoreItem';
 import { ChipItem } from './chips/ChipItem';
-import { WeaponType } from './weapons/Weapon';
+import { WeaponType } from './weapons/WeaponType';
 
 interface ItemDetail {
     label: string;

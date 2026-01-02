@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { WeaponDrop } from './WeaponDrop';
-import { WeaponType, Weapon } from './Weapon';
+import { WeaponType } from './WeaponType';
 import { WeaponRegistry } from './WeaponRegistry';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
@@ -65,7 +65,17 @@ export class WeaponDropManager {
         dropPosition.y = 0.5; // Slightly above ground
 
         // Use level char for display on drop (drops default to alpha)
-        const displayName = `${weaponDef.name} ${Weapon.getLevelChar(1)}`;
+        const tempForChar = new WeaponItem(
+            crypto.randomUUID(),
+            weaponDef.name,
+            weaponDef.baseBuyPrice,
+            weaponDef.baseSellPrice,
+            weaponType,
+            weaponDef.baseDamage,
+            weaponDef.model,
+            1
+        );
+        const displayName = `${weaponDef.name} ${tempForChar.getLevelChar(1)}`;
         const weaponDrop = new WeaponDrop(
             scene,
             physicsWorld,

@@ -1,4 +1,4 @@
-import { WeaponType } from './Weapon';
+import { WeaponType } from './WeaponType';
 
 /**
  * Weapon definition interface

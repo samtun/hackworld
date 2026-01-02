@@ -2,13 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { AssetManager } from '../../AssetManager.ts';
 import { BaseMesh } from '../../BaseMesh.ts';
-
-export enum WeaponType {
-    SWORD = 'sword',
-    DUAL_BLADE = 'dual_blade',
-    LANCE = 'lance',
-    HAMMER = 'hammer'
-}
+import { WeaponType } from './WeaponType';
 
 export interface WeaponLevel {
     char: string; // greek character
@@ -23,16 +17,6 @@ export interface WeaponStats {
 }
 
 export class Weapon extends BaseMesh {
-    // Expose level metadata via static helpers to keep entity-oriented design
-    private static LEVELS = [
-        { char: 'α', requiredTech: 0, damagePercent: 1 },
-        { char: 'β', requiredTech: 120, damagePercent: 1.80 },
-        { char: 'γ', requiredTech: 460, damagePercent: 3.20 },
-        { char: 'δ', requiredTech: 720, damagePercent: 6.20 },
-        { char: 'ε', requiredTech: 1280, damagePercent: 9.80 },
-        { char: 'ω', requiredTech: 2500, damagePercent: 14.00 }
-    ];
-
     private static WEAPON_MODEL_PATHS: Record<WeaponType, string> = {
         [WeaponType.SWORD]: 'models/sword.glb',
         [WeaponType.DUAL_BLADE]: 'models/double_sword.glb',
@@ -63,22 +47,6 @@ export class Weapon extends BaseMesh {
         }
     };
 
-    // Return level definition by numeric level (1-based). Throws if level <= 0.
-    static getLevelByNumber(level: number): WeaponLevel {
-        if (level <= 0) throw new Error('Weapon level must be >= 1');
-        if (level > Weapon.LEVELS.length) return Weapon.LEVELS[Weapon.LEVELS.length - 1];
-        return Weapon.LEVELS[level - 1];
-    }
-
-    // Return greek char for numeric level
-    static getLevelChar(level: number): string {
-        return Weapon.getLevelByNumber(level).char;
-    }
-
-    // Return multiplier for numeric level
-    static getDamageMultiplierFromLevelNumber(level: number): number {
-        return Weapon.getLevelByNumber(level).damagePercent;
-    }
     body?: CANNON.Body;
     isAttacking: boolean = false;
     private attackTimer: number = 0;

@@ -3,7 +3,7 @@ import { WeaponRegistry } from './items/weapons/WeaponRegistry';
 import { CoreRegistry } from './items/cores/CoreRegistry';
 import { ChipRegistry } from './items/chips/ChipRegistry';
 import { WeaponItem } from './items/weapons/WeaponItem';
-import { Weapon, WeaponType } from './items/weapons/Weapon';
+import { WeaponType } from './items/weapons/WeaponType';
 import { CoreItem } from './items/cores/CoreItem';
 import { ChipItem } from './items/chips/ChipItem';
 
@@ -262,21 +262,23 @@ export class DebugValueEditor {
         levelSelect.style.fontSize = '14px';
         levelSelect.style.fontFamily = 'inherit';
 
-        // Populate from Weapon.LEVELS if available, otherwise fall back to 1..5
-        const rawLevels = (Weapon as any).LEVELS || [];
+        // Populate from WeaponItem.LEVELS if available, otherwise fall back to 1..5
+        const rawLevels = (WeaponItem as any).LEVELS || [];
         if (rawLevels && rawLevels.length > 0) {
             rawLevels.forEach((lvl: any, idx: number) => {
                 const num = idx + 1;
                 const opt = document.createElement('option');
                 opt.value = String(num);
-                opt.textContent = `${Weapon.getLevelChar(num)}${lvl.name ? ` (${lvl.name})` : ''}`;
+                const char = new WeaponItem('tmp', 'tmp', 0, 0, WeaponType.SWORD, 0, '', num).getLevelChar(num);
+                opt.textContent = `${char}${lvl.name ? ` (${lvl.name})` : ''}`;
                 levelSelect.appendChild(opt);
             });
         } else {
             for (let i = 1; i <= 5; i++) {
                 const opt = document.createElement('option');
                 opt.value = String(i);
-                opt.textContent = `${Weapon.getLevelChar(i)} Level ${i}`;
+                const char = new WeaponItem('tmp', 'tmp', 0, 0, WeaponType.SWORD, 0, '', i).getLevelChar(i);
+                opt.textContent = `${char} Level ${i}`;
                 levelSelect.appendChild(opt);
             }
         }
