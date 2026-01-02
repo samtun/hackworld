@@ -397,7 +397,7 @@ export class Game {
 
         // Define interactive entity types
         interface InteractiveEntity {
-            type: 'npc' | 'weaponDrop' | 'portal';
+            type: 'npc' | 'weaponDrop' | 'chipDrop' | 'coreDrop' | 'portal';
             data?: any;
             hint: string;
             action: () => void;
@@ -426,7 +426,7 @@ export class Game {
                 }
             }
 
-            // Check weapon drop (higher priority than traders)
+            // Check weapon / chip / core drops (higher priority than traders)
             if (!nearbyInteractive) {
                 const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.position);
                 if (weaponDropNearby) {
@@ -438,6 +438,34 @@ export class Game {
                             this.world.pickupWeaponDrop(weaponDropNearby, this.player);
                         }
                     };
+                }
+
+                if (!nearbyInteractive) {
+                    const chipDropNearby = this.world.checkChipDropInteraction(this.player.position);
+                    if (chipDropNearby) {
+                        nearbyInteractive = {
+                            type: 'chipDrop',
+                            data: chipDropNearby,
+                            hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
+                            action: () => {
+                                this.world.pickupChipDrop(chipDropNearby, this.player);
+                            }
+                        };
+                    }
+                }
+
+                if (!nearbyInteractive) {
+                    const coreDropNearby = this.world.checkCoreDropInteraction(this.player.position);
+                    if (coreDropNearby) {
+                        nearbyInteractive = {
+                            type: 'coreDrop',
+                            data: coreDropNearby,
+                            hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
+                            action: () => {
+                                this.world.pickupCoreDrop(coreDropNearby, this.player);
+                            }
+                        };
+                    }
                 }
             }
 

@@ -18,7 +18,7 @@ export class Enemy {
     deathDuration: number = 1.0;
     flashTimer: number = 0;
     stunTimer: number = 0;
-    weaponDropChance: number = 0.04;
+    itemDropChance: number = 0.04;
     xDataDropChance: number = 0.02;
     expAmount: number = 10; // EXP granted on defeat
 

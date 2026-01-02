@@ -32,7 +32,7 @@ export class WeaponDropManager {
         player: Player
     ): boolean {
         // Roll for drop
-        if (Math.random() > enemy.weaponDropChance) {
+        if (Math.random() > enemy.itemDropChance) {
             return false; // No drop
         }
 
