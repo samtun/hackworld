@@ -51,6 +51,9 @@ export class Player extends BaseMesh {
     private static readonly EXP_LINEAR_FACTOR = 30;
     private static readonly EXP_QUADRATIC_FACTOR = 0.07;
 
+    // Tech point cap
+    private static readonly TECH_POINT_CAP = 2500;
+
     // Base Stats (without equipment modifiers or upgrades)
     private baseStrength: number = 14;
     private baseDefense: number = 17;
@@ -278,6 +281,10 @@ export class Player extends BaseMesh {
     incrementTechForCurrentWeapon(dropRateFactor: number) {
         const key = this.currentWeaponType;
         const x = this.tech[key];
+        if (x >= Player.TECH_POINT_CAP) {
+            return; // Cap reached
+        }
+
         const dropChance = (0.015 + Math.log10(x + 3) * 0.02 + 0.0001 * x) * dropRateFactor;
         const random = Math.random();
         console.log(`Tech increment check: current tech=${x}, ${random} <= dropChance=${dropChance.toFixed(4)}`);
