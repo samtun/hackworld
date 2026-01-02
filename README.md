@@ -10,6 +10,7 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Hub based game world with multiple dungeon stages
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
 - Inventory system with looting mechanics
+- **Card Collection** - Collect cards from booster packs found as enemy drops. Visit Irkel in the lobby to open packs and view your collection across 10 albums
 - **Save system** - Save your game progress to a JSON file through the Save Manager NPC in the lobby
 
 ## Tech Stack
