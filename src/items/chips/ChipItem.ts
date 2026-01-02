@@ -1,22 +1,13 @@
 import { EquippableItem } from '../EquippableItem';
 import { Player } from '../../Player';
 import { ChipType, ChipStats } from './Chip';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class ChipItem extends EquippableItem {
     chipType: ChipType;
     stats: ChipStats;
     // fixed numeric level for this chip instance (1 = α, 2 = β, ...)
     level: number;
-
-    // Level metadata for chips (based on player level, not tech)
-    private static CHIP_LEVELS = [
-        { requiredLevel: 1, statPercent: 1.00 },   // α - Lvl 1 +0%
-        { requiredLevel: 10, statPercent: 1.10 },  // β - Lvl 10 +10%
-        { requiredLevel: 24, statPercent: 1.25 },  // γ - Lvl 24 +25%
-        { requiredLevel: 40, statPercent: 1.40 },  // δ - Lvl 40 +40%
-        { requiredLevel: 72, statPercent: 1.60 },  // ε - Lvl 72 +60%
-        { requiredLevel: 124, statPercent: 1.90 }  // ω - Lvl 124 +90%
-    ];
 
     constructor(id: string, name: string, buyPrice: number, sellPrice: number, chipType: ChipType, stats: ChipStats, level: number = 1) {
         super(id, name, buyPrice, sellPrice);
@@ -29,8 +20,8 @@ export class ChipItem extends EquippableItem {
     public getLevelByNumber(): { requiredLevel: number; statPercent: number } {
         const lvl = this.level;
         if (lvl <= 0) throw new Error('Chip level must be >= 1');
-        if (lvl > ChipItem.CHIP_LEVELS.length) return ChipItem.CHIP_LEVELS[ChipItem.CHIP_LEVELS.length - 1];
-        return ChipItem.CHIP_LEVELS[lvl - 1];
+        if (lvl > ItemLevelHelper.CHIP_CORE_LEVELS.length) return ItemLevelHelper.CHIP_CORE_LEVELS[ItemLevelHelper.CHIP_CORE_LEVELS.length - 1];
+        return ItemLevelHelper.CHIP_CORE_LEVELS[lvl - 1];
     }
 
     // Return multiplier for numeric level

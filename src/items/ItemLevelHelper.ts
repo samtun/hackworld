@@ -10,6 +10,16 @@ export class ItemLevelHelper {
         6: 'ω',
     };
 
+    // Level definitions for chips and cores (based on player level, not tech)
+    public static CHIP_CORE_LEVELS = [
+        { requiredLevel: 1, statPercent: 1.00 },   // α - Lvl 1 +0%
+        { requiredLevel: 10, statPercent: 1.10 },  // β - Lvl 10 +10%
+        { requiredLevel: 24, statPercent: 1.25 },  // γ - Lvl 24 +25%
+        { requiredLevel: 40, statPercent: 1.40 },  // δ - Lvl 40 +40%
+        { requiredLevel: 72, statPercent: 1.60 },  // ε - Lvl 72 +60%
+        { requiredLevel: 124, statPercent: 1.90 }  // ω - Lvl 124 +90%
+    ];
+
     public static getLevelChar(level: number): string {
         if (level <= 0) throw new Error('Weapon level must be >= 1');
         if (level > Object.keys(this.LEVELS).length) {

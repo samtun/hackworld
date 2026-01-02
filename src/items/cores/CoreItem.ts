@@ -1,21 +1,12 @@
 import { EquippableItem } from '../EquippableItem';
 import { Player } from '../../Player';
 import { CoreStats } from './Core';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class CoreItem extends EquippableItem {
     stats: CoreStats;
     // fixed numeric level for this core instance (1 = α, 2 = β, ...)
     level: number;
-
-    // Level metadata for cores (based on player level, not tech)
-    private static CORE_LEVELS = [
-        { requiredLevel: 1, statPercent: 1.00 },   // α - Lvl 1 +0%
-        { requiredLevel: 10, statPercent: 1.10 },  // β - Lvl 10 +10%
-        { requiredLevel: 24, statPercent: 1.25 },  // γ - Lvl 24 +25%
-        { requiredLevel: 40, statPercent: 1.40 },  // δ - Lvl 40 +40%
-        { requiredLevel: 72, statPercent: 1.60 },  // ε - Lvl 72 +60%
-        { requiredLevel: 124, statPercent: 1.90 }  // ω - Lvl 124 +90%
-    ];
 
     constructor(id: string, name: string, buyPrice: number, sellPrice: number, stats: CoreStats, level: number = 1) {
         super(id, name, buyPrice, sellPrice);
@@ -27,8 +18,8 @@ export class CoreItem extends EquippableItem {
     public getLevelByNumber(): { requiredLevel: number; statPercent: number } {
         const lvl = this.level;
         if (lvl <= 0) throw new Error('Core level must be >= 1');
-        if (lvl > CoreItem.CORE_LEVELS.length) return CoreItem.CORE_LEVELS[CoreItem.CORE_LEVELS.length - 1];
-        return CoreItem.CORE_LEVELS[lvl - 1];
+        if (lvl > ItemLevelHelper.CHIP_CORE_LEVELS.length) return ItemLevelHelper.CHIP_CORE_LEVELS[ItemLevelHelper.CHIP_CORE_LEVELS.length - 1];
+        return ItemLevelHelper.CHIP_CORE_LEVELS[lvl - 1];
     }
 
     // Return multiplier for numeric level
@@ -41,16 +32,12 @@ export class CoreItem extends EquippableItem {
         const multiplier = this.getStatMultiplierFromLevelNumber();
         const effectiveStats: CoreStats = {};
 
-        if (this.stats.strength !== undefined) {
-            effectiveStats.strength = Math.round(this.stats.strength * multiplier);
-        }
-
-        if (this.stats.defense !== undefined) {
-            effectiveStats.defense = Math.round(this.stats.defense * multiplier);
-        }
-
-        if (this.stats.speed !== undefined) {
-            effectiveStats.speed = Math.round(this.stats.speed * multiplier);
+        // Apply multiplier to all stat types
+        const statKeys = ['strength', 'defense', 'speed'] as const;
+        for (const key of statKeys) {
+            if (this.stats[key] !== undefined) {
+                effectiveStats[key] = Math.round(this.stats[key]! * multiplier);
+            }
         }
 
         return effectiveStats;

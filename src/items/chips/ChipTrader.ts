@@ -8,6 +8,10 @@ import { TRADER_UI_COLORS } from '../TraderUIConstants';
 export class ChipTrader extends BaseTrader {
     private static instance: ChipTrader; // Singleton
 
+    // Price multipliers for different levels
+    private static readonly LEVEL_2_PRICE_MULTIPLIER = 1.5;
+    private static readonly LEVEL_3_PRICE_MULTIPLIER = 2.0;
+
     private chipRegistry: ChipRegistry;
 
     private constructor() {
@@ -54,7 +58,7 @@ export class ChipTrader extends BaseTrader {
             this.traderInventory.push(new ChipItem(
                 crypto.randomUUID(),
                 chipDef.name,
-                Math.round(chipDef.buyPrice * 1.5),
+                Math.round(chipDef.buyPrice * ChipTrader.LEVEL_2_PRICE_MULTIPLIER),
                 chipDef.sellPrice,
                 chipDef.type,
                 chipDef.stats,
@@ -65,7 +69,7 @@ export class ChipTrader extends BaseTrader {
             this.traderInventory.push(new ChipItem(
                 crypto.randomUUID(),
                 chipDef.name,
-                Math.round(chipDef.buyPrice * 2.0),
+                Math.round(chipDef.buyPrice * ChipTrader.LEVEL_3_PRICE_MULTIPLIER),
                 chipDef.sellPrice,
                 chipDef.type,
                 chipDef.stats,
