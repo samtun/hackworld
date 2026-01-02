@@ -8,21 +8,9 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 
 - Hack and slash gameplay
 - Hub based game world with multiple dungeon stages
-- Two unique dungeon stages accessible from the lobby
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
 - Inventory system with looting mechanics
-- **Weapon drops** - Defeated enemies have a chance to drop weapons that can be picked up and added to your inventory
-- **Interactive trader** in the lobby - Buy and sell weapons and cores, manage your bits
-- **Chip system** - Equip chips to modify player behavior and weapon properties
-  - **Firewire** - Increases weapon range by 10%
-  - **Overclock** - Increases walk speed by 10%
-  - Chips can be purchased from the chip trader in the lobby
-- **X-Data resource system** - Collect X-Data from defeated enemies and use it to permanently upgrade your stats with Ford in the lobby
 - **Save system** - Save your game progress to a JSON file through the Save Manager NPC in the lobby
-  - Saves player stats (HP, TP, level, EXP, strength, defense, speed, money, X-Data)
-  - Saves player upgrades and inventory
-  - Tracks and saves playtime
-  - Saves trader inventories
 
 ## Tech Stack
 
@@ -43,9 +31,7 @@ Play the game at: [https://samtun.github.io/hackworld/](https://samtun.github.io
    - The hub is a single area without loading screens
    - Loading screens in general are less common and finish quicker
    - New equipment can be equipped at any time. No need to return to the hub
-   - The X-Data resource system is implemented with drops from enemies that can be used for permanent stat upgrades
    - The combat feels a bit more dynamic while keeping the original feel in many areas
-   - Tech (skills) is improved by reducing the amount of skills and using quick access button combinations to them rather than tedious switching via a menu
 
 ## Installation & Start
 
@@ -107,13 +93,6 @@ Examples:
 #### Local Enforcement
 Commit messages are validated locally via Husky hooks. Invalid commits will be rejected before they reach the repository.
 
-#### Automated Releases
-When code is merged to the `main` branch:
-- Semantic versioning is automatically applied based on commit types
-- A `CHANGELOG.md` is generated with all changes
-- A GitHub Release is created with the new version tag
-- The `package.json` version is updated automatically
-
 ### Debug Mode
 The game includes a comprehensive debug mode for development and testing.
 - **Availability**: Development builds only (`npm run dev`)
@@ -125,11 +104,8 @@ When debug mode is enabled (F8), you get access to:
 1. **Physics Colliders Visualization**: Red wireframe boxes show all physics collision boundaries
 2. **Debug Value Editor**: A powerful overlay for live editing and testing
    - **Player Stats Editor**: Modify HP, TP, Strength, Defense, Speed, Level, X-Data, and Money in real-time
-   - **Add Weapons**: Add any weapon from the registry with custom damage values
-   - **Add Cores**: Add any core from the registry with their defined stats
+   - **Add Items**: Add any weapons, cores and chips to the player inventory
    - **Collapsible UI**: Click the arrow button (▼/▲) to expand or collapse the editor panel
-
-The debug value editor is positioned in the top-right corner and can be toggled between expanded and collapsed states for convenience during testing.
 
 ## Deployment
 
