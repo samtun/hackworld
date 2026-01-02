@@ -1,3 +1,37 @@
+# [1.8.0](https://github.com/samtun/hackworld/compare/v1.7.1...v1.8.0) (2026-01-02)
+
+
+### Bug Fixes
+
+* add only weapons to weapon trader inventory ([9f36546](https://github.com/samtun/hackworld/commit/9f36546c5c9991554487d52b2dba55f0b93b7b39))
+* fix jumping after weapon drop pickup ([6caa876](https://github.com/samtun/hackworld/commit/6caa8764e2dc1a55489a85e259cf4f0a26a63e8f))
+* fix passed argument ([da464a8](https://github.com/samtun/hackworld/commit/da464a8088bebfc00869b44ea0e4d198fd02539c))
+* fix vulnerabilities in packages ([1fca22f](https://github.com/samtun/hackworld/commit/1fca22f741af1f20e222cc28d77c8c90ccc54a97))
+* initial player and camera position bug ([c6da1f4](https://github.com/samtun/hackworld/commit/c6da1f47d143561082ac28c4b69e565fd7c1c96f))
+* make cancelled charge attack wait player to press attack again ([a77c85d](https://github.com/samtun/hackworld/commit/a77c85d7d8c319cd95c9a2577da0931e43e963e4))
+* make weapon drops show level properly ([3abb353](https://github.com/samtun/hackworld/commit/3abb353ae297915565e660f24d298225f8c827da))
+* player jumping on scene switches ([02f54d4](https://github.com/samtun/hackworld/commit/02f54d4a0a5e9997227a0f68d6454629d684bae6))
+* remove player from function call ([6abb9e3](https://github.com/samtun/hackworld/commit/6abb9e380941958ccc6872e9482aa3b0b88c5d24))
+* remove player invulnerability while charging attack ([6c1c68b](https://github.com/samtun/hackworld/commit/6c1c68b9bcf8ff8933b63777a5983fb7e5e49a49))
+* remove unnecessary physicsWorld parameter from chip and core drop methods ([e038a47](https://github.com/samtun/hackworld/commit/e038a47898446b37f2cf0d0ed956a3a141e94d6b))
+* remove unnecessary physicsWorld parameter from drop creation ([6f9f07f](https://github.com/samtun/hackworld/commit/6f9f07fcca1f44ef00649e13c2653e8a51f02085))
+* update Node.js version to 24.10.0 in workflow files ([93dc22a](https://github.com/samtun/hackworld/commit/93dc22a29f9d1610e08f8764d91cd82faabd2d73))
+
+
+### Features
+
+* add core and chip drops ([507287c](https://github.com/samtun/hackworld/commit/507287c42dccaa90386b825c3c5428da9828c0c8))
+* add knockback to player on hit ([8216200](https://github.com/samtun/hackworld/commit/8216200ce20d59b87f6ce525b16dabaa58450c18))
+* add tech and weapon levels to the save file ([0d7925b](https://github.com/samtun/hackworld/commit/0d7925bd0def89f7dbd6b32162451931a365ecb7))
+* add weapon levels incl. debug view inputs ([3a93740](https://github.com/samtun/hackworld/commit/3a93740d1197ecfb33f8392c19f3510cb555f9c0))
+* change base hp and tp values and stop player from moving while attacking ([6584a4e](https://github.com/samtun/hackworld/commit/6584a4ea833a3bc092f1ccf814fbd9c968f37232))
+* display level on weapon drops in italic ([193ec07](https://github.com/samtun/hackworld/commit/193ec076425fc6e8fb845e56076a7a59bf118035))
+* improve camera position ([f02679f](https://github.com/samtun/hackworld/commit/f02679f58a9ac71d67d1db827b0eccebc2e52c5f))
+* increase enemy hp and lower large enemy exp ([9c737ba](https://github.com/samtun/hackworld/commit/9c737ba15eea4d2d3020ec5d955b06c94707a7b0))
+* introduce tech point cap of 2500 ([dc59582](https://github.com/samtun/hackworld/commit/dc5958242d84a0aac172afbbbb5d176ab8d4707b))
+* refine tech drop chance ([30e39fb](https://github.com/samtun/hackworld/commit/30e39fb864ca1caee42443cf9f0a5c5051029418))
+* use actual drop rate for tech points ([df27108](https://github.com/samtun/hackworld/commit/df27108639f7d45a9902ff13ec68f18a7060c48d))
+
 ## [1.7.1](https://github.com/samtun/hackworld/compare/v1.7.0...v1.7.1) (2026-01-01)
 
 
