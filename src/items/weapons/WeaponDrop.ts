@@ -2,12 +2,13 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { WeaponType } from './WeaponType';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import { ItemDrop } from '../ItemDrop';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
  * Displays a 3D text label and animates in a floating motion
  */
-export class WeaponDrop {
+export class WeaponDrop implements ItemDrop {
     mesh: THREE.Group;
     body: CANNON.Body;
     weaponType: WeaponType;
@@ -28,7 +29,6 @@ export class WeaponDrop {
 
     constructor(
         scene: THREE.Scene,
-        world: CANNON.World,
         position: CANNON.Vec3,
         weaponType: WeaponType,
         weaponName: string,
@@ -126,7 +126,8 @@ export class WeaponDrop {
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
 
-        // Create physics body (sensor for detection)
+        // Create physics body (sensor for detection). Do NOT add to physics world here;
+        // caller (ItemDropManager) will add the body to the world.
         const shape = new CANNON.Sphere(0.5);
         this.body = new CANNON.Body({
             mass: 0,
@@ -139,8 +140,6 @@ export class WeaponDrop {
         // Mark as weapon drop for detection
         (this.body as any).isWeaponDrop = true;
         (this.body as any).weaponDrop = this;
-
-        world.addBody(this.body);
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {

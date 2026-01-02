@@ -5,11 +5,14 @@ import { Player } from './Player';
 import { AssetManager } from './AssetManager';
 import { BaseStage, Lobby, createStage } from './stages';
 import { Npc } from './npcs/Npc';
-import { WeaponDropManager } from './items/weapons/WeaponDropManager';
-import { WeaponDrop } from './items/weapons/WeaponDrop';
-import { ChipDropManager } from './items/chips/ChipDropManager';
-import { CoreDropManager } from './items/cores/CoreDropManager';
+import { ItemDropManager } from './items/ItemDropManager';
+import { WeaponDropStrategy } from './items/strategies/WeaponDropStrategy';
+import { ChipDropStrategy } from './items/strategies/ChipDropStrategy';
+import { CoreDropStrategy } from './items/strategies/CoreDropStrategy';
 import { XData } from './items/xdata/XData';
+import { WeaponDrop } from './items/weapons/WeaponDrop';
+import { ChipDrop } from './items/chips/ChipDrop';
+import { CoreDrop } from './items/cores/CoreDrop';
 import { XDataDropManager } from './items/xdata/XDataDropManager';
 import { EXPNumber } from './EXPNumber';
 import { HealingSystem } from './systems/HealingSystem';
@@ -33,10 +36,8 @@ export class World {
     expNumbers: EXPNumber[] = [];
 
     // Drop managers
-    private weaponDropManager: WeaponDropManager;
+    private itemDropManager: ItemDropManager;
     private xDataDropManager: XDataDropManager;
-    private chipDropManager: ChipDropManager;
-    private coreDropManager: CoreDropManager;
 
     // XData interaction callback (set by Game)
     private xDataInteractionCallback?: () => void;
@@ -58,10 +59,13 @@ export class World {
         this.assetManager = AssetManager.Instance;
         this.onLoadProgressCallback = onLoadProgress;
 
-        this.weaponDropManager = WeaponDropManager.Instance;
+        this.itemDropManager = ItemDropManager.Instance;
         this.xDataDropManager = XDataDropManager.Instance;
-        this.chipDropManager = ChipDropManager.Instance;
-        this.coreDropManager = CoreDropManager.Instance;
+
+        // Register drop strategies
+        this.itemDropManager.registerStrategy('weapon', new WeaponDropStrategy());
+        this.itemDropManager.registerStrategy('chip', new ChipDropStrategy());
+        this.itemDropManager.registerStrategy('core', new CoreDropStrategy());
 
         // Setup progress callback for asset manager
         if (this.onLoadProgressCallback) {
@@ -123,9 +127,7 @@ export class World {
                 this.currentStage.clear();
                 this.currentStage = undefined;
             }
-            this.weaponDropManager.clear(this.scene, this.physicsWorld);
-            this.chipDropManager.clear(this.scene, this.physicsWorld);
-            this.coreDropManager.clear(this.scene, this.physicsWorld);
+            this.itemDropManager.clear(this.scene, this.physicsWorld);
             this.clearXData();
 
             // Create new stage instance
@@ -192,13 +194,13 @@ export class World {
                 const random = Math.random();
                 let droppedItem = false;
 
-                // 50% chance to drop weapon, 25% chip, 25% core
+                // 50% weapon, 25% chip, 25% core
                 if (random < 0.5) {
-                    droppedItem = this.weaponDropManager.tryDropWeapon(this.scene, this.physicsWorld, enemy, player);
+                    droppedItem = this.itemDropManager.tryDrop('weapon', this.scene, this.physicsWorld, enemy, player);
                 } else if (random < 0.75) {
-                    droppedItem = this.chipDropManager.tryDropChip(this.scene, this.physicsWorld, enemy, player);
+                    droppedItem = this.itemDropManager.tryDrop('chip', this.scene, this.physicsWorld, enemy, player);
                 } else {
-                    droppedItem = this.coreDropManager.tryDropCore(this.scene, this.physicsWorld, enemy, player);
+                    droppedItem = this.itemDropManager.tryDrop('core', this.scene, this.physicsWorld, enemy, player);
                 }
 
                 if (!droppedItem) {
@@ -214,11 +216,8 @@ export class World {
             }
         }
 
-        // Update weapon drops
-        this.weaponDropManager.update(dt, cameraPosition, player.position);
-        // Update chip/core drops
-        this.chipDropManager.update(dt, cameraPosition, player.position);
-        this.coreDropManager.update(dt, cameraPosition, player.position);
+        // Update all registered item drop strategies
+        this.itemDropManager.update(dt, cameraPosition, player.position);
 
         // Update X-Data entities
         for (let i = this.xDataEntities.length - 1; i >= 0; i--) {
@@ -312,41 +311,41 @@ export class World {
      * Check if player is near a weapon drop
      */
     checkWeaponDropInteraction(playerPosition: THREE.Vector3): WeaponDrop | null {
-        return this.weaponDropManager.checkInteraction(playerPosition);
+        return this.itemDropManager.checkInteraction('weapon', playerPosition) as WeaponDrop | null;
     }
 
     /**
      * Pick up a weapon drop
      */
     pickupWeaponDrop(drop: WeaponDrop, player: Player): void {
-        this.weaponDropManager.pickup(this.scene, this.physicsWorld, drop, player);
+        this.itemDropManager.pickup('weapon', this.scene, this.physicsWorld, drop, player);
     }
 
     /**
      * Check if player is near a chip drop
      */
     checkChipDropInteraction(playerPosition: THREE.Vector3) {
-        return this.chipDropManager.checkInteraction(playerPosition);
+        return this.itemDropManager.checkInteraction('chip', playerPosition) as ChipDrop | null;
     }
 
     /**
      * Pick up a chip drop
      */
-    pickupChipDrop(drop: any, player: Player): void {
-        this.chipDropManager.pickup(this.scene, this.physicsWorld, drop, player);
+    pickupChipDrop(drop: ChipDrop, player: Player): void {
+        this.itemDropManager.pickup('chip', this.scene, this.physicsWorld, drop, player);
     }
 
     /**
      * Check if player is near a core drop
      */
     checkCoreDropInteraction(playerPosition: THREE.Vector3) {
-        return this.coreDropManager.checkInteraction(playerPosition);
+        return this.itemDropManager.checkInteraction('core', playerPosition) as CoreDrop | null;
     }
 
     /**
      * Pick up a core drop
      */
-    pickupCoreDrop(drop: any, player: Player): void {
-        this.coreDropManager.pickup(this.scene, this.physicsWorld, drop, player);
+    pickupCoreDrop(drop: CoreDrop, player: Player): void {
+        this.itemDropManager.pickup('core', this.scene, this.physicsWorld, drop, player);
     }
 }

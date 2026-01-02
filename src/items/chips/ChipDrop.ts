@@ -1,8 +1,9 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { ChipType } from './Chip';
+import { ItemDrop } from '../ItemDrop';
 
-export class ChipDrop {
+export class ChipDrop implements ItemDrop {
     mesh: THREE.Group;
     body: CANNON.Body;
     chipId: string;
@@ -17,7 +18,7 @@ export class ChipDrop {
     private readonly FLOAT_AMPLITUDE: number = 0.12;
     private readonly PICKUP_DISTANCE: number = 1.5;
 
-    constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, chipId: string, chipName: string, chipType: ChipType, buyPrice: number, sellPrice: number) {
+    constructor(scene: THREE.Scene, position: CANNON.Vec3, chipId: string, chipName: string, chipType: ChipType, buyPrice: number, sellPrice: number) {
         this.chipId = chipId;
         this.chipName = chipName;
         this.chipType = chipType;
@@ -62,7 +63,6 @@ export class ChipDrop {
         this.body.position.copy(position);
         (this.body as any).isChipDrop = true;
         (this.body as any).chipDrop = this;
-        world.addBody(this.body);
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {

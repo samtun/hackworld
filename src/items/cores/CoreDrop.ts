@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { ItemDrop } from '../ItemDrop';
 
-export class CoreDrop {
+export class CoreDrop implements ItemDrop {
     mesh: THREE.Group;
     body: CANNON.Body;
     coreId: string;
@@ -15,7 +16,7 @@ export class CoreDrop {
     private readonly FLOAT_AMPLITUDE: number = 0.14;
     private readonly PICKUP_DISTANCE: number = 1.5;
 
-    constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, coreId: string, coreName: string, buyPrice: number, sellPrice: number) {
+    constructor(scene: THREE.Scene, position: CANNON.Vec3, coreId: string, coreName: string, buyPrice: number, sellPrice: number) {
         this.coreId = coreId;
         this.coreName = coreName;
         this.buyPrice = buyPrice;
@@ -57,7 +58,6 @@ export class CoreDrop {
         this.body.position.copy(position);
         (this.body as any).isCoreDrop = true;
         (this.body as any).coreDrop = this;
-        world.addBody(this.body);
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
