@@ -27,6 +27,7 @@ export class Enemy {
     attackAnimDuration: number = 0.3;
     attackAnimTimer: number = 0;
     weaponBaseRotation: THREE.Euler;
+    techDropRateFactor: number = 1.0;
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
         // Visual

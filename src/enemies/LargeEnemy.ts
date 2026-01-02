@@ -14,6 +14,7 @@ export class LargeEnemy extends Enemy {
         this.weaponDropChance = 0.08;
         this.xDataDropChance = 0.04;
         this.expAmount = 25;
+        this.techDropRateFactor = 1.3;
 
         const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
         const material = new THREE.MeshStandardMaterial({ color: 0x8b0000 }); // Dark red

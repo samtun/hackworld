@@ -72,10 +72,10 @@ export class Player extends BaseMesh {
 
     // Weapon tech/proficiency stats (gained on hit)
     public tech: Record<WeaponType, number> = {
-        [WeaponType.SWORD]: 0,
-        [WeaponType.DUAL_BLADE]: 0,
-        [WeaponType.LANCE]: 0,
-        [WeaponType.HAMMER]: 0,
+        [WeaponType.SWORD]: 1,
+        [WeaponType.DUAL_BLADE]: 1,
+        [WeaponType.LANCE]: 1,
+        [WeaponType.HAMMER]: 1,
     };
 
     // Upgrade levels for X-Data upgrades
@@ -275,9 +275,16 @@ export class Player extends BaseMesh {
     }
 
     // Increment tech for the currently equipped weapon
-    incrementTechForCurrentWeapon(amount: number = 1) {
+    incrementTechForCurrentWeapon(dropRateFactor: number) {
         const key = this.currentWeaponType;
-        this.tech[key] = (this.tech[key] || 0) + amount;
+        const x = this.tech[key];
+        const dropChance = (0.015 + Math.log(x + 3) * 0.02 + 0.0001 * x) * dropRateFactor;
+        const random = Math.random();
+        console.log(`Tech increment check: current tech=${x}, ${random} <= dropChance=${dropChance.toFixed(4)}`);
+        if (random <= dropChance) {
+            console.log(`Tech increased from ${x} to ${x + 1}`);
+            this.tech[key] += 1;
+        }
     }
 
     // Compute damage for a single hit, applying tech multiplier and an optional base multiplier
@@ -470,8 +477,7 @@ export class Player extends BaseMesh {
                     enemy.takeDamage(damage, this.body.position);
                     console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
-                    // Grant 1 tech point for weapon type used
-                    this.incrementTechForCurrentWeapon(1);
+                    this.incrementTechForCurrentWeapon(enemy.techDropRateFactor);
 
                     // Mark this enemy as hit for this attack phase
                     this.enemiesHitThisPhase.add(enemy);
@@ -790,8 +796,7 @@ export class Player extends BaseMesh {
                 enemy.takeDamage(damage, this.body.position);
                 console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
 
-                // Grant 1 tech point for weapon type used
-                this.incrementTechForCurrentWeapon(1);
+                this.incrementTechForCurrentWeapon();
 
                 // Mark this enemy as hit during this dash
                 this.dashHitEnemies.add(enemy);
