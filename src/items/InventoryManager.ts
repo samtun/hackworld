@@ -260,7 +260,7 @@ export class InventoryManager {
             const priceText = item.sellPrice !== undefined ? ` (${item.sellPrice} bits)` : '';
 
             // Set item text without equipped indicator (triangle will be overlay)
-            itemDiv.innerHTML = formatItemLabel(item, player, priceText);
+            itemDiv.innerHTML = formatItemLabel(item, priceText);
 
             const isSelected = index === this.selectedIndex;
 

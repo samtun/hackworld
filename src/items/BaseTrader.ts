@@ -288,7 +288,7 @@ export abstract class BaseTrader {
             const price = mode === 'buy' ? item.buyPrice : item.sellPrice;
             const priceText = price !== undefined ? ` (${price} bits)` : '';
             const canAfford = mode === 'sell' || (price !== undefined && player.money >= price);
-            itemDiv.innerHTML = formatItemLabel(item, player, priceText);
+            itemDiv.innerHTML = formatItemLabel(item, priceText);
             const isSelected = isActive && index === this.selectedIndex;
             Object.assign(itemDiv.style, { padding: '8px', backgroundColor: isSelected ? '#888' : 'transparent', border: isSelected ? '2px solid #fff' : '2px solid transparent', opacity: canAfford ? '1' : '0.5', transition: 'transform 0.1s', position: 'relative' });
             if ((item as any).isEquipped) {
