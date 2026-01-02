@@ -72,15 +72,39 @@ export class WeaponDrop {
         canvas.width = 512;
         canvas.height = 128;
 
-        // Draw text on canvas
-        const weaponNameWithLevel = `${weaponName} ${ItemLevelHelper.getLevelChar(this.level)}`;
+        // Draw text on canvas: name + italic level char to the right, keeping the whole label centered
+        const levelChar = ItemLevelHelper.getLevelChar(this.level);
         context.fillStyle = 'rgba(0, 0, 0, 0.8)';
         context.fillRect(0, 0, canvas.width, canvas.height);
-        context.font = 'bold 48px Arial';
+
+        // Base (name) style
+        const baseFont = 'bold 48px Arial';
+        context.font = baseFont;
         context.fillStyle = '#ffffff';
-        context.textAlign = 'center';
         context.textBaseline = 'middle';
-        context.fillText(weaponNameWithLevel, canvas.width / 2, canvas.height / 2);
+
+        // Measure widths to center the combined text
+        const nameWidth = context.measureText(weaponName).width;
+        // Measure level width using italic bold font
+        const levelFont = 'italic bold 48px Arial';
+        context.font = levelFont;
+        const levelWidth = context.measureText(levelChar).width;
+
+        const spacing = 8; // gap between name and level char
+        const totalWidth = nameWidth + spacing + levelWidth;
+
+        // Draw with left alignment starting at computed X so combined text is centered
+        const startX = canvas.width / 2 - totalWidth / 2;
+        const centerY = canvas.height / 2;
+
+        // Draw name
+        context.font = baseFont;
+        context.textAlign = 'left';
+        context.fillText(weaponName, startX, centerY);
+
+        // Draw italic level char right of name
+        context.font = levelFont;
+        context.fillText(levelChar, startX + nameWidth + spacing, centerY);
 
         // Create texture from canvas
         const texture = new THREE.CanvasTexture(canvas);
