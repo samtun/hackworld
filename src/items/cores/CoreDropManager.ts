@@ -25,7 +25,7 @@ export class CoreDropManager {
         const pos = enemy.body.position.clone();
         pos.y = 0.5;
 
-        const drop = new CoreDrop(scene, physicsWorld, pos, def.id, def.name, def.buyPrice, def.sellPrice);
+        const drop = new CoreDrop(scene, pos, def.id, def.name, def.buyPrice, def.sellPrice);
         this.coreDrops.push(drop);
         console.log(`Enemy dropped core ${def.name}`);
         return true;

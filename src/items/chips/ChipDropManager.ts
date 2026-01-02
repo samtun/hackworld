@@ -25,7 +25,7 @@ export class ChipDropManager {
         const pos = enemy.body.position.clone();
         pos.y = 0.5;
 
-        const drop = new ChipDrop(scene, physicsWorld, pos, def.id, def.name, def.type, def.buyPrice, def.sellPrice);
+        const drop = new ChipDrop(scene, pos, def.id, def.name, def.type, def.buyPrice, def.sellPrice);
         this.chipDrops.push(drop);
         console.log(`Enemy dropped chip ${def.name}`);
         return true;

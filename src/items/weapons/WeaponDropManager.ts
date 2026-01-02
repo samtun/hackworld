@@ -66,7 +66,6 @@ export class WeaponDropManager {
 
         const weaponDrop = new WeaponDrop(
             scene,
-            physicsWorld,
             dropPosition,
             weaponType,
             weaponDef.name,
