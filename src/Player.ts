@@ -272,6 +272,7 @@ export class Player extends BaseMesh {
             const effectiveStats = equippedChip.getEffectiveStats();
             if (effectiveStats.weaponRangeMultiplier !== undefined) {
                 return effectiveStats.weaponRangeMultiplier;
+            }
         }
         return 1.0; // Default: no multiplier
     }
