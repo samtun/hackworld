@@ -1,5 +1,5 @@
-import { EquippableItem } from './EquippableItem';
-import { Player } from '../Player';
+import { EquippableItem } from '../EquippableItem';
+import { Player } from '../../Player';
 import { WeaponType, Weapon } from './Weapon';
 
 export class WeaponItem extends EquippableItem {

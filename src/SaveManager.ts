@@ -1,4 +1,4 @@
-import { WeaponItem } from './items/WeaponItem';
+import { WeaponItem } from './items/weapons/WeaponItem';
 import { SaveManagerUI } from './SaveManagerUI';
 import { PlayerRegistry } from './PlayerRegistry';
 import { InputManager } from './InputManager';

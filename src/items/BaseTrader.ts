@@ -1,5 +1,5 @@
 import { Item } from './Item';
-import { ItemDetailsPanel } from '../ItemDetailsPanel';
+import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
 import { resetInputDebounce } from '../ui/UiUtils';

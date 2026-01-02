@@ -1,6 +1,6 @@
 import { Item } from './Item';
-import { WeaponItem } from './WeaponItem';
-import { Weapon } from './Weapon';
+import { WeaponItem } from './weapons/WeaponItem';
+import { Weapon } from './weapons/Weapon';
 
 // Return an HTML-safe label for an item, including price text if provided.
 export function formatItemLabel(item: Item, priceText: string = ''): string {

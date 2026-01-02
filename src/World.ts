@@ -5,10 +5,10 @@ import { Player } from './Player';
 import { AssetManager } from './AssetManager';
 import { BaseStage, Lobby, createStage } from './stages';
 import { Npc } from './npcs/Npc';
-import { WeaponDropManager } from './items/WeaponDropManager';
-import { WeaponDrop } from './items/WeaponDrop';
-import { XData } from './xdata/XData';
-import { XDataDropManager } from './xdata/XDataDropManager';
+import { WeaponDropManager } from './items/weapons/WeaponDropManager';
+import { WeaponDrop } from './items/weapons/WeaponDrop';
+import { XData } from './items/xdata/XData';
+import { XDataDropManager } from './items/xdata/XDataDropManager';
 import { EXPNumber } from './EXPNumber';
 import { HealingSystem } from './systems/HealingSystem';
 

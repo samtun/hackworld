@@ -1,9 +1,9 @@
-import { Player } from '../Player';
-import { Item } from './Item';
+import { Player } from '../../Player';
+import { Item } from '../Item';
 import { ChipItem } from './ChipItem';
 import { ChipRegistry } from './ChipRegistry';
-import { BaseTrader } from './BaseTrader';
-import { TRADER_UI_COLORS } from './TraderUIConstants';
+import { BaseTrader } from '../BaseTrader';
+import { TRADER_UI_COLORS } from '../TraderUIConstants';
 
 export class ChipTrader extends BaseTrader {
     private static instance: ChipTrader; // Singleton

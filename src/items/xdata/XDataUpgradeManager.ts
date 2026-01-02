@@ -1,6 +1,6 @@
-import { Player } from '../Player';
-import { InputManager } from '../InputManager';
-import { resetInputDebounce } from '../ui/UiUtils';
+import { Player } from '../../Player';
+import { InputManager } from '../../InputManager';
+import { resetInputDebounce } from '../../ui/UiUtils';
 
 // --- Constants ---
 const COLORS = {

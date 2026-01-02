@@ -1,13 +1,13 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { InputManager } from './InputManager';
-import { Weapon, WeaponType } from './items/Weapon';
+import { Weapon, WeaponType } from './items/weapons/Weapon';
 import { Enemy } from './enemies/Enemy';
 import { Item } from './items/Item';
-import { WeaponItem } from './items/WeaponItem';
-import { CoreItem } from './items/CoreItem';
-import { ChipItem } from './items/ChipItem';
-import { WeaponRegistry } from './items/WeaponRegistry';
+import { WeaponItem } from './items/weapons/WeaponItem';
+import { CoreItem } from './items/cores/CoreItem';
+import { ChipItem } from './items/chips/ChipItem';
+import { WeaponRegistry } from './items/weapons/WeaponRegistry';
 import { BaseMesh } from './BaseMesh';
 
 export class Player extends BaseMesh {

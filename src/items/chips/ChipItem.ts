@@ -1,5 +1,5 @@
-import { EquippableItem } from './EquippableItem';
-import { Player } from '../Player';
+import { EquippableItem } from '../EquippableItem';
+import { Player } from '../../Player';
 import { ChipType, ChipStats } from './Chip';
 
 export class ChipItem extends EquippableItem {

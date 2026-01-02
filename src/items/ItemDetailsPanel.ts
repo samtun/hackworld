@@ -1,8 +1,8 @@
-import { Item } from './items/Item';
-import { WeaponItem } from './items/WeaponItem';
-import { CoreItem } from './items/CoreItem';
-import { ChipItem } from './items/ChipItem';
-import { WeaponType } from './items/Weapon';
+import { Item } from './Item';
+import { WeaponItem } from './weapons/WeaponItem';
+import { CoreItem } from './cores/CoreItem';
+import { ChipItem } from './chips/ChipItem';
+import { WeaponType } from './weapons/Weapon';
 
 interface ItemDetail {
     label: string;

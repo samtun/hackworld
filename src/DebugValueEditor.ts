@@ -1,11 +1,11 @@
 import { Player } from './Player';
-import { WeaponRegistry } from './items/WeaponRegistry';
-import { CoreRegistry } from './items/CoreRegistry';
-import { ChipRegistry } from './items/ChipRegistry';
-import { WeaponItem } from './items/WeaponItem';
-import { Weapon, WeaponType } from './items/Weapon';
-import { CoreItem } from './items/CoreItem';
-import { ChipItem } from './items/ChipItem';
+import { WeaponRegistry } from './items/weapons/WeaponRegistry';
+import { CoreRegistry } from './items/cores/CoreRegistry';
+import { ChipRegistry } from './items/chips/ChipRegistry';
+import { WeaponItem } from './items/weapons/WeaponItem';
+import { Weapon, WeaponType } from './items/weapons/Weapon';
+import { CoreItem } from './items/cores/CoreItem';
+import { ChipItem } from './items/chips/ChipItem';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory

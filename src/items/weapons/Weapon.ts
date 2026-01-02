@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { AssetManager } from '../AssetManager.ts';
-import { BaseMesh } from '../BaseMesh.ts';
+import { AssetManager } from '../../AssetManager.ts';
+import { BaseMesh } from '../../BaseMesh.ts';
 
 export enum WeaponType {
     SWORD = 'sword',

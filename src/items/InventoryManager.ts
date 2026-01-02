@@ -27,7 +27,7 @@ const STYLES = {
     SLOT_GAP: '15px'
 };
 
-import { ItemDetailsPanel } from '../ItemDetailsPanel';
+import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';

@@ -1,9 +1,9 @@
 import { WeaponItem } from './WeaponItem';
-import { BaseTrader, TraderUIConfig } from './BaseTrader';
+import { BaseTrader, TraderUIConfig } from '../BaseTrader';
 import { WeaponRegistry } from './WeaponRegistry';
-import { Player } from '../Player';
-import { Item } from './Item';
-import { TRADER_UI_COLORS } from './TraderUIConstants';
+import { Player } from '../../Player';
+import { Item } from '../Item';
+import { TRADER_UI_COLORS } from '../TraderUIConstants';
 
 export class WeaponTrader extends BaseTrader {
     static instance: WeaponTrader; // Singleton

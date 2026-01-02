@@ -2,12 +2,12 @@ import * as CANNON from 'cannon-es';
 import { BaseStage } from './BaseStage';
 import { HealingStation } from '../HealingStation';
 import { Player } from '../Player';
-import { ChipTrader } from '../items/ChipTrader';
+import { ChipTrader } from '../items/chips/ChipTrader';
 import { SaveManager } from '../SaveManager';
-import { XDataUpgradeManager } from '../xdata/XDataUpgradeManager';
-import { WeaponTrader } from '../items/WeaponTrader';
+import { XDataUpgradeManager } from '../items/xdata/XDataUpgradeManager';
+import { WeaponTrader } from '../items/weapons/WeaponTrader';
 import { Npc } from '../npcs/Npc';
-import { CoreTrader } from '../items/CoreTrader';
+import { CoreTrader } from '../items/cores/CoreTrader';
 
 export class Lobby extends BaseStage {
     id = 'lobby';
