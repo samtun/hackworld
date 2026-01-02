@@ -278,7 +278,7 @@ export class Player extends BaseMesh {
     incrementTechForCurrentWeapon(dropRateFactor: number) {
         const key = this.currentWeaponType;
         const x = this.tech[key];
-        const dropChance = (0.015 + Math.log(x + 3) * 0.02 + 0.0001 * x) * dropRateFactor;
+        const dropChance = (0.015 + Math.log10(x + 3) * 0.02 + 0.0001 * x) * dropRateFactor;
         const random = Math.random();
         console.log(`Tech increment check: current tech=${x}, ${random} <= dropChance=${dropChance.toFixed(4)}`);
         if (random <= dropChance) {
