@@ -803,7 +803,7 @@ export class Player extends BaseMesh {
                 enemy.takeDamage(damage, this.body.position);
                 console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
 
-                this.incrementTechForCurrentWeapon();
+                this.incrementTechForCurrentWeapon(enemy.techDropRateFactor);
 
                 // Mark this enemy as hit during this dash
                 this.dashHitEnemies.add(enemy);
