@@ -36,16 +36,40 @@ export class ChipTrader extends BaseTrader {
     protected initializeTraderInventory() {
         this.traderInventory = [];
 
-        // Add chips from registry
+        // Add chips from registry at multiple levels (α, β, γ levels)
         const allChips = this.chipRegistry.getAllChips();
         for (const chipDef of allChips) {
+            // Add level 1 (α)
             this.traderInventory.push(new ChipItem(
                 crypto.randomUUID(),
                 chipDef.name,
                 chipDef.buyPrice,
                 chipDef.sellPrice,
                 chipDef.type,
-                chipDef.stats
+                chipDef.stats,
+                1
+            ));
+            
+            // Add level 2 (β) with increased price
+            this.traderInventory.push(new ChipItem(
+                crypto.randomUUID(),
+                chipDef.name,
+                Math.round(chipDef.buyPrice * 1.5),
+                chipDef.sellPrice,
+                chipDef.type,
+                chipDef.stats,
+                2
+            ));
+            
+            // Add level 3 (γ) with increased price
+            this.traderInventory.push(new ChipItem(
+                crypto.randomUUID(),
+                chipDef.name,
+                Math.round(chipDef.buyPrice * 2.0),
+                chipDef.sellPrice,
+                chipDef.type,
+                chipDef.stats,
+                3
             ));
         }
     }

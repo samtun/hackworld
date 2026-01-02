@@ -243,31 +243,35 @@ export class Player extends BaseMesh {
 
         // Apply core modifiers if a core is equipped
         const equippedCore = this.inventory.find(item => item instanceof CoreItem && item.isEquipped) as CoreItem | undefined;
-        if (equippedCore && equippedCore.stats) {
-            if (equippedCore.stats.strength !== undefined) {
-                this.strength = Math.min(this.strength + equippedCore.stats.strength, Player.MAX_STAT_VALUE);
+        if (equippedCore) {
+            const effectiveStats = equippedCore.getEffectiveStats();
+            if (effectiveStats.strength !== undefined) {
+                this.strength = Math.min(this.strength + effectiveStats.strength, Player.MAX_STAT_VALUE);
             }
-            if (equippedCore.stats.defense !== undefined) {
-                this.defense = Math.min(this.defense + equippedCore.stats.defense, Player.MAX_STAT_VALUE);
+            if (effectiveStats.defense !== undefined) {
+                this.defense = Math.min(this.defense + effectiveStats.defense, Player.MAX_STAT_VALUE);
             }
-            if (equippedCore.stats.speed !== undefined) {
-                this.speed += equippedCore.stats.speed;
+            if (effectiveStats.speed !== undefined) {
+                this.speed += effectiveStats.speed;
             }
         }
 
         // Apply chip modifiers if a chip is equipped
         const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
-        if (equippedChip && equippedChip.stats) {
-            if (equippedChip.stats.walkSpeedMultiplier !== undefined) {
-                this.speed *= equippedChip.stats.walkSpeedMultiplier;
+        if (equippedChip) {
+            const effectiveStats = equippedChip.getEffectiveStats();
+            if (effectiveStats.walkSpeedMultiplier !== undefined) {
+                this.speed *= effectiveStats.walkSpeedMultiplier;
             }
         }
     }
 
     getWeaponRangeMultiplier(): number {
         const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
-        if (equippedChip && equippedChip.stats && equippedChip.stats.weaponRangeMultiplier !== undefined) {
-            return equippedChip.stats.weaponRangeMultiplier;
+        if (equippedChip) {
+            const effectiveStats = equippedChip.getEffectiveStats();
+            if (effectiveStats.weaponRangeMultiplier !== undefined) {
+                return effectiveStats.weaponRangeMultiplier;
         }
         return 1.0; // Default: no multiplier
     }

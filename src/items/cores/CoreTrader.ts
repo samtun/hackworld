@@ -37,14 +37,37 @@ export class CoreTrader extends BaseTrader {
     protected initializeTraderInventory() {
         this.traderInventory = [];
 
+        // Add cores from registry at multiple levels (α, β, γ levels)
         const allCores = this.coreRegistry.getAllCores();
         for (const coreDef of allCores) {
+            // Add level 1 (α)
             this.traderInventory.push(new CoreItem(
                 crypto.randomUUID(),
                 coreDef.name,
                 coreDef.buyPrice,
                 coreDef.sellPrice,
-                coreDef.stats
+                coreDef.stats,
+                1
+            ));
+            
+            // Add level 2 (β) with increased price
+            this.traderInventory.push(new CoreItem(
+                crypto.randomUUID(),
+                coreDef.name,
+                Math.round(coreDef.buyPrice * 1.5),
+                coreDef.sellPrice,
+                coreDef.stats,
+                2
+            ));
+            
+            // Add level 3 (γ) with increased price
+            this.traderInventory.push(new CoreItem(
+                crypto.randomUUID(),
+                coreDef.name,
+                Math.round(coreDef.buyPrice * 2.0),
+                coreDef.sellPrice,
+                coreDef.stats,
+                3
             ));
         }
     }

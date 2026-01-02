@@ -25,9 +25,12 @@ export class ChipDropManager {
         const pos = enemy.body.position.clone();
         pos.y = 0.5;
 
-        const drop = new ChipDrop(scene, pos, def.id, def.name, def.type, def.buyPrice, def.sellPrice);
+        // Randomly assign a level (1-6)
+        const level = Math.floor(Math.random() * 6) + 1;
+
+        const drop = new ChipDrop(scene, pos, def.id, def.name, def.type, def.buyPrice, def.sellPrice, level);
         this.chipDrops.push(drop);
-        console.log(`Enemy dropped chip ${def.name}`);
+        console.log(`Enemy dropped chip ${def.name} (level ${level})`);
         return true;
     }
 
@@ -57,11 +60,12 @@ export class ChipDropManager {
             def.buyPrice,
             def.sellPrice,
             def.type,
-            def.stats
+            def.stats,
+            drop.level
         );
 
         player.inventory.push(newItem);
-        console.log(`Picked up chip ${def.name}`);
+        console.log(`Picked up chip ${def.name} (level ${drop.level})`);
 
         const idx = this.chipDrops.indexOf(drop);
         if (idx > -1) {
