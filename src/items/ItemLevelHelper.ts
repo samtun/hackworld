@@ -20,6 +20,10 @@ export class ItemLevelHelper {
         { requiredLevel: 124, statPercent: 1.90 }  // ω - Lvl 124 +90%
     ];
 
+    // Price multipliers for trader level variants
+    public static readonly LEVEL_2_PRICE_MULTIPLIER = 1.5;
+    public static readonly LEVEL_3_PRICE_MULTIPLIER = 2.0;
+
     public static getLevelChar(level: number): string {
         if (level <= 0) throw new Error('Weapon level must be >= 1');
         if (level > Object.keys(this.LEVELS).length) {
@@ -27,5 +31,19 @@ export class ItemLevelHelper {
         }
         
         return this.LEVELS[level];
+    }
+
+    // Get level definition by numeric level (1-based) for chips/cores
+    public static getChipCoreLevelByNumber(level: number): { requiredLevel: number; statPercent: number } {
+        if (level <= 0) throw new Error('Level must be >= 1');
+        if (level > this.CHIP_CORE_LEVELS.length) {
+            return this.CHIP_CORE_LEVELS[this.CHIP_CORE_LEVELS.length - 1];
+        }
+        return this.CHIP_CORE_LEVELS[level - 1];
+    }
+
+    // Get stat multiplier for a given level
+    public static getStatMultiplierForLevel(level: number): number {
+        return this.getChipCoreLevelByNumber(level).statPercent;
     }
 }

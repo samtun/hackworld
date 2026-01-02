@@ -16,15 +16,12 @@ export class CoreItem extends EquippableItem {
 
     // Return level definition by numeric level (1-based). Throws if level <= 0.
     public getLevelByNumber(): { requiredLevel: number; statPercent: number } {
-        const lvl = this.level;
-        if (lvl <= 0) throw new Error('Core level must be >= 1');
-        if (lvl > ItemLevelHelper.CHIP_CORE_LEVELS.length) return ItemLevelHelper.CHIP_CORE_LEVELS[ItemLevelHelper.CHIP_CORE_LEVELS.length - 1];
-        return ItemLevelHelper.CHIP_CORE_LEVELS[lvl - 1];
+        return ItemLevelHelper.getChipCoreLevelByNumber(this.level);
     }
 
     // Return multiplier for numeric level
     public getStatMultiplierFromLevelNumber(): number {
-        return this.getLevelByNumber().statPercent;
+        return ItemLevelHelper.getStatMultiplierForLevel(this.level);
     }
 
     // Get stats with level multiplier applied

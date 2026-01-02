@@ -4,13 +4,10 @@ import { CoreRegistry } from './CoreRegistry';
 import { Player } from '../../Player';
 import { Item } from '../Item';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class CoreTrader extends BaseTrader {
     private static instance: CoreTrader; // Singleton
-
-    // Price multipliers for different levels
-    private static readonly LEVEL_2_PRICE_MULTIPLIER = 1.5;
-    private static readonly LEVEL_3_PRICE_MULTIPLIER = 2.0;
 
     private coreRegistry: CoreRegistry;
 
@@ -58,7 +55,7 @@ export class CoreTrader extends BaseTrader {
             this.traderInventory.push(new CoreItem(
                 crypto.randomUUID(),
                 coreDef.name,
-                Math.round(coreDef.buyPrice * CoreTrader.LEVEL_2_PRICE_MULTIPLIER),
+                Math.round(coreDef.buyPrice * ItemLevelHelper.LEVEL_2_PRICE_MULTIPLIER),
                 coreDef.sellPrice,
                 coreDef.stats,
                 2
@@ -68,7 +65,7 @@ export class CoreTrader extends BaseTrader {
             this.traderInventory.push(new CoreItem(
                 crypto.randomUUID(),
                 coreDef.name,
-                Math.round(coreDef.buyPrice * CoreTrader.LEVEL_3_PRICE_MULTIPLIER),
+                Math.round(coreDef.buyPrice * ItemLevelHelper.LEVEL_3_PRICE_MULTIPLIER),
                 coreDef.sellPrice,
                 coreDef.stats,
                 3
