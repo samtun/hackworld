@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { WeaponDrop } from './WeaponDrop';
-import { WeaponType } from './Weapon';
+import { WeaponType } from './WeaponType';
 import { WeaponRegistry } from './WeaponRegistry';
-import { Enemy } from '../enemies/Enemy';
-import { Player } from '../Player';
+import { Enemy } from '../../enemies/Enemy';
+import { Player } from '../../Player';
 import { WeaponItem } from './WeaponItem';
 
 /**
@@ -15,7 +15,7 @@ export class WeaponDropManager {
     private static instance: WeaponDropManager;
     private weaponDrops: WeaponDrop[] = [];
 
-    private constructor() {}
+    private constructor() { }
 
     public static get Instance(): WeaponDropManager {
         return this.instance || (this.instance = new this());
@@ -72,7 +72,8 @@ export class WeaponDropManager {
             weaponDef.name,
             finalDamage,
             finalBuyPrice,
-            finalSellPrice
+            finalSellPrice,
+            1
         );
 
         this.weaponDrops.push(weaponDrop);
@@ -148,7 +149,8 @@ export class WeaponDropManager {
             drop.sellPrice,
             drop.weaponType,
             drop.damage,
-            model
+            model,
+            drop.level
         );
 
         player.inventory.push(newItem);

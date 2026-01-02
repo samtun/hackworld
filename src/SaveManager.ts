@@ -1,4 +1,4 @@
-import { Item } from './items/InventoryManager';
+import { WeaponItem } from './items/weapons/WeaponItem';
 import { SaveManagerUI } from './SaveManagerUI';
 import { PlayerRegistry } from './PlayerRegistry';
 import { InputManager } from './InputManager';
@@ -25,6 +25,9 @@ export interface SaveData {
         money: number;
         xData: number;
 
+        // Weapon tech (per-type)
+        tech: Record<string, number>;
+
         // Upgrades
         strengthUpgrades: number;
         defenseUpgrades: number;
@@ -39,7 +42,7 @@ export interface SaveData {
         };
 
         // Inventory
-        inventory: Item[];
+        inventory: any[];
     };
 }
 
@@ -144,7 +147,27 @@ export class SaveManager {
                     y: player.body.position.y,
                     z: player.body.position.z
                 },
-                inventory: structuredClone(player.inventory)
+                // Serialize inventory and include weapon levels
+                inventory: player.inventory.map(i => {
+                    if (i instanceof WeaponItem) {
+                        const wi = i as any;
+                        return {
+                            kind: 'weapon',
+                            id: wi.id,
+                            name: wi.name,
+                            buyPrice: wi.buyPrice ?? wi.baseBuyPrice,
+                            sellPrice: wi.sellPrice ?? wi.baseSellPrice,
+                            weaponType: wi.weaponType,
+                            damage: wi.damage ?? wi.baseDamage,
+                            model: wi.model,
+                            level: wi.level,
+                            isEquipped: !!wi.isEquipped,
+                        };
+                    }
+                    // Fallback: deep-clone other items
+                    return structuredClone(i);
+                }),
+                tech: structuredClone((player as any).tech || {})
             },
         };
 

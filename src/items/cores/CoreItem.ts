@@ -1,5 +1,5 @@
-import { EquippableItem } from './EquippableItem';
-import { Player } from '../Player';
+import { EquippableItem } from '../EquippableItem';
+import { Player } from '../../Player';
 import { CoreStats } from './Core';
 
 export class CoreItem extends EquippableItem {

@@ -1,22 +1,14 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { AssetManager } from '../AssetManager.ts';
-import { BaseMesh } from '../BaseMesh.ts';
+import { AssetManager } from '../../AssetManager.ts';
+import { BaseMesh } from '../../BaseMesh.ts';
+import { WeaponType } from './WeaponType';
 
-export enum WeaponType {
-    SWORD = 'sword',
-    DUAL_BLADE = 'dual_blade',
-    LANCE = 'lance',
-    HAMMER = 'hammer'
+export interface WeaponLevel {
+    char: string; // greek character
+    requiredTech: number;
+    damagePercent: number; // percent value, e.g. 180 for 180%
 }
-
-// Model paths for each weapon type
-const WEAPON_MODEL_PATHS: Record<WeaponType, string> = {
-    [WeaponType.SWORD]: 'models/sword.glb',
-    [WeaponType.DUAL_BLADE]: 'models/double_sword.glb',
-    [WeaponType.LANCE]: 'models/lance.glb',
-    [WeaponType.HAMMER]: 'models/hammer.glb'
-};
 
 export interface WeaponStats {
     attackSpeed: number; // Duration in seconds
@@ -24,31 +16,37 @@ export interface WeaponStats {
     attackAngle: number; // In radians
 }
 
-// Weapon type configurations
-export const WEAPON_CONFIGS: Record<WeaponType, WeaponStats> = {
-    [WeaponType.SWORD]: {
-        attackSpeed: 0.3,
-        range: 2.0,
-        attackAngle: Math.PI / 2 // 90 degrees
-    },
-    [WeaponType.DUAL_BLADE]: {
-        attackSpeed: 0.2,
-        range: 1.5,
-        attackAngle: Math.PI / 3 // 60 degrees
-    },
-    [WeaponType.LANCE]: {
-        attackSpeed: 0.5,
-        range: 3.0,
-        attackAngle: Math.PI / 4 // 45 degrees
-    },
-    [WeaponType.HAMMER]: {
-        attackSpeed: 0.7,
-        range: 1.8,
-        attackAngle: Math.PI / 2 // 90 degrees
-    }
-};
-
 export class Weapon extends BaseMesh {
+    private static WEAPON_MODEL_PATHS: Record<WeaponType, string> = {
+        [WeaponType.SWORD]: 'models/sword.glb',
+        [WeaponType.DUAL_BLADE]: 'models/double_sword.glb',
+        [WeaponType.LANCE]: 'models/lance.glb',
+        [WeaponType.HAMMER]: 'models/hammer.glb'
+    };
+
+    private static WEAPON_CONFIGS: Record<WeaponType, WeaponStats> = {
+        [WeaponType.SWORD]: {
+            attackSpeed: 0.3,
+            range: 2.0,
+            attackAngle: Math.PI / 2 // 90 degrees
+        },
+        [WeaponType.DUAL_BLADE]: {
+            attackSpeed: 0.2,
+            range: 1.5,
+            attackAngle: Math.PI / 3 // 60 degrees
+        },
+        [WeaponType.LANCE]: {
+            attackSpeed: 0.5,
+            range: 3.0,
+            attackAngle: Math.PI / 4 // 45 degrees
+        },
+        [WeaponType.HAMMER]: {
+            attackSpeed: 0.7,
+            range: 1.8,
+            attackAngle: Math.PI / 2 // 90 degrees
+        }
+    };
+
     body?: CANNON.Body;
     isAttacking: boolean = false;
     private attackTimer: number = 0;
@@ -76,7 +74,7 @@ export class Weapon extends BaseMesh {
         world?: CANNON.World) {
         super(modelAsset);
         this.weaponType = weaponType;
-        this.stats = WEAPON_CONFIGS[weaponType];
+        this.stats = Weapon.WEAPON_CONFIGS[weaponType];
         this.damage = damage;
         this.assetManager = AssetManager.Instance;
         this.scene = scene;
@@ -90,7 +88,7 @@ export class Weapon extends BaseMesh {
     }
 
     private async loadWeaponModel(type: WeaponType): Promise<void> {
-        const modelPath = WEAPON_MODEL_PATHS[type];
+        const modelPath = Weapon.WEAPON_MODEL_PATHS[type];
 
         try {
             // Try to use preloaded asset first
@@ -430,7 +428,7 @@ export class Weapon extends BaseMesh {
 
         // Update type, stats, and damage
         this.weaponType = newType;
-        this.stats = WEAPON_CONFIGS[newType];
+        this.stats = Weapon.WEAPON_CONFIGS[newType];
         this.damage = newDamage;
 
         // Create new empty group(s)

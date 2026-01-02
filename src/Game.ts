@@ -4,18 +4,18 @@ import CannonDebugger from 'cannon-es-debugger';
 import { Player } from './Player';
 import { World } from './World';
 import { InputManager } from './InputManager';
-import { UIManager } from './UIManager';
+import { UIManager } from './ui/UIManager';
 import { Lobby } from './stages';
 import { InventoryManager } from './items/InventoryManager';
-import { WeaponTrader } from './items/WeaponTrader';
-import { ChipTrader } from './items/ChipTrader';
+import { WeaponTrader } from './items/weapons/WeaponTrader';
+import { ChipTrader } from './items/chips/ChipTrader';
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { NpcDialogueManager } from './npcs/NpcDialogueManager';
-import { XDataUpgradeManager } from './xdata/XDataUpgradeManager';
+import { XDataUpgradeManager } from './items/xdata/XDataUpgradeManager';
 import { DebugValueEditor } from './DebugValueEditor';
 import { SaveManager } from './SaveManager';
 import { PlayerRegistry } from './PlayerRegistry';
-import { CoreTrader } from './items/CoreTrader';
+import { CoreTrader } from './items/cores/CoreTrader';
 
 export class Game {
     scene: THREE.Scene;

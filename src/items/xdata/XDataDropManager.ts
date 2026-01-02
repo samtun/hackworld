@@ -1,5 +1,5 @@
-import { Enemy } from "../enemies/Enemy";
-import { Player } from "../Player";
+import { Enemy } from "../../enemies/Enemy";
+import { Player } from "../../Player";
 
 export class XDataDropManager {
     private static instance: XDataDropManager;

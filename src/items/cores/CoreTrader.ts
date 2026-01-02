@@ -1,9 +1,9 @@
 import { CoreItem } from './CoreItem';
-import { BaseTrader, TraderUIConfig } from './BaseTrader';
+import { BaseTrader, TraderUIConfig } from '../BaseTrader';
 import { CoreRegistry } from './CoreRegistry';
-import { Player } from '../Player';
-import { Item } from './Item';
-import { TRADER_UI_COLORS } from './TraderUIConstants';
+import { Player } from '../../Player';
+import { Item } from '../Item';
+import { TRADER_UI_COLORS } from '../TraderUIConstants';
 
 export class CoreTrader extends BaseTrader {
     private static instance: CoreTrader; // Singleton
