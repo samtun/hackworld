@@ -16,57 +16,52 @@ export interface WeaponLevel {
     damagePercent: number; // percent value, e.g. 180 for 180%
 }
 
-// Levels follow the greek alphabet and required tech thresholds
-const WEAPON_LEVELS: WeaponLevel[] = [
-    { char: 'α', requiredTech: 0, damagePercent: 1 },
-    { char: 'β', requiredTech: 120, damagePercent: 1.80 },
-    { char: 'γ', requiredTech: 460, damagePercent: 3.20 },
-    { char: 'δ', requiredTech: 720, damagePercent: 6.20 },
-    { char: 'ε', requiredTech: 1280, damagePercent: 9.80 },
-    { char: 'ω', requiredTech: 2500, damagePercent: 14.00 }
-];
-
-// Model paths for each weapon type
-const WEAPON_MODEL_PATHS: Record<WeaponType, string> = {
-    [WeaponType.SWORD]: 'models/sword.glb',
-    [WeaponType.DUAL_BLADE]: 'models/double_sword.glb',
-    [WeaponType.LANCE]: 'models/lance.glb',
-    [WeaponType.HAMMER]: 'models/hammer.glb'
-};
-
 export interface WeaponStats {
     attackSpeed: number; // Duration in seconds
     range: number;
     attackAngle: number; // In radians
 }
 
-// Weapon type configurations
-export const WEAPON_CONFIGS: Record<WeaponType, WeaponStats> = {
-    [WeaponType.SWORD]: {
-        attackSpeed: 0.3,
-        range: 2.0,
-        attackAngle: Math.PI / 2 // 90 degrees
-    },
-    [WeaponType.DUAL_BLADE]: {
-        attackSpeed: 0.2,
-        range: 1.5,
-        attackAngle: Math.PI / 3 // 60 degrees
-    },
-    [WeaponType.LANCE]: {
-        attackSpeed: 0.5,
-        range: 3.0,
-        attackAngle: Math.PI / 4 // 45 degrees
-    },
-    [WeaponType.HAMMER]: {
-        attackSpeed: 0.7,
-        range: 1.8,
-        attackAngle: Math.PI / 2 // 90 degrees
-    }
-};
-
 export class Weapon extends BaseMesh {
     // Expose level metadata via static helpers to keep entity-oriented design
-    private static LEVELS = WEAPON_LEVELS;
+    private static LEVELS = [
+        { char: 'α', requiredTech: 0, damagePercent: 1 },
+        { char: 'β', requiredTech: 120, damagePercent: 1.80 },
+        { char: 'γ', requiredTech: 460, damagePercent: 3.20 },
+        { char: 'δ', requiredTech: 720, damagePercent: 6.20 },
+        { char: 'ε', requiredTech: 1280, damagePercent: 9.80 },
+        { char: 'ω', requiredTech: 2500, damagePercent: 14.00 }
+    ];
+
+    private static WEAPON_MODEL_PATHS: Record<WeaponType, string> = {
+        [WeaponType.SWORD]: 'models/sword.glb',
+        [WeaponType.DUAL_BLADE]: 'models/double_sword.glb',
+        [WeaponType.LANCE]: 'models/lance.glb',
+        [WeaponType.HAMMER]: 'models/hammer.glb'
+    };
+
+    private static WEAPON_CONFIGS: Record<WeaponType, WeaponStats> = {
+        [WeaponType.SWORD]: {
+            attackSpeed: 0.3,
+            range: 2.0,
+            attackAngle: Math.PI / 2 // 90 degrees
+        },
+        [WeaponType.DUAL_BLADE]: {
+            attackSpeed: 0.2,
+            range: 1.5,
+            attackAngle: Math.PI / 3 // 60 degrees
+        },
+        [WeaponType.LANCE]: {
+            attackSpeed: 0.5,
+            range: 3.0,
+            attackAngle: Math.PI / 4 // 45 degrees
+        },
+        [WeaponType.HAMMER]: {
+            attackSpeed: 0.7,
+            range: 1.8,
+            attackAngle: Math.PI / 2 // 90 degrees
+        }
+    };
 
     // Return level definition by numeric level (1-based). Throws if level <= 0.
     static getLevelByNumber(level: number): WeaponLevel {
@@ -111,7 +106,7 @@ export class Weapon extends BaseMesh {
         world?: CANNON.World) {
         super(modelAsset);
         this.weaponType = weaponType;
-        this.stats = WEAPON_CONFIGS[weaponType];
+        this.stats = Weapon.WEAPON_CONFIGS[weaponType];
         this.damage = damage;
         this.assetManager = AssetManager.Instance;
         this.scene = scene;
@@ -125,7 +120,7 @@ export class Weapon extends BaseMesh {
     }
 
     private async loadWeaponModel(type: WeaponType): Promise<void> {
-        const modelPath = WEAPON_MODEL_PATHS[type];
+        const modelPath = Weapon.WEAPON_MODEL_PATHS[type];
 
         try {
             // Try to use preloaded asset first
@@ -465,7 +460,7 @@ export class Weapon extends BaseMesh {
 
         // Update type, stats, and damage
         this.weaponType = newType;
-        this.stats = WEAPON_CONFIGS[newType];
+        this.stats = Weapon.WEAPON_CONFIGS[newType];
         this.damage = newDamage;
 
         // Create new empty group(s)
