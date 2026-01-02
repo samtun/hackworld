@@ -16,6 +16,7 @@ import { DebugValueEditor } from './DebugValueEditor';
 import { SaveManager } from './SaveManager';
 import { PlayerRegistry } from './PlayerRegistry';
 import { CoreTrader } from './items/cores/CoreTrader';
+import { CardManager } from './items/cards/CardManager';
 
 export class Game {
     scene: THREE.Scene;
@@ -36,6 +37,7 @@ export class Game {
     npcDialogue!: NpcDialogueManager;
     xDataUpgrade!: XDataUpgradeManager;
     saveManager!: SaveManager;
+    cardManager!: CardManager;
     playerRegistry!: PlayerRegistry;
 
     clock!: THREE.Clock;
@@ -165,6 +167,7 @@ export class Game {
         this.dungeonSelection = DungeonSelectionManager.Instance;
         this.trader = WeaponTrader.Instance;
         this.saveManager = SaveManager.Instance;
+        this.cardManager = CardManager.Instance;
         this.clock = new THREE.Clock();
 
         // Set up player
@@ -266,7 +269,8 @@ export class Game {
             this.dungeonSelection.isVisible ||
             this.npcDialogue.isVisible ||
             this.xDataUpgrade.isVisible ||
-            this.saveManager.isVisible;
+            this.saveManager.isVisible ||
+            this.cardManager.isVisible;
     }
 
     onWindowResize() {
@@ -391,13 +395,18 @@ export class Game {
         if (this.saveManager.isVisible) {
             this.saveManager.update(this.input);
         }
+
+        // Update card manager if visible
+        if (this.cardManager.isVisible) {
+            this.cardManager.update(this.player, this.input);
+        }
         
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.isAnyMenuOpen();
 
         // Define interactive entity types
         interface InteractiveEntity {
-            type: 'npc' | 'weaponDrop' | 'chipDrop' | 'coreDrop' | 'portal';
+            type: 'npc' | 'weaponDrop' | 'chipDrop' | 'coreDrop' | 'boosterPackDrop' | 'portal';
             data?: any;
             hint: string;
             action: () => void;
@@ -463,6 +472,20 @@ export class Game {
                             hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
                             action: () => {
                                 this.world.pickupCoreDrop(coreDropNearby, this.player);
+                            }
+                        };
+                    }
+                }
+
+                if (!nearbyInteractive) {
+                    const boosterPackDropNearby = this.world.checkBoosterPackDropInteraction(this.player.position);
+                    if (boosterPackDropNearby) {
+                        nearbyInteractive = {
+                            type: 'boosterPackDrop',
+                            data: boosterPackDropNearby,
+                            hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
+                            action: () => {
+                                this.world.pickupBoosterPackDrop(boosterPackDropNearby, this.player);
                             }
                         };
                     }

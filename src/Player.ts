@@ -73,6 +73,9 @@ export class Player extends BaseMesh {
     // X-Data resource
     xData: number = 0;
 
+    // Booster Packs
+    boosterPacks: number = 0;
+
     // Weapon tech/proficiency stats (gained on hit)
     public tech: Record<WeaponType, number> = {
         [WeaponType.SWORD]: 1,
@@ -817,6 +820,14 @@ export class Player extends BaseMesh {
     collectXData(amount: number): void {
         this.xData += amount;
         console.log(`Collected ${amount} X-Data. Total: ${this.xData}`);
+    }
+
+    /**
+     * Collect Booster Pack
+     */
+    collectBoosterPack(): void {
+        this.boosterPacks += 1;
+        console.log(`Collected Booster Pack. Total: ${this.boosterPacks}`);
     }
 
     /**

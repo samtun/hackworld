@@ -8,6 +8,7 @@ import { XDataUpgradeManager } from '../items/xdata/XDataUpgradeManager';
 import { WeaponTrader } from '../items/weapons/WeaponTrader';
 import { Npc } from '../npcs/Npc';
 import { CoreTrader } from '../items/cores/CoreTrader';
+import { CardManager } from '../items/cards/CardManager';
 
 export class Lobby extends BaseStage {
     id = 'lobby';
@@ -37,6 +38,7 @@ export class Lobby extends BaseStage {
     weaponTraderNpc?: Npc;
     chipTraderNpc?: Npc;
     coreTraderNpc?: Npc;
+    irkelNpc?: Npc;
 
     // Managers
     private weaponTraderManager?: WeaponTrader;
@@ -44,6 +46,7 @@ export class Lobby extends BaseStage {
     private coreTrader?: CoreTrader;
     private saveManager?: SaveManager;
     private xDataUpgradeManager?: XDataUpgradeManager;
+    private cardManager?: import('../items/cards/CardManager').CardManager;
 
     // Healing Station
     healingStation?: HealingStation;
@@ -193,6 +196,29 @@ export class Lobby extends BaseStage {
         );
 
         this.npcs.add(this.weaponTraderNpc);
+
+        // Create Irkel NPC (Card Manager)
+        const irkelDialogue = [
+            "Hey there, collector! I'm Irkel.",
+            "I've got booster packs and can help you manage your card collection.",
+            "Each pack contains 5 random cards from various albums.",
+            "Come see me when you find some packs!"
+        ];
+
+        this.cardManager = CardManager.Instance;
+        this.irkelNpc = new Npc(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            "models/npc_placeholder.glb",
+            "Irkel",
+            "Card Collection",
+            new CANNON.Vec3(7, 0, 0),
+            irkelDialogue,
+            () => this.cardManager?.show()
+        );
+
+        this.npcs.add(this.irkelNpc);
     }
 
     /*

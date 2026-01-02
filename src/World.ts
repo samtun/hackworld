@@ -9,10 +9,12 @@ import { ItemDropManager } from './items/ItemDropManager';
 import { WeaponDropStrategy } from './items/strategies/WeaponDropStrategy';
 import { ChipDropStrategy } from './items/strategies/ChipDropStrategy';
 import { CoreDropStrategy } from './items/strategies/CoreDropStrategy';
+import { BoosterPackDropStrategy } from './items/strategies/BoosterPackDropStrategy';
 import { XData } from './items/xdata/XData';
 import { WeaponDrop } from './items/weapons/WeaponDrop';
 import { ChipDrop } from './items/chips/ChipDrop';
 import { CoreDrop } from './items/cores/CoreDrop';
+import { BoosterPackDrop } from './items/cards/BoosterPackDrop';
 import { XDataDropManager } from './items/xdata/XDataDropManager';
 import { EXPNumber } from './EXPNumber';
 import { HealingSystem } from './systems/HealingSystem';
@@ -66,6 +68,7 @@ export class World {
         this.itemDropManager.registerStrategy('weapon', new WeaponDropStrategy());
         this.itemDropManager.registerStrategy('chip', new ChipDropStrategy());
         this.itemDropManager.registerStrategy('core', new CoreDropStrategy());
+        this.itemDropManager.registerStrategy('boosterPack', new BoosterPackDropStrategy());
 
         // Setup progress callback for asset manager
         if (this.onLoadProgressCallback) {
@@ -207,6 +210,9 @@ export class World {
                     const xDataAmount = this.xDataDropManager.rollDrop(player, enemy);
                     if (xDataAmount > 0) {
                         this.spawnXData(enemy.getDeathPosition(), xDataAmount);
+                    } else {
+                        // If no item or X-Data was dropped, try booster pack (3% chance)
+                        this.itemDropManager.tryDrop('boosterPack', this.scene, this.physicsWorld, enemy, player);
                     }
                 }
 
@@ -347,5 +353,19 @@ export class World {
      */
     pickupCoreDrop(drop: CoreDrop, player: Player): void {
         this.itemDropManager.pickup('core', this.scene, this.physicsWorld, drop, player);
+    }
+
+    /**
+     * Check if player is near a booster pack drop
+     */
+    checkBoosterPackDropInteraction(playerPosition: THREE.Vector3): BoosterPackDrop | null {
+        return this.itemDropManager.checkInteraction('boosterPack', playerPosition) as BoosterPackDrop | null;
+    }
+
+    /**
+     * Pick up a booster pack drop
+     */
+    pickupBoosterPackDrop(drop: BoosterPackDrop, player: Player): void {
+        this.itemDropManager.pickup('boosterPack', this.scene, this.physicsWorld, drop, player);
     }
 }
