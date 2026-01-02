@@ -25,7 +25,7 @@ export class ItemLevelHelper {
     public static readonly LEVEL_3_PRICE_MULTIPLIER = 2.0;
 
     public static getLevelChar(level: number): string {
-        if (level <= 0) throw new Error('Weapon level must be >= 1');
+        if (level <= 0) throw new Error('Level must be >= 1');
         if (level > Object.keys(this.LEVELS).length) {
             return this.LEVELS[Object.keys(this.LEVELS).length];
         }
