@@ -120,8 +120,10 @@ export class SaveManager {
 
     /**
      * Save the current game state to a JSON file
+     * Includes player stats, inventory, playtime, and card collection
      * @param player - The player object containing all player data
      * @returns The save data object
+     * @note Load functionality is not yet implemented. When implemented, use CardCollection.loadSaveData()
      */
     save(): SaveData {
         const player = this.playerRegistry.activePlayers[0];

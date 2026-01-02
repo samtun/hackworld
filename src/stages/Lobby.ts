@@ -46,7 +46,7 @@ export class Lobby extends BaseStage {
     private coreTrader?: CoreTrader;
     private saveManager?: SaveManager;
     private xDataUpgradeManager?: XDataUpgradeManager;
-    private cardManager?: import('../items/cards/CardManager').CardManager;
+    private cardManager?: CardManager;
 
     // Healing Station
     healingStation?: HealingStation;
