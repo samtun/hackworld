@@ -6,6 +6,7 @@ import { WeaponItem } from './items/weapons/WeaponItem';
 import { WeaponType } from './items/weapons/WeaponType';
 import { CoreItem } from './items/cores/CoreItem';
 import { ChipItem } from './items/chips/ChipItem';
+import { ItemLevelHelper } from './items/ItemLevelHelper';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -269,7 +270,7 @@ export class DebugValueEditor {
                 const num = idx + 1;
                 const opt = document.createElement('option');
                 opt.value = String(num);
-                const char = new WeaponItem('tmp', 'tmp', 0, 0, WeaponType.SWORD, 0, '', num).getLevelChar(num);
+                const char = ItemLevelHelper.getLevelChar(num);
                 opt.textContent = `${char}${lvl.name ? ` (${lvl.name})` : ''}`;
                 levelSelect.appendChild(opt);
             });
@@ -277,7 +278,7 @@ export class DebugValueEditor {
             for (let i = 1; i <= 5; i++) {
                 const opt = document.createElement('option');
                 opt.value = String(i);
-                const char = new WeaponItem('tmp', 'tmp', 0, 0, WeaponType.SWORD, 0, '', i).getLevelChar(i);
+                const char = ItemLevelHelper.getLevelChar(i);
                 opt.textContent = `${char} Level ${i}`;
                 levelSelect.appendChild(opt);
             }

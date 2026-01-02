@@ -287,9 +287,8 @@ export class Player extends BaseMesh {
         if (!equipped) {
             return 0;
         }
-        
-        const levelNum = equipped.level;
-        const levelMultiplier = equipped.getDamageMultiplierFromLevelNumber(levelNum);
+
+        const levelMultiplier = equipped.getDamageMultiplierFromLevelNumber();
         return Math.floor(this.weapon.damage * baseMultiplier * levelMultiplier);
     }
 

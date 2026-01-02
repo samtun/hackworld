@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { WeaponType } from './WeaponType';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
@@ -12,6 +13,7 @@ export class WeaponDrop {
     weaponType: WeaponType;
     weaponName: string;
     textMesh: THREE.Mesh | null = null;
+    level: number = 1;
     
     // Weapon stats with bonus applied
     damage: number;
@@ -32,7 +34,8 @@ export class WeaponDrop {
         weaponName: string,
         damage: number,
         buyPrice: number,
-        sellPrice: number
+        sellPrice: number,
+        level: number = 1
     ) {
         this.weaponType = weaponType;
         this.weaponName = weaponName;
@@ -40,6 +43,7 @@ export class WeaponDrop {
         this.buyPrice = buyPrice;
         this.sellPrice = sellPrice;
         this.baseHeight = position.y;
+        this.level = level;
 
         // Create visual group
         this.mesh = new THREE.Group();
@@ -69,13 +73,14 @@ export class WeaponDrop {
         canvas.height = 128;
 
         // Draw text on canvas
+        const weaponNameWithLevel = `${weaponName} ${ItemLevelHelper.getLevelChar(this.level)}`;
         context.fillStyle = 'rgba(0, 0, 0, 0.8)';
         context.fillRect(0, 0, canvas.width, canvas.height);
         context.font = 'bold 48px Arial';
         context.fillStyle = '#ffffff';
         context.textAlign = 'center';
         context.textBaseline = 'middle';
-        context.fillText(weaponName, canvas.width / 2, canvas.height / 2);
+        context.fillText(weaponNameWithLevel, canvas.width / 2, canvas.height / 2);
 
         // Create texture from canvas
         const texture = new THREE.CanvasTexture(canvas);

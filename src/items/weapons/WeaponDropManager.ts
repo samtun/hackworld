@@ -64,27 +64,16 @@ export class WeaponDropManager {
         const dropPosition = enemy.body.position.clone();
         dropPosition.y = 0.5; // Slightly above ground
 
-        // Use level char for display on drop (drops default to alpha)
-        const tempForChar = new WeaponItem(
-            crypto.randomUUID(),
-            weaponDef.name,
-            weaponDef.baseBuyPrice,
-            weaponDef.baseSellPrice,
-            weaponType,
-            weaponDef.baseDamage,
-            weaponDef.model,
-            1
-        );
-        const displayName = `${weaponDef.name} ${tempForChar.getLevelChar(1)}`;
         const weaponDrop = new WeaponDrop(
             scene,
             physicsWorld,
             dropPosition,
             weaponType,
-            displayName,
+            weaponDef.name,
             finalDamage,
             finalBuyPrice,
-            finalSellPrice
+            finalSellPrice,
+            1
         );
 
         this.weaponDrops.push(weaponDrop);
@@ -161,7 +150,7 @@ export class WeaponDropManager {
             drop.weaponType,
             drop.damage,
             model,
-            1
+            drop.level
         );
 
         player.inventory.push(newItem);
