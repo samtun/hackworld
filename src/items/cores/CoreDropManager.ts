@@ -16,7 +16,7 @@ export class CoreDropManager {
         return this.instance || (this.instance = new this());
     }
 
-    tryDropCore(scene: THREE.Scene, physicsWorld: CANNON.World, enemy: Enemy, _: Player): boolean {
+    tryDropCore(scene: THREE.Scene, enemy: Enemy, _: Player): boolean {
         if (Math.random() > enemy.itemDropChance) return false;
 
         const def = CoreRegistry.Instance.getRandomCore();

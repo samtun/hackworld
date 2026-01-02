@@ -27,7 +27,6 @@ export class WeaponDropManager {
      */
     tryDropWeapon(
         scene: THREE.Scene,
-        physicsWorld: CANNON.World,
         enemy: Enemy,
         player: Player
     ): boolean {

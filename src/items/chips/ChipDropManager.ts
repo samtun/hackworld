@@ -16,7 +16,7 @@ export class ChipDropManager {
         return this.instance || (this.instance = new this());
     }
 
-    tryDropChip(scene: THREE.Scene, physicsWorld: CANNON.World, enemy: Enemy, _: Player): boolean {
+    tryDropChip(scene: THREE.Scene, enemy: Enemy, _: Player): boolean {
         if (Math.random() > enemy.itemDropChance) return false;
 
         const def = ChipRegistry.Instance.getRandomChip();
