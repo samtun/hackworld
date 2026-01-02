@@ -69,6 +69,14 @@ export class Player extends BaseMesh {
     // X-Data resource
     xData: number = 0;
 
+    // Weapon tech/proficiency stats (gained on hit)
+    public tech: Record<WeaponType, number> = {
+        [WeaponType.SWORD]: 0,
+        [WeaponType.DUAL_BLADE]: 0,
+        [WeaponType.LANCE]: 0,
+        [WeaponType.HAMMER]: 0,
+    };
+
     // Upgrade levels for X-Data upgrades
     strengthUpgrades: number = 0;
     defenseUpgrades: number = 0;
@@ -134,7 +142,8 @@ export class Player extends BaseMesh {
             sword.baseSellPrice,
             sword.type,
             sword.baseDamage,
-            sword.model
+            sword.model,
+            1
         );
 
         // Initialize weapon visual
@@ -257,6 +266,26 @@ export class Player extends BaseMesh {
             return equippedChip.stats.weaponRangeMultiplier;
         }
         return 1.0; // Default: no multiplier
+    }
+
+    // Return current tech points for a given weapon type
+    getTechForWeapon(type: WeaponType): number {
+        return this.tech[type] ?? 0;
+    }
+
+    // Increment tech for the currently equipped weapon
+    incrementTechForCurrentWeapon(amount: number = 1) {
+        const key = this.currentWeaponType;
+        this.tech[key] = (this.tech[key] || 0) + amount;
+    }
+
+    // Compute damage for a single hit, applying tech multiplier and an optional base multiplier
+    private getHitDamage(baseMultiplier: number = 1): number {
+        // Determine multiplier from equipped weapon's fixed level
+        const equipped = this.inventory.find(i => i instanceof WeaponItem && i.isEquipped) as WeaponItem | undefined;
+        const levelNum = equipped ? equipped.level : 1;
+        const levelMultiplier = Weapon.getDamageMultiplierFromLevelNumber(levelNum);
+        return Math.floor(this.weapon.damage * baseMultiplier * levelMultiplier);
     }
 
     update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
@@ -420,7 +449,8 @@ export class Player extends BaseMesh {
     }
 
     checkAttackHits(enemies: Enemy[]) {
-        const damage = this.weapon.damage;
+        // Compute damage for this hit (applies tech multiplier)
+        const damage = this.getHitDamage();
         const attackBody = this.weapon.body;
 
         if (attackBody) {
@@ -435,6 +465,9 @@ export class Player extends BaseMesh {
                 if (this.checkCollision(attackBody, enemy.body)) {
                     enemy.takeDamage(damage, this.body.position);
                     console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
+
+                    // Grant 1 tech point for weapon type used
+                    this.incrementTechForCurrentWeapon(1);
 
                     // Mark this enemy as hit for this attack phase
                     this.enemiesHitThisPhase.add(enemy);
@@ -493,7 +526,7 @@ export class Player extends BaseMesh {
 
         // Cancel charging attack if taking damage and suppress immediate follow-up attack
         if (this.isChargingAttack) this.cancelChargeAttack()
-            
+
         console.log(`Player took ${amount} damage. HP: ${this.hp}`);
     }
 
@@ -748,10 +781,13 @@ export class Player extends BaseMesh {
 
             // Check if player body overlaps with enemy body
             if (this.checkCollision(this.body, enemy.body)) {
-                // Deal 3x weapon damage
-                const damage = this.weapon.damage * 3;
+                // Deal 3x weapon damage with tech multiplier
+                const damage = this.getHitDamage(3);
                 enemy.takeDamage(damage, this.body.position);
                 console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
+
+                // Grant 1 tech point for weapon type used
+                this.incrementTechForCurrentWeapon(1);
 
                 // Mark this enemy as hit during this dash
                 this.dashHitEnemies.add(enemy);

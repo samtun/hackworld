@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { WeaponDrop } from './WeaponDrop';
-import { WeaponType } from './Weapon';
+import { WeaponType, Weapon } from './Weapon';
 import { WeaponRegistry } from './WeaponRegistry';
 import { Enemy } from '../enemies/Enemy';
 import { Player } from '../Player';
@@ -15,7 +15,7 @@ export class WeaponDropManager {
     private static instance: WeaponDropManager;
     private weaponDrops: WeaponDrop[] = [];
 
-    private constructor() {}
+    private constructor() { }
 
     public static get Instance(): WeaponDropManager {
         return this.instance || (this.instance = new this());
@@ -64,12 +64,14 @@ export class WeaponDropManager {
         const dropPosition = enemy.body.position.clone();
         dropPosition.y = 0.5; // Slightly above ground
 
+        // Use level char for display on drop (drops default to alpha)
+        const displayName = `${weaponDef.name} ${Weapon.getLevelChar(1)}`;
         const weaponDrop = new WeaponDrop(
             scene,
             physicsWorld,
             dropPosition,
             weaponType,
-            weaponDef.name,
+            displayName,
             finalDamage,
             finalBuyPrice,
             finalSellPrice
@@ -148,7 +150,8 @@ export class WeaponDropManager {
             drop.sellPrice,
             drop.weaponType,
             drop.damage,
-            model
+            model,
+            1
         );
 
         player.inventory.push(newItem);

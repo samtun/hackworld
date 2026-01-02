@@ -45,7 +45,23 @@ export class WeaponTrader extends BaseTrader {
                 weaponDef.baseSellPrice,
                 weaponDef.type,
                 weaponDef.baseDamage,
-                weaponDef.model
+                weaponDef.model,
+                1 // default level alpha
+            ));
+        }
+
+        // Add a test Aegis Sword at Beta level for testing equip restrictions
+        const aegis = this.weaponRegistry.getWeaponById('aegis_sword');
+        if (aegis) {
+            this.traderInventory.push(new WeaponItem(
+                'aegis_sword_beta',
+                aegis.name,
+                aegis.baseBuyPrice * 2,
+                aegis.baseSellPrice,
+                aegis.type,
+                aegis.baseDamage,
+                aegis.model,
+                2 // beta
             ));
         }
     }

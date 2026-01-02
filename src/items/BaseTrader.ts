@@ -3,6 +3,7 @@ import { ItemDetailsPanel } from '../ItemDetailsPanel';
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
 import { resetInputDebounce } from '../ui/UiUtils';
+import { formatItemLabel } from './ItemDisplay';
 
 export type TradeMode = 'buy' | 'sell';
 
@@ -287,7 +288,7 @@ export abstract class BaseTrader {
             const price = mode === 'buy' ? item.buyPrice : item.sellPrice;
             const priceText = price !== undefined ? ` (${price} bits)` : '';
             const canAfford = mode === 'sell' || (price !== undefined && player.money >= price);
-            itemDiv.innerText = `${item.name}${priceText}`;
+            itemDiv.innerHTML = formatItemLabel(item, player, priceText);
             const isSelected = isActive && index === this.selectedIndex;
             Object.assign(itemDiv.style, { padding: '8px', backgroundColor: isSelected ? '#888' : 'transparent', border: isSelected ? '2px solid #fff' : '2px solid transparent', opacity: canAfford ? '1' : '0.5', transition: 'transform 0.1s', position: 'relative' });
             if ((item as any).isEquipped) {

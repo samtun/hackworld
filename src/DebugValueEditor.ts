@@ -3,6 +3,7 @@ import { WeaponRegistry } from './items/WeaponRegistry';
 import { CoreRegistry } from './items/CoreRegistry';
 import { ChipRegistry } from './items/ChipRegistry';
 import { WeaponItem } from './items/WeaponItem';
+import { Weapon, WeaponType } from './items/Weapon';
 import { CoreItem } from './items/CoreItem';
 import { ChipItem } from './items/ChipItem';
 
@@ -114,6 +115,10 @@ export class DebugValueEditor {
         this.createStatInput(statsSection, 'level', 'Level', 'number');
         this.createStatInput(statsSection, 'xData', 'X-Data', 'number');
         this.createStatInput(statsSection, 'money', 'Money', 'number');
+        this.createStatInput(statsSection, 'swordTech', 'Sword Tech', 'number');
+        this.createStatInput(statsSection, 'doubleSwordTech', 'Double Sword Tech', 'number');
+        this.createStatInput(statsSection, 'lanceTech', 'Lance Tech', 'number');
+        this.createStatInput(statsSection, 'hammerTech', 'Hammer Tech', 'number');
         panel.appendChild(statsSection);
 
         // Weapons Section
@@ -236,6 +241,50 @@ export class DebugValueEditor {
         damageRow.appendChild(damageInput);
         parent.appendChild(damageRow);
 
+        // Level selector (greek chars)
+        const levelRow = document.createElement('div');
+        levelRow.style.display = 'flex';
+        levelRow.style.justifyContent = 'space-between';
+        levelRow.style.alignItems = 'center';
+        levelRow.style.marginBottom = '10px';
+
+        const levelLabel = document.createElement('label');
+        levelLabel.textContent = 'Level:';
+        levelLabel.style.fontSize = '14px';
+
+        const levelSelect = document.createElement('select');
+        levelSelect.style.width = '100px';
+        levelSelect.style.padding = '5px';
+        levelSelect.style.backgroundColor = '#222';
+        levelSelect.style.border = '1px solid #666';
+        levelSelect.style.borderRadius = '3px';
+        levelSelect.style.color = '#fff';
+        levelSelect.style.fontSize = '14px';
+        levelSelect.style.fontFamily = 'inherit';
+
+        // Populate from Weapon.LEVELS if available, otherwise fall back to 1..5
+        const rawLevels = (Weapon as any).LEVELS || [];
+        if (rawLevels && rawLevels.length > 0) {
+            rawLevels.forEach((lvl: any, idx: number) => {
+                const num = idx + 1;
+                const opt = document.createElement('option');
+                opt.value = String(num);
+                opt.textContent = `${Weapon.getLevelChar(num)}${lvl.name ? ` (${lvl.name})` : ''}`;
+                levelSelect.appendChild(opt);
+            });
+        } else {
+            for (let i = 1; i <= 5; i++) {
+                const opt = document.createElement('option');
+                opt.value = String(i);
+                opt.textContent = `${Weapon.getLevelChar(i)} Level ${i}`;
+                levelSelect.appendChild(opt);
+            }
+        }
+
+        levelRow.appendChild(levelLabel);
+        levelRow.appendChild(levelSelect);
+        parent.appendChild(levelRow);
+
         // Add button
         const addButton = document.createElement('button');
         addButton.textContent = 'Add Weapon';
@@ -259,13 +308,16 @@ export class DebugValueEditor {
                 if (weapon) {
                     // Generate unique ID using timestamp and random number
                     const newId = `debug_weapon_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    const newItem = new WeaponItem(newId, weapon.name, weapon.baseBuyPrice, weapon.baseSellPrice, weapon.type, weapon.baseDamage, weapon.model);
+                    const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
+                    const newItem = new WeaponItem(newId, weapon.name, weapon.baseBuyPrice, weapon.baseSellPrice, weapon.type, weapon.baseDamage, weapon.model, lvl);
                     this.player.inventory.push(newItem);
-                    console.log(`Added weapon: ${weapon.name} with ${damage} damage`);
+                    console.log(`Added weapon: ${weapon.name} (Level ${lvl}) with ${damage} damage`);
 
                     // Reset selection
                     select.value = '';
                     damageInput.value = '10';
+                    // reset level selector to first option
+                    if (levelSelect.options.length > 0) levelSelect.selectedIndex = 0;
                 }
             }
         });
@@ -461,6 +513,11 @@ export class DebugValueEditor {
         this.updateInputValue('level', player.level);
         this.updateInputValue('xData', player.xData);
         this.updateInputValue('money', player.money);
+        const playerTech = (player as any).tech || {};
+        this.updateInputValue('swordTech', playerTech[WeaponType.SWORD] || 0);
+        this.updateInputValue('doubleSwordTech', playerTech[WeaponType.DUAL_BLADE] || 0);
+        this.updateInputValue('lanceTech', playerTech[WeaponType.LANCE] || 0);
+        this.updateInputValue('hammerTech', playerTech[WeaponType.HAMMER] || 0);
 
         // Apply changes from inputs to player (if user has modified them)
         this.applyInputValue('hp', (val) => { player.hp = Math.max(0, Math.min(val, player.maxHp)); });
@@ -473,6 +530,10 @@ export class DebugValueEditor {
         this.applyInputValue('level', (val) => { player.level = Math.max(1, val); });
         this.applyInputValue('xData', (val) => { player.xData = Math.max(0, val); });
         this.applyInputValue('money', (val) => { player.money = Math.max(0, val); });
+        this.applyInputValue('swordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.SWORD] = Math.max(0, val); });
+        this.applyInputValue('doubleSwordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.DUAL_BLADE] = Math.max(0, val); });
+        this.applyInputValue('lanceTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.LANCE] = Math.max(0, val); });
+        this.applyInputValue('hammerTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.HAMMER] = Math.max(0, val); });
     }
 
     private updateInputValue(key: string, value: number): void {

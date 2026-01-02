@@ -1,17 +1,20 @@
 import { EquippableItem } from './EquippableItem';
 import { Player } from '../Player';
-import { WeaponType } from './Weapon';
+import { WeaponType, Weapon } from './Weapon';
 
 export class WeaponItem extends EquippableItem {
     weaponType: WeaponType;
     damage: number;
     model: string;
+    // fixed numeric level for this weapon instance (1 = α, 2 = β, ...)
+    level: number;
 
-    constructor(id: string, name: string, buyPrice: number, sellPrice: number, weaponType: WeaponType, damage: number, model: string) {
+    constructor(id: string, name: string, buyPrice: number, sellPrice: number, weaponType: WeaponType, damage: number, model: string, level: number = 1) {
         super(id, name, buyPrice, sellPrice);
         this.weaponType = weaponType;
         this.damage = damage;
         this.model = model;
+        this.level = level;
     }
 
     getType(): string {
@@ -19,6 +22,14 @@ export class WeaponItem extends EquippableItem {
     }
 
     equip(player: Player): void {
+        // Check player's tech for this weapon type against required tech for this weapon's level
+        const lvlDef = Weapon.getLevelByNumber(this.level);
+        const playerTech = player.getTechForWeapon(this.weaponType);
+        if (lvlDef && playerTech < lvlDef.requiredTech) {
+            console.log(`Cannot equip ${this.name} ${this.level}: requires ${lvlDef.requiredTech} tech, player has ${playerTech}`);
+            return; // Do not equip
+        }
+
         // Unequip other weapons
         player.inventory.forEach(item => {
             if (item instanceof WeaponItem && item !== this && item.isEquipped) {
@@ -27,7 +38,6 @@ export class WeaponItem extends EquippableItem {
         });
 
         // Logic to equip weapon on player
-        // This requires Player to expose scene and world, or a method to set weapon
         player.setWeapon(this);
         this.isEquipped = true;
     }
@@ -45,7 +55,8 @@ export class WeaponItem extends EquippableItem {
             this.sellPrice,
             this.weaponType,
             this.damage,
-            this.model
+            this.model,
+            this.level
         );
     }
 }

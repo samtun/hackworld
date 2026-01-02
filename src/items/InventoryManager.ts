@@ -30,6 +30,7 @@ const STYLES = {
 import { ItemDetailsPanel } from '../ItemDetailsPanel';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
+import { formatItemLabel } from './ItemDisplay';
 
 export { Item }; // Re-export Item for other files that might import it from here
 
@@ -259,7 +260,7 @@ export class InventoryManager {
             const priceText = item.sellPrice !== undefined ? ` (${item.sellPrice} bits)` : '';
 
             // Set item text without equipped indicator (triangle will be overlay)
-            itemDiv.innerText = `${item.name}${priceText}`;
+            itemDiv.innerHTML = formatItemLabel(item, player, priceText);
 
             const isSelected = index === this.selectedIndex;
 

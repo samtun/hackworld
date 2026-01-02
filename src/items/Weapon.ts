@@ -10,6 +10,22 @@ export enum WeaponType {
     HAMMER = 'hammer'
 }
 
+export interface WeaponLevel {
+    char: string; // greek character
+    requiredTech: number;
+    damagePercent: number; // percent value, e.g. 180 for 180%
+}
+
+// Levels follow the greek alphabet and required tech thresholds
+const WEAPON_LEVELS: WeaponLevel[] = [
+    { char: 'α', requiredTech: 0, damagePercent: 1 },
+    { char: 'β', requiredTech: 120, damagePercent: 1.80 },
+    { char: 'γ', requiredTech: 460, damagePercent: 3.20 },
+    { char: 'δ', requiredTech: 720, damagePercent: 6.20 },
+    { char: 'ε', requiredTech: 1280, damagePercent: 9.80 },
+    { char: 'ω', requiredTech: 2500, damagePercent: 14.00 }
+];
+
 // Model paths for each weapon type
 const WEAPON_MODEL_PATHS: Record<WeaponType, string> = {
     [WeaponType.SWORD]: 'models/sword.glb',
@@ -49,6 +65,25 @@ export const WEAPON_CONFIGS: Record<WeaponType, WeaponStats> = {
 };
 
 export class Weapon extends BaseMesh {
+    // Expose level metadata via static helpers to keep entity-oriented design
+    private static LEVELS = WEAPON_LEVELS;
+
+    // Return level definition by numeric level (1-based). Throws if level <= 0.
+    static getLevelByNumber(level: number): WeaponLevel {
+        if (level <= 0) throw new Error('Weapon level must be >= 1');
+        if (level > Weapon.LEVELS.length) return Weapon.LEVELS[Weapon.LEVELS.length - 1];
+        return Weapon.LEVELS[level - 1];
+    }
+
+    // Return greek char for numeric level
+    static getLevelChar(level: number): string {
+        return Weapon.getLevelByNumber(level).char;
+    }
+
+    // Return multiplier for numeric level
+    static getDamageMultiplierFromLevelNumber(level: number): number {
+        return Weapon.getLevelByNumber(level).damagePercent;
+    }
     body?: CANNON.Body;
     isAttacking: boolean = false;
     private attackTimer: number = 0;
