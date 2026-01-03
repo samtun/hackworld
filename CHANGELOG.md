@@ -1,3 +1,22 @@
+# [1.9.0](https://github.com/samtun/hackworld/compare/v1.8.0...v1.9.0) (2026-01-03)
+
+
+### Bug Fixes
+
+* address PR feedback on level system ([7e89e92](https://github.com/samtun/hackworld/commit/7e89e92875774e3d8d13009055c5220b06345c1a))
+* correct syntax error in Player.ts getWeaponRangeMultiplier ([7c9ba80](https://github.com/samtun/hackworld/commit/7c9ba80c614349518ea9de94605c0605d45e163d))
+* update error message to be more generic ([029dc96](https://github.com/samtun/hackworld/commit/029dc9607528468bdcae6f5a1d57c82668a226b9))
+
+
+### Features
+
+* add level system to chip and core items ([55f6dd4](https://github.com/samtun/hackworld/commit/55f6dd4622cf1c7ad1e6c3f46f7295f54b6a13b5))
+
+
+### Performance Improvements
+
+* optimize determineDropLevel by checking roll early ([ac4a598](https://github.com/samtun/hackworld/commit/ac4a598061981815836f06454892ecd157de3e06))
+
 # [1.8.0](https://github.com/samtun/hackworld/compare/v1.7.1...v1.8.0) (2026-01-02)
 
 
