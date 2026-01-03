@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { createParticleShaderMaterial, updateParticleScaleFactor } from './ParticleShaderUtils';
 
 /**
  * Portal entity with particle effects
@@ -66,37 +67,8 @@ export class Portal {
         particleGeometry.setAttribute('position', new THREE.BufferAttribute(this.particleSystem.positions, 3));
         particleGeometry.setAttribute('size', new THREE.BufferAttribute(this.particleSystem.sizes, 1));
 
-        // Custom shader material for per-particle size control
-        const particleMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                color: { value: this.color }
-            },
-            vertexShader: `
-                attribute float size;
-                
-                void main() {
-                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                    gl_PointSize = size * (300.0 / -mvPosition.z);
-                    gl_Position = projectionMatrix * mvPosition;
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 color;
-                
-                void main() {
-                    float dist = length(gl_PointCoord - vec2(0.5));
-                    if (dist > 0.5) discard;
-                    
-                    float alpha = 1.0 - (dist * 2.0);
-                    alpha = alpha * alpha;
-                    
-                    gl_FragColor = vec4(color, alpha * 0.9);
-                }
-            `,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            transparent: true
-        });
+        // Create shader material with screen-independent particle sizing
+        const particleMaterial = createParticleShaderMaterial(this.color);
 
         this.particles = new THREE.Points(particleGeometry, particleMaterial);
         scene.add(this.particles);
@@ -193,6 +165,15 @@ export class Portal {
         if (sizeAttribute) {
             (sizeAttribute as THREE.BufferAttribute).needsUpdate = true;
         }
+    }
+
+    /**
+     * Update the particle scale factor for screen-independent sizing
+     * Should be called when window is resized
+     */
+    updateScaleFactor(): void {
+        const particleMaterial = this.particles.material as THREE.ShaderMaterial;
+        updateParticleScaleFactor(particleMaterial);
     }
 
     /**
