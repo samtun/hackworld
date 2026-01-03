@@ -273,6 +273,7 @@ export class CardManager {
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
+                WebkitBackfaceVisibility: 'hidden',
                 backfaceVisibility: 'hidden',
                 boxSizing: 'border-box'
             });
@@ -300,6 +301,7 @@ export class CardManager {
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
+                WebkitBackfaceVisibility: 'hidden',
                 backfaceVisibility: 'hidden',
                 transform: 'rotateY(180deg)',
                 boxSizing: 'border-box'
