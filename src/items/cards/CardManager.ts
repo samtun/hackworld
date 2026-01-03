@@ -350,7 +350,7 @@ export class CardManager {
             cardDiv.appendChild(slotText);
             
             const rarityText = document.createElement('div');
-            rarityText.innerText = card.rarity.charAt(0).toUpperCase();
+            rarityText.innerText = card.rarity.toUpperCase();
             Object.assign(rarityText.style, {
                 fontSize: '14px',
                 color: COLORS.TEXT,
@@ -365,7 +365,7 @@ export class CardManager {
                 fontSize: '24px',
                 color: COLORS.COLLECTED,
                 marginTop: '5px',
-                minHeight: '29px' // Reserve space for checkmark
+                height: '29px' // Reserve space for checkmark
             });
             cardDiv.appendChild(checkmark);
             
