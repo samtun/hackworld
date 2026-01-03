@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { BaseStage } from './BaseStage';
 import { HealingStation } from '../HealingStation';
@@ -22,6 +23,7 @@ export class Lobby extends BaseStage {
             description: 'Safe hub area'
         };
     }
+    
     /**
      * Get assets required by lobby
      */
@@ -62,8 +64,22 @@ export class Lobby extends BaseStage {
         this.clear();
         console.log("Loading Lobby...");
 
-        // Floor
-        this.createFloor(20, 0x808080);
+        // Load Lobby Model
+        const lobbyAsset = this.assetManager.get('models/lobby.glb');
+        const lobbyScene = lobbyAsset.scene;
+        this.scene.add(lobbyScene);
+        this.meshes.push(lobbyScene);
+
+        // Create floor collider
+        const floorShape = new CANNON.Plane();
+        const floorBody = new CANNON.Body({
+            mass: 0,
+            material: this.physicsMaterial
+        });
+        floorBody.addShape(floorShape);
+        floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+        this.physicsWorld.addBody(floorBody);
+        this.bodies.push(floorBody);
 
         // Portal
         this.createPortal(new CANNON.Vec3(5, 0.05, 5), 0x00ff00, 'selection');

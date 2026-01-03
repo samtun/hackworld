@@ -110,6 +110,7 @@ export class World {
             'models/trader_weapons.glb',
             'models/npc_placeholder.glb',
             'models/healing_station.glb',
+            'models/lobby.glb' // Lobby assets moved here to ensure availability at game start
         ];
 
         await this.assetManager.preloadAll(commonAssets);
