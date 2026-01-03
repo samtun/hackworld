@@ -31,6 +31,7 @@ import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';
+import { WeaponType } from './weapons/WeaponType';
 
 export { Item }; // Re-export Item for other files that might import it from here
 
@@ -369,6 +370,25 @@ export class InventoryManager {
             </div>
         `;
 
-        return statsHTML + xDataHTML + expHTML;
+        // Add Tech display
+        const techHTML = `
+            <div style="height: 2px; background-color: ${COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
+            <div style="font-weight: bold; padding: 5px 0;">Tech</div>
+            <div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>Sword</span> <span>${player.tech[WeaponType.SWORD]}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>Double Sword</span> <span>${player.tech[WeaponType.DUAL_BLADE]}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>Lance</span> <span>${player.tech[WeaponType.LANCE]}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>Hammer</span> <span>${player.tech[WeaponType.HAMMER]}</span>
+            </div>
+        `;
+
+        return statsHTML + xDataHTML + expHTML + techHTML;
     }
 }
