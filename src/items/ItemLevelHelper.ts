@@ -71,19 +71,21 @@ export class ItemLevelHelper {
             return equippableLevel;
         }
 
-        // Check if player is close to next level (within 5 levels)
-        const nextLevelIndex = equippableLevel; // Next level is current equippable + 1 (in 0-based index)
-        if (nextLevelIndex < this.CHIP_CORE_LEVELS.length) {
-            const nextRequiredLevel = this.CHIP_CORE_LEVELS[nextLevelIndex].requiredLevel;
-            const levelsAway = nextRequiredLevel - playerLevel;
-            
-            // 8% chance (70-78%) to drop one level higher if within 5 levels
-            if (levelsAway <= 5 && roll < 0.78) {
-                return equippableLevel + 1;
+        // 8% chance (70-78%) to drop one level higher if player is close to next level
+        if (roll < 0.78) {
+            const nextLevelIndex = equippableLevel; // Next level is current equippable + 1 (in 0-based index)
+            if (nextLevelIndex < this.CHIP_CORE_LEVELS.length) {
+                const nextRequiredLevel = this.CHIP_CORE_LEVELS[nextLevelIndex].requiredLevel;
+                const levelsAway = nextRequiredLevel - playerLevel;
+                
+                // Only drop one level higher if within 5 levels of requirement
+                if (levelsAway <= 5) {
+                    return equippableLevel + 1;
+                }
             }
         }
 
-        // Otherwise (22% chance), drop one level lower
+        // Otherwise (22% chance or roll >= 0.78 but not close to next level), drop one level lower
         return Math.max(1, equippableLevel - 1);
     }
 }
