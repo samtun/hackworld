@@ -236,79 +236,120 @@ export class CardManager {
             flexWrap: 'nowrap' // Keep all cards in a single row
         });
         
-        // Display all 5 cards
+        // Display all 4 cards
         this.revealedCards.forEach((card, index) => {
             const isFlipped = this.flippedCardIndices.has(index);
             
-            const cardDiv = document.createElement('div');
-            Object.assign(cardDiv.style, {
+            // Outer container for 3D perspective
+            const cardContainer = document.createElement('div');
+            Object.assign(cardContainer.style, {
+                perspective: '1000px',
+                minWidth: '150px',
+                minHeight: '200px'
+            });
+            
+            // Inner flipper element
+            const cardFlipper = document.createElement('div');
+            Object.assign(cardFlipper.style, {
+                position: 'relative',
+                width: '100%',
+                height: '100%',
+                transition: 'transform 0.6s',
+                transformStyle: 'preserve-3d',
+                transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+            });
+            
+            // Card back (face down)
+            const cardBack = document.createElement('div');
+            Object.assign(cardBack.style, {
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
                 padding: '20px',
                 backgroundColor: COLORS.CARD_BG,
-                border: `3px solid ${isFlipped ? this.getRarityColor(card.rarity) : '#666'}`,
+                border: '3px solid #666',
                 borderRadius: '10px',
                 textAlign: 'center',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
-                minHeight: '180px',
-                minWidth: '140px',
-                transition: 'all 0.3s ease'
+                backfaceVisibility: 'hidden',
+                boxSizing: 'border-box'
             });
             
-            if (isFlipped) {
-                // Show card front with details
-                const isNew = this.cardCollection.hasCard(card);
-                
-                const albumText = document.createElement('div');
-                albumText.innerText = card.album;
-                Object.assign(albumText.style, {
-                    fontSize: '24px',
-                    fontWeight: 'bold',
-                    color: this.getRarityColor(card.rarity),
-                    marginBottom: '8px'
-                });
-                cardDiv.appendChild(albumText);
-                
-                const slotText = document.createElement('div');
-                slotText.innerText = `#${card.slot}`;
-                Object.assign(slotText.style, {
-                    fontSize: '18px',
-                    color: COLORS.TEXT,
-                    marginBottom: '8px'
-                });
-                cardDiv.appendChild(slotText);
-                
-                const rarityText = document.createElement('div');
-                rarityText.innerText = card.rarity.toUpperCase();
-                Object.assign(rarityText.style, {
-                    fontSize: '14px',
-                    color: this.getRarityColor(card.rarity),
-                    marginBottom: '8px'
-                });
-                cardDiv.appendChild(rarityText);
-                
-                const statusText = document.createElement('div');
-                statusText.innerText = isNew ? 'DUP' : '✨ NEW';
-                Object.assign(statusText.style, {
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    color: isNew ? '#888' : COLORS.COLLECTED,
-                    marginTop: '8px'
-                });
-                cardDiv.appendChild(statusText);
-            } else {
-                // Show card back (gray)
-                const backText = document.createElement('div');
-                backText.innerText = '?';
-                Object.assign(backText.style, {
-                    fontSize: '48px',
-                    fontWeight: 'bold',
-                    color: '#666'
-                });
-                cardDiv.appendChild(backText);
-            }
+            const backText = document.createElement('div');
+            backText.innerText = '?';
+            Object.assign(backText.style, {
+                fontSize: '48px',
+                fontWeight: 'bold',
+                color: '#666'
+            });
+            cardBack.appendChild(backText);
             
-            cardsContainer.appendChild(cardDiv);
+            // Card front (face up)
+            const cardFront = document.createElement('div');
+            Object.assign(cardFront.style, {
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                padding: '20px',
+                backgroundColor: COLORS.CARD_BG,
+                border: `3px solid ${this.getRarityColor(card.rarity)}`,
+                borderRadius: '10px',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                backfaceVisibility: 'hidden',
+                transform: 'rotateY(180deg)',
+                boxSizing: 'border-box'
+            });
+            
+            const isNew = this.cardCollection.hasCard(card);
+            
+            const albumText = document.createElement('div');
+            albumText.innerText = card.album;
+            Object.assign(albumText.style, {
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: this.getRarityColor(card.rarity),
+                marginBottom: '8px'
+            });
+            cardFront.appendChild(albumText);
+            
+            const slotText = document.createElement('div');
+            slotText.innerText = `#${card.slot}`;
+            Object.assign(slotText.style, {
+                fontSize: '18px',
+                color: COLORS.TEXT,
+                marginBottom: '8px'
+            });
+            cardFront.appendChild(slotText);
+            
+            const rarityText = document.createElement('div');
+            rarityText.innerText = card.rarity.toUpperCase();
+            Object.assign(rarityText.style, {
+                fontSize: '14px',
+                color: this.getRarityColor(card.rarity),
+                marginBottom: '8px'
+            });
+            cardFront.appendChild(rarityText);
+            
+            const statusText = document.createElement('div');
+            statusText.innerText = isNew ? 'DUP' : '✨ NEW';
+            Object.assign(statusText.style, {
+                fontSize: '16px',
+                fontWeight: 'bold',
+                color: isNew ? '#888' : COLORS.COLLECTED,
+                marginTop: '8px'
+            });
+            cardFront.appendChild(statusText);
+            
+            // Assemble the card structure
+            cardFlipper.appendChild(cardBack);
+            cardFlipper.appendChild(cardFront);
+            cardContainer.appendChild(cardFlipper);
+            cardsContainer.appendChild(cardContainer);
         });
         
         this.mainContent.appendChild(cardsContainer);
@@ -515,10 +556,10 @@ export class CardManager {
     private handleSelect(player: Player) {
         if (this.viewMode === 'menu') {
             if (this.selectedMenuIndex === 0 && player.boosterPacks > 0) {
-                // Open pack - generate 5 random cards
+                // Open pack - generate 4 random cards
                 player.boosterPacks -= 1;
                 this.revealedCards = [];
-                for (let i = 0; i < 5; i++) {
+                for (let i = 0; i < 4; i++) {
                     this.revealedCards.push(CardDefinitions.getRandomCard());
                 }
                 this.flippedCardIndices.clear();
