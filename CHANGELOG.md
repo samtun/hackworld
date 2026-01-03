@@ -1,3 +1,23 @@
+# [1.11.0](https://github.com/samtun/hackworld/compare/v1.10.0...v1.11.0) (2026-01-03)
+
+
+### Bug Fixes
+
+* add WebKit prefix for backface-visibility to ensure flip animation works ([2c907bf](https://github.com/samtun/hackworld/commit/2c907bf7a6db42c47b2e4af207f46f1d1b83c811))
+* address code review feedback ([d5dc8f0](https://github.com/samtun/hackworld/commit/d5dc8f0253c5e81ffa4481ad6d2bea89b602bca1))
+* address PR review feedback ([ade09af](https://github.com/samtun/hackworld/commit/ade09afbe0299fd5154000fc49dfc4cb7bd4fbb4))
+* card flip transition ([f08a148](https://github.com/samtun/hackworld/commit/f08a148176247447b0f7d118a44b38d8ba0d6628))
+* invert new card status logic and improve layout for status display ([8662d61](https://github.com/samtun/hackworld/commit/8662d61877f99973bc9c6f11f6dbf71ce3707db6))
+* use full card rarity in ui ([ad47701](https://github.com/samtun/hackworld/commit/ad47701540de0ecf14155bc90659fbb31c49cbcd))
+
+
+### Features
+
+* add card collectibles system with booster packs ([afef61a](https://github.com/samtun/hackworld/commit/afef61aeadd2b13db392ce4eba1b38b8eb629a52))
+* add card flip animation with card backs to booster pack opening ([9112190](https://github.com/samtun/hackworld/commit/91121903cd5d7270bdb97cc7e3e40ae930f0a9ad))
+* display all 5 cards at once when opening booster pack ([90bcfb9](https://github.com/samtun/hackworld/commit/90bcfb9cbd09be58d438e83357a88b108e2583d9))
+* reduce booster pack to 4 cards and add 3D flip animation ([fafa64a](https://github.com/samtun/hackworld/commit/fafa64ae533d04951b3808fe6f13ce2ec5ba599e))
+
 # [1.10.0](https://github.com/samtun/hackworld/compare/v1.9.1...v1.10.0) (2026-01-03)
 
 
