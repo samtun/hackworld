@@ -282,9 +282,9 @@ export class Game {
             }
 
             // Update healing station particles if exists (Lobby specific)
-            const lobby = this.world.currentStage as any;
-            if (lobby.healingStation) {
-                lobby.healingStation.updateScaleFactor();
+            const stage = this.world.currentStage as any;
+            if (stage.healingStation && typeof stage.healingStation.updateScaleFactor === 'function') {
+                stage.healingStation.updateScaleFactor();
             }
         }
     }

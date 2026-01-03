@@ -28,6 +28,7 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     private readonly HEALING_RISE_SPEED = 1.8; // Faster rise speed during healing
     private readonly MAX_PARTICLE_SIZE = 0.5;
     private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
+    private readonly CAMERA_FOV_RADIANS = (45 * Math.PI) / 180; // 45 degrees in radians
     private time: number = 0;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3) {
@@ -56,9 +57,7 @@ export class HealingStation extends BaseMesh implements IHealingStation {
         particleGeometry.setAttribute('size', new THREE.BufferAttribute(this.particleSystem.sizes, 1));
 
         // Calculate scale factor for screen-independent particle size
-        // FOV = 45 degrees, tan(45°/2) ≈ 0.4142
-        // scaleFactor = viewportHeight / (2 * tan(fov/2))
-        const scaleFactor = window.innerHeight / (2.0 * 0.4142);
+        const scaleFactor = this.calculateScaleFactor();
 
         // Custom shader material for per-particle size control
         const particleMaterial = new THREE.ShaderMaterial({
@@ -189,11 +188,19 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     }
 
     /**
+     * Calculate the scale factor for perspective-correct particle sizing
+     * Formula: viewportHeight / (2 * tan(fov/2))
+     */
+    private calculateScaleFactor(): number {
+        return window.innerHeight / (2.0 * Math.tan(this.CAMERA_FOV_RADIANS / 2.0));
+    }
+
+    /**
      * Update the particle scale factor for screen-independent sizing
      * Should be called when window is resized
      */
     updateScaleFactor(): void {
-        const scaleFactor = window.innerHeight / (2.0 * 0.4142);
+        const scaleFactor = this.calculateScaleFactor();
         const particleMaterial = this.particles.material as THREE.ShaderMaterial;
         if (particleMaterial && particleMaterial.uniforms.scaleFactor) {
             particleMaterial.uniforms.scaleFactor.value = scaleFactor;
