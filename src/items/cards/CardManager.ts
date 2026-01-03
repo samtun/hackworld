@@ -49,7 +49,6 @@ export class CardManager {
     private selectedAlbumIndex: number = 0;
     private currentAlbum: string = '';
     private revealedCards: Card[] = [];
-    private revealIndex: number = 0;
     
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
@@ -213,71 +212,97 @@ export class CardManager {
     private renderOpenPack() {
         this.mainContent.innerHTML = '';
         
-        if (this.revealIndex < this.revealedCards.length) {
-            const card = this.revealedCards[this.revealIndex];
+        // Title
+        const titleDiv = document.createElement('div');
+        titleDiv.innerText = 'Pack Contents';
+        Object.assign(titleDiv.style, {
+            textAlign: 'center',
+            fontSize: '24px',
+            fontWeight: 'bold',
+            color: COLORS.TEXT,
+            marginBottom: '20px'
+        });
+        this.mainContent.appendChild(titleDiv);
+        
+        // Grid container for all cards
+        const gridDiv = document.createElement('div');
+        Object.assign(gridDiv.style, {
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+            gap: '15px',
+            marginBottom: '20px'
+        });
+        
+        // Display all 5 cards at once
+        this.revealedCards.forEach((card) => {
             const isNew = this.cardCollection.addCard(card);
             
             const cardDiv = document.createElement('div');
             Object.assign(cardDiv.style, {
-                padding: '40px',
-                margin: '20px auto',
-                maxWidth: '400px',
+                padding: '20px',
                 backgroundColor: COLORS.CARD_BG,
-                border: `4px solid ${this.getRarityColor(card.rarity)}`,
-                borderRadius: '15px',
-                textAlign: 'center'
+                border: `3px solid ${this.getRarityColor(card.rarity)}`,
+                borderRadius: '10px',
+                textAlign: 'center',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                minHeight: '180px'
             });
             
             const albumText = document.createElement('div');
             albumText.innerText = card.album;
             Object.assign(albumText.style, {
-                fontSize: '32px',
+                fontSize: '24px',
                 fontWeight: 'bold',
                 color: this.getRarityColor(card.rarity),
-                marginBottom: '10px'
+                marginBottom: '8px'
             });
             cardDiv.appendChild(albumText);
             
             const slotText = document.createElement('div');
-            slotText.innerText = `Card #${card.slot}`;
+            slotText.innerText = `#${card.slot}`;
             Object.assign(slotText.style, {
-                fontSize: '24px',
+                fontSize: '18px',
                 color: COLORS.TEXT,
-                marginBottom: '15px'
+                marginBottom: '8px'
             });
             cardDiv.appendChild(slotText);
             
             const rarityText = document.createElement('div');
             rarityText.innerText = card.rarity.toUpperCase();
             Object.assign(rarityText.style, {
-                fontSize: '20px',
+                fontSize: '14px',
                 color: this.getRarityColor(card.rarity),
-                marginBottom: '15px'
+                marginBottom: '8px'
             });
             cardDiv.appendChild(rarityText);
             
             const statusText = document.createElement('div');
-            statusText.innerText = isNew ? '✨ NEW! ✨' : 'DUPLICATE';
+            statusText.innerText = isNew ? '✨ NEW' : 'DUP';
             Object.assign(statusText.style, {
-                fontSize: '22px',
+                fontSize: '16px',
                 fontWeight: 'bold',
                 color: isNew ? COLORS.COLLECTED : '#888',
-                marginTop: '10px'
+                marginTop: '8px'
             });
             cardDiv.appendChild(statusText);
             
-            this.mainContent.appendChild(cardDiv);
-            
-            const continueText = document.createElement('div');
-            continueText.innerText = `Card ${this.revealIndex + 1} / 5`;
-            Object.assign(continueText.style, {
-                textAlign: 'center',
-                fontSize: '16px',
-                color: COLORS.SEPARATOR,
-                marginTop: '20px'
-            });
-            this.mainContent.appendChild(continueText);
-        }
+            gridDiv.appendChild(cardDiv);
+        });
+        
+        this.mainContent.appendChild(gridDiv);
+        
+        // Instructions
+        const instructionsText = document.createElement('div');
+        instructionsText.innerText = 'Press ENTER / A to continue';
+        Object.assign(instructionsText.style, {
+            textAlign: 'center',
+            fontSize: '16px',
+            color: COLORS.SEPARATOR,
+            marginTop: '10px'
+        });
+        this.mainContent.appendChild(instructionsText);
     }
     
     private renderAlbumList() {
@@ -463,13 +488,12 @@ export class CardManager {
     private handleSelect(player: Player) {
         if (this.viewMode === 'menu') {
             if (this.selectedMenuIndex === 0 && player.boosterPacks > 0) {
-                // Open pack
+                // Open pack - generate 5 random cards and add them to collection
                 player.boosterPacks -= 1;
                 this.revealedCards = [];
                 for (let i = 0; i < 5; i++) {
                     this.revealedCards.push(CardDefinitions.getRandomCard());
                 }
-                this.revealIndex = 0;
                 this.viewMode = 'openPack';
             } else if (this.selectedMenuIndex === 1) {
                 // View albums
@@ -477,11 +501,8 @@ export class CardManager {
                 this.selectedAlbumIndex = 0;
             }
         } else if (this.viewMode === 'openPack') {
-            // Advance to next card or return to menu
-            this.revealIndex++;
-            if (this.revealIndex >= this.revealedCards.length) {
-                this.viewMode = 'menu';
-            }
+            // Return to menu after viewing all cards
+            this.viewMode = 'menu';
         } else if (this.viewMode === 'viewAlbums') {
             // Open specific album
             const albums = CardDefinitions.getAlbums();
