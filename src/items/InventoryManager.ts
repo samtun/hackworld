@@ -31,6 +31,7 @@ import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';
+import { WeaponType } from './weapons/WeaponType';
 
 export { Item }; // Re-export Item for other files that might import it from here
 
@@ -73,34 +74,23 @@ export class InventoryManager {
         const windowDiv = this.createWindow();
         this.container.appendChild(windowDiv);
 
-        // 1. Equipped Items Panel (Top Left)
-        const equippedPanel = this.createPanel(COLORS.PANEL_EQUIPPED, '1 / 2', '1 / 2');
-        equippedPanel.style.display = 'flex';
-        equippedPanel.style.flexDirection = 'column';
-        equippedPanel.style.alignItems = 'center';
-        equippedPanel.style.justifyContent = 'center';
-        equippedPanel.style.gap = STYLES.SLOT_GAP;
-        windowDiv.appendChild(equippedPanel);
+        // 2. Stats Panel (Left Column - Full Height)
+        const statsPanel = this.createPanel(COLORS.PANEL_STATS, '1 / 3', '1 / 2');
+        statsPanel.style.fontSize = '18px';
+        statsPanel.style.display = 'flex';
+        statsPanel.style.flexDirection = 'column';
+        windowDiv.appendChild(statsPanel);
 
-        // Level display (top of equipped panel)
+        // Level display (top of stats panel)
         const levelDisplay = document.createElement('div');
         levelDisplay.id = 'level-display';
         levelDisplay.style.fontSize = '24px';
         levelDisplay.style.fontWeight = 'bold';
-        levelDisplay.style.marginBottom = '10px';
+        levelDisplay.style.marginBottom = '20px';
         levelDisplay.style.color = '#ffd700'; // Gold color
         levelDisplay.style.textShadow = '2px 2px 0px #000';
-        equippedPanel.appendChild(levelDisplay);
-
-        // Slots
-        this.createSlot(equippedPanel, 'Core');
-        this.createSlot(equippedPanel, 'Weapon');
-        this.createSlot(equippedPanel, 'Chip');
-
-        // 2. Stats Panel (Bottom Left)
-        const statsPanel = this.createPanel(COLORS.PANEL_STATS, '2 / 3', '1 / 2');
-        statsPanel.style.fontSize = '18px';
-        windowDiv.appendChild(statsPanel);
+        levelDisplay.style.textAlign = 'center';
+        statsPanel.appendChild(levelDisplay);
 
         this.statsText = document.createElement('div');
         statsPanel.appendChild(this.statsText);
@@ -183,26 +173,6 @@ export class InventoryManager {
             padding: STYLES.PANEL_PADDING
         });
         return el;
-    }
-
-    private createSlot(parent: HTMLElement, label: string) {
-        const slot = document.createElement('div');
-        Object.assign(slot.style, {
-            width: '80px',
-            height: '60px',
-            backgroundColor: COLORS.SLOT_BG,
-            borderRadius: '8px',
-            border: `2px solid ${COLORS.BORDER}`,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontWeight: 'bold',
-            fontFamily: STYLES.FONT_FAMILY,
-            color: COLORS.TEXT,
-            textShadow: '1px 1px 0 #000'
-        });
-        slot.innerText = label;
-        parent.appendChild(slot);
     }
 
     toggle() {
@@ -369,6 +339,25 @@ export class InventoryManager {
             </div>
         `;
 
-        return statsHTML + xDataHTML + expHTML;
+        // Add Tech display
+        const techHTML = `
+            <div style="height: 2px; background-color: ${COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
+            <div style="font-weight: bold; padding: 5px 0;">Tech</div>
+            <div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>Sword</span> <span>${player.tech[WeaponType.SWORD]}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>Double Sword</span> <span>${player.tech[WeaponType.DUAL_BLADE]}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>Lance</span> <span>${player.tech[WeaponType.LANCE]}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>Hammer</span> <span>${player.tech[WeaponType.HAMMER]}</span>
+            </div>
+        `;
+
+        return statsHTML + xDataHTML + expHTML + techHTML;
     }
 }
