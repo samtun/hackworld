@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { ChipType } from './Chip';
 import { ItemDrop } from '../ItemDrop';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class ChipDrop implements ItemDrop {
     mesh: THREE.Group;
@@ -11,6 +12,7 @@ export class ChipDrop implements ItemDrop {
     chipType: ChipType;
     buyPrice: number;
     sellPrice: number;
+    level: number = 1;
 
     private floatTimer: number = 0;
     private baseHeight: number;
@@ -18,12 +20,13 @@ export class ChipDrop implements ItemDrop {
     private readonly FLOAT_AMPLITUDE: number = 0.12;
     private readonly PICKUP_DISTANCE: number = 1.5;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, chipId: string, chipName: string, chipType: ChipType, buyPrice: number, sellPrice: number) {
+    constructor(scene: THREE.Scene, position: CANNON.Vec3, chipId: string, chipName: string, chipType: ChipType, buyPrice: number, sellPrice: number, level: number) {
         this.chipId = chipId;
         this.chipName = chipName;
         this.chipType = chipType;
         this.buyPrice = buyPrice;
         this.sellPrice = sellPrice;
+        this.level = level;
         this.baseHeight = position.y;
 
         this.mesh = new THREE.Group();
@@ -36,18 +39,39 @@ export class ChipDrop implements ItemDrop {
         sphere.position.y = 0.25;
         this.mesh.add(sphere);
 
-        // Text label (canvas)
+        // Text label (canvas) with level character
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d')!;
         canvas.width = 256;
         canvas.height = 64;
         ctx.fillStyle = 'rgba(0,0,0,0.8)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.font = 'bold 28px Arial';
+        
+        // Measure widths for centering
+        const levelChar = ItemLevelHelper.getLevelChar(this.level);
+        const baseFont = 'bold 28px Arial';
+        ctx.font = baseFont;
+        const nameWidth = ctx.measureText(this.chipName).width;
+        const levelFont = 'italic bold 28px Arial';
+        ctx.font = levelFont;
+        const levelWidth = ctx.measureText(levelChar).width;
+        
+        const spacing = 4;
+        const totalWidth = nameWidth + spacing + levelWidth;
+        const startX = canvas.width / 2 - totalWidth / 2;
+        const centerY = canvas.height / 2;
+        
+        // Draw name
+        ctx.font = baseFont;
         ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'center';
+        ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        ctx.fillText(this.chipName, canvas.width / 2, canvas.height / 2);
+        ctx.fillText(this.chipName, startX, centerY);
+        
+        // Draw level char
+        ctx.font = levelFont;
+        ctx.fillText(levelChar, startX + nameWidth + spacing, centerY);
+        
         const texture = new THREE.CanvasTexture(canvas);
         const plane = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.3), new THREE.MeshBasicMaterial({ map: texture, transparent: true }));
         plane.position.y = 0;
