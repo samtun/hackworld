@@ -1,3 +1,11 @@
+# [1.10.0](https://github.com/samtun/hackworld/compare/v1.9.1...v1.10.0) (2026-01-03)
+
+
+### Features
+
+* add weapon tech stats to inventory ([ae8e9dc](https://github.com/samtun/hackworld/commit/ae8e9dca95c23167bcaafe377fd60b15afa265fd))
+* refactor inventory UI to enhance stats panel and remove equipped items slots ([25a9dda](https://github.com/samtun/hackworld/commit/25a9ddad88dcac9799c4b5773ea7c4f58dbfdd38))
+
 ## [1.9.1](https://github.com/samtun/hackworld/compare/v1.9.0...v1.9.1) (2026-01-03)
 
 
