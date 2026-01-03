@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { BaseMesh } from './BaseMesh';
 import { HealingSystem } from './systems/HealingSystem';
 import { IHealingStation } from './systems/IHealingStation';
+import { createParticleShaderMaterial, updateParticleScaleFactor } from './ParticleShaderUtils';
 
 /**
  * HealingStation entity with upward-moving particle effects
@@ -28,7 +29,6 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     private readonly HEALING_RISE_SPEED = 1.8; // Faster rise speed during healing
     private readonly MAX_PARTICLE_SIZE = 0.5;
     private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
-    private readonly CAMERA_FOV_RADIANS = (45 * Math.PI) / 180; // 45 degrees in radians
     private time: number = 0;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3) {
@@ -56,42 +56,8 @@ export class HealingStation extends BaseMesh implements IHealingStation {
         particleGeometry.setAttribute('position', new THREE.BufferAttribute(this.particleSystem.positions, 3));
         particleGeometry.setAttribute('size', new THREE.BufferAttribute(this.particleSystem.sizes, 1));
 
-        // Calculate scale factor for screen-independent particle size
-        const scaleFactor = this.calculateScaleFactor();
-
-        // Custom shader material for per-particle size control
-        const particleMaterial = new THREE.ShaderMaterial({
-            uniforms: {
-                color: { value: this.color },
-                scaleFactor: { value: scaleFactor }
-            },
-            vertexShader: `
-                attribute float size;
-                uniform float scaleFactor;
-                
-                void main() {
-                    vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                    gl_PointSize = size * (scaleFactor / -mvPosition.z);
-                    gl_Position = projectionMatrix * mvPosition;
-                }
-            `,
-            fragmentShader: `
-                uniform vec3 color;
-                
-                void main() {
-                    float dist = length(gl_PointCoord - vec2(0.5));
-                    if (dist > 0.5) discard;
-                    
-                    float alpha = 1.0 - (dist * 2.0);
-                    alpha = alpha * alpha;
-                    
-                    gl_FragColor = vec4(color, alpha * 0.9);
-                }
-            `,
-            blending: THREE.AdditiveBlending,
-            depthWrite: false,
-            transparent: true
-        });
+        // Create shader material with screen-independent particle sizing
+        const particleMaterial = createParticleShaderMaterial(this.color);
 
         this.particles = new THREE.Points(particleGeometry, particleMaterial);
         scene.add(this.particles);
@@ -188,23 +154,12 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     }
 
     /**
-     * Calculate the scale factor for perspective-correct particle sizing
-     * Formula: viewportHeight / (2 * tan(fov/2))
-     */
-    private calculateScaleFactor(): number {
-        return window.innerHeight / (2.0 * Math.tan(this.CAMERA_FOV_RADIANS / 2.0));
-    }
-
-    /**
      * Update the particle scale factor for screen-independent sizing
      * Should be called when window is resized
      */
     updateScaleFactor(): void {
-        const scaleFactor = this.calculateScaleFactor();
         const particleMaterial = this.particles.material as THREE.ShaderMaterial;
-        if (particleMaterial && particleMaterial.uniforms.scaleFactor) {
-            particleMaterial.uniforms.scaleFactor.value = scaleFactor;
-        }
+        updateParticleScaleFactor(particleMaterial);
     }
 
     /**
