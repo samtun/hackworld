@@ -6,9 +6,10 @@ import { ChipRegistry } from '../chips/ChipRegistry';
 import { ChipItem } from '../chips/ChipItem';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class ChipDropStrategy implements ItemDropStrategy {
-    tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, _player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         if (Math.random() > enemy.itemDropChance) return null;
 
         const def = ChipRegistry.Instance.getRandomChip();
@@ -17,8 +18,11 @@ export class ChipDropStrategy implements ItemDropStrategy {
         const pos = enemy.body.position.clone();
         pos.y = 0.5;
 
-        const drop = new ChipDrop(scene, pos, def.id, def.name, def.type, def.buyPrice, def.sellPrice);
-        console.log(`Enemy dropped chip ${def.name}`);
+        // Use smart level determination based on player level
+        const level = ItemLevelHelper.determineDropLevel(player.level);
+
+        const drop = new ChipDrop(scene, pos, def.id, def.name, def.type, def.buyPrice, def.sellPrice, level);
+        console.log(`Enemy dropped chip ${def.name} (level ${level})`);
         return drop;
     }
 
@@ -35,10 +39,11 @@ export class ChipDropStrategy implements ItemDropStrategy {
             def.buyPrice,
             def.sellPrice,
             def.type,
-            def.stats
+            def.stats,
+            drop.level
         );
 
         player.inventory.push(newItem);
-        console.log(`Picked up chip ${def.name}`);
+        console.log(`Picked up chip ${def.name} (level ${drop.level})`);
     }
 }

@@ -35,7 +35,7 @@ export class WeaponDrop implements ItemDrop {
         damage: number,
         buyPrice: number,
         sellPrice: number,
-        level: number = 1
+        level: number
     ) {
         this.weaponType = weaponType;
         this.weaponName = weaponName;

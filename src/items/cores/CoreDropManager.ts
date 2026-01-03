@@ -5,6 +5,7 @@ import { CoreRegistry } from './CoreRegistry';
 import { CoreItem } from './CoreItem';
 import { Player } from '../../Player';
 import { Enemy } from '../../enemies/Enemy';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class CoreDropManager {
     private static instance: CoreDropManager;
@@ -16,7 +17,7 @@ export class CoreDropManager {
         return this.instance || (this.instance = new this());
     }
 
-    tryDropCore(scene: THREE.Scene, enemy: Enemy, _: Player): boolean {
+    tryDropCore(scene: THREE.Scene, enemy: Enemy, player: Player): boolean {
         if (Math.random() > enemy.itemDropChance) return false;
 
         const def = CoreRegistry.Instance.getRandomCore();
@@ -25,8 +26,8 @@ export class CoreDropManager {
         const pos = enemy.body.position.clone();
         pos.y = 0.5;
 
-        // Randomly assign a level (1-6)
-        const level = Math.floor(Math.random() * 6) + 1;
+        // Use smart level determination based on player level
+        const level = ItemLevelHelper.determineDropLevel(player.level);
 
         const drop = new CoreDrop(scene, pos, def.id, def.name, def.buyPrice, def.sellPrice, level);
         this.coreDrops.push(drop);

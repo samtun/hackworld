@@ -4,7 +4,6 @@ import { CoreRegistry } from './CoreRegistry';
 import { Player } from '../../Player';
 import { Item } from '../Item';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
-import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class CoreTrader extends BaseTrader {
     private static instance: CoreTrader; // Singleton
@@ -51,21 +50,21 @@ export class CoreTrader extends BaseTrader {
                 1
             ));
             
-            // Add level 2 (β) with increased price
+            // Add level 2 (β)
             this.traderInventory.push(new CoreItem(
                 crypto.randomUUID(),
                 coreDef.name,
-                Math.round(coreDef.buyPrice * ItemLevelHelper.LEVEL_2_PRICE_MULTIPLIER),
+                coreDef.buyPrice,
                 coreDef.sellPrice,
                 coreDef.stats,
                 2
             ));
             
-            // Add level 3 (γ) with increased price
+            // Add level 3 (γ)
             this.traderInventory.push(new CoreItem(
                 crypto.randomUUID(),
                 coreDef.name,
-                Math.round(coreDef.buyPrice * ItemLevelHelper.LEVEL_3_PRICE_MULTIPLIER),
+                coreDef.buyPrice,
                 coreDef.sellPrice,
                 coreDef.stats,
                 3

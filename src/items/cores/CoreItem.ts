@@ -14,6 +14,27 @@ export class CoreItem extends EquippableItem {
         this.level = level;
     }
 
+    // Override to apply level-based price multiplier
+    get buyPrice(): number {
+        const multiplier = this.getPriceMultiplierForLevel();
+        return Math.round(this.baseBuyPrice * multiplier);
+    }
+
+    // Sell price remains at base level
+    get sellPrice(): number {
+        return this.baseSellPrice;
+    }
+
+    private getPriceMultiplierForLevel(): number {
+        // α=1x, β=1.5x, γ=2x, δ=3x, ε=5x, ω=8x
+        const multipliers = [1.0, 1.5, 2.0, 3.0, 5.0, 8.0];
+        const index = this.level - 1;
+        if (index < 0 || index >= multipliers.length) {
+            return multipliers[multipliers.length - 1];
+        }
+        return multipliers[index];
+    }
+
     // Return level definition by numeric level (1-based). Throws if level <= 0.
     public getLevelByNumber(): { requiredLevel: number; statPercent: number } {
         return ItemLevelHelper.getChipCoreLevelByNumber(this.level);

@@ -5,6 +5,7 @@ import { ChipRegistry } from './ChipRegistry';
 import { ChipItem } from './ChipItem';
 import { Player } from '../../Player';
 import { Enemy } from '../../enemies/Enemy';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class ChipDropManager {
     private static instance: ChipDropManager;
@@ -16,7 +17,7 @@ export class ChipDropManager {
         return this.instance || (this.instance = new this());
     }
 
-    tryDropChip(scene: THREE.Scene, enemy: Enemy, _: Player): boolean {
+    tryDropChip(scene: THREE.Scene, enemy: Enemy, player: Player): boolean {
         if (Math.random() > enemy.itemDropChance) return false;
 
         const def = ChipRegistry.Instance.getRandomChip();
@@ -25,8 +26,8 @@ export class ChipDropManager {
         const pos = enemy.body.position.clone();
         pos.y = 0.5;
 
-        // Randomly assign a level (1-6)
-        const level = Math.floor(Math.random() * 6) + 1;
+        // Use smart level determination based on player level
+        const level = ItemLevelHelper.determineDropLevel(player.level);
 
         const drop = new ChipDrop(scene, pos, def.id, def.name, def.type, def.buyPrice, def.sellPrice, level);
         this.chipDrops.push(drop);

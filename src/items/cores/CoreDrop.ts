@@ -18,7 +18,7 @@ export class CoreDrop implements ItemDrop {
     private readonly FLOAT_AMPLITUDE: number = 0.14;
     private readonly PICKUP_DISTANCE: number = 1.5;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, coreId: string, coreName: string, buyPrice: number, sellPrice: number, level: number = 1) {
+    constructor(scene: THREE.Scene, position: CANNON.Vec3, coreId: string, coreName: string, buyPrice: number, sellPrice: number, level: number) {
         this.coreId = coreId;
         this.coreName = coreName;
         this.buyPrice = buyPrice;

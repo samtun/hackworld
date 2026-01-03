@@ -4,7 +4,6 @@ import { ChipItem } from './ChipItem';
 import { ChipRegistry } from './ChipRegistry';
 import { BaseTrader } from '../BaseTrader';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
-import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class ChipTrader extends BaseTrader {
     private static instance: ChipTrader; // Singleton
@@ -51,22 +50,22 @@ export class ChipTrader extends BaseTrader {
                 1
             ));
             
-            // Add level 2 (β) with increased price
+            // Add level 2 (β)
             this.traderInventory.push(new ChipItem(
                 crypto.randomUUID(),
                 chipDef.name,
-                Math.round(chipDef.buyPrice * ItemLevelHelper.LEVEL_2_PRICE_MULTIPLIER),
+                chipDef.buyPrice,
                 chipDef.sellPrice,
                 chipDef.type,
                 chipDef.stats,
                 2
             ));
             
-            // Add level 3 (γ) with increased price
+            // Add level 3 (γ)
             this.traderInventory.push(new ChipItem(
                 crypto.randomUUID(),
                 chipDef.name,
-                Math.round(chipDef.buyPrice * ItemLevelHelper.LEVEL_3_PRICE_MULTIPLIER),
+                chipDef.buyPrice,
                 chipDef.sellPrice,
                 chipDef.type,
                 chipDef.stats,

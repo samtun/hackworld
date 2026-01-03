@@ -57,6 +57,7 @@ export class Player extends BaseMesh {
     // Base Stats (without equipment modifiers or upgrades)
     private baseStrength: number = 14;
     private baseDefense: number = 17;
+    private baseSpeed: number = 6;
 
     // Stats (with equipment modifiers applied)
     level: number = 1;
@@ -236,6 +237,9 @@ export class Player extends BaseMesh {
         this.defense = Math.min(Math.floor((this.baseDefense + this.defenseUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
         this.maxHp = Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, Player.MAX_STAT_VALUE);
         this.maxTp = Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, Player.MAX_STAT_VALUE);
+
+        // Reset speed to base value before applying modifiers
+        this.speed = this.baseSpeed;
 
         // Ensure current HP/TP don't exceed new max
         if (this.hp > this.maxHp) this.hp = this.maxHp;
