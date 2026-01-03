@@ -6,9 +6,10 @@ import { CoreRegistry } from '../cores/CoreRegistry';
 import { CoreItem } from '../cores/CoreItem';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class CoreDropStrategy implements ItemDropStrategy {
-    tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, _player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         if (Math.random() > enemy.itemDropChance) return null;
 
         const def = CoreRegistry.Instance.getRandomCore();
@@ -17,8 +18,11 @@ export class CoreDropStrategy implements ItemDropStrategy {
         const pos = enemy.body.position.clone();
         pos.y = 0.5;
 
-        const drop = new CoreDrop(scene, pos, def.id, def.name, def.buyPrice, def.sellPrice);
-        console.log(`Enemy dropped core ${def.name}`);
+        // Use smart level determination based on player level
+        const level = ItemLevelHelper.determineDropLevel(player.level);
+
+        const drop = new CoreDrop(scene, pos, def.id, def.name, def.buyPrice, def.sellPrice, level);
+        console.log(`Enemy dropped core ${def.name} (level ${level})`);
         return drop;
     }
 
@@ -34,10 +38,11 @@ export class CoreDropStrategy implements ItemDropStrategy {
             def.name,
             def.buyPrice,
             def.sellPrice,
-            def.stats
+            def.stats,
+            drop.level
         );
 
         player.inventory.push(newItem);
-        console.log(`Picked up core ${def.name}`);
+        console.log(`Picked up core ${def.name} (level ${drop.level})`);
     }
 }
