@@ -36,17 +36,6 @@ export class BoosterPackDrop implements ItemDrop {
         packMesh.position.y = 0.3;
         this.mesh.add(packMesh);
 
-        // Add accent box on top
-        const accentGeometry = new THREE.BoxGeometry(0.42, 0.1, 0.32);
-        const accentMaterial = new THREE.MeshStandardMaterial({
-            color: 0xffd700, // Gold color
-            emissive: 0xffd700,
-            emissiveIntensity: 0.5
-        });
-        const accentMesh = new THREE.Mesh(accentGeometry, accentMaterial);
-        accentMesh.position.y = 0.65;
-        this.mesh.add(accentMesh);
-
         // Create text label using canvas texture
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d')!;

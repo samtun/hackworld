@@ -333,7 +333,11 @@ export class CardManager {
                 border: `2px solid ${this.getRarityColor(card.rarity)}`,
                 borderRadius: '5px',
                 textAlign: 'center',
-                opacity: collected ? '1' : '0.4'
+                opacity: collected ? '1' : '0.4',
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: '100px',
+                justifyContent: 'center'
             });
             
             const slotText = document.createElement('div');
@@ -354,16 +358,16 @@ export class CardManager {
             });
             cardDiv.appendChild(rarityText);
             
-            if (collected) {
-                const checkmark = document.createElement('div');
-                checkmark.innerText = '✓';
-                Object.assign(checkmark.style, {
-                    fontSize: '24px',
-                    color: COLORS.COLLECTED,
-                    marginTop: '5px'
-                });
-                cardDiv.appendChild(checkmark);
-            }
+            // Always create checkmark container to maintain consistent height
+            const checkmark = document.createElement('div');
+            checkmark.innerText = collected ? '✓' : '';
+            Object.assign(checkmark.style, {
+                fontSize: '24px',
+                color: COLORS.COLLECTED,
+                marginTop: '5px',
+                minHeight: '29px' // Reserve space for checkmark
+            });
+            cardDiv.appendChild(checkmark);
             
             gridDiv.appendChild(cardDiv);
         });

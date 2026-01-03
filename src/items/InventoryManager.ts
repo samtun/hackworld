@@ -361,6 +361,14 @@ export class InventoryManager {
             </div>
         `;
 
+        // Add Booster Packs display
+        const boosterPacksHTML = `
+            <div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span style="color: #ffaa00;">Booster Packs</span> <span style="color: #ffaa00;">${player.boosterPacks}</span>
+            </div>
+        `;
+
         // Add EXP display
         const expHTML = `
             <div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
@@ -369,6 +377,6 @@ export class InventoryManager {
             </div>
         `;
 
-        return statsHTML + xDataHTML + expHTML;
+        return statsHTML + xDataHTML + boosterPacksHTML + expHTML;
     }
 }
