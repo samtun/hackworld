@@ -16,7 +16,7 @@ export const CAMERA_FOV_RADIANS = (45 * Math.PI) / 180;
  * by accounting for the viewport height and camera field of view.
  */
 export function calculateParticleScaleFactor(): number {
-    return window.innerHeight / (2.0 * Math.tan(CAMERA_FOV_RADIANS / 2.0));
+    return window.innerHeight / (5.0 * Math.tan(CAMERA_FOV_RADIANS / 2.0));
 }
 
 /**
