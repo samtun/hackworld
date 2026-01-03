@@ -17,6 +17,7 @@ import { SaveManager } from './SaveManager';
 import { PlayerRegistry } from './PlayerRegistry';
 import { CoreTrader } from './items/cores/CoreTrader';
 import { CardManager } from './items/cards/CardManager';
+import { InteractiveEntityType } from './InteractiveEntityType';
 
 export class Game {
     scene: THREE.Scene;
@@ -420,7 +421,7 @@ export class Game {
 
         // Define interactive entity types
         interface InteractiveEntity {
-            type: 'npc' | 'weaponDrop' | 'chipDrop' | 'coreDrop' | 'boosterPackDrop' | 'portal';
+            type: InteractiveEntityType;
             data?: any;
             hint: string;
             action: () => void;
@@ -434,7 +435,7 @@ export class Game {
             for (const npc of allNpcs) {
                 if (npc.isPlayerNearby(this.player.position)) {
                     nearbyInteractive = {
-                        type: 'npc',
+                        type: InteractiveEntityType.NPC,
                         data: npc,
                         hint: npc.getInteractionHint(),
                         action: () => {
@@ -454,7 +455,7 @@ export class Game {
                 const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.position);
                 if (weaponDropNearby) {
                     nearbyInteractive = {
-                        type: 'weaponDrop',
+                        type: InteractiveEntityType.WEAPON_DROP,
                         data: weaponDropNearby,
                         hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
                         action: () => {
@@ -467,7 +468,7 @@ export class Game {
                     const chipDropNearby = this.world.checkChipDropInteraction(this.player.position);
                     if (chipDropNearby) {
                         nearbyInteractive = {
-                            type: 'chipDrop',
+                            type: InteractiveEntityType.CHIP_DROP,
                             data: chipDropNearby,
                             hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
                             action: () => {
@@ -481,7 +482,7 @@ export class Game {
                     const coreDropNearby = this.world.checkCoreDropInteraction(this.player.position);
                     if (coreDropNearby) {
                         nearbyInteractive = {
-                            type: 'coreDrop',
+                            type: InteractiveEntityType.CORE_DROP,
                             data: coreDropNearby,
                             hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
                             action: () => {
@@ -495,7 +496,7 @@ export class Game {
                     const boosterPackDropNearby = this.world.checkBoosterPackDropInteraction(this.player.position);
                     if (boosterPackDropNearby) {
                         nearbyInteractive = {
-                            type: 'boosterPackDrop',
+                            type: InteractiveEntityType.BOOSTER_PACK_DROP,
                             data: boosterPackDropNearby,
                             hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
                             action: () => {
@@ -511,7 +512,7 @@ export class Game {
                 const destination = this.world.checkPortalInteraction(this.player.position);
                 if (destination) {
                     nearbyInteractive = {
-                        type: 'portal',
+                        type: InteractiveEntityType.PORTAL,
                         data: destination,
                         hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Enter Portal',
                         action: () => {
@@ -573,7 +574,7 @@ export class Game {
 
             // Check for interaction - prevent if just opened a menu or dialogue was just closed
             const shouldPreventInteraction = this.wasJustInteracted ||
-                (nearbyInteractive.type === 'npc' && wasDialogueVisible);
+                (nearbyInteractive.type === InteractiveEntityType.NPC && wasDialogueVisible);
 
             if (isSelectPressed && !this.wasSelectPressed && !shouldPreventInteraction) {
                 nearbyInteractive.action();

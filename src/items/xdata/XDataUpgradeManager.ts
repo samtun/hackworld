@@ -1,6 +1,7 @@
 import { Player } from '../../Player';
 import { InputManager } from '../../InputManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
+import { StatType } from '../../StatType';
 
 // --- Constants ---
 const COLORS = {
@@ -25,8 +26,6 @@ const STYLES = {
     PANEL_PADDING: '20px',
     GRID_GAP: '10px'
 };
-
-type StatType = 'strength' | 'defense' | 'hp' | 'tp';
 
 interface StatInfo {
     type: StatType;
@@ -58,10 +57,10 @@ export class XDataUpgradeManager {
 
     // Stat options
     private stats: StatInfo[] = [
-        { type: 'strength', label: 'Strength', description: 'Increases weapon damage', upgradeEffect: '+1 per upgrade' },
-        { type: 'defense', label: 'Defense', description: 'Reduces damage taken', upgradeEffect: '+1 per upgrade' },
-        { type: 'hp', label: 'HP', description: 'Increases max health', upgradeEffect: '+5 per upgrade' },
-        { type: 'tp', label: 'TP', description: 'Increases max tech points', upgradeEffect: '+5 per upgrade' }
+        { type: StatType.STRENGTH, label: 'Strength', description: 'Increases weapon damage', upgradeEffect: '+1 per upgrade' },
+        { type: StatType.DEFENSE, label: 'Defense', description: 'Reduces damage taken', upgradeEffect: '+1 per upgrade' },
+        { type: StatType.HP, label: 'HP', description: 'Increases max health', upgradeEffect: '+5 per upgrade' },
+        { type: StatType.TP, label: 'TP', description: 'Increases max tech points', upgradeEffect: '+5 per upgrade' }
     ];
 
     private constructor() {
@@ -263,24 +262,24 @@ export class XDataUpgradeManager {
             let isMaxed = false;
 
             switch (stat.type) {
-                case 'strength':
+                case StatType.STRENGTH:
                     currentLevel = player.strengthUpgrades;
-                    baseValue = player.getBaseStatValue('strength');
+                    baseValue = player.getBaseStatValue(StatType.STRENGTH);
                     isMaxed = baseValue >= 9999;
                     break;
-                case 'defense':
+                case StatType.DEFENSE:
                     currentLevel = player.defenseUpgrades;
-                    baseValue = player.getBaseStatValue('defense');
+                    baseValue = player.getBaseStatValue(StatType.DEFENSE);
                     isMaxed = baseValue >= 9999;
                     break;
-                case 'hp':
+                case StatType.HP:
                     // Use actual maxHp instead of getBaseStatValue() to show current value
                     // (important for debug tools and to avoid confusion when viewing stats)
                     currentLevel = player.hpUpgrades;
                     baseValue = player.maxHp;
                     isMaxed = baseValue >= 9999;
                     break;
-                case 'tp':
+                case StatType.TP:
                     // Use actual maxTp instead of getBaseStatValue() to show current value
                     // (important for debug tools and to avoid confusion when viewing stats)
                     currentLevel = player.tpUpgrades;

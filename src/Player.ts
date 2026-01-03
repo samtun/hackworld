@@ -10,6 +10,7 @@ import { CoreItem } from './items/cores/CoreItem';
 import { ChipItem } from './items/chips/ChipItem';
 import { WeaponRegistry } from './items/weapons/WeaponRegistry';
 import { BaseMesh } from './BaseMesh';
+import { StatType } from './StatType';
 
 export class Player extends BaseMesh {
     id: string;
@@ -933,31 +934,31 @@ export class Player extends BaseMesh {
      * Upgrade a stat using X-Data
      * Returns true if upgrade was successful, false if not enough X-Data or stat is at max (9999)
      */
-    upgradeWithXData(statType: 'strength' | 'defense' | 'hp' | 'tp'): boolean {
+    upgradeWithXData(statType: StatType): boolean {
         let currentLevel = 0;
         let currentValue = 0;
 
         switch (statType) {
-            case 'strength':
+            case StatType.STRENGTH:
                 currentLevel = this.strengthUpgrades;
                 currentValue = this.baseStrength + this.strengthUpgrades;
                 break;
-            case 'defense':
+            case StatType.DEFENSE:
                 currentLevel = this.defenseUpgrades;
                 currentValue = this.baseDefense + this.defenseUpgrades;
                 break;
-            case 'hp':
+            case StatType.HP:
                 currentLevel = this.hpUpgrades;
                 currentValue = 100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT);
                 break;
-            case 'tp':
+            case StatType.TP:
                 currentLevel = this.tpUpgrades;
                 currentValue = 100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT);
                 break;
         }
 
         // Check if stat would exceed 9999 cap
-        const upgradeAmount = (statType === 'hp' || statType === 'tp')
+        const upgradeAmount = (statType === StatType.HP || statType === StatType.TP)
             ? Player.HP_TP_UPGRADE_AMOUNT
             : Player.STRENGTH_DEFENSE_UPGRADE_AMOUNT;
         if (currentValue + upgradeAmount > Player.MAX_STAT_VALUE) {
@@ -971,18 +972,18 @@ export class Player extends BaseMesh {
             this.xData -= cost;
 
             switch (statType) {
-                case 'strength':
+                case StatType.STRENGTH:
                     this.strengthUpgrades++;
                     break;
-                case 'defense':
+                case StatType.DEFENSE:
                     this.defenseUpgrades++;
                     break;
-                case 'hp':
+                case StatType.HP:
                     this.hpUpgrades++;
                     // Heal player when upgrading HP
                     this.hp += Player.HP_TP_UPGRADE_AMOUNT;
                     break;
-                case 'tp':
+                case StatType.TP:
                     this.tpUpgrades++;
                     // Restore TP when upgrading
                     this.tp += Player.HP_TP_UPGRADE_AMOUNT;
@@ -1002,15 +1003,15 @@ export class Player extends BaseMesh {
      * Get base stat value without equipment modifiers (for UI display)
      * Returns base value + upgrades only, capped at 9999
      */
-    getBaseStatValue(statType: 'strength' | 'defense' | 'hp' | 'tp'): number {
+    getBaseStatValue(statType: StatType): number {
         switch (statType) {
-            case 'strength':
+            case StatType.STRENGTH:
                 return Math.min(this.baseStrength + this.strengthUpgrades, Player.MAX_STAT_VALUE);
-            case 'defense':
+            case StatType.DEFENSE:
                 return Math.min(this.baseDefense + this.defenseUpgrades, Player.MAX_STAT_VALUE);
-            case 'hp':
+            case StatType.HP:
                 return Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
-            case 'tp':
+            case StatType.TP:
                 return Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
         }
     }

@@ -4,8 +4,10 @@ import { Player } from '../Player';
 import { InputManager } from '../InputManager';
 import { resetInputDebounce } from '../ui/UiUtils';
 import { formatItemLabel } from './ItemDisplay';
+import { TradeMode } from './TradeMode';
+import { TraderPanel } from './TraderPanel';
 
-export type TradeMode = 'buy' | 'sell';
+export { TradeMode } from './TradeMode';
 
 export type TraderUIConfig = {
     title?: string;
@@ -34,7 +36,7 @@ export abstract class BaseTrader {
     itemDetailsPanel!: HTMLDivElement;
 
     selectedIndex: number = 0;
-    activePanel: 'trader' | 'player' = 'trader';
+    activePanel: TraderPanel = TraderPanel.TRADER;
     itemElements: HTMLDivElement[] = [];
     needsRender: boolean = false;
 
@@ -248,7 +250,7 @@ export abstract class BaseTrader {
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.selectedIndex = 0;
-        this.activePanel = 'trader';
+        this.activePanel = TraderPanel.TRADER;
         this.needsRender = true;
         resetInputDebounce(this as any);
     }
@@ -274,10 +276,10 @@ export abstract class BaseTrader {
     protected render(player: Player) {
         if (!this.traderList || !this.playerList) return;
         if (this.playerMoneyText) this.playerMoneyText.innerText = `${player.money} BITS`;
-        this.renderItemList(this.traderList, this.traderInventory, this.activePanel === 'trader', 'buy', player);
+        this.renderItemList(this.traderList, this.traderInventory, this.activePanel === TraderPanel.TRADER, TradeMode.BUY, player);
         const playerItems = this.filterPlayerInventory(player);
-        this.renderItemList(this.playerList, playerItems as Item[], this.activePanel === 'player', 'sell', player);
-        const selectedItem = this.activePanel === 'trader' ? this.traderInventory[this.selectedIndex] : (playerItems[this.selectedIndex] as Item | undefined);
+        this.renderItemList(this.playerList, playerItems as Item[], this.activePanel === TraderPanel.PLAYER, TradeMode.SELL, player);
+        const selectedItem = this.activePanel === TraderPanel.TRADER ? this.traderInventory[this.selectedIndex] : (playerItems[this.selectedIndex] as Item | undefined);
         if (this.itemDetailsPanel) this.itemDetailsPanel.innerHTML = ItemDetailsPanel.generateHTML(selectedItem as Item | undefined);
     }
 
@@ -285,9 +287,9 @@ export abstract class BaseTrader {
         container.innerHTML = ''; this.itemElements = [];
         items.forEach((item, index) => {
             const itemDiv = document.createElement('div');
-            const price = mode === 'buy' ? item.buyPrice : item.sellPrice;
+            const price = mode === TradeMode.BUY ? item.buyPrice : item.sellPrice;
             const priceText = price !== undefined ? ` (${price} bits)` : '';
-            const canAfford = mode === 'sell' || (price !== undefined && player.money >= price);
+            const canAfford = mode === TradeMode.SELL || (price !== undefined && player.money >= price);
             itemDiv.innerHTML = formatItemLabel(item, priceText);
             const isSelected = isActive && index === this.selectedIndex;
             Object.assign(itemDiv.style, { padding: '8px', backgroundColor: isSelected ? '#888' : 'transparent', border: isSelected ? '2px solid #fff' : '2px solid transparent', opacity: canAfford ? '1' : '0.5', transition: 'transform 0.1s', position: 'relative' });
@@ -316,14 +318,14 @@ export abstract class BaseTrader {
         }
 
         if (navigateDown && !this.lastNavigateDownState) {
-            const maxIndex = this.activePanel === 'trader'
+            const maxIndex = this.activePanel === TraderPanel.TRADER
                 ? this.traderInventory.length - 1
                 : (this.filterPlayerInventory(player) || []).length - 1;
             if (this.selectedIndex < maxIndex) this.selectedIndex++;
         }
 
-        if (navigateLeft && !this.lastNavigateLeftState) { this.activePanel = 'trader'; this.selectedIndex = 0; }
-        if (navigateRight && !this.lastNavigateRightState) { this.activePanel = 'player'; this.selectedIndex = 0; }
+        if (navigateLeft && !this.lastNavigateLeftState) { this.activePanel = TraderPanel.TRADER; this.selectedIndex = 0; }
+        if (navigateRight && !this.lastNavigateRightState) { this.activePanel = TraderPanel.PLAYER; this.selectedIndex = 0; }
 
         if (select && !this.lastSelectState) this.handleTransaction(player);
 
@@ -335,7 +337,7 @@ export abstract class BaseTrader {
     }
 
     protected handleTransaction(player: Player) {
-        if (this.activePanel === 'trader') {
+        if (this.activePanel === TraderPanel.TRADER) {
             const item = this.traderInventory[this.selectedIndex];
             if (item && item.buyPrice !== undefined && player.money >= item.buyPrice) {
                 player.money -= item.buyPrice;
