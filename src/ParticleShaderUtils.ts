@@ -77,7 +77,7 @@ export function createParticleShaderMaterial(color: THREE.Color): THREE.ShaderMa
  * @param material - The shader material to update
  */
 export function updateParticleScaleFactor(material: THREE.ShaderMaterial): void {
-    if (material && material.uniforms.scaleFactor) {
+    if (material && material.uniforms && material.uniforms.scaleFactor) {
         material.uniforms.scaleFactor.value = calculateParticleScaleFactor();
     }
 }
