@@ -137,6 +137,11 @@ export class DebugValueEditor {
         this.createChipSelector(chipsSection);
         panel.appendChild(chipsSection);
 
+        // Booster Packs Section
+        const boosterPacksSection = this.createSection('Booster Packs');
+        this.createBoosterPackButton(boosterPacksSection);
+        panel.appendChild(boosterPacksSection);
+
         return panel;
     }
 
@@ -534,6 +539,31 @@ export class DebugValueEditor {
                     select.value = '';
                     if (levelSelect.options.length > 0) levelSelect.selectedIndex = 0;
                 }
+            }
+        });
+
+        parent.appendChild(addButton);
+    }
+
+    private createBoosterPackButton(parent: HTMLDivElement): void {
+        // Add button
+        const addButton = document.createElement('button');
+        addButton.textContent = 'Add Booster Pack';
+        addButton.style.width = '100%';
+        addButton.style.padding = '10px';
+        addButton.style.backgroundColor = '#ffaa00';
+        addButton.style.border = 'none';
+        addButton.style.borderRadius = '5px';
+        addButton.style.color = '#fff';
+        addButton.style.fontSize = '14px';
+        addButton.style.fontWeight = 'bold';
+        addButton.style.cursor = 'pointer';
+        addButton.style.fontFamily = 'inherit';
+
+        addButton.addEventListener('click', () => {
+            if (this.player) {
+                this.player.collectBoosterPack();
+                console.log(`Added booster pack. Total: ${this.player.boosterPacks}`);
             }
         });
 

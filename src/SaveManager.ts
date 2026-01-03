@@ -2,6 +2,7 @@ import { WeaponItem } from './items/weapons/WeaponItem';
 import { SaveManagerUI } from './SaveManagerUI';
 import { PlayerRegistry } from './PlayerRegistry';
 import { InputManager } from './InputManager';
+import { CardCollection } from './items/cards/CardCollection';
 
 /**
  * Interface representing the complete save data structure
@@ -24,6 +25,7 @@ export interface SaveData {
         speed: number;
         money: number;
         xData: number;
+        boosterPacks: number;
 
         // Weapon tech (per-type)
         tech: Record<string, number>;
@@ -44,6 +46,8 @@ export interface SaveData {
         // Inventory
         inventory: any[];
     };
+    // Card Collection
+    cardCollection: string[];
 }
 
 /**
@@ -116,11 +120,14 @@ export class SaveManager {
 
     /**
      * Save the current game state to a JSON file
+     * Includes player stats, inventory, playtime, and card collection
      * @param player - The player object containing all player data
      * @returns The save data object
+     * @note Load functionality is not yet implemented. When implemented, use CardCollection.loadSaveData()
      */
     save(): SaveData {
         const player = this.playerRegistry.activePlayers[0];
+        const cardCollection = CardCollection.Instance;
         const saveData: SaveData = {
             version: SaveManager.SAVE_VERSION,
             timestamp: new Date().toISOString(),
@@ -138,6 +145,7 @@ export class SaveManager {
                 speed: player.speed,
                 money: player.money,
                 xData: player.xData,
+                boosterPacks: player.boosterPacks,
                 strengthUpgrades: player.strengthUpgrades,
                 defenseUpgrades: player.defenseUpgrades,
                 hpUpgrades: player.hpUpgrades,
@@ -169,6 +177,7 @@ export class SaveManager {
                 }),
                 tech: structuredClone((player as any).tech || {})
             },
+            cardCollection: cardCollection.getSaveData()
         };
 
         // Convert to JSON and download
