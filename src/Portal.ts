@@ -66,17 +66,24 @@ export class Portal {
         particleGeometry.setAttribute('position', new THREE.BufferAttribute(this.particleSystem.positions, 3));
         particleGeometry.setAttribute('size', new THREE.BufferAttribute(this.particleSystem.sizes, 1));
 
+        // Calculate scale factor for screen-independent particle size
+        // FOV = 45 degrees, tan(45°/2) ≈ 0.4142
+        // scaleFactor = viewportHeight / (2 * tan(fov/2))
+        const scaleFactor = window.innerHeight / (2.0 * 0.4142);
+
         // Custom shader material for per-particle size control
         const particleMaterial = new THREE.ShaderMaterial({
             uniforms: {
-                color: { value: this.color }
+                color: { value: this.color },
+                scaleFactor: { value: scaleFactor }
             },
             vertexShader: `
                 attribute float size;
+                uniform float scaleFactor;
                 
                 void main() {
                     vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
-                    gl_PointSize = size * (300.0 / -mvPosition.z);
+                    gl_PointSize = size * (scaleFactor / -mvPosition.z);
                     gl_Position = projectionMatrix * mvPosition;
                 }
             `,
@@ -192,6 +199,18 @@ export class Portal {
         const sizeAttribute = this.particles.geometry.getAttribute('size');
         if (sizeAttribute) {
             (sizeAttribute as THREE.BufferAttribute).needsUpdate = true;
+        }
+    }
+
+    /**
+     * Update the particle scale factor for screen-independent sizing
+     * Should be called when window is resized
+     */
+    updateScaleFactor(): void {
+        const scaleFactor = window.innerHeight / (2.0 * 0.4142);
+        const particleMaterial = this.particles.material as THREE.ShaderMaterial;
+        if (particleMaterial && particleMaterial.uniforms.scaleFactor) {
+            particleMaterial.uniforms.scaleFactor.value = scaleFactor;
         }
     }
 
