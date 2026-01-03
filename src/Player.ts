@@ -57,6 +57,7 @@ export class Player extends BaseMesh {
     // Base Stats (without equipment modifiers or upgrades)
     private baseStrength: number = 14;
     private baseDefense: number = 17;
+    private baseSpeed: number = 6;
 
     // Stats (with equipment modifiers applied)
     level: number = 1;
@@ -237,37 +238,45 @@ export class Player extends BaseMesh {
         this.maxHp = Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, Player.MAX_STAT_VALUE);
         this.maxTp = Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, Player.MAX_STAT_VALUE);
 
+        // Reset speed to base value before applying modifiers
+        this.speed = this.baseSpeed;
+
         // Ensure current HP/TP don't exceed new max
         if (this.hp > this.maxHp) this.hp = this.maxHp;
         if (this.tp > this.maxTp) this.tp = this.maxTp;
 
         // Apply core modifiers if a core is equipped
         const equippedCore = this.inventory.find(item => item instanceof CoreItem && item.isEquipped) as CoreItem | undefined;
-        if (equippedCore && equippedCore.stats) {
-            if (equippedCore.stats.strength !== undefined) {
-                this.strength = Math.min(this.strength + equippedCore.stats.strength, Player.MAX_STAT_VALUE);
+        if (equippedCore) {
+            const effectiveStats = equippedCore.getEffectiveStats();
+            if (effectiveStats.strength !== undefined) {
+                this.strength = Math.min(this.strength + effectiveStats.strength, Player.MAX_STAT_VALUE);
             }
-            if (equippedCore.stats.defense !== undefined) {
-                this.defense = Math.min(this.defense + equippedCore.stats.defense, Player.MAX_STAT_VALUE);
+            if (effectiveStats.defense !== undefined) {
+                this.defense = Math.min(this.defense + effectiveStats.defense, Player.MAX_STAT_VALUE);
             }
-            if (equippedCore.stats.speed !== undefined) {
-                this.speed += equippedCore.stats.speed;
+            if (effectiveStats.speed !== undefined) {
+                this.speed += effectiveStats.speed;
             }
         }
 
         // Apply chip modifiers if a chip is equipped
         const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
-        if (equippedChip && equippedChip.stats) {
-            if (equippedChip.stats.walkSpeedMultiplier !== undefined) {
-                this.speed *= equippedChip.stats.walkSpeedMultiplier;
+        if (equippedChip) {
+            const effectiveStats = equippedChip.getEffectiveStats();
+            if (effectiveStats.walkSpeedMultiplier !== undefined) {
+                this.speed *= effectiveStats.walkSpeedMultiplier;
             }
         }
     }
 
     getWeaponRangeMultiplier(): number {
         const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
-        if (equippedChip && equippedChip.stats && equippedChip.stats.weaponRangeMultiplier !== undefined) {
-            return equippedChip.stats.weaponRangeMultiplier;
+        if (equippedChip) {
+            const effectiveStats = equippedChip.getEffectiveStats();
+            if (effectiveStats.weaponRangeMultiplier !== undefined) {
+                return effectiveStats.weaponRangeMultiplier;
+            }
         }
         return 1.0; // Default: no multiplier
     }

@@ -359,6 +359,40 @@ export class DebugValueEditor {
 
         parent.appendChild(select);
 
+        // Level selector (greek chars)
+        const levelRow = document.createElement('div');
+        levelRow.style.display = 'flex';
+        levelRow.style.justifyContent = 'space-between';
+        levelRow.style.alignItems = 'center';
+        levelRow.style.marginBottom = '10px';
+
+        const levelLabel = document.createElement('label');
+        levelLabel.textContent = 'Level:';
+        levelLabel.style.fontSize = '14px';
+
+        const levelSelect = document.createElement('select');
+        levelSelect.style.width = '100px';
+        levelSelect.style.padding = '5px';
+        levelSelect.style.backgroundColor = '#222';
+        levelSelect.style.border = '1px solid #666';
+        levelSelect.style.borderRadius = '3px';
+        levelSelect.style.color = '#fff';
+        levelSelect.style.fontSize = '14px';
+        levelSelect.style.fontFamily = 'inherit';
+
+        // Populate levels 1-6
+        for (let i = 1; i <= 6; i++) {
+            const opt = document.createElement('option');
+            opt.value = String(i);
+            const char = ItemLevelHelper.getLevelChar(i);
+            opt.textContent = `${char} Level ${i}`;
+            levelSelect.appendChild(opt);
+        }
+
+        levelRow.appendChild(levelLabel);
+        levelRow.appendChild(levelSelect);
+        parent.appendChild(levelRow);
+
         // Add button
         const addButton = document.createElement('button');
         addButton.textContent = 'Add Core';
@@ -381,12 +415,14 @@ export class DebugValueEditor {
                 if (core) {
                     // Generate unique ID using timestamp and random number
                     const newId = `debug_core_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    const newCore = new CoreItem(newId, core.name, core.buyPrice, core.sellPrice, core.stats);
+                    const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
+                    const newCore = new CoreItem(newId, core.name, core.buyPrice, core.sellPrice, core.stats, lvl);
                     this.player.inventory.push(newCore);
-                    console.log(`Added core: ${core.name}`);
+                    console.log(`Added core: ${core.name} (Level ${lvl})`);
 
                     // Reset selection
                     select.value = '';
+                    if (levelSelect.options.length > 0) levelSelect.selectedIndex = 0;
                 }
             }
         });
@@ -433,6 +469,40 @@ export class DebugValueEditor {
 
         parent.appendChild(select);
 
+        // Level selector (greek chars)
+        const levelRow = document.createElement('div');
+        levelRow.style.display = 'flex';
+        levelRow.style.justifyContent = 'space-between';
+        levelRow.style.alignItems = 'center';
+        levelRow.style.marginBottom = '10px';
+
+        const levelLabel = document.createElement('label');
+        levelLabel.textContent = 'Level:';
+        levelLabel.style.fontSize = '14px';
+
+        const levelSelect = document.createElement('select');
+        levelSelect.style.width = '100px';
+        levelSelect.style.padding = '5px';
+        levelSelect.style.backgroundColor = '#222';
+        levelSelect.style.border = '1px solid #666';
+        levelSelect.style.borderRadius = '3px';
+        levelSelect.style.color = '#fff';
+        levelSelect.style.fontSize = '14px';
+        levelSelect.style.fontFamily = 'inherit';
+
+        // Populate levels 1-6
+        for (let i = 1; i <= 6; i++) {
+            const opt = document.createElement('option');
+            opt.value = String(i);
+            const char = ItemLevelHelper.getLevelChar(i);
+            opt.textContent = `${char} Level ${i}`;
+            levelSelect.appendChild(opt);
+        }
+
+        levelRow.appendChild(levelLabel);
+        levelRow.appendChild(levelSelect);
+        parent.appendChild(levelRow);
+
         // Add button
         const addButton = document.createElement('button');
         addButton.textContent = 'Add Chip';
@@ -455,12 +525,14 @@ export class DebugValueEditor {
                 if (chip) {
                     // Generate unique ID using timestamp and random number
                     const newId = `debug_chip_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    const newChip = new ChipItem(newId, chip.name, chip.buyPrice, chip.sellPrice, chip.type, chip.stats);
+                    const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
+                    const newChip = new ChipItem(newId, chip.name, chip.buyPrice, chip.sellPrice, chip.type, chip.stats, lvl);
                     this.player.inventory.push(newChip);
-                    console.log(`Added chip: ${chip.name}`);
+                    console.log(`Added chip: ${chip.name} (Level ${lvl})`);
 
                     // Reset selection
                     select.value = '';
+                    if (levelSelect.options.length > 0) levelSelect.selectedIndex = 0;
                 }
             }
         });

@@ -70,9 +70,11 @@ export class ItemDetailsPanel {
     private static getCoreDetails(item: CoreItem): ItemDetail[] {
         const details: ItemDetail[] = [];
 
-        this.addStatIfPresent(details, 'Strength', item.stats.strength);
-        this.addStatIfPresent(details, 'Defense', item.stats.defense);
-        this.addStatIfPresent(details, 'Speed', item.stats.speed);
+        // Use effective stats (with level multiplier applied)
+        const effectiveStats = item.getEffectiveStats();
+        this.addStatIfPresent(details, 'Strength', effectiveStats.strength);
+        this.addStatIfPresent(details, 'Defense', effectiveStats.defense);
+        this.addStatIfPresent(details, 'Speed', effectiveStats.speed);
 
         return details;
     }
@@ -93,13 +95,16 @@ export class ItemDetailsPanel {
     private static getChipDetails(item: ChipItem): ItemDetail[] {
         const details: ItemDetail[] = [];
 
-        if (item.stats.weaponRangeMultiplier !== undefined) {
-            const percentIncrease = ((item.stats.weaponRangeMultiplier - 1) * 100).toFixed(0);
+        // Use effective stats (with level multiplier applied)
+        const effectiveStats = item.getEffectiveStats();
+
+        if (effectiveStats.weaponRangeMultiplier !== undefined) {
+            const percentIncrease = ((effectiveStats.weaponRangeMultiplier - 1) * 100).toFixed(0);
             details.push({ label: 'Weapon Range', value: `+${percentIncrease}%` });
         }
 
-        if (item.stats.walkSpeedMultiplier !== undefined) {
-            const percentIncrease = ((item.stats.walkSpeedMultiplier - 1) * 100).toFixed(0);
+        if (effectiveStats.walkSpeedMultiplier !== undefined) {
+            const percentIncrease = ((effectiveStats.walkSpeedMultiplier - 1) * 100).toFixed(0);
             details.push({ label: 'Walk Speed', value: `+${percentIncrease}%` });
         }
 
