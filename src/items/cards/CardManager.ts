@@ -49,6 +49,8 @@ export class CardManager {
     private selectedAlbumIndex: number = 0;
     private currentAlbum: string = '';
     private revealedCards: Card[] = [];
+    private flippedCardIndices: Set<number> = new Set(); // Track which cards have been flipped
+    private flippingInProgress: boolean = false; // Track if flip animation is in progress
     
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
@@ -224,78 +226,103 @@ export class CardManager {
         });
         this.mainContent.appendChild(titleDiv);
         
-        // Grid container for all cards
-        const gridDiv = document.createElement('div');
-        Object.assign(gridDiv.style, {
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
+        // Container for all cards in a single row
+        const cardsContainer = document.createElement('div');
+        Object.assign(cardsContainer.style, {
+            display: 'flex',
+            justifyContent: 'center',
             gap: '15px',
-            marginBottom: '20px'
+            marginBottom: '20px',
+            flexWrap: 'nowrap' // Keep all cards in a single row
         });
         
-        // Display all 5 cards at once
-        this.revealedCards.forEach((card) => {
-            const isNew = this.cardCollection.addCard(card);
+        // Display all 5 cards
+        this.revealedCards.forEach((card, index) => {
+            const isFlipped = this.flippedCardIndices.has(index);
             
             const cardDiv = document.createElement('div');
             Object.assign(cardDiv.style, {
                 padding: '20px',
                 backgroundColor: COLORS.CARD_BG,
-                border: `3px solid ${this.getRarityColor(card.rarity)}`,
+                border: `3px solid ${isFlipped ? this.getRarityColor(card.rarity) : '#666'}`,
                 borderRadius: '10px',
                 textAlign: 'center',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
-                minHeight: '180px'
+                minHeight: '180px',
+                minWidth: '140px',
+                transition: 'all 0.3s ease'
             });
             
-            const albumText = document.createElement('div');
-            albumText.innerText = card.album;
-            Object.assign(albumText.style, {
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: this.getRarityColor(card.rarity),
-                marginBottom: '8px'
-            });
-            cardDiv.appendChild(albumText);
+            if (isFlipped) {
+                // Show card front with details
+                const isNew = this.cardCollection.hasCard(card);
+                
+                const albumText = document.createElement('div');
+                albumText.innerText = card.album;
+                Object.assign(albumText.style, {
+                    fontSize: '24px',
+                    fontWeight: 'bold',
+                    color: this.getRarityColor(card.rarity),
+                    marginBottom: '8px'
+                });
+                cardDiv.appendChild(albumText);
+                
+                const slotText = document.createElement('div');
+                slotText.innerText = `#${card.slot}`;
+                Object.assign(slotText.style, {
+                    fontSize: '18px',
+                    color: COLORS.TEXT,
+                    marginBottom: '8px'
+                });
+                cardDiv.appendChild(slotText);
+                
+                const rarityText = document.createElement('div');
+                rarityText.innerText = card.rarity.toUpperCase();
+                Object.assign(rarityText.style, {
+                    fontSize: '14px',
+                    color: this.getRarityColor(card.rarity),
+                    marginBottom: '8px'
+                });
+                cardDiv.appendChild(rarityText);
+                
+                const statusText = document.createElement('div');
+                statusText.innerText = isNew ? 'DUP' : '✨ NEW';
+                Object.assign(statusText.style, {
+                    fontSize: '16px',
+                    fontWeight: 'bold',
+                    color: isNew ? '#888' : COLORS.COLLECTED,
+                    marginTop: '8px'
+                });
+                cardDiv.appendChild(statusText);
+            } else {
+                // Show card back (gray)
+                const backText = document.createElement('div');
+                backText.innerText = '?';
+                Object.assign(backText.style, {
+                    fontSize: '48px',
+                    fontWeight: 'bold',
+                    color: '#666'
+                });
+                cardDiv.appendChild(backText);
+            }
             
-            const slotText = document.createElement('div');
-            slotText.innerText = `#${card.slot}`;
-            Object.assign(slotText.style, {
-                fontSize: '18px',
-                color: COLORS.TEXT,
-                marginBottom: '8px'
-            });
-            cardDiv.appendChild(slotText);
-            
-            const rarityText = document.createElement('div');
-            rarityText.innerText = card.rarity.toUpperCase();
-            Object.assign(rarityText.style, {
-                fontSize: '14px',
-                color: this.getRarityColor(card.rarity),
-                marginBottom: '8px'
-            });
-            cardDiv.appendChild(rarityText);
-            
-            const statusText = document.createElement('div');
-            statusText.innerText = isNew ? '✨ NEW' : 'DUP';
-            Object.assign(statusText.style, {
-                fontSize: '16px',
-                fontWeight: 'bold',
-                color: isNew ? COLORS.COLLECTED : '#888',
-                marginTop: '8px'
-            });
-            cardDiv.appendChild(statusText);
-            
-            gridDiv.appendChild(cardDiv);
+            cardsContainer.appendChild(cardDiv);
         });
         
-        this.mainContent.appendChild(gridDiv);
+        this.mainContent.appendChild(cardsContainer);
         
         // Instructions
         const instructionsText = document.createElement('div');
-        instructionsText.innerText = 'Press ENTER / A to continue';
+        const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
+        if (this.flippingInProgress) {
+            instructionsText.innerText = 'Revealing cards...';
+        } else if (allFlipped) {
+            instructionsText.innerText = 'Press ENTER / A to continue';
+        } else {
+            instructionsText.innerText = 'Press ENTER / A to reveal cards';
+        }
         Object.assign(instructionsText.style, {
             textAlign: 'center',
             fontSize: '16px',
@@ -488,12 +515,14 @@ export class CardManager {
     private handleSelect(player: Player) {
         if (this.viewMode === 'menu') {
             if (this.selectedMenuIndex === 0 && player.boosterPacks > 0) {
-                // Open pack - generate 5 random cards and add them to collection
+                // Open pack - generate 5 random cards
                 player.boosterPacks -= 1;
                 this.revealedCards = [];
                 for (let i = 0; i < 5; i++) {
                     this.revealedCards.push(CardDefinitions.getRandomCard());
                 }
+                this.flippedCardIndices.clear();
+                this.flippingInProgress = false;
                 this.viewMode = 'openPack';
             } else if (this.selectedMenuIndex === 1) {
                 // View albums
@@ -501,14 +530,42 @@ export class CardManager {
                 this.selectedAlbumIndex = 0;
             }
         } else if (this.viewMode === 'openPack') {
-            // Return to menu after viewing all cards
-            this.viewMode = 'menu';
+            const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
+            if (!allFlipped && !this.flippingInProgress) {
+                // Start flipping cards one by one
+                this.startCardFlipAnimation(player);
+            } else if (allFlipped && !this.flippingInProgress) {
+                // Return to menu after all cards are flipped
+                this.viewMode = 'menu';
+            }
         } else if (this.viewMode === 'viewAlbums') {
             // Open specific album
             const albums = CardDefinitions.getAlbums();
             this.currentAlbum = albums[this.selectedAlbumIndex];
             this.viewMode = 'viewAlbum';
         }
+    }
+    
+    private async startCardFlipAnimation(player: Player) {
+        this.flippingInProgress = true;
+        this.render(player);
+        
+        // Add cards to collection before flipping
+        this.revealedCards.forEach(card => {
+            this.cardCollection.addCard(card);
+        });
+        
+        // Flip cards one by one with a delay
+        for (let i = 0; i < this.revealedCards.length; i++) {
+            // Wait 400ms between each card flip
+            await new Promise(resolve => setTimeout(resolve, 400));
+            this.flippedCardIndices.add(i);
+            // Re-render to show the flipped state
+            this.render(player);
+        }
+        
+        this.flippingInProgress = false;
+        this.render(player);
     }
     
     private handleCancel() {
