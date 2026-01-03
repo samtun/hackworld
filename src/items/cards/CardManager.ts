@@ -3,6 +3,7 @@ import { InputManager } from '../../InputManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
 import { Card, CardDefinitions, CardRarity } from './Card';
 import { CardCollection } from './CardCollection';
+import { ViewMode } from './ViewMode';
 
 // --- Constants ---
 const COLORS = {
@@ -31,8 +32,6 @@ const STYLES = {
     GRID_GAP: '10px'
 };
 
-type ViewMode = 'menu' | 'openPack' | 'viewAlbums' | 'viewAlbum';
-
 export class CardManager {
     private static instance: CardManager;
     
@@ -44,7 +43,7 @@ export class CardManager {
     private packCountDisplay!: HTMLDivElement;
     
     // Navigation state
-    private viewMode: ViewMode = 'menu';
+    private viewMode: ViewMode = ViewMode.MENU;
     private selectedMenuIndex: number = 0;
     private selectedAlbumIndex: number = 0;
     private currentAlbum: string = '';
@@ -502,7 +501,7 @@ export class CardManager {
         if (this.isVisible) return;
         this.isVisible = true;
         this.container.style.display = 'flex';
-        this.viewMode = 'menu';
+        this.viewMode = ViewMode.MENU;
         this.selectedMenuIndex = 0;
         resetInputDebounce(this as any);
     }
@@ -518,16 +517,16 @@ export class CardManager {
         this.packCountDisplay.innerText = `Booster Packs: ${player.boosterPacks}`;
         
         switch (this.viewMode) {
-            case 'menu':
+            case ViewMode.MENU:
                 this.renderMenu(player);
                 break;
-            case 'openPack':
+            case ViewMode.OPEN_PACK:
                 this.renderOpenPack();
                 break;
-            case 'viewAlbums':
+            case ViewMode.VIEW_ALBUMS:
                 this.renderAlbumList();
                 break;
-            case 'viewAlbum':
+            case ViewMode.VIEW_ALBUM:
                 this.renderAlbumDetail();
                 break;
         }
@@ -567,24 +566,24 @@ export class CardManager {
     }
     
     private handleNavigateUp() {
-        if (this.viewMode === 'menu') {
+        if (this.viewMode === ViewMode.MENU) {
             this.selectedMenuIndex = Math.max(0, this.selectedMenuIndex - 1);
-        } else if (this.viewMode === 'viewAlbums') {
+        } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
             this.selectedAlbumIndex = Math.max(0, this.selectedAlbumIndex - 1);
         }
     }
     
     private handleNavigateDown() {
-        if (this.viewMode === 'menu') {
+        if (this.viewMode === ViewMode.MENU) {
             this.selectedMenuIndex = Math.min(1, this.selectedMenuIndex + 1);
-        } else if (this.viewMode === 'viewAlbums') {
+        } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
             const maxIndex = CardDefinitions.getAlbums().length - 1;
             this.selectedAlbumIndex = Math.min(maxIndex, this.selectedAlbumIndex + 1);
         }
     }
     
     private handleSelect(player: Player) {
-        if (this.viewMode === 'menu') {
+        if (this.viewMode === ViewMode.MENU) {
             if (this.selectedMenuIndex === 0 && player.boosterPacks > 0) {
                 // Open pack - generate 4 random cards
                 player.boosterPacks -= 1;
@@ -594,26 +593,26 @@ export class CardManager {
                 }
                 this.flippedCardIndices.clear();
                 this.flippingInProgress = false;
-                this.viewMode = 'openPack';
+                this.viewMode = ViewMode.OPEN_PACK;
                 
                 // Start flipping immediately
                 this.startCardFlipAnimation(player);
             } else if (this.selectedMenuIndex === 1) {
                 // View albums
-                this.viewMode = 'viewAlbums';
+                this.viewMode = ViewMode.VIEW_ALBUMS;
                 this.selectedAlbumIndex = 0;
             }
-        } else if (this.viewMode === 'openPack') {
+        } else if (this.viewMode === ViewMode.OPEN_PACK) {
             const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
             if (allFlipped && !this.flippingInProgress) {
                 // Return to menu after all cards are flipped
-                this.viewMode = 'menu';
+                this.viewMode = ViewMode.MENU;
             }
-        } else if (this.viewMode === 'viewAlbums') {
+        } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
             // Open specific album
             const albums = CardDefinitions.getAlbums();
             this.currentAlbum = albums[this.selectedAlbumIndex];
-            this.viewMode = 'viewAlbum';
+            this.viewMode = ViewMode.VIEW_ALBUM;
         }
     }
     
@@ -640,15 +639,15 @@ export class CardManager {
     }
     
     private handleCancel() {
-        if (this.viewMode === 'menu') {
+        if (this.viewMode === ViewMode.MENU) {
             this.hide();
-        } else if (this.viewMode === 'openPack') {
+        } else if (this.viewMode === ViewMode.OPEN_PACK) {
             // Can't cancel during pack opening, must view all cards
             return;
-        } else if (this.viewMode === 'viewAlbums') {
-            this.viewMode = 'menu';
-        } else if (this.viewMode === 'viewAlbum') {
-            this.viewMode = 'viewAlbums';
+        } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
+            this.viewMode = ViewMode.MENU;
+        } else if (this.viewMode === ViewMode.VIEW_ALBUM) {
+            this.viewMode = ViewMode.VIEW_ALBUMS;
         }
     }
 }
