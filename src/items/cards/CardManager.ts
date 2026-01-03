@@ -309,7 +309,7 @@ export class CardManager {
                     boxSizing: 'border-box'
                 });
                 
-                const isNew = this.cardCollection.hasCard(card);
+                const isNew = !this.cardCollection.hasCard(card);
                 
                 const albumText = document.createElement('div');
                 albumText.innerText = card.album;
@@ -338,16 +338,28 @@ export class CardManager {
                     marginBottom: '8px'
                 });
                 cardFront.appendChild(rarityText);
-                
-                const statusText = document.createElement('div');
-                statusText.innerText = isNew ? 'DUP' : '✨ NEW';
-                Object.assign(statusText.style, {
-                    fontSize: '16px',
-                    fontWeight: 'bold',
-                    color: isNew ? '#888' : COLORS.COLLECTED,
-                    marginTop: '8px'
+                // Reserve space for status to keep consistent card layout
+                const statusContainer = document.createElement('div');
+                Object.assign(statusContainer.style, {
+                    height: '30px',
+                    marginTop: '8px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
                 });
-                cardFront.appendChild(statusText);
+
+                if (isNew) {
+                    const statusText = document.createElement('div');
+                    statusText.innerText = '✨ NEW';
+                    Object.assign(statusText.style, {
+                        fontSize: '16px',
+                        fontWeight: 'bold',
+                        color: '#888'
+                    });
+                    statusContainer.appendChild(statusText);
+                }
+
+                cardFront.appendChild(statusContainer);
                 
                 // Assemble the card structure
                 cardFlipper.appendChild(cardBack);
@@ -583,6 +595,9 @@ export class CardManager {
                 this.flippedCardIndices.clear();
                 this.flippingInProgress = false;
                 this.viewMode = 'openPack';
+                
+                // Start flipping immediately
+                this.startCardFlipAnimation(player);
             } else if (this.selectedMenuIndex === 1) {
                 // View albums
                 this.viewMode = 'viewAlbums';
@@ -590,10 +605,7 @@ export class CardManager {
             }
         } else if (this.viewMode === 'openPack') {
             const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
-            if (!allFlipped && !this.flippingInProgress) {
-                // Start flipping cards one by one
-                this.startCardFlipAnimation(player);
-            } else if (allFlipped && !this.flippingInProgress) {
+            if (allFlipped && !this.flippingInProgress) {
                 // Return to menu after all cards are flipped
                 this.viewMode = 'menu';
             }
