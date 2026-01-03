@@ -28,13 +28,11 @@ export class ChipItem extends EquippableItem {
     }
 
     private getPriceMultiplierForLevel(): number {
-        // α=1x, β=1.5x, γ=2x, δ=3x, ε=5x, ω=8x
-        const multipliers = [1.0, 1.5, 2.0, 3.0, 5.0, 8.0];
         const index = this.level - 1;
-        if (index < 0 || index >= multipliers.length) {
-            return multipliers[multipliers.length - 1];
+        if (index < 0 || index >= ItemLevelHelper.PRICE_MULTIPLIERS.length) {
+            return ItemLevelHelper.PRICE_MULTIPLIERS[ItemLevelHelper.PRICE_MULTIPLIERS.length - 1];
         }
-        return multipliers[index];
+        return ItemLevelHelper.PRICE_MULTIPLIERS[index];
     }
 
     // Return level definition by numeric level (1-based). Throws if level <= 0.

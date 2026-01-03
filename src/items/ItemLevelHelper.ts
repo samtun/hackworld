@@ -20,6 +20,9 @@ export class ItemLevelHelper {
         { requiredLevel: 124, statPercent: 1.90 }  // ω - Lvl 124 +90%
     ];
 
+    // Price multipliers for item levels
+    public static PRICE_MULTIPLIERS = [1.0, 1.5, 2.0, 3.0, 5.0, 8.0];
+
     public static getLevelChar(level: number): string {
         if (level <= 0) throw new Error('Level must be >= 1');
         const maxLevel = Object.keys(this.LEVELS).length;
