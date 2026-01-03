@@ -273,6 +273,20 @@ export class Game {
         this.camera.aspect = window.innerWidth / window.innerHeight;
         this.camera.updateProjectionMatrix();
         this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+        // Update particle scale factors for screen-independent sizing
+        if (this.world.currentStage) {
+            // Update portal particles if exists
+            if (this.world.currentStage.portal) {
+                this.world.currentStage.portal.updateScaleFactor();
+            }
+
+            // Update healing station particles if exists (Lobby specific)
+            const stage = this.world.currentStage as any;
+            if (stage.healingStation && typeof stage.healingStation.updateScaleFactor === 'function') {
+                stage.healingStation.updateScaleFactor();
+            }
+        }
     }
 
     animate() {
