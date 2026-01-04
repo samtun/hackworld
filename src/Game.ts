@@ -176,6 +176,11 @@ export class Game {
         this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, Game.LOBBY_SPAWN_POSITION, this.input, this.defaultMaterial));
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
+        
+        // Set up damage number callback for player
+        this.player.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
+            this.world.spawnDamageNumber(position, amount);
+        };
     }
 
     switchScene(destination: string) {

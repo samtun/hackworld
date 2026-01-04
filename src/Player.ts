@@ -125,6 +125,9 @@ export class Player extends BaseMesh {
     isDead: boolean = false;
     private deathCallback?: () => void;
 
+    // Callback for spawning damage numbers
+    onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
+
     // Inventory
     inventory: Item[] = [];
     money: number = 500; // Starting money
@@ -534,6 +537,12 @@ export class Player extends BaseMesh {
 
         console.log("Applying damage...");
         this.hp -= amount;
+
+        // Spawn damage number if callback is set
+        if (this.onDamageTaken) {
+            this.onDamageTaken(this.body.position, amount);
+        }
+
         if (this.hp <= 0) {
             this.hp = 0;
             this.die();

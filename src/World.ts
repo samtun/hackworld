@@ -18,6 +18,7 @@ import { BoosterPackDrop } from './items/cards/BoosterPackDrop';
 import { XDataDropManager } from './items/xdata/XDataDropManager';
 import { EXPNumber } from './EXPNumber';
 import { HealingSystem } from './systems/HealingSystem';
+import { FloatingNumberManager } from './FloatingNumberManager';
 
 export class World {
     scene: THREE.Scene;
@@ -36,6 +37,9 @@ export class World {
 
     // EXP number entities
     expNumbers: EXPNumber[] = [];
+
+    // Floating number manager (for damage and EXP numbers)
+    public floatingNumberManager: FloatingNumberManager;
 
     // Drop managers
     private itemDropManager: ItemDropManager;
@@ -63,6 +67,9 @@ export class World {
 
         this.itemDropManager = ItemDropManager.Instance;
         this.xDataDropManager = XDataDropManager.Instance;
+
+        // Initialize floating number manager
+        this.floatingNumberManager = new FloatingNumberManager(scene);
 
         // Register drop strategies
         this.itemDropManager.registerStrategy('weapon', new WeaponDropStrategy());
@@ -185,6 +192,14 @@ export class World {
 
         for (let i = this.currentStage.enemies.length - 1; i >= 0; i--) {
             const enemy = this.currentStage.enemies[i];
+            
+            // Set up damage callback if not already set
+            if (!enemy.onDamageTaken) {
+                enemy.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
+                    this.spawnDamageNumber(position, amount);
+                };
+            }
+            
             enemy.update(dt, player);
 
             if (enemy.isDead) {
@@ -238,7 +253,7 @@ export class World {
             }
         }
 
-        // Update EXP numbers
+        // Update EXP numbers (legacy, kept for backward compatibility)
         for (let i = this.expNumbers.length - 1; i >= 0; i--) {
             const expNum = this.expNumbers[i];
             const shouldRemove = expNum.update(dt, cameraPosition);
@@ -248,6 +263,9 @@ export class World {
                 this.expNumbers.splice(i, 1);
             }
         }
+
+        // Update floating numbers (damage, EXP, etc.)
+        this.floatingNumberManager.update(dt, cameraPosition);
     }
 
     /**
@@ -263,9 +281,17 @@ export class World {
      * Spawn EXP number visual at the given position
      */
     spawnEXPNumber(position: CANNON.Vec3, amount: number): void {
-        const expNumber = new EXPNumber(this.scene, position, amount);
-        this.expNumbers.push(expNumber);
+        // Use new floating number manager for consistent styling
+        this.floatingNumberManager.spawnEXP(position, amount);
         console.log(`Spawned +${amount} EXP number at position (${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)})`);
+    }
+
+    /**
+     * Spawn damage number visual at the given position
+     */
+    spawnDamageNumber(position: CANNON.Vec3, amount: number): void {
+        this.floatingNumberManager.spawnDamage(position, amount);
+        console.log(`Spawned ${amount} damage number at position (${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)})`);
     }
 
     /**
@@ -294,10 +320,14 @@ export class World {
         }
         this.xDataEntities = [];
 
-        // Also clear EXP numbers
+        // Also clear EXP numbers (legacy)
         for (const expNum of this.expNumbers) {
             expNum.cleanup(this.scene);
         }
+        this.expNumbers = [];
+
+        // Clear floating numbers
+        this.floatingNumberManager.clear();
         this.expNumbers = [];
     }
 
