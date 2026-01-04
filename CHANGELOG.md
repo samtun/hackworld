@@ -1,3 +1,11 @@
+# [1.14.0](https://github.com/samtun/hackworld/compare/v1.13.0...v1.14.0) (2026-01-04)
+
+
+### Features
+
+* expand weapon registry with additional weapon entries and updated attributes ([1da75d7](https://github.com/samtun/hackworld/commit/1da75d748850543118e4b791ceac66b12b46f926))
+* refactor weapon repository to load weapons from JSON data ([ffe408b](https://github.com/samtun/hackworld/commit/ffe408b5d1c564c7f8b7236456305a6fcde57693))
+
 # [1.13.0](https://github.com/samtun/hackworld/compare/v1.12.0...v1.13.0) (2026-01-04)
 
 
