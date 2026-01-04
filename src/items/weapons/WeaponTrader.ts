@@ -1,6 +1,6 @@
 import { WeaponItem } from './WeaponItem';
 import { BaseTrader, TraderUIConfig } from '../BaseTrader';
-import { WeaponRegistry } from './WeaponRegistry';
+import { WeaponRepository } from './WeaponRepository';
 import { Player } from '../../Player';
 import { Item } from '../Item';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
@@ -8,7 +8,7 @@ import { TRADER_UI_COLORS } from '../TraderUIConstants';
 export class WeaponTrader extends BaseTrader {
     static instance: WeaponTrader; // Singleton
 
-    private weaponRegistry: WeaponRegistry;
+    private weaponRepository: WeaponRepository;
 
     private constructor() {
         const cfg: TraderUIConfig = {
@@ -26,7 +26,7 @@ export class WeaponTrader extends BaseTrader {
             }
         };
         super(cfg);
-        this.weaponRegistry = WeaponRegistry.Instance;
+        this.weaponRepository = WeaponRepository.Instance;
         this.initializeTraderInventory();
     }
 
@@ -37,33 +37,8 @@ export class WeaponTrader extends BaseTrader {
     protected initializeTraderInventory() {
         this.traderInventory = [];
 
-        for (const weaponDef of this.weaponRegistry.getAllWeapons()) {
-            this.traderInventory.push(new WeaponItem(
-                crypto.randomUUID(),
-                weaponDef.name,
-                weaponDef.baseBuyPrice,
-                weaponDef.baseSellPrice,
-                weaponDef.type,
-                weaponDef.baseDamage,
-                weaponDef.model,
-                1 // default level alpha
-            ));
-        }
-
-        // Add a test Aegis Sword at Beta level for testing equip restrictions
-        const aegis = this.weaponRegistry.getWeaponById('aegis_sword');
-        if (aegis) {
-            this.traderInventory.push(new WeaponItem(
-                'aegis_sword_beta',
-                aegis.name,
-                aegis.baseBuyPrice * 2,
-                aegis.baseSellPrice,
-                aegis.type,
-                aegis.baseDamage,
-                aegis.model,
-                2 // beta
-            ));
-        }
+        // Get all weapons from repository (already cloned with unique IDs)
+        this.traderInventory = this.weaponRepository.getAllWeapons();
     }
 
     protected filterPlayerInventory(player: Player): Item[] {

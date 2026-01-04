@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { WeaponDrop } from '../weapons/WeaponDrop';
-import { WeaponRegistry } from '../weapons/WeaponRegistry';
+import { WeaponRepository } from '../weapons/WeaponRepository';
 import { WeaponType } from '../weapons/WeaponType';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
@@ -13,16 +13,16 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         if (Math.random() > enemy.itemDropChance) return null;
 
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
-        const weaponDef = WeaponRegistry.Instance.getRandomWeaponOfType(weaponType);
-        if (!weaponDef) return null;
+        const weaponItem = WeaponRepository.Instance.getRandomWeaponOfType(weaponType);
+        if (!weaponItem) return null;
 
         const random = Math.random();
         const bonusValue = Math.pow(1.16 * random - 0.5, 5) * 10;
         const bonusMultiplier = 1 + bonusValue * 20 / 100;
-        const finalDamage = Math.round(weaponDef.baseDamage * bonusMultiplier);
-        const damageFactor = finalDamage / weaponDef.baseDamage;
-        const finalBuyPrice = Math.round(weaponDef.baseBuyPrice * damageFactor);
-        const finalSellPrice = Math.round(weaponDef.baseSellPrice * damageFactor);
+        const finalDamage = Math.round(weaponItem.damage * bonusMultiplier);
+        const damageFactor = finalDamage / weaponItem.damage;
+        const finalBuyPrice = Math.round(weaponItem.buyPrice * damageFactor);
+        const finalSellPrice = Math.round(weaponItem.sellPrice * damageFactor);
 
         const dropPosition = enemy.body.position.clone();
         dropPosition.y = 0.5;
@@ -31,13 +31,13 @@ export class WeaponDropStrategy implements ItemDropStrategy {
             scene,
             dropPosition,
             weaponType,
-            weaponDef.name,
+            weaponItem.name,
             finalDamage,
             finalBuyPrice,
             finalSellPrice,
             1
         );
-        console.log(`Enemy dropped ${weaponDef.name} (${weaponType}) - Damage: ${finalDamage}`);
+        console.log(`Enemy dropped ${weaponItem.name} (${weaponType}) - Damage: ${finalDamage}`);
         return wd;
     }
 
@@ -51,8 +51,8 @@ export class WeaponDropStrategy implements ItemDropStrategy {
     }
 
     pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: WeaponDrop, player: Player): void {
-        const weaponDef = WeaponRegistry.Instance.getWeaponByType(drop.weaponType);
-        const model = weaponDef ? weaponDef.model : 'models/sword.glb';
+        const weaponItem = WeaponRepository.Instance.getWeaponByType(drop.weaponType);
+        const model = weaponItem ? weaponItem.model : 'models/sword.glb';
 
         const newItem = new WeaponItem(
             crypto.randomUUID(),
