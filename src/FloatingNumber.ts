@@ -10,7 +10,7 @@ export interface FloatingNumberConfig {
     prefix?: string;
     suffix?: string;
     fontSize?: number;
-    lifetime?: number;
+    riseTime?: number;
     floatSpeed?: number;
 }
 
@@ -19,20 +19,25 @@ export interface FloatingNumberConfig {
  * Spawns above entity location, floats upward, and fades out
  */
 export class FloatingNumber {
-    static readonly DEFAULT_LIFETIME: number = 0.8;
+    static readonly DEFAULT_RISE_TIME: number = 0.2;
     static readonly DEFAULT_FLOAT_SPEED: number = 2.0;
     static readonly DEFAULT_FONTSIZE: number = 80;
+    static readonly HOLD_TIME: number = 0.5;
+    static readonly FADE_TIME: number = 0.2;
 
     mesh: THREE.Mesh;
     private timer: number = 0;
     private readonly lifetime: number;
+    private readonly riseTime: number;
     private readonly floatSpeed: number;
     private initialY: number;
     private textTexture: THREE.CanvasTexture;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, config: FloatingNumberConfig) {
-        this.initialY = position.y;
-        this.lifetime = config.lifetime ?? FloatingNumber.DEFAULT_LIFETIME; // seconds
+        let numberPosition = new CANNON.Vec3(position.x, position.y + 1.0, position.z);
+        this.initialY = numberPosition.y;
+        this.riseTime = config.riseTime ?? FloatingNumber.DEFAULT_RISE_TIME; // seconds
+        this.lifetime = this.riseTime + FloatingNumber.HOLD_TIME + FloatingNumber.FADE_TIME;
         this.floatSpeed = config.floatSpeed ?? FloatingNumber.DEFAULT_FLOAT_SPEED; // units per second
 
         // Create canvas for text texture
@@ -71,7 +76,7 @@ export class FloatingNumber {
         });
 
         this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.position.set(position.x, position.y, position.z);
+        this.mesh.position.set(numberPosition.x, numberPosition.y, numberPosition.z);
 
         // Make the mesh always face the camera (billboard effect will be applied in update)
         scene.add(this.mesh);
@@ -87,12 +92,20 @@ export class FloatingNumber {
         this.timer += dt;
 
         // Float upward
-        this.mesh.position.y = this.initialY + (this.timer * this.floatSpeed);
+        if (this.timer < this.riseTime) {
+            this.mesh.position.y = this.initialY + (this.timer * this.floatSpeed);
+        } else {
+            this.mesh.position.y = this.initialY + (this.riseTime * this.floatSpeed);
+        }
 
-        // Fade out based on lifetime
-        const progress = this.timer / this.lifetime;
+        // Fade out logic
         const material = this.mesh.material as THREE.MeshBasicMaterial;
-        material.opacity = 1 - progress;
+        if (this.timer < this.riseTime + FloatingNumber.HOLD_TIME) {
+            material.opacity = 1;
+        } else {
+            const fadeProgress = (this.timer - (this.riseTime + FloatingNumber.HOLD_TIME)) / FloatingNumber.FADE_TIME;
+            material.opacity = Math.max(0, 1 - fadeProgress);
+        }
 
         // Billboard effect - always face camera
         this.mesh.lookAt(cameraPosition);

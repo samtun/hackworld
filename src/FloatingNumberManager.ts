@@ -40,11 +40,8 @@ export class FloatingNumberManager {
         this.spawn(position, {
             text: amount.toString(),
             color: '#ffffff',
-            prefix: '+',
             suffix: ' EXP',
             fontSize: 80,
-            floatSpeed: 1.4,
-            lifetime: 1.2
         });
     }
 
