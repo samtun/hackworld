@@ -1,3 +1,15 @@
+# [1.13.0](https://github.com/samtun/hackworld/compare/v1.12.0...v1.13.0) (2026-01-04)
+
+
+### Bug Fixes
+
+* add zero damage guard and fix weapon mutation in debug editor ([40f7caf](https://github.com/samtun/hackworld/commit/40f7caf690e6af041f9c0418739d0e3a5b55a22d))
+
+
+### Features
+
+* replace WeaponRegistry with WeaponRepository using tree structure ([b6650ab](https://github.com/samtun/hackworld/commit/b6650ab28300b79f26416de2086524a13c8fb0c4))
+
 # [1.12.0](https://github.com/samtun/hackworld/compare/v1.11.0...v1.12.0) (2026-01-04)
 
 
