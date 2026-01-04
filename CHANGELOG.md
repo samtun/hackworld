@@ -1,3 +1,10 @@
+# [1.15.0](https://github.com/samtun/hackworld/compare/v1.14.0...v1.15.0) (2026-01-04)
+
+
+### Features
+
+* add ESC/B button support to close inventory ([779478c](https://github.com/samtun/hackworld/commit/779478c86e6ef7580d8523859637adad6653fb84))
+
 # [1.14.0](https://github.com/samtun/hackworld/compare/v1.13.0...v1.14.0) (2026-01-04)
 
 
