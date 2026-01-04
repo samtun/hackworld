@@ -15,7 +15,7 @@ export class WeaponDrop implements ItemDrop {
     weaponName: string;
     textMesh: THREE.Mesh | null = null;
     level: number = 1;
-    
+
     // Weapon stats with bonus applied
     damage: number;
     buyPrice: number;
@@ -118,7 +118,7 @@ export class WeaponDrop implements ItemDrop {
         const textGeometry = new THREE.PlaneGeometry(2, 0.5);
         this.textMesh = new THREE.Mesh(textGeometry, textMaterial);
         this.textMesh.position.y = 0;
-        this.textMesh.renderOrder = 999;
+        this.textMesh.renderOrder = 990;
         this.textMesh.visible = false; // Start hidden
         this.mesh.add(this.textMesh);
 

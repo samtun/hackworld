@@ -63,7 +63,7 @@ export class BoosterPackDrop implements ItemDrop {
         const textGeometry = new THREE.PlaneGeometry(2, 0.5);
         this.textMesh = new THREE.Mesh(textGeometry, textMaterial);
         this.textMesh.position.y = 0;
-        this.textMesh.renderOrder = 999;
+        this.textMesh.renderOrder = 990;
         this.textMesh.visible = false; // Start hidden
         this.mesh.add(this.textMesh);
 

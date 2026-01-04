@@ -12,6 +12,7 @@ export interface FloatingNumberConfig {
     fontSize?: number;
     riseTime?: number;
     floatSpeed?: number;
+    priority?: boolean; // A number with priority is rendered above numbers without priority
 }
 
 /**
@@ -78,9 +79,9 @@ export class FloatingNumber {
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.set(numberPosition.x, numberPosition.y, numberPosition.z);
-        
+
         // Set high render order to ensure it renders last (on top)
-        this.mesh.renderOrder = 999;
+        this.mesh.renderOrder = config.priority ? 999 : 998;
 
         // Make the mesh always face the camera (billboard effect will be applied in update)
         scene.add(this.mesh);

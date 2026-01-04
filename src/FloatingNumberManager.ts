@@ -29,7 +29,7 @@ export class FloatingNumberManager {
         this.spawn(position, {
             text: amount.toString(),
             color: color,
-            fontSize: 80
+            fontSize: 60,
         });
     }
 
@@ -42,6 +42,7 @@ export class FloatingNumberManager {
             color: '#ffffff',
             suffix: ' EXP',
             fontSize: 80,
+            priority: true
         });
     }
 

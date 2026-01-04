@@ -192,7 +192,7 @@ export class World {
             // Set up damage callback if not already set
             if (!enemy.onDamageTaken) {
                 enemy.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
-                    this.spawnDamageNumber(position, amount, '#FFFFFF');
+                    this.spawnDamageNumber(position, amount, '#fdc650ff');
                 };
             }
 

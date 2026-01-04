@@ -179,7 +179,7 @@ export class Game {
 
         // Set up damage number callback for player
         this.player.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
-            this.world.spawnDamageNumber(position, amount, '#FF0000');
+            this.world.spawnDamageNumber(position, amount, '#ff2424ff');
         };
     }
 
