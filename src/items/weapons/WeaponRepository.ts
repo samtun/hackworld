@@ -1,5 +1,6 @@
 import { WeaponType } from './WeaponType';
 import { WeaponItem } from './WeaponItem';
+import weaponsData from './weapons.json';
 
 /**
  * Centralized weapon repository - single source of truth for all weapons in the game
@@ -7,76 +8,51 @@ import { WeaponItem } from './WeaponItem';
  */
 export class WeaponRepository {
     private static instance: WeaponRepository; // Singleton
-    
-    // Tree structure: level (numeric) -> weaponType -> WeaponItem[]
-    private weaponsByLevel: Map<number, Map<WeaponType, WeaponItem[]>> = new Map([
-        [1, new Map([
-            [WeaponType.SWORD, [
-                new WeaponItem(
-                    'aegis_sword_alpha',
-                    'Aegis Sword',
-                    100,
-                    50,
-                    WeaponType.SWORD,
-                    10,
-                    'models/sword.glb',
-                    1
-                )
-            ]],
-            [WeaponType.DUAL_BLADE, [
-                new WeaponItem(
-                    'rune_blade_alpha',
-                    'Rune Blade',
-                    150,
-                    75,
-                    WeaponType.DUAL_BLADE,
-                    7,
-                    'models/double_sword.glb',
-                    1
-                )
-            ]],
-            [WeaponType.LANCE, [
-                new WeaponItem(
-                    'fierce_lance_alpha',
-                    'Fierce Lance',
-                    120,
-                    60,
-                    WeaponType.LANCE,
-                    12,
-                    'models/lance.glb',
-                    1
-                )
-            ]],
-            [WeaponType.HAMMER, [
-                new WeaponItem(
-                    'battle_hawk_alpha',
-                    'Battle Hawk',
-                    180,
-                    90,
-                    WeaponType.HAMMER,
-                    18,
-                    'models/hammer.glb',
-                    1
-                )
-            ]]
-        ])],
-        [2, new Map([
-            [WeaponType.SWORD, [
-                new WeaponItem(
-                    'aegis_sword_beta',
-                    'Aegis Sword',
-                    200,
-                    100,
-                    WeaponType.SWORD,
-                    18,
-                    'models/sword.glb',
-                    2
-                )
-            ]]
-        ])]
-    ]);
+
+    // List structure: index corresponds to level - 1 (e.g. index 0 is level 1)
+    // Each element is a Map: weaponType -> WeaponItem[]
+    private weaponsByLevel: Map<WeaponType, WeaponItem[]>[] = [];
 
     private constructor() {
+        this.loadWeapons();
+    }
+
+    private loadWeapons() {
+        for (const data of weaponsData) {
+            const levelIndex = data.level - 1;
+            if (levelIndex < 0) continue;
+
+            // Ensure the level map exists
+            if (!this.weaponsByLevel[levelIndex]) {
+                this.weaponsByLevel[levelIndex] = new Map<WeaponType, WeaponItem[]>();
+            }
+
+            const levelMap = this.weaponsByLevel[levelIndex];
+
+            // Validate weapon type
+            const type = data.weaponType as WeaponType;
+            if (!Object.values(WeaponType).includes(type)) {
+                console.warn(`Invalid weapon type '${data.weaponType}' for weapon '${data.id}'`);
+                continue;
+            }
+
+            if (!levelMap.has(type)) {
+                levelMap.set(type, []);
+            }
+
+            const weapon = new WeaponItem(
+                data.id,
+                data.name,
+                data.buyPrice,
+                data.sellPrice,
+                type,
+                data.damage,
+                data.model,
+                data.level
+            );
+
+            levelMap.get(type)!.push(weapon);
+        }
     }
 
     public static get Instance(): WeaponRepository {
@@ -88,15 +64,16 @@ export class WeaponRepository {
      */
     getAllWeapons(): WeaponItem[] {
         const allWeapons: WeaponItem[] = [];
-        
-        for (const levelMap of this.weaponsByLevel.values()) {
+
+        for (const levelMap of this.weaponsByLevel) {
+            if (!levelMap) continue;
             for (const weapons of levelMap.values()) {
                 for (const weapon of weapons) {
                     allWeapons.push(weapon.clone(crypto.randomUUID()));
                 }
             }
         }
-        
+
         return allWeapons;
     }
 
@@ -105,7 +82,10 @@ export class WeaponRepository {
      * Returns a cloned instance with a new UUID
      */
     getWeaponByTypeAndLevel(type: WeaponType, level: number): WeaponItem | undefined {
-        const levelMap = this.weaponsByLevel.get(level);
+        const levelIndex = level - 1;
+        if (levelIndex < 0 || levelIndex >= this.weaponsByLevel.length) return undefined;
+
+        const levelMap = this.weaponsByLevel[levelIndex];
         if (!levelMap) return undefined;
 
         const weapons = levelMap.get(type);
@@ -120,7 +100,10 @@ export class WeaponRepository {
      * Returns a cloned instance with a new UUID
      */
     getRandomWeaponOfLevel(level: number): WeaponItem | undefined {
-        const levelMap = this.weaponsByLevel.get(level);
+        const levelIndex = level - 1;
+        if (levelIndex < 0 || levelIndex >= this.weaponsByLevel.length) return undefined;
+
+        const levelMap = this.weaponsByLevel[levelIndex];
         if (!levelMap) return undefined;
 
         const allWeaponsAtLevel: WeaponItem[] = [];
@@ -139,7 +122,8 @@ export class WeaponRepository {
      * Returns a cloned instance with a new UUID
      */
     getWeaponById(id: string): WeaponItem | undefined {
-        for (const levelMap of this.weaponsByLevel.values()) {
+        for (const levelMap of this.weaponsByLevel) {
+            if (!levelMap) continue;
             for (const weapons of levelMap.values()) {
                 const weapon = weapons.find(w => w.id === id);
                 if (weapon) {
@@ -157,7 +141,8 @@ export class WeaponRepository {
     getWeaponsByType(type: WeaponType): WeaponItem[] {
         const weaponsOfType: WeaponItem[] = [];
 
-        for (const levelMap of this.weaponsByLevel.values()) {
+        for (const levelMap of this.weaponsByLevel) {
+            if (!levelMap) continue;
             const weapons = levelMap.get(type);
             if (weapons) {
                 for (const weapon of weapons) {

@@ -1,0 +1,52 @@
+[
+    {
+        "id": "aegis_sword_alpha",
+        "name": "Aegis Sword",
+        "buyPrice": 100,
+        "sellPrice": 50,
+        "weaponType": "sword",
+        "damage": 10,
+        "model": "models/sword.glb",
+        "level": 1
+    },
+    {
+        "id": "rune_blade_alpha",
+        "name": "Rune Blade",
+        "buyPrice": 150,
+        "sellPrice": 75,
+        "weaponType": "dual_blade",
+        "damage": 7,
+        "model": "models/double_sword.glb",
+        "level": 1
+    },
+    {
+        "id": "fierce_lance_alpha",
+        "name": "Fierce Lance",
+        "buyPrice": 120,
+        "sellPrice": 60,
+        "weaponType": "lance",
+        "damage": 12,
+        "model": "models/lance.glb",
+        "level": 1
+    },
+    {
+        "id": "battle_hawk_alpha",
+        "name": "Battle Hawk",
+        "buyPrice": 180,
+        "sellPrice": 90,
+        "weaponType": "hammer",
+        "damage": 18,
+        "model": "models/hammer.glb",
+        "level": 1
+    },
+    {
+        "id": "aegis_sword_beta",
+        "name": "Aegis Sword",
+        "buyPrice": 200,
+        "sellPrice": 100,
+        "weaponType": "sword",
+        "damage": 18,
+        "model": "models/sword.glb",
+        "level": 2
+    }
+]
