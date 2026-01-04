@@ -1,3 +1,19 @@
+# [1.12.0](https://github.com/samtun/hackworld/compare/v1.11.0...v1.12.0) (2026-01-04)
+
+
+### Bug Fixes
+
+* improve floating number visibility ([cf3d6f0](https://github.com/samtun/hackworld/commit/cf3d6f0d84f5298b0a4e8b674a0c2cba2b922a76))
+* remove duplicate expNumbers array reset ([c402379](https://github.com/samtun/hackworld/commit/c402379b538d56548487d47a796eccdce0238fc8))
+
+
+### Features
+
+* add damage numbers on hit for players and enemies ([3bf033f](https://github.com/samtun/hackworld/commit/3bf033f1ac530c64cbbe3170448fb4ff2fbbc119))
+* add priority option for floating numbers to control render order ([b052675](https://github.com/samtun/hackworld/commit/b052675b40197f3784446d117c51ab5a6f926edf))
+* make floating numbers hold at upmost top position ([19a93e2](https://github.com/samtun/hackworld/commit/19a93e2502f5c4cf43e1debea4c7536adc09e0b4))
+* render floating numbers on top of all objects with depthTest false ([fa81210](https://github.com/samtun/hackworld/commit/fa81210fe7d0b3289cdddafdc1439f99e43dbe55))
+
 # [1.11.0](https://github.com/samtun/hackworld/compare/v1.10.0...v1.11.0) (2026-01-03)
 
 
