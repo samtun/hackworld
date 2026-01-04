@@ -72,11 +72,15 @@ export class FloatingNumber {
             transparent: true,
             opacity: 1,
             side: THREE.DoubleSide,
-            depthWrite: false
+            depthWrite: false,
+            depthTest: false // Disable depth testing to render on top of everything
         });
 
         this.mesh = new THREE.Mesh(geometry, material);
         this.mesh.position.set(numberPosition.x, numberPosition.y, numberPosition.z);
+        
+        // Set high render order to ensure it renders last (on top)
+        this.mesh.renderOrder = 999;
 
         // Make the mesh always face the camera (billboard effect will be applied in update)
         scene.add(this.mesh);
