@@ -16,7 +16,6 @@ import { ChipDrop } from './items/chips/ChipDrop';
 import { CoreDrop } from './items/cores/CoreDrop';
 import { BoosterPackDrop } from './items/cards/BoosterPackDrop';
 import { XDataDropManager } from './items/xdata/XDataDropManager';
-import { EXPNumber } from './EXPNumber';
 import { HealingSystem } from './systems/HealingSystem';
 import { FloatingNumberManager } from './FloatingNumberManager';
 
@@ -34,9 +33,6 @@ export class World {
 
     // X-Data entities
     xDataEntities: XData[] = [];
-
-    // EXP number entities
-    expNumbers: EXPNumber[] = [];
 
     // Floating number manager (for damage and EXP numbers)
     public floatingNumberManager: FloatingNumberManager;
@@ -253,17 +249,6 @@ export class World {
             }
         }
 
-        // Update EXP numbers (legacy, kept for backward compatibility)
-        for (let i = this.expNumbers.length - 1; i >= 0; i--) {
-            const expNum = this.expNumbers[i];
-            const shouldRemove = expNum.update(dt, cameraPosition);
-
-            if (shouldRemove) {
-                expNum.cleanup(this.scene);
-                this.expNumbers.splice(i, 1);
-            }
-        }
-
         // Update floating numbers (damage, EXP, etc.)
         this.floatingNumberManager.update(dt, cameraPosition);
     }
@@ -319,12 +304,6 @@ export class World {
             xData.cleanup(this.scene, this.physicsWorld);
         }
         this.xDataEntities = [];
-
-        // Also clear EXP numbers (legacy)
-        for (const expNum of this.expNumbers) {
-            expNum.cleanup(this.scene);
-        }
-        this.expNumbers = [];
 
         // Clear floating numbers
         this.floatingNumberManager.clear();
