@@ -9,11 +9,22 @@ import { Player } from '../../Player';
 import { WeaponItem } from '../weapons/WeaponItem';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
+    // Weapon level tech requirements (from WeaponItem.WEAPON_LEVELS)
+    private static readonly WEAPON_LEVEL_TECH_REQUIREMENTS = [
+        { level: 1, requiredTech: 0 },
+        { level: 2, requiredTech: 120 },
+        { level: 3, requiredTech: 460 },
+        { level: 4, requiredTech: 720 },
+        { level: 5, requiredTech: 1280 },
+        { level: 6, requiredTech: 2500 }
+    ];
+
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         if (Math.random() > enemy.itemDropChance) return null;
 
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
-        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, 1);
+        const weaponLevel = this.determineWeaponLevel(weaponType, player);
+        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, weaponLevel);
         if (!weaponItem) return null;
 
         // Guard against zero damage
@@ -41,9 +52,9 @@ export class WeaponDropStrategy implements ItemDropStrategy {
             finalDamage,
             finalBuyPrice,
             finalSellPrice,
-            1
+            weaponLevel
         );
-        console.log(`Enemy dropped ${weaponItem.name} (${weaponType}) - Damage: ${finalDamage}`);
+        console.log(`Enemy dropped ${weaponItem.name} (${weaponType}) Level ${weaponLevel} - Damage: ${finalDamage}`);
         return wd;
     }
 
@@ -54,6 +65,54 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const otherTypes = allTypes.filter(t => t !== currentWeaponType);
         const otherIndex = Math.floor((random - 0.45) / (0.55 / otherTypes.length));
         return otherTypes[Math.min(otherIndex, otherTypes.length - 1)];
+    }
+
+    /**
+     * Determine the weapon level to drop based on player's tech stat for the weapon type
+     * 
+     * Logic:
+     * 1. Base level is determined by player's tech stat (highest level they can equip)
+     * 2. If player has 80%+ of next level's tech requirement, 25% chance to drop 1 level higher
+     * 3. Always 25% chance to drop 1 level lower than base level
+     */
+    private determineWeaponLevel(weaponType: WeaponType, player: Player): number {
+        const playerTech = player.getTechForWeapon(weaponType);
+        
+        // Determine base level (highest level player can equip)
+        let baseLevel = 1;
+        for (const levelDef of WeaponDropStrategy.WEAPON_LEVEL_TECH_REQUIREMENTS) {
+            if (playerTech >= levelDef.requiredTech) {
+                baseLevel = levelDef.level;
+            } else {
+                break;
+            }
+        }
+        
+        // Check if player is at 80% or more of next level requirement
+        const nextLevelIndex = baseLevel; // Index in array (0-based) for next level
+        let canDropHigher = false;
+        if (nextLevelIndex < WeaponDropStrategy.WEAPON_LEVEL_TECH_REQUIREMENTS.length) {
+            const nextLevelReq = WeaponDropStrategy.WEAPON_LEVEL_TECH_REQUIREMENTS[nextLevelIndex].requiredTech;
+            const threshold = nextLevelReq * 0.8;
+            if (playerTech >= threshold) {
+                canDropHigher = true;
+            }
+        }
+        
+        // 25% chance to drop 1 level lower
+        const lowerRoll = Math.random();
+        if (lowerRoll < 0.25 && baseLevel > 1) {
+            return baseLevel - 1;
+        }
+        
+        // 25% chance to drop 1 level higher (if eligible)
+        const higherRoll = Math.random();
+        if (canDropHigher && higherRoll < 0.25) {
+            return baseLevel + 1;
+        }
+        
+        // Default: drop at base level
+        return baseLevel;
     }
 
     pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: WeaponDrop, player: Player): void {
