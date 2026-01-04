@@ -8,6 +8,7 @@ export interface FloatingNumberConfig {
     text: string;
     color: string;
     prefix?: string;
+    suffix?: string;
     fontSize?: number;
     lifetime?: number;
     floatSpeed?: number;
@@ -18,6 +19,10 @@ export interface FloatingNumberConfig {
  * Spawns above entity location, floats upward, and fades out
  */
 export class FloatingNumber {
+    static readonly DEFAULT_LIFETIME: number = 0.8;
+    static readonly DEFAULT_FLOAT_SPEED: number = 2.0;
+    static readonly DEFAULT_FONTSIZE: number = 80;
+
     mesh: THREE.Mesh;
     private timer: number = 0;
     private readonly lifetime: number;
@@ -27,8 +32,8 @@ export class FloatingNumber {
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, config: FloatingNumberConfig) {
         this.initialY = position.y;
-        this.lifetime = config.lifetime ?? 1.2; // seconds
-        this.floatSpeed = config.floatSpeed ?? 1.5; // units per second
+        this.lifetime = config.lifetime ?? FloatingNumber.DEFAULT_LIFETIME; // seconds
+        this.floatSpeed = config.floatSpeed ?? FloatingNumber.DEFAULT_FLOAT_SPEED; // units per second
 
         // Create canvas for text texture
         const canvas = document.createElement('canvas');
@@ -37,8 +42,8 @@ export class FloatingNumber {
         canvas.height = 128;
 
         // Prepare display text
-        const displayText = `${config.prefix ?? ''}${config.text}`;
-        const fontSize = config.fontSize ?? 80;
+        const displayText = `${config.prefix ?? ''}${config.text}${config.suffix ?? ''}`;
+        const fontSize = config.fontSize ?? FloatingNumber.DEFAULT_FONTSIZE;
 
         // Draw text on canvas
         context.fillStyle = config.color;

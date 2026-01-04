@@ -117,9 +117,9 @@ export class Game {
             // Start Loop
             this.animate();
         },
-        (loaded, total) => this.ui.updateLoadingProgress(loaded, total),
-        () => this.ui.showLoadingScreen(),
-        () => this.ui.hideLoadingScreen());
+            (loaded, total) => this.ui.updateLoadingProgress(loaded, total),
+            () => this.ui.showLoadingScreen(),
+            () => this.ui.hideLoadingScreen());
 
         // Resize Handler
         window.addEventListener('resize', () => this.onWindowResize(), false);
@@ -176,10 +176,10 @@ export class Game {
         this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, Game.LOBBY_SPAWN_POSITION, this.input, this.defaultMaterial));
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
-        
+
         // Set up damage number callback for player
         this.player.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
-            this.world.spawnDamageNumber(position, amount);
+            this.world.spawnDamageNumber(position, amount, '#FF0000');
         };
     }
 
@@ -420,7 +420,7 @@ export class Game {
         if (this.cardManager.isVisible) {
             this.cardManager.update(this.player, this.input);
         }
-        
+
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.isAnyMenuOpen();
 

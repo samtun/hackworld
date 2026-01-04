@@ -23,12 +23,12 @@ export class FloatingNumberManager {
     }
 
     /**
-     * Spawn a damage number (red color)
+     * Spawn a damage number
      */
-    spawnDamage(position: CANNON.Vec3, amount: number): void {
+    spawnDamage(position: CANNON.Vec3, amount: number, color: string): void {
         this.spawn(position, {
             text: amount.toString(),
-            color: '#ff4444',
+            color: color,
             fontSize: 80
         });
     }
@@ -41,7 +41,10 @@ export class FloatingNumberManager {
             text: amount.toString(),
             color: '#ffffff',
             prefix: '+',
-            fontSize: 80
+            suffix: ' EXP',
+            fontSize: 80,
+            floatSpeed: 1.4,
+            lifetime: 1.2
         });
     }
 

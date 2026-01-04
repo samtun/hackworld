@@ -54,7 +54,7 @@ export class World {
         onLoadComplete: () => void,
         onLoadProgress: (loaded: number, total: number) => void,
         onStart: () => void,
-        onComplete: () => void,){
+        onComplete: () => void,) {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
         this.physicsMaterial = physicsMaterial;
@@ -188,14 +188,14 @@ export class World {
 
         for (let i = this.currentStage.enemies.length - 1; i >= 0; i--) {
             const enemy = this.currentStage.enemies[i];
-            
+
             // Set up damage callback if not already set
             if (!enemy.onDamageTaken) {
                 enemy.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
-                    this.spawnDamageNumber(position, amount);
+                    this.spawnDamageNumber(position, amount, '#FFFFFF');
                 };
             }
-            
+
             enemy.update(dt, player);
 
             if (enemy.isDead) {
@@ -268,15 +268,13 @@ export class World {
     spawnEXPNumber(position: CANNON.Vec3, amount: number): void {
         // Use new floating number manager for consistent styling
         this.floatingNumberManager.spawnEXP(position, amount);
-        console.log(`Spawned +${amount} EXP number at position (${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)})`);
     }
 
     /**
      * Spawn damage number visual at the given position
      */
-    spawnDamageNumber(position: CANNON.Vec3, amount: number): void {
-        this.floatingNumberManager.spawnDamage(position, amount);
-        console.log(`Spawned ${amount} damage number at position (${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)})`);
+    spawnDamageNumber(position: CANNON.Vec3, amount: number, color: string): void {
+        this.floatingNumberManager.spawnDamage(position, amount, color);
     }
 
     /**
