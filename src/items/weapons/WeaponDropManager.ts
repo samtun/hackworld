@@ -45,6 +45,12 @@ export class WeaponDropManager {
             return false;
         }
 
+        // Guard against zero damage
+        if (weaponItem.damage <= 0) {
+            console.warn(`Weapon ${weaponItem.name} has invalid damage: ${weaponItem.damage}`);
+            return false;
+        }
+
         // Calculate bonus using the formula: (1.16 * x - 0.5)^5 * 10
         // This creates a distribution where most weapons are close to base stats
         const random = Math.random();

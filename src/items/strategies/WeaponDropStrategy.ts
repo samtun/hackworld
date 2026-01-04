@@ -16,6 +16,12 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const weaponItem = WeaponRepository.Instance.getRandomWeaponOfType(weaponType);
         if (!weaponItem) return null;
 
+        // Guard against zero damage
+        if (weaponItem.damage <= 0) {
+            console.warn(`Weapon ${weaponItem.name} has invalid damage: ${weaponItem.damage}`);
+            return null;
+        }
+
         const random = Math.random();
         const bonusValue = Math.pow(1.16 * random - 0.5, 5) * 10;
         const bonusMultiplier = 1 + bonusValue * 20 / 100;

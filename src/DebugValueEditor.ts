@@ -315,12 +315,12 @@ export class DebugValueEditor {
                 const weapon = this.weaponRepository.getWeaponById(weaponId);
                 if (weapon) {
                     const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
-                    // Weapon is already cloned with a new ID from repository
-                    // Update damage to match user input
-                    weapon.damage = damage;
-                    weapon.level = lvl;
-                    this.player.inventory.push(weapon);
-                    console.log(`Added weapon: ${weapon.name} (Level ${lvl}) with ${damage} damage`);
+                    // Clone weapon again to avoid mutating the repository's cached instance
+                    const weaponCopy = weapon.clone(crypto.randomUUID());
+                    weaponCopy.damage = damage;
+                    weaponCopy.level = lvl;
+                    this.player.inventory.push(weaponCopy);
+                    console.log(`Added weapon: ${weaponCopy.name} (Level ${lvl}) with ${damage} damage`);
 
                     // Reset selection
                     select.value = '';
