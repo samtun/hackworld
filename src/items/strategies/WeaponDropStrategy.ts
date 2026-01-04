@@ -99,19 +99,21 @@ export class WeaponDropStrategy implements ItemDropStrategy {
             }
         }
         
-        // 25% chance to drop 1 level lower
-        const lowerRoll = Math.random();
-        if (lowerRoll < 0.25 && baseLevel > 1) {
+        // Single roll for drop level variation
+        const roll = Math.random();
+        
+        // 25% chance to drop 1 level lower (if possible)
+        if (roll < 0.25 && baseLevel > 1) {
             return baseLevel - 1;
         }
         
         // 25% chance to drop 1 level higher (if eligible)
-        const higherRoll = Math.random();
-        if (canDropHigher && higherRoll < 0.25) {
+        // This is checked in the range [0.25, 0.5) to give it a true 25% chance
+        if (roll >= 0.25 && roll < 0.5 && canDropHigher) {
             return baseLevel + 1;
         }
         
-        // Default: drop at base level
+        // Remaining 50% (or more if special drops not possible): drop at base level
         return baseLevel;
     }
 
