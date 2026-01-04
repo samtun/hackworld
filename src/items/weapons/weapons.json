@@ -10,14 +10,114 @@
         "level": 1
     },
     {
+        "id": "aegis_sword_beta",
+        "name": "Aegis Sword",
+        "buyPrice": 180,
+        "sellPrice": 90,
+        "weaponType": "sword",
+        "damage": 18,
+        "model": "models/sword.glb",
+        "level": 2
+    },
+    {
+        "id": "aegis_sword_gamma",
+        "name": "Aegis Sword",
+        "buyPrice": 320,
+        "sellPrice": 160,
+        "weaponType": "sword",
+        "damage": 32,
+        "model": "models/sword.glb",
+        "level": 3
+    },
+    {
+        "id": "aegis_sword_delta",
+        "name": "Aegis Sword",
+        "buyPrice": 620,
+        "sellPrice": 310,
+        "weaponType": "sword",
+        "damage": 62,
+        "model": "models/sword.glb",
+        "level": 4
+    },
+    {
+        "id": "aegis_sword_epsilon",
+        "name": "Aegis Sword",
+        "buyPrice": 980,
+        "sellPrice": 490,
+        "weaponType": "sword",
+        "damage": 98,
+        "model": "models/sword.glb",
+        "level": 5
+    },
+    {
+        "id": "aegis_sword_omega",
+        "name": "Aegis Sword",
+        "buyPrice": 1400,
+        "sellPrice": 700,
+        "weaponType": "sword",
+        "damage": 140,
+        "model": "models/sword.glb",
+        "level": 6
+    },
+    {
         "id": "rune_blade_alpha",
         "name": "Rune Blade",
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 160,
+        "sellPrice": 80,
         "weaponType": "dual_blade",
-        "damage": 7,
+        "damage": 8,
         "model": "models/double_sword.glb",
         "level": 1
+    },
+    {
+        "id": "rune_blade_beta",
+        "name": "Rune Blade",
+        "buyPrice": 280,
+        "sellPrice": 140,
+        "weaponType": "dual_blade",
+        "damage": 14,
+        "model": "models/double_sword.glb",
+        "level": 2
+    },
+    {
+        "id": "rune_blade_gamma",
+        "name": "Rune Blade",
+        "buyPrice": 480,
+        "sellPrice": 240,
+        "weaponType": "dual_blade",
+        "damage": 26,
+        "model": "models/double_sword.glb",
+        "level": 3
+    },
+    {
+        "id": "rune_blade_delta",
+        "name": "Rune Blade",
+        "buyPrice": 940,
+        "sellPrice": 470,
+        "weaponType": "dual_blade",
+        "damage": 50,
+        "model": "models/double_sword.glb",
+        "level": 4
+    },
+    {
+        "id": "rune_blade_epsilon",
+        "name": "Rune Blade",
+        "buyPrice": 1480,
+        "sellPrice": 740,
+        "weaponType": "dual_blade",
+        "damage": 78,
+        "model": "models/double_sword.glb",
+        "level": 5
+    },
+    {
+        "id": "rune_blade_omega",
+        "name": "Rune Blade",
+        "buyPrice": 2100,
+        "sellPrice": 1050,
+        "weaponType": "dual_blade",
+        "damage": 112,
+        "model": "models/double_sword.glb",
+        "level": 6
     },
     {
         "id": "fierce_lance_alpha",
@@ -25,9 +125,59 @@
         "buyPrice": 120,
         "sellPrice": 60,
         "weaponType": "lance",
-        "damage": 12,
+        "damage": 13,
         "model": "models/lance.glb",
         "level": 1
+    },
+    {
+        "id": "fierce_lance_beta",
+        "name": "Fierce Lance",
+        "buyPrice": 220,
+        "sellPrice": 110,
+        "weaponType": "lance",
+        "damage": 23,
+        "model": "models/lance.glb",
+        "level": 2
+    },
+    {
+        "id": "fierce_lance_gamma",
+        "name": "Fierce Lance",
+        "buyPrice": 380,
+        "sellPrice": 190,
+        "weaponType": "lance",
+        "damage": 42,
+        "model": "models/lance.glb",
+        "level": 3
+    },
+    {
+        "id": "fierce_lance_delta",
+        "name": "Fierce Lance",
+        "buyPrice": 740,
+        "sellPrice": 370,
+        "weaponType": "lance",
+        "damage": 81,
+        "model": "models/lance.glb",
+        "level": 4
+    },
+    {
+        "id": "fierce_lance_epsilon",
+        "name": "Fierce Lance",
+        "buyPrice": 1180,
+        "sellPrice": 590,
+        "weaponType": "lance",
+        "damage": 127,
+        "model": "models/lance.glb",
+        "level": 5
+    },
+    {
+        "id": "fierce_lance_omega",
+        "name": "Fierce Lance",
+        "buyPrice": 1680,
+        "sellPrice": 840,
+        "weaponType": "lance",
+        "damage": 182,
+        "model": "models/lance.glb",
+        "level": 6
     },
     {
         "id": "battle_hawk_alpha",
@@ -35,18 +185,58 @@
         "buyPrice": 180,
         "sellPrice": 90,
         "weaponType": "hammer",
-        "damage": 18,
+        "damage": 14,
         "model": "models/hammer.glb",
         "level": 1
     },
     {
-        "id": "aegis_sword_beta",
-        "name": "Aegis Sword",
-        "buyPrice": 200,
-        "sellPrice": 100,
-        "weaponType": "sword",
-        "damage": 18,
-        "model": "models/sword.glb",
+        "id": "battle_hawk_beta",
+        "name": "Battle Hawk",
+        "buyPrice": 320,
+        "sellPrice": 160,
+        "weaponType": "hammer",
+        "damage": 25,
+        "model": "models/hammer.glb",
         "level": 2
+    },
+    {
+        "id": "battle_hawk_gamma",
+        "name": "Battle Hawk",
+        "buyPrice": 580,
+        "sellPrice": 290,
+        "weaponType": "hammer",
+        "damage": 45,
+        "model": "models/hammer.glb",
+        "level": 3
+    },
+    {
+        "id": "battle_hawk_delta",
+        "name": "Battle Hawk",
+        "buyPrice": 1120,
+        "sellPrice": 560,
+        "weaponType": "hammer",
+        "damage": 87,
+        "model": "models/hammer.glb",
+        "level": 4
+    },
+    {
+        "id": "battle_hawk_epsilon",
+        "name": "Battle Hawk",
+        "buyPrice": 1760,
+        "sellPrice": 880,
+        "weaponType": "hammer",
+        "damage": 137,
+        "model": "models/hammer.glb",
+        "level": 5
+    },
+    {
+        "id": "battle_hawk_omega",
+        "name": "Battle Hawk",
+        "buyPrice": 2520,
+        "sellPrice": 1260,
+        "weaponType": "hammer",
+        "damage": 196,
+        "model": "models/hammer.glb",
+        "level": 6
     }
 ]
