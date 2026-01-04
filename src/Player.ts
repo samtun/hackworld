@@ -8,7 +8,7 @@ import { Item } from './items/Item';
 import { WeaponItem } from './items/weapons/WeaponItem';
 import { CoreItem } from './items/cores/CoreItem';
 import { ChipItem } from './items/chips/ChipItem';
-import { WeaponRegistry } from './items/weapons/WeaponRegistry';
+import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { BaseMesh } from './BaseMesh';
 import { StatType } from './StatType';
 
@@ -26,7 +26,7 @@ export class Player extends BaseMesh {
     public scene: THREE.Scene;
     public world: CANNON.World;
 
-    private weaponRegistry: WeaponRegistry;
+    private weaponRepository: WeaponRepository;
 
     // Track enemies hit during current attack phase to prevent multiple hits
     // For dual blade, this gets reset between phases to allow double-hitting
@@ -138,34 +138,23 @@ export class Player extends BaseMesh {
         this.world = world;
         this.id = crypto.randomUUID();
         this.input = input;
-        this.weaponRegistry = WeaponRegistry.Instance;
+        this.weaponRepository = WeaponRepository.Instance;
         this.position = position.clone() as any;
 
-        // Initial weapons from registry
-        const sword = this.weaponRegistry.getWeaponById('aegis_sword');
-        if (!sword) {
+        // Initial weapon from repository (already cloned with unique ID)
+        const swordItem = this.weaponRepository.getWeaponById('aegis_sword_alpha');
+        if (!swordItem) {
             throw new Error("The default sword could not be loaded");
         }
 
-        const swordItem = new WeaponItem(
-            crypto.randomUUID(),
-            sword.name,
-            sword.baseBuyPrice,
-            sword.baseSellPrice,
-            sword.type,
-            sword.baseDamage,
-            sword.model,
-            1
-        );
-
         // Initialize weapon visual
-        this.weapon = new Weapon(sword.model, sword.type, sword.baseDamage, scene, world);
+        this.weapon = new Weapon(swordItem.model, swordItem.weaponType, swordItem.damage, scene, world);
         this.setWeapon(swordItem);
 
         this.inventory.push(swordItem);
         // We manually equip it here to sync state without triggering full equip logic yet
         swordItem.isEquipped = true;
-        this.currentWeaponType = sword.type;
+        this.currentWeaponType = swordItem.weaponType;
 
         // Visual Mesh
         this.mesh.traverse(obj => {

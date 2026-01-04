@@ -1,5 +1,5 @@
 import { Player } from './Player';
-import { WeaponRegistry } from './items/weapons/WeaponRegistry';
+import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { CoreRegistry } from './items/cores/CoreRegistry';
 import { ChipRegistry } from './items/chips/ChipRegistry';
 import { WeaponItem } from './items/weapons/WeaponItem';
@@ -25,12 +25,12 @@ export class DebugValueEditor {
     // Store player reference for button callbacks
     private player: Player | null = null;
 
-    private weaponRegistry: WeaponRegistry;
+    private weaponRepository: WeaponRepository;
     private chipRegistry: ChipRegistry;
     private coreRegistry: CoreRegistry;
 
     constructor() {
-        this.weaponRegistry = WeaponRegistry.Instance;
+        this.weaponRepository = WeaponRepository.Instance;
         this.chipRegistry = ChipRegistry.Instance;
         this.coreRegistry = CoreRegistry.Instance;
 
@@ -190,7 +190,7 @@ export class DebugValueEditor {
     }
 
     private createWeaponSelector(parent: HTMLElement): void {
-        const weapons = this.weaponRegistry.getAllWeapons();
+        const weapons = this.weaponRepository.getAllWeapons();
 
         const selectRow = document.createElement('div');
         selectRow.style.marginBottom = '10px';
@@ -213,7 +213,7 @@ export class DebugValueEditor {
         weapons.forEach(weapon => {
             const option = document.createElement('option');
             option.value = weapon.id;
-            option.textContent = `${weapon.name} (${weapon.type})`;
+            option.textContent = `${weapon.name} (${weapon.weaponType})`;
             select.appendChild(option);
         });
 
@@ -312,13 +312,13 @@ export class DebugValueEditor {
             const damage = parseInt(damageInput.value);
 
             if (weaponId && !isNaN(damage) && this.player) {
-                const weapon = this.weaponRegistry.getWeaponById(weaponId);
+                const weapon = this.weaponRepository.getWeaponById(weaponId);
                 if (weapon) {
-                    // Generate unique ID using timestamp and random number
-                    const newId = `debug_weapon_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
                     const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
-                    const newItem = new WeaponItem(newId, weapon.name, weapon.baseBuyPrice, weapon.baseSellPrice, weapon.type, weapon.baseDamage, weapon.model, lvl);
-                    this.player.inventory.push(newItem);
+                    // Update damage and level
+                    weapon.damage = damage;
+                    weapon.level = lvl;
+                    this.player.inventory.push(weapon);
                     console.log(`Added weapon: ${weapon.name} (Level ${lvl}) with ${damage} damage`);
 
                     // Reset selection

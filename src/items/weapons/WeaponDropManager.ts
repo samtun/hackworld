@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { WeaponDrop } from './WeaponDrop';
 import { WeaponType } from './WeaponType';
-import { WeaponRegistry } from './WeaponRegistry';
+import { WeaponRepository } from './WeaponRepository';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { WeaponItem } from './WeaponItem';
@@ -38,10 +38,16 @@ export class WeaponDropManager {
         // Select random weapon type with weighted probability
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
 
-        // Get weapon definition from registry
-        const weaponDef = WeaponRegistry.Instance.getRandomWeaponOfType(weaponType);
-        if (!weaponDef) {
+        // Get weapon from repository at level 1 (already cloned with unique ID)
+        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, 1);
+        if (!weaponItem) {
             console.warn(`No weapon found for type ${weaponType}`);
+            return false;
+        }
+
+        // Guard against zero damage
+        if (weaponItem.damage <= 0) {
+            console.warn(`Weapon ${weaponItem.name} has invalid damage: ${weaponItem.damage}`);
             return false;
         }
 
@@ -52,12 +58,12 @@ export class WeaponDropManager {
 
         // Apply bonus to base values
         const bonusMultiplier = 1 + bonusValue * 20 / 100;
-        const finalDamage = Math.round(weaponDef.baseDamage * bonusMultiplier);
+        const finalDamage = Math.round(weaponItem.damage * bonusMultiplier);
 
         // Calculate factor for damage diff to avoid small bonus values to raise price without changing the damage
-        const damageFactor = finalDamage / weaponDef.baseDamage;
-        const finalBuyPrice = Math.round(weaponDef.baseBuyPrice * damageFactor);
-        const finalSellPrice = Math.round(weaponDef.baseSellPrice * damageFactor);
+        const damageFactor = finalDamage / weaponItem.damage;
+        const finalBuyPrice = Math.round(weaponItem.buyPrice * damageFactor);
+        const finalSellPrice = Math.round(weaponItem.sellPrice * damageFactor);
 
         // Create weapon drop at enemy position
         const dropPosition = enemy.body.position.clone();
@@ -67,7 +73,7 @@ export class WeaponDropManager {
             scene,
             dropPosition,
             weaponType,
-            weaponDef.name,
+            weaponItem.name,
             finalDamage,
             finalBuyPrice,
             finalSellPrice,
@@ -75,7 +81,7 @@ export class WeaponDropManager {
         );
 
         this.weaponDrops.push(weaponDrop);
-        console.log(`Enemy dropped ${weaponDef.name} (${weaponType}) with ${bonusMultiplier.toFixed(2)}% bonus (from f(random) = ${bonusValue}) - Damage: ${finalDamage}, Buy: ${finalBuyPrice}, Sell: ${finalSellPrice}`);
+        console.log(`Enemy dropped ${weaponItem.name} (${weaponType}) with ${bonusMultiplier.toFixed(2)}% bonus (from f(random) = ${bonusValue}) - Damage: ${finalDamage}, Buy: ${finalBuyPrice}, Sell: ${finalSellPrice}`);
         return true;
     }
 
@@ -135,9 +141,9 @@ export class WeaponDropManager {
         drop: WeaponDrop,
         player: Player
     ): void {
-        // Get model from registry (WeaponDrop doesn't store model path currently)
-        const weaponDef = WeaponRegistry.Instance.getWeaponByType(drop.weaponType);
-        const model = weaponDef ? weaponDef.model : 'models/sword.glb'; // Fallback
+        // Get weapon from repository to get model path
+        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(drop.weaponType, drop.level);
+        const model = weaponItem ? weaponItem.model : 'models/sword.glb'; // Fallback
 
         // Add weapon to player inventory
         const newItem = new WeaponItem(
