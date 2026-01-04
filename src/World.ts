@@ -328,7 +328,6 @@ export class World {
 
         // Clear floating numbers
         this.floatingNumberManager.clear();
-        this.expNumbers = [];
     }
 
     checkPortalInteraction(playerPosition: THREE.Vector3): string | null {
