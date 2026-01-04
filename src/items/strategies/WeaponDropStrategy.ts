@@ -72,8 +72,15 @@ export class WeaponDropStrategy implements ItemDropStrategy {
      * 
      * Logic:
      * 1. Base level is determined by player's tech stat (highest level they can equip)
-     * 2. If player has 80%+ of next level's tech requirement, 25% chance to drop 1 level higher
-     * 3. Always 25% chance to drop 1 level lower than base level
+     * 2. Single random roll determines the drop variation:
+     *    - 25% chance to drop 1 level lower (only if base level > 1)
+     *    - 25% chance to drop 1 level higher (only if player has 80%+ of next level's tech requirement)
+     *    - Remaining probability drops at base level
+     * 
+     * Probability distribution examples:
+     * - Both directions possible: 25% lower, 25% higher, 50% base
+     * - Only one direction possible: 25% special, 75% base
+     * - No special drops available: 100% base
      */
     private determineWeaponLevel(weaponType: WeaponType, player: Player): number {
         const playerTech = player.getTechForWeapon(weaponType);
@@ -108,12 +115,13 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         }
         
         // 25% chance to drop 1 level higher (if eligible)
-        // This is checked in the range [0.25, 0.5) to give it a true 25% chance
+        // Checked in range [0.25, 0.5) to give it a true 25% chance
         if (roll >= 0.25 && roll < 0.5 && canDropHigher) {
             return baseLevel + 1;
         }
         
-        // Remaining 50% (or more if special drops not possible): drop at base level
+        // Default: drop at base level
+        // This covers range [0.5, 1.0) plus any probability from unavailable special drops
         return baseLevel;
     }
 
