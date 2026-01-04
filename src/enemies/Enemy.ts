@@ -29,6 +29,9 @@ export class Enemy {
     weaponBaseRotation: THREE.Euler;
     techDropRateFactor: number = 1.0;
 
+    // Callback for spawning damage numbers
+    onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
+
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
         // Visual
         const geometry = new THREE.BoxGeometry(1, 1, 1);
@@ -178,6 +181,11 @@ export class Enemy {
         if (this.isDying || this.isDead) return;
 
         this.hp -= amount;
+
+        // Spawn damage number if callback is set
+        if (this.onDamageTaken) {
+            this.onDamageTaken(this.body.position, amount);
+        }
 
         // Flash white
         (this.mesh.material as THREE.MeshStandardMaterial).emissive.setHex(0xffffff);

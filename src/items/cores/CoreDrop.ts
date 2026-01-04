@@ -42,7 +42,7 @@ export class CoreDrop implements ItemDrop {
         canvas.height = 64;
         ctx.fillStyle = 'rgba(0,0,0,0.8)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
+
         // Measure widths for centering
         const levelChar = ItemLevelHelper.getLevelChar(this.level);
         const baseFont = 'bold 26px Arial';
@@ -51,28 +51,28 @@ export class CoreDrop implements ItemDrop {
         const levelFont = 'italic bold 26px Arial';
         ctx.font = levelFont;
         const levelWidth = ctx.measureText(levelChar).width;
-        
+
         const spacing = 4;
         const totalWidth = nameWidth + spacing + levelWidth;
         const startX = canvas.width / 2 - totalWidth / 2;
         const centerY = canvas.height / 2;
-        
+
         // Draw name
         ctx.font = baseFont;
         ctx.fillStyle = '#ffffff';
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
         ctx.fillText(this.coreName, startX, centerY);
-        
+
         // Draw level char
         ctx.font = levelFont;
         ctx.fillText(levelChar, startX + nameWidth + spacing, centerY);
-        
+
         const texture = new THREE.CanvasTexture(canvas);
         const plane = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.3), new THREE.MeshBasicMaterial({ map: texture, transparent: true }));
         plane.position.y = 0;
         plane.visible = false;
-        plane.renderOrder = 999;
+        plane.renderOrder = 990;
         this.mesh.add(plane);
 
         this.mesh.position.set(position.x, position.y, position.z);
