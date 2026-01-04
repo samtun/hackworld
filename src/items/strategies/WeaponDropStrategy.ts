@@ -10,6 +10,8 @@ import { WeaponItem } from '../weapons/WeaponItem';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
     // Weapon level tech requirements (from WeaponItem.WEAPON_LEVELS)
+    // Note: This is duplicated here as WeaponItem.WEAPON_LEVELS is private
+    // These values must stay synchronized with WeaponItem.WEAPON_LEVELS
     private static readonly WEAPON_LEVEL_TECH_REQUIREMENTS = [
         { level: 1, requiredTech: 0 },
         { level: 2, requiredTech: 120 },
@@ -18,6 +20,9 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         { level: 5, requiredTech: 1280 },
         { level: 6, requiredTech: 2500 }
     ];
+    
+    // Threshold for becoming eligible for higher level drops (80% of next level requirement)
+    private static readonly HIGHER_LEVEL_THRESHOLD = 0.8;
 
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         if (Math.random() > enemy.itemDropChance) return null;
@@ -100,7 +105,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         let canDropHigher = false;
         if (nextLevelIndex < WeaponDropStrategy.WEAPON_LEVEL_TECH_REQUIREMENTS.length) {
             const nextLevelReq = WeaponDropStrategy.WEAPON_LEVEL_TECH_REQUIREMENTS[nextLevelIndex].requiredTech;
-            const threshold = nextLevelReq * 0.8;
+            const threshold = nextLevelReq * WeaponDropStrategy.HIGHER_LEVEL_THRESHOLD;
             if (playerTech >= threshold) {
                 canDropHigher = true;
             }
