@@ -38,8 +38,8 @@ export class WeaponDropManager {
         // Select random weapon type with weighted probability
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
 
-        // Get weapon from repository (already cloned with unique ID)
-        const weaponItem = WeaponRepository.Instance.getRandomWeaponOfType(weaponType);
+        // Get weapon from repository at level 1 (already cloned with unique ID)
+        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, 1);
         if (!weaponItem) {
             console.warn(`No weapon found for type ${weaponType}`);
             return false;
@@ -142,7 +142,7 @@ export class WeaponDropManager {
         player: Player
     ): void {
         // Get weapon from repository to get model path
-        const weaponItem = WeaponRepository.Instance.getWeaponByType(drop.weaponType);
+        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(drop.weaponType, drop.level);
         const model = weaponItem ? weaponItem.model : 'models/sword.glb'; // Fallback
 
         // Add weapon to player inventory

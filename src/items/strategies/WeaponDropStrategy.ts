@@ -13,7 +13,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         if (Math.random() > enemy.itemDropChance) return null;
 
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
-        const weaponItem = WeaponRepository.Instance.getRandomWeaponOfType(weaponType);
+        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, 1);
         if (!weaponItem) return null;
 
         // Guard against zero damage
@@ -57,7 +57,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
     }
 
     pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: WeaponDrop, player: Player): void {
-        const weaponItem = WeaponRepository.Instance.getWeaponByType(drop.weaponType);
+        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(drop.weaponType, drop.level);
         const model = weaponItem ? weaponItem.model : 'models/sword.glb';
 
         const newItem = new WeaponItem(

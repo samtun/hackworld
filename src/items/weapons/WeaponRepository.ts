@@ -115,8 +115,7 @@ export class WeaponRepository {
     }
 
     /**
-     * Get a weapon by type and level
-     * Returns the first weapon of that type at that level
+     * Get a random weapon by type and level
      * Returns a cloned instance with a new UUID
      */
     getWeaponByTypeAndLevel(type: WeaponType, level: number): WeaponItem | undefined {
@@ -126,7 +125,8 @@ export class WeaponRepository {
         const weapons = levelMap.get(type);
         if (!weapons || weapons.length === 0) return undefined;
 
-        return weapons[0].clone(crypto.randomUUID());
+        const randomWeapon = weapons[Math.floor(Math.random() * weapons.length)];
+        return randomWeapon.clone(crypto.randomUUID());
     }
 
     /**
@@ -149,27 +149,7 @@ export class WeaponRepository {
     }
 
     /**
-     * Get a random weapon of a specific type (from any level)
-     * Returns a cloned instance with a new UUID
-     */
-    getRandomWeaponOfType(type: WeaponType): WeaponItem | undefined {
-        const allWeaponsOfType: WeaponItem[] = [];
-
-        for (const levelMap of this.weaponsByLevel.values()) {
-            const weapons = levelMap.get(type);
-            if (weapons) {
-                allWeaponsOfType.push(...weapons);
-            }
-        }
-
-        if (allWeaponsOfType.length === 0) return undefined;
-
-        const randomWeapon = allWeaponsOfType[Math.floor(Math.random() * allWeaponsOfType.length)];
-        return randomWeapon.clone(crypto.randomUUID());
-    }
-
-    /**
-     * Get weapon by ID (for backward compatibility during transition)
+     * Get weapon by ID
      * Returns a cloned instance with a new UUID
      */
     getWeaponById(id: string): WeaponItem | undefined {
@@ -182,15 +162,6 @@ export class WeaponRepository {
             }
         }
         return undefined;
-    }
-
-    /**
-     * Get weapon by type (returns first weapon of that type from level 1)
-     * For backward compatibility
-     * Returns a cloned instance with a new UUID
-     */
-    getWeaponByType(type: WeaponType): WeaponItem | undefined {
-        return this.getWeaponByTypeAndLevel(type, 1);
     }
 
     /**
