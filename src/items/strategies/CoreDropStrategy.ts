@@ -25,7 +25,7 @@ export class CoreDropStrategy implements ItemDropStrategy {
         pos.y = 0.5;
 
         const drop = new CoreDrop(scene, pos, coreItem.id, coreItem.name, coreItem.buyPrice, coreItem.sellPrice, level);
-        console.log(`Enemy dropped core ${coreItem.name} (level ${level})`);
+        console.log(`Enemy dropped ${drop}`);
         return drop;
     }
 
@@ -37,15 +37,8 @@ export class CoreDropStrategy implements ItemDropStrategy {
             return;
         }
 
-        // Get the properly leveled core from the repository
-        const leveledCore = CoreRepository.Instance.getCoreByNameAndLevel(coreItem.name, drop.level);
-        if (!leveledCore) {
-            console.warn(`Core not found in repository for name ${coreItem.name} and level ${drop.level}`);
-            return;
-        }
-
-        player.inventory.push(leveledCore);
-        console.log(`Picked up core ${leveledCore.name} (level ${drop.level})`);
+        player.inventory.push(coreItem);
+        console.log(`Picked up core ${coreItem})`);
     }
 
     getDropProbability(): number {

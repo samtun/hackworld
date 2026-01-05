@@ -37,15 +37,8 @@ export class ChipDropStrategy implements ItemDropStrategy {
             return;
         }
 
-        // Get the properly leveled chip from the repository
-        const leveledChip = ChipRepository.Instance.getChipByTypeAndLevel(chipItem.chipType, drop.level);
-        if (!leveledChip) {
-            console.warn(`Chip not found in repository for type ${chipItem.chipType} and level ${drop.level}`);
-            return;
-        }
-
-        player.inventory.push(leveledChip);
-        console.log(`Picked up chip ${leveledChip.name} (level ${drop.level})`);
+        player.inventory.push(chipItem);
+        console.log(`Picked up chip ${chipItem}`);
     }
 
     getDropProbability(): number {

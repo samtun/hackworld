@@ -4,8 +4,11 @@ import * as CANNON from 'cannon-es';
 export abstract class ItemDrop {
     abstract mesh: THREE.Object3D;
     abstract body?: CANNON.Body;
+
     abstract update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void;
     abstract cleanup(scene: THREE.Scene, world: CANNON.World): void;
+
+    protected readonly PICKUP_DISTANCE: number = 1.5;
 
     /**
      * Creates a text label using canvas with the correct Share Tech font

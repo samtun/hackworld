@@ -17,7 +17,6 @@ export class CoreDrop extends ItemDrop {
     private baseHeight: number;
     private readonly FLOAT_SPEED: number = 1.0;
     private readonly FLOAT_AMPLITUDE: number = 0.14;
-    private readonly PICKUP_DISTANCE: number = 1.5;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, coreId: string, coreName: string, buyPrice: number, sellPrice: number, level: number) {
         super();
