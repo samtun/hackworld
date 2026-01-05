@@ -10,8 +10,6 @@ import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class CoreDropStrategy implements ItemDropStrategy {
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
-        if (Math.random() > enemy.itemDropChance) return null;
-
         const def = CoreRegistry.Instance.getRandomCore();
         if (!def) return null;
 

@@ -6,11 +6,7 @@ import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 
 export class BoosterPackDropStrategy implements ItemDropStrategy {
-    private readonly DROP_CHANCE = 0.03; // 3% chance
-
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, _player: Player): import("../ItemDrop").ItemDrop | null {
-        if (Math.random() > this.DROP_CHANCE) return null;
-
         const dropPosition = enemy.body.position.clone();
         dropPosition.y = 0.5;
 

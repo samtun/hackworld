@@ -515,6 +515,20 @@ export class Game {
                         };
                     }
                 }
+
+                if (!nearbyInteractive) {
+                    const xDataDropNearby = this.world.checkXDataDropInteraction(this.player.position);
+                    if (xDataDropNearby) {
+                        nearbyInteractive = {
+                            type: InteractiveEntityType.XDATA_DROP,
+                            data: xDataDropNearby,
+                            hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
+                            action: () => {
+                                this.world.pickupXDataDrop(xDataDropNearby, this.player);
+                            }
+                        };
+                    }
+                }
             }
 
             // Check portal
