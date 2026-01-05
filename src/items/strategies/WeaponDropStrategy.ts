@@ -9,18 +9,6 @@ import { Player } from '../../Player';
 import { WeaponItem } from '../weapons/WeaponItem';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
-    // Weapon level tech requirements (from WeaponItem.WEAPON_LEVELS)
-    // Note: This is duplicated here as WeaponItem.WEAPON_LEVELS is private
-    // These values must stay synchronized with WeaponItem.WEAPON_LEVELS
-    private static readonly WEAPON_LEVEL_TECH_REQUIREMENTS = [
-        { level: 1, requiredTech: 0 },
-        { level: 2, requiredTech: 120 },
-        { level: 3, requiredTech: 460 },
-        { level: 4, requiredTech: 720 },
-        { level: 5, requiredTech: 1280 },
-        { level: 6, requiredTech: 2500 }
-    ];
-    
     // Threshold for becoming eligible for higher level drops (80% of next level requirement)
     private static readonly HIGHER_LEVEL_THRESHOLD = 0.8;
 
@@ -92,9 +80,9 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         
         // Determine base level (highest level player can equip)
         let baseLevel = 1;
-        for (const levelDef of WeaponDropStrategy.WEAPON_LEVEL_TECH_REQUIREMENTS) {
-            if (playerTech >= levelDef.requiredTech) {
-                baseLevel = levelDef.level;
+        for (let i = 0; i < WeaponItem.WEAPON_LEVELS.length; i++) {
+            if (playerTech >= WeaponItem.WEAPON_LEVELS[i].requiredTech) {
+                baseLevel = i + 1; // Level is 1-indexed
             } else {
                 break;
             }
@@ -103,8 +91,8 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         // Check if player is at 80% or more of next level requirement
         const nextLevelIndex = baseLevel; // Index in array (0-based) for next level
         let canDropHigher = false;
-        if (nextLevelIndex < WeaponDropStrategy.WEAPON_LEVEL_TECH_REQUIREMENTS.length) {
-            const nextLevelReq = WeaponDropStrategy.WEAPON_LEVEL_TECH_REQUIREMENTS[nextLevelIndex].requiredTech;
+        if (nextLevelIndex < WeaponItem.WEAPON_LEVELS.length) {
+            const nextLevelReq = WeaponItem.WEAPON_LEVELS[nextLevelIndex].requiredTech;
             const threshold = nextLevelReq * WeaponDropStrategy.HIGHER_LEVEL_THRESHOLD;
             if (playerTech >= threshold) {
                 canDropHigher = true;
