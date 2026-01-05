@@ -12,7 +12,7 @@ export interface FloatingIndicatorConfig {
     fontSize?: number;
     riseTime?: number;
     floatSpeed?: number;
-    priority?: boolean; // A number with priority is rendered above numbers without priority
+    priority?: boolean; // An indicator with priority is rendered above indicators without priority
 }
 
 /**
