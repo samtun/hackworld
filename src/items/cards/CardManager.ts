@@ -42,6 +42,7 @@ export class CardManager {
     // UI Elements
     private mainContent!: HTMLDivElement;
     private packCountDisplay!: HTMLDivElement;
+    private controlsDiv!: HTMLDivElement;
     
     // Navigation state
     private viewMode: ViewMode = ViewMode.MENU;
@@ -115,9 +116,9 @@ export class CardManager {
         windowDiv.appendChild(this.mainContent);
         
         // Controls hint
-        const controlsDiv = document.createElement('div');
-        controlsDiv.innerHTML = '<span class="key-icon">↑↓</span> / <span class="btn-icon xbox-dpad">D-Pad</span> Navigate | <span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Select | <span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Back';
-        Object.assign(controlsDiv.style, {
+        this.controlsDiv = document.createElement('div');
+        this.controlsDiv.innerHTML = '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back';
+        Object.assign(this.controlsDiv.style, {
             textAlign: 'center',
             fontSize: '14px',
             color: COLORS.SEPARATOR,
@@ -126,7 +127,7 @@ export class CardManager {
             borderTop: `2px solid ${COLORS.SEPARATOR}`,
             marginTop: '10px'
         });
-        windowDiv.appendChild(controlsDiv);
+        windowDiv.appendChild(this.controlsDiv);
     }
     
     private createOverlay(): HTMLDivElement {
@@ -517,6 +518,15 @@ export class CardManager {
     
     private render(player: Player) {
         this.packCountDisplay.innerText = `Booster Packs: ${player.boosterPacks}`;
+        
+        // Update controls hint based on input method
+        if (this.currentInputManager) {
+            const hintConfig = {
+                keyboard: '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back',
+                controller: '<span class="btn-icon xbox-dpad">D-Pad</span> Navigate | <span class="btn-icon xbox-a">A</span> Select | <span class="btn-icon xbox-b">B</span> Back'
+            };
+            this.controlsDiv.innerHTML = getHint(hintConfig, this.currentInputManager);
+        }
         
         switch (this.viewMode) {
             case ViewMode.MENU:
