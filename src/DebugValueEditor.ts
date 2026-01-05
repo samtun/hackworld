@@ -1,8 +1,10 @@
 import { Player } from './Player';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
-import { CoreRepository } from './items/cores/CoreRepository';
-import { ChipRepository } from './items/chips/ChipRepository';
+import { CoreRegistry } from './items/cores/CoreRegistry';
+import { ChipRegistry } from './items/chips/ChipRegistry';
 import { WeaponType } from './items/weapons/WeaponType';
+import { CoreItem } from './items/cores/CoreItem';
+import { ChipItem } from './items/chips/ChipItem';
 import { ItemLevelHelper } from './items/ItemLevelHelper';
 import { max } from 'three/examples/jsm/nodes/Nodes.js';
 
@@ -24,13 +26,13 @@ export class DebugValueEditor {
     private player: Player | null = null;
 
     private weaponRepository: WeaponRepository;
-    private chipRepository: ChipRepository;
-    private coreRepository: CoreRepository;
+    private chipRegistry: ChipRegistry;
+    private coreRegistry: CoreRegistry;
 
     constructor() {
         this.weaponRepository = WeaponRepository.Instance;
-        this.chipRepository = ChipRepository.Instance;
-        this.coreRepository = CoreRepository.Instance;
+        this.chipRegistry = ChipRegistry.Instance;
+        this.coreRegistry = CoreRegistry.Instance;
 
         this.container = this.createContainer();
         this.toggleButton = this.createToggleButton();
@@ -461,22 +463,11 @@ export class DebugValueEditor {
     }
 
     private createCoreSelector(parent: HTMLElement): void {
-        // Get all unique core names from level 1 items to show in selector
-        const cores: { name: string; stats: any }[] = [];
-        const seenNames = new Set<string>();
-        
-        // Get level 1 cores to show base info in selector
-        const allCores = this.coreRepository.getAllCores();
-        for (const core of allCores) {
-            if (core.level === 1 && !seenNames.has(core.name)) {
-                seenNames.add(core.name);
-                cores.push({ name: core.name, stats: core.stats });
-            }
-        }
+        const cores = this.coreRegistry.getAllCores();
 
         const coreOptions = cores.map(core => {
             const statsStr = Object.entries(core.stats)
-                .map(([key, val]) => `${key}: ${(val as number) > 0 ? '+' : ''}${val}`)
+                .map(([key, val]) => `${key}: ${val > 0 ? '+' : ''}${val}`)
                 .join(', ');
             return {
                 value: core.id,
@@ -520,11 +511,14 @@ export class DebugValueEditor {
         const addButton = this.createButton('Add Core', () => {
             const coreId = select.value;
 
-            if (coreName && this.player) {
-                const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
-                const core = this.coreRepository.getCoreByNameAndLevel(coreName, lvl);
+            if (coreId && this.player) {
+                const core = this.coreRegistry.getCoreById(coreId);
                 if (core) {
-                    this.player.inventory.push(core);
+                    // Generate unique ID using timestamp and random number
+                    const newId = `debug_core_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+                    const lvl = parseInt(levelSelect.value) || 1;
+                    const newCore = new CoreItem(newId, core.name, core.buyPrice, core.sellPrice, core.stats, lvl);
+                    this.player.inventory.push(newCore);
                     console.log(`Added core: ${core.name} (Level ${lvl})`);
 
                     // Reset selection
@@ -538,26 +532,15 @@ export class DebugValueEditor {
     }
 
     private createChipSelector(parent: HTMLElement): void {
-        // Get all unique chip types from level 1 items to show in selector
-        const chips: { name: string; type: string; stats: any }[] = [];
-        const seenNames = new Set<string>();
-        
-        // Get level 1 chips to show base info in selector
-        const allChips = this.chipRepository.getAllChips();
-        for (const chip of allChips) {
-            if (chip.level === 1 && !seenNames.has(chip.name)) {
-                seenNames.add(chip.name);
-                chips.push({ name: chip.name, type: chip.chipType, stats: chip.stats });
-            }
-        }
+        const chips = this.chipRegistry.getAllChips();
 
         const chipOptions = chips.map(chip => {
             const effectsStr = Object.entries(chip.stats)
                 .map(([key, val]) => {
                     if (key === 'weaponRangeMultiplier') {
-                        return `Weapon Range: +${(((val as number) - 1) * 100).toFixed(0)}%`;
+                        return `Weapon Range: +${((val - 1) * 100).toFixed(0)}%`;
                     } else if (key === 'walkSpeedMultiplier') {
-                        return `Walk Speed: +${(((val as number) - 1) * 100).toFixed(0)}%`;
+                        return `Walk Speed: +${((val - 1) * 100).toFixed(0)}%`;
                     }
                     return '';
                 })
@@ -605,11 +588,14 @@ export class DebugValueEditor {
         const addButton = this.createButton('Add Chip', () => {
             const chipId = select.value;
 
-            if (chipType && this.player) {
-                const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
-                const chip = this.chipRepository.getChipByTypeAndLevel(chipType as any, lvl);
+            if (chipId && this.player) {
+                const chip = this.chipRegistry.getChipById(chipId);
                 if (chip) {
-                    this.player.inventory.push(chip);
+                    // Generate unique ID using timestamp and random number
+                    const newId = `debug_chip_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+                    const lvl = parseInt(levelSelect.value) || 1;
+                    const newChip = new ChipItem(newId, chip.name, chip.buyPrice, chip.sellPrice, chip.type, chip.stats, lvl);
+                    this.player.inventory.push(newChip);
                     console.log(`Added chip: ${chip.name} (Level ${lvl})`);
 
                     // Reset selection
