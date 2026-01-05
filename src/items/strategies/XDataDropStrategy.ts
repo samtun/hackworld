@@ -7,6 +7,7 @@ import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 
 export class XDataDropStrategy implements ItemDropStrategy {
+    readonly key = 'xData';
     // X-Data drop chance calculation constants
     // These values determine the player level scaling factor for X-Data drops
     private static readonly XDATA_LEVEL_DIVISOR = 428.7453673;

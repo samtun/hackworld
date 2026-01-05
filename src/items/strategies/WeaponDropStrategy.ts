@@ -9,6 +9,7 @@ import { Player } from '../../Player';
 import { WeaponItem } from '../weapons/WeaponItem';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
+    readonly key = 'weapon';
     // Threshold for becoming eligible for higher level drops (80% of next level requirement)
     private static readonly HIGHER_LEVEL_THRESHOLD = 0.8;
     private readonly DROP_PROBABILITY = 0.43; // 43% of total drops

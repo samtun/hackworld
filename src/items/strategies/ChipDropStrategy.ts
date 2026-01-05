@@ -9,6 +9,7 @@ import { Player } from '../../Player';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class ChipDropStrategy implements ItemDropStrategy {
+    readonly key = 'chip';
     private readonly DROP_PROBABILITY = 0.27; // 27% of total drops
 
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {

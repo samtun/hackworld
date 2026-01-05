@@ -6,6 +6,7 @@ import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 
 export class BoosterPackDropStrategy implements ItemDropStrategy {
+    readonly key = 'boosterPack';
     private readonly DROP_PROBABILITY = 0.03; // 3% of total drops
 
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, _player: Player): import("../ItemDrop").ItemDrop | null {
