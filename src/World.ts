@@ -193,10 +193,10 @@ export class World {
                 // Try to drop an item (weapon, chip, core, or booster pack)
                 // The ItemDropManager will select one strategy based on probabilities
                 // and each strategy will check enemy.itemDropChance internally
-                this.itemDropManager.tryDropItem(this.scene, this.physicsWorld, enemy, player);
-
-                // Try to drop X-Data separately (independent of item drops)
-                this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, enemy, player);
+                if (!(this.itemDropManager.tryDropItem(this.scene, this.physicsWorld, enemy, player))) {
+                    // Try to drop X-Data separately (independent of item drops) if no item was dropped
+                    this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, enemy, player);
+                }
 
                 this.scene.remove(enemy.mesh);
                 this.physicsWorld.removeBody(enemy.body);
