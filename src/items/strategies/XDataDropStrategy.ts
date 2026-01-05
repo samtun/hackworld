@@ -1,12 +1,13 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { ItemDropStrategy } from '../ItemDropManager';
+import { ItemDrop } from '../ItemDrop';
 import { XDataDrop } from '../xdata/XDataDrop';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 
 export class XDataDropStrategy implements ItemDropStrategy {
-    tryDrop(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): ItemDrop | null {
         // Low level players should not get any X-Data yet
         if (player.level < 10) return null;
 

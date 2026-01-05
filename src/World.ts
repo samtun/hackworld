@@ -20,6 +20,11 @@ import { HealingSystem } from './systems/HealingSystem';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 
 export class World {
+    // X-Data drop chance calculation constants
+    // These values determine the player level scaling factor for X-Data drops
+    private static readonly XDATA_LEVEL_DIVISOR = 428.7453673;
+    private static readonly XDATA_LEVEL_MULTIPLIER = 3.285563999;
+
     scene: THREE.Scene;
     physicsWorld: CANNON.World;
     physicsMaterial: CANNON.Material;
@@ -219,7 +224,7 @@ export class World {
                 // Calculate drop chance with player level factor
                 const levelDropChance = player.level >= 100
                     ? 1
-                    : player.level / (428.7453673 - 3.285563999 * player.level);
+                    : player.level / (World.XDATA_LEVEL_DIVISOR - World.XDATA_LEVEL_MULTIPLIER * player.level);
                 const xDataDropChance = levelDropChance * enemy.xDataDropChance;
                 if (Math.random() <= xDataDropChance) {
                     this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, enemy, player);
