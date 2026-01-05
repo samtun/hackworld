@@ -1,3 +1,17 @@
+# [1.18.0](https://github.com/samtun/hackworld/compare/v1.17.0...v1.18.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* correct comment for spawnEXP method ([175ab31](https://github.com/samtun/hackworld/commit/175ab3196233cd28e907260ae19ee04f40e64ab0))
+* update comment to refer to indicators instead of numbers ([50bd58c](https://github.com/samtun/hackworld/commit/50bd58c640abe3a7f29d8d5ed8e1124bffffa9ca))
+
+
+### Features
+
+* reduce tech indicator size and time ([1c12f87](https://github.com/samtun/hackworld/commit/1c12f87071f742a46faa10a6d34af57c014edb4b))
+* rename FloatingNumber to FloatingIndicator and add tech point indicator ([371cf14](https://github.com/samtun/hackworld/commit/371cf1459efde0909d749d6926113cb4c7c3b715))
+
 # [1.17.0](https://github.com/samtun/hackworld/compare/v1.16.0...v1.17.0) (2026-01-05)
 
 
