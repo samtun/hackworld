@@ -6,6 +6,7 @@ import { WeaponType } from './items/weapons/WeaponType';
 import { CoreItem } from './items/cores/CoreItem';
 import { ChipItem } from './items/chips/ChipItem';
 import { ItemLevelHelper } from './items/ItemLevelHelper';
+import { max } from 'three/examples/jsm/nodes/Nodes.js';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -112,8 +113,9 @@ export class DebugValueEditor {
 
         // Row 1: Level (full width)
         const levelRow = document.createElement('div');
-        levelRow.style.display = 'flex';
-        levelRow.style.gap = '8px';
+        levelRow.style.display = 'grid';
+        levelRow.style.gridTemplateColumns = '1fr 1fr';
+        levelRow.style.gap = '10px';
         this.createStatInputInRow(levelRow, 'level', 'Level:', 'number');
         statsContainer.appendChild(levelRow);
 
@@ -142,8 +144,9 @@ export class DebugValueEditor {
 
         // Row 5: Defense (left only)
         const defenseRow = document.createElement('div');
-        defenseRow.style.display = 'flex';
-        defenseRow.style.gap = '8px';
+        defenseRow.style.display = 'grid';
+        defenseRow.style.gridTemplateColumns = '1fr 1fr';
+        defenseRow.style.gap = '10px';
         this.createStatInputInRow(defenseRow, 'defense', 'Defense:', 'number');
         statsContainer.appendChild(defenseRow);
 
@@ -243,6 +246,8 @@ export class DebugValueEditor {
         input.style.color = '#fff';
         input.style.fontSize = '14px';
         input.style.fontFamily = 'inherit';
+        input.style.width = '100%';
+        input.style.boxSizing = 'border-box';
 
         this.inputElements.set(key, input);
 
@@ -273,6 +278,8 @@ export class DebugValueEditor {
         input.style.color = '#fff';
         input.style.fontSize = '14px';
         input.style.fontFamily = 'inherit';
+        input.style.width = '100%';
+        input.style.boxSizing = 'border-box';
 
         this.inputElements.set(key, input);
 
@@ -286,6 +293,7 @@ export class DebugValueEditor {
         container.style.display = 'flex';
         container.style.alignItems = 'center';
         container.style.gap = '8px';
+        container.style.width = '100%';
 
         const labelEl = document.createElement('label');
         labelEl.textContent = label;
@@ -304,6 +312,8 @@ export class DebugValueEditor {
         currentInput.style.color = '#fff';
         currentInput.style.fontSize = '14px';
         currentInput.style.fontFamily = 'inherit';
+        currentInput.style.width = '100%';
+        currentInput.style.boxSizing = 'border-box';
 
         // Separator
         const separator = document.createElement('span');
@@ -323,6 +333,8 @@ export class DebugValueEditor {
         maxInput.style.color = '#fff';
         maxInput.style.fontSize = '14px';
         maxInput.style.fontFamily = 'inherit';
+        maxInput.style.width = '100%';
+        maxInput.style.boxSizing = 'border-box';
 
         this.inputElements.set(currentKey, currentInput);
         this.inputElements.set(maxKey, maxInput);
@@ -403,6 +415,7 @@ export class DebugValueEditor {
         input.style.color = '#fff';
         input.style.fontSize = '14px';
         input.style.fontFamily = 'inherit';
+        input.style.boxSizing = 'border-box';
 
         row.appendChild(labelEl);
         row.appendChild(input);
