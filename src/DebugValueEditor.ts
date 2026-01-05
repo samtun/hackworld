@@ -103,27 +103,60 @@ export class DebugValueEditor {
         title.style.paddingBottom = '10px';
         panel.appendChild(title);
 
-        // Stats Section with two-column layout
+        // Stats Section - using regular grid without auto-flow for precise placement
         const statsSection = this.createSection('Player Stats');
-        const statsGrid = this.createTwoColumnGrid(6);
+        const statsContainer = document.createElement('div');
+        statsContainer.style.display = 'flex';
+        statsContainer.style.flexDirection = 'column';
+        statsContainer.style.gap = '8px';
 
-        // Left column
-        this.createStatInputInGrid(statsGrid, 'left', 'level', 'Level:', 'number');
-        this.createSplitStatInputInGrid(statsGrid, 'left', 'hp', 'maxHp', 'HP:', 'number');
-        this.createSplitStatInputInGrid(statsGrid, 'left', 'tp', 'maxTp', 'TP:', 'number');
-        this.createStatInputInGrid(statsGrid, 'left', 'strength', 'Strength:', 'number');
-        this.createStatInputInGrid(statsGrid, 'left', 'defense', 'Defense:', 'number');
-        this.createStatInputInGrid(statsGrid, 'left', 'xData', 'X-Data:', 'number');
+        // Row 1: Level (full width)
+        const levelRow = document.createElement('div');
+        levelRow.style.display = 'flex';
+        levelRow.style.gap = '8px';
+        this.createStatInputInRow(levelRow, 'level', 'Level:', 'number');
+        statsContainer.appendChild(levelRow);
 
-        // Right column
-        this.createEmptyRowInGrid(statsGrid); // Empty first row (aligns with Level)
-        this.createEmptyRowInGrid(statsGrid); // Empty (aligns with HP)
-        this.createEmptyRowInGrid(statsGrid); // Empty (aligns with TP)
-        this.createStatInputInGrid(statsGrid, 'right', 'speed', 'Speed:', 'number');
-        this.createStatInputInGrid(statsGrid, 'right', 'money', 'Money:', 'number');
-        this.createEmptyRowInGrid(statsGrid); // Empty (aligns with X-Data)
+        // Row 2: HP split (full width)
+        const hpRow = document.createElement('div');
+        hpRow.style.display = 'flex';
+        hpRow.style.gap = '8px';
+        this.createSplitStatInputInRow(hpRow, 'hp', 'maxHp', 'HP:', 'number');
+        statsContainer.appendChild(hpRow);
 
-        statsSection.appendChild(statsGrid);
+        // Row 3: TP split (full width)
+        const tpRow = document.createElement('div');
+        tpRow.style.display = 'flex';
+        tpRow.style.gap = '8px';
+        this.createSplitStatInputInRow(tpRow, 'tp', 'maxTp', 'TP:', 'number');
+        statsContainer.appendChild(tpRow);
+
+        // Row 4: Strength + Speed (two columns)
+        const strengthSpeedRow = document.createElement('div');
+        strengthSpeedRow.style.display = 'grid';
+        strengthSpeedRow.style.gridTemplateColumns = '1fr 1fr';
+        strengthSpeedRow.style.gap = '10px';
+        this.createStatInputInRow(strengthSpeedRow, 'strength', 'Strength:', 'number');
+        this.createStatInputInRow(strengthSpeedRow, 'speed', 'Speed:', 'number');
+        statsContainer.appendChild(strengthSpeedRow);
+
+        // Row 5: Defense (left only)
+        const defenseRow = document.createElement('div');
+        defenseRow.style.display = 'flex';
+        defenseRow.style.gap = '8px';
+        this.createStatInputInRow(defenseRow, 'defense', 'Defense:', 'number');
+        statsContainer.appendChild(defenseRow);
+
+        // Row 6: X-Data + Money (two columns)
+        const xDataMoneyRow = document.createElement('div');
+        xDataMoneyRow.style.display = 'grid';
+        xDataMoneyRow.style.gridTemplateColumns = '1fr 1fr';
+        xDataMoneyRow.style.gap = '10px';
+        this.createStatInputInRow(xDataMoneyRow, 'xData', 'X-Data:', 'number');
+        this.createStatInputInRow(xDataMoneyRow, 'money', 'Money:', 'number');
+        statsContainer.appendChild(xDataMoneyRow);
+
+        statsSection.appendChild(statsContainer);
         panel.appendChild(statsSection);
 
         // Weapon Tech Section with two-column layout
@@ -188,12 +221,6 @@ export class DebugValueEditor {
         return grid;
     }
 
-    private createEmptyRowInGrid(grid: HTMLDivElement): void {
-        const emptyDiv = document.createElement('div');
-        emptyDiv.style.height = '30px';
-        grid.appendChild(emptyDiv);
-    }
-
     private createStatInputInGrid(grid: HTMLDivElement, _column: 'left' | 'right', key: string, label: string, type: string): void {
         const row = document.createElement('div');
         row.style.display = 'flex';
@@ -224,11 +251,41 @@ export class DebugValueEditor {
         grid.appendChild(row);
     }
 
-    private createSplitStatInputInGrid(grid: HTMLDivElement, _column: 'left' | 'right', currentKey: string, maxKey: string, label: string, type: string): void {
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.alignItems = 'center';
-        row.style.gap = '8px';
+    private createStatInputInRow(parent: HTMLElement, key: string, label: string, type: string): void {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.gap = '8px';
+
+        const labelEl = document.createElement('label');
+        labelEl.textContent = label;
+        labelEl.style.fontSize = '14px';
+        labelEl.style.minWidth = '80px';
+        labelEl.style.flex = '0 0 auto';
+
+        const input = document.createElement('input');
+        input.type = type;
+        input.style.flex = '1';
+        input.style.padding = '5px';
+        input.style.backgroundColor = '#222';
+        input.style.border = '1px solid #666';
+        input.style.borderRadius = '3px';
+        input.style.color = '#fff';
+        input.style.fontSize = '14px';
+        input.style.fontFamily = 'inherit';
+
+        this.inputElements.set(key, input);
+
+        container.appendChild(labelEl);
+        container.appendChild(input);
+        parent.appendChild(container);
+    }
+
+    private createSplitStatInputInRow(parent: HTMLElement, currentKey: string, maxKey: string, label: string, type: string): void {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.gap = '8px';
 
         const labelEl = document.createElement('label');
         labelEl.textContent = label;
@@ -270,11 +327,11 @@ export class DebugValueEditor {
         this.inputElements.set(currentKey, currentInput);
         this.inputElements.set(maxKey, maxInput);
 
-        row.appendChild(labelEl);
-        row.appendChild(currentInput);
-        row.appendChild(separator);
-        row.appendChild(maxInput);
-        grid.appendChild(row);
+        container.appendChild(labelEl);
+        container.appendChild(currentInput);
+        container.appendChild(separator);
+        container.appendChild(maxInput);
+        parent.appendChild(container);
     }
 
     private createButton(text: string, onClick: () => void): HTMLButtonElement {
