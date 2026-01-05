@@ -111,6 +111,12 @@ export class Player extends BaseMesh {
     agilityUpgrades: number = 0;
     luckUpgrades: number = 0;
 
+    // Stat points allocated from leveling up (separate from X-Data upgrades)
+    strengthPoints: number = 0;
+    defensePoints: number = 0;
+    agilityPoints: number = 0;
+    luckPoints: number = 0;
+
     // Charged Attack
     private isChargingAttack: boolean = false;
     private chargeTimer: number = 0;
@@ -250,11 +256,11 @@ export class Player extends BaseMesh {
         const levelHpBonus = this.getLevelHpBonus();
         const levelTpBonus = this.getLevelTpBonus();
 
-        // Start with base stats (including upgrades) and apply level multiplier
-        this.strength = Math.min(Math.floor((this.baseStrength + this.strengthUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
-        this.defense = Math.min(Math.floor((this.baseDefense + this.defenseUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
-        this.agility = Math.min(Math.floor((this.baseAgility + this.agilityUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
-        this.luck = Math.min(Math.floor((this.baseLuck + this.luckUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
+        // Start with base stats + X-Data upgrades + stat points, then apply level multiplier
+        this.strength = Math.min(Math.floor((this.baseStrength + this.strengthUpgrades + this.strengthPoints) * levelStatBonus), Player.MAX_STAT_VALUE);
+        this.defense = Math.min(Math.floor((this.baseDefense + this.defenseUpgrades + this.defensePoints) * levelStatBonus), Player.MAX_STAT_VALUE);
+        this.agility = Math.min(Math.floor((this.baseAgility + this.agilityUpgrades + this.agilityPoints) * levelStatBonus), Player.MAX_STAT_VALUE);
+        this.luck = Math.min(Math.floor((this.baseLuck + this.luckUpgrades + this.luckPoints) * levelStatBonus), Player.MAX_STAT_VALUE);
         this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, Player.MAX_STAT_VALUE);
         this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, Player.MAX_STAT_VALUE);
 
@@ -1081,22 +1087,22 @@ export class Player extends BaseMesh {
 
     /**
      * Get base stat value without equipment modifiers (for UI display)
-     * Returns base value + upgrades only, capped at 9999
+     * Returns base value + X-Data upgrades + stat points, capped at 9999
      */
     getBaseStatValue(statType: StatType): number {
         switch (statType) {
             case StatType.STRENGTH:
-                return Math.min(this.baseStrength + this.strengthUpgrades, Player.MAX_STAT_VALUE);
+                return Math.min(this.baseStrength + this.strengthUpgrades + this.strengthPoints, Player.MAX_STAT_VALUE);
             case StatType.DEFENSE:
-                return Math.min(this.baseDefense + this.defenseUpgrades, Player.MAX_STAT_VALUE);
+                return Math.min(this.baseDefense + this.defenseUpgrades + this.defensePoints, Player.MAX_STAT_VALUE);
             case StatType.HP:
                 return Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
             case StatType.TP:
                 return Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
             case StatType.AGILITY:
-                return Math.min(this.baseAgility + this.agilityUpgrades, Player.MAX_STAT_VALUE);
+                return Math.min(this.baseAgility + this.agilityUpgrades + this.agilityPoints, Player.MAX_STAT_VALUE);
             case StatType.LUCK:
-                return Math.min(this.baseLuck + this.luckUpgrades, Player.MAX_STAT_VALUE);
+                return Math.min(this.baseLuck + this.luckUpgrades + this.luckPoints, Player.MAX_STAT_VALUE);
         }
     }
 
@@ -1114,16 +1120,16 @@ export class Player extends BaseMesh {
         let currentValue = 0;
         switch (statType) {
             case StatType.STRENGTH:
-                currentValue = this.baseStrength + this.strengthUpgrades;
+                currentValue = this.baseStrength + this.strengthUpgrades + this.strengthPoints;
                 break;
             case StatType.DEFENSE:
-                currentValue = this.baseDefense + this.defenseUpgrades;
+                currentValue = this.baseDefense + this.defenseUpgrades + this.defensePoints;
                 break;
             case StatType.AGILITY:
-                currentValue = this.baseAgility + this.agilityUpgrades;
+                currentValue = this.baseAgility + this.agilityUpgrades + this.agilityPoints;
                 break;
             case StatType.LUCK:
-                currentValue = this.baseLuck + this.luckUpgrades;
+                currentValue = this.baseLuck + this.luckUpgrades + this.luckPoints;
                 break;
             case StatType.HP:
             case StatType.TP:
@@ -1136,21 +1142,21 @@ export class Player extends BaseMesh {
             return false;
         }
 
-        // Consume a stat point and increase the base upgrade
+        // Consume a stat point and increase the stat point counter (not upgrades)
         this.statPointsAvailable--;
         
         switch (statType) {
             case StatType.STRENGTH:
-                this.strengthUpgrades++;
+                this.strengthPoints++;
                 break;
             case StatType.DEFENSE:
-                this.defenseUpgrades++;
+                this.defensePoints++;
                 break;
             case StatType.AGILITY:
-                this.agilityUpgrades++;
+                this.agilityPoints++;
                 break;
             case StatType.LUCK:
-                this.luckUpgrades++;
+                this.luckPoints++;
                 break;
         }
 
