@@ -106,38 +106,38 @@ export class DebugValueEditor {
         // Stats Section with two-column layout
         const statsSection = this.createSection('Player Stats');
         const statsGrid = this.createTwoColumnGrid();
-        
+
         // Left column
         this.createStatInputInGrid(statsGrid, 'left', 'level', 'Level:', 'number');
         this.createStatInputInGrid(statsGrid, 'left', 'hp', 'HP:', 'number');
         this.createStatInputInGrid(statsGrid, 'left', 'tp', 'TP:', 'number');
-        this.createStatInputInGrid(statsGrid, 'left', 'strength', 'Strength:', 'number');
-        this.createStatInputInGrid(statsGrid, 'left', 'defense', 'Defense:', 'number');
         this.createStatInputInGrid(statsGrid, 'left', 'xData', 'X-Data:', 'number');
-        
+        this.createStatInputInGrid(statsGrid, 'left', 'strength', 'Strength:', 'number');
+        this.createStatInputInGrid(statsGrid, 'left', 'speed', 'Speed:', 'number');
+
         // Right column
         this.createEmptyRowInGrid(statsGrid); // Empty first row
         this.createStatInputInGrid(statsGrid, 'right', 'maxHp', 'Max', 'number');
         this.createStatInputInGrid(statsGrid, 'right', 'maxTp', 'Max', 'number');
+        this.createStatInputInGrid(statsGrid, 'right', 'bits', 'Bits:', 'number');
         this.createStatInputInGrid(statsGrid, 'right', 'defense', 'Defense:', 'number');
-        this.createStatInputInGrid(statsGrid, 'right', 'speed', 'Speed:', 'number');
-        this.createStatInputInGrid(statsGrid, 'right', 'money', 'Money:', 'number');
-        
+        this.createEmptyRowInGrid(statsGrid); // Empty row for spacing
+
         statsSection.appendChild(statsGrid);
         panel.appendChild(statsSection);
 
         // Weapon Tech Section with two-column layout
         const weaponTechSection = this.createSection('Weapon Tech');
         const weaponTechGrid = this.createTwoColumnGrid(2);
-        
+
         // Left column
         this.createStatInputInGrid(weaponTechGrid, 'left', 'swordTech', 'Sword Tech:', 'number');
         this.createStatInputInGrid(weaponTechGrid, 'left', 'doubleSwordTech', 'Double Sword', 'number');
-        
+
         // Right column
         this.createStatInputInGrid(weaponTechGrid, 'right', 'lanceTech', 'Lance', 'number');
         this.createStatInputInGrid(weaponTechGrid, 'right', 'hammerTech', 'Hammer', 'number');
-        
+
         weaponTechSection.appendChild(weaponTechGrid);
         panel.appendChild(weaponTechSection);
 
@@ -543,7 +543,7 @@ export class DebugValueEditor {
         this.updateInputValue('speed', player.speed);
         this.updateInputValue('level', player.level);
         this.updateInputValue('xData', player.xData);
-        this.updateInputValue('money', player.money);
+        this.updateInputValue('bits', player.money);
         const playerTech = (player as any).tech || {};
         this.updateInputValue('swordTech', playerTech[WeaponType.SWORD] || 0);
         this.updateInputValue('doubleSwordTech', playerTech[WeaponType.DUAL_BLADE] || 0);
@@ -560,7 +560,7 @@ export class DebugValueEditor {
         this.applyInputValue('speed', (val) => { player.speed = Math.max(0, val); });
         this.applyInputValue('level', (val) => { player.level = Math.max(1, val); });
         this.applyInputValue('xData', (val) => { player.xData = Math.max(0, val); });
-        this.applyInputValue('money', (val) => { player.money = Math.max(0, val); });
+        this.applyInputValue('bits', (val) => { player.money = Math.max(0, val); });
         this.applyInputValue('swordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.SWORD] = Math.max(0, val); });
         this.applyInputValue('doubleSwordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.DUAL_BLADE] = Math.max(0, val); });
         this.applyInputValue('lanceTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.LANCE] = Math.max(0, val); });
