@@ -114,9 +114,9 @@ export class Lobby extends BaseStage {
         // Create Save Manager NPC
         const saveManagerDialogue = [
             "Hello! I'm the Save Manager.",
-            "I can help you save your current game progress to a file.",
+            "I can help you save your current game progress to a file, or load a previously saved game.",
             "This includes your stats, inventory, playtime, and trader inventories.",
-            "Come closer when you're ready to save!"
+            "Come closer when you're ready to save or load!"
         ];
 
         this.saveManager = SaveManager.Instance;
