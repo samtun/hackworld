@@ -45,18 +45,9 @@ export class CoreItem extends EquippableItem {
 
     // Get stats with level multiplier applied
     public getEffectiveStats(): CoreStats {
-        const multiplier = this.getStatMultiplierFromLevelNumber();
-        const effectiveStats: CoreStats = {};
-
-        // Apply multiplier to all stat types
-        const statKeys = ['strength', 'defense', 'speed'] as const;
-        for (const key of statKeys) {
-            if (this.stats[key] !== undefined) {
-                effectiveStats[key] = Math.round(this.stats[key]! * multiplier);
-            }
-        }
-
-        return effectiveStats;
+        // Stats are now stored directly in JSON with level scaling applied
+        // No need for additional multiplier
+        return { ...this.stats };
     }
 
     getType(): string {

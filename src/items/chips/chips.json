@@ -4,7 +4,7 @@
         "name": "Firewire",
         "chipType": "firewire",
         "stats": {
-            "weaponRangeMultiplier": 1.1
+            "weaponRangeMultiplier": 1.10
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -15,7 +15,7 @@
         "name": "Firewire",
         "chipType": "firewire",
         "stats": {
-            "weaponRangeMultiplier": 1.1
+            "weaponRangeMultiplier": 1.12
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -26,7 +26,7 @@
         "name": "Firewire",
         "chipType": "firewire",
         "stats": {
-            "weaponRangeMultiplier": 1.1
+            "weaponRangeMultiplier": 1.14
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -37,7 +37,7 @@
         "name": "Firewire",
         "chipType": "firewire",
         "stats": {
-            "weaponRangeMultiplier": 1.1
+            "weaponRangeMultiplier": 1.16
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -48,7 +48,7 @@
         "name": "Firewire",
         "chipType": "firewire",
         "stats": {
-            "weaponRangeMultiplier": 1.1
+            "weaponRangeMultiplier": 1.18
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -59,7 +59,7 @@
         "name": "Firewire",
         "chipType": "firewire",
         "stats": {
-            "weaponRangeMultiplier": 1.1
+            "weaponRangeMultiplier": 1.20
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -70,7 +70,7 @@
         "name": "Overclock",
         "chipType": "overclock",
         "stats": {
-            "walkSpeedMultiplier": 1.1
+            "walkSpeedMultiplier": 1.10
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -81,7 +81,7 @@
         "name": "Overclock",
         "chipType": "overclock",
         "stats": {
-            "walkSpeedMultiplier": 1.1
+            "walkSpeedMultiplier": 1.12
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -92,7 +92,7 @@
         "name": "Overclock",
         "chipType": "overclock",
         "stats": {
-            "walkSpeedMultiplier": 1.1
+            "walkSpeedMultiplier": 1.14
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -103,7 +103,7 @@
         "name": "Overclock",
         "chipType": "overclock",
         "stats": {
-            "walkSpeedMultiplier": 1.1
+            "walkSpeedMultiplier": 1.16
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -114,7 +114,7 @@
         "name": "Overclock",
         "chipType": "overclock",
         "stats": {
-            "walkSpeedMultiplier": 1.1
+            "walkSpeedMultiplier": 1.18
         },
         "buyPrice": 150,
         "sellPrice": 75,
@@ -125,7 +125,7 @@
         "name": "Overclock",
         "chipType": "overclock",
         "stats": {
-            "walkSpeedMultiplier": 1.1
+            "walkSpeedMultiplier": 1.20
         },
         "buyPrice": 150,
         "sellPrice": 75,

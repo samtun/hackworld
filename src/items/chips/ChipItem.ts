@@ -47,21 +47,9 @@ export class ChipItem extends EquippableItem {
 
     // Get stats with level multiplier applied
     public getEffectiveStats(): ChipStats {
-        const multiplier = this.getStatMultiplierFromLevelNumber();
-        const effectiveStats: ChipStats = {};
-
-        if (this.stats.weaponRangeMultiplier !== undefined) {
-            // Apply multiplier to the bonus part: e.g., 1.1 becomes 1 + (0.1 * multiplier)
-            const bonus = this.stats.weaponRangeMultiplier - 1;
-            effectiveStats.weaponRangeMultiplier = 1 + (bonus * multiplier);
-        }
-
-        if (this.stats.walkSpeedMultiplier !== undefined) {
-            const bonus = this.stats.walkSpeedMultiplier - 1;
-            effectiveStats.walkSpeedMultiplier = 1 + (bonus * multiplier);
-        }
-
-        return effectiveStats;
+        // Stats are now stored directly in JSON with level scaling applied
+        // No need for additional multiplier
+        return { ...this.stats };
     }
 
     getType(): string {
