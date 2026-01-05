@@ -337,22 +337,21 @@ export class Player extends BaseMesh {
         }
     }
 
-    // Compute damage for a single hit, applying tech multiplier and an optional base multiplier
+    // Compute damage for a single hit, applying strength and critical hit multipliers
     private getHitDamage(baseMultiplier: number = 1): number {
-        // Determine multiplier from equipped weapon's fixed level
         const equipped = this.inventory.find(i => i instanceof WeaponItem && i.isEquipped) as WeaponItem | undefined;
         if (!equipped) {
             return 0;
         }
 
-        const levelMultiplier = equipped.getDamageMultiplierFromLevelNumber();
         const strengthMultiplier = 1 + this.getStrengthMultiplier();
         
         // Check for critical hit
         const isCritical = Math.random() < this.getCriticalChance();
         const critMultiplier = isCritical ? 1.5 : 1.0;
         
-        const damage = Math.floor(this.weapon.damage * baseMultiplier * levelMultiplier * strengthMultiplier * critMultiplier);
+        // Damage is directly from weapon (which already has level scaling in weapons.json)
+        const damage = Math.floor(this.weapon.damage * baseMultiplier * strengthMultiplier * critMultiplier);
         
         if (isCritical) {
             console.log('Critical Hit!');
