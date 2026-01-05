@@ -47,9 +47,8 @@ export abstract class ItemDrop {
         context.textAlign = 'left';
         context.fillText(itemName, startX, centerY);
 
-        // Draw italic level char right of name (if provided)
+        // Draw level char right of name (if provided)
         if (levelChar) {
-            context.font = font;
             context.fillText(levelChar, startX + nameWidth + spacing, centerY);
         }
 
