@@ -1,3 +1,15 @@
+# [1.20.0](https://github.com/samtun/hackworld/compare/v1.19.0...v1.20.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* only clear itemElements array for active panel in BaseTrader ([c52aeb1](https://github.com/samtun/hackworld/commit/c52aeb1a56f9a45153b203ba7dd510d9a8f6f8e3))
+
+
+### Features
+
+* add shake and grayed out styling for unequippable items ([c689403](https://github.com/samtun/hackworld/commit/c6894038c38217ed83cf56f5ffb75f6706908d5c))
+
 # [1.19.0](https://github.com/samtun/hackworld/compare/v1.18.0...v1.19.0) (2026-01-05)
 
 
