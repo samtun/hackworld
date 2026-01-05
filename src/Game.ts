@@ -181,6 +181,11 @@ export class Game {
         this.player.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
             this.world.spawnDamageNumber(position, amount, '#ff2424ff');
         };
+
+        // Set up tech indicator callback for player
+        this.player.onTechGained = (position: CANNON.Vec3) => {
+            this.world.spawnTechIndicator(position);
+        };
     }
 
     switchScene(destination: string) {

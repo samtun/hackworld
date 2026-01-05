@@ -130,6 +130,9 @@ export class Player extends BaseMesh {
     // Callback for spawning damage numbers
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
 
+    // Callback for spawning tech indicators
+    onTechGained?: (position: CANNON.Vec3) => void;
+
     // Inventory
     inventory: Item[] = [];
     money: number = 500; // Starting money
@@ -298,6 +301,11 @@ export class Player extends BaseMesh {
         if (random <= dropChance) {
             console.log(`Tech increased from ${x} to ${x + 1}`);
             this.tech[key] += 1;
+            
+            // Spawn tech indicator at player position
+            if (this.onTechGained) {
+                this.onTechGained(this.body.position);
+            }
         }
     }
 

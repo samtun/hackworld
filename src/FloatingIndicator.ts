@@ -2,9 +2,9 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 
 /**
- * Configuration for a floating number display
+ * Configuration for a floating indicator display
  */
-export interface FloatingNumberConfig {
+export interface FloatingIndicatorConfig {
     text: string;
     color: string;
     prefix?: string;
@@ -12,14 +12,15 @@ export interface FloatingNumberConfig {
     fontSize?: number;
     riseTime?: number;
     floatSpeed?: number;
-    priority?: boolean; // A number with priority is rendered above numbers without priority
+    holdTime?: number;
+    priority?: boolean; // An indicator with priority is rendered above indicators without priority
 }
 
 /**
- * Visual indicator for floating numbers (damage, EXP, etc.)
+ * Visual indicator for floating text (damage, EXP, tech points, etc.)
  * Spawns above entity location, floats upward, and fades out
  */
-export class FloatingNumber {
+export class FloatingIndicator {
     static readonly DEFAULT_RISE_TIME: number = 0.2;
     static readonly DEFAULT_FLOAT_SPEED: number = 2.0;
     static readonly DEFAULT_FONTSIZE: number = 80;
@@ -31,15 +32,17 @@ export class FloatingNumber {
     private readonly lifetime: number;
     private readonly riseTime: number;
     private readonly floatSpeed: number;
+    private readonly holdTime: number;
     private initialY: number;
     private textTexture: THREE.CanvasTexture;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, config: FloatingNumberConfig) {
+    constructor(scene: THREE.Scene, position: CANNON.Vec3, config: FloatingIndicatorConfig) {
         let numberPosition = new CANNON.Vec3(position.x, position.y + 1.0, position.z);
         this.initialY = numberPosition.y;
-        this.riseTime = config.riseTime ?? FloatingNumber.DEFAULT_RISE_TIME; // seconds
-        this.lifetime = this.riseTime + FloatingNumber.HOLD_TIME + FloatingNumber.FADE_TIME;
-        this.floatSpeed = config.floatSpeed ?? FloatingNumber.DEFAULT_FLOAT_SPEED; // units per second
+        this.holdTime = config.holdTime ?? FloatingIndicator.HOLD_TIME; // seconds
+        this.riseTime = config.riseTime ?? FloatingIndicator.DEFAULT_RISE_TIME; // seconds
+        this.lifetime = this.riseTime + FloatingIndicator.HOLD_TIME + FloatingIndicator.FADE_TIME;
+        this.floatSpeed = config.floatSpeed ?? FloatingIndicator.DEFAULT_FLOAT_SPEED; // units per second
 
         // Create canvas for text texture
         const canvas = document.createElement('canvas');
@@ -49,7 +52,7 @@ export class FloatingNumber {
 
         // Prepare display text
         const displayText = `${config.prefix ?? ''}${config.text}${config.suffix ?? ''}`;
-        const fontSize = config.fontSize ?? FloatingNumber.DEFAULT_FONTSIZE;
+        const fontSize = config.fontSize ?? FloatingIndicator.DEFAULT_FONTSIZE;
 
         // Draw text on canvas
         context.fillStyle = config.color;
@@ -88,7 +91,7 @@ export class FloatingNumber {
     }
 
     /**
-     * Update the floating number - float upward and fade out
+     * Update the floating indicator - float upward and fade out
      * @param dt Delta time
      * @param cameraPosition Camera position for billboard effect
      * @returns true if the entity should be removed
@@ -105,10 +108,10 @@ export class FloatingNumber {
 
         // Fade out logic
         const material = this.mesh.material as THREE.MeshBasicMaterial;
-        if (this.timer < this.riseTime + FloatingNumber.HOLD_TIME) {
+        if (this.timer < this.riseTime + this.holdTime) {
             material.opacity = 1;
         } else {
-            const fadeProgress = (this.timer - (this.riseTime + FloatingNumber.HOLD_TIME)) / FloatingNumber.FADE_TIME;
+            const fadeProgress = (this.timer - (this.riseTime + this.holdTime)) / FloatingIndicator.FADE_TIME;
             material.opacity = Math.max(0, 1 - fadeProgress);
         }
 
