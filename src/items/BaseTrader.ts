@@ -284,7 +284,11 @@ export abstract class BaseTrader {
     }
 
     protected renderItemList(container: HTMLDivElement, items: Item[], isActive: boolean, mode: TradeMode, player: Player) {
-        container.innerHTML = ''; this.itemElements = [];
+        container.innerHTML = '';
+        // Only clear itemElements if this is the active panel
+        if (isActive) {
+            this.itemElements = [];
+        }
         items.forEach((item, index) => {
             const itemDiv = document.createElement('div');
             const price = mode === TradeMode.BUY ? item.buyPrice : item.sellPrice;
