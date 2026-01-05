@@ -14,24 +14,6 @@ export class CoreItem extends EquippableItem {
         this.level = level;
     }
 
-    // Override to apply level-based price multiplier
-    get buyPrice(): number {
-        const multiplier = this.getPriceMultiplierForLevel();
-        return Math.round(this.baseBuyPrice * multiplier);
-    }
-
-    // Sell price remains at base level
-    get sellPrice(): number {
-        return this.baseSellPrice;
-    }
-
-    private getPriceMultiplierForLevel(): number {
-        const index = this.level - 1;
-        if (index < 0 || index >= ItemLevelHelper.PRICE_MULTIPLIERS.length) {
-            return ItemLevelHelper.PRICE_MULTIPLIERS[ItemLevelHelper.PRICE_MULTIPLIERS.length - 1];
-        }
-        return ItemLevelHelper.PRICE_MULTIPLIERS[index];
-    }
 
     // Return level definition by numeric level (1-based). Throws if level <= 0.
     public getLevelByNumber(): { requiredLevel: number; statPercent: number } {
@@ -45,18 +27,9 @@ export class CoreItem extends EquippableItem {
 
     // Get stats with level multiplier applied
     public getEffectiveStats(): CoreStats {
-        const multiplier = this.getStatMultiplierFromLevelNumber();
-        const effectiveStats: CoreStats = {};
-
-        // Apply multiplier to all stat types
-        const statKeys = ['strength', 'defense', 'speed'] as const;
-        for (const key of statKeys) {
-            if (this.stats[key] !== undefined) {
-                effectiveStats[key] = Math.round(this.stats[key]! * multiplier);
-            }
-        }
-
-        return effectiveStats;
+        // Stats are now stored directly in JSON with level scaling applied
+        // No need for additional multiplier
+        return { ...this.stats };
     }
 
     getType(): string {
@@ -97,9 +70,9 @@ export class CoreItem extends EquippableItem {
         return new CoreItem(
             newId || this.id,
             this.name,
-            this.buyPrice,
-            this.sellPrice,
-            this.stats,
+            this.baseBuyPrice,
+            this.baseSellPrice,
+            { ...this.stats }, // Deep copy stats
             this.level
         );
     }

@@ -16,25 +16,6 @@ export class ChipItem extends EquippableItem {
         this.level = level;
     }
 
-    // Override to apply level-based price multiplier
-    get buyPrice(): number {
-        const multiplier = this.getPriceMultiplierForLevel();
-        return Math.round(this.baseBuyPrice * multiplier);
-    }
-
-    // Sell price remains at base level
-    get sellPrice(): number {
-        return this.baseSellPrice;
-    }
-
-    private getPriceMultiplierForLevel(): number {
-        const index = this.level - 1;
-        if (index < 0 || index >= ItemLevelHelper.PRICE_MULTIPLIERS.length) {
-            return ItemLevelHelper.PRICE_MULTIPLIERS[ItemLevelHelper.PRICE_MULTIPLIERS.length - 1];
-        }
-        return ItemLevelHelper.PRICE_MULTIPLIERS[index];
-    }
-
     // Return level definition by numeric level (1-based). Throws if level <= 0.
     public getLevelByNumber(): { requiredLevel: number; statPercent: number } {
         return ItemLevelHelper.getChipCoreLevelByNumber(this.level);
@@ -43,25 +24,6 @@ export class ChipItem extends EquippableItem {
     // Return multiplier for numeric level
     public getStatMultiplierFromLevelNumber(): number {
         return ItemLevelHelper.getStatMultiplierForLevel(this.level);
-    }
-
-    // Get stats with level multiplier applied
-    public getEffectiveStats(): ChipStats {
-        const multiplier = this.getStatMultiplierFromLevelNumber();
-        const effectiveStats: ChipStats = {};
-
-        if (this.stats.weaponRangeMultiplier !== undefined) {
-            // Apply multiplier to the bonus part: e.g., 1.1 becomes 1 + (0.1 * multiplier)
-            const bonus = this.stats.weaponRangeMultiplier - 1;
-            effectiveStats.weaponRangeMultiplier = 1 + (bonus * multiplier);
-        }
-
-        if (this.stats.walkSpeedMultiplier !== undefined) {
-            const bonus = this.stats.walkSpeedMultiplier - 1;
-            effectiveStats.walkSpeedMultiplier = 1 + (bonus * multiplier);
-        }
-
-        return effectiveStats;
     }
 
     getType(): string {
@@ -102,10 +64,10 @@ export class ChipItem extends EquippableItem {
         return new ChipItem(
             newId || this.id,
             this.name,
-            this.buyPrice,
-            this.sellPrice,
+            this.baseBuyPrice,
+            this.baseSellPrice,
             this.chipType,
-            this.stats,
+            { ...this.stats }, // Deep copy stats
             this.level
         );
     }

@@ -1,0 +1,134 @@
+[
+    {
+        "id": "firewire_alpha",
+        "name": "Firewire",
+        "chipType": "firewire",
+        "stats": {
+            "weaponRangeMultiplier": 1.10
+        },
+        "buyPrice": 150,
+        "sellPrice": 75,
+        "level": 1
+    },
+    {
+        "id": "firewire_beta",
+        "name": "Firewire",
+        "chipType": "firewire",
+        "stats": {
+            "weaponRangeMultiplier": 1.12
+        },
+        "buyPrice": 225,
+        "sellPrice": 112,
+        "level": 2
+    },
+    {
+        "id": "firewire_gamma",
+        "name": "Firewire",
+        "chipType": "firewire",
+        "stats": {
+            "weaponRangeMultiplier": 1.14
+        },
+        "buyPrice": 300,
+        "sellPrice": 150,
+        "level": 3
+    },
+    {
+        "id": "firewire_delta",
+        "name": "Firewire",
+        "chipType": "firewire",
+        "stats": {
+            "weaponRangeMultiplier": 1.16
+        },
+        "buyPrice": 450,
+        "sellPrice": 225,
+        "level": 4
+    },
+    {
+        "id": "firewire_epsilon",
+        "name": "Firewire",
+        "chipType": "firewire",
+        "stats": {
+            "weaponRangeMultiplier": 1.18
+        },
+        "buyPrice": 750,
+        "sellPrice": 375,
+        "level": 5
+    },
+    {
+        "id": "firewire_omega",
+        "name": "Firewire",
+        "chipType": "firewire",
+        "stats": {
+            "weaponRangeMultiplier": 1.20
+        },
+        "buyPrice": 1200,
+        "sellPrice": 600,
+        "level": 6
+    },
+    {
+        "id": "overclock_alpha",
+        "name": "Overclock",
+        "chipType": "overclock",
+        "stats": {
+            "walkSpeedMultiplier": 1.10
+        },
+        "buyPrice": 150,
+        "sellPrice": 75,
+        "level": 1
+    },
+    {
+        "id": "overclock_beta",
+        "name": "Overclock",
+        "chipType": "overclock",
+        "stats": {
+            "walkSpeedMultiplier": 1.12
+        },
+        "buyPrice": 225,
+        "sellPrice": 112,
+        "level": 2
+    },
+    {
+        "id": "overclock_gamma",
+        "name": "Overclock",
+        "chipType": "overclock",
+        "stats": {
+            "walkSpeedMultiplier": 1.14
+        },
+        "buyPrice": 300,
+        "sellPrice": 150,
+        "level": 3
+    },
+    {
+        "id": "overclock_delta",
+        "name": "Overclock",
+        "chipType": "overclock",
+        "stats": {
+            "walkSpeedMultiplier": 1.16
+        },
+        "buyPrice": 450,
+        "sellPrice": 225,
+        "level": 4
+    },
+    {
+        "id": "overclock_epsilon",
+        "name": "Overclock",
+        "chipType": "overclock",
+        "stats": {
+            "walkSpeedMultiplier": 1.18
+        },
+        "buyPrice": 750,
+        "sellPrice": 375,
+        "level": 5
+    },
+    {
+        "id": "overclock_omega",
+        "name": "Overclock",
+        "chipType": "overclock",
+        "stats": {
+            "walkSpeedMultiplier": 1.20
+        },
+        "buyPrice": 1200,
+        "sellPrice": 600,
+        "level": 6
+    }
+]

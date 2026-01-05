@@ -57,10 +57,13 @@ export class ItemDetailsPanel {
     private static getWeaponDetails(item: WeaponItem): ItemDetail[] {
         const typeLabel = this.getWeaponTypeLabel(item.weaponType);
         const damage = item.damage;
+        const levelDef = item.getLevelByNumber();
 
         return [
             { label: 'Type', value: typeLabel },
-            { label: 'Damage', value: damage }
+            { label: 'Damage', value: damage },
+            { label: 'Required Tech', value: levelDef.requiredTech },
+            { label: 'Price', value: `${item.sellPrice} bits` }
         ];
     }
 
@@ -70,11 +73,17 @@ export class ItemDetailsPanel {
     private static getCoreDetails(item: CoreItem): ItemDetail[] {
         const details: ItemDetail[] = [];
 
+        // Add level and requirement info
+        const levelDef = item.getLevelByNumber();
+        details.push({ label: 'Required Player Level', value: levelDef.requiredLevel });
+
         // Use effective stats (with level multiplier applied)
-        const effectiveStats = item.getEffectiveStats();
+        const effectiveStats = item.stats
         this.addStatIfPresent(details, 'Strength', effectiveStats.strength);
         this.addStatIfPresent(details, 'Defense', effectiveStats.defense);
         this.addStatIfPresent(details, 'Speed', effectiveStats.speed);
+
+        details.push({ label: 'Price', value: `${item.sellPrice} bits` });
 
         return details;
     }
@@ -95,8 +104,12 @@ export class ItemDetailsPanel {
     private static getChipDetails(item: ChipItem): ItemDetail[] {
         const details: ItemDetail[] = [];
 
+        // Add level and requirement info
+        const levelDef = item.getLevelByNumber();
+        details.push({ label: 'Required Player Level', value: levelDef.requiredLevel });
+
         // Use effective stats (with level multiplier applied)
-        const effectiveStats = item.getEffectiveStats();
+        const effectiveStats = item.stats;
 
         if (effectiveStats.weaponRangeMultiplier !== undefined) {
             const percentIncrease = ((effectiveStats.weaponRangeMultiplier - 1) * 100).toFixed(0);
@@ -107,6 +120,8 @@ export class ItemDetailsPanel {
             const percentIncrease = ((effectiveStats.walkSpeedMultiplier - 1) * 100).toFixed(0);
             details.push({ label: 'Walk Speed', value: `+${percentIncrease}%` });
         }
+
+        details.push({ label: 'Price', value: `${item.sellPrice} bits` });
 
         return details;
     }

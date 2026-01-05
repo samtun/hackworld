@@ -9,6 +9,7 @@ import { ItemDrop } from '../ItemDrop';
  * Displays a 3D text label and animates in a floating motion
  */
 export class WeaponDrop extends ItemDrop {
+    weaponId: string;
     mesh: THREE.Group;
     body: CANNON.Body;
     weaponType: WeaponType;
@@ -25,9 +26,9 @@ export class WeaponDrop extends ItemDrop {
     private baseHeight: number;
     private readonly FLOAT_SPEED: number = 1.5;
     private readonly FLOAT_AMPLITUDE: number = 0.15;
-    private readonly PICKUP_DISTANCE: number = 1.5;
 
     constructor(
+        weaponId: string,
         scene: THREE.Scene,
         position: CANNON.Vec3,
         weaponType: WeaponType,
@@ -38,6 +39,7 @@ export class WeaponDrop extends ItemDrop {
         level: number
     ) {
         super();
+        this.weaponId = weaponId;
         this.weaponType = weaponType;
         this.weaponName = weaponName;
         this.damage = damage;

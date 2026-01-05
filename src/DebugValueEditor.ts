@@ -1,12 +1,9 @@
 import { Player } from './Player';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
-import { CoreRegistry } from './items/cores/CoreRegistry';
-import { ChipRegistry } from './items/chips/ChipRegistry';
+import { CoreRepository } from './items/cores/CoreRepository';
+import { ChipRepository } from './items/chips/ChipRepository';
 import { WeaponType } from './items/weapons/WeaponType';
-import { CoreItem } from './items/cores/CoreItem';
-import { ChipItem } from './items/chips/ChipItem';
 import { ItemLevelHelper } from './items/ItemLevelHelper';
-import { max } from 'three/examples/jsm/nodes/Nodes.js';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -26,13 +23,13 @@ export class DebugValueEditor {
     private player: Player | null = null;
 
     private weaponRepository: WeaponRepository;
-    private chipRegistry: ChipRegistry;
-    private coreRegistry: CoreRegistry;
+    private chipRepository: ChipRepository;
+    private coreRepository: CoreRepository;
 
     constructor() {
         this.weaponRepository = WeaponRepository.Instance;
-        this.chipRegistry = ChipRegistry.Instance;
-        this.coreRegistry = CoreRegistry.Instance;
+        this.chipRepository = ChipRepository.Instance;
+        this.coreRepository = CoreRepository.Instance;
 
         this.container = this.createContainer();
         this.toggleButton = this.createToggleButton();
@@ -393,35 +390,6 @@ export class DebugValueEditor {
         return select;
     }
 
-    private createInputRow(label: string, type: string = 'number', defaultValue: string = ''): { row: HTMLDivElement; input: HTMLInputElement } {
-        const row = document.createElement('div');
-        row.style.display = 'flex';
-        row.style.justifyContent = 'space-between';
-        row.style.alignItems = 'center';
-        row.style.marginBottom = '10px';
-
-        const labelEl = document.createElement('label');
-        labelEl.textContent = label;
-        labelEl.style.fontSize = '14px';
-
-        const input = document.createElement('input');
-        input.type = type;
-        input.value = defaultValue;
-        input.style.width = '100px';
-        input.style.padding = '5px';
-        input.style.backgroundColor = '#222';
-        input.style.border = '1px solid #666';
-        input.style.borderRadius = '3px';
-        input.style.color = '#fff';
-        input.style.fontSize = '14px';
-        input.style.fontFamily = 'inherit';
-        input.style.boxSizing = 'border-box';
-
-        row.appendChild(labelEl);
-        row.appendChild(input);
-
-        return { row, input };
-    }
 
     private createWeaponSelector(parent: HTMLElement): void {
         const weapons = this.weaponRepository.getAllWeapons();
@@ -435,26 +403,18 @@ export class DebugValueEditor {
         select.style.marginBottom = '10px';
         parent.appendChild(select);
 
-        // Damage input
-        const { row: damageRow, input: damageInput } = this.createInputRow('Damage:', 'number', '10');
-        parent.appendChild(damageRow);
-
         // Add button
         const addButton = this.createButton('Add Weapon', () => {
             const weaponId = select.value;
-            const damage = parseInt(damageInput.value);
 
-            if (weaponId && !isNaN(damage) && this.player) {
+            if (weaponId && this.player) {
                 const weapon = this.weaponRepository.getWeaponById(weaponId);
                 if (weapon) {
-                    // Update damage
-                    weapon.damage = damage;
                     this.player.inventory.push(weapon);
-                    console.log(`Added weapon: ${weapon.name} (Level ${weapon.level}) with ${damage} damage`);
+                    console.log(`Added weapon: ${weapon.name} (Level ${weapon.level})`);
 
                     // Reset selection
                     select.value = '';
-                    damageInput.value = '10';
                 }
             }
         });
@@ -463,15 +423,15 @@ export class DebugValueEditor {
     }
 
     private createCoreSelector(parent: HTMLElement): void {
-        const cores = this.coreRegistry.getAllCores();
+        const cores = this.coreRepository.getAllCores();
 
         const coreOptions = cores.map(core => {
             const statsStr = Object.entries(core.stats)
-                .map(([key, val]) => `${key}: ${val > 0 ? '+' : ''}${val}`)
+                .map(([key, val]) => `${key}: ${(val as number) > 0 ? '+' : ''}${val}`)
                 .join(', ');
             return {
                 value: core.id,
-                text: `${core.name} (${statsStr})`
+                text: `${core.name} ${ItemLevelHelper.getLevelChar(core.level)} (${statsStr})`
             };
         });
 
@@ -479,51 +439,18 @@ export class DebugValueEditor {
         select.style.marginBottom = '10px';
         parent.appendChild(select);
 
-        // Level selector (greek chars)
-        const levelOptions = [];
-        for (let i = 1; i <= 6; i++) {
-            const char = ItemLevelHelper.getLevelChar(i);
-            levelOptions.push({
-                value: String(i),
-                text: `${char} Level ${i}`
-            });
-        }
-
-        const levelSelect = this.createSelect(levelOptions);
-        levelSelect.style.width = '100px';
-        levelSelect.style.marginBottom = '10px';
-
-        const levelRow = document.createElement('div');
-        levelRow.style.display = 'flex';
-        levelRow.style.justifyContent = 'space-between';
-        levelRow.style.alignItems = 'center';
-        levelRow.style.marginBottom = '10px';
-
-        const levelLabel = document.createElement('label');
-        levelLabel.textContent = 'Level:';
-        levelLabel.style.fontSize = '14px';
-
-        levelRow.appendChild(levelLabel);
-        levelRow.appendChild(levelSelect);
-        parent.appendChild(levelRow);
-
         // Add button
         const addButton = this.createButton('Add Core', () => {
             const coreId = select.value;
 
             if (coreId && this.player) {
-                const core = this.coreRegistry.getCoreById(coreId);
+                const core = this.coreRepository.getCoreById(coreId);
                 if (core) {
-                    // Generate unique ID using timestamp and random number
-                    const newId = `debug_core_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    const lvl = parseInt(levelSelect.value) || 1;
-                    const newCore = new CoreItem(newId, core.name, core.buyPrice, core.sellPrice, core.stats, lvl);
-                    this.player.inventory.push(newCore);
-                    console.log(`Added core: ${core.name} (Level ${lvl})`);
+                    this.player.inventory.push(core);
+                    console.log(`Added core: ${core.name} (Level ${core.level})`);
 
                     // Reset selection
                     select.value = '';
-                    if (levelSelect.options.length > 0) levelSelect.selectedIndex = 0;
                 }
             }
         });
@@ -532,15 +459,15 @@ export class DebugValueEditor {
     }
 
     private createChipSelector(parent: HTMLElement): void {
-        const chips = this.chipRegistry.getAllChips();
+        const chips = this.chipRepository.getAllChips();
 
         const chipOptions = chips.map(chip => {
             const effectsStr = Object.entries(chip.stats)
                 .map(([key, val]) => {
                     if (key === 'weaponRangeMultiplier') {
-                        return `Weapon Range: +${((val - 1) * 100).toFixed(0)}%`;
+                        return `Weapon Range: +${(((val as number) - 1) * 100).toFixed(0)}%`;
                     } else if (key === 'walkSpeedMultiplier') {
-                        return `Walk Speed: +${((val - 1) * 100).toFixed(0)}%`;
+                        return `Walk Speed: +${(((val as number) - 1) * 100).toFixed(0)}%`;
                     }
                     return '';
                 })
@@ -548,7 +475,7 @@ export class DebugValueEditor {
                 .join(', ');
             return {
                 value: chip.id,
-                text: `${chip.name} (${effectsStr})`
+                text: `${chip.name} ${ItemLevelHelper.getLevelChar(chip.level)} (${effectsStr})`
             };
         });
 
@@ -556,51 +483,18 @@ export class DebugValueEditor {
         select.style.marginBottom = '10px';
         parent.appendChild(select);
 
-        // Level selector (greek chars)
-        const levelOptions = [];
-        for (let i = 1; i <= 6; i++) {
-            const char = ItemLevelHelper.getLevelChar(i);
-            levelOptions.push({
-                value: String(i),
-                text: `${char} Level ${i}`
-            });
-        }
-
-        const levelSelect = this.createSelect(levelOptions);
-        levelSelect.style.width = '100px';
-        levelSelect.style.marginBottom = '10px';
-
-        const levelRow = document.createElement('div');
-        levelRow.style.display = 'flex';
-        levelRow.style.justifyContent = 'space-between';
-        levelRow.style.alignItems = 'center';
-        levelRow.style.marginBottom = '10px';
-
-        const levelLabel = document.createElement('label');
-        levelLabel.textContent = 'Level:';
-        levelLabel.style.fontSize = '14px';
-
-        levelRow.appendChild(levelLabel);
-        levelRow.appendChild(levelSelect);
-        parent.appendChild(levelRow);
-
         // Add button
         const addButton = this.createButton('Add Chip', () => {
             const chipId = select.value;
 
             if (chipId && this.player) {
-                const chip = this.chipRegistry.getChipById(chipId);
+                const chip = this.chipRepository.getChipById(chipId);
                 if (chip) {
-                    // Generate unique ID using timestamp and random number
-                    const newId = `debug_chip_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    const lvl = parseInt(levelSelect.value) || 1;
-                    const newChip = new ChipItem(newId, chip.name, chip.buyPrice, chip.sellPrice, chip.type, chip.stats, lvl);
-                    this.player.inventory.push(newChip);
-                    console.log(`Added chip: ${chip.name} (Level ${lvl})`);
+                    this.player.inventory.push(chip);
+                    console.log(`Added chip: ${chip.name} (Level ${chip.level})`);
 
                     // Reset selection
                     select.value = '';
-                    if (levelSelect.options.length > 0) levelSelect.selectedIndex = 0;
                 }
             }
         });

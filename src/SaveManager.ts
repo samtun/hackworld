@@ -4,9 +4,9 @@ import { PlayerRegistry } from './PlayerRegistry';
 import { InputManager } from './InputManager';
 import { CardCollection } from './items/cards/CardCollection';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
-import { CoreRegistry } from './items/cores/CoreRegistry';
+import { CoreRepository } from './items/cores/CoreRepository';
 import { CoreItem } from './items/cores/CoreItem';
-import { ChipRegistry } from './items/chips/ChipRegistry';
+import { ChipRepository } from './items/chips/ChipRepository';
 import { ChipItem } from './items/chips/ChipItem';
 
 /**
@@ -301,8 +301,8 @@ export class SaveManager {
             // Restore inventory
             player.inventory = [];
             const weaponRepo = WeaponRepository.Instance;
-            const coreRegistry = CoreRegistry.Instance;
-            const chipRegistry = ChipRegistry.Instance;
+            const coreRepository = CoreRepository.Instance;
+            const chipRepository = ChipRepository.Instance;
 
             for (const itemData of saveData.player.inventory) {
                 if (itemData.kind === 'weapon') {
@@ -322,41 +322,26 @@ export class SaveManager {
                         console.warn('Invalid weapon data in save file:', itemData);
                     }
                 } else if (itemData.kind === 'core') {
-                    // Restore core by name since the ID is a UUID
-                    const allCores = coreRegistry.getAllCores();
-                    const coreDef = allCores.find(c => c.name === itemData.name);
-                    if (coreDef) {
-                        const coreItem = new CoreItem(
-                            crypto.randomUUID(),
-                            coreDef.name,
-                            coreDef.buyPrice,
-                            coreDef.sellPrice,
-                            coreDef.stats,
-                            itemData.level
-                        );
-                        if (itemData.isEquipped) {
-                            coreItem.isEquipped = true;
+                    // Restore core by name and level from repository
+                    if (itemData.name && itemData.level) {
+                        const coreItem = coreRepository.getCoreByNameAndLevel(itemData.name, itemData.level);
+                        if (coreItem) {
+                            if (itemData.isEquipped) {
+                                coreItem.isEquipped = true;
+                            }
+                            player.inventory.push(coreItem);
                         }
-                        player.inventory.push(coreItem);
                     }
                 } else if (itemData.kind === 'chip') {
-                    // Restore chip by name since the ID is a UUID
-                    const allChips = chipRegistry.getAllChips();
-                    const chipDef = allChips.find(c => c.name === itemData.name);
-                    if (chipDef) {
-                        const chipItem = new ChipItem(
-                            crypto.randomUUID(),
-                            chipDef.name,
-                            chipDef.buyPrice,
-                            chipDef.sellPrice,
-                            chipDef.type,
-                            chipDef.stats,
-                            itemData.level
-                        );
-                        if (itemData.isEquipped) {
-                            chipItem.isEquipped = true;
+                    // Restore chip by name and level from repository
+                    if (itemData.name && itemData.level) {
+                        const chipItem = chipRepository.getChipByNameAndLevel(itemData.name, itemData.level);
+                        if (chipItem) {
+                            if (itemData.isEquipped) {
+                                chipItem.isEquipped = true;
+                            }
+                            player.inventory.push(chipItem);
                         }
-                        player.inventory.push(chipItem);
                     }
                 }
             }

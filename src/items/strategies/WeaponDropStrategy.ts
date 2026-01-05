@@ -40,6 +40,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         dropPosition.y = 0.5;
 
         const wd = new WeaponDrop(
+            weaponItem.id,
             scene,
             dropPosition,
             weaponType,
@@ -119,22 +120,14 @@ export class WeaponDropStrategy implements ItemDropStrategy {
     }
 
     pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: WeaponDrop, player: Player): void {
-        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(drop.weaponType, drop.level);
-        const model = weaponItem ? weaponItem.model : 'models/sword.glb';
+        const weaponItem = WeaponRepository.Instance.getWeaponById(drop.weaponId);
+        if (!weaponItem) {
+            console.warn(`Weapon not found for ${drop.weaponId}`);
+            return;
+        }
 
-        const newItem = new WeaponItem(
-            crypto.randomUUID(),
-            drop.weaponName,
-            drop.buyPrice,
-            drop.sellPrice,
-            drop.weaponType,
-            drop.damage,
-            model,
-            drop.level
-        );
-
-        player.inventory.push(newItem);
-        console.log(`Picked up ${drop.weaponName} (Damage: ${drop.damage})`);
+        player.inventory.push(weaponItem);
+        console.log(`Picked up ${weaponItem}`);
     }
 
     getDropProbability(): number {

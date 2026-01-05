@@ -249,7 +249,7 @@ export class Player extends BaseMesh {
         // Apply core modifiers if a core is equipped
         const equippedCore = this.inventory.find(item => item instanceof CoreItem && item.isEquipped) as CoreItem | undefined;
         if (equippedCore) {
-            const effectiveStats = equippedCore.getEffectiveStats();
+            const effectiveStats = equippedCore.stats;
             if (effectiveStats.strength !== undefined) {
                 this.strength = Math.min(this.strength + effectiveStats.strength, Player.MAX_STAT_VALUE);
             }
@@ -264,7 +264,7 @@ export class Player extends BaseMesh {
         // Apply chip modifiers if a chip is equipped
         const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
         if (equippedChip) {
-            const effectiveStats = equippedChip.getEffectiveStats();
+            const effectiveStats = equippedChip.stats;
             if (effectiveStats.walkSpeedMultiplier !== undefined) {
                 this.speed *= effectiveStats.walkSpeedMultiplier;
             }
@@ -274,7 +274,7 @@ export class Player extends BaseMesh {
     getWeaponRangeMultiplier(): number {
         const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
         if (equippedChip) {
-            const effectiveStats = equippedChip.getEffectiveStats();
+            const effectiveStats = equippedChip.stats;
             if (effectiveStats.weaponRangeMultiplier !== undefined) {
                 return effectiveStats.weaponRangeMultiplier;
             }
@@ -301,7 +301,7 @@ export class Player extends BaseMesh {
         if (random <= dropChance) {
             console.log(`Tech increased from ${x} to ${x + 1}`);
             this.tech[key] += 1;
-            
+
             // Spawn tech indicator at player position
             if (this.onTechGained) {
                 this.onTechGained(this.body.position);

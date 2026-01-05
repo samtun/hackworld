@@ -15,7 +15,6 @@ export class BoosterPackDrop extends ItemDrop {
     private baseHeight: number;
     private readonly FLOAT_SPEED: number = 1.5;
     private readonly FLOAT_AMPLITUDE: number = 0.15;
-    private readonly PICKUP_DISTANCE: number = 1.5;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3) {
         super();

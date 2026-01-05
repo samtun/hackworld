@@ -19,7 +19,6 @@ export class ChipDrop extends ItemDrop {
     private baseHeight: number;
     private readonly FLOAT_SPEED: number = 1.2;
     private readonly FLOAT_AMPLITUDE: number = 0.12;
-    private readonly PICKUP_DISTANCE: number = 1.5;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, chipId: string, chipName: string, chipType: ChipType, buyPrice: number, sellPrice: number, level: number) {
         super();
