@@ -12,7 +12,11 @@ export class ChipDropStrategy implements ItemDropStrategy {
     private readonly DROP_PROBABILITY = 0.27; // 27% of total drops
 
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
-        if (Math.random() > enemy.itemDropChance) return null;
+        // Apply luck multiplier to drop chance
+        const luckMultiplier = 1 + (player.luck / 40000);
+        const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
+        
+        if (Math.random() > effectiveDropChance) return null;
 
         // Use smart level determination based on player level
         const level = ItemLevelHelper.determineDropLevel(player.level);

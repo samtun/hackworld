@@ -15,7 +15,11 @@ export class WeaponDropStrategy implements ItemDropStrategy {
     private readonly DROP_PROBABILITY = 0.43; // 43% of total drops
 
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
-        if (Math.random() > enemy.itemDropChance) return null;
+        // Apply luck multiplier to drop chance
+        const luckMultiplier = 1 + (player.luck / 40000);
+        const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
+        
+        if (Math.random() > effectiveDropChance) return null;
 
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
         const weaponLevel = this.determineWeaponLevel(player.getTechForWeapon(weaponType));
