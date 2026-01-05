@@ -1,3 +1,30 @@
+# [1.18.0](https://github.com/samtun/hackworld/compare/v1.17.0...v1.18.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* correct comment for spawnEXP method ([175ab31](https://github.com/samtun/hackworld/commit/175ab3196233cd28e907260ae19ee04f40e64ab0))
+* update comment to refer to indicators instead of numbers ([50bd58c](https://github.com/samtun/hackworld/commit/50bd58c640abe3a7f29d8d5ed8e1124bffffa9ca))
+
+
+### Features
+
+* reduce tech indicator size and time ([1c12f87](https://github.com/samtun/hackworld/commit/1c12f87071f742a46faa10a6d34af57c014edb4b))
+* rename FloatingNumber to FloatingIndicator and add tech point indicator ([371cf14](https://github.com/samtun/hackworld/commit/371cf1459efde0909d749d6926113cb4c7c3b715))
+
+# [1.17.0](https://github.com/samtun/hackworld/compare/v1.16.0...v1.17.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* unify item drop label font styles for consistency ([e931717](https://github.com/samtun/hackworld/commit/e931717b44b0069c3fb7a002a2da0ee803a0b70f))
+
+
+### Features
+
+* unify BoosterPackDrop label with shared createTextLabel method ([210b0a7](https://github.com/samtun/hackworld/commit/210b0a7ac5b3a797a30317aaec381e6ed291f33a)), closes [#ffaa00](https://github.com/samtun/hackworld/issues/ffaa00)
+* unify ItemDrop label styles with Share Tech font ([e6295e0](https://github.com/samtun/hackworld/commit/e6295e0d2abb4c5d90e27ee2e60ad5a32e89c1b8))
+
 # [1.16.0](https://github.com/samtun/hackworld/compare/v1.15.0...v1.16.0) (2026-01-05)
 
 

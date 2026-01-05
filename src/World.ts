@@ -17,7 +17,7 @@ import { CoreDrop } from './items/cores/CoreDrop';
 import { BoosterPackDrop } from './items/cards/BoosterPackDrop';
 import { XDataDropManager } from './items/xdata/XDataDropManager';
 import { HealingSystem } from './systems/HealingSystem';
-import { FloatingNumberManager } from './FloatingNumberManager';
+import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 
 export class World {
     scene: THREE.Scene;
@@ -34,8 +34,8 @@ export class World {
     // X-Data entities
     xDataEntities: XData[] = [];
 
-    // Floating number manager (for damage and EXP numbers)
-    public floatingNumberManager: FloatingNumberManager;
+    // Floating indicator manager (for damage, EXP, tech points, etc.)
+    public floatingIndicatorManager: FloatingIndicatorManager;
 
     // Drop managers
     private itemDropManager: ItemDropManager;
@@ -64,8 +64,8 @@ export class World {
         this.itemDropManager = ItemDropManager.Instance;
         this.xDataDropManager = XDataDropManager.Instance;
 
-        // Initialize floating number manager
-        this.floatingNumberManager = new FloatingNumberManager(scene);
+        // Initialize floating indicator manager
+        this.floatingIndicatorManager = new FloatingIndicatorManager(scene);
 
         // Register drop strategies
         this.itemDropManager.registerStrategy('weapon', new WeaponDropStrategy());
@@ -249,8 +249,8 @@ export class World {
             }
         }
 
-        // Update floating numbers (damage, EXP, etc.)
-        this.floatingNumberManager.update(dt, cameraPosition);
+        // Update floating indicators (damage, EXP, tech points, etc.)
+        this.floatingIndicatorManager.update(dt, cameraPosition);
     }
 
     /**
@@ -266,15 +266,22 @@ export class World {
      * Spawn EXP number visual at the given position
      */
     spawnEXPNumber(position: CANNON.Vec3, amount: number): void {
-        // Use new floating number manager for consistent styling
-        this.floatingNumberManager.spawnEXP(position, amount);
+        // Use new floating indicator manager for consistent styling
+        this.floatingIndicatorManager.spawnEXP(position, amount);
     }
 
     /**
      * Spawn damage number visual at the given position
      */
     spawnDamageNumber(position: CANNON.Vec3, amount: number, color: string): void {
-        this.floatingNumberManager.spawnDamage(position, amount, color);
+        this.floatingIndicatorManager.spawnDamage(position, amount, color);
+    }
+
+    /**
+     * Spawn tech point indicator visual at the given position
+     */
+    spawnTechIndicator(position: CANNON.Vec3): void {
+        this.floatingIndicatorManager.spawnTech(position);
     }
 
     /**
@@ -303,8 +310,8 @@ export class World {
         }
         this.xDataEntities = [];
 
-        // Clear floating numbers
-        this.floatingNumberManager.clear();
+        // Clear floating indicators
+        this.floatingIndicatorManager.clear();
     }
 
     checkPortalInteraction(playerPosition: THREE.Vector3): string | null {
