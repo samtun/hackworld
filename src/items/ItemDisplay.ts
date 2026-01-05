@@ -6,18 +6,8 @@ import { CoreItem } from './cores/CoreItem';
 
 // Return an HTML-safe label for an item, including price text if provided.
 export function formatItemLabel(item: Item, priceText: string = ''): string {
-    if (item instanceof WeaponItem) {
-        // Show the weapon's own fixed level as greek character
-        const char = ItemLevelHelper.getLevelChar(item.level);
-        return `${escapeHtml(item.name)} <i style="font-style:italic;">${escapeHtml(char)}</i>${escapeHtml(priceText)}`;
-    }
-    if (item instanceof ChipItem) {
-        // Show the chip's level as greek character
-        const char = ItemLevelHelper.getLevelChar(item.level);
-        return `${escapeHtml(item.name)} <i style="font-style:italic;">${escapeHtml(char)}</i>${escapeHtml(priceText)}`;
-    }
-    if (item instanceof CoreItem) {
-        // Show the core's level as greek character
+    if (item instanceof WeaponItem || item instanceof ChipItem || item instanceof CoreItem) {
+        // Show the item's level as greek character
         const char = ItemLevelHelper.getLevelChar(item.level);
         return `${escapeHtml(item.name)} <i style="font-style:italic;">${escapeHtml(char)}</i>${escapeHtml(priceText)}`;
     }

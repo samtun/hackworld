@@ -229,13 +229,12 @@ export class InventoryManager {
 
         player.inventory.forEach((item, index) => {
             const itemDiv = document.createElement('div');
-            const priceText = item.sellPrice !== undefined ? ` (${item.sellPrice} bits)` : '';
 
             // Set item text without equipped indicator (triangle will be overlay)
-            itemDiv.innerHTML = formatItemLabel(item, priceText);
+            itemDiv.innerHTML = formatItemLabel(item);
 
             const isSelected = index === this.selectedIndex;
-            
+
             // Check if item can be equipped (for EquippableItems only)
             const canEquip = item instanceof EquippableItem ? item.canEquip(player) : true;
 

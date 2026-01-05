@@ -63,7 +63,8 @@ export class ItemDetailsPanel {
             { label: 'Type', value: typeLabel },
             { label: 'Damage', value: damage },
             { label: 'Level', value: item.level },
-            { label: 'Required Tech', value: levelDef.requiredTech }
+            { label: 'Required Tech', value: levelDef.requiredTech },
+            { label: 'Price', value: `${item.sellPrice} bits` }
         ];
     }
 
@@ -83,6 +84,8 @@ export class ItemDetailsPanel {
         this.addStatIfPresent(details, 'Strength', effectiveStats.strength);
         this.addStatIfPresent(details, 'Defense', effectiveStats.defense);
         this.addStatIfPresent(details, 'Speed', effectiveStats.speed);
+
+        details.push({ label: 'Price', value: `${item.sellPrice} bits` });
 
         return details;
     }
@@ -120,6 +123,8 @@ export class ItemDetailsPanel {
             const percentIncrease = ((effectiveStats.walkSpeedMultiplier - 1) * 100).toFixed(0);
             details.push({ label: 'Walk Speed', value: `+${percentIncrease}%` });
         }
+
+        details.push({ label: 'Price', value: `${item.sellPrice} bits` });
 
         return details;
     }
