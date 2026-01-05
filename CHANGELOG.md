@@ -1,3 +1,13 @@
+## [1.21.1](https://github.com/samtun/hackworld/compare/v1.21.0...v1.21.1) (2026-01-05)
+
+
+### Bug Fixes
+
+* fix stats placement in DebugValueEditor ([2402e8f](https://github.com/samtun/hackworld/commit/2402e8f97a17dff72530a5d5e859c16c31619d77))
+* remove duplicate defense field and fix money input key ([1760175](https://github.com/samtun/hackworld/commit/17601755dbd048c5d767f5c4f6c87a9905cfbe35))
+* reorganize player stats layout to keep speed and money visible ([6449daa](https://github.com/samtun/hackworld/commit/6449daaabc16ac49143d6c9563e2cf6c869fd330))
+* value editor layout ([2807a13](https://github.com/samtun/hackworld/commit/2807a13be6783ba3b7df36806c0296e57584e33a))
+
 # [1.21.0](https://github.com/samtun/hackworld/compare/v1.20.0...v1.21.0) (2026-01-05)
 
 

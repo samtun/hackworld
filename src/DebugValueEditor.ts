@@ -4,6 +4,7 @@ import { CoreRepository } from './items/cores/CoreRepository';
 import { ChipRepository } from './items/chips/ChipRepository';
 import { WeaponType } from './items/weapons/WeaponType';
 import { ItemLevelHelper } from './items/ItemLevelHelper';
+import { max } from 'three/examples/jsm/nodes/Nodes.js';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -81,7 +82,7 @@ export class DebugValueEditor {
         panel.style.position = 'absolute';
         panel.style.top = '50px';
         panel.style.right = '0';
-        panel.style.width = '400px';
+        panel.style.width = '500px';
         panel.style.maxHeight = '80vh';
         panel.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
         panel.style.border = '2px solid #fff';
@@ -101,23 +102,78 @@ export class DebugValueEditor {
         title.style.paddingBottom = '10px';
         panel.appendChild(title);
 
-        // Stats Section
+        // Stats Section - using regular grid without auto-flow for precise placement
         const statsSection = this.createSection('Player Stats');
-        this.createStatInput(statsSection, 'hp', 'HP', 'number');
-        this.createStatInput(statsSection, 'maxHp', 'Max HP', 'number');
-        this.createStatInput(statsSection, 'tp', 'TP', 'number');
-        this.createStatInput(statsSection, 'maxTp', 'Max TP', 'number');
-        this.createStatInput(statsSection, 'strength', 'Strength', 'number');
-        this.createStatInput(statsSection, 'defense', 'Defense', 'number');
-        this.createStatInput(statsSection, 'speed', 'Speed', 'number');
-        this.createStatInput(statsSection, 'level', 'Level', 'number');
-        this.createStatInput(statsSection, 'xData', 'X-Data', 'number');
-        this.createStatInput(statsSection, 'money', 'Money', 'number');
-        this.createStatInput(statsSection, 'swordTech', 'Sword Tech', 'number');
-        this.createStatInput(statsSection, 'doubleSwordTech', 'Double Sword Tech', 'number');
-        this.createStatInput(statsSection, 'lanceTech', 'Lance Tech', 'number');
-        this.createStatInput(statsSection, 'hammerTech', 'Hammer Tech', 'number');
+        const statsContainer = document.createElement('div');
+        statsContainer.style.display = 'flex';
+        statsContainer.style.flexDirection = 'column';
+        statsContainer.style.gap = '8px';
+
+        // Row 1: Level (full width)
+        const levelRow = document.createElement('div');
+        levelRow.style.display = 'grid';
+        levelRow.style.gridTemplateColumns = '1fr 1fr';
+        levelRow.style.gap = '10px';
+        this.createStatInputInRow(levelRow, 'level', 'Level:', 'number');
+        statsContainer.appendChild(levelRow);
+
+        // Row 2: HP split (full width)
+        const hpRow = document.createElement('div');
+        hpRow.style.display = 'flex';
+        hpRow.style.gap = '8px';
+        this.createSplitStatInputInRow(hpRow, 'hp', 'maxHp', 'HP:', 'number');
+        statsContainer.appendChild(hpRow);
+
+        // Row 3: TP split (full width)
+        const tpRow = document.createElement('div');
+        tpRow.style.display = 'flex';
+        tpRow.style.gap = '8px';
+        this.createSplitStatInputInRow(tpRow, 'tp', 'maxTp', 'TP:', 'number');
+        statsContainer.appendChild(tpRow);
+
+        // Row 4: Strength + Speed (two columns)
+        const strengthSpeedRow = document.createElement('div');
+        strengthSpeedRow.style.display = 'grid';
+        strengthSpeedRow.style.gridTemplateColumns = '1fr 1fr';
+        strengthSpeedRow.style.gap = '10px';
+        this.createStatInputInRow(strengthSpeedRow, 'strength', 'Strength:', 'number');
+        this.createStatInputInRow(strengthSpeedRow, 'speed', 'Speed:', 'number');
+        statsContainer.appendChild(strengthSpeedRow);
+
+        // Row 5: Defense (left only)
+        const defenseRow = document.createElement('div');
+        defenseRow.style.display = 'grid';
+        defenseRow.style.gridTemplateColumns = '1fr 1fr';
+        defenseRow.style.gap = '10px';
+        this.createStatInputInRow(defenseRow, 'defense', 'Defense:', 'number');
+        statsContainer.appendChild(defenseRow);
+
+        // Row 6: X-Data + Money (two columns)
+        const xDataMoneyRow = document.createElement('div');
+        xDataMoneyRow.style.display = 'grid';
+        xDataMoneyRow.style.gridTemplateColumns = '1fr 1fr';
+        xDataMoneyRow.style.gap = '10px';
+        this.createStatInputInRow(xDataMoneyRow, 'xData', 'X-Data:', 'number');
+        this.createStatInputInRow(xDataMoneyRow, 'money', 'Money:', 'number');
+        statsContainer.appendChild(xDataMoneyRow);
+
+        statsSection.appendChild(statsContainer);
         panel.appendChild(statsSection);
+
+        // Weapon Tech Section with two-column layout
+        const weaponTechSection = this.createSection('Weapon Tech');
+        const weaponTechGrid = this.createTwoColumnGrid(2);
+
+        // Left column
+        this.createStatInputInGrid(weaponTechGrid, 'left', 'swordTech', 'Sword Tech:', 'number');
+        this.createStatInputInGrid(weaponTechGrid, 'left', 'doubleSwordTech', 'Double Sword', 'number');
+
+        // Right column
+        this.createStatInputInGrid(weaponTechGrid, 'right', 'lanceTech', 'Lance', 'number');
+        this.createStatInputInGrid(weaponTechGrid, 'right', 'hammerTech', 'Hammer', 'number');
+
+        weaponTechSection.appendChild(weaponTechGrid);
+        panel.appendChild(weaponTechSection);
 
         // Weapons Section
         const weaponsSection = this.createSection('Add Weapon');
@@ -156,21 +212,31 @@ export class DebugValueEditor {
         return section;
     }
 
-    private createStatInput(parent: HTMLElement, key: string, label: string, type: string): void {
+    private createTwoColumnGrid(rows: number = 6): HTMLDivElement {
+        const grid = document.createElement('div');
+        grid.style.display = 'grid';
+        grid.style.gridTemplateColumns = '1fr 1fr';
+        grid.style.gridTemplateRows = `repeat(${rows}, auto)`;
+        grid.style.gridAutoFlow = 'column';
+        grid.style.gap = '10px';
+        return grid;
+    }
+
+    private createStatInputInGrid(grid: HTMLDivElement, _column: 'left' | 'right', key: string, label: string, type: string): void {
         const row = document.createElement('div');
         row.style.display = 'flex';
-        row.style.justifyContent = 'space-between';
         row.style.alignItems = 'center';
-        row.style.marginBottom = '8px';
+        row.style.gap = '8px';
 
         const labelEl = document.createElement('label');
-        labelEl.textContent = label + ':';
+        labelEl.textContent = label;
         labelEl.style.fontSize = '14px';
-        labelEl.style.flex = '1';
+        labelEl.style.minWidth = '80px';
+        labelEl.style.flex = '0 0 auto';
 
         const input = document.createElement('input');
         input.type = type;
-        input.style.width = '100px';
+        input.style.flex = '1';
         input.style.padding = '5px';
         input.style.backgroundColor = '#222';
         input.style.border = '1px solid #666';
@@ -178,20 +244,126 @@ export class DebugValueEditor {
         input.style.color = '#fff';
         input.style.fontSize = '14px';
         input.style.fontFamily = 'inherit';
+        input.style.width = '100%';
+        input.style.boxSizing = 'border-box';
 
         this.inputElements.set(key, input);
 
         row.appendChild(labelEl);
         row.appendChild(input);
-        parent.appendChild(row);
+        grid.appendChild(row);
     }
 
-    private createWeaponSelector(parent: HTMLElement): void {
-        const weapons = this.weaponRepository.getAllWeapons();
+    private createStatInputInRow(parent: HTMLElement, key: string, label: string, type: string): void {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.gap = '8px';
 
-        const selectRow = document.createElement('div');
-        selectRow.style.marginBottom = '10px';
+        const labelEl = document.createElement('label');
+        labelEl.textContent = label;
+        labelEl.style.fontSize = '14px';
+        labelEl.style.minWidth = '80px';
+        labelEl.style.flex = '0 0 auto';
 
+        const input = document.createElement('input');
+        input.type = type;
+        input.style.flex = '1';
+        input.style.padding = '5px';
+        input.style.backgroundColor = '#222';
+        input.style.border = '1px solid #666';
+        input.style.borderRadius = '3px';
+        input.style.color = '#fff';
+        input.style.fontSize = '14px';
+        input.style.fontFamily = 'inherit';
+        input.style.width = '100%';
+        input.style.boxSizing = 'border-box';
+
+        this.inputElements.set(key, input);
+
+        container.appendChild(labelEl);
+        container.appendChild(input);
+        parent.appendChild(container);
+    }
+
+    private createSplitStatInputInRow(parent: HTMLElement, currentKey: string, maxKey: string, label: string, type: string): void {
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.alignItems = 'center';
+        container.style.gap = '8px';
+        container.style.width = '100%';
+
+        const labelEl = document.createElement('label');
+        labelEl.textContent = label;
+        labelEl.style.fontSize = '14px';
+        labelEl.style.minWidth = '80px';
+        labelEl.style.flex = '0 0 auto';
+
+        // Current value input
+        const currentInput = document.createElement('input');
+        currentInput.type = type;
+        currentInput.style.flex = '1';
+        currentInput.style.padding = '5px';
+        currentInput.style.backgroundColor = '#222';
+        currentInput.style.border = '1px solid #666';
+        currentInput.style.borderRadius = '3px';
+        currentInput.style.color = '#fff';
+        currentInput.style.fontSize = '14px';
+        currentInput.style.fontFamily = 'inherit';
+        currentInput.style.width = '100%';
+        currentInput.style.boxSizing = 'border-box';
+
+        // Separator
+        const separator = document.createElement('span');
+        separator.textContent = '/';
+        separator.style.color = '#fff';
+        separator.style.fontSize = '14px';
+        separator.style.padding = '0 4px';
+
+        // Max value input
+        const maxInput = document.createElement('input');
+        maxInput.type = type;
+        maxInput.style.flex = '1';
+        maxInput.style.padding = '5px';
+        maxInput.style.backgroundColor = '#222';
+        maxInput.style.border = '1px solid #666';
+        maxInput.style.borderRadius = '3px';
+        maxInput.style.color = '#fff';
+        maxInput.style.fontSize = '14px';
+        maxInput.style.fontFamily = 'inherit';
+        maxInput.style.width = '100%';
+        maxInput.style.boxSizing = 'border-box';
+
+        this.inputElements.set(currentKey, currentInput);
+        this.inputElements.set(maxKey, maxInput);
+
+        container.appendChild(labelEl);
+        container.appendChild(currentInput);
+        container.appendChild(separator);
+        container.appendChild(maxInput);
+        parent.appendChild(container);
+    }
+
+    private createButton(text: string, onClick: () => void): HTMLButtonElement {
+        const button = document.createElement('button');
+        button.textContent = text;
+        button.style.width = '100%';
+        button.style.padding = '10px';
+        button.style.backgroundColor = '#666';
+        button.style.border = 'none';
+        button.style.borderRadius = '5px';
+        button.style.color = '#fff';
+        button.style.fontSize = '14px';
+        button.style.fontWeight = 'bold';
+        button.style.cursor = 'pointer';
+        button.style.fontFamily = 'inherit';
+
+        button.addEventListener('click', onClick);
+
+        return button;
+    }
+
+    private createSelect(options: { value: string; text: string }[], defaultText: string = ''): HTMLSelectElement {
         const select = document.createElement('select');
         select.style.width = '100%';
         select.style.padding = '8px';
@@ -202,64 +374,71 @@ export class DebugValueEditor {
         select.style.fontSize = '14px';
         select.style.fontFamily = 'inherit';
 
-        const defaultOption = document.createElement('option');
-        defaultOption.value = '';
-        defaultOption.textContent = '-- Select Weapon --';
-        select.appendChild(defaultOption);
+        if (defaultText) {
+            const defaultOption = document.createElement('option');
+            defaultOption.value = '';
+            defaultOption.textContent = defaultText;
+            select.appendChild(defaultOption);
+        }
 
-        weapons.forEach(weapon => {
+        options.forEach(opt => {
             const option = document.createElement('option');
-            option.value = weapon.id;
-            const levelChar = ItemLevelHelper.getLevelChar(weapon.level);
-            option.textContent = `${weapon.name} ${levelChar} (${weapon.weaponType})`;
+            option.value = opt.value;
+            option.textContent = opt.text;
             select.appendChild(option);
         });
 
-        selectRow.appendChild(select);
-        parent.appendChild(selectRow);
+        return select;
+    }
+
+    private createInputRow(label: string, type: string = 'number', defaultValue: string = ''): { row: HTMLDivElement; input: HTMLInputElement } {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.justifyContent = 'space-between';
+        row.style.alignItems = 'center';
+        row.style.marginBottom = '10px';
+
+        const labelEl = document.createElement('label');
+        labelEl.textContent = label;
+        labelEl.style.fontSize = '14px';
+
+        const input = document.createElement('input');
+        input.type = type;
+        input.value = defaultValue;
+        input.style.width = '100px';
+        input.style.padding = '5px';
+        input.style.backgroundColor = '#222';
+        input.style.border = '1px solid #666';
+        input.style.borderRadius = '3px';
+        input.style.color = '#fff';
+        input.style.fontSize = '14px';
+        input.style.fontFamily = 'inherit';
+        input.style.boxSizing = 'border-box';
+
+        row.appendChild(labelEl);
+        row.appendChild(input);
+
+        return { row, input };
+    }
+
+    private createWeaponSelector(parent: HTMLElement): void {
+        const weapons = this.weaponRepository.getAllWeapons();
+
+        const weaponOptions = weapons.map(weapon => ({
+            value: weapon.id,
+            text: `${weapon.name} ${ItemLevelHelper.getLevelChar(weapon.level)} (${weapon.weaponType})`
+        }));
+
+        const select = this.createSelect(weaponOptions, '-- Select Weapon --');
+        select.style.marginBottom = '10px';
+        parent.appendChild(select);
 
         // Damage input
-        const damageRow = document.createElement('div');
-        damageRow.style.display = 'flex';
-        damageRow.style.justifyContent = 'space-between';
-        damageRow.style.alignItems = 'center';
-        damageRow.style.marginBottom = '10px';
-
-        const damageLabel = document.createElement('label');
-        damageLabel.textContent = 'Damage:';
-        damageLabel.style.fontSize = '14px';
-
-        const damageInput = document.createElement('input');
-        damageInput.type = 'number';
-        damageInput.value = '10';
-        damageInput.style.width = '100px';
-        damageInput.style.padding = '5px';
-        damageInput.style.backgroundColor = '#222';
-        damageInput.style.border = '1px solid #666';
-        damageInput.style.borderRadius = '3px';
-        damageInput.style.color = '#fff';
-        damageInput.style.fontSize = '14px';
-        damageInput.style.fontFamily = 'inherit';
-
-        damageRow.appendChild(damageLabel);
-        damageRow.appendChild(damageInput);
+        const { row: damageRow, input: damageInput } = this.createInputRow('Damage:', 'number', '10');
         parent.appendChild(damageRow);
 
         // Add button
-        const addButton = document.createElement('button');
-        addButton.textContent = 'Add Weapon';
-        addButton.style.width = '100%';
-        addButton.style.padding = '10px';
-        addButton.style.backgroundColor = '#4CAF50';
-        addButton.style.border = 'none';
-        addButton.style.borderRadius = '5px';
-        addButton.style.color = '#fff';
-        addButton.style.fontSize = '14px';
-        addButton.style.fontWeight = 'bold';
-        addButton.style.cursor = 'pointer';
-        addButton.style.fontFamily = 'inherit';
-
-        addButton.addEventListener('click', () => {
+        const addButton = this.createButton('Add Weapon', () => {
             const weaponId = select.value;
             const damage = parseInt(damageInput.value);
 
@@ -295,35 +474,34 @@ export class DebugValueEditor {
             }
         }
 
-        const select = document.createElement('select');
-        select.style.width = '100%';
-        select.style.padding = '8px';
-        select.style.marginBottom = '10px';
-        select.style.backgroundColor = '#222';
-        select.style.border = '1px solid #666';
-        select.style.borderRadius = '3px';
-        select.style.color = '#fff';
-        select.style.fontSize = '14px';
-        select.style.fontFamily = 'inherit';
-
-        const defaultOption = document.createElement('option');
-        defaultOption.value = '';
-        defaultOption.textContent = '-- Select Core --';
-        select.appendChild(defaultOption);
-
-        cores.forEach(core => {
-            const option = document.createElement('option');
-            option.value = core.name;
+        const coreOptions = cores.map(core => {
             const statsStr = Object.entries(core.stats)
                 .map(([key, val]) => `${key}: ${(val as number) > 0 ? '+' : ''}${val}`)
                 .join(', ');
-            option.textContent = `${core.name} (${statsStr})`;
-            select.appendChild(option);
+            return {
+                value: core.id,
+                text: `${core.name} (${statsStr})`
+            };
         });
 
+        const select = this.createSelect(coreOptions, '-- Select Core --');
+        select.style.marginBottom = '10px';
         parent.appendChild(select);
 
         // Level selector (greek chars)
+        const levelOptions = [];
+        for (let i = 1; i <= 6; i++) {
+            const char = ItemLevelHelper.getLevelChar(i);
+            levelOptions.push({
+                value: String(i),
+                text: `${char} Level ${i}`
+            });
+        }
+
+        const levelSelect = this.createSelect(levelOptions);
+        levelSelect.style.width = '100px';
+        levelSelect.style.marginBottom = '10px';
+
         const levelRow = document.createElement('div');
         levelRow.style.display = 'flex';
         levelRow.style.justifyContent = 'space-between';
@@ -334,45 +512,13 @@ export class DebugValueEditor {
         levelLabel.textContent = 'Level:';
         levelLabel.style.fontSize = '14px';
 
-        const levelSelect = document.createElement('select');
-        levelSelect.style.width = '100px';
-        levelSelect.style.padding = '5px';
-        levelSelect.style.backgroundColor = '#222';
-        levelSelect.style.border = '1px solid #666';
-        levelSelect.style.borderRadius = '3px';
-        levelSelect.style.color = '#fff';
-        levelSelect.style.fontSize = '14px';
-        levelSelect.style.fontFamily = 'inherit';
-
-        // Populate levels 1-6
-        for (let i = 1; i <= 6; i++) {
-            const opt = document.createElement('option');
-            opt.value = String(i);
-            const char = ItemLevelHelper.getLevelChar(i);
-            opt.textContent = `${char} Level ${i}`;
-            levelSelect.appendChild(opt);
-        }
-
         levelRow.appendChild(levelLabel);
         levelRow.appendChild(levelSelect);
         parent.appendChild(levelRow);
 
         // Add button
-        const addButton = document.createElement('button');
-        addButton.textContent = 'Add Core';
-        addButton.style.width = '100%';
-        addButton.style.padding = '10px';
-        addButton.style.backgroundColor = '#2196F3';
-        addButton.style.border = 'none';
-        addButton.style.borderRadius = '5px';
-        addButton.style.color = '#fff';
-        addButton.style.fontSize = '14px';
-        addButton.style.fontWeight = 'bold';
-        addButton.style.cursor = 'pointer';
-        addButton.style.fontFamily = 'inherit';
-
-        addButton.addEventListener('click', () => {
-            const coreName = select.value;
+        const addButton = this.createButton('Add Core', () => {
+            const coreId = select.value;
 
             if (coreName && this.player) {
                 const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
@@ -405,25 +551,7 @@ export class DebugValueEditor {
             }
         }
 
-        const select = document.createElement('select');
-        select.style.width = '100%';
-        select.style.padding = '8px';
-        select.style.marginBottom = '10px';
-        select.style.backgroundColor = '#222';
-        select.style.border = '1px solid #666';
-        select.style.borderRadius = '3px';
-        select.style.color = '#fff';
-        select.style.fontSize = '14px';
-        select.style.fontFamily = 'inherit';
-
-        const defaultOption = document.createElement('option');
-        defaultOption.value = '';
-        defaultOption.textContent = '-- Select Chip --';
-        select.appendChild(defaultOption);
-
-        chips.forEach(chip => {
-            const option = document.createElement('option');
-            option.value = chip.type;
+        const chipOptions = chips.map(chip => {
             const effectsStr = Object.entries(chip.stats)
                 .map(([key, val]) => {
                     if (key === 'weaponRangeMultiplier') {
@@ -435,13 +563,30 @@ export class DebugValueEditor {
                 })
                 .filter(str => str !== '')
                 .join(', ');
-            option.textContent = `${chip.name} (${effectsStr})`;
-            select.appendChild(option);
+            return {
+                value: chip.id,
+                text: `${chip.name} (${effectsStr})`
+            };
         });
 
+        const select = this.createSelect(chipOptions, '-- Select Chip --');
+        select.style.marginBottom = '10px';
         parent.appendChild(select);
 
         // Level selector (greek chars)
+        const levelOptions = [];
+        for (let i = 1; i <= 6; i++) {
+            const char = ItemLevelHelper.getLevelChar(i);
+            levelOptions.push({
+                value: String(i),
+                text: `${char} Level ${i}`
+            });
+        }
+
+        const levelSelect = this.createSelect(levelOptions);
+        levelSelect.style.width = '100px';
+        levelSelect.style.marginBottom = '10px';
+
         const levelRow = document.createElement('div');
         levelRow.style.display = 'flex';
         levelRow.style.justifyContent = 'space-between';
@@ -452,45 +597,13 @@ export class DebugValueEditor {
         levelLabel.textContent = 'Level:';
         levelLabel.style.fontSize = '14px';
 
-        const levelSelect = document.createElement('select');
-        levelSelect.style.width = '100px';
-        levelSelect.style.padding = '5px';
-        levelSelect.style.backgroundColor = '#222';
-        levelSelect.style.border = '1px solid #666';
-        levelSelect.style.borderRadius = '3px';
-        levelSelect.style.color = '#fff';
-        levelSelect.style.fontSize = '14px';
-        levelSelect.style.fontFamily = 'inherit';
-
-        // Populate levels 1-6
-        for (let i = 1; i <= 6; i++) {
-            const opt = document.createElement('option');
-            opt.value = String(i);
-            const char = ItemLevelHelper.getLevelChar(i);
-            opt.textContent = `${char} Level ${i}`;
-            levelSelect.appendChild(opt);
-        }
-
         levelRow.appendChild(levelLabel);
         levelRow.appendChild(levelSelect);
         parent.appendChild(levelRow);
 
         // Add button
-        const addButton = document.createElement('button');
-        addButton.textContent = 'Add Chip';
-        addButton.style.width = '100%';
-        addButton.style.padding = '10px';
-        addButton.style.backgroundColor = '#FF9800';
-        addButton.style.border = 'none';
-        addButton.style.borderRadius = '5px';
-        addButton.style.color = '#fff';
-        addButton.style.fontSize = '14px';
-        addButton.style.fontWeight = 'bold';
-        addButton.style.cursor = 'pointer';
-        addButton.style.fontFamily = 'inherit';
-
-        addButton.addEventListener('click', () => {
-            const chipType = select.value;
+        const addButton = this.createButton('Add Chip', () => {
+            const chipId = select.value;
 
             if (chipType && this.player) {
                 const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
@@ -510,21 +623,7 @@ export class DebugValueEditor {
     }
 
     private createBoosterPackButton(parent: HTMLDivElement): void {
-        // Add button
-        const addButton = document.createElement('button');
-        addButton.textContent = 'Add Booster Pack';
-        addButton.style.width = '100%';
-        addButton.style.padding = '10px';
-        addButton.style.backgroundColor = '#ffaa00';
-        addButton.style.border = 'none';
-        addButton.style.borderRadius = '5px';
-        addButton.style.color = '#fff';
-        addButton.style.fontSize = '14px';
-        addButton.style.fontWeight = 'bold';
-        addButton.style.cursor = 'pointer';
-        addButton.style.fontFamily = 'inherit';
-
-        addButton.addEventListener('click', () => {
+        const addButton = this.createButton('Add Booster Pack', () => {
             if (this.player) {
                 this.player.collectBoosterPack();
                 console.log(`Added booster pack. Total: ${this.player.boosterPacks}`);
