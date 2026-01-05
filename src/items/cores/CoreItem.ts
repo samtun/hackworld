@@ -63,10 +63,16 @@ export class CoreItem extends EquippableItem {
         return 'core';
     }
 
-    equip(player: Player): void {
+    canEquip(player: Player): boolean {
         // Check player level against required level for this core's level
         const lvlDef = this.getLevelByNumber();
-        if (player.level < lvlDef.requiredLevel) {
+        return player.level >= lvlDef.requiredLevel;
+    }
+
+    equip(player: Player): void {
+        // Check if player can equip this core
+        if (!this.canEquip(player)) {
+            const lvlDef = this.getLevelByNumber();
             console.log(`Cannot equip ${this.name} (level ${this.level}): requires player level ${lvlDef.requiredLevel}, player is level ${player.level}`);
             return; // Do not equip
         }

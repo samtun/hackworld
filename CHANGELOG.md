@@ -1,3 +1,28 @@
+# [1.20.0](https://github.com/samtun/hackworld/compare/v1.19.0...v1.20.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* only clear itemElements array for active panel in BaseTrader ([c52aeb1](https://github.com/samtun/hackworld/commit/c52aeb1a56f9a45153b203ba7dd510d9a8f6f8e3))
+
+
+### Features
+
+* add shake and grayed out styling for unequippable items ([c689403](https://github.com/samtun/hackworld/commit/c6894038c38217ed83cf56f5ffb75f6706908d5c))
+
+# [1.19.0](https://github.com/samtun/hackworld/compare/v1.18.0...v1.19.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* add error handling and validation for load functionality ([03fcc6e](https://github.com/samtun/hackworld/commit/03fcc6e7901f4dcb380d50b768da1558ca347d98))
+* restore HP/TP after stat recalculation in load ([77edc69](https://github.com/samtun/hackworld/commit/77edc699b89752623a1671cd103eb22f16f719fc))
+
+
+### Features
+
+* add load save file functionality to save manager ([f2a160a](https://github.com/samtun/hackworld/commit/f2a160ad497b33f86f5e32e3e05ed4f9b73ad1e1))
+
 # [1.18.0](https://github.com/samtun/hackworld/compare/v1.17.0...v1.18.0) (2026-01-05)
 
 

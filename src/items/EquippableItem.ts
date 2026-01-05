@@ -10,4 +10,5 @@ export abstract class EquippableItem extends Item {
 
     abstract equip(player: Player): void;
     abstract unequip(player: Player): void;
+    abstract canEquip(player: Player): boolean;
 }

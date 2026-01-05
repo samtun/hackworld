@@ -44,11 +44,18 @@ export class WeaponItem extends EquippableItem {
         return 'weapon';
     }
 
-    equip(player: Player): void {
+    canEquip(player: Player): boolean {
         // Check player's tech for this weapon type against required tech for this weapon's level
         const lvlDef = this.getLevelByNumber();
         const playerTech = player.getTechForWeapon(this.weaponType);
-        if (lvlDef && playerTech < lvlDef.requiredTech) {
+        return playerTech >= lvlDef.requiredTech;
+    }
+
+    equip(player: Player): void {
+        // Check if player can equip this weapon
+        if (!this.canEquip(player)) {
+            const lvlDef = this.getLevelByNumber();
+            const playerTech = player.getTechForWeapon(this.weaponType);
             console.log(`Cannot equip ${this.name} ${this.level}: requires ${lvlDef.requiredTech} tech, player has ${playerTech}`);
             return; // Do not equip
         }
