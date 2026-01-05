@@ -6,11 +6,6 @@ import { AssetManager } from './AssetManager';
 import { BaseStage, Lobby, createStage } from './stages';
 import { Npc } from './npcs/Npc';
 import { ItemDropManager } from './items/ItemDropManager';
-import { WeaponDropStrategy } from './items/strategies/WeaponDropStrategy';
-import { ChipDropStrategy } from './items/strategies/ChipDropStrategy';
-import { CoreDropStrategy } from './items/strategies/CoreDropStrategy';
-import { BoosterPackDropStrategy } from './items/strategies/BoosterPackDropStrategy';
-import { XDataDropStrategy } from './items/strategies/XDataDropStrategy';
 import { WeaponDrop } from './items/weapons/WeaponDrop';
 import { ChipDrop } from './items/chips/ChipDrop';
 import { CoreDrop } from './items/cores/CoreDrop';
@@ -20,11 +15,6 @@ import { HealingSystem } from './systems/HealingSystem';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 
 export class World {
-    // X-Data drop chance calculation constants
-    // These values determine the player level scaling factor for X-Data drops
-    private static readonly XDATA_LEVEL_DIVISOR = 428.7453673;
-    private static readonly XDATA_LEVEL_MULTIPLIER = 3.285563999;
-
     scene: THREE.Scene;
     physicsWorld: CANNON.World;
     physicsMaterial: CANNON.Material;
@@ -67,12 +57,7 @@ export class World {
         // Initialize floating indicator manager
         this.floatingIndicatorManager = new FloatingIndicatorManager(scene);
 
-        // Register drop strategies
-        this.itemDropManager.registerStrategy('weapon', new WeaponDropStrategy());
-        this.itemDropManager.registerStrategy('chip', new ChipDropStrategy());
-        this.itemDropManager.registerStrategy('core', new CoreDropStrategy());
-        this.itemDropManager.registerStrategy('boosterPack', new BoosterPackDropStrategy());
-        this.itemDropManager.registerStrategy('xData', new XDataDropStrategy());
+        // Drop strategies are now registered internally by ItemDropManager
 
         // Setup progress callback for asset manager
         if (this.onLoadProgressCallback) {
@@ -205,30 +190,13 @@ export class World {
                 // Spawn EXP number visual
                 this.spawnEXPNumber(enemy.getDeathPosition(), enemy.expAmount);
 
-                // Check if enemy should drop an item based on itemDropChance
-                if (Math.random() <= enemy.itemDropChance) {
-                    const random = Math.random();
-                    // 43% weapon, 27% chip, 27% core, 3% booster pack
-                    if (random < 0.43) {
-                        this.itemDropManager.tryDrop('weapon', this.scene, this.physicsWorld, enemy, player);
-                    } else if (random < 0.70) { // 0.43 + 0.27 = 0.70
-                        this.itemDropManager.tryDrop('chip', this.scene, this.physicsWorld, enemy, player);
-                    } else if (random < 0.97) { // 0.70 + 0.27 = 0.97
-                        this.itemDropManager.tryDrop('core', this.scene, this.physicsWorld, enemy, player);
-                    } else { // 0.97 to 1.00 = 3%
-                        this.itemDropManager.tryDrop('boosterPack', this.scene, this.physicsWorld, enemy, player);
-                    }
-                }
+                // Try to drop an item (weapon, chip, core, or booster pack)
+                // The ItemDropManager will select one strategy based on probabilities
+                // and each strategy will check enemy.itemDropChance internally
+                this.itemDropManager.tryDropItem(this.scene, this.physicsWorld, enemy, player);
 
-                // Check if enemy should drop X-Data based on xDataDropChance
-                // Calculate drop chance with player level factor
-                const levelDropChance = player.level >= 100
-                    ? 1
-                    : player.level / (World.XDATA_LEVEL_DIVISOR - World.XDATA_LEVEL_MULTIPLIER * player.level);
-                const xDataDropChance = levelDropChance * enemy.xDataDropChance;
-                if (Math.random() <= xDataDropChance) {
-                    this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, enemy, player);
-                }
+                // Try to drop X-Data separately (independent of item drops)
+                this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, enemy, player);
 
                 this.scene.remove(enemy.mesh);
                 this.physicsWorld.removeBody(enemy.body);

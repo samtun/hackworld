@@ -7,9 +7,23 @@ import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 
 export class XDataDropStrategy implements ItemDropStrategy {
+    // X-Data drop chance calculation constants
+    // These values determine the player level scaling factor for X-Data drops
+    private static readonly XDATA_LEVEL_DIVISOR = 428.7453673;
+    private static readonly XDATA_LEVEL_MULTIPLIER = 3.285563999;
+
     tryDrop(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): ItemDrop | null {
         // Low level players should not get any X-Data yet
         if (player.level < 10) return null;
+
+        // Calculate drop chance with player level factor
+        const levelDropChance = player.level >= 100
+            ? 1
+            : player.level / (XDataDropStrategy.XDATA_LEVEL_DIVISOR - XDataDropStrategy.XDATA_LEVEL_MULTIPLIER * player.level);
+        const xDataDropChance = levelDropChance * enemy.xDataDropChance;
+
+        // Check if drop should occur
+        if (Math.random() > xDataDropChance) return null;
 
         const xDataAmount = this.determineAmount(enemy.xDataDropChance);
         if (xDataAmount <= 0) return null;
@@ -25,6 +39,11 @@ export class XDataDropStrategy implements ItemDropStrategy {
     pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: XDataDrop, player: Player): void {
         player.collectXData(drop.amount);
         console.log(`Picked up ${drop.amount} X-Data`);
+    }
+
+    getDropProbability(): number {
+        // XData doesn't use the weighted selection system as it's independent of item drops
+        return 0;
     }
 
     private determineAmount(dropChance: number): number {

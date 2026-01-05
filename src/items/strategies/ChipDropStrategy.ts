@@ -9,7 +9,11 @@ import { Player } from '../../Player';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class ChipDropStrategy implements ItemDropStrategy {
+    private readonly DROP_PROBABILITY = 0.27; // 27% of total drops
+
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+        if (Math.random() > enemy.itemDropChance) return null;
+
         const def = ChipRegistry.Instance.getRandomChip();
         if (!def) return null;
 
@@ -43,5 +47,9 @@ export class ChipDropStrategy implements ItemDropStrategy {
 
         player.inventory.push(newItem);
         console.log(`Picked up chip ${def.name} (level ${drop.level})`);
+    }
+
+    getDropProbability(): number {
+        return this.DROP_PROBABILITY;
     }
 }

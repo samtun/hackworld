@@ -11,8 +11,11 @@ import { WeaponItem } from '../weapons/WeaponItem';
 export class WeaponDropStrategy implements ItemDropStrategy {
     // Threshold for becoming eligible for higher level drops (80% of next level requirement)
     private static readonly HIGHER_LEVEL_THRESHOLD = 0.8;
+    private readonly DROP_PROBABILITY = 0.43; // 43% of total drops
 
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+        if (Math.random() > enemy.itemDropChance) return null;
+
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
         const weaponLevel = this.determineWeaponLevel(player.getTechForWeapon(weaponType));
         const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, weaponLevel);
@@ -131,6 +134,10 @@ export class WeaponDropStrategy implements ItemDropStrategy {
 
         player.inventory.push(newItem);
         console.log(`Picked up ${drop.weaponName} (Damage: ${drop.damage})`);
+    }
+
+    getDropProbability(): number {
+        return this.DROP_PROBABILITY;
     }
 
 }

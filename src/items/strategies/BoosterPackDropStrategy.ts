@@ -6,7 +6,11 @@ import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 
 export class BoosterPackDropStrategy implements ItemDropStrategy {
+    private readonly DROP_PROBABILITY = 0.03; // 3% of total drops
+
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, _player: Player): import("../ItemDrop").ItemDrop | null {
+        if (Math.random() > enemy.itemDropChance) return null;
+
         const dropPosition = enemy.body.position.clone();
         dropPosition.y = 0.5;
 
@@ -18,5 +22,9 @@ export class BoosterPackDropStrategy implements ItemDropStrategy {
     pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, _drop: BoosterPackDrop, player: Player): void {
         player.collectBoosterPack();
         console.log('Picked up Booster Pack');
+    }
+
+    getDropProbability(): number {
+        return this.DROP_PROBABILITY;
     }
 }
