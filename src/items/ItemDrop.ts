@@ -23,18 +23,15 @@ export abstract class ItemDrop {
         context.fillStyle = 'rgba(0, 0, 0, 0.8)';
         context.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Use correct font: bold 40px "Share Tech", Arial, sans-serif
-        const baseFont = 'bold 40px "Share Tech", Arial, sans-serif';
-        context.font = baseFont;
+        const font = 'bold 68px "Share Tech", Arial, sans-serif';
+        context.font = font;
         context.fillStyle = '#ffffff';
         context.textBaseline = 'middle';
 
         // Measure widths to center the combined text
         const nameWidth = context.measureText(itemName).width;
-        
-        // Measure level width using italic bold font
-        const levelFont = 'italic bold 40px "Share Tech", Arial, sans-serif';
-        context.font = levelFont;
+
+        context.font = font;
         const levelWidth = context.measureText(levelChar).width;
 
         const spacing = 8; // gap between name and level char
@@ -45,12 +42,12 @@ export abstract class ItemDrop {
         const centerY = canvas.height / 2;
 
         // Draw name
-        context.font = baseFont;
+        context.font = font;
         context.textAlign = 'left';
         context.fillText(itemName, startX, centerY);
 
         // Draw italic level char right of name
-        context.font = levelFont;
+        context.font = font;
         context.fillText(levelChar, startX + nameWidth + spacing, centerY);
 
         // Create texture from canvas
@@ -67,7 +64,7 @@ export abstract class ItemDrop {
         textMesh.position.y = 0;
         textMesh.renderOrder = 990;
         textMesh.visible = false; // Start hidden
-        
+
         return textMesh;
     }
 }
