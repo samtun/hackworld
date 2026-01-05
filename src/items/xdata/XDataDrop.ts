@@ -82,7 +82,7 @@ export class XDataDrop extends ItemDrop {
         
         // Dispose of geometries and materials
         this.mesh.traverse((child) => {
-            if ((child as any).isMesh) {
+            if (child instanceof THREE.Mesh) {
                 const mesh = child as THREE.Mesh;
                 if (mesh.geometry) mesh.geometry.dispose();
                 const material = mesh.material;
