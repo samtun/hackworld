@@ -1,5 +1,6 @@
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
+import { shakeElement } from '../ui/UiUtils';
 
 // --- Constants ---
 const COLORS = {
@@ -234,12 +235,16 @@ export class InventoryManager {
             itemDiv.innerHTML = formatItemLabel(item, priceText);
 
             const isSelected = index === this.selectedIndex;
+            
+            // Check if item can be equipped (for EquippableItems only)
+            const canEquip = item instanceof EquippableItem ? item.canEquip(player) : true;
 
             Object.assign(itemDiv.style, {
                 padding: '5px',
                 backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
                 border: isSelected ? '2px solid #fff' : '2px solid transparent',
-                position: 'relative'
+                position: 'relative',
+                opacity: canEquip ? '1' : '0.5'
             });
 
             // Add triangle overlay for equipped items
@@ -304,10 +309,16 @@ export class InventoryManager {
         if (select && !this.lastSelectState) {
             const item = player.inventory[this.selectedIndex];
             if (item instanceof EquippableItem) {
-                item.equip(player);
-                console.log(`Equipped item: ${item.name}`);
-                // Trigger re-render to update equipped indicator immediately
-                this.needsRender = true;
+                // Check if item can be equipped
+                if (item.canEquip(player)) {
+                    item.equip(player);
+                    console.log(`Equipped item: ${item.name}`);
+                    // Trigger re-render to update equipped indicator immediately
+                    this.needsRender = true;
+                } else {
+                    // Item cannot be equipped - shake it
+                    this.shakeItem(this.selectedIndex);
+                }
             }
         }
 
@@ -377,5 +388,11 @@ export class InventoryManager {
         `;
 
         return statsHTML + xDataHTML + techHTML + boosterPacksHTML + expHTML;
+    }
+
+    private shakeItem(index: number) {
+        if (this.itemElements && this.itemElements[index]) {
+            shakeElement(this.itemElements[index]);
+        }
     }
 }

@@ -2,7 +2,7 @@ import { Item } from './Item';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
-import { resetInputDebounce } from '../ui/UiUtils';
+import { resetInputDebounce, shakeElement } from '../ui/UiUtils';
 import { formatItemLabel } from './ItemDisplay';
 import { TradeMode } from './TradeMode';
 import { TraderPanel } from './TraderPanel';
@@ -284,7 +284,11 @@ export abstract class BaseTrader {
     }
 
     protected renderItemList(container: HTMLDivElement, items: Item[], isActive: boolean, mode: TradeMode, player: Player) {
-        container.innerHTML = ''; this.itemElements = [];
+        container.innerHTML = '';
+        // Only clear itemElements if this is the active panel
+        if (isActive) {
+            this.itemElements = [];
+        }
         items.forEach((item, index) => {
             const itemDiv = document.createElement('div');
             const price = mode === TradeMode.BUY ? item.buyPrice : item.sellPrice;
@@ -339,13 +343,18 @@ export abstract class BaseTrader {
     protected handleTransaction(player: Player) {
         if (this.activePanel === TraderPanel.TRADER) {
             const item = this.traderInventory[this.selectedIndex];
-            if (item && item.buyPrice !== undefined && player.money >= item.buyPrice) {
-                player.money -= item.buyPrice;
-                const clone = (item as any).clone ? (item as any).clone(`p${Date.now()}`) : { ...item, id: `p${Date.now()}` };
-                (clone as any).isEquipped = false; player.inventory.push(clone as Item);
-                this.traderInventory.splice(this.selectedIndex, 1);
-                if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) this.selectedIndex--;
-                this.needsRender = true;
+            if (item && item.buyPrice !== undefined) {
+                if (player.money >= item.buyPrice) {
+                    player.money -= item.buyPrice;
+                    const clone = (item as any).clone ? (item as any).clone(`p${Date.now()}`) : { ...item, id: `p${Date.now()}` };
+                    (clone as any).isEquipped = false; player.inventory.push(clone as Item);
+                    this.traderInventory.splice(this.selectedIndex, 1);
+                    if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) this.selectedIndex--;
+                    this.needsRender = true;
+                } else {
+                    // Player doesn't have enough money - shake the item
+                    this.shakeItem(this.selectedIndex);
+                }
             }
         } else {
             const playerItems = this.filterPlayerInventory(player);
@@ -365,17 +374,7 @@ export abstract class BaseTrader {
 
     protected shakeItem(index: number) {
         if (this.itemElements && this.itemElements[index]) {
-            const element = this.itemElements[index];
-            const keyframes = [
-                { transform: 'translateX(0px)' },
-                { transform: 'translateX(-5px)' },
-                { transform: 'translateX(5px)' },
-                { transform: 'translateX(-5px)' },
-                { transform: 'translateX(5px)' },
-                { transform: 'translateX(0px)' }
-            ];
-            const timing = { duration: 300, iterations: 1 };
-            try { element.animate(keyframes, timing); } catch (e) { /* ignore if not supported */ }
+            shakeElement(this.itemElements[index]);
         }
     }
 }
