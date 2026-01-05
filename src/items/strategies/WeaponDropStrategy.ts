@@ -16,7 +16,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         if (Math.random() > enemy.itemDropChance) return null;
 
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
-        const weaponLevel = this.determineWeaponLevel(weaponType, player);
+        const weaponLevel = this.determineWeaponLevel(player.getTechForWeapon(weaponType));
         const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, weaponLevel);
         if (!weaponItem) return null;
 
@@ -75,9 +75,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
      * - Only one direction possible: 25% special, 75% base
      * - No special drops available: 100% base
      */
-    private determineWeaponLevel(weaponType: WeaponType, player: Player): number {
-        const playerTech = player.getTechForWeapon(weaponType);
-        
+    private determineWeaponLevel(playerTech: number): number {
         // Determine base level (highest level player can equip)
         let baseLevel = 1;
         for (let i = 0; i < WeaponItem.WEAPON_LEVELS.length; i++) {
@@ -87,7 +85,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
                 break;
             }
         }
-        
+
         // Check if player is at 80% or more of next level requirement
         const nextLevelIndex = baseLevel; // Index in array (0-based) for next level
         let canDropHigher = false;
@@ -98,21 +96,21 @@ export class WeaponDropStrategy implements ItemDropStrategy {
                 canDropHigher = true;
             }
         }
-        
+
         // Single roll for drop level variation
         const roll = Math.random();
-        
+
         // 25% chance to drop 1 level lower (if possible)
         if (roll < 0.25 && baseLevel > 1) {
             return baseLevel - 1;
         }
-        
+
         // 25% chance to drop 1 level higher (if eligible)
         // Checked in range [0.25, 0.5) to give it a true 25% chance
         if (roll >= 0.25 && roll < 0.5 && canDropHigher) {
             return baseLevel + 1;
         }
-        
+
         // Default: drop at base level
         // This covers range [0.5, 1.0) plus any probability from unavailable special drops
         return baseLevel;
