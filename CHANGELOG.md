@@ -1,3 +1,19 @@
+# [1.23.0](https://github.com/samtun/hackworld/compare/v1.22.0...v1.23.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* remove stat level multiplier ([18ab267](https://github.com/samtun/hackworld/commit/18ab2678323ff8342ac04ae9dc06a901e3cd3fbf))
+* separate stat points from XData upgrades for independent tracking ([da2cd61](https://github.com/samtun/hackworld/commit/da2cd61bbf4c15aa8913c89383c128899c50c8e2))
+
+
+### Features
+
+* add Agility and Luck to X-Data upgrade UI ([f968157](https://github.com/samtun/hackworld/commit/f968157eca1f94953d395344564c911edbadefc4))
+* apply luck multiplier to item drops and EXP gains ([e0fb658](https://github.com/samtun/hackworld/commit/e0fb6584956c09f6ae9bb905506972eef9f0d18a))
+* implement player stat system with strength, defense, agility, and luck ([19a6ef8](https://github.com/samtun/hackworld/commit/19a6ef80bb6de9852b4652a8df0f86ea67ec4732))
+* improve stat points display and add level up button to debug panel ([2650c10](https://github.com/samtun/hackworld/commit/2650c1002c390c7a1668140735b208e8248cb8b4))
+
 # [1.22.0](https://github.com/samtun/hackworld/compare/v1.21.2...v1.22.0) (2026-01-05)
 
 
