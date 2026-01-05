@@ -34,7 +34,7 @@ export class FloatingIndicatorManager {
     }
 
     /**
-     * Spawn an EXP number (white color with + prefix)
+     * Spawn an EXP number (white color with EXP suffix)
      */
     spawnEXP(position: CANNON.Vec3, amount: number): void {
         this.spawn(position, {
