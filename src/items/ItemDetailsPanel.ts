@@ -62,7 +62,6 @@ export class ItemDetailsPanel {
         return [
             { label: 'Type', value: typeLabel },
             { label: 'Damage', value: damage },
-            { label: 'Level', value: item.level },
             { label: 'Required Tech', value: levelDef.requiredTech },
             { label: 'Price', value: `${item.sellPrice} bits` }
         ];
@@ -76,7 +75,6 @@ export class ItemDetailsPanel {
 
         // Add level and requirement info
         const levelDef = item.getLevelByNumber();
-        details.push({ label: 'Level', value: item.level });
         details.push({ label: 'Required Player Level', value: levelDef.requiredLevel });
 
         // Use effective stats (with level multiplier applied)
@@ -108,7 +106,6 @@ export class ItemDetailsPanel {
 
         // Add level and requirement info
         const levelDef = item.getLevelByNumber();
-        details.push({ label: 'Level', value: item.level });
         details.push({ label: 'Required Player Level', value: levelDef.requiredLevel });
 
         // Use effective stats (with level multiplier applied)
