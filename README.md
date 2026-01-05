@@ -10,7 +10,7 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Hub based game world with multiple dungeon stages
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
 - Inventory system with looting mechanics
-- **Save system** - Save your game progress to a JSON file through the Save Manager NPC in the lobby
+- **Save/Load system** - Save your game progress to a JSON file or load a previously saved game through the Save Manager NPC in the lobby
 
 ## Tech Stack
 
