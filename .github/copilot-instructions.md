@@ -197,6 +197,67 @@ if (material && typeof material.dispose === 'function') {
 ### Game State Management
 Use the existing state management patterns in Game.ts for scene transitions and game state.
 
+### Save System
+The game includes a comprehensive save/load system managed by `SaveManager.ts` and `SaveManagerUI.ts`.
+
+#### When Adding New Player Stats or Inventory Items
+**CRITICAL**: When adding new player stats, inventory item types, or any persistent game state, you **MUST** update the save system:
+
+1. **Update the SaveData interface** in `SaveManager.ts`:
+   - Add new fields to the appropriate section (player stats, inventory, etc.)
+   - Include proper TypeScript types for all new fields
+
+2. **Update the save() method** in `SaveManager.ts`:
+   - Add code to serialize the new data into the SaveData structure
+   - For inventory items, follow the existing pattern with `kind` field:
+     ```typescript
+     if (i instanceof NewItemType) {
+         return {
+             kind: 'newitem',
+             id: i.id,
+             name: i.name,
+             level: i.level,
+             isEquipped: !!i.isEquipped,
+             // Add other relevant properties
+         };
+     }
+     ```
+
+3. **Update the load() method** in `SaveManager.ts`:
+   - Add code to restore the new data from the SaveData structure
+   - For player stats, directly assign the values
+   - For inventory items, create new instances from registries/repositories:
+     ```typescript
+     else if (itemData.kind === 'newitem') {
+         const registry = NewItemRegistry.Instance;
+         const def = registry.getByName(itemData.name);
+         if (def) {
+             const item = new NewItemType(
+                 crypto.randomUUID(),
+                 def.name,
+                 // ... other constructor params
+                 itemData.level
+             );
+             if (itemData.isEquipped) {
+                 item.isEquipped = true;
+             }
+             player.inventory.push(item);
+         }
+     }
+     ```
+
+4. **Test thoroughly**:
+   - Save a game with the new data
+   - Load the save file and verify all data is restored correctly
+   - Check that equipped states and levels are preserved
+
+#### Important Notes
+- Items are identified by their base properties (name, type, level), not by UUID
+- Weapons are restored using `WeaponRepository.getWeaponByTypeAndLevel()`
+- Cores and Chips are restored by looking up their name in their respective registries
+- Always create new instances with fresh UUIDs when loading
+- Call `player.recalculateStats()` after loading to ensure equipped items apply their effects correctly
+
 ## What to Avoid
 - ❌ Don't create monolithic classes with too many responsibilities
 - ❌ Don't bypass the entity-based architecture

@@ -3,6 +3,11 @@ import { SaveManagerUI } from './SaveManagerUI';
 import { PlayerRegistry } from './PlayerRegistry';
 import { InputManager } from './InputManager';
 import { CardCollection } from './items/cards/CardCollection';
+import { WeaponRepository } from './items/weapons/WeaponRepository';
+import { CoreRegistry } from './items/cores/CoreRegistry';
+import { CoreItem } from './items/cores/CoreItem';
+import { ChipRegistry } from './items/chips/ChipRegistry';
+import { ChipItem } from './items/chips/ChipItem';
 
 /**
  * Interface representing the complete save data structure
@@ -82,6 +87,7 @@ export class SaveManager {
         this.saveManagerUi.show(
             this.getFormattedPlaytime(),
             () => this.save(),
+            (file: File) => this.load(file),
         );
     }
 
@@ -171,6 +177,24 @@ export class SaveManager {
                             level: wi.level,
                             isEquipped: !!wi.isEquipped,
                         };
+                    } else if (i instanceof CoreItem) {
+                        const ci = i as any;
+                        return {
+                            kind: 'core',
+                            id: ci.id,
+                            name: ci.name,
+                            level: ci.level,
+                            isEquipped: !!ci.isEquipped,
+                        };
+                    } else if (i instanceof ChipItem) {
+                        const chi = i as any;
+                        return {
+                            kind: 'chip',
+                            id: chi.id,
+                            name: chi.name,
+                            level: chi.level,
+                            isEquipped: !!chi.isEquipped,
+                        };
                     }
                     // Fallback: deep-clone other items
                     return structuredClone(i);
@@ -218,5 +242,143 @@ export class SaveManager {
      */
     private formatTimestampForFilename(timestamp: string): string {
         return timestamp.replace(/[:.]/g, '-').replace('T', '_').split('Z')[0];
+    }
+
+    /**
+     * Load game state from a save file
+     * @param file - The save file to load
+     */
+    async load(file: File): Promise<void> {
+        try {
+            // Read file content
+            const text = await file.text();
+            const saveData: SaveData = JSON.parse(text);
+
+            // Validate save data version
+            if (!saveData.version) {
+                throw new Error('Invalid save file: missing version');
+            }
+
+            // Get the player instance
+            const player = this.playerRegistry.activePlayers[0];
+            if (!player) {
+                throw new Error('No active player found');
+            }
+
+            // Restore player stats
+            player.level = saveData.player.level;
+            player.exp = saveData.player.exp;
+            player.expRequired = saveData.player.expRequired;
+            player.hp = saveData.player.hp;
+            player.maxHp = saveData.player.maxHp;
+            player.tp = saveData.player.tp;
+            player.maxTp = saveData.player.maxTp;
+            player.strength = saveData.player.strength;
+            player.defense = saveData.player.defense;
+            player.speed = saveData.player.speed;
+            player.money = saveData.player.money;
+            player.xData = saveData.player.xData;
+            player.boosterPacks = saveData.player.boosterPacks;
+
+            // Restore upgrades
+            player.strengthUpgrades = saveData.player.strengthUpgrades;
+            player.defenseUpgrades = saveData.player.defenseUpgrades;
+            player.hpUpgrades = saveData.player.hpUpgrades;
+            player.tpUpgrades = saveData.player.tpUpgrades;
+
+            // Restore weapon tech
+            if (saveData.player.tech) {
+                (player as any).tech = structuredClone(saveData.player.tech);
+            }
+
+            // Restore position
+            player.body.position.set(
+                saveData.player.position.x,
+                saveData.player.position.y,
+                saveData.player.position.z
+            );
+
+            // Restore inventory
+            player.inventory = [];
+            const weaponRepo = WeaponRepository.Instance;
+            const coreRegistry = CoreRegistry.Instance;
+            const chipRegistry = ChipRegistry.Instance;
+
+            for (const itemData of saveData.player.inventory) {
+                if (itemData.kind === 'weapon') {
+                    // Restore weapon by finding a weapon with matching properties
+                    // We use weaponType and level to find the right weapon from the repository
+                    if (itemData.weaponType && itemData.level) {
+                        const baseWeapon = weaponRepo.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
+                        if (baseWeapon) {
+                            // Set the saved properties if needed
+                            if (itemData.isEquipped) {
+                                baseWeapon.isEquipped = true;
+                                player.setWeapon(baseWeapon);
+                            }
+                            player.inventory.push(baseWeapon);
+                        }
+                    } else {
+                        console.warn('Invalid weapon data in save file:', itemData);
+                    }
+                } else if (itemData.kind === 'core') {
+                    // Restore core by name since the ID is a UUID
+                    const allCores = coreRegistry.getAllCores();
+                    const coreDef = allCores.find(c => c.name === itemData.name);
+                    if (coreDef) {
+                        const coreItem = new CoreItem(
+                            crypto.randomUUID(),
+                            coreDef.name,
+                            coreDef.buyPrice,
+                            coreDef.sellPrice,
+                            coreDef.stats,
+                            itemData.level
+                        );
+                        if (itemData.isEquipped) {
+                            coreItem.isEquipped = true;
+                        }
+                        player.inventory.push(coreItem);
+                    }
+                } else if (itemData.kind === 'chip') {
+                    // Restore chip by name since the ID is a UUID
+                    const allChips = chipRegistry.getAllChips();
+                    const chipDef = allChips.find(c => c.name === itemData.name);
+                    if (chipDef) {
+                        const chipItem = new ChipItem(
+                            crypto.randomUUID(),
+                            chipDef.name,
+                            chipDef.buyPrice,
+                            chipDef.sellPrice,
+                            chipDef.type,
+                            chipDef.stats,
+                            itemData.level
+                        );
+                        if (itemData.isEquipped) {
+                            chipItem.isEquipped = true;
+                        }
+                        player.inventory.push(chipItem);
+                    }
+                }
+            }
+
+            // Recalculate stats based on equipped items
+            player.recalculateStats();
+
+            // Restore HP/TP after recalculation (they may have been clamped)
+            player.hp = Math.min(saveData.player.hp, player.maxHp);
+            player.tp = Math.min(saveData.player.tp, player.maxTp);
+
+            // Restore playtime
+            this.playTimeSeconds = saveData.playtime;
+
+            // Restore card collection
+            const cardCollection = CardCollection.Instance;
+            cardCollection.loadSaveData(saveData.cardCollection);
+
+            console.log('Save file loaded successfully');
+        } catch (error) {
+            console.error('Failed to load save file:', error);
+            throw error;
+        }
     }
 }
