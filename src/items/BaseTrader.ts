@@ -2,7 +2,7 @@ import { Item } from './Item';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
-import { resetInputDebounce } from '../ui/UiUtils';
+import { resetInputDebounce, shakeElement } from '../ui/UiUtils';
 import { formatItemLabel } from './ItemDisplay';
 import { TradeMode } from './TradeMode';
 import { TraderPanel } from './TraderPanel';
@@ -370,17 +370,7 @@ export abstract class BaseTrader {
 
     protected shakeItem(index: number) {
         if (this.itemElements && this.itemElements[index]) {
-            const element = this.itemElements[index];
-            const keyframes = [
-                { transform: 'translateX(0px)' },
-                { transform: 'translateX(-5px)' },
-                { transform: 'translateX(5px)' },
-                { transform: 'translateX(-5px)' },
-                { transform: 'translateX(5px)' },
-                { transform: 'translateX(0px)' }
-            ];
-            const timing = { duration: 300, iterations: 1 };
-            try { element.animate(keyframes, timing); } catch (e) { /* ignore if not supported */ }
+            shakeElement(this.itemElements[index]);
         }
     }
 }

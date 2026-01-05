@@ -1,5 +1,6 @@
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
+import { shakeElement } from '../ui/UiUtils';
 
 // --- Constants ---
 const COLORS = {
@@ -406,17 +407,7 @@ export class InventoryManager {
 
     private shakeItem(index: number) {
         if (this.itemElements && this.itemElements[index]) {
-            const element = this.itemElements[index];
-            const keyframes = [
-                { transform: 'translateX(0px)' },
-                { transform: 'translateX(-5px)' },
-                { transform: 'translateX(5px)' },
-                { transform: 'translateX(-5px)' },
-                { transform: 'translateX(5px)' },
-                { transform: 'translateX(0px)' }
-            ];
-            const timing = { duration: 300, iterations: 1 };
-            try { element.animate(keyframes, timing); } catch (e) { /* ignore if not supported */ }
+            shakeElement(this.itemElements[index]);
         }
     }
 }
