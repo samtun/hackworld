@@ -9,8 +9,8 @@ export class WeaponItem extends EquippableItem {
     // fixed numeric level for this weapon instance (1 = α, 2 = β, ...)
     level: number;
 
-    // Level metadata owned by the WeaponItem instance
-    private static WEAPON_LEVELS = [
+    // Level metadata - single source of truth for weapon level requirements
+    public static readonly WEAPON_LEVELS = [
         { requiredTech: 0, damagePercent: 1 }, // α
         { requiredTech: 120, damagePercent: 1.80 }, // β
         { requiredTech: 460, damagePercent: 3.20 }, // γ
