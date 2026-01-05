@@ -360,6 +360,10 @@ export class SaveManager {
             // Recalculate stats based on equipped items
             player.recalculateStats();
 
+            // Restore HP/TP after recalculation (they may have been clamped)
+            player.hp = Math.min(saveData.player.hp, player.maxHp);
+            player.tp = Math.min(saveData.player.tp, player.maxTp);
+
             // Restore playtime
             this.playTimeSeconds = saveData.playtime;
 
