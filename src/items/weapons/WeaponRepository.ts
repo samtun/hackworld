@@ -71,7 +71,7 @@ export class WeaponRepository {
                 for (const weapon of weapons) {
                     // Return clones with the original ID so they can be looked up later
                     // (e.g. by the trader or debug tools)
-                    allWeapons.push(weapon.clone(weapon.id));
+                    allWeapons.push(weapon.clone());
                 }
             }
         }
@@ -81,7 +81,7 @@ export class WeaponRepository {
 
     /**
      * Get a random weapon by type and level
-     * Returns a cloned instance with a new UUID
+     * Returns a cloned instance with the original ID
      */
     getWeaponByTypeAndLevel(type: WeaponType, level: number): WeaponItem | undefined {
         const levelIndex = level - 1;
@@ -94,12 +94,12 @@ export class WeaponRepository {
         if (!weapons || weapons.length === 0) return undefined;
 
         const randomWeapon = weapons[Math.floor(Math.random() * weapons.length)];
-        return randomWeapon.clone(crypto.randomUUID());
+        return randomWeapon.clone();
     }
 
     /**
      * Get a random weapon of a specific level
-     * Returns a cloned instance with a new UUID
+     * Returns a cloned instance with the original ID
      */
     getRandomWeaponOfLevel(level: number): WeaponItem | undefined {
         const levelIndex = level - 1;
@@ -116,12 +116,12 @@ export class WeaponRepository {
         if (allWeaponsAtLevel.length === 0) return undefined;
 
         const randomWeapon = allWeaponsAtLevel[Math.floor(Math.random() * allWeaponsAtLevel.length)];
-        return randomWeapon.clone(crypto.randomUUID());
+        return randomWeapon.clone();
     }
 
     /**
      * Get weapon by ID
-     * Returns a cloned instance with a new UUID
+     * Returns a cloned instance with the original ID
      */
     getWeaponById(id: string): WeaponItem | undefined {
         for (const levelMap of this.weaponsByLevel) {
@@ -129,7 +129,7 @@ export class WeaponRepository {
             for (const weapons of levelMap.values()) {
                 const weapon = weapons.find(w => w.id === id);
                 if (weapon) {
-                    return weapon.clone(crypto.randomUUID());
+                    return weapon.clone();
                 }
             }
         }
@@ -138,7 +138,7 @@ export class WeaponRepository {
 
     /**
      * Get all weapons of a specific type (from all levels)
-     * Returns cloned instances with new UUIDs
+     * Returns cloned instances with the original ID
      */
     getWeaponsByType(type: WeaponType): WeaponItem[] {
         const weaponsOfType: WeaponItem[] = [];
@@ -148,7 +148,7 @@ export class WeaponRepository {
             const weapons = levelMap.get(type);
             if (weapons) {
                 for (const weapon of weapons) {
-                    weaponsOfType.push(weapon.clone(crypto.randomUUID()));
+                    weaponsOfType.push(weapon.clone());
                 }
             }
         }

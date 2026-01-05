@@ -357,7 +357,7 @@ export abstract class BaseTrader {
                 // Use crypto.randomUUID() for better uniqueness than Date.now()
                 const sold = (item as any).clone ? (item as any).clone(crypto.randomUUID()) : { ...item, id: crypto.randomUUID() };
                 (sold as any).isEquipped = false; this.traderInventory.push(sold as Item);
-                const idx = player.inventory.findIndex(i => i.id === item.id);
+                const idx = player.inventory.indexOf(item);
                 if (idx !== -1) player.inventory.splice(idx, 1);
                 if (this.selectedIndex >= playerItems.length - 1 && this.selectedIndex > 0) this.selectedIndex--;
                 this.needsRender = true;
