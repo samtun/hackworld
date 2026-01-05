@@ -1,3 +1,23 @@
+# [1.22.0](https://github.com/samtun/hackworld/compare/v1.21.2...v1.22.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* apply progressive stat scaling to chips and cores JSON files ([7f166d9](https://github.com/samtun/hackworld/commit/7f166d974be7b80335cec19fe24a9344615a1e9d))
+* clone methods now correctly use base prices and deep copy stats ([a04c4e4](https://github.com/samtun/hackworld/commit/a04c4e4e8a977a67a940f6945b523f36db57d187))
+* remove drop managers and unify drops further ([6bc0f87](https://github.com/samtun/hackworld/commit/6bc0f874c28e5d700e203f6433e38478a9349c3d))
+* remove level from itemdetailpanel ([940f129](https://github.com/samtun/hackworld/commit/940f129da182cccc7a54a63a517d5adc957d0197))
+* remove redundant method from chip and core items ([843fbdf](https://github.com/samtun/hackworld/commit/843fbdf591643bd2f84a95c8dbaa4ec08558f730))
+* revert DebugValueEditor changes ([4eaa777](https://github.com/samtun/hackworld/commit/4eaa7777184051e405f7f7dec23f12774eded49c))
+* revert test change ([f134605](https://github.com/samtun/hackworld/commit/f13460576956d817a69bb20a9f4915ad3ff29ae1))
+
+
+### Features
+
+* add chip and core repositories with JSON data files ([f046d04](https://github.com/samtun/hackworld/commit/f046d04cca6c98fd35308e86bc1a36d9d33379b3))
+* apply level-based price multipliers to chip and core sell prices ([b4b3191](https://github.com/samtun/hackworld/commit/b4b31919b7c2c1b49ce1b99e2a02170695d07ada))
+* remove price from item name in inventory, move to item details ([27c408b](https://github.com/samtun/hackworld/commit/27c408b316843cf52fb66b85190e232bd19ca65c))
+
 ## [1.21.2](https://github.com/samtun/hackworld/compare/v1.21.1...v1.21.2) (2026-01-05)
 
 
