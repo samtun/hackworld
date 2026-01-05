@@ -16,26 +16,6 @@ export class ChipItem extends EquippableItem {
         this.level = level;
     }
 
-    // Override to apply level-based price multiplier
-    get buyPrice(): number {
-        const multiplier = this.getPriceMultiplierForLevel();
-        return Math.round(this.baseBuyPrice * multiplier);
-    }
-
-    // Override to apply level-based price multiplier to sell price
-    get sellPrice(): number {
-        const multiplier = this.getPriceMultiplierForLevel();
-        return Math.round(this.baseSellPrice * multiplier);
-    }
-
-    private getPriceMultiplierForLevel(): number {
-        const index = this.level - 1;
-        if (index < 0 || index >= ItemLevelHelper.PRICE_MULTIPLIERS.length) {
-            return ItemLevelHelper.PRICE_MULTIPLIERS[ItemLevelHelper.PRICE_MULTIPLIERS.length - 1];
-        }
-        return ItemLevelHelper.PRICE_MULTIPLIERS[index];
-    }
-
     // Return level definition by numeric level (1-based). Throws if level <= 0.
     public getLevelByNumber(): { requiredLevel: number; statPercent: number } {
         return ItemLevelHelper.getChipCoreLevelByNumber(this.level);

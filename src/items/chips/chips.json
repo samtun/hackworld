@@ -17,8 +17,8 @@
         "stats": {
             "weaponRangeMultiplier": 1.12
         },
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 225,
+        "sellPrice": 112,
         "level": 2
     },
     {
@@ -28,8 +28,8 @@
         "stats": {
             "weaponRangeMultiplier": 1.14
         },
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 300,
+        "sellPrice": 150,
         "level": 3
     },
     {
@@ -39,8 +39,8 @@
         "stats": {
             "weaponRangeMultiplier": 1.16
         },
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 450,
+        "sellPrice": 225,
         "level": 4
     },
     {
@@ -50,8 +50,8 @@
         "stats": {
             "weaponRangeMultiplier": 1.18
         },
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 750,
+        "sellPrice": 375,
         "level": 5
     },
     {
@@ -61,8 +61,8 @@
         "stats": {
             "weaponRangeMultiplier": 1.20
         },
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 1200,
+        "sellPrice": 600,
         "level": 6
     },
     {
@@ -83,8 +83,8 @@
         "stats": {
             "walkSpeedMultiplier": 1.12
         },
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 225,
+        "sellPrice": 112,
         "level": 2
     },
     {
@@ -94,8 +94,8 @@
         "stats": {
             "walkSpeedMultiplier": 1.14
         },
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 300,
+        "sellPrice": 150,
         "level": 3
     },
     {
@@ -105,8 +105,8 @@
         "stats": {
             "walkSpeedMultiplier": 1.16
         },
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 450,
+        "sellPrice": 225,
         "level": 4
     },
     {
@@ -116,8 +116,8 @@
         "stats": {
             "walkSpeedMultiplier": 1.18
         },
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 750,
+        "sellPrice": 375,
         "level": 5
     },
     {
@@ -127,8 +127,8 @@
         "stats": {
             "walkSpeedMultiplier": 1.20
         },
-        "buyPrice": 150,
-        "sellPrice": 75,
+        "buyPrice": 1200,
+        "sellPrice": 600,
         "level": 6
     }
 ]
