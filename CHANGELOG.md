@@ -1,3 +1,16 @@
+# [1.16.0](https://github.com/samtun/hackworld/compare/v1.15.0...v1.16.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* fix hp and tp calculation on level up ([e94854c](https://github.com/samtun/hackworld/commit/e94854c6c38284b01be6fdd538f3bbe6ef513e33))
+* use single random roll for proper 25% probabilities ([9abd1c5](https://github.com/samtun/hackworld/commit/9abd1c589411280db5b6bee3cf8a0e517c09bdc3))
+
+
+### Features
+
+* implement proper weapon drop logic based on player tech ([a6c68c7](https://github.com/samtun/hackworld/commit/a6c68c7cf647d8079363d11c862c5babff2b94f9))
+
 # [1.15.0](https://github.com/samtun/hackworld/compare/v1.14.0...v1.15.0) (2026-01-04)
 
 
