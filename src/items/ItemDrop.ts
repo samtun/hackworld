@@ -10,10 +10,11 @@ export abstract class ItemDrop {
     /**
      * Creates a text label using canvas with the correct Share Tech font
      * @param itemName The name of the item to display
-     * @param levelChar The level character to display in italic (e.g., 'α', 'β')
+     * @param levelChar The level character to display in italic (e.g., 'α', 'β'). Leave empty for no level display.
+     * @param textColor The color of the text (default: '#ffffff')
      * @returns A THREE.Mesh with the text label
      */
-    protected createTextLabel(itemName: string, levelChar: string): THREE.Mesh {
+    protected createTextLabel(itemName: string, levelChar: string = '', textColor: string = '#ffffff'): THREE.Mesh {
         const canvas = document.createElement('canvas');
         const context = canvas.getContext('2d')!;
         canvas.width = 512;
@@ -25,16 +26,16 @@ export abstract class ItemDrop {
 
         const font = 'bold 68px "Share Tech", Arial, sans-serif';
         context.font = font;
-        context.fillStyle = '#ffffff';
+        context.fillStyle = textColor;
         context.textBaseline = 'middle';
 
         // Measure widths to center the combined text
         const nameWidth = context.measureText(itemName).width;
 
         context.font = font;
-        const levelWidth = context.measureText(levelChar).width;
+        const levelWidth = levelChar ? context.measureText(levelChar).width : 0;
 
-        const spacing = 8; // gap between name and level char
+        const spacing = levelChar ? 8 : 0; // gap between name and level char only if level char exists
         const totalWidth = nameWidth + spacing + levelWidth;
 
         // Draw with left alignment starting at computed X so combined text is centered
@@ -46,9 +47,11 @@ export abstract class ItemDrop {
         context.textAlign = 'left';
         context.fillText(itemName, startX, centerY);
 
-        // Draw italic level char right of name
-        context.font = font;
-        context.fillText(levelChar, startX + nameWidth + spacing, centerY);
+        // Draw italic level char right of name (if provided)
+        if (levelChar) {
+            context.font = font;
+            context.fillText(levelChar, startX + nameWidth + spacing, centerY);
+        }
 
         // Create texture from canvas
         const texture = new THREE.CanvasTexture(canvas);
