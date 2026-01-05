@@ -84,16 +84,32 @@ export class InventoryManager {
         statsPanel.style.flexDirection = 'column';
         windowDiv.appendChild(statsPanel);
 
-        // Level display (top of stats panel)
+        // Level display container with stat points
+        const levelContainer = document.createElement('div');
+        levelContainer.style.display = 'flex';
+        levelContainer.style.justifyContent = 'space-between';
+        levelContainer.style.alignItems = 'center';
+        levelContainer.style.marginBottom = '20px';
+        statsPanel.appendChild(levelContainer);
+
+        // Level display (left side)
         const levelDisplay = document.createElement('div');
         levelDisplay.id = 'level-display';
         levelDisplay.style.fontSize = '24px';
         levelDisplay.style.fontWeight = 'bold';
-        levelDisplay.style.marginBottom = '20px';
         levelDisplay.style.color = '#ffd700'; // Gold color
         levelDisplay.style.textShadow = '2px 2px 0px #000';
-        levelDisplay.style.textAlign = 'center';
-        statsPanel.appendChild(levelDisplay);
+        levelContainer.appendChild(levelDisplay);
+
+        // Stat points display (right side)
+        const statPointsDisplay = document.createElement('div');
+        statPointsDisplay.id = 'stat-points-display';
+        statPointsDisplay.style.fontSize = '24px';
+        statPointsDisplay.style.fontWeight = 'bold';
+        statPointsDisplay.style.color = '#ffd700'; // Gold color
+        statPointsDisplay.style.textShadow = '2px 2px 0px #000';
+        statPointsDisplay.style.display = 'none'; // Hidden by default
+        levelContainer.appendChild(statPointsDisplay);
 
         this.statsText = document.createElement('div');
         statsPanel.appendChild(this.statsText);
@@ -211,13 +227,21 @@ export class InventoryManager {
     }
 
     private render(player: Player) {
-        // Update Level Display with stat points
+        // Update Level Display
         const levelDisplay = document.getElementById('level-display');
         if (levelDisplay) {
-            const statPointsText = player.statPointsAvailable > 0 
-                ? ` (${player.statPointsAvailable} pts)` 
-                : '';
-            levelDisplay.innerText = `Level ${player.level}${statPointsText}`;
+            levelDisplay.innerText = `Level ${player.level}`;
+        }
+        
+        // Update stat points display if available
+        const statPointsDisplay = document.getElementById('stat-points-display');
+        if (statPointsDisplay) {
+            if (player.statPointsAvailable > 0) {
+                statPointsDisplay.innerText = `${player.statPointsAvailable}`;
+                statPointsDisplay.style.display = 'block';
+            } else {
+                statPointsDisplay.style.display = 'none';
+            }
         }
 
         // Update Stats

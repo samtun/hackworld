@@ -158,6 +158,18 @@ export class DebugValueEditor {
         statsContainer.appendChild(xDataMoneyRow);
 
         statsSection.appendChild(statsContainer);
+        
+        // Add Level Up button
+        const levelUpButton = this.createButton('Level Up', () => {
+            if (this.player) {
+                const expNeeded = this.player.expRequired - this.player.exp;
+                this.player.gainExp(expNeeded);
+                console.log(`Leveled up! Now level ${this.player.level}`);
+            }
+        });
+        levelUpButton.style.marginTop = '10px';
+        statsSection.appendChild(levelUpButton);
+        
         panel.appendChild(statsSection);
 
         // Weapon Tech Section with two-column layout
