@@ -11,7 +11,7 @@ export class BoosterPackDropStrategy implements ItemDropStrategy {
 
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
-        const luckMultiplier = 1 + (player.luck / 40000);
+        const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
         const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
         
         if (Math.random() > effectiveDropChance) return null;

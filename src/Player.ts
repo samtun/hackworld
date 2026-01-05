@@ -17,7 +17,6 @@ export class Player extends BaseMesh {
     body: CANNON.Body;
     input: InputManager;
     weapon: Weapon;
-    speed: number = 6;
     currentWeaponType: WeaponType = WeaponType.SWORD;
     innerMesh?: THREE.Mesh;
     position: THREE.Vector3;
@@ -43,6 +42,13 @@ export class Player extends BaseMesh {
     private static readonly HP_TP_UPGRADE_AMOUNT = 5;
     private static readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
 
+    // Stat effect formula constants
+    private static readonly STAT_FORMULA_NUMERATOR = 0.27; // Numerator for strength/defense formulas
+    private static readonly STAT_FORMULA_LOG_BASE = 9999; // Log base for strength/defense formulas
+    private static readonly AGILITY_CRIT_DIVISOR = 40000; // Divisor for agility critical chance
+    private static readonly BASE_CRIT_CHANCE = 0.02; // Base 2% critical chance
+    private static readonly LUCK_DIVISOR = 40000; // Divisor for luck multiplier
+
     // Level system constants
     private static readonly MAX_LEVEL = 999;
     private static readonly LEVEL_STAT_MULTIPLIER = 1.002; // Stats increase by (1 + 0.002) * level
@@ -54,6 +60,9 @@ export class Player extends BaseMesh {
 
     // Tech point cap
     private static readonly TECH_POINT_CAP = 2500;
+
+    // Movement speed constant
+    private static readonly WALK_SPEED = 6;
 
     // Base Stats (without equipment modifiers or upgrades)
     private baseHp: number = 170;
@@ -280,25 +289,25 @@ export class Player extends BaseMesh {
     // Calculate strength multiplier using formula: 0.27 / ln(9999) * ln(x)
     private getStrengthMultiplier(): number {
         if (this.strength <= 0) return 0;
-        const multiplier = (0.27 / Math.log(9999)) * Math.log(this.strength);
+        const multiplier = (Player.STAT_FORMULA_NUMERATOR / Math.log(Player.STAT_FORMULA_LOG_BASE)) * Math.log(this.strength);
         return Math.max(0, multiplier);
     }
 
     // Calculate defense multiplier using formula: 0.27 / ln(9999) * ln(x)
     private getDefenseMultiplier(): number {
         if (this.defense <= 0) return 0;
-        const multiplier = (0.27 / Math.log(9999)) * Math.log(this.defense);
+        const multiplier = (Player.STAT_FORMULA_NUMERATOR / Math.log(Player.STAT_FORMULA_LOG_BASE)) * Math.log(this.defense);
         return Math.max(0, multiplier);
     }
 
     // Calculate critical hit chance using formula: agility / 40000 + 0.02
     private getCriticalChance(): number {
-        return this.agility / 40000 + 0.02;
+        return this.agility / Player.AGILITY_CRIT_DIVISOR + Player.BASE_CRIT_CHANCE;
     }
 
     // Calculate luck multiplier using formula: luck / 40000
     private getLuckMultiplier(): number {
-        return this.luck / 40000;
+        return this.luck / Player.LUCK_DIVISOR;
     }
 
     // Return current tech points for a given weapon type
@@ -435,7 +444,7 @@ export class Player extends BaseMesh {
             }
 
             // Apply walk speed multiplier from chips
-            let effectiveSpeed = this.speed;
+            let effectiveSpeed = Player.WALK_SPEED;
             const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
             if (equippedChip && equippedChip.stats.walkSpeedMultiplier !== undefined) {
                 effectiveSpeed *= equippedChip.stats.walkSpeedMultiplier;
