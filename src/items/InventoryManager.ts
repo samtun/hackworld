@@ -33,9 +33,6 @@ import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';
 import { WeaponType } from './weapons/WeaponType';
-import { WeaponItem } from './weapons/WeaponItem';
-import { ChipItem } from './chips/ChipItem';
-import { CoreItem } from './cores/CoreItem';
 
 export { Item }; // Re-export Item for other files that might import it from here
 
@@ -240,7 +237,7 @@ export class InventoryManager {
             const isSelected = index === this.selectedIndex;
             
             // Check if item can be equipped (for EquippableItems only)
-            const canEquip = item instanceof EquippableItem ? this.canEquipItem(item, player) : true;
+            const canEquip = item instanceof EquippableItem ? item.canEquip(player) : true;
 
             Object.assign(itemDiv.style, {
                 padding: '5px',
@@ -313,7 +310,7 @@ export class InventoryManager {
             const item = player.inventory[this.selectedIndex];
             if (item instanceof EquippableItem) {
                 // Check if item can be equipped
-                if (this.canEquipItem(item, player)) {
+                if (item.canEquip(player)) {
                     item.equip(player);
                     console.log(`Equipped item: ${item.name}`);
                     // Trigger re-render to update equipped indicator immediately
@@ -391,18 +388,6 @@ export class InventoryManager {
         `;
 
         return statsHTML + xDataHTML + techHTML + boosterPacksHTML + expHTML;
-    }
-
-    private canEquipItem(item: EquippableItem, player: Player): boolean {
-        if (item instanceof WeaponItem) {
-            const lvlDef = item.getLevelByNumber();
-            const playerTech = player.getTechForWeapon(item.weaponType);
-            return playerTech >= lvlDef.requiredTech;
-        } else if (item instanceof ChipItem || item instanceof CoreItem) {
-            const lvlDef = item.getLevelByNumber();
-            return player.level >= lvlDef.requiredLevel;
-        }
-        return true;
     }
 
     private shakeItem(index: number) {
