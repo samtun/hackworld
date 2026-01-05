@@ -56,6 +56,7 @@ export class InventoryManager {
     private lastNavigateUpState: boolean = false;
     private lastNavigateDownState: boolean = false;
     private lastSelectState: boolean = false;
+    private lastCancelState: boolean = false;
 
     private constructor() {
         this.createUI();
@@ -276,6 +277,14 @@ export class InventoryManager {
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();
         const select = input.isSelectPressed();
+        const cancel = input.isCancelPressed();
+
+        // Cancel/Close inventory (with debouncing)
+        if (cancel && !this.lastCancelState) {
+            this.toggle(); // Close the inventory
+            this.lastCancelState = cancel;
+            return; // Exit early to prevent other navigation
+        }
 
         // Navigate up (with debouncing)
         if (navigateUp && !this.lastNavigateUpState) {
@@ -306,6 +315,7 @@ export class InventoryManager {
         this.lastNavigateUpState = navigateUp;
         this.lastNavigateDownState = navigateDown;
         this.lastSelectState = select;
+        this.lastCancelState = cancel;
     }
 
     private generateStatsHTML(player: Player): string {
