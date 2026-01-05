@@ -105,23 +105,23 @@ export class DebugValueEditor {
 
         // Stats Section with two-column layout
         const statsSection = this.createSection('Player Stats');
-        const statsGrid = this.createTwoColumnGrid();
+        const statsGrid = this.createTwoColumnGrid(6);
 
         // Left column
         this.createStatInputInGrid(statsGrid, 'left', 'level', 'Level:', 'number');
-        this.createStatInputInGrid(statsGrid, 'left', 'hp', 'HP:', 'number');
-        this.createStatInputInGrid(statsGrid, 'left', 'tp', 'TP:', 'number');
-        this.createStatInputInGrid(statsGrid, 'left', 'xData', 'X-Data:', 'number');
+        this.createSplitStatInputInGrid(statsGrid, 'left', 'hp', 'maxHp', 'HP:', 'number');
+        this.createSplitStatInputInGrid(statsGrid, 'left', 'tp', 'maxTp', 'TP:', 'number');
         this.createStatInputInGrid(statsGrid, 'left', 'strength', 'Strength:', 'number');
-        this.createStatInputInGrid(statsGrid, 'left', 'speed', 'Speed:', 'number');
+        this.createStatInputInGrid(statsGrid, 'left', 'defense', 'Defense:', 'number');
+        this.createStatInputInGrid(statsGrid, 'left', 'xData', 'X-Data:', 'number');
 
         // Right column
         this.createEmptyRowInGrid(statsGrid); // Empty first row
-        this.createStatInputInGrid(statsGrid, 'right', 'maxHp', 'Max', 'number');
-        this.createStatInputInGrid(statsGrid, 'right', 'maxTp', 'Max', 'number');
-        this.createStatInputInGrid(statsGrid, 'right', 'bits', 'Bits:', 'number');
         this.createStatInputInGrid(statsGrid, 'right', 'defense', 'Defense:', 'number');
-        this.createEmptyRowInGrid(statsGrid); // Empty row for spacing
+        this.createEmptyRowInGrid(statsGrid);
+        this.createEmptyRowInGrid(statsGrid);
+        this.createStatInputInGrid(statsGrid, 'right', 'speed', 'Speed:', 'number');
+        this.createStatInputInGrid(statsGrid, 'right', 'money', 'Money:', 'number');
 
         statsSection.appendChild(statsGrid);
         panel.appendChild(statsSection);
@@ -221,6 +221,59 @@ export class DebugValueEditor {
 
         row.appendChild(labelEl);
         row.appendChild(input);
+        grid.appendChild(row);
+    }
+
+    private createSplitStatInputInGrid(grid: HTMLDivElement, _column: 'left' | 'right', currentKey: string, maxKey: string, label: string, type: string): void {
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.gap = '8px';
+
+        const labelEl = document.createElement('label');
+        labelEl.textContent = label;
+        labelEl.style.fontSize = '14px';
+        labelEl.style.minWidth = '80px';
+        labelEl.style.flex = '0 0 auto';
+
+        // Current value input
+        const currentInput = document.createElement('input');
+        currentInput.type = type;
+        currentInput.style.flex = '1';
+        currentInput.style.padding = '5px';
+        currentInput.style.backgroundColor = '#222';
+        currentInput.style.border = '1px solid #666';
+        currentInput.style.borderRadius = '3px';
+        currentInput.style.color = '#fff';
+        currentInput.style.fontSize = '14px';
+        currentInput.style.fontFamily = 'inherit';
+
+        // Separator
+        const separator = document.createElement('span');
+        separator.textContent = '/';
+        separator.style.color = '#fff';
+        separator.style.fontSize = '14px';
+        separator.style.padding = '0 4px';
+
+        // Max value input
+        const maxInput = document.createElement('input');
+        maxInput.type = type;
+        maxInput.style.flex = '1';
+        maxInput.style.padding = '5px';
+        maxInput.style.backgroundColor = '#222';
+        maxInput.style.border = '1px solid #666';
+        maxInput.style.borderRadius = '3px';
+        maxInput.style.color = '#fff';
+        maxInput.style.fontSize = '14px';
+        maxInput.style.fontFamily = 'inherit';
+
+        this.inputElements.set(currentKey, currentInput);
+        this.inputElements.set(maxKey, maxInput);
+
+        row.appendChild(labelEl);
+        row.appendChild(currentInput);
+        row.appendChild(separator);
+        row.appendChild(maxInput);
         grid.appendChild(row);
     }
 
