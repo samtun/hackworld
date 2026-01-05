@@ -32,6 +32,9 @@ import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';
 import { WeaponType } from './weapons/WeaponType';
+import { WeaponItem } from './weapons/WeaponItem';
+import { ChipItem } from './chips/ChipItem';
+import { CoreItem } from './cores/CoreItem';
 
 export { Item }; // Re-export Item for other files that might import it from here
 
@@ -234,12 +237,16 @@ export class InventoryManager {
             itemDiv.innerHTML = formatItemLabel(item, priceText);
 
             const isSelected = index === this.selectedIndex;
+            
+            // Check if item can be equipped (for EquippableItems only)
+            const canEquip = item instanceof EquippableItem ? this.canEquipItem(item, player) : true;
 
             Object.assign(itemDiv.style, {
                 padding: '5px',
                 backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
                 border: isSelected ? '2px solid #fff' : '2px solid transparent',
-                position: 'relative'
+                position: 'relative',
+                opacity: canEquip ? '1' : '0.5'
             });
 
             // Add triangle overlay for equipped items
@@ -304,10 +311,16 @@ export class InventoryManager {
         if (select && !this.lastSelectState) {
             const item = player.inventory[this.selectedIndex];
             if (item instanceof EquippableItem) {
-                item.equip(player);
-                console.log(`Equipped item: ${item.name}`);
-                // Trigger re-render to update equipped indicator immediately
-                this.needsRender = true;
+                // Check if item can be equipped
+                if (this.canEquipItem(item, player)) {
+                    item.equip(player);
+                    console.log(`Equipped item: ${item.name}`);
+                    // Trigger re-render to update equipped indicator immediately
+                    this.needsRender = true;
+                } else {
+                    // Item cannot be equipped - shake it
+                    this.shakeItem(this.selectedIndex);
+                }
             }
         }
 
@@ -377,5 +390,33 @@ export class InventoryManager {
         `;
 
         return statsHTML + xDataHTML + techHTML + boosterPacksHTML + expHTML;
+    }
+
+    private canEquipItem(item: EquippableItem, player: Player): boolean {
+        if (item instanceof WeaponItem) {
+            const lvlDef = item.getLevelByNumber();
+            const playerTech = player.getTechForWeapon(item.weaponType);
+            return playerTech >= lvlDef.requiredTech;
+        } else if (item instanceof ChipItem || item instanceof CoreItem) {
+            const lvlDef = item.getLevelByNumber();
+            return player.level >= lvlDef.requiredLevel;
+        }
+        return true;
+    }
+
+    private shakeItem(index: number) {
+        if (this.itemElements && this.itemElements[index]) {
+            const element = this.itemElements[index];
+            const keyframes = [
+                { transform: 'translateX(0px)' },
+                { transform: 'translateX(-5px)' },
+                { transform: 'translateX(5px)' },
+                { transform: 'translateX(-5px)' },
+                { transform: 'translateX(5px)' },
+                { transform: 'translateX(0px)' }
+            ];
+            const timing = { duration: 300, iterations: 1 };
+            try { element.animate(keyframes, timing); } catch (e) { /* ignore if not supported */ }
+        }
     }
 }

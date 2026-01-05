@@ -339,13 +339,18 @@ export abstract class BaseTrader {
     protected handleTransaction(player: Player) {
         if (this.activePanel === TraderPanel.TRADER) {
             const item = this.traderInventory[this.selectedIndex];
-            if (item && item.buyPrice !== undefined && player.money >= item.buyPrice) {
-                player.money -= item.buyPrice;
-                const clone = (item as any).clone ? (item as any).clone(`p${Date.now()}`) : { ...item, id: `p${Date.now()}` };
-                (clone as any).isEquipped = false; player.inventory.push(clone as Item);
-                this.traderInventory.splice(this.selectedIndex, 1);
-                if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) this.selectedIndex--;
-                this.needsRender = true;
+            if (item && item.buyPrice !== undefined) {
+                if (player.money >= item.buyPrice) {
+                    player.money -= item.buyPrice;
+                    const clone = (item as any).clone ? (item as any).clone(`p${Date.now()}`) : { ...item, id: `p${Date.now()}` };
+                    (clone as any).isEquipped = false; player.inventory.push(clone as Item);
+                    this.traderInventory.splice(this.selectedIndex, 1);
+                    if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) this.selectedIndex--;
+                    this.needsRender = true;
+                } else {
+                    // Player doesn't have enough money - shake the item
+                    this.shakeItem(this.selectedIndex);
+                }
             }
         } else {
             const playerItems = this.filterPlayerInventory(player);
