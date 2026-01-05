@@ -341,7 +341,8 @@ export abstract class BaseTrader {
             const item = this.traderInventory[this.selectedIndex];
             if (item && item.buyPrice !== undefined && player.money >= item.buyPrice) {
                 player.money -= item.buyPrice;
-                const clone = (item as any).clone ? (item as any).clone(`p${Date.now()}`) : { ...item, id: `p${Date.now()}` };
+                // Use crypto.randomUUID() for better uniqueness than Date.now()
+                const clone = (item as any).clone ? (item as any).clone(crypto.randomUUID()) : { ...item, id: crypto.randomUUID() };
                 (clone as any).isEquipped = false; player.inventory.push(clone as Item);
                 this.traderInventory.splice(this.selectedIndex, 1);
                 if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) this.selectedIndex--;
@@ -353,7 +354,8 @@ export abstract class BaseTrader {
             if (item && item.sellPrice !== undefined) {
                 if ((item as any).isEquipped) { this.shakeItem(this.selectedIndex); return; }
                 player.money += item.sellPrice;
-                const sold = (item as any).clone ? (item as any).clone(`t${Date.now()}`) : { ...item, id: `t${Date.now()}` };
+                // Use crypto.randomUUID() for better uniqueness than Date.now()
+                const sold = (item as any).clone ? (item as any).clone(crypto.randomUUID()) : { ...item, id: crypto.randomUUID() };
                 (sold as any).isEquipped = false; this.traderInventory.push(sold as Item);
                 const idx = player.inventory.findIndex(i => i.id === item.id);
                 if (idx !== -1) player.inventory.splice(idx, 1);

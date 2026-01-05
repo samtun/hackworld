@@ -69,7 +69,9 @@ export class WeaponRepository {
             if (!levelMap) continue;
             for (const weapons of levelMap.values()) {
                 for (const weapon of weapons) {
-                    allWeapons.push(weapon.clone(crypto.randomUUID()));
+                    // Return clones with the original ID so they can be looked up later
+                    // (e.g. by the trader or debug tools)
+                    allWeapons.push(weapon.clone(weapon.id));
                 }
             }
         }
