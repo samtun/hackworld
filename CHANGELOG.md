@@ -1,3 +1,16 @@
+# [1.19.0](https://github.com/samtun/hackworld/compare/v1.18.0...v1.19.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* add error handling and validation for load functionality ([03fcc6e](https://github.com/samtun/hackworld/commit/03fcc6e7901f4dcb380d50b768da1558ca347d98))
+* restore HP/TP after stat recalculation in load ([77edc69](https://github.com/samtun/hackworld/commit/77edc699b89752623a1671cd103eb22f16f719fc))
+
+
+### Features
+
+* add load save file functionality to save manager ([f2a160a](https://github.com/samtun/hackworld/commit/f2a160ad497b33f86f5e32e3e05ed4f9b73ad1e1))
+
 # [1.18.0](https://github.com/samtun/hackworld/compare/v1.17.0...v1.18.0) (2026-01-05)
 
 
