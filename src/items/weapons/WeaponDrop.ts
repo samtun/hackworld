@@ -8,7 +8,7 @@ import { ItemDrop } from '../ItemDrop';
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
  * Displays a 3D text label and animates in a floating motion
  */
-export class WeaponDrop implements ItemDrop {
+export class WeaponDrop extends ItemDrop {
     mesh: THREE.Group;
     body: CANNON.Body;
     weaponType: WeaponType;
@@ -37,6 +37,7 @@ export class WeaponDrop implements ItemDrop {
         sellPrice: number,
         level: number
     ) {
+        super();
         this.weaponType = weaponType;
         this.weaponName = weaponName;
         this.damage = damage;
@@ -66,60 +67,9 @@ export class WeaponDrop implements ItemDrop {
         weaponMesh.position.y = 0.3;
         this.mesh.add(weaponMesh);
 
-        // Create text label using canvas texture
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d')!;
-        canvas.width = 512;
-        canvas.height = 128;
-
-        // Draw text on canvas: name + italic level char to the right, keeping the whole label centered
+        // Create text label using shared method
         const levelChar = ItemLevelHelper.getLevelChar(this.level);
-        context.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Base (name) style
-        const baseFont = 'bold 48px Arial';
-        context.font = baseFont;
-        context.fillStyle = '#ffffff';
-        context.textBaseline = 'middle';
-
-        // Measure widths to center the combined text
-        const nameWidth = context.measureText(weaponName).width;
-        // Measure level width using italic bold font
-        const levelFont = 'italic bold 48px Arial';
-        context.font = levelFont;
-        const levelWidth = context.measureText(levelChar).width;
-
-        const spacing = 8; // gap between name and level char
-        const totalWidth = nameWidth + spacing + levelWidth;
-
-        // Draw with left alignment starting at computed X so combined text is centered
-        const startX = canvas.width / 2 - totalWidth / 2;
-        const centerY = canvas.height / 2;
-
-        // Draw name
-        context.font = baseFont;
-        context.textAlign = 'left';
-        context.fillText(weaponName, startX, centerY);
-
-        // Draw italic level char right of name
-        context.font = levelFont;
-        context.fillText(levelChar, startX + nameWidth + spacing, centerY);
-
-        // Create texture from canvas
-        const texture = new THREE.CanvasTexture(canvas);
-        const textMaterial = new THREE.MeshBasicMaterial({
-            map: texture,
-            transparent: true,
-            side: THREE.DoubleSide,
-            depthTest: false,
-            depthWrite: false
-        });
-        const textGeometry = new THREE.PlaneGeometry(2, 0.5);
-        this.textMesh = new THREE.Mesh(textGeometry, textMaterial);
-        this.textMesh.position.y = 0;
-        this.textMesh.renderOrder = 990;
-        this.textMesh.visible = false; // Start hidden
+        this.textMesh = this.createTextLabel(weaponName, levelChar);
         this.mesh.add(this.textMesh);
 
         // Position the group

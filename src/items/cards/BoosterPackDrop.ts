@@ -6,7 +6,7 @@ import { ItemDrop } from '../ItemDrop';
  * BoosterPackDrop entity - represents a booster pack that can be picked up from the ground
  * Displays a 3D text label and animates in a floating motion
  */
-export class BoosterPackDrop implements ItemDrop {
+export class BoosterPackDrop extends ItemDrop {
     mesh: THREE.Group;
     body: CANNON.Body;
     textMesh: THREE.Mesh | null = null;
@@ -18,6 +18,7 @@ export class BoosterPackDrop implements ItemDrop {
     private readonly PICKUP_DISTANCE: number = 1.5;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3) {
+        super();
         this.baseHeight = position.y;
 
         // Create visual group
