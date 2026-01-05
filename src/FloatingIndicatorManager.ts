@@ -51,10 +51,13 @@ export class FloatingIndicatorManager {
      */
     spawnTech(position: CANNON.Vec3): void {
         this.spawn(position, {
-            text: '⬆️tech',
-            color: '#00ff00',
-            fontSize: 70,
-            priority: true
+            text: '⇧ tech',
+            color: '#FFFFFF',
+            fontSize: 50,
+            priority: true,
+            floatSpeed: 1.0,
+            holdTime: 0,
+            riseTime: 0.5
         });
     }
 

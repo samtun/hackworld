@@ -12,6 +12,7 @@ export interface FloatingIndicatorConfig {
     fontSize?: number;
     riseTime?: number;
     floatSpeed?: number;
+    holdTime?: number;
     priority?: boolean; // An indicator with priority is rendered above indicators without priority
 }
 
@@ -31,12 +32,14 @@ export class FloatingIndicator {
     private readonly lifetime: number;
     private readonly riseTime: number;
     private readonly floatSpeed: number;
+    private readonly holdTime: number;
     private initialY: number;
     private textTexture: THREE.CanvasTexture;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, config: FloatingIndicatorConfig) {
         let numberPosition = new CANNON.Vec3(position.x, position.y + 1.0, position.z);
         this.initialY = numberPosition.y;
+        this.holdTime = config.holdTime ?? FloatingIndicator.HOLD_TIME; // seconds
         this.riseTime = config.riseTime ?? FloatingIndicator.DEFAULT_RISE_TIME; // seconds
         this.lifetime = this.riseTime + FloatingIndicator.HOLD_TIME + FloatingIndicator.FADE_TIME;
         this.floatSpeed = config.floatSpeed ?? FloatingIndicator.DEFAULT_FLOAT_SPEED; // units per second
@@ -105,10 +108,10 @@ export class FloatingIndicator {
 
         // Fade out logic
         const material = this.mesh.material as THREE.MeshBasicMaterial;
-        if (this.timer < this.riseTime + FloatingIndicator.HOLD_TIME) {
+        if (this.timer < this.riseTime + this.holdTime) {
             material.opacity = 1;
         } else {
-            const fadeProgress = (this.timer - (this.riseTime + FloatingIndicator.HOLD_TIME)) / FloatingIndicator.FADE_TIME;
+            const fadeProgress = (this.timer - (this.riseTime + this.holdTime)) / FloatingIndicator.FADE_TIME;
             material.opacity = Math.max(0, 1 - fadeProgress);
         }
 
