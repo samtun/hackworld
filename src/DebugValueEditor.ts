@@ -2,7 +2,6 @@ import { Player } from './Player';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { CoreRegistry } from './items/cores/CoreRegistry';
 import { ChipRegistry } from './items/chips/ChipRegistry';
-import { WeaponItem } from './items/weapons/WeaponItem';
 import { WeaponType } from './items/weapons/WeaponType';
 import { CoreItem } from './items/cores/CoreItem';
 import { ChipItem } from './items/chips/ChipItem';
