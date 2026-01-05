@@ -59,6 +59,8 @@ export class XDataUpgradeManager {
     private stats: StatInfo[] = [
         { type: StatType.STRENGTH, label: 'Strength', description: 'Increases weapon damage', upgradeEffect: '+1 per upgrade' },
         { type: StatType.DEFENSE, label: 'Defense', description: 'Reduces damage taken', upgradeEffect: '+1 per upgrade' },
+        { type: StatType.AGILITY, label: 'Agility', description: 'Increases critical hit chance', upgradeEffect: '+1 per upgrade' },
+        { type: StatType.LUCK, label: 'Luck', description: 'Increases drop rates and EXP gain', upgradeEffect: '+1 per upgrade' },
         { type: StatType.HP, label: 'HP', description: 'Increases max health', upgradeEffect: '+5 per upgrade' },
         { type: StatType.TP, label: 'TP', description: 'Increases max tech points', upgradeEffect: '+5 per upgrade' }
     ];
