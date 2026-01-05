@@ -440,6 +440,12 @@ export class Game {
         let nearbyInteractive: InteractiveEntity | null = null;
 
         if (!anyMenuOpen) {
+            // Auto-pickup XData drops
+            const xDataDropNearby = this.world.checkXDataDropInteraction(this.player.position);
+            if (xDataDropNearby) {
+                this.world.pickupXDataDrop(xDataDropNearby, this.player);
+            }
+
             // Check NPCs (including dialogue NPCs and Ford)
             const allNpcs = this.world.getAllNpcs();
             for (const npc of allNpcs) {
@@ -511,20 +517,6 @@ export class Game {
                             hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
                             action: () => {
                                 this.world.pickupBoosterPackDrop(boosterPackDropNearby, this.player);
-                            }
-                        };
-                    }
-                }
-
-                if (!nearbyInteractive) {
-                    const xDataDropNearby = this.world.checkXDataDropInteraction(this.player.position);
-                    if (xDataDropNearby) {
-                        nearbyInteractive = {
-                            type: InteractiveEntityType.XDATA_DROP,
-                            data: xDataDropNearby,
-                            hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
-                            action: () => {
-                                this.world.pickupXDataDrop(xDataDropNearby, this.player);
                             }
                         };
                     }
