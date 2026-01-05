@@ -88,9 +88,9 @@ export class CoreItem extends EquippableItem {
         return new CoreItem(
             newId || this.id,
             this.name,
-            this.buyPrice,
-            this.sellPrice,
-            this.stats,
+            this.baseBuyPrice,
+            this.baseSellPrice,
+            { ...this.stats }, // Deep copy stats
             this.level
         );
     }

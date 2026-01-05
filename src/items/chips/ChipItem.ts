@@ -83,10 +83,10 @@ export class ChipItem extends EquippableItem {
         return new ChipItem(
             newId || this.id,
             this.name,
-            this.buyPrice,
-            this.sellPrice,
+            this.baseBuyPrice,
+            this.baseSellPrice,
             this.chipType,
-            this.stats,
+            { ...this.stats }, // Deep copy stats
             this.level
         );
     }
