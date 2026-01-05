@@ -35,11 +35,6 @@ export class WeaponItem extends EquippableItem {
         return WeaponItem.WEAPON_LEVELS[lvl - 1];
     }
 
-    // Return multiplier for numeric level
-    public getDamageMultiplierFromLevelNumber(): number {
-        return this.getLevelByNumber().damagePercent;
-    }
-
     getType(): string {
         return 'weapon';
     }

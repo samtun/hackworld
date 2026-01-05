@@ -1,6 +1,7 @@
 import { Player } from '../Player';
 import { InputManager } from '../InputManager';
 import { shakeElement } from '../ui/UiUtils';
+import { StatType } from '../StatType';
 
 // --- Constants ---
 const COLORS = {
@@ -83,16 +84,32 @@ export class InventoryManager {
         statsPanel.style.flexDirection = 'column';
         windowDiv.appendChild(statsPanel);
 
-        // Level display (top of stats panel)
+        // Level display container with stat points
+        const levelContainer = document.createElement('div');
+        levelContainer.style.display = 'flex';
+        levelContainer.style.justifyContent = 'space-between';
+        levelContainer.style.alignItems = 'center';
+        levelContainer.style.marginBottom = '20px';
+        statsPanel.appendChild(levelContainer);
+
+        // Level display (left side)
         const levelDisplay = document.createElement('div');
         levelDisplay.id = 'level-display';
         levelDisplay.style.fontSize = '24px';
         levelDisplay.style.fontWeight = 'bold';
-        levelDisplay.style.marginBottom = '20px';
         levelDisplay.style.color = '#ffd700'; // Gold color
         levelDisplay.style.textShadow = '2px 2px 0px #000';
-        levelDisplay.style.textAlign = 'center';
-        statsPanel.appendChild(levelDisplay);
+        levelContainer.appendChild(levelDisplay);
+
+        // Stat points display (right side)
+        const statPointsDisplay = document.createElement('div');
+        statPointsDisplay.id = 'stat-points-display';
+        statPointsDisplay.style.fontSize = '24px';
+        statPointsDisplay.style.fontWeight = 'bold';
+        statPointsDisplay.style.color = '#ffd700'; // Gold color
+        statPointsDisplay.style.textShadow = '2px 2px 0px #000';
+        statPointsDisplay.style.display = 'none'; // Hidden by default
+        levelContainer.appendChild(statPointsDisplay);
 
         this.statsText = document.createElement('div');
         statsPanel.appendChild(this.statsText);
@@ -215,9 +232,23 @@ export class InventoryManager {
         if (levelDisplay) {
             levelDisplay.innerText = `Level ${player.level}`;
         }
+        
+        // Update stat points display if available
+        const statPointsDisplay = document.getElementById('stat-points-display');
+        if (statPointsDisplay) {
+            if (player.statPointsAvailable > 0) {
+                statPointsDisplay.innerText = `${player.statPointsAvailable}`;
+                statPointsDisplay.style.display = 'block';
+            } else {
+                statPointsDisplay.style.display = 'none';
+            }
+        }
 
         // Update Stats
         this.statsText.innerHTML = this.generateStatsHTML(player);
+        
+        // Attach event listeners to stat add buttons
+        this.attachStatButtonListeners(player);
 
         // Update Item Details for selected item
         const selectedItem = player.inventory[this.selectedIndex];
@@ -277,6 +308,24 @@ export class InventoryManager {
         }
     }
 
+    private attachStatButtonListeners(player: Player) {
+        const buttons = this.statsText.querySelectorAll('.stat-add-btn');
+        buttons.forEach(button => {
+            button.addEventListener('click', () => {
+                const statType = button.getAttribute('data-stat') as StatType;
+                if (statType) {
+                    const success = player.addStatPoint(statType);
+                    if (success) {
+                        this.needsRender = true;
+                    } else {
+                        // Shake the stats panel if can't add point
+                        shakeElement(this.statsText);
+                    }
+                }
+            });
+        });
+    }
+
     private handleNavigation(player: Player, input: InputManager) {
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();
@@ -329,19 +378,35 @@ export class InventoryManager {
     }
 
     private generateStatsHTML(player: Player): string {
+        const hasStatPoints = player.statPointsAvailable > 0;
+        
+        // Helper function to create a stat row with optional + button
+        const createStatRow = (label: string, value: string | number, statType?: StatType) => {
+            const buttonHTML = hasStatPoints && statType && statType !== StatType.HP && statType !== StatType.TP
+                ? `<button class="stat-add-btn" data-stat="${statType}" style="margin-left: 10px; padding: 2px 8px; cursor: pointer; background: #666; color: #fff; border: 1px solid #fff; border-radius: 3px; font-family: inherit; font-size: 14px;">+</button>`
+                : '';
+            
+            return `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px 0;">
+                    <span>${label}</span> 
+                    <span style="display: flex; align-items: center;">
+                        ${value}${buttonHTML}
+                    </span>
+                </div>
+            `;
+        };
+
         const stats = [
-            { label: 'HP', value: `${Math.ceil(player.hp)} / ${player.maxHp}` },
-            { label: 'TP', value: `${Math.ceil(player.tp)} / ${player.maxTp}` },
-            { label: 'Strength', value: player.strength },
-            { label: 'Defense', value: player.defense },
-            { label: 'Bits', value: player.money }
+            createStatRow('HP', `${Math.ceil(player.hp)} / ${player.maxHp}`, StatType.HP),
+            createStatRow('TP', `${Math.ceil(player.tp)} / ${player.maxTp}`, StatType.TP),
+            createStatRow('Strength', player.strength, StatType.STRENGTH),
+            createStatRow('Defense', player.defense, StatType.DEFENSE),
+            createStatRow('Agility', player.agility, StatType.AGILITY),
+            createStatRow('Luck', player.luck, StatType.LUCK),
+            createStatRow('Bits', player.money)
         ];
 
-        const statsHTML = stats.map(stat => `
-            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span>${stat.label}</span> <span>${stat.value}</span>
-            </div>
-        `).join(`<div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>`);
+        const statsHTML = stats.join(`<div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>`);
 
         // Add X-Data display
         const xDataHTML = `
