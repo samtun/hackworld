@@ -1,3 +1,18 @@
+# [1.21.0](https://github.com/samtun/hackworld/compare/v1.20.0...v1.21.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* automatically pickup xdata drop when near ([b79d8a9](https://github.com/samtun/hackworld/commit/b79d8a96c91fb8c82939acb8e766a43456cb6563))
+* fix adding weapons via DebugValueEditor ([ed43b21](https://github.com/samtun/hackworld/commit/ed43b216c5544b34c8cf96f80bff7ec6790c5213))
+* make xData only drop if no item was dropped ([96870cc](https://github.com/samtun/hackworld/commit/96870ccb343604b00c187937fd6cbf1a891e9e8c))
+* remove unused import ([b3581af](https://github.com/samtun/hackworld/commit/b3581afa0b0ecb03edb30bbf34fcd07211e04124))
+
+
+### Features
+
+* unify item drops with consistent strategy pattern ([84ec3c1](https://github.com/samtun/hackworld/commit/84ec3c12a0859b2f1ef0df769f9c478bf857c93c))
+
 # [1.20.0](https://github.com/samtun/hackworld/compare/v1.19.0...v1.20.0) (2026-01-05)
 
 
