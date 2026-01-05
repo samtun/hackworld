@@ -22,9 +22,10 @@ export class ChipItem extends EquippableItem {
         return Math.round(this.baseBuyPrice * multiplier);
     }
 
-    // Sell price remains at base level
+    // Override to apply level-based price multiplier to sell price
     get sellPrice(): number {
-        return this.baseSellPrice;
+        const multiplier = this.getPriceMultiplierForLevel();
+        return Math.round(this.baseSellPrice * multiplier);
     }
 
     private getPriceMultiplierForLevel(): number {
