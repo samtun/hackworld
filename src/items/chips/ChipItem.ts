@@ -45,13 +45,6 @@ export class ChipItem extends EquippableItem {
         return ItemLevelHelper.getStatMultiplierForLevel(this.level);
     }
 
-    // Get stats with level multiplier applied
-    public getEffectiveStats(): ChipStats {
-        // Stats are now stored directly in JSON with level scaling applied
-        // No need for additional multiplier
-        return { ...this.stats };
-    }
-
     getType(): string {
         return 'chip';
     }

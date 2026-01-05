@@ -72,14 +72,14 @@ export class ItemDetailsPanel {
      */
     private static getCoreDetails(item: CoreItem): ItemDetail[] {
         const details: ItemDetail[] = [];
-        
+
         // Add level and requirement info
         const levelDef = item.getLevelByNumber();
         details.push({ label: 'Level', value: item.level });
         details.push({ label: 'Required Player Level', value: levelDef.requiredLevel });
 
         // Use effective stats (with level multiplier applied)
-        const effectiveStats = item.getEffectiveStats();
+        const effectiveStats = item.stats
         this.addStatIfPresent(details, 'Strength', effectiveStats.strength);
         this.addStatIfPresent(details, 'Defense', effectiveStats.defense);
         this.addStatIfPresent(details, 'Speed', effectiveStats.speed);
@@ -102,14 +102,14 @@ export class ItemDetailsPanel {
      */
     private static getChipDetails(item: ChipItem): ItemDetail[] {
         const details: ItemDetail[] = [];
-        
+
         // Add level and requirement info
         const levelDef = item.getLevelByNumber();
         details.push({ label: 'Level', value: item.level });
         details.push({ label: 'Required Player Level', value: levelDef.requiredLevel });
 
         // Use effective stats (with level multiplier applied)
-        const effectiveStats = item.getEffectiveStats();
+        const effectiveStats = item.stats;
 
         if (effectiveStats.weaponRangeMultiplier !== undefined) {
             const percentIncrease = ((effectiveStats.weaponRangeMultiplier - 1) * 100).toFixed(0);
