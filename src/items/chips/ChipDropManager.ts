@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { ChipDrop } from './ChipDrop';
-import { ChipRegistry } from './ChipRegistry';
 import { ChipRepository } from './ChipRepository';
 import { Player } from '../../Player';
 import { Enemy } from '../../enemies/Enemy';
@@ -20,18 +19,19 @@ export class ChipDropManager {
     tryDropChip(scene: THREE.Scene, enemy: Enemy, player: Player): boolean {
         if (Math.random() > enemy.itemDropChance) return false;
 
-        const def = ChipRegistry.Instance.getRandomChip();
-        if (!def) return false;
+        // Use smart level determination based on player level
+        const level = ItemLevelHelper.determineDropLevel(player.level);
+
+        // Get a random chip at the determined level from the repository
+        const chipItem = ChipRepository.Instance.getRandomChipOfLevel(level);
+        if (!chipItem) return false;
 
         const pos = enemy.body.position.clone();
         pos.y = 0.5;
 
-        // Use smart level determination based on player level
-        const level = ItemLevelHelper.determineDropLevel(player.level);
-
-        const drop = new ChipDrop(scene, pos, def.id, def.name, def.type, def.buyPrice, def.sellPrice, level);
+        const drop = new ChipDrop(scene, pos, chipItem.id, chipItem.name, chipItem.chipType, chipItem.buyPrice, chipItem.sellPrice, level);
         this.chipDrops.push(drop);
-        console.log(`Enemy dropped chip ${def.name} (level ${level})`);
+        console.log(`Enemy dropped chip ${chipItem.name} (level ${level})`);
         return true;
     }
 
@@ -48,22 +48,22 @@ export class ChipDropManager {
     }
 
     pickup(scene: THREE.Scene, physicsWorld: CANNON.World, drop: ChipDrop, player: Player): void {
-        // Find registry entry to get the base chip type
-        const def = ChipRegistry.Instance.getChipById(drop.chipId);
-        if (!def) {
-            console.warn(`Chip definition not found for ${drop.chipId}`);
-            return;
-        }
-
-        // Get the leveled chip from the repository
-        const chipItem = ChipRepository.Instance.getChipByTypeAndLevel(def.type, drop.level);
+        // Get the chip from repository by ID to find its type
+        const chipItem = ChipRepository.Instance.getChipById(drop.chipId);
         if (!chipItem) {
-            console.warn(`Chip not found in repository for type ${def.type} and level ${drop.level}`);
+            console.warn(`Chip not found for ${drop.chipId}`);
             return;
         }
 
-        player.inventory.push(chipItem);
-        console.log(`Picked up chip ${chipItem.name} (level ${drop.level})`);
+        // Get the properly leveled chip from the repository
+        const leveledChip = ChipRepository.Instance.getChipByTypeAndLevel(chipItem.chipType, drop.level);
+        if (!leveledChip) {
+            console.warn(`Chip not found in repository for type ${chipItem.chipType} and level ${drop.level}`);
+            return;
+        }
+
+        player.inventory.push(leveledChip);
+        console.log(`Picked up chip ${leveledChip.name} (level ${drop.level})`);
 
         const idx = this.chipDrops.indexOf(drop);
         if (idx > -1) {

@@ -1,10 +1,8 @@
 import { Player } from './Player';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
-import { CoreRegistry } from './items/cores/CoreRegistry';
-import { ChipRegistry } from './items/chips/ChipRegistry';
+import { CoreRepository } from './items/cores/CoreRepository';
+import { ChipRepository } from './items/chips/ChipRepository';
 import { WeaponType } from './items/weapons/WeaponType';
-import { CoreItem } from './items/cores/CoreItem';
-import { ChipItem } from './items/chips/ChipItem';
 import { ItemLevelHelper } from './items/ItemLevelHelper';
 
 /**
@@ -25,13 +23,13 @@ export class DebugValueEditor {
     private player: Player | null = null;
 
     private weaponRepository: WeaponRepository;
-    private chipRegistry: ChipRegistry;
-    private coreRegistry: CoreRegistry;
+    private chipRepository: ChipRepository;
+    private coreRepository: CoreRepository;
 
     constructor() {
         this.weaponRepository = WeaponRepository.Instance;
-        this.chipRegistry = ChipRegistry.Instance;
-        this.coreRegistry = CoreRegistry.Instance;
+        this.chipRepository = ChipRepository.Instance;
+        this.coreRepository = CoreRepository.Instance;
 
         this.container = this.createContainer();
         this.toggleButton = this.createToggleButton();
@@ -284,7 +282,18 @@ export class DebugValueEditor {
     }
 
     private createCoreSelector(parent: HTMLElement): void {
-        const cores = this.coreRegistry.getAllCores();
+        // Get all unique core names from level 1 items to show in selector
+        const cores: { name: string; stats: any }[] = [];
+        const seenNames = new Set<string>();
+        
+        // Get level 1 cores to show base info in selector
+        const allCores = this.coreRepository.getAllCores();
+        for (const core of allCores) {
+            if (core.level === 1 && !seenNames.has(core.name)) {
+                seenNames.add(core.name);
+                cores.push({ name: core.name, stats: core.stats });
+            }
+        }
 
         const select = document.createElement('select');
         select.style.width = '100%';
@@ -304,9 +313,9 @@ export class DebugValueEditor {
 
         cores.forEach(core => {
             const option = document.createElement('option');
-            option.value = core.id;
+            option.value = core.name;
             const statsStr = Object.entries(core.stats)
-                .map(([key, val]) => `${key}: ${val > 0 ? '+' : ''}${val}`)
+                .map(([key, val]) => `${key}: ${(val as number) > 0 ? '+' : ''}${val}`)
                 .join(', ');
             option.textContent = `${core.name} (${statsStr})`;
             select.appendChild(option);
@@ -363,16 +372,13 @@ export class DebugValueEditor {
         addButton.style.fontFamily = 'inherit';
 
         addButton.addEventListener('click', () => {
-            const coreId = select.value;
+            const coreName = select.value;
 
-            if (coreId && this.player) {
-                const core = this.coreRegistry.getCoreById(coreId);
+            if (coreName && this.player) {
+                const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
+                const core = this.coreRepository.getCoreByNameAndLevel(coreName, lvl);
                 if (core) {
-                    // Generate unique ID using timestamp and random number
-                    const newId = `debug_core_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
-                    const newCore = new CoreItem(newId, core.name, core.buyPrice, core.sellPrice, core.stats, lvl);
-                    this.player.inventory.push(newCore);
+                    this.player.inventory.push(core);
                     console.log(`Added core: ${core.name} (Level ${lvl})`);
 
                     // Reset selection
@@ -386,7 +392,18 @@ export class DebugValueEditor {
     }
 
     private createChipSelector(parent: HTMLElement): void {
-        const chips = this.chipRegistry.getAllChips();
+        // Get all unique chip types from level 1 items to show in selector
+        const chips: { name: string; type: string; stats: any }[] = [];
+        const seenNames = new Set<string>();
+        
+        // Get level 1 chips to show base info in selector
+        const allChips = this.chipRepository.getAllChips();
+        for (const chip of allChips) {
+            if (chip.level === 1 && !seenNames.has(chip.name)) {
+                seenNames.add(chip.name);
+                chips.push({ name: chip.name, type: chip.chipType, stats: chip.stats });
+            }
+        }
 
         const select = document.createElement('select');
         select.style.width = '100%';
@@ -406,13 +423,13 @@ export class DebugValueEditor {
 
         chips.forEach(chip => {
             const option = document.createElement('option');
-            option.value = chip.id;
+            option.value = chip.type;
             const effectsStr = Object.entries(chip.stats)
                 .map(([key, val]) => {
                     if (key === 'weaponRangeMultiplier') {
-                        return `Weapon Range: +${((val - 1) * 100).toFixed(0)}%`;
+                        return `Weapon Range: +${(((val as number) - 1) * 100).toFixed(0)}%`;
                     } else if (key === 'walkSpeedMultiplier') {
-                        return `Walk Speed: +${((val - 1) * 100).toFixed(0)}%`;
+                        return `Walk Speed: +${(((val as number) - 1) * 100).toFixed(0)}%`;
                     }
                     return '';
                 })
@@ -473,16 +490,13 @@ export class DebugValueEditor {
         addButton.style.fontFamily = 'inherit';
 
         addButton.addEventListener('click', () => {
-            const chipId = select.value;
+            const chipType = select.value;
 
-            if (chipId && this.player) {
-                const chip = this.chipRegistry.getChipById(chipId);
+            if (chipType && this.player) {
+                const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
+                const chip = this.chipRepository.getChipByTypeAndLevel(chipType as any, lvl);
                 if (chip) {
-                    // Generate unique ID using timestamp and random number
-                    const newId = `debug_chip_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
-                    const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
-                    const newChip = new ChipItem(newId, chip.name, chip.buyPrice, chip.sellPrice, chip.type, chip.stats, lvl);
-                    this.player.inventory.push(newChip);
+                    this.player.inventory.push(chip);
                     console.log(`Added chip: ${chip.name} (Level ${lvl})`);
 
                     // Reset selection

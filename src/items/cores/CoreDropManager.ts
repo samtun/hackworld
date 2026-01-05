@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { CoreDrop } from './CoreDrop';
-import { CoreRegistry } from './CoreRegistry';
 import { CoreRepository } from './CoreRepository';
 import { Player } from '../../Player';
 import { Enemy } from '../../enemies/Enemy';
@@ -20,18 +19,19 @@ export class CoreDropManager {
     tryDropCore(scene: THREE.Scene, enemy: Enemy, player: Player): boolean {
         if (Math.random() > enemy.itemDropChance) return false;
 
-        const def = CoreRegistry.Instance.getRandomCore();
-        if (!def) return false;
+        // Use smart level determination based on player level
+        const level = ItemLevelHelper.determineDropLevel(player.level);
+
+        // Get a random core at the determined level from the repository
+        const coreItem = CoreRepository.Instance.getRandomCoreOfLevel(level);
+        if (!coreItem) return false;
 
         const pos = enemy.body.position.clone();
         pos.y = 0.5;
 
-        // Use smart level determination based on player level
-        const level = ItemLevelHelper.determineDropLevel(player.level);
-
-        const drop = new CoreDrop(scene, pos, def.id, def.name, def.buyPrice, def.sellPrice, level);
+        const drop = new CoreDrop(scene, pos, coreItem.id, coreItem.name, coreItem.buyPrice, coreItem.sellPrice, level);
         this.coreDrops.push(drop);
-        console.log(`Enemy dropped core ${def.name} (level ${level})`);
+        console.log(`Enemy dropped core ${coreItem.name} (level ${level})`);
         return true;
     }
 
@@ -48,22 +48,22 @@ export class CoreDropManager {
     }
 
     pickup(scene: THREE.Scene, physicsWorld: CANNON.World, drop: CoreDrop, player: Player): void {
-        // Find registry entry to get the base core name
-        const def = CoreRegistry.Instance.getCoreById(drop.coreId);
-        if (!def) {
-            console.warn(`Core definition not found for ${drop.coreId}`);
-            return;
-        }
-
-        // Get the leveled core from the repository
-        const coreItem = CoreRepository.Instance.getCoreByNameAndLevel(def.name, drop.level);
+        // Get the core from repository by ID to find its name
+        const coreItem = CoreRepository.Instance.getCoreById(drop.coreId);
         if (!coreItem) {
-            console.warn(`Core not found in repository for name ${def.name} and level ${drop.level}`);
+            console.warn(`Core not found for ${drop.coreId}`);
             return;
         }
 
-        player.inventory.push(coreItem);
-        console.log(`Picked up core ${coreItem.name} (level ${drop.level})`);
+        // Get the properly leveled core from the repository
+        const leveledCore = CoreRepository.Instance.getCoreByNameAndLevel(coreItem.name, drop.level);
+        if (!leveledCore) {
+            console.warn(`Core not found in repository for name ${coreItem.name} and level ${drop.level}`);
+            return;
+        }
+
+        player.inventory.push(leveledCore);
+        console.log(`Picked up core ${leveledCore.name} (level ${drop.level})`);
 
         const idx = this.coreDrops.indexOf(drop);
         if (idx > -1) {
