@@ -1,7 +1,7 @@
 import { InputManager } from '../InputManager';
 import { Npc } from './Npc';
 import { resetInputDebounce } from '../ui/UiUtils';
-import { getHint, HintConfigs } from '../ui/InputHints';
+import { getHint, getKeyboardHint, HintConfigs } from '../ui/InputHints';
 
 const COLORS = {
     OVERLAY: 'rgba(0, 0, 0, 0.85)',
@@ -142,9 +142,9 @@ export class NpcDialogueManager {
         } else {
             // Fallback to keyboard hints if InputManager not available
             if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
-                this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> Continue | <span class="key-icon">ESC</span> Exit';
+                this.continueHint.innerHTML = getKeyboardHint(HintConfigs.continueExit);
             } else {
-                this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> Close | <span class="key-icon">ESC</span> Exit';
+                this.continueHint.innerHTML = getKeyboardHint(HintConfigs.closeExit);
             }
         }
     }

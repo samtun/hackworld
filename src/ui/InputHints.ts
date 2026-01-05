@@ -17,6 +17,13 @@ export function getHint(config: HintConfig, inputManager: InputManager): string 
 }
 
 /**
+ * Returns the keyboard variant of a hint configuration (useful for fallbacks)
+ */
+export function getKeyboardHint(config: HintConfig): string {
+    return config.keyboard;
+}
+
+/**
  * Common hint configurations
  */
 export const HintConfigs = {
@@ -53,11 +60,11 @@ export const HintConfigs = {
         controller: '<span class="btn-icon xbox-a">A</span> Upgrade <span style="margin: 0 15px;"></span> <span class="btn-icon xbox-b">B</span> Close'
     },
     revealContinue: {
-        keyboard: 'Press ENTER to reveal cards',
-        controller: 'Press A to reveal cards'
+        keyboard: '<span class="key-icon">ENTER</span> to reveal cards',
+        controller: '<span class="btn-icon xbox-a">A</span> to reveal cards'
     },
     continuePack: {
-        keyboard: 'Press ENTER to continue',
-        controller: 'Press A to continue'
+        keyboard: '<span class="key-icon">ENTER</span> to continue',
+        controller: '<span class="btn-icon xbox-a">A</span> to continue'
     }
 };
