@@ -1,14 +1,14 @@
 import { Player } from '../../Player';
 import { Item } from '../Item';
 import { ChipItem } from './ChipItem';
-import { ChipRegistry } from './ChipRegistry';
+import { ChipRepository } from './ChipRepository';
 import { BaseTrader } from '../BaseTrader';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
 
 export class ChipTrader extends BaseTrader {
     private static instance: ChipTrader; // Singleton
 
-    private chipRegistry: ChipRegistry;
+    private chipRepository: ChipRepository;
 
     private constructor() {
         super({
@@ -25,7 +25,7 @@ export class ChipTrader extends BaseTrader {
                 text: TRADER_UI_COLORS.TEXT
             }
         });
-        this.chipRegistry = ChipRegistry.Instance;
+        this.chipRepository = ChipRepository.Instance;
         this.initializeTraderInventory();
     }
 
@@ -36,42 +36,8 @@ export class ChipTrader extends BaseTrader {
     protected initializeTraderInventory() {
         this.traderInventory = [];
 
-        // Add chips from registry at multiple levels (α, β, γ levels)
-        const allChips = this.chipRegistry.getAllChips();
-        for (const chipDef of allChips) {
-            // Add level 1 (α)
-            this.traderInventory.push(new ChipItem(
-                crypto.randomUUID(),
-                chipDef.name,
-                chipDef.buyPrice,
-                chipDef.sellPrice,
-                chipDef.type,
-                chipDef.stats,
-                1
-            ));
-            
-            // Add level 2 (β)
-            this.traderInventory.push(new ChipItem(
-                crypto.randomUUID(),
-                chipDef.name,
-                chipDef.buyPrice,
-                chipDef.sellPrice,
-                chipDef.type,
-                chipDef.stats,
-                2
-            ));
-            
-            // Add level 3 (γ)
-            this.traderInventory.push(new ChipItem(
-                crypto.randomUUID(),
-                chipDef.name,
-                chipDef.buyPrice,
-                chipDef.sellPrice,
-                chipDef.type,
-                chipDef.stats,
-                3
-            ));
-        }
+        // Get all chips from repository (already cloned with unique IDs)
+        this.traderInventory = this.chipRepository.getAllChips();
     }
 
     protected filterPlayerInventory(player: Player): Item[] {

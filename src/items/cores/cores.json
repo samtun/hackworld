@@ -1,0 +1,200 @@
+[
+    {
+        "id": "herald_core_alpha",
+        "name": "Herald Core",
+        "stats": {
+            "strength": 3,
+            "defense": 2
+        },
+        "buyPrice": 200,
+        "sellPrice": 100,
+        "level": 1
+    },
+    {
+        "id": "herald_core_beta",
+        "name": "Herald Core",
+        "stats": {
+            "strength": 3,
+            "defense": 2
+        },
+        "buyPrice": 200,
+        "sellPrice": 100,
+        "level": 2
+    },
+    {
+        "id": "herald_core_gamma",
+        "name": "Herald Core",
+        "stats": {
+            "strength": 3,
+            "defense": 2
+        },
+        "buyPrice": 200,
+        "sellPrice": 100,
+        "level": 3
+    },
+    {
+        "id": "herald_core_delta",
+        "name": "Herald Core",
+        "stats": {
+            "strength": 3,
+            "defense": 2
+        },
+        "buyPrice": 200,
+        "sellPrice": 100,
+        "level": 4
+    },
+    {
+        "id": "herald_core_epsilon",
+        "name": "Herald Core",
+        "stats": {
+            "strength": 3,
+            "defense": 2
+        },
+        "buyPrice": 200,
+        "sellPrice": 100,
+        "level": 5
+    },
+    {
+        "id": "herald_core_omega",
+        "name": "Herald Core",
+        "stats": {
+            "strength": 3,
+            "defense": 2
+        },
+        "buyPrice": 200,
+        "sellPrice": 100,
+        "level": 6
+    },
+    {
+        "id": "swift_core_alpha",
+        "name": "Swift Core",
+        "stats": {
+            "speed": 4,
+            "defense": -2
+        },
+        "buyPrice": 150,
+        "sellPrice": 75,
+        "level": 1
+    },
+    {
+        "id": "swift_core_beta",
+        "name": "Swift Core",
+        "stats": {
+            "speed": 4,
+            "defense": -2
+        },
+        "buyPrice": 150,
+        "sellPrice": 75,
+        "level": 2
+    },
+    {
+        "id": "swift_core_gamma",
+        "name": "Swift Core",
+        "stats": {
+            "speed": 4,
+            "defense": -2
+        },
+        "buyPrice": 150,
+        "sellPrice": 75,
+        "level": 3
+    },
+    {
+        "id": "swift_core_delta",
+        "name": "Swift Core",
+        "stats": {
+            "speed": 4,
+            "defense": -2
+        },
+        "buyPrice": 150,
+        "sellPrice": 75,
+        "level": 4
+    },
+    {
+        "id": "swift_core_epsilon",
+        "name": "Swift Core",
+        "stats": {
+            "speed": 4,
+            "defense": -2
+        },
+        "buyPrice": 150,
+        "sellPrice": 75,
+        "level": 5
+    },
+    {
+        "id": "swift_core_omega",
+        "name": "Swift Core",
+        "stats": {
+            "speed": 4,
+            "defense": -2
+        },
+        "buyPrice": 150,
+        "sellPrice": 75,
+        "level": 6
+    },
+    {
+        "id": "defender_core_alpha",
+        "name": "Defender Core",
+        "stats": {
+            "strength": -1,
+            "defense": 4
+        },
+        "buyPrice": 180,
+        "sellPrice": 90,
+        "level": 1
+    },
+    {
+        "id": "defender_core_beta",
+        "name": "Defender Core",
+        "stats": {
+            "strength": -1,
+            "defense": 4
+        },
+        "buyPrice": 180,
+        "sellPrice": 90,
+        "level": 2
+    },
+    {
+        "id": "defender_core_gamma",
+        "name": "Defender Core",
+        "stats": {
+            "strength": -1,
+            "defense": 4
+        },
+        "buyPrice": 180,
+        "sellPrice": 90,
+        "level": 3
+    },
+    {
+        "id": "defender_core_delta",
+        "name": "Defender Core",
+        "stats": {
+            "strength": -1,
+            "defense": 4
+        },
+        "buyPrice": 180,
+        "sellPrice": 90,
+        "level": 4
+    },
+    {
+        "id": "defender_core_epsilon",
+        "name": "Defender Core",
+        "stats": {
+            "strength": -1,
+            "defense": 4
+        },
+        "buyPrice": 180,
+        "sellPrice": 90,
+        "level": 5
+    },
+    {
+        "id": "defender_core_omega",
+        "name": "Defender Core",
+        "stats": {
+            "strength": -1,
+            "defense": 4
+        },
+        "buyPrice": 180,
+        "sellPrice": 90,
+        "level": 6
+    }
+]

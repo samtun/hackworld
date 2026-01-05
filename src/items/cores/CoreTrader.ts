@@ -1,6 +1,6 @@
 import { CoreItem } from './CoreItem';
 import { BaseTrader, TraderUIConfig } from '../BaseTrader';
-import { CoreRegistry } from './CoreRegistry';
+import { CoreRepository } from './CoreRepository';
 import { Player } from '../../Player';
 import { Item } from '../Item';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
@@ -8,7 +8,7 @@ import { TRADER_UI_COLORS } from '../TraderUIConstants';
 export class CoreTrader extends BaseTrader {
     private static instance: CoreTrader; // Singleton
 
-    private coreRegistry: CoreRegistry;
+    private coreRepository: CoreRepository;
 
     private constructor() {
         const cfg: TraderUIConfig = {
@@ -26,7 +26,7 @@ export class CoreTrader extends BaseTrader {
             }
         };
         super(cfg);
-        this.coreRegistry = CoreRegistry.Instance;
+        this.coreRepository = CoreRepository.Instance;
         this.initializeTraderInventory();
     }
 
@@ -37,39 +37,8 @@ export class CoreTrader extends BaseTrader {
     protected initializeTraderInventory() {
         this.traderInventory = [];
 
-        // Add cores from registry at multiple levels (α, β, γ levels)
-        const allCores = this.coreRegistry.getAllCores();
-        for (const coreDef of allCores) {
-            // Add level 1 (α)
-            this.traderInventory.push(new CoreItem(
-                crypto.randomUUID(),
-                coreDef.name,
-                coreDef.buyPrice,
-                coreDef.sellPrice,
-                coreDef.stats,
-                1
-            ));
-            
-            // Add level 2 (β)
-            this.traderInventory.push(new CoreItem(
-                crypto.randomUUID(),
-                coreDef.name,
-                coreDef.buyPrice,
-                coreDef.sellPrice,
-                coreDef.stats,
-                2
-            ));
-            
-            // Add level 3 (γ)
-            this.traderInventory.push(new CoreItem(
-                crypto.randomUUID(),
-                coreDef.name,
-                coreDef.buyPrice,
-                coreDef.sellPrice,
-                coreDef.stats,
-                3
-            ));
-        }
+        // Get all cores from repository (already cloned with unique IDs)
+        this.traderInventory = this.coreRepository.getAllCores();
     }
 
     protected filterPlayerInventory(player: Player): Item[] {

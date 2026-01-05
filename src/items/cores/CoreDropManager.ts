@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { CoreDrop } from './CoreDrop';
 import { CoreRegistry } from './CoreRegistry';
-import { CoreItem } from './CoreItem';
+import { CoreRepository } from './CoreRepository';
 import { Player } from '../../Player';
 import { Enemy } from '../../enemies/Enemy';
 import { ItemLevelHelper } from '../ItemLevelHelper';
@@ -48,23 +48,22 @@ export class CoreDropManager {
     }
 
     pickup(scene: THREE.Scene, physicsWorld: CANNON.World, drop: CoreDrop, player: Player): void {
+        // Find registry entry to get the base core name
         const def = CoreRegistry.Instance.getCoreById(drop.coreId);
         if (!def) {
             console.warn(`Core definition not found for ${drop.coreId}`);
             return;
         }
 
-        const newItem = new CoreItem(
-            crypto.randomUUID(),
-            def.name,
-            def.buyPrice,
-            def.sellPrice,
-            def.stats,
-            drop.level
-        );
+        // Get the leveled core from the repository
+        const coreItem = CoreRepository.Instance.getCoreByNameAndLevel(def.name, drop.level);
+        if (!coreItem) {
+            console.warn(`Core not found in repository for name ${def.name} and level ${drop.level}`);
+            return;
+        }
 
-        player.inventory.push(newItem);
-        console.log(`Picked up core ${def.name} (level ${drop.level})`);
+        player.inventory.push(coreItem);
+        console.log(`Picked up core ${coreItem.name} (level ${drop.level})`);
 
         const idx = this.coreDrops.indexOf(drop);
         if (idx > -1) {

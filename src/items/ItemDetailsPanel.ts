@@ -57,10 +57,13 @@ export class ItemDetailsPanel {
     private static getWeaponDetails(item: WeaponItem): ItemDetail[] {
         const typeLabel = this.getWeaponTypeLabel(item.weaponType);
         const damage = item.damage;
+        const levelDef = item.getLevelByNumber();
 
         return [
             { label: 'Type', value: typeLabel },
-            { label: 'Damage', value: damage }
+            { label: 'Damage', value: damage },
+            { label: 'Level', value: item.level },
+            { label: 'Required Tech', value: levelDef.requiredTech }
         ];
     }
 
@@ -69,6 +72,11 @@ export class ItemDetailsPanel {
      */
     private static getCoreDetails(item: CoreItem): ItemDetail[] {
         const details: ItemDetail[] = [];
+        
+        // Add level and requirement info
+        const levelDef = item.getLevelByNumber();
+        details.push({ label: 'Level', value: item.level });
+        details.push({ label: 'Required Player Level', value: levelDef.requiredLevel });
 
         // Use effective stats (with level multiplier applied)
         const effectiveStats = item.getEffectiveStats();
@@ -94,6 +102,11 @@ export class ItemDetailsPanel {
      */
     private static getChipDetails(item: ChipItem): ItemDetail[] {
         const details: ItemDetail[] = [];
+        
+        // Add level and requirement info
+        const levelDef = item.getLevelByNumber();
+        details.push({ label: 'Level', value: item.level });
+        details.push({ label: 'Required Player Level', value: levelDef.requiredLevel });
 
         // Use effective stats (with level multiplier applied)
         const effectiveStats = item.getEffectiveStats();
