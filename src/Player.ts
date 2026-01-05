@@ -58,9 +58,10 @@ export class Player extends BaseMesh {
     // Base Stats (without equipment modifiers or upgrades)
     private baseHp: number = 170;
     private baseTp: number = 60;
-    private baseStrength: number = 14;
-    private baseDefense: number = 17;
-    private baseSpeed: number = 6;
+    private baseStrength: number = 1;
+    private baseDefense: number = 1;
+    private baseAgility: number = 1;
+    private baseLuck: number = 1;
 
     // Stats (with equipment modifiers applied)
     level: number = 1;
@@ -70,9 +71,14 @@ export class Player extends BaseMesh {
     hp: number = this.baseHp;
     maxTp: number = this.baseTp;
     tp: number = this.baseTp;
-    strength: number = 14;
-    defense: number = 17;
+    strength: number = 1;
+    defense: number = 1;
+    agility: number = 1;
+    luck: number = 1;
     invulnerableTimer: number = 0;
+    
+    // Stat points available for allocation
+    statPointsAvailable: number = 0;
 
     // X-Data resource
     xData: number = 0;
@@ -93,6 +99,8 @@ export class Player extends BaseMesh {
     defenseUpgrades: number = 0;
     hpUpgrades: number = 0;
     tpUpgrades: number = 0;
+    agilityUpgrades: number = 0;
+    luckUpgrades: number = 0;
 
     // Charged Attack
     private isChargingAttack: boolean = false;
@@ -236,11 +244,10 @@ export class Player extends BaseMesh {
         // Start with base stats (including upgrades) and apply level multiplier
         this.strength = Math.min(Math.floor((this.baseStrength + this.strengthUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
         this.defense = Math.min(Math.floor((this.baseDefense + this.defenseUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
+        this.agility = Math.min(Math.floor((this.baseAgility + this.agilityUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
+        this.luck = Math.min(Math.floor((this.baseLuck + this.luckUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
         this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, Player.MAX_STAT_VALUE);
         this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, Player.MAX_STAT_VALUE);
-
-        // Reset speed to base value before applying modifiers
-        this.speed = this.baseSpeed;
 
         // Ensure current HP/TP don't exceed new max
         if (this.hp > this.maxHp) this.hp = this.maxHp;
@@ -256,18 +263,6 @@ export class Player extends BaseMesh {
             if (effectiveStats.defense !== undefined) {
                 this.defense = Math.min(this.defense + effectiveStats.defense, Player.MAX_STAT_VALUE);
             }
-            if (effectiveStats.speed !== undefined) {
-                this.speed += effectiveStats.speed;
-            }
-        }
-
-        // Apply chip modifiers if a chip is equipped
-        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
-        if (equippedChip) {
-            const effectiveStats = equippedChip.stats;
-            if (effectiveStats.walkSpeedMultiplier !== undefined) {
-                this.speed *= effectiveStats.walkSpeedMultiplier;
-            }
         }
     }
 
@@ -280,6 +275,30 @@ export class Player extends BaseMesh {
             }
         }
         return 1.0; // Default: no multiplier
+    }
+
+    // Calculate strength multiplier using formula: 0.27 / ln(9999) * ln(x)
+    private getStrengthMultiplier(): number {
+        if (this.strength <= 0) return 0;
+        const multiplier = (0.27 / Math.log(9999)) * Math.log(this.strength);
+        return Math.max(0, multiplier);
+    }
+
+    // Calculate defense multiplier using formula: 0.27 / ln(9999) * ln(x)
+    private getDefenseMultiplier(): number {
+        if (this.defense <= 0) return 0;
+        const multiplier = (0.27 / Math.log(9999)) * Math.log(this.defense);
+        return Math.max(0, multiplier);
+    }
+
+    // Calculate critical hit chance using formula: agility / 40000 + 0.02
+    private getCriticalChance(): number {
+        return this.agility / 40000 + 0.02;
+    }
+
+    // Calculate luck multiplier using formula: luck / 40000
+    private getLuckMultiplier(): number {
+        return this.luck / 40000;
     }
 
     // Return current tech points for a given weapon type
@@ -318,7 +337,19 @@ export class Player extends BaseMesh {
         }
 
         const levelMultiplier = equipped.getDamageMultiplierFromLevelNumber();
-        return Math.floor(this.weapon.damage * baseMultiplier * levelMultiplier);
+        const strengthMultiplier = 1 + this.getStrengthMultiplier();
+        
+        // Check for critical hit
+        const isCritical = Math.random() < this.getCriticalChance();
+        const critMultiplier = isCritical ? 1.5 : 1.0;
+        
+        const damage = Math.floor(this.weapon.damage * baseMultiplier * levelMultiplier * strengthMultiplier * critMultiplier);
+        
+        if (isCritical) {
+            console.log('Critical Hit!');
+        }
+        
+        return damage;
     }
 
     update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
@@ -403,8 +434,15 @@ export class Player extends BaseMesh {
                 this.mesh.quaternion.slerp(targetQuaternion, 15 * dt);
             }
 
-            this.body.velocity.x = moveX * this.speed;
-            this.body.velocity.z = moveZ * this.speed;
+            // Apply walk speed multiplier from chips
+            let effectiveSpeed = this.speed;
+            const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
+            if (equippedChip && equippedChip.stats.walkSpeedMultiplier !== undefined) {
+                effectiveSpeed *= equippedChip.stats.walkSpeedMultiplier;
+            }
+
+            this.body.velocity.x = moveX * effectiveSpeed;
+            this.body.velocity.z = moveZ * effectiveSpeed;
 
             this.isGrounded = Math.abs(this.body.velocity.y) < Player.GROUND_VELOCITY_THRESHOLD;
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive) {
@@ -535,11 +573,16 @@ export class Player extends BaseMesh {
         if (this.invulnerableTimer > 0 || this.isDashing || this.isDead) return;
 
         console.log("Applying damage...");
-        this.hp -= amount;
+        
+        // Apply defense multiplier to reduce damage
+        const defenseMultiplier = 1 - this.getDefenseMultiplier();
+        const reducedDamage = Math.max(1, Math.floor(amount * defenseMultiplier));
+        
+        this.hp -= reducedDamage;
 
         // Spawn damage number if callback is set
         if (this.onDamageTaken) {
-            this.onDamageTaken(this.body.position, amount);
+            this.onDamageTaken(this.body.position, reducedDamage);
         }
 
         if (this.hp <= 0) {
@@ -565,7 +608,7 @@ export class Player extends BaseMesh {
         // Cancel charging attack if taking damage and suppress immediate follow-up attack
         if (this.isChargingAttack) this.cancelChargeAttack()
 
-        console.log(`Player took ${amount} damage. HP: ${this.hp}`);
+        console.log(`Player took ${reducedDamage} damage (${amount} reduced by defense). HP: ${this.hp}`);
     }
 
     /**
@@ -870,8 +913,12 @@ export class Player extends BaseMesh {
             return;
         }
 
-        this.exp += amount;
-        console.log(`Gained ${amount} EXP. Current: ${this.exp}/${this.expRequired}`);
+        // Apply luck multiplier to EXP gain
+        const luckMultiplier = 1 + this.getLuckMultiplier();
+        const adjustedAmount = Math.floor(amount * luckMultiplier);
+        
+        this.exp += adjustedAmount;
+        console.log(`Gained ${adjustedAmount} EXP (${amount} base + luck bonus). Current: ${this.exp}/${this.expRequired}`);
 
         // Check for level up(s)
         while (this.exp >= this.expRequired && this.level < Player.MAX_LEVEL) {
@@ -885,6 +932,9 @@ export class Player extends BaseMesh {
     private levelUp(): void {
         this.exp -= this.expRequired;
         this.level++;
+        
+        // Award 4 stat points
+        this.statPointsAvailable += 4;
 
         // Calculate new required EXP for next level
         if (this.level < Player.MAX_LEVEL) {
@@ -900,7 +950,7 @@ export class Player extends BaseMesh {
         // Heal player up to max HP and TP
         this.heal(this.maxHp, this.maxTp);
 
-        console.log(`Level Up! Now level ${this.level}. Next level requires ${this.expRequired} EXP.`);
+        console.log(`Level Up! Now level ${this.level}. Next level requires ${this.expRequired} EXP. ${this.statPointsAvailable} stat points available.`);
     }
 
     /**
@@ -955,6 +1005,14 @@ export class Player extends BaseMesh {
                 currentLevel = this.defenseUpgrades;
                 currentValue = this.baseDefense + this.defenseUpgrades;
                 break;
+            case StatType.AGILITY:
+                currentLevel = this.agilityUpgrades;
+                currentValue = this.baseAgility + this.agilityUpgrades;
+                break;
+            case StatType.LUCK:
+                currentLevel = this.luckUpgrades;
+                currentValue = this.baseLuck + this.luckUpgrades;
+                break;
             case StatType.HP:
                 currentLevel = this.hpUpgrades;
                 currentValue = 100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT);
@@ -985,6 +1043,12 @@ export class Player extends BaseMesh {
                     break;
                 case StatType.DEFENSE:
                     this.defenseUpgrades++;
+                    break;
+                case StatType.AGILITY:
+                    this.agilityUpgrades++;
+                    break;
+                case StatType.LUCK:
+                    this.luckUpgrades++;
                     break;
                 case StatType.HP:
                     this.hpUpgrades++;
@@ -1021,6 +1085,69 @@ export class Player extends BaseMesh {
                 return Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
             case StatType.TP:
                 return Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
+            case StatType.AGILITY:
+                return Math.min(this.baseAgility + this.agilityUpgrades, Player.MAX_STAT_VALUE);
+            case StatType.LUCK:
+                return Math.min(this.baseLuck + this.luckUpgrades, Player.MAX_STAT_VALUE);
         }
+    }
+
+    /**
+     * Add a stat point to a specific stat
+     * Returns true if successful, false if no points available or stat at max
+     */
+    addStatPoint(statType: StatType): boolean {
+        if (this.statPointsAvailable <= 0) {
+            console.log('No stat points available');
+            return false;
+        }
+
+        // Check current value to see if we can increase it
+        let currentValue = 0;
+        switch (statType) {
+            case StatType.STRENGTH:
+                currentValue = this.baseStrength + this.strengthUpgrades;
+                break;
+            case StatType.DEFENSE:
+                currentValue = this.baseDefense + this.defenseUpgrades;
+                break;
+            case StatType.AGILITY:
+                currentValue = this.baseAgility + this.agilityUpgrades;
+                break;
+            case StatType.LUCK:
+                currentValue = this.baseLuck + this.luckUpgrades;
+                break;
+            case StatType.HP:
+            case StatType.TP:
+                console.log('Cannot add stat points to HP or TP');
+                return false;
+        }
+
+        if (currentValue >= Player.MAX_STAT_VALUE) {
+            console.log(`${statType} is already at max value (${Player.MAX_STAT_VALUE})`);
+            return false;
+        }
+
+        // Consume a stat point and increase the base upgrade
+        this.statPointsAvailable--;
+        
+        switch (statType) {
+            case StatType.STRENGTH:
+                this.strengthUpgrades++;
+                break;
+            case StatType.DEFENSE:
+                this.defenseUpgrades++;
+                break;
+            case StatType.AGILITY:
+                this.agilityUpgrades++;
+                break;
+            case StatType.LUCK:
+                this.luckUpgrades++;
+                break;
+        }
+
+        this.recalculateStats();
+        console.log(`Added 1 point to ${statType}. ${this.statPointsAvailable} points remaining.`);
+        return true;
     }
 }

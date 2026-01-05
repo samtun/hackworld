@@ -81,7 +81,6 @@ export class ItemDetailsPanel {
         const effectiveStats = item.stats
         this.addStatIfPresent(details, 'Strength', effectiveStats.strength);
         this.addStatIfPresent(details, 'Defense', effectiveStats.defense);
-        this.addStatIfPresent(details, 'Speed', effectiveStats.speed);
 
         details.push({ label: 'Price', value: `${item.sellPrice} bits` });
 

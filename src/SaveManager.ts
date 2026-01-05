@@ -27,10 +27,12 @@ export interface SaveData {
         maxTp: number;
         strength: number;
         defense: number;
-        speed: number;
+        agility: number;
+        luck: number;
         money: number;
         xData: number;
         boosterPacks: number;
+        statPointsAvailable: number;
 
         // Weapon tech (per-type)
         tech: Record<string, number>;
@@ -40,6 +42,8 @@ export interface SaveData {
         defenseUpgrades: number;
         hpUpgrades: number;
         tpUpgrades: number;
+        agilityUpgrades: number;
+        luckUpgrades: number;
 
         // Position
         position: {
@@ -148,14 +152,18 @@ export class SaveManager {
                 maxTp: player.maxTp,
                 strength: player.strength,
                 defense: player.defense,
-                speed: player.speed,
+                agility: player.agility,
+                luck: player.luck,
                 money: player.money,
                 xData: player.xData,
                 boosterPacks: player.boosterPacks,
+                statPointsAvailable: player.statPointsAvailable,
                 strengthUpgrades: player.strengthUpgrades,
                 defenseUpgrades: player.defenseUpgrades,
                 hpUpgrades: player.hpUpgrades,
                 tpUpgrades: player.tpUpgrades,
+                agilityUpgrades: player.agilityUpgrades,
+                luckUpgrades: player.luckUpgrades,
                 position: {
                     x: player.body.position.x,
                     y: player.body.position.y,
@@ -275,16 +283,20 @@ export class SaveManager {
             player.maxTp = saveData.player.maxTp;
             player.strength = saveData.player.strength;
             player.defense = saveData.player.defense;
-            player.speed = saveData.player.speed;
+            player.agility = saveData.player.agility ?? 1;
+            player.luck = saveData.player.luck ?? 1;
             player.money = saveData.player.money;
             player.xData = saveData.player.xData;
             player.boosterPacks = saveData.player.boosterPacks;
+            player.statPointsAvailable = saveData.player.statPointsAvailable ?? 0;
 
             // Restore upgrades
             player.strengthUpgrades = saveData.player.strengthUpgrades;
             player.defenseUpgrades = saveData.player.defenseUpgrades;
             player.hpUpgrades = saveData.player.hpUpgrades;
             player.tpUpgrades = saveData.player.tpUpgrades;
+            player.agilityUpgrades = saveData.player.agilityUpgrades ?? 0;
+            player.luckUpgrades = saveData.player.luckUpgrades ?? 0;
 
             // Restore weapon tech
             if (saveData.player.tech) {

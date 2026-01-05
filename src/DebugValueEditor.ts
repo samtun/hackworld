@@ -130,22 +130,23 @@ export class DebugValueEditor {
         this.createSplitStatInputInRow(tpRow, 'tp', 'maxTp', 'TP:', 'number');
         statsContainer.appendChild(tpRow);
 
-        // Row 4: Strength + Speed (two columns)
-        const strengthSpeedRow = document.createElement('div');
-        strengthSpeedRow.style.display = 'grid';
-        strengthSpeedRow.style.gridTemplateColumns = '1fr 1fr';
-        strengthSpeedRow.style.gap = '10px';
-        this.createStatInputInRow(strengthSpeedRow, 'strength', 'Strength:', 'number');
-        this.createStatInputInRow(strengthSpeedRow, 'speed', 'Speed:', 'number');
-        statsContainer.appendChild(strengthSpeedRow);
+        // Row 4: Strength + Agility (two columns)
+        const strengthAgilityRow = document.createElement('div');
+        strengthAgilityRow.style.display = 'grid';
+        strengthAgilityRow.style.gridTemplateColumns = '1fr 1fr';
+        strengthAgilityRow.style.gap = '10px';
+        this.createStatInputInRow(strengthAgilityRow, 'strength', 'Strength:', 'number');
+        this.createStatInputInRow(strengthAgilityRow, 'agility', 'Agility:', 'number');
+        statsContainer.appendChild(strengthAgilityRow);
 
-        // Row 5: Defense (left only)
-        const defenseRow = document.createElement('div');
-        defenseRow.style.display = 'grid';
-        defenseRow.style.gridTemplateColumns = '1fr 1fr';
-        defenseRow.style.gap = '10px';
-        this.createStatInputInRow(defenseRow, 'defense', 'Defense:', 'number');
-        statsContainer.appendChild(defenseRow);
+        // Row 5: Defense + Luck (two columns)
+        const defenseLuckRow = document.createElement('div');
+        defenseLuckRow.style.display = 'grid';
+        defenseLuckRow.style.gridTemplateColumns = '1fr 1fr';
+        defenseLuckRow.style.gap = '10px';
+        this.createStatInputInRow(defenseLuckRow, 'defense', 'Defense:', 'number');
+        this.createStatInputInRow(defenseLuckRow, 'luck', 'Luck:', 'number');
+        statsContainer.appendChild(defenseLuckRow);
 
         // Row 6: X-Data + Money (two columns)
         const xDataMoneyRow = document.createElement('div');
@@ -557,7 +558,8 @@ export class DebugValueEditor {
         this.updateInputValue('maxTp', player.maxTp);
         this.updateInputValue('strength', player.strength);
         this.updateInputValue('defense', player.defense);
-        this.updateInputValue('speed', player.speed);
+        this.updateInputValue('agility', player.agility);
+        this.updateInputValue('luck', player.luck);
         this.updateInputValue('level', player.level);
         this.updateInputValue('xData', player.xData);
         this.updateInputValue('money', player.money);
@@ -574,7 +576,8 @@ export class DebugValueEditor {
         this.applyInputValue('maxTp', (val) => { player.maxTp = Math.max(1, val); });
         this.applyInputValue('strength', (val) => { player.strength = Math.max(0, val); });
         this.applyInputValue('defense', (val) => { player.defense = Math.max(0, val); });
-        this.applyInputValue('speed', (val) => { player.speed = Math.max(0, val); });
+        this.applyInputValue('agility', (val) => { player.agility = Math.max(0, val); });
+        this.applyInputValue('luck', (val) => { player.luck = Math.max(0, val); });
         this.applyInputValue('level', (val) => { player.level = Math.max(1, val); });
         this.applyInputValue('xData', (val) => { player.xData = Math.max(0, val); });
         this.applyInputValue('money', (val) => { player.money = Math.max(0, val); });
