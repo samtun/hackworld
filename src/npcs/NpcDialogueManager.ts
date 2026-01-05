@@ -1,6 +1,7 @@
 import { InputManager } from '../InputManager';
 import { Npc } from './Npc';
 import { resetInputDebounce } from '../ui/UiUtils';
+import { getHint, HintConfigs } from '../ui/InputHints';
 
 const COLORS = {
     OVERLAY: 'rgba(0, 0, 0, 0.85)',
@@ -125,17 +126,26 @@ export class NpcDialogueManager {
     /**
      * Update dialogue display
      */
-    private updateDialogue() {
+    private updateDialogue(input?: InputManager) {
         if (!this.currentNpc) return;
 
         this.nameBox.innerText = this.currentNpc.name;
         this.dialogueText.innerText = this.currentNpc.dialogue[this.currentLineIndex];
 
-        // Update continue hint
-        if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
-            this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Continue | <span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Exit';
+        // Update continue hint based on input method if InputManager is available
+        if (input) {
+            if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
+                this.continueHint.innerHTML = getHint(HintConfigs.continueExit, input);
+            } else {
+                this.continueHint.innerHTML = getHint(HintConfigs.closeExit, input);
+            }
         } else {
-            this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Close | <span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Exit';
+            // Fallback to keyboard hints if InputManager not available
+            if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
+                this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> Continue | <span class="key-icon">ESC</span> Exit';
+            } else {
+                this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> Close | <span class="key-icon">ESC</span> Exit';
+            }
         }
     }
 
@@ -161,8 +171,8 @@ export class NpcDialogueManager {
                     // End of dialogue
                     this.hide();
                 } else {
-                    // Show next line
-                    this.updateDialogue();
+                    // Show next line and update hints based on input method
+                    this.updateDialogue(input);
                 }
             }
         }

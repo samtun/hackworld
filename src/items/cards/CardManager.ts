@@ -4,6 +4,7 @@ import { resetInputDebounce } from '../../ui/UiUtils';
 import { Card, CardDefinitions, CardRarity } from './Card';
 import { CardCollection } from './CardCollection';
 import { ViewMode } from './ViewMode';
+import { getHint, HintConfigs } from '../../ui/InputHints';
 
 // --- Constants ---
 const COLORS = {
@@ -58,6 +59,7 @@ export class CardManager {
     private lastCancelState: boolean = false;
     
     private cardCollection: CardCollection;
+    private currentInputManager?: InputManager; // Store input manager for dynamic hints
     
     private constructor() {
         this.cardCollection = CardCollection.Instance;
@@ -390,14 +392,14 @@ export class CardManager {
         
         // Update instructions text
         const instructionsText = document.getElementById('pack-instructions');
-        if (instructionsText) {
+        if (instructionsText && this.currentInputManager) {
             const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
             if (this.flippingInProgress) {
                 instructionsText.innerText = 'Revealing cards...';
             } else if (allFlipped) {
-                instructionsText.innerText = 'Press ENTER / A to continue';
+                instructionsText.innerText = getHint(HintConfigs.continuePack, this.currentInputManager);
             } else {
-                instructionsText.innerText = 'Press ENTER / A to reveal cards';
+                instructionsText.innerText = getHint(HintConfigs.revealContinue, this.currentInputManager);
             }
         }
     }
@@ -534,6 +536,9 @@ export class CardManager {
     
     public update(player: Player, input: InputManager) {
         if (!this.isVisible) return;
+        
+        // Store input manager for dynamic hints
+        this.currentInputManager = input;
         
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();

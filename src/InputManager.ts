@@ -258,4 +258,8 @@ export class InputManager {
         }
         return false;
     }
+
+    isControllerConnected(): boolean {
+        return this.gamepadIndex !== null;
+    }
 }
