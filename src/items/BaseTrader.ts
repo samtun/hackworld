@@ -6,6 +6,7 @@ import { resetInputDebounce, shakeElement } from '../ui/UiUtils';
 import { formatItemLabel } from './ItemDisplay';
 import { TradeMode } from './TradeMode';
 import { TraderPanel } from './TraderPanel';
+import { EquippableItem } from './EquippableItem';
 
 export { TradeMode } from './TradeMode';
 
@@ -346,8 +347,12 @@ export abstract class BaseTrader {
             if (item && item.buyPrice !== undefined) {
                 if (player.money >= item.buyPrice) {
                     player.money -= item.buyPrice;
-                    const clone = (item as any).clone ? (item as any).clone(`p${Date.now()}`) : { ...item, id: `p${Date.now()}` };
-                    (clone as any).isEquipped = false; player.inventory.push(clone as Item);
+                    // Use crypto.randomUUID() for better uniqueness than Date.now()
+                    const clone: Item = item.clone();
+                    if (clone instanceof EquippableItem) {
+                        clone.isEquipped = false;
+                    }
+                    player.inventory.push(clone);
                     this.traderInventory.splice(this.selectedIndex, 1);
                     if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) this.selectedIndex--;
                     this.needsRender = true;
@@ -360,11 +365,15 @@ export abstract class BaseTrader {
             const playerItems = this.filterPlayerInventory(player);
             const item = playerItems[this.selectedIndex];
             if (item && item.sellPrice !== undefined) {
-                if ((item as any).isEquipped) { this.shakeItem(this.selectedIndex); return; }
+                if (item instanceof EquippableItem && item.isEquipped) {
+                    this.shakeItem(this.selectedIndex);
+                    return;
+                }
                 player.money += item.sellPrice;
-                const sold = (item as any).clone ? (item as any).clone(`t${Date.now()}`) : { ...item, id: `t${Date.now()}` };
-                (sold as any).isEquipped = false; this.traderInventory.push(sold as Item);
-                const idx = player.inventory.findIndex(i => i.id === item.id);
+                // Use crypto.randomUUID() for better uniqueness than Date.now()
+                const sold = item.clone();
+                this.traderInventory.push(sold as Item);
+                const idx = player.inventory.indexOf(item);
                 if (idx !== -1) player.inventory.splice(idx, 1);
                 if (this.selectedIndex >= playerItems.length - 1 && this.selectedIndex > 0) this.selectedIndex--;
                 this.needsRender = true;

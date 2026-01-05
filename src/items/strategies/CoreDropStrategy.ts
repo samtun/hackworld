@@ -9,6 +9,9 @@ import { Player } from '../../Player';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class CoreDropStrategy implements ItemDropStrategy {
+    readonly key = 'core';
+    private readonly DROP_PROBABILITY = 0.27; // 27% of total drops
+
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         if (Math.random() > enemy.itemDropChance) return null;
 
@@ -44,5 +47,9 @@ export class CoreDropStrategy implements ItemDropStrategy {
 
         player.inventory.push(newItem);
         console.log(`Picked up core ${def.name} (level ${drop.level})`);
+    }
+
+    getDropProbability(): number {
+        return this.DROP_PROBABILITY;
     }
 }

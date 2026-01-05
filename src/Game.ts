@@ -440,6 +440,12 @@ export class Game {
         let nearbyInteractive: InteractiveEntity | null = null;
 
         if (!anyMenuOpen) {
+            // Auto-pickup XData drops
+            const xDataDropNearby = this.world.checkXDataDropInteraction(this.player.position);
+            if (xDataDropNearby) {
+                this.world.pickupXDataDrop(xDataDropNearby, this.player);
+            }
+
             // Check NPCs (including dialogue NPCs and Ford)
             const allNpcs = this.world.getAllNpcs();
             for (const npc of allNpcs) {

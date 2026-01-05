@@ -6,16 +6,11 @@ import { AssetManager } from './AssetManager';
 import { BaseStage, Lobby, createStage } from './stages';
 import { Npc } from './npcs/Npc';
 import { ItemDropManager } from './items/ItemDropManager';
-import { WeaponDropStrategy } from './items/strategies/WeaponDropStrategy';
-import { ChipDropStrategy } from './items/strategies/ChipDropStrategy';
-import { CoreDropStrategy } from './items/strategies/CoreDropStrategy';
-import { BoosterPackDropStrategy } from './items/strategies/BoosterPackDropStrategy';
-import { XData } from './items/xdata/XData';
 import { WeaponDrop } from './items/weapons/WeaponDrop';
 import { ChipDrop } from './items/chips/ChipDrop';
 import { CoreDrop } from './items/cores/CoreDrop';
 import { BoosterPackDrop } from './items/cards/BoosterPackDrop';
-import { XDataDropManager } from './items/xdata/XDataDropManager';
+import { XDataDrop } from './items/xdata/XDataDrop';
 import { HealingSystem } from './systems/HealingSystem';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 
@@ -31,15 +26,11 @@ export class World {
     // Current active stage
     currentStage?: BaseStage;
 
-    // X-Data entities
-    xDataEntities: XData[] = [];
-
     // Floating indicator manager (for damage, EXP, tech points, etc.)
     public floatingIndicatorManager: FloatingIndicatorManager;
 
     // Drop managers
     private itemDropManager: ItemDropManager;
-    private xDataDropManager: XDataDropManager;
 
     // XData interaction callback (set by Game)
     private xDataInteractionCallback?: () => void;
@@ -62,16 +53,11 @@ export class World {
         this.onLoadProgressCallback = onLoadProgress;
 
         this.itemDropManager = ItemDropManager.Instance;
-        this.xDataDropManager = XDataDropManager.Instance;
 
         // Initialize floating indicator manager
         this.floatingIndicatorManager = new FloatingIndicatorManager(scene);
 
-        // Register drop strategies
-        this.itemDropManager.registerStrategy('weapon', new WeaponDropStrategy());
-        this.itemDropManager.registerStrategy('chip', new ChipDropStrategy());
-        this.itemDropManager.registerStrategy('core', new CoreDropStrategy());
-        this.itemDropManager.registerStrategy('boosterPack', new BoosterPackDropStrategy());
+        // Drop strategies are now registered internally by ItemDropManager
 
         // Setup progress callback for asset manager
         if (this.onLoadProgressCallback) {
@@ -134,7 +120,6 @@ export class World {
                 this.currentStage = undefined;
             }
             this.itemDropManager.clear(this.scene, this.physicsWorld);
-            this.clearXData();
 
             // Create new stage instance
             const newStage = createStage(stageId, this.scene, this.physicsWorld, this.physicsMaterial);
@@ -205,26 +190,12 @@ export class World {
                 // Spawn EXP number visual
                 this.spawnEXPNumber(enemy.getDeathPosition(), enemy.expAmount);
 
-                const random = Math.random();
-                let droppedItem = false;
-
-                // 50% weapon, 25% chip, 25% core
-                if (random < 0.5) {
-                    droppedItem = this.itemDropManager.tryDrop('weapon', this.scene, this.physicsWorld, enemy, player);
-                } else if (random < 0.75) {
-                    droppedItem = this.itemDropManager.tryDrop('chip', this.scene, this.physicsWorld, enemy, player);
-                } else {
-                    droppedItem = this.itemDropManager.tryDrop('core', this.scene, this.physicsWorld, enemy, player);
-                }
-
-                if (!droppedItem) {
-                    const xDataAmount = this.xDataDropManager.rollDrop(player, enemy);
-                    if (xDataAmount > 0) {
-                        this.spawnXData(enemy.getDeathPosition(), xDataAmount);
-                    } else {
-                        // If no item or X-Data was dropped, try booster pack (3% chance)
-                        this.itemDropManager.tryDrop('boosterPack', this.scene, this.physicsWorld, enemy, player);
-                    }
+                // Try to drop an item (weapon, chip, core, or booster pack)
+                // The ItemDropManager will select one strategy based on probabilities
+                // and each strategy will check enemy.itemDropChance internally
+                if (!(this.itemDropManager.tryDropItem(this.scene, this.physicsWorld, enemy, player))) {
+                    // Try to drop X-Data separately (independent of item drops) if no item was dropped
+                    this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, enemy, player);
                 }
 
                 this.scene.remove(enemy.mesh);
@@ -236,30 +207,8 @@ export class World {
         // Update all registered item drop strategies
         this.itemDropManager.update(dt, cameraPosition, player.position);
 
-        // Update X-Data entities
-        for (let i = this.xDataEntities.length - 1; i >= 0; i--) {
-            const xData = this.xDataEntities[i];
-            xData.update(dt);
-
-            // Check for collision with player
-            if (this.checkXDataCollision(xData, player)) {
-                player.collectXData(xData.amount);
-                xData.cleanup(this.scene, this.physicsWorld);
-                this.xDataEntities.splice(i, 1);
-            }
-        }
-
         // Update floating indicators (damage, EXP, tech points, etc.)
         this.floatingIndicatorManager.update(dt, cameraPosition);
-    }
-
-    /**
-     * Spawn X-Data at the given position
-     */
-    spawnXData(position: CANNON.Vec3, amount: number): void {
-        const xData = new XData(this.scene, this.physicsWorld, position, amount);
-        this.xDataEntities.push(xData);
-        console.log(`Spawned ${amount} X-Data at position (${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)})`);
     }
 
     /**
@@ -282,36 +231,6 @@ export class World {
      */
     spawnTechIndicator(position: CANNON.Vec3): void {
         this.floatingIndicatorManager.spawnTech(position);
-    }
-
-    /**
-     * Check collision between X-Data and player
-     */
-    private checkXDataCollision(xData: XData, player: Player): boolean {
-        const playerPos = player.body.position;
-        const xDataPos = xData.body.position;
-
-        const dx = playerPos.x - xDataPos.x;
-        const dy = playerPos.y - xDataPos.y;
-        const dz = playerPos.z - xDataPos.z;
-        const distSq = dx * dx + dy * dy + dz * dz;
-
-        // Collection radius of 1.5 units
-        const collectionRadius = 1.5;
-        return distSq < (collectionRadius * collectionRadius);
-    }
-
-    /**
-     * Clear all X-Data entities
-     */
-    private clearXData(): void {
-        for (const xData of this.xDataEntities) {
-            xData.cleanup(this.scene, this.physicsWorld);
-        }
-        this.xDataEntities = [];
-
-        // Clear floating indicators
-        this.floatingIndicatorManager.clear();
     }
 
     checkPortalInteraction(playerPosition: THREE.Vector3): string | null {
@@ -380,5 +299,19 @@ export class World {
      */
     pickupBoosterPackDrop(drop: BoosterPackDrop, player: Player): void {
         this.itemDropManager.pickup('boosterPack', this.scene, this.physicsWorld, drop, player);
+    }
+
+    /**
+     * Check if player is near an X-Data drop
+     */
+    checkXDataDropInteraction(playerPosition: THREE.Vector3): XDataDrop | null {
+        return this.itemDropManager.checkInteraction('xData', playerPosition) as XDataDrop | null;
+    }
+
+    /**
+     * Pick up an X-Data drop
+     */
+    pickupXDataDrop(drop: XDataDrop, player: Player): void {
+        this.itemDropManager.pickup('xData', this.scene, this.physicsWorld, drop, player);
     }
 }

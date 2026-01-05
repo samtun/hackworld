@@ -2,7 +2,6 @@ import { Player } from './Player';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { CoreRegistry } from './items/cores/CoreRegistry';
 import { ChipRegistry } from './items/chips/ChipRegistry';
-import { WeaponItem } from './items/weapons/WeaponItem';
 import { WeaponType } from './items/weapons/WeaponType';
 import { CoreItem } from './items/cores/CoreItem';
 import { ChipItem } from './items/chips/ChipItem';
@@ -213,7 +212,8 @@ export class DebugValueEditor {
         weapons.forEach(weapon => {
             const option = document.createElement('option');
             option.value = weapon.id;
-            option.textContent = `${weapon.name} (${weapon.weaponType})`;
+            const levelChar = ItemLevelHelper.getLevelChar(weapon.level);
+            option.textContent = `${weapon.name} ${levelChar} (${weapon.weaponType})`;
             select.appendChild(option);
         });
 
@@ -247,52 +247,6 @@ export class DebugValueEditor {
         damageRow.appendChild(damageInput);
         parent.appendChild(damageRow);
 
-        // Level selector (greek chars)
-        const levelRow = document.createElement('div');
-        levelRow.style.display = 'flex';
-        levelRow.style.justifyContent = 'space-between';
-        levelRow.style.alignItems = 'center';
-        levelRow.style.marginBottom = '10px';
-
-        const levelLabel = document.createElement('label');
-        levelLabel.textContent = 'Level:';
-        levelLabel.style.fontSize = '14px';
-
-        const levelSelect = document.createElement('select');
-        levelSelect.style.width = '100px';
-        levelSelect.style.padding = '5px';
-        levelSelect.style.backgroundColor = '#222';
-        levelSelect.style.border = '1px solid #666';
-        levelSelect.style.borderRadius = '3px';
-        levelSelect.style.color = '#fff';
-        levelSelect.style.fontSize = '14px';
-        levelSelect.style.fontFamily = 'inherit';
-
-        // Populate from WeaponItem.LEVELS if available, otherwise fall back to 1..5
-        const rawLevels = (WeaponItem as any).LEVELS || [];
-        if (rawLevels && rawLevels.length > 0) {
-            rawLevels.forEach((lvl: any, idx: number) => {
-                const num = idx + 1;
-                const opt = document.createElement('option');
-                opt.value = String(num);
-                const char = ItemLevelHelper.getLevelChar(num);
-                opt.textContent = `${char}${lvl.name ? ` (${lvl.name})` : ''}`;
-                levelSelect.appendChild(opt);
-            });
-        } else {
-            for (let i = 1; i <= 5; i++) {
-                const opt = document.createElement('option');
-                opt.value = String(i);
-                const char = ItemLevelHelper.getLevelChar(i);
-                opt.textContent = `${char} Level ${i}`;
-                levelSelect.appendChild(opt);
-            }
-        }
-
-        levelRow.appendChild(levelLabel);
-        levelRow.appendChild(levelSelect);
-        parent.appendChild(levelRow);
-
         // Add button
         const addButton = document.createElement('button');
         addButton.textContent = 'Add Weapon';
@@ -314,18 +268,14 @@ export class DebugValueEditor {
             if (weaponId && !isNaN(damage) && this.player) {
                 const weapon = this.weaponRepository.getWeaponById(weaponId);
                 if (weapon) {
-                    const lvl = parseInt((levelSelect as HTMLSelectElement).value) || 1;
-                    // Update damage and level
+                    // Update damage
                     weapon.damage = damage;
-                    weapon.level = lvl;
                     this.player.inventory.push(weapon);
-                    console.log(`Added weapon: ${weapon.name} (Level ${lvl}) with ${damage} damage`);
+                    console.log(`Added weapon: ${weapon.name} (Level ${weapon.level}) with ${damage} damage`);
 
                     // Reset selection
                     select.value = '';
                     damageInput.value = '10';
-                    // reset level selector to first option
-                    if (levelSelect.options.length > 0) levelSelect.selectedIndex = 0;
                 }
             }
         });

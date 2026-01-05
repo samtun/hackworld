@@ -3,28 +3,98 @@ import * as CANNON from 'cannon-es';
 import { Enemy } from '../enemies/Enemy';
 import { Player } from '../Player';
 import { ItemDrop } from './ItemDrop';
+import { WeaponDropStrategy } from './strategies/WeaponDropStrategy';
+import { ChipDropStrategy } from './strategies/ChipDropStrategy';
+import { CoreDropStrategy } from './strategies/CoreDropStrategy';
+import { BoosterPackDropStrategy } from './strategies/BoosterPackDropStrategy';
+import { XDataDropStrategy } from './strategies/XDataDropStrategy';
 
 export interface ItemDropStrategy {
+    // unique identifier for this strategy type
+    readonly key: string;
     // returns the created drop object or null when no drop occurred
     tryDrop(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): ItemDrop | null;
     // perform pickup logic (add item to inventory); do NOT cleanup the drop visuals/bodies
     pickup(scene: THREE.Scene, world: CANNON.World, drop: ItemDrop, player: Player): void;
+    // return the probability weight for this drop type (e.g., 0.43 for weapon)
+    getDropProbability(): number;
 }
 
 export class ItemDropManager {
     private static instance: ItemDropManager;
     private strategies: Map<string, ItemDropStrategy> = new Map();
     private drops: Map<string, ItemDrop[]> = new Map();
+    private itemDropStrategies: ItemDropStrategy[] = [];
 
-    private constructor() {}
+    private constructor() {
+        // Register all item drop strategies internally (weapon, chip, core, boosterPack)
+        this.registerStrategy(new WeaponDropStrategy());
+        this.registerStrategy(new ChipDropStrategy());
+        this.registerStrategy(new CoreDropStrategy());
+        this.registerStrategy(new BoosterPackDropStrategy());
+
+        // XData is separate from item drops
+        this.registerStrategy(new XDataDropStrategy());
+
+        // Build list of item drop strategies (excluding xData)
+        this.itemDropStrategies = [
+            this.strategies.get('weapon')!,
+            this.strategies.get('chip')!,
+            this.strategies.get('core')!,
+            this.strategies.get('boosterPack')!
+        ];
+    }
 
     public static get Instance(): ItemDropManager {
         return this.instance || (this.instance = new this());
     }
 
-    registerStrategy(key: string, strategy: ItemDropStrategy) {
-        this.strategies.set(key, strategy);
-        this.drops.set(key, []);
+    registerStrategy(strategy: ItemDropStrategy) {
+        this.strategies.set(strategy.key, strategy);
+        this.drops.set(strategy.key, []);
+    }
+
+    private selectRandomStrategy(): ItemDropStrategy | null {
+        // Calculate cumulative probabilities for weighted selection
+        const totalProbability = this.itemDropStrategies.reduce((sum, s) => sum + s.getDropProbability(), 0);
+        if (totalProbability <= 0) return null;
+
+        const random = Math.random() * totalProbability;
+
+        // Using cumulative distribution to select strategy is necessary to avoid bias
+        let cumulative = 0;
+        for (const strategy of this.itemDropStrategies) {
+            cumulative += strategy.getDropProbability();
+            if (random < cumulative) {
+                return strategy;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Try to drop an item from enemy using all registered item drop strategies.
+     * Each strategy independently checks enemy.itemDropChance and only one item can be dropped.
+     * Strategies are tried in order weighted by their drop probability.
+     * @returns true if an item was dropped, false otherwise
+     */
+    tryDropItem(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): boolean {
+        const strategy = this.selectRandomStrategy();
+        if (!strategy) return false;
+
+        // Try this strategy
+        const drop = strategy.tryDrop(scene, world, enemy, player);
+        if (drop) {
+            const arr = this.drops.get(strategy.key)!;
+            // Add physics body to world if provided by the drop
+            if (drop.body instanceof CANNON.Body) {
+                world.addBody(drop.body);
+            }
+            arr.push(drop);
+            return true;
+        }
+
+        return false;
     }
 
     tryDrop(key: string, scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): boolean {
