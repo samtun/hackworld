@@ -56,6 +56,8 @@ export class Player extends BaseMesh {
     private static readonly TECH_POINT_CAP = 2500;
 
     // Base Stats (without equipment modifiers or upgrades)
+    private baseHp: number = 170;
+    private baseTp: number = 60;
     private baseStrength: number = 14;
     private baseDefense: number = 17;
     private baseSpeed: number = 6;
@@ -64,10 +66,10 @@ export class Player extends BaseMesh {
     level: number = 1;
     exp: number = 0;
     expRequired: number = Player.EXP_BASE; // EXP needed for next level
-    maxHp: number = 170;
-    hp: number = 170;
-    maxTp: number = 60;
-    tp: number = 60;
+    maxHp: number = this.baseHp;
+    hp: number = this.baseHp;
+    maxTp: number = this.baseTp;
+    tp: number = this.baseTp;
     strength: number = 14;
     defense: number = 17;
     invulnerableTimer: number = 0;
@@ -231,8 +233,8 @@ export class Player extends BaseMesh {
         // Start with base stats (including upgrades) and apply level multiplier
         this.strength = Math.min(Math.floor((this.baseStrength + this.strengthUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
         this.defense = Math.min(Math.floor((this.baseDefense + this.defenseUpgrades) * levelStatBonus), Player.MAX_STAT_VALUE);
-        this.maxHp = Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, Player.MAX_STAT_VALUE);
-        this.maxTp = Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, Player.MAX_STAT_VALUE);
+        this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, Player.MAX_STAT_VALUE);
+        this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, Player.MAX_STAT_VALUE);
 
         // Reset speed to base value before applying modifiers
         this.speed = this.baseSpeed;
