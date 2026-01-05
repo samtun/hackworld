@@ -6,7 +6,7 @@ import { ItemDrop } from '../ItemDrop';
  * BoosterPackDrop entity - represents a booster pack that can be picked up from the ground
  * Displays a 3D text label and animates in a floating motion
  */
-export class BoosterPackDrop implements ItemDrop {
+export class BoosterPackDrop extends ItemDrop {
     mesh: THREE.Group;
     body: CANNON.Body;
     textMesh: THREE.Mesh | null = null;
@@ -18,6 +18,7 @@ export class BoosterPackDrop implements ItemDrop {
     private readonly PICKUP_DISTANCE: number = 1.5;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3) {
+        super();
         this.baseHeight = position.y;
 
         // Create visual group
@@ -36,35 +37,8 @@ export class BoosterPackDrop implements ItemDrop {
         packMesh.position.y = 0.3;
         this.mesh.add(packMesh);
 
-        // Create text label using canvas texture
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d')!;
-        canvas.width = 512;
-        canvas.height = 128;
-
-        context.fillStyle = 'rgba(0, 0, 0, 0.8)';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-
-        context.font = 'bold 48px Arial';
-        context.fillStyle = '#ffaa00';
-        context.textAlign = 'center';
-        context.textBaseline = 'middle';
-        context.fillText('Booster Pack', canvas.width / 2, canvas.height / 2);
-
-        // Create texture from canvas
-        const texture = new THREE.CanvasTexture(canvas);
-        const textMaterial = new THREE.MeshBasicMaterial({
-            map: texture,
-            transparent: true,
-            side: THREE.DoubleSide,
-            depthTest: false,
-            depthWrite: false
-        });
-        const textGeometry = new THREE.PlaneGeometry(2, 0.5);
-        this.textMesh = new THREE.Mesh(textGeometry, textMaterial);
-        this.textMesh.position.y = 0;
-        this.textMesh.renderOrder = 990;
-        this.textMesh.visible = false; // Start hidden
+        // Create text label using shared method with custom orange color
+        this.textMesh = this.createTextLabel('Booster Pack', '', '#ffaa00');
         this.mesh.add(this.textMesh);
 
         // Position the group

@@ -4,7 +4,7 @@ import { ChipType } from './Chip';
 import { ItemDrop } from '../ItemDrop';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 
-export class ChipDrop implements ItemDrop {
+export class ChipDrop extends ItemDrop {
     mesh: THREE.Group;
     body: CANNON.Body;
     chipId: string;
@@ -13,6 +13,7 @@ export class ChipDrop implements ItemDrop {
     buyPrice: number;
     sellPrice: number;
     level: number = 1;
+    textMesh: THREE.Mesh | null = null;
 
     private floatTimer: number = 0;
     private baseHeight: number;
@@ -21,6 +22,7 @@ export class ChipDrop implements ItemDrop {
     private readonly PICKUP_DISTANCE: number = 1.5;
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3, chipId: string, chipName: string, chipType: ChipType, buyPrice: number, sellPrice: number, level: number) {
+        super();
         this.chipId = chipId;
         this.chipName = chipName;
         this.chipType = chipType;
@@ -39,45 +41,10 @@ export class ChipDrop implements ItemDrop {
         sphere.position.y = 0.25;
         this.mesh.add(sphere);
 
-        // Text label (canvas) with level character
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d')!;
-        canvas.width = 256;
-        canvas.height = 64;
-        ctx.fillStyle = 'rgba(0,0,0,0.8)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Measure widths for centering
+        // Create text label using shared method
         const levelChar = ItemLevelHelper.getLevelChar(this.level);
-        const baseFont = 'bold 28px Arial';
-        ctx.font = baseFont;
-        const nameWidth = ctx.measureText(this.chipName).width;
-        const levelFont = 'italic bold 28px Arial';
-        ctx.font = levelFont;
-        const levelWidth = ctx.measureText(levelChar).width;
-
-        const spacing = 4;
-        const totalWidth = nameWidth + spacing + levelWidth;
-        const startX = canvas.width / 2 - totalWidth / 2;
-        const centerY = canvas.height / 2;
-
-        // Draw name
-        ctx.font = baseFont;
-        ctx.fillStyle = '#ffffff';
-        ctx.textAlign = 'left';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(this.chipName, startX, centerY);
-
-        // Draw level char
-        ctx.font = levelFont;
-        ctx.fillText(levelChar, startX + nameWidth + spacing, centerY);
-
-        const texture = new THREE.CanvasTexture(canvas);
-        const plane = new THREE.Mesh(new THREE.PlaneGeometry(1.2, 0.3), new THREE.MeshBasicMaterial({ map: texture, transparent: true }));
-        plane.position.y = 0;
-        plane.renderOrder = 990;
-        plane.visible = false;
-        this.mesh.add(plane);
+        this.textMesh = this.createTextLabel(this.chipName, levelChar);
+        this.mesh.add(this.textMesh);
 
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
@@ -97,15 +64,14 @@ export class ChipDrop implements ItemDrop {
         const distanceToPlayer = this.mesh.position.distanceTo(playerPosition);
         const isNear = distanceToPlayer < this.PICKUP_DISTANCE;
 
-        // show text when near
-        const textMesh = this.mesh.children.find(c => (c as THREE.Mesh).material !== undefined && (c as THREE.Mesh).geometry.type === 'PlaneGeometry');
-        if (textMesh) (textMesh as THREE.Mesh).visible = isNear;
+        if (this.textMesh) {
+            this.textMesh.visible = isNear;
 
-        // billboard text
-        if (isNear && textMesh) {
-            const dir = new THREE.Vector3().subVectors(cameraPosition, this.mesh.position).normalize();
-            const angle = Math.atan2(dir.x, dir.z);
-            (textMesh as THREE.Mesh).rotation.y = angle;
+            if (isNear) {
+                const dir = new THREE.Vector3().subVectors(cameraPosition, this.mesh.position).normalize();
+                const angle = Math.atan2(dir.x, dir.z);
+                this.textMesh.rotation.y = angle;
+            }
         }
 
         this.body.position.y = this.mesh.position.y;
