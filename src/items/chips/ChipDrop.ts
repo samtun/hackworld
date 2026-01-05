@@ -13,6 +13,7 @@ export class ChipDrop extends ItemDrop {
     buyPrice: number;
     sellPrice: number;
     level: number = 1;
+    textMesh: THREE.Mesh | null = null;
 
     private floatTimer: number = 0;
     private baseHeight: number;
@@ -42,8 +43,8 @@ export class ChipDrop extends ItemDrop {
 
         // Create text label using shared method
         const levelChar = ItemLevelHelper.getLevelChar(this.level);
-        const textMesh = this.createTextLabel(this.chipName, levelChar);
-        this.mesh.add(textMesh);
+        this.textMesh = this.createTextLabel(this.chipName, levelChar);
+        this.mesh.add(this.textMesh);
 
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
@@ -63,15 +64,14 @@ export class ChipDrop extends ItemDrop {
         const distanceToPlayer = this.mesh.position.distanceTo(playerPosition);
         const isNear = distanceToPlayer < this.PICKUP_DISTANCE;
 
-        // show text when near
-        const textMesh = this.mesh.children.find(c => (c as THREE.Mesh).material !== undefined && (c as THREE.Mesh).geometry.type === 'PlaneGeometry');
-        if (textMesh) (textMesh as THREE.Mesh).visible = isNear;
+        if (this.textMesh) {
+            this.textMesh.visible = isNear;
 
-        // billboard text
-        if (isNear && textMesh) {
-            const dir = new THREE.Vector3().subVectors(cameraPosition, this.mesh.position).normalize();
-            const angle = Math.atan2(dir.x, dir.z);
-            (textMesh as THREE.Mesh).rotation.y = angle;
+            if (isNear) {
+                const dir = new THREE.Vector3().subVectors(cameraPosition, this.mesh.position).normalize();
+                const angle = Math.atan2(dir.x, dir.z);
+                this.textMesh.rotation.y = angle;
+            }
         }
 
         this.body.position.y = this.mesh.position.y;
