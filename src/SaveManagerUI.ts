@@ -11,7 +11,7 @@ export class SaveManagerUI {
     container!: HTMLDivElement;
     isVisible: boolean = false;
     private saveCallback?: () => void;
-    private loadCallback?: (file: File) => void;
+    private loadCallback?: (file: File) => Promise<void>;
 
     // UI Elements
     private saveButton!: HTMLDivElement;
@@ -127,15 +127,20 @@ export class SaveManagerUI {
         this.fileInput.type = 'file';
         this.fileInput.accept = '.json';
         this.fileInput.style.display = 'none';
-        this.fileInput.addEventListener('change', (e) => {
+        this.fileInput.addEventListener('change', async (e) => {
             const file = (e.target as HTMLInputElement).files?.[0];
             if (file && this.loadCallback) {
-                this.loadCallback(file);
-                this.showLoadSuccess();
-                // Auto-close after showing success message
-                this.autoCloseTimer = window.setTimeout(() => {
-                    this.hide();
-                }, 1500);
+                try {
+                    await this.loadCallback(file);
+                    this.showLoadSuccess();
+                    // Auto-close after showing success message
+                    this.autoCloseTimer = window.setTimeout(() => {
+                        this.hide();
+                    }, 1500);
+                } catch (error) {
+                    this.showLoadError();
+                    console.error('Failed to load save file:', error);
+                }
             }
         });
         buttonContainer.appendChild(this.fileInput);
@@ -161,7 +166,7 @@ export class SaveManagerUI {
      * @param onSave - Callback to execute when save is confirmed
      * @param onLoad - Callback to execute when a file is selected for loading
      */
-    show(playtime: string, onSave: () => void, onLoad: (file: File) => void): void {
+    show(playtime: string, onSave: () => void, onLoad: (file: File) => Promise<void>): void {
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.saveCallback = onSave;
@@ -263,5 +268,18 @@ export class SaveManagerUI {
     private showLoadSuccess(): void {
         this.saveStatusText.textContent = 'Game loaded successfully!';
         this.saveStatusText.style.display = 'block';
+    }
+
+    /**
+     * Show load error message
+     */
+    private showLoadError(): void {
+        this.saveStatusText.textContent = 'Failed to load save file!';
+        this.saveStatusText.style.color = '#ff0000';
+        this.saveStatusText.style.display = 'block';
+        // Reset color after timeout
+        window.setTimeout(() => {
+            this.saveStatusText.style.color = '#00ff00';
+        }, 2000);
     }
 }

@@ -308,14 +308,18 @@ export class SaveManager {
                 if (itemData.kind === 'weapon') {
                     // Restore weapon by finding a weapon with matching properties
                     // We use weaponType and level to find the right weapon from the repository
-                    const baseWeapon = weaponRepo.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
-                    if (baseWeapon) {
-                        // Set the saved properties if needed
-                        if (itemData.isEquipped) {
-                            baseWeapon.isEquipped = true;
-                            player.setWeapon(baseWeapon);
+                    if (itemData.weaponType && itemData.level) {
+                        const baseWeapon = weaponRepo.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
+                        if (baseWeapon) {
+                            // Set the saved properties if needed
+                            if (itemData.isEquipped) {
+                                baseWeapon.isEquipped = true;
+                                player.setWeapon(baseWeapon);
+                            }
+                            player.inventory.push(baseWeapon);
                         }
-                        player.inventory.push(baseWeapon);
+                    } else {
+                        console.warn('Invalid weapon data in save file:', itemData);
                     }
                 } else if (itemData.kind === 'core') {
                     // Restore core by name since the ID is a UUID
