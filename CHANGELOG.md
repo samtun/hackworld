@@ -1,3 +1,16 @@
+# [1.17.0](https://github.com/samtun/hackworld/compare/v1.16.0...v1.17.0) (2026-01-05)
+
+
+### Bug Fixes
+
+* unify item drop label font styles for consistency ([e931717](https://github.com/samtun/hackworld/commit/e931717b44b0069c3fb7a002a2da0ee803a0b70f))
+
+
+### Features
+
+* unify BoosterPackDrop label with shared createTextLabel method ([210b0a7](https://github.com/samtun/hackworld/commit/210b0a7ac5b3a797a30317aaec381e6ed291f33a)), closes [#ffaa00](https://github.com/samtun/hackworld/issues/ffaa00)
+* unify ItemDrop label styles with Share Tech font ([e6295e0](https://github.com/samtun/hackworld/commit/e6295e0d2abb4c5d90e27ee2e60ad5a32e89c1b8))
+
 # [1.16.0](https://github.com/samtun/hackworld/compare/v1.15.0...v1.16.0) (2026-01-05)
 
 
