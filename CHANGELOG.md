@@ -1,3 +1,10 @@
+## [1.21.2](https://github.com/samtun/hackworld/compare/v1.21.1...v1.21.2) (2026-01-05)
+
+
+### Bug Fixes
+
+* revert changes in DebugValueEditor ([120bad5](https://github.com/samtun/hackworld/commit/120bad57cd25fb149731c2c4e23f6d980ed438b1))
+
 ## [1.21.1](https://github.com/samtun/hackworld/compare/v1.21.0...v1.21.1) (2026-01-05)
 
 
