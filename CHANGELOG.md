@@ -1,3 +1,10 @@
+## [1.24.1](https://github.com/samtun/hackworld/compare/v1.24.0...v1.24.1) (2026-01-06)
+
+
+### Bug Fixes
+
+* display agility and luck stats correctly in XData upgrade UI ([e6dd004](https://github.com/samtun/hackworld/commit/e6dd004f2be4d58e2ad9e24e9904b1f53edda396))
+
 # [1.24.0](https://github.com/samtun/hackworld/compare/v1.23.0...v1.24.0) (2026-01-06)
 
 
