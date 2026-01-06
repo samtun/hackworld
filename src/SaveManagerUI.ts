@@ -1,5 +1,6 @@
 import { InputManager } from './InputManager';
 import { resetInputDebounce } from './ui/UiUtils';
+import { getHint } from './ui/InputHints';
 
 /**
  * UI Manager for the save system
@@ -19,6 +20,7 @@ export class SaveManagerUI {
     private fileInput!: HTMLInputElement;
     private playtimeDisplay!: HTMLDivElement;
     private saveStatusText!: HTMLDivElement;
+    private instructionsDiv!: HTMLDivElement;
     private autoCloseTimer?: number;
     private lastSelectState: boolean = false;
     private selectedButton: 'save' | 'load' = 'save';
@@ -148,13 +150,13 @@ export class SaveManagerUI {
         modalWindow.appendChild(buttonContainer);
 
         // Instructions
-        const instructions = document.createElement('div');
-        instructions.innerHTML = '<span class="key-icon">LEFT</span> / <span class="key-icon">RIGHT</span> / <span class="btn-icon xbox-dpad">D-PAD</span> Navigate | <span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Select | <span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Cancel';
-        instructions.style.marginTop = '20px';
-        instructions.style.fontSize = '12px';
-        instructions.style.textAlign = 'center';
-        instructions.style.color = '#aaa';
-        modalWindow.appendChild(instructions);
+        this.instructionsDiv = document.createElement('div');
+        this.instructionsDiv.innerHTML = '<span class="key-icon">LEFT</span> / <span class="key-icon">RIGHT</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Cancel';
+        this.instructionsDiv.style.marginTop = '20px';
+        this.instructionsDiv.style.fontSize = '12px';
+        this.instructionsDiv.style.textAlign = 'center';
+        this.instructionsDiv.style.color = '#aaa';
+        modalWindow.appendChild(this.instructionsDiv);
 
         this.container.appendChild(modalWindow);
         document.body.appendChild(this.container);
@@ -219,6 +221,13 @@ export class SaveManagerUI {
      */
     update(input: InputManager): void {
         if (!this.isVisible) return;
+
+        // Update hints based on input method
+        const hintConfig = {
+            keyboard: '<span class="key-icon">LEFT</span> / <span class="key-icon">RIGHT</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Cancel',
+            controller: '<span class="btn-icon xbox-dpad">D-PAD</span> Navigate | <span class="btn-icon xbox-a">A</span> Select | <span class="btn-icon xbox-b">B</span> Cancel'
+        };
+        this.instructionsDiv.innerHTML = getHint(hintConfig, input);
 
         // Navigate between buttons with left/right
         const leftPressed = input.isNavigateLeftPressed();

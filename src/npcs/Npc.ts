@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { BaseMesh } from '../BaseMesh.ts';
+import { InputManager } from '../InputManager';
+import { getHint } from '../ui/InputHints';
 
 export class Npc extends BaseMesh {
     name: string;
@@ -65,8 +67,12 @@ export class Npc extends BaseMesh {
     /**
      * Get interaction hint text
      */
-    getInteractionHint(): string {
-        return `<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> ${this.interactionHint}`;
+    getInteractionHint(inputManager: InputManager): string {
+        const hintConfig = {
+            keyboard: `<span class="key-icon">ENTER</span> ${this.interactionHint}`,
+            controller: `<span class="btn-icon xbox-a">A</span> ${this.interactionHint}`
+        };
+        return getHint(hintConfig, inputManager);
     }
 
     /**

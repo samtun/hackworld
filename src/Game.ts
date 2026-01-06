@@ -18,6 +18,7 @@ import { PlayerRegistry } from './PlayerRegistry';
 import { CoreTrader } from './items/cores/CoreTrader';
 import { CardManager } from './items/cards/CardManager';
 import { InteractiveEntityType } from './InteractiveEntityType';
+import { getHint, HintConfigs } from './ui/InputHints';
 
 export class Game {
     scene: THREE.Scene;
@@ -453,7 +454,7 @@ export class Game {
                     nearbyInteractive = {
                         type: InteractiveEntityType.NPC,
                         data: npc,
-                        hint: npc.getInteractionHint(),
+                        hint: npc.getInteractionHint(this.input),
                         action: () => {
                             if (npc.interactionCallback) {
                                 npc.interact();
@@ -473,7 +474,7 @@ export class Game {
                     nearbyInteractive = {
                         type: InteractiveEntityType.WEAPON_DROP,
                         data: weaponDropNearby,
-                        hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
+                        hint: getHint(HintConfigs.pickUp, this.input),
                         action: () => {
                             this.world.pickupWeaponDrop(weaponDropNearby, this.player);
                         }
@@ -486,7 +487,7 @@ export class Game {
                         nearbyInteractive = {
                             type: InteractiveEntityType.CHIP_DROP,
                             data: chipDropNearby,
-                            hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
+                            hint: getHint(HintConfigs.pickUp, this.input),
                             action: () => {
                                 this.world.pickupChipDrop(chipDropNearby, this.player);
                             }
@@ -500,7 +501,7 @@ export class Game {
                         nearbyInteractive = {
                             type: InteractiveEntityType.CORE_DROP,
                             data: coreDropNearby,
-                            hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
+                            hint: getHint(HintConfigs.pickUp, this.input),
                             action: () => {
                                 this.world.pickupCoreDrop(coreDropNearby, this.player);
                             }
@@ -514,7 +515,7 @@ export class Game {
                         nearbyInteractive = {
                             type: InteractiveEntityType.BOOSTER_PACK_DROP,
                             data: boosterPackDropNearby,
-                            hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Pick up',
+                            hint: getHint(HintConfigs.pickUp, this.input),
                             action: () => {
                                 this.world.pickupBoosterPackDrop(boosterPackDropNearby, this.player);
                             }
@@ -530,7 +531,7 @@ export class Game {
                     nearbyInteractive = {
                         type: InteractiveEntityType.PORTAL,
                         data: destination,
-                        hint: '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Enter Portal',
+                        hint: getHint(HintConfigs.enterPortal, this.input),
                         action: () => {
                             if (destination === 'selection') {
                                 this.dungeonSelection.show((dungeonId: string) => {

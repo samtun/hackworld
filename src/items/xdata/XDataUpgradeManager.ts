@@ -2,6 +2,7 @@ import { Player } from '../../Player';
 import { InputManager } from '../../InputManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
 import { StatType } from '../../StatType';
+import { getHint, HintConfigs } from '../../ui/InputHints';
 
 // --- Constants ---
 const COLORS = {
@@ -43,6 +44,7 @@ export class XDataUpgradeManager {
     // UI Elements
     xDataDisplay!: HTMLDivElement;
     statList!: HTMLDivElement;
+    hintDiv!: HTMLDivElement;
     itemElements: HTMLDivElement[] = [];
 
     // Navigation state
@@ -142,9 +144,9 @@ export class XDataUpgradeManager {
         statsPanel.appendChild(this.statList);
 
         // Controls hint
-        const hintDiv = document.createElement('div');
-        hintDiv.innerHTML = '<span class="key-icon">ENTER</span>/<span class="btn-icon xbox-a">A</span> Upgrade <span style="margin: 0 15px;"></span> <span class="key-icon">ESC</span>/<span class="btn-icon xbox-b">B</span> Close';
-        Object.assign(hintDiv.style, {
+        this.hintDiv = document.createElement('div');
+        this.hintDiv.innerHTML = '<span class="key-icon">ENTER</span> Upgrade <span style="margin: 0 15px;"></span> <span class="key-icon">ESC</span> Close';
+        Object.assign(this.hintDiv.style, {
             textAlign: 'center',
             fontSize: '14px',
             color: COLORS.TEXT,
@@ -153,7 +155,7 @@ export class XDataUpgradeManager {
             marginTop: '15px',
             borderTop: `2px solid ${COLORS.SEPARATOR}`
         });
-        windowDiv.appendChild(hintDiv);
+        windowDiv.appendChild(this.hintDiv);
     }
 
     private createOverlay(): HTMLDivElement {
@@ -231,6 +233,9 @@ export class XDataUpgradeManager {
 
         // Handle keyboard/gamepad navigation
         if (input) {
+            // Update hints based on input method
+            this.hintDiv.innerHTML = getHint(HintConfigs.upgradeClose, input);
+            
             const oldIndex = this.selectedIndex;
             this.handleNavigation(player, input);
 
