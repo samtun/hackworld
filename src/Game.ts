@@ -456,10 +456,22 @@ export class Game {
                         data: npc,
                         hint: npc.getInteractionHint(this.input),
                         action: () => {
-                            if (npc.interactionCallback) {
-                                npc.interact();
+                            // If dialogue hasn't been shown yet, show it first
+                            if (!npc.hasShownDialogue() && npc.dialogue.length > 0) {
+                                // Show dialogue, then call the interaction callback when complete
+                                this.npcDialogue.show(npc, () => {
+                                    if (npc.interactionCallback) {
+                                        npc.interact();
+                                    }
+                                });
                             } else {
-                                this.npcDialogue.show(npc);
+                                // Dialogue already shown or no dialogue - go straight to callback
+                                if (npc.interactionCallback) {
+                                    npc.interact();
+                                } else {
+                                    // Fallback for NPCs with no callback (like Nyleth) - show dialogue again
+                                    this.npcDialogue.show(npc);
+                                }
                             }
                         }
                     };
