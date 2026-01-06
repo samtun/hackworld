@@ -274,6 +274,16 @@ export class XDataUpgradeManager {
                     baseValue = player.getBaseStatValue(StatType.DEFENSE);
                     isMaxed = baseValue >= 9999;
                     break;
+                case StatType.AGILITY:
+                    currentLevel = player.agilityUpgrades;
+                    baseValue = player.getBaseStatValue(StatType.AGILITY);
+                    isMaxed = baseValue >= 9999;
+                    break;
+                case StatType.LUCK:
+                    currentLevel = player.luckUpgrades;
+                    baseValue = player.getBaseStatValue(StatType.LUCK);
+                    isMaxed = baseValue >= 9999;
+                    break;
                 case StatType.HP:
                     // Use actual maxHp instead of getBaseStatValue() to show current value
                     // (important for debug tools and to avoid confusion when viewing stats)
