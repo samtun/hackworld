@@ -1,6 +1,7 @@
 import { InputManager } from '../InputManager';
 import { Npc } from './Npc';
 import { resetInputDebounce } from '../ui/UiUtils';
+import { getHint, getKeyboardHint, HintConfigs } from '../ui/InputHints';
 
 const COLORS = {
     OVERLAY: 'rgba(0, 0, 0, 0.85)',
@@ -28,6 +29,9 @@ export class NpcDialogueManager {
     // Input tracking for debouncing
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
+    
+    // Store InputManager for dynamic hints
+    private currentInputManager?: InputManager;
 
     public static get Instance(): NpcDialogueManager {
         return this.instance || (this.instance = new this());
@@ -107,7 +111,7 @@ export class NpcDialogueManager {
         this.currentNpc = npc;
         this.currentLineIndex = 0;
         this.container.style.display = 'flex';
-        this.updateDialogue();
+        this.updateDialogue(this.currentInputManager);
         // Reset input state to prevent immediate action on open
         resetInputDebounce(this as any);
     }
@@ -125,17 +129,26 @@ export class NpcDialogueManager {
     /**
      * Update dialogue display
      */
-    private updateDialogue() {
+    private updateDialogue(input?: InputManager) {
         if (!this.currentNpc) return;
 
         this.nameBox.innerText = this.currentNpc.name;
         this.dialogueText.innerText = this.currentNpc.dialogue[this.currentLineIndex];
 
-        // Update continue hint
-        if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
-            this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Continue | <span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Exit';
+        // Update continue hint based on input method if InputManager is available
+        if (input) {
+            if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
+                this.continueHint.innerHTML = getHint(HintConfigs.continueExit, input);
+            } else {
+                this.continueHint.innerHTML = getHint(HintConfigs.closeExit, input);
+            }
         } else {
-            this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Close | <span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Exit';
+            // Fallback to keyboard hints if InputManager not available
+            if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
+                this.continueHint.innerHTML = getKeyboardHint(HintConfigs.continueExit);
+            } else {
+                this.continueHint.innerHTML = getKeyboardHint(HintConfigs.closeExit);
+            }
         }
     }
 
@@ -143,6 +156,9 @@ export class NpcDialogueManager {
      * Update input handling
      */
     update(input: InputManager) {
+        // Always store input manager for dynamic hints, even when not visible
+        this.currentInputManager = input;
+        
         if (!this.isVisible) return;
 
         const select = input.isSelectPressed();
@@ -161,8 +177,8 @@ export class NpcDialogueManager {
                     // End of dialogue
                     this.hide();
                 } else {
-                    // Show next line
-                    this.updateDialogue();
+                    // Show next line and update hints based on input method
+                    this.updateDialogue(input);
                 }
             }
         }

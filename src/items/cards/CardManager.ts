@@ -4,6 +4,7 @@ import { resetInputDebounce } from '../../ui/UiUtils';
 import { Card, CardDefinitions, CardRarity } from './Card';
 import { CardCollection } from './CardCollection';
 import { ViewMode } from './ViewMode';
+import { getHint, HintConfigs } from '../../ui/InputHints';
 
 // --- Constants ---
 const COLORS = {
@@ -41,6 +42,7 @@ export class CardManager {
     // UI Elements
     private mainContent!: HTMLDivElement;
     private packCountDisplay!: HTMLDivElement;
+    private controlsDiv!: HTMLDivElement;
     
     // Navigation state
     private viewMode: ViewMode = ViewMode.MENU;
@@ -58,6 +60,7 @@ export class CardManager {
     private lastCancelState: boolean = false;
     
     private cardCollection: CardCollection;
+    private currentInputManager?: InputManager; // Store input manager for dynamic hints
     
     private constructor() {
         this.cardCollection = CardCollection.Instance;
@@ -113,9 +116,9 @@ export class CardManager {
         windowDiv.appendChild(this.mainContent);
         
         // Controls hint
-        const controlsDiv = document.createElement('div');
-        controlsDiv.innerHTML = '<span class="key-icon">↑↓</span> / <span class="btn-icon xbox-dpad">D-Pad</span> Navigate | <span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Select | <span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Back';
-        Object.assign(controlsDiv.style, {
+        this.controlsDiv = document.createElement('div');
+        this.controlsDiv.innerHTML = '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back';
+        Object.assign(this.controlsDiv.style, {
             textAlign: 'center',
             fontSize: '14px',
             color: COLORS.SEPARATOR,
@@ -124,7 +127,7 @@ export class CardManager {
             borderTop: `2px solid ${COLORS.SEPARATOR}`,
             marginTop: '10px'
         });
-        windowDiv.appendChild(controlsDiv);
+        windowDiv.appendChild(this.controlsDiv);
     }
     
     private createOverlay(): HTMLDivElement {
@@ -390,14 +393,14 @@ export class CardManager {
         
         // Update instructions text
         const instructionsText = document.getElementById('pack-instructions');
-        if (instructionsText) {
+        if (instructionsText && this.currentInputManager) {
             const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
             if (this.flippingInProgress) {
                 instructionsText.innerText = 'Revealing cards...';
             } else if (allFlipped) {
-                instructionsText.innerText = 'Press ENTER / A to continue';
+                instructionsText.innerHTML = getHint(HintConfigs.continuePack, this.currentInputManager);
             } else {
-                instructionsText.innerText = 'Press ENTER / A to reveal cards';
+                instructionsText.innerHTML = getHint(HintConfigs.revealContinue, this.currentInputManager);
             }
         }
     }
@@ -516,6 +519,15 @@ export class CardManager {
     private render(player: Player) {
         this.packCountDisplay.innerText = `Booster Packs: ${player.boosterPacks}`;
         
+        // Update controls hint based on input method
+        if (this.currentInputManager) {
+            const hintConfig = {
+                keyboard: '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back',
+                controller: '<span class="btn-icon xbox-dpad">D-Pad</span> Navigate | <span class="btn-icon xbox-a">A</span> Select | <span class="btn-icon xbox-b">B</span> Back'
+            };
+            this.controlsDiv.innerHTML = getHint(hintConfig, this.currentInputManager);
+        }
+        
         switch (this.viewMode) {
             case ViewMode.MENU:
                 this.renderMenu(player);
@@ -534,6 +546,9 @@ export class CardManager {
     
     public update(player: Player, input: InputManager) {
         if (!this.isVisible) return;
+        
+        // Store input manager for dynamic hints
+        this.currentInputManager = input;
         
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();
@@ -642,8 +657,11 @@ export class CardManager {
         if (this.viewMode === ViewMode.MENU) {
             this.hide();
         } else if (this.viewMode === ViewMode.OPEN_PACK) {
-            // Can't cancel during pack opening, must view all cards
-            return;
+            // Allow canceling after all cards are flipped
+            const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
+            if (allFlipped && !this.flippingInProgress) {
+                this.viewMode = ViewMode.MENU;
+            }
         } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
             this.viewMode = ViewMode.MENU;
         } else if (this.viewMode === ViewMode.VIEW_ALBUM) {

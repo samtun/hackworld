@@ -7,6 +7,7 @@ import { formatItemLabel } from './ItemDisplay';
 import { TradeMode } from './TradeMode';
 import { TraderPanel } from './TraderPanel';
 import { EquippableItem } from './EquippableItem';
+import { getHint, HintConfigs } from '../ui/InputHints';
 
 export { TradeMode } from './TradeMode';
 
@@ -35,6 +36,7 @@ export abstract class BaseTrader {
     playerPanel!: HTMLDivElement;
     playerMoneyText!: HTMLDivElement;
     itemDetailsPanel!: HTMLDivElement;
+    hintDiv!: HTMLDivElement;
 
     selectedIndex: number = 0;
     activePanel: TraderPanel = TraderPanel.TRADER;
@@ -237,10 +239,10 @@ export abstract class BaseTrader {
         });
         windowDiv.appendChild(moneyDiv);
 
-        const hintDiv = document.createElement('div');
-        hintDiv.innerHTML = '<span class="key-icon">ENTER</span>/<span class="btn-icon xbox-a">A</span> Buy/Sell <span style="margin: 0 15px;"></span> <span class="key-icon">ESC</span>/<span class="btn-icon xbox-b">B</span> Close';
-        hintDiv.style.fontSize = '14px';
-        moneyDiv.appendChild(hintDiv);
+        this.hintDiv = document.createElement('div');
+        this.hintDiv.innerHTML = '<span class="key-icon">ENTER</span> Buy/Sell <span style="margin: 0 15px;"></span> <span class="key-icon">ESC</span> Close';
+        this.hintDiv.style.fontSize = '14px';
+        moneyDiv.appendChild(this.hintDiv);
 
         this.playerMoneyText = document.createElement('div');
         this.playerMoneyText.style.color = this.uiConfig.colors?.moneyColor || colors.moneyColor;
@@ -266,6 +268,9 @@ export abstract class BaseTrader {
     update(player: Player, input?: InputManager) {
         if (!this.isVisible) return;
         if (input) {
+            // Update hints based on input method
+            this.hintDiv.innerHTML = getHint(HintConfigs.buySellClose, input);
+            
             const oldIndex = this.selectedIndex;
             const oldPanel = this.activePanel;
             this.handleNavigation(player, input);
