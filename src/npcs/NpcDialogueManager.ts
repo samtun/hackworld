@@ -29,6 +29,9 @@ export class NpcDialogueManager {
     // Input tracking for debouncing
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
+    
+    // Store InputManager for dynamic hints
+    private currentInputManager?: InputManager;
 
     public static get Instance(): NpcDialogueManager {
         return this.instance || (this.instance = new this());
@@ -108,7 +111,7 @@ export class NpcDialogueManager {
         this.currentNpc = npc;
         this.currentLineIndex = 0;
         this.container.style.display = 'flex';
-        this.updateDialogue();
+        this.updateDialogue(this.currentInputManager);
         // Reset input state to prevent immediate action on open
         resetInputDebounce(this as any);
     }
@@ -153,6 +156,9 @@ export class NpcDialogueManager {
      * Update input handling
      */
     update(input: InputManager) {
+        // Always store input manager for dynamic hints, even when not visible
+        this.currentInputManager = input;
+        
         if (!this.isVisible) return;
 
         const select = input.isSelectPressed();

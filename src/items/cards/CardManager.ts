@@ -398,9 +398,9 @@ export class CardManager {
             if (this.flippingInProgress) {
                 instructionsText.innerText = 'Revealing cards...';
             } else if (allFlipped) {
-                instructionsText.innerText = getHint(HintConfigs.continuePack, this.currentInputManager);
+                instructionsText.innerHTML = getHint(HintConfigs.continuePack, this.currentInputManager);
             } else {
-                instructionsText.innerText = getHint(HintConfigs.revealContinue, this.currentInputManager);
+                instructionsText.innerHTML = getHint(HintConfigs.revealContinue, this.currentInputManager);
             }
         }
     }
@@ -657,8 +657,11 @@ export class CardManager {
         if (this.viewMode === ViewMode.MENU) {
             this.hide();
         } else if (this.viewMode === ViewMode.OPEN_PACK) {
-            // Can't cancel during pack opening, must view all cards
-            return;
+            // Allow canceling after all cards are flipped
+            const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
+            if (allFlipped && !this.flippingInProgress) {
+                this.viewMode = ViewMode.MENU;
+            }
         } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
             this.viewMode = ViewMode.MENU;
         } else if (this.viewMode === ViewMode.VIEW_ALBUM) {
