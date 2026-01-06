@@ -180,7 +180,7 @@ export class NpcDialogueManager {
                 this.currentLineIndex++;
                 if (this.currentLineIndex >= this.currentNpc.dialogue.length) {
                     // End of dialogue - mark as shown and call callback if provided
-                    this.currentNpc.hasShownDialogue = true;
+                    this.currentNpc.markDialogueShown();
                     const callback = this.onDialogueCompleteCallback;
                     this.hide();
                     

@@ -457,7 +457,7 @@ export class Game {
                         hint: npc.getInteractionHint(this.input),
                         action: () => {
                             // If dialogue hasn't been shown yet, show it first
-                            if (!npc.hasShownDialogue && npc.dialogue.length > 0) {
+                            if (!npc.hasShownDialogue() && npc.dialogue.length > 0) {
                                 // Show dialogue, then call the interaction callback when complete
                                 this.npcDialogue.show(npc, () => {
                                     if (npc.interactionCallback) {

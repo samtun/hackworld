@@ -8,6 +8,7 @@ import { CoreRepository } from './items/cores/CoreRepository';
 import { CoreItem } from './items/cores/CoreItem';
 import { ChipRepository } from './items/chips/ChipRepository';
 import { ChipItem } from './items/chips/ChipItem';
+import { NpcRegistry } from './npcs/NpcRegistry';
 
 /**
  * Interface representing the complete save data structure
@@ -63,6 +64,8 @@ export interface SaveData {
     };
     // Card Collection
     cardCollection: string[];
+    // NPC dialogue state
+    npcDialogueShown: string[];
 }
 
 /**
@@ -219,7 +222,8 @@ export class SaveManager {
                 }),
                 tech: structuredClone((player as any).tech || {})
             },
-            cardCollection: cardCollection.getSaveData()
+            cardCollection: cardCollection.getSaveData(),
+            npcDialogueShown: NpcRegistry.Instance.getShownDialogueList()
         };
 
         // Convert to JSON and download
@@ -387,6 +391,15 @@ export class SaveManager {
             // Restore card collection
             const cardCollection = CardCollection.Instance;
             cardCollection.loadSaveData(saveData.cardCollection);
+
+            // Restore NPC dialogue state (with fallback for old saves)
+            const npcRegistry = NpcRegistry.Instance;
+            if (saveData.npcDialogueShown) {
+                npcRegistry.loadDialogueState(saveData.npcDialogueShown);
+            } else {
+                // Old save file - reset to show all dialogues
+                npcRegistry.reset();
+            }
 
             console.log('Save file loaded successfully');
         } catch (error) {

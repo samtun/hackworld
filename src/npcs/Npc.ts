@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { BaseMesh } from '../BaseMesh.ts';
 import { InputManager } from '../InputManager';
 import { getHint } from '../ui/InputHints';
+import { NpcRegistry } from './NpcRegistry';
 
 export class Npc extends BaseMesh {
     name: string;
@@ -11,7 +12,6 @@ export class Npc extends BaseMesh {
     position: CANNON.Vec3;
     dialogue: string[];
     interactionCallback?: () => void;
-    hasShownDialogue: boolean = false;
 
     constructor(
         scene: THREE.Scene,
@@ -95,6 +95,20 @@ export class Npc extends BaseMesh {
             new THREE.Vector3(this.position.x, this.position.y, this.position.z)
         );
         return dist < 2.0; // Interaction range
+    }
+
+    /**
+     * Check if this NPC's dialogue has been shown
+     */
+    hasShownDialogue(): boolean {
+        return NpcRegistry.Instance.hasShownDialogue(this.name);
+    }
+
+    /**
+     * Mark this NPC's dialogue as shown
+     */
+    markDialogueShown(): void {
+        NpcRegistry.Instance.markDialogueShown(this.name);
     }
 
     cleanup(scene: THREE.Scene, world: CANNON.World): void {
