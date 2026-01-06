@@ -23,6 +23,8 @@ export class SaveManagerUI {
     private instructionsDiv!: HTMLDivElement;
     private autoCloseTimer?: number;
     private lastSelectState: boolean = false;
+    private lastNavigateLeftState: boolean = false;
+    private lastNavigateRightState: boolean = false;
     private selectedButton: 'save' | 'load' = 'save';
 
     private constructor() {
@@ -233,9 +235,21 @@ export class SaveManagerUI {
         const leftPressed = input.isNavigateLeftPressed();
         const rightPressed = input.isNavigateRightPressed();
         
-        if (leftPressed || rightPressed) {
-            this.selectedButton = this.selectedButton === 'save' ? 'load' : 'save';
-            this.updateButtonHighlight();
+        // Only change selection on button press (not held) and respect boundaries
+        if (leftPressed && !this.lastNavigateLeftState) {
+            // Only switch if we're on the right button (load)
+            if (this.selectedButton === 'load') {
+                this.selectedButton = 'save';
+                this.updateButtonHighlight();
+            }
+        }
+        
+        if (rightPressed && !this.lastNavigateRightState) {
+            // Only switch if we're on the left button (save)
+            if (this.selectedButton === 'save') {
+                this.selectedButton = 'load';
+                this.updateButtonHighlight();
+            }
         }
 
         // Selection
@@ -255,6 +269,8 @@ export class SaveManagerUI {
         }
 
         this.lastSelectState = isSelectPressed;
+        this.lastNavigateLeftState = leftPressed;
+        this.lastNavigateRightState = rightPressed;
 
         // Cancel with ESC/B button
         const isCancelPressed = input.isCancelPressed();
