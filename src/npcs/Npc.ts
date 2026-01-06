@@ -11,6 +11,7 @@ export class Npc extends BaseMesh {
     position: CANNON.Vec3;
     dialogue: string[];
     interactionCallback?: () => void;
+    hasShownDialogue: boolean = false;
 
     constructor(
         scene: THREE.Scene,

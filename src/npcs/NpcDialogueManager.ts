@@ -32,6 +32,9 @@ export class NpcDialogueManager {
     
     // Store InputManager for dynamic hints
     private currentInputManager?: InputManager;
+    
+    // Callback to execute after dialogue completes
+    private onDialogueCompleteCallback?: () => void;
 
     public static get Instance(): NpcDialogueManager {
         return this.instance || (this.instance = new this());
@@ -106,10 +109,11 @@ export class NpcDialogueManager {
     /**
      * Show dialogue with an NPC
      */
-    show(npc: Npc) {
+    show(npc: Npc, onComplete?: () => void) {
         this.isVisible = true;
         this.currentNpc = npc;
         this.currentLineIndex = 0;
+        this.onDialogueCompleteCallback = onComplete;
         this.container.style.display = 'flex';
         this.updateDialogue(this.currentInputManager);
         // Reset input state to prevent immediate action on open
@@ -123,6 +127,7 @@ export class NpcDialogueManager {
         this.isVisible = false;
         this.currentNpc = null;
         this.currentLineIndex = 0;
+        this.onDialogueCompleteCallback = undefined;
         this.container.style.display = 'none';
     }
 
@@ -174,8 +179,15 @@ export class NpcDialogueManager {
             if (this.currentNpc) {
                 this.currentLineIndex++;
                 if (this.currentLineIndex >= this.currentNpc.dialogue.length) {
-                    // End of dialogue
+                    // End of dialogue - mark as shown and call callback if provided
+                    this.currentNpc.hasShownDialogue = true;
+                    const callback = this.onDialogueCompleteCallback;
                     this.hide();
+                    
+                    // Execute callback after hiding dialogue
+                    if (callback) {
+                        callback();
+                    }
                 } else {
                     // Show next line and update hints based on input method
                     this.updateDialogue(input);
