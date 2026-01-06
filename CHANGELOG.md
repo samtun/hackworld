@@ -1,3 +1,17 @@
+# [1.24.0](https://github.com/samtun/hackworld/compare/v1.23.0...v1.24.0) (2026-01-06)
+
+
+### Bug Fixes
+
+* npc dialogue shows correct hints on first open and card pack hints render as html ([d030a2d](https://github.com/samtun/hackworld/commit/d030a2d44abaeb04541d77c1c873213256465966))
+
+
+### Features
+
+* add dynamic hints to SaveManagerUI ([e20d7fc](https://github.com/samtun/hackworld/commit/e20d7fc521081cece425df9abd7dffd6ca9f1891))
+* add dynamic input hints based on controller connection ([8089480](https://github.com/samtun/hackworld/commit/80894807edd5edec773af2f43d176eee65d1dd8d))
+* complete dynamic hints implementation for CardManager ([05a22af](https://github.com/samtun/hackworld/commit/05a22af9c33532e12605b43341e49659b74ae3e9))
+
 # [1.23.0](https://github.com/samtun/hackworld/compare/v1.22.0...v1.23.0) (2026-01-05)
 
 
