@@ -1,3 +1,10 @@
+## [1.24.2](https://github.com/samtun/hackworld/compare/v1.24.1...v1.24.2) (2026-01-06)
+
+
+### Bug Fixes
+
+* prevent rapid button switching in Save Manager UI ([0db7d83](https://github.com/samtun/hackworld/commit/0db7d83facb95d0815e2251e1750820fbfab2c29))
+
 ## [1.24.1](https://github.com/samtun/hackworld/compare/v1.24.0...v1.24.1) (2026-01-06)
 
 
