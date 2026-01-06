@@ -1,3 +1,10 @@
+# [1.25.0](https://github.com/samtun/hackworld/compare/v1.24.2...v1.25.0) (2026-01-06)
+
+
+### Features
+
+* add dialogue on first NPC interaction before showing UIs ([78d2a4f](https://github.com/samtun/hackworld/commit/78d2a4fccd4074c46508d207c6b561d016de61d3))
+
 ## [1.24.2](https://github.com/samtun/hackworld/compare/v1.24.1...v1.24.2) (2026-01-06)
 
 
