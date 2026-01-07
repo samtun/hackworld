@@ -28,8 +28,7 @@ export class CrimsonDepths extends BaseStage {
         this.clear();
         console.log("Loading Crimson Depths...");
 
-        // Darker Floor - Dark Red
-        this.createFloor(40, 0x330000);
+        this.createFloorCollider();
 
         // Portal back to Lobby
         this.createPortal(new CANNON.Vec3(-10, 0.05, -10), 0x0000ff, Lobby.getMetadata().id);

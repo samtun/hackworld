@@ -63,7 +63,14 @@ export class Lobby extends BaseStage {
         console.log("Loading Lobby...");
 
         // Floor
-        this.createFloor(20, 0x808080);
+        this.createFloorCollider();
+
+        const lobbyModel = this.assetManager.get('models/lobby_01.glb');
+        if (lobbyModel) {
+            this.scene.add(lobbyModel.scene.clone());
+        } else {
+            console.warn("Lobby model not found in asset manager.");
+        }
 
         // Portal
         this.createPortal(new CANNON.Vec3(5, 0.05, 5), 0x00ff00, 'selection');

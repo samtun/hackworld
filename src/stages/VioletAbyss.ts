@@ -28,8 +28,7 @@ export class VioletAbyss extends BaseStage {
         this.clear();
         console.log("Loading Dungeon 2...");
 
-        // Different themed floor - Dark Purple
-        this.createFloor(50, 0x1a0033);
+        this.createFloorCollider();
 
         // Portal back to Lobby
         this.createPortal(new CANNON.Vec3(12, 0.05, 12), 0x0000ff, Lobby.getMetadata().id);

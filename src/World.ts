@@ -99,6 +99,7 @@ export class World {
             'models/trader_weapons.glb',
             'models/npc_placeholder.glb',
             'models/healing_station.glb',
+            'models/lobby_01.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);

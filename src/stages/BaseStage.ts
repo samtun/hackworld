@@ -128,17 +128,9 @@ export abstract class BaseStage {
     }
 
     /**
-     * Create floor
+     * Create floor collider plane
      */
-    protected createFloor(size: number, color: number): void {
-        const floorGeo = new THREE.PlaneGeometry(size, size);
-        const floorMat = new THREE.MeshStandardMaterial({ color });
-        const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-        floorMesh.rotation.x = -Math.PI / 2;
-        floorMesh.receiveShadow = true;
-        this.scene.add(floorMesh);
-        this.meshes.push(floorMesh);
-
+    protected createFloorCollider(): void {
         const floorShape = new CANNON.Plane();
         const floorBody = new CANNON.Body({
             mass: 0,
