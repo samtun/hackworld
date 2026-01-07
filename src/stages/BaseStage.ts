@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { Enemy } from '../enemies/Enemy';
 import { LargeEnemy } from '../enemies/LargeEnemy';
 import { AssetManager } from '../AssetManager';
@@ -56,12 +57,26 @@ export abstract class BaseStage {
     /**
      * Load the stage - to be implemented by each stage
      */
-    abstract load(): void;
+    abstract load(): Promise<void>;
+
+    /**
+     * Load environment map from EXR file
+     */
+    protected async loadEnvironmentMap(): Promise<void> {
+        if (!this.environmentMap) return;
+
+        new EXRLoader().load(this.environmentMap, (texture) => {
+            texture.mapping = THREE.EquirectangularReflectionMapping;
+            this.scene.environment = texture;
+        });
+    }
 
     /**
      * Clean up all resources
      */
     clear(): void {
+        this.scene.environment = null;
+
         // Stop and remove mixers
         for (const mixer of this.mixers) {
             mixer.stopAllAction();

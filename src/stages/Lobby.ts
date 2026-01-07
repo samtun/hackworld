@@ -60,10 +60,10 @@ export class Lobby extends BaseStage {
     // Callback for Save Manager interaction (set by Game)
     saveManagerInteractionCallback?: () => void;
 
-    load(): void {
+    async load(): Promise<void> {
         this.clear();
         console.log("Loading Lobby...");
-
+        await this.loadEnvironmentMap();
         const lobbyModel = this.assetManager.get('models/lobby.glb');
         if (lobbyModel) {
             const lobbyScene = lobbyModel.scene.clone();

@@ -25,10 +25,10 @@ export class VioletAbyss extends BaseStage {
         ];
     }
 
-    load(): void {
+    async load(): Promise<void> {
         this.clear();
         console.log("Loading Dungeon 2...");
-
+        await this.loadEnvironmentMap();
         this.createFloorCollider();
 
         // Portal back to Lobby
