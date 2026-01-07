@@ -6,6 +6,7 @@ export class CrimsonDepths extends BaseStage {
     id = 'crimsonDepths';
     name = 'Crimson Depths';
     description = 'A dark dungeon with red hues';
+    environmentMap: string = 'textures/environments/lobby_env.exr';
 
     static getMetadata() {
         return {

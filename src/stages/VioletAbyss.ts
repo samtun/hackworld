@@ -6,6 +6,7 @@ export class VioletAbyss extends BaseStage {
     id = 'violetAbyss';
     name = 'Violet Abyss';
     description = 'A mysterious purple realm';
+    environmentMap: string = 'textures/environments/lobby_env.exr';
 
     static getMetadata() {
         return {

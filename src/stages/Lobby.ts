@@ -1,4 +1,5 @@
 import * as CANNON from 'cannon-es';
+import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { HealingStation } from '../HealingStation';
 import { Player } from '../Player';
@@ -14,6 +15,7 @@ export class Lobby extends BaseStage {
     id = 'lobby';
     name = 'Lobby';
     description = 'Safe hub area';
+    environmentMap: string = 'textures/environments/lobby_env.exr';
 
     static getMetadata() {
         return {
@@ -62,14 +64,18 @@ export class Lobby extends BaseStage {
         this.clear();
         console.log("Loading Lobby...");
 
-        // Floor
-        this.createFloorCollider();
-
-        const lobbyModel = this.assetManager.get('models/lobby_01.glb');
+        const lobbyModel = this.assetManager.get('models/lobby.glb');
         if (lobbyModel) {
-            this.scene.add(lobbyModel.scene.clone());
-        } else {
-            console.warn("Lobby model not found in asset manager.");
+            const lobbyScene = lobbyModel.scene.clone();
+            lobbyScene.position.set(0, 0, 0);
+            this.scene.add(lobbyScene);
+            this.meshes.push(lobbyScene);
+        }
+
+        const lobbyColliderModel = this.assetManager.get('models/lobby_collider.glb');
+        if (lobbyColliderModel) {
+            const lobbyColliderScene = lobbyColliderModel.scene.clone();
+            this.createLobbyColliders(lobbyColliderScene);
         }
 
         // Portal
@@ -236,6 +242,64 @@ export class Lobby extends BaseStage {
 
         if (!this.healingStation) return;
         this.healingStation.update(dt);
+    }
+
+    private createLobbyColliders(modelScene: THREE.Group | THREE.Object3D): void {
+        modelScene.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                this.createColliderFromMesh(child);
+            }
+        });
+    }
+
+    private createColliderFromMesh(mesh: THREE.Mesh): void {
+        const geometry = mesh.geometry;
+
+        // 1. calculate Bounding Box (if not already done)
+        geometry.computeBoundingBox();
+        const box = geometry.boundingBox!;
+
+        // 2. calculate size (Max - Min)
+        const size = new THREE.Vector3();
+        box.getSize(size);
+
+        // 3. calculate half-extents considering scaling
+        // Cannon needs the radius from the center to the edge
+        const halfExtents = new CANNON.Vec3(
+            (size.x * mesh.scale.x) / 2,
+            (size.y * mesh.scale.y) / 2,
+            (size.z * mesh.scale.z) / 2
+        );
+
+        const boxShape = new CANNON.Box(halfExtents);
+
+        // 4. Create Body
+        const body = new CANNON.Body({
+            mass: 0, // Static
+            material: this.physicsMaterial
+        });
+
+        // 5. Consider offset
+        // If the geometry center is not at (0,0,0),
+        // we need to move the shape within the body.
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        center.multiply(mesh.scale); // Also apply scaling to the offset
+
+        const cannonOffset = new CANNON.Vec3(center.x, center.y, center.z);
+        body.addShape(boxShape, cannonOffset);
+
+        // 6. Synchronize world position and rotation
+        const worldPos = new THREE.Vector3();
+        const worldQuat = new THREE.Quaternion();
+        mesh.getWorldPosition(worldPos);
+        mesh.getWorldQuaternion(worldQuat);
+
+        body.position.set(worldPos.x, worldPos.y, worldPos.z);
+        body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);
+
+        this.physicsWorld.addBody(body);
+        this.bodies.push(body);
     }
 
     /**

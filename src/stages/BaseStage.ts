@@ -15,6 +15,7 @@ export abstract class BaseStage {
     abstract id: string;
     abstract name: string;
     abstract description: string;
+    abstract environmentMap: string
 
     // Static method to get metadata without instantiation
     static getMetadata(): { id: string; name: string; description: string } {

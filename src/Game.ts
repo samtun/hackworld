@@ -97,7 +97,7 @@ export class Game {
 
         // Setup Physics
         this.physicsWorld = new CANNON.World();
-        this.physicsWorld.gravity.set(0, -30, 0);
+        this.physicsWorld.gravity.set(0, -9.82, 0);
 
         // Create a slippery material (friction = 0)
         this.defaultMaterial = new CANNON.Material('default');
