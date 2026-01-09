@@ -50,6 +50,8 @@ export class Lobby extends BaseStage {
     private xDataUpgradeManager?: XDataUpgradeManager;
     private cardManager?: CardManager;
 
+    private bannerTexture?: THREE.Texture | null = null;
+
     // Healing Station
     healingStation?: HealingStation;
     private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
@@ -64,12 +66,18 @@ export class Lobby extends BaseStage {
         this.clear();
         console.log("Loading Lobby...");
         await this.loadEnvironmentMap();
-        const lobbyModel = this.assetManager.get('models/lobby.glb');
-        if (lobbyModel) {
-            const lobbyScene = lobbyModel.scene.clone();
+        const lobbyGltf = this.assetManager.get('models/lobby.glb');
+        if (lobbyGltf) {
+            const lobbyScene = lobbyGltf.scene.clone();
             lobbyScene.position.set(0, 0, 0);
             this.scene.add(lobbyScene);
             this.meshes.push(lobbyScene);
+            lobbyScene.traverse((node) => {
+                // Get texture for banner mesh to animate it later
+                if (node.name === "Lobby_Banner" && node instanceof THREE.Mesh && node.material.map) {
+                    this.bannerTexture = node.material.map;
+                }
+            });
         }
 
         const lobbyColliderModel = this.assetManager.get('models/lobby_collider.glb');
@@ -239,6 +247,13 @@ export class Lobby extends BaseStage {
      */
     update(dt: number, player: Player) {
         super.update(dt, player);
+
+        // Animate banner texture
+        if (this.bannerTexture) {
+            const speed = 0.04;
+            const time = performance.now() * 0.001;
+            this.bannerTexture.offset.x = (time * speed) % 1;
+        }
 
         if (!this.healingStation) return;
         this.healingStation.update(dt);

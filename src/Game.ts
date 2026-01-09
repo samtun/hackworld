@@ -81,9 +81,10 @@ export class Game {
         this.camera.position.copy(this.cameraOffset);
         this.camera.lookAt(0, 4, 0);
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.getElementById('app')!.appendChild(this.renderer.domElement);
 
         // Lights
