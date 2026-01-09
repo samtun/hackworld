@@ -1,3 +1,11 @@
+## [1.28.1](https://github.com/samtun/hackworld/compare/v1.28.0...v1.28.1) (2026-01-09)
+
+
+### Bug Fixes
+
+* fix enemy flashing on hit and adjust constants ([0bfd809](https://github.com/samtun/hackworld/commit/0bfd8096a30eda4625e0a548f671f4ef1c09a731))
+* fix jumping of player ([d2dee99](https://github.com/samtun/hackworld/commit/d2dee9901f17a85f1776d042075de17f2c1c3a50))
+
 # [1.28.0](https://github.com/samtun/hackworld/compare/v1.27.0...v1.28.0) (2026-01-09)
 
 
