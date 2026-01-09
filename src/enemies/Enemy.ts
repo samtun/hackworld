@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
 import { BaseMesh } from '../BaseMesh';
+import { PlayerRegistry } from '../PlayerRegistry';
 
 export class Enemy extends BaseMesh {
     weaponMesh: THREE.Mesh;
@@ -29,6 +30,9 @@ export class Enemy extends BaseMesh {
     weaponBaseRotation: THREE.Euler;
     techDropRateFactor: number = 1.0;
 
+    private materials: THREE.Material[] = [];
+    private player: Player;
+
     // Callback for spawning damage numbers
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
 
@@ -37,6 +41,12 @@ export class Enemy extends BaseMesh {
 
         // Visual
         scene.add(this.mesh);
+        this.mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                child.material = child.material.clone();
+                this.materials.push(child.material);
+            }
+        });
 
         // Weapon Visual
         const weaponGeo = new THREE.BoxGeometry(0.1, 0.1, 1.2);
@@ -56,9 +66,11 @@ export class Enemy extends BaseMesh {
         this.body.addShape(shape);
         this.body.position.copy(position);
         world.addBody(this.body);
+
+        this.player = PlayerRegistry.Instance.activePlayers[0];
     }
 
-    update(dt: number, player: Player) {
+    update(dt: number) {
         if (this.isDead) return;
 
         if (this.isDying) {
@@ -83,9 +95,12 @@ export class Enemy extends BaseMesh {
                 this.mesh.scale.y = 1 - progress;
 
                 // Fade
-                const mat = this.mesh.material as THREE.MeshStandardMaterial;
-                mat.transparent = true;
-                mat.opacity = 1 - progress;
+                this.materials.forEach((mat) => {
+                    if (mat instanceof THREE.MeshStandardMaterial) {
+                        mat.transparent = true;
+                        mat.opacity = 1 - progress;
+                    }
+                });
             }
             return;
         }
@@ -99,7 +114,11 @@ export class Enemy extends BaseMesh {
         if (this.flashTimer > 0) {
             this.flashTimer -= dt;
             if (this.flashTimer <= 0) {
-                (this.mesh.material as THREE.MeshStandardMaterial).emissive.setHex(0x000000);
+                this.materials.forEach((mat) => {
+                    if (mat instanceof THREE.MeshStandardMaterial) {
+                        mat.emissive.setHex(0x000000);
+                    }
+                });
             }
         }
 
@@ -113,7 +132,7 @@ export class Enemy extends BaseMesh {
         }
 
         // AI Logic
-        const playerPos = player.body.position;
+        const playerPos = this.player.body.position;
         const myPos = this.body.position;
 
         const dist = myPos.distanceTo(playerPos);
@@ -147,7 +166,7 @@ export class Enemy extends BaseMesh {
 
         // Attack Trigger
         if (dist < this.attackRange && this.attackTimer <= 0) {
-            this.attack(player);
+            this.attack(this.player);
         }
 
         // Attack Animation
@@ -186,7 +205,11 @@ export class Enemy extends BaseMesh {
         }
 
         // Flash white
-        (this.mesh.material as THREE.MeshStandardMaterial).emissive.setHex(0xffffff);
+        this.materials.forEach((mat) => {
+            if (mat instanceof THREE.MeshStandardMaterial) {
+                mat.emissive.setHex(0xffffff);
+            }
+        });
         this.flashTimer = 0.1; // 100ms
         this.stunTimer = 0.5; // 0.5s stun
 
