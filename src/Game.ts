@@ -63,7 +63,7 @@ export class Game {
     isTransitioning: boolean = false;
 
     // Spawn position constants
-    private static readonly LOBBY_SPAWN_POSITION = new CANNON.Vec3(0, 0.5, 0);
+    // private static readonly LOBBY_SPAWN_POSITION = new CANNON.Vec3(0, 0.5, 0);
 
     // Last teleporter position for respawn (starts at lobby spawn)
     lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
@@ -175,7 +175,8 @@ export class Game {
 
         // Set up player
         this.playerRegistry = PlayerRegistry.Instance;
-        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, Game.LOBBY_SPAWN_POSITION, this.input, this.defaultMaterial));
+        const initialSpawn = this.world.currentStage ? this.world.currentStage.spawnPosition : new CANNON.Vec3(0, 0.5, 0);
+        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, initialSpawn, this.input, this.defaultMaterial));
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
 
@@ -193,17 +194,10 @@ export class Game {
     switchScene(destination: string) {
         // Use loadStage helper method
         this.world.loadStageById(destination).then(() => {
-            // Place player safely on the ground to avoid penetration/bounce.
-            // Compute half-height from player's collision shape if available.
-            let halfHeight = 0.5;
-            const primaryShape: any = this.player.body.shapes && this.player.body.shapes[0];
-            if (primaryShape && primaryShape.halfExtents && typeof primaryShape.halfExtents.y === 'number') {
-                halfHeight = primaryShape.halfExtents.y;
-            }
-
-            // Small epsilon above the ground to avoid initial penetration
-            const safeY = halfHeight + 0.01;
-            const targetPos = new CANNON.Vec3(0, safeY, 0);
+            // Get spawn position from stage configuration
+            const targetPos = this.world.currentStage
+                ? this.world.currentStage.spawnPosition
+                : new CANNON.Vec3(0, 0.5, 0);
 
             // Move player and clear velocities/rotation to prevent any impulse from previous physics steps
             this.player.move(targetPos);
@@ -258,7 +252,8 @@ export class Game {
         // Respawn player at lobby spawn point without updating lastTeleporterPosition
         // We don't update lastTeleporterPosition here because death returns shouldn't
         // change the respawn point for future deaths
-        this.player.respawn(Game.LOBBY_SPAWN_POSITION);
+        // Note: The actual position will be corrected when switchScene loads the lobby
+        this.player.respawn(new CANNON.Vec3(0, 0.5, 0));
 
         // Switch to lobby
         this.switchScene(Lobby.getMetadata().id);

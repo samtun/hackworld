@@ -7,6 +7,7 @@ export class VioletAbyss extends BaseStage {
     name = 'Violet Abyss';
     description = 'A mysterious purple realm';
     environmentMap: string = 'textures/environments/lobby_env.exr';
+    spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
 
     static getMetadata() {
         return {

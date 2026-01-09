@@ -17,6 +17,7 @@ export abstract class BaseStage {
     abstract name: string;
     abstract description: string;
     abstract environmentMap: string
+    abstract spawnPosition: CANNON.Vec3;
 
     // Static method to get metadata without instantiation
     static getMetadata(): { id: string; name: string; description: string } {
