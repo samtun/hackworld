@@ -160,7 +160,7 @@ export class Player extends BaseMesh {
     money: number = 500; // Starting money
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
-        super('models/npc_placeholder.glb');
+        super('models/main_character.glb');
         this.scene = scene;
         this.world = world;
         this.id = crypto.randomUUID();

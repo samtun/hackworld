@@ -101,6 +101,7 @@ export class World {
             'models/healing_station.glb',
             'models/lobby.glb',
             'models/lobby_collider.glb',
+            'models/main_character.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);

@@ -16,13 +16,9 @@ export class LargeEnemy extends Enemy {
         this.expAmount = 25;
         this.techDropRateFactor = 1.3;
 
-        const geometry = new THREE.BoxGeometry(1.5, 1.5, 1.5);
-        const material = new THREE.MeshStandardMaterial({ color: 0x8b0000 }); // Dark red
-
         // Replace the mesh
         scene.remove(this.mesh);
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.castShadow = true;
+        this.mesh.scale.set(1.5, 1.5, 1.5);
         scene.add(this.mesh);
 
         // Re-attach weapon to new mesh

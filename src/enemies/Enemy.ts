@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
+import { BaseMesh } from '../BaseMesh';
 
-export class Enemy {
-    mesh: THREE.Mesh;
+export class Enemy extends BaseMesh {
     weaponMesh: THREE.Mesh;
     body: CANNON.Body;
     hp: number = 60;
@@ -33,11 +33,9 @@ export class Enemy {
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
+        super('models/monster.glb');
+
         // Visual
-        const geometry = new THREE.BoxGeometry(1, 1, 1);
-        const material = new THREE.MeshStandardMaterial({ color: 0xff0000 }); // Red enemy
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.castShadow = true;
         scene.add(this.mesh);
 
         // Weapon Visual

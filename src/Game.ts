@@ -69,7 +69,7 @@ export class Game {
     lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
 
     // Camera follow offset
-    cameraOffset: THREE.Vector3 = new THREE.Vector3(10, 15, 10);
+    cameraOffset: THREE.Vector3 = new THREE.Vector3(8, 10, 8);
 
     constructor() {
         // Setup Three.js
@@ -79,7 +79,7 @@ export class Game {
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
         // Isometric-ish view
         this.camera.position.copy(this.cameraOffset);
-        this.camera.lookAt(0, 4, 0);
+        this.camera.lookAt(0, 0, 0);
 
         this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -582,9 +582,9 @@ export class Game {
         }
 
         // Camera Follow
-        const targetX = this.player.position.x + 10;
-        const targetY = this.player.position.y + 10;
-        const targetZ = this.player.position.z + 10;
+        const targetX = this.player.position.x + this.cameraOffset.x;
+        const targetY = this.player.position.y + this.cameraOffset.y;
+        const targetZ = this.player.position.z + this.cameraOffset.z;
 
         const lerpFactor = Math.min(5 * dt, 1);
         this.camera.position.x += (targetX - this.camera.position.x) * lerpFactor;
