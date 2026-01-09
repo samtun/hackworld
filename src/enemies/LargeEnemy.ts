@@ -34,6 +34,7 @@ export class LargeEnemy extends Enemy {
         });
         this.body.addShape(shape);
         this.body.position.copy(position);
+        (this.body as any).entity = this;
         world.addBody(this.body);
     }
 

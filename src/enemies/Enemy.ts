@@ -65,6 +65,7 @@ export class Enemy extends BaseMesh {
         });
         this.body.addShape(shape);
         this.body.position.copy(position);
+        (this.body as any).entity = this;
         world.addBody(this.body);
 
         this.player = PlayerRegistry.Instance.activePlayers[0];

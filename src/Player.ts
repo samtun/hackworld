@@ -226,6 +226,16 @@ export class Player extends BaseMesh {
 
         // Damping to stop sliding
         this.body.linearDamping = 0.9;
+
+        this.body.addEventListener('collide', (e: any) => {
+            const entity = e.body.entity;
+            if (entity && entity instanceof Enemy) {
+                if (this.isDashing) {
+                    this.handleDashHit(entity);
+                }
+            }
+        });
+
         world.addBody(this.body);
     }
 
@@ -401,7 +411,7 @@ export class Player extends BaseMesh {
         this.dashTimer += dt;
         this.body.velocity.x = this.dashDirection.x * this.DASH_SPEED;
         this.body.velocity.z = this.dashDirection.z * this.DASH_SPEED;
-        this.checkDashHits(enemies);
+
         if (this.dashTimer >= this.DASH_DURATION) {
             this.isDashing = false;
             this.dashHitEnemies.clear();
@@ -503,6 +513,15 @@ export class Player extends BaseMesh {
                 if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
                     this.weapon.onDamageFrame = () => this.enemiesHitThisPhase.clear();
                 }
+
+                if (this.weapon.body) {
+                    this.weapon.body.addEventListener('collide', (e: any) => {
+                        const entity = e.body.entity;
+                        if (entity && entity instanceof Enemy) {
+                            this.handleAttackHit(entity);
+                        }
+                    });
+                }
             }
         }
 
@@ -516,7 +535,6 @@ export class Player extends BaseMesh {
 
         // Weapon update & hit checks
         this.weapon.update(dt, this.position, this.mesh.quaternion);
-        if (this.weapon.isAttacking && this.weapon.body) this.checkAttackHits(enemies);
     }
 
     private handleInvulnerability(dt: number) {
@@ -534,7 +552,7 @@ export class Player extends BaseMesh {
         }
     }
 
-    private syncPosition() {
+    syncPosition() {
         // Align the visual mesh with the physics body using the body's shape dimensions,
         // not the world-space AABB, to avoid incorrect offsets as the player moves.
         let y = this.body.position.y;
@@ -555,53 +573,37 @@ export class Player extends BaseMesh {
         this.syncPosition();
     }
 
-    checkAttackHits(enemies: Enemy[]) {
-        // Compute damage for this hit (applies tech multiplier)
-        const damage = this.getHitDamage();
-        const attackBody = this.weapon.body;
+    private handleDashHit(enemy: Enemy) {
+        if (enemy.isDead || enemy.isDying) return;
 
-        if (attackBody) {
-            attackBody.position.set(attackBody.position.x, this.position.y + 1.0, attackBody.position.z);
-            for (const enemy of enemies) {
-                if (enemy.isDead || enemy.isDying) continue;
+        // Skip if we already hit this enemy during this dash
+        if (this.dashHitEnemies.has(enemy)) return;
 
-                // Skip if we already hit this enemy during this attack phase
-                if (this.enemiesHitThisPhase.has(enemy)) continue;
+        // Deal 3x weapon damage with tech multiplier
+        const damage = this.getHitDamage(3);
+        enemy.takeDamage(damage, this.body.position);
+        console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
 
-                // Check if attack hitbox overlaps with enemy body
-                if (this.checkCollision(attackBody, enemy.body)) {
-                    enemy.takeDamage(damage, this.body.position);
-                    console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
+        this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
-                    this.tryIncrementWeaponTech(enemy.techDropRateFactor);
-
-                    // Mark this enemy as hit for this attack phase
-                    this.enemiesHitThisPhase.add(enemy);
-                }
-            }
-        }
+        // Mark this enemy as hit during this dash
+        this.dashHitEnemies.add(enemy);
     }
 
-    private checkCollision(body1: CANNON.Body, body2: CANNON.Body): boolean {
-        // Simple AABB (Axis-Aligned Bounding Box) collision check
-        const shape1 = body1.shapes[0];
-        const shape2 = body2.shapes[0];
+    private handleAttackHit(enemy: Enemy) {
+        if (enemy.isDead || enemy.isDying) return;
 
-        if (shape1 instanceof CANNON.Box && shape2 instanceof CANNON.Box) {
-            const pos1 = body1.position;
-            const pos2 = body2.position;
-            const halfExtents1 = shape1.halfExtents;
-            const halfExtents2 = shape2.halfExtents;
+        // Skip if we already hit this enemy during this attack phase
+        if (this.enemiesHitThisPhase.has(enemy)) return;
 
-            // Check overlap on all three axes
-            const overlapX = Math.abs(pos1.x - pos2.x) < (halfExtents1.x + halfExtents2.x);
-            const overlapY = Math.abs(pos1.y - pos2.y) < (halfExtents1.y + halfExtents2.y);
-            const overlapZ = Math.abs(pos1.z - pos2.z) < (halfExtents1.z + halfExtents2.z);
+        const damage = this.getHitDamage();
+        enemy.takeDamage(damage, this.body.position);
+        console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
-            return overlapX && overlapY && overlapZ;
-        }
+        this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
-        return false;
+        // Mark this enemy as hit for this attack phase
+        this.enemiesHitThisPhase.add(enemy);
     }
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
@@ -886,28 +888,7 @@ export class Player extends BaseMesh {
         this.levelUpParticleTimer = 0;
     }
 
-    private checkDashHits(enemies: Enemy[]) {
-        // Check collision with player body during dash
-        for (const enemy of enemies) {
-            if (enemy.isDead || enemy.isDying) continue;
 
-            // Skip if we already hit this enemy during this dash
-            if (this.dashHitEnemies.has(enemy)) continue;
-
-            // Check if player body overlaps with enemy body
-            if (this.checkCollision(this.body, enemy.body)) {
-                // Deal 3x weapon damage with tech multiplier
-                const damage = this.getHitDamage(3);
-                enemy.takeDamage(damage, this.body.position);
-                console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
-
-                this.tryIncrementWeaponTech(enemy.techDropRateFactor);
-
-                // Mark this enemy as hit during this dash
-                this.dashHitEnemies.add(enemy);
-            }
-        }
-    }
 
     /**
      * Collect X-Data
