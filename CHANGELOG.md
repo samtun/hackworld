@@ -1,3 +1,19 @@
+# [1.26.0](https://github.com/samtun/hackworld/compare/v1.25.0...v1.26.0) (2026-01-09)
+
+
+### Bug Fixes
+
+* await load call on stages ([70b4fb5](https://github.com/samtun/hackworld/commit/70b4fb59be6c5dbdb2f2ec3c8ec42b11d0e2d976))
+
+
+### Features
+
+* add animated banner to lobby mesh ([bec3b00](https://github.com/samtun/hackworld/commit/bec3b00fdf56ff640f0d21c5948b20b7da245390))
+* add env map to all stages ([5183379](https://github.com/samtun/hackworld/commit/5183379c961623d172ac1542234f3904bc392d54))
+* add lobby geometry with collider ([6570e63](https://github.com/samtun/hackworld/commit/6570e6310a380ffca4722333c777a5ee23c581fa))
+* add lobby model ([33321c6](https://github.com/samtun/hackworld/commit/33321c64c0210d2c9ade997a6684941b751248a7))
+* add vertical fadeout to lobby mesh ([b7a4eca](https://github.com/samtun/hackworld/commit/b7a4ecaded3d160b44433f75ed36b8d9a328c3d4))
+
 # [1.25.0](https://github.com/samtun/hackworld/compare/v1.24.2...v1.25.0) (2026-01-06)
 
 
