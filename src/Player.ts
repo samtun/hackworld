@@ -32,36 +32,38 @@ export class Player extends BaseMesh {
     private enemiesHitThisPhase: Set<Enemy> = new Set();
 
     // Ground detection threshold
-    private static readonly GROUND_VELOCITY_THRESHOLD = 0.1;
+    private readonly GROUND_VELOCITY_THRESHOLD = 0.05;
 
     // Knockback strength
-    private static readonly KNOCKBACK_FORCE = 120;
+    private readonly KNOCKBACK_FORCE = 80;
 
     // Stat caps and upgrade amounts
-    private static readonly MAX_STAT_VALUE = 9999;
-    private static readonly HP_TP_UPGRADE_AMOUNT = 5;
-    private static readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
+    private readonly MAX_STAT_VALUE = 9999;
+    private readonly HP_TP_UPGRADE_AMOUNT = 5;
+    private readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
 
     // Stat effect formula constants
-    private static readonly STAT_FORMULA_NUMERATOR = 0.27; // Numerator for strength/defense formulas
-    private static readonly STAT_FORMULA_LOG_BASE = 9999; // Log base for strength/defense formulas
-    private static readonly AGILITY_CRIT_DIVISOR = 40000; // Divisor for agility critical chance
-    private static readonly BASE_CRIT_CHANCE = 0.02; // Base 2% critical chance
-    private static readonly LUCK_DIVISOR = 40000; // Divisor for luck multiplier
+    private readonly STAT_FORMULA_NUMERATOR = 0.27; // Numerator for strength/defense formulas
+    private readonly STAT_FORMULA_LOG_BASE = this.MAX_STAT_VALUE; // Log base for strength/defense formulas
+    private readonly AGILITY_CRIT_DIVISOR = 40000; // Divisor for agility critical chance
+    private readonly BASE_CRIT_CHANCE = 0.02; // Base 2% critical chance
+    private readonly LUCK_DIVISOR = 40000; // Divisor for luck multiplier
+    private readonly CRITICAL_HIT_MULTIPLIER = 1.5;
 
     // Level system constants
-    private static readonly MAX_LEVEL = 999;
-    private static readonly LEVEL_HP_MULTIPLIER = 10.01; // HP increase by (10 + 0.01) * level
-    private static readonly LEVEL_TP_MULTIPLIER = 5.005; // TP increase by (5 + 0.005) * level
-    private static readonly EXP_BASE = 350;
-    private static readonly EXP_LINEAR_FACTOR = 30;
-    private static readonly EXP_QUADRATIC_FACTOR = 0.07;
+    private readonly MAX_LEVEL = 9999;
+    private readonly LEVEL_HP_MULTIPLIER = 10.01; // HP increase by (10 + 0.01) * level
+    private readonly LEVEL_TP_MULTIPLIER = 5.005; // TP increase by (5 + 0.005) * level
+    private readonly EXP_BASE = 350;
+    private readonly EXP_LINEAR_FACTOR = 30;
+    private readonly EXP_QUADRATIC_FACTOR = 0.07;
 
     // Tech point cap
-    private static readonly TECH_POINT_CAP = 2500;
+    private readonly TECH_POINT_CAP = 2500;
 
     // Movement speed constant
-    private static readonly WALK_SPEED = 6;
+    private readonly WALK_SPEED = 6;
+    private readonly JUMP_FORCE = 5;
 
     // Base Stats (without equipment modifiers or upgrades)
     private baseHp: number = 170;
@@ -74,7 +76,7 @@ export class Player extends BaseMesh {
     // Stats (with equipment modifiers applied)
     level: number = 1;
     exp: number = 0;
-    expRequired: number = Player.EXP_BASE; // EXP needed for next level
+    expRequired: number = this.EXP_BASE; // EXP needed for next level
     maxHp: number = this.baseHp;
     hp: number = this.baseHp;
     maxTp: number = this.baseTp;
@@ -255,12 +257,12 @@ export class Player extends BaseMesh {
         const levelTpBonus = this.getLevelTpBonus();
 
         // Start with base stats + X-Data upgrades + stat points, then apply level multiplier
-        this.strength = Math.min(Math.floor(this.baseStrength + this.strengthUpgrades + this.strengthPoints), Player.MAX_STAT_VALUE);
-        this.defense = Math.min(Math.floor(this.baseDefense + this.defenseUpgrades + this.defensePoints), Player.MAX_STAT_VALUE);
-        this.agility = Math.min(Math.floor(this.baseAgility + this.agilityUpgrades + this.agilityPoints), Player.MAX_STAT_VALUE);
-        this.luck = Math.min(Math.floor(this.baseLuck + this.luckUpgrades + this.luckPoints), Player.MAX_STAT_VALUE);
-        this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, Player.MAX_STAT_VALUE);
-        this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, Player.MAX_STAT_VALUE);
+        this.strength = Math.min(Math.floor(this.baseStrength + this.strengthUpgrades + this.strengthPoints), this.MAX_STAT_VALUE);
+        this.defense = Math.min(Math.floor(this.baseDefense + this.defenseUpgrades + this.defensePoints), this.MAX_STAT_VALUE);
+        this.agility = Math.min(Math.floor(this.baseAgility + this.agilityUpgrades + this.agilityPoints), this.MAX_STAT_VALUE);
+        this.luck = Math.min(Math.floor(this.baseLuck + this.luckUpgrades + this.luckPoints), this.MAX_STAT_VALUE);
+        this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, this.MAX_STAT_VALUE);
+        this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, this.MAX_STAT_VALUE);
 
         // Ensure current HP/TP don't exceed new max
         if (this.hp > this.maxHp) this.hp = this.maxHp;
@@ -271,10 +273,10 @@ export class Player extends BaseMesh {
         if (equippedCore) {
             const effectiveStats = equippedCore.stats;
             if (effectiveStats.strength !== undefined) {
-                this.strength = Math.min(this.strength + effectiveStats.strength, Player.MAX_STAT_VALUE);
+                this.strength = Math.min(this.strength + effectiveStats.strength, this.MAX_STAT_VALUE);
             }
             if (effectiveStats.defense !== undefined) {
-                this.defense = Math.min(this.defense + effectiveStats.defense, Player.MAX_STAT_VALUE);
+                this.defense = Math.min(this.defense + effectiveStats.defense, this.MAX_STAT_VALUE);
             }
         }
     }
@@ -293,25 +295,25 @@ export class Player extends BaseMesh {
     // Calculate strength multiplier using formula: 0.27 / ln(9999) * ln(x)
     private getStrengthMultiplier(): number {
         if (this.strength <= 0) return 0;
-        const multiplier = (Player.STAT_FORMULA_NUMERATOR / Math.log(Player.STAT_FORMULA_LOG_BASE)) * Math.log(this.strength);
+        const multiplier = (this.STAT_FORMULA_NUMERATOR / Math.log(this.STAT_FORMULA_LOG_BASE)) * Math.log(this.strength);
         return Math.max(0, multiplier);
     }
 
     // Calculate defense multiplier using formula: 0.27 / ln(9999) * ln(x)
     private getDefenseMultiplier(): number {
         if (this.defense <= 0) return 0;
-        const multiplier = (Player.STAT_FORMULA_NUMERATOR / Math.log(Player.STAT_FORMULA_LOG_BASE)) * Math.log(this.defense);
+        const multiplier = (this.STAT_FORMULA_NUMERATOR / Math.log(this.STAT_FORMULA_LOG_BASE)) * Math.log(this.defense);
         return Math.max(0, multiplier);
     }
 
     // Calculate critical hit chance using formula: agility / 40000 + 0.02
     private getCriticalChance(): number {
-        return this.agility / Player.AGILITY_CRIT_DIVISOR + Player.BASE_CRIT_CHANCE;
+        return this.agility / this.AGILITY_CRIT_DIVISOR + this.BASE_CRIT_CHANCE;
     }
 
     // Calculate luck multiplier using formula: luck / 40000
     private getLuckMultiplier(): number {
-        return this.luck / Player.LUCK_DIVISOR;
+        return this.luck / this.LUCK_DIVISOR;
     }
 
     // Return current tech points for a given weapon type
@@ -323,7 +325,7 @@ export class Player extends BaseMesh {
     incrementTechForCurrentWeapon(dropRateFactor: number) {
         const key = this.currentWeaponType;
         const x = this.tech[key];
-        if (x >= Player.TECH_POINT_CAP) {
+        if (x >= this.TECH_POINT_CAP) {
             return; // Cap reached
         }
 
@@ -352,7 +354,7 @@ export class Player extends BaseMesh {
 
         // Check for critical hit
         const isCritical = Math.random() < this.getCriticalChance();
-        const critMultiplier = isCritical ? 1.5 : 1.0;
+        const critMultiplier = isCritical ? this.CRITICAL_HIT_MULTIPLIER : 1.0;
 
         // Damage is directly from weapon (which already has level scaling in weapons.json)
         const damage = Math.floor(this.weapon.damage * baseMultiplier * strengthMultiplier * critMultiplier);
@@ -383,7 +385,7 @@ export class Player extends BaseMesh {
         if (this.input.isAttackReleased()) this.attackLockedUntilRelease = false;
 
         // Invulnerability flash and timers
-        this.handleInvulnerability(dt);
+        this.handleInvulnerability(dt)
 
         // Update level-up particles and input state
         this.updateLevelUpParticles(dt);
@@ -447,7 +449,7 @@ export class Player extends BaseMesh {
             }
 
             // Apply walk speed multiplier from chips
-            let effectiveSpeed = Player.WALK_SPEED;
+            let effectiveSpeed = this.WALK_SPEED;
             const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
             if (equippedChip && equippedChip.stats.walkSpeedMultiplier !== undefined) {
                 effectiveSpeed *= equippedChip.stats.walkSpeedMultiplier;
@@ -456,9 +458,9 @@ export class Player extends BaseMesh {
             this.body.velocity.x = moveX * effectiveSpeed;
             this.body.velocity.z = moveZ * effectiveSpeed;
 
-            this.isGrounded = Math.abs(this.body.velocity.y) < Player.GROUND_VELOCITY_THRESHOLD;
+            this.isGrounded = Math.abs(this.body.velocity.y) < this.GROUND_VELOCITY_THRESHOLD;
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive) {
-                this.body.velocity.y = 10;
+                this.body.velocity.y = this.JUMP_FORCE;
             }
         } else {
             this.body.velocity.x *= 0.8;
@@ -584,8 +586,6 @@ export class Player extends BaseMesh {
         console.log(`Player taking ${amount} damage. Timer: ${this.invulnerableTimer}`);
         if (this.invulnerableTimer > 0 || this.isDashing || this.isDead) return;
 
-        console.log("Applying damage...");
-
         // Apply defense multiplier to reduce damage
         const defenseMultiplier = 1 - this.getDefenseMultiplier();
         const reducedDamage = Math.max(1, Math.floor(amount * defenseMultiplier));
@@ -613,7 +613,7 @@ export class Player extends BaseMesh {
             knockDir.y = 0;
             if (knockDir.length() > 0) {
                 knockDir.normalize();
-                this.body.applyImpulse(new CANNON.Vec3(knockDir.x * Player.KNOCKBACK_FORCE, 5, knockDir.z * Player.KNOCKBACK_FORCE), knockDir);
+                this.body.applyImpulse(new CANNON.Vec3(knockDir.x * this.KNOCKBACK_FORCE, 5, knockDir.z * this.KNOCKBACK_FORCE), knockDir);
             }
         }
 
@@ -909,9 +909,9 @@ export class Player extends BaseMesh {
      */
     private calculateExpRequired(level: number): number {
         return Math.floor(
-            Player.EXP_BASE +
-            level * Player.EXP_LINEAR_FACTOR +
-            Math.pow(level, 2) * Player.EXP_QUADRATIC_FACTOR
+            this.EXP_BASE +
+            level * this.EXP_LINEAR_FACTOR +
+            Math.pow(level, 2) * this.EXP_QUADRATIC_FACTOR
         );
     }
 
@@ -920,7 +920,7 @@ export class Player extends BaseMesh {
      * @param amount - Amount of EXP to gain
      */
     gainExp(amount: number): void {
-        if (this.level >= Player.MAX_LEVEL) {
+        if (this.level >= this.MAX_LEVEL) {
             console.log('Player is at max level');
             return;
         }
@@ -933,7 +933,7 @@ export class Player extends BaseMesh {
         console.log(`Gained ${adjustedAmount} EXP (${amount} base + luck bonus). Current: ${this.exp}/${this.expRequired}`);
 
         // Check for level up(s)
-        while (this.exp >= this.expRequired && this.level < Player.MAX_LEVEL) {
+        while (this.exp >= this.expRequired && this.level < this.MAX_LEVEL) {
             this.levelUp();
         }
     }
@@ -949,7 +949,7 @@ export class Player extends BaseMesh {
         this.statPointsAvailable += 4;
 
         // Calculate new required EXP for next level
-        if (this.level < Player.MAX_LEVEL) {
+        if (this.level < this.MAX_LEVEL) {
             this.expRequired = this.calculateExpRequired(this.level);
         }
 
@@ -969,14 +969,14 @@ export class Player extends BaseMesh {
      * Get the level bonus for HP
      */
     private getLevelHpBonus(): number {
-        return Math.floor(Player.LEVEL_HP_MULTIPLIER * (this.level - 1));
+        return Math.floor(this.LEVEL_HP_MULTIPLIER * (this.level - 1));
     }
 
     /**
      * Get the level bonus for TP
      */
     private getLevelTpBonus(): number {
-        return Math.floor(Player.LEVEL_TP_MULTIPLIER * (this.level - 1));
+        return Math.floor(this.LEVEL_TP_MULTIPLIER * (this.level - 1));
     }
 
     /**
@@ -1020,20 +1020,20 @@ export class Player extends BaseMesh {
                 break;
             case StatType.HP:
                 currentLevel = this.hpUpgrades;
-                currentValue = 100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT);
+                currentValue = 100 + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT);
                 break;
             case StatType.TP:
                 currentLevel = this.tpUpgrades;
-                currentValue = 100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT);
+                currentValue = 100 + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT);
                 break;
         }
 
         // Check if stat would exceed 9999 cap
         const upgradeAmount = (statType === StatType.HP || statType === StatType.TP)
-            ? Player.HP_TP_UPGRADE_AMOUNT
-            : Player.STRENGTH_DEFENSE_UPGRADE_AMOUNT;
-        if (currentValue + upgradeAmount > Player.MAX_STAT_VALUE) {
-            console.log(`${statType} is already at max value (${Player.MAX_STAT_VALUE})`);
+            ? this.HP_TP_UPGRADE_AMOUNT
+            : this.STRENGTH_DEFENSE_UPGRADE_AMOUNT;
+        if (currentValue + upgradeAmount > this.MAX_STAT_VALUE) {
+            console.log(`${statType} is already at max value (${this.MAX_STAT_VALUE})`);
             return false;
         }
 
@@ -1058,12 +1058,12 @@ export class Player extends BaseMesh {
                 case StatType.HP:
                     this.hpUpgrades++;
                     // Heal player when upgrading HP
-                    this.hp += Player.HP_TP_UPGRADE_AMOUNT;
+                    this.hp += this.HP_TP_UPGRADE_AMOUNT;
                     break;
                 case StatType.TP:
                     this.tpUpgrades++;
                     // Restore TP when upgrading
-                    this.tp += Player.HP_TP_UPGRADE_AMOUNT;
+                    this.tp += this.HP_TP_UPGRADE_AMOUNT;
                     break;
             }
 
@@ -1083,17 +1083,17 @@ export class Player extends BaseMesh {
     getBaseStatValue(statType: StatType): number {
         switch (statType) {
             case StatType.STRENGTH:
-                return Math.min(this.baseStrength + this.strengthUpgrades + this.strengthPoints, Player.MAX_STAT_VALUE);
+                return Math.min(this.baseStrength + this.strengthUpgrades + this.strengthPoints, this.MAX_STAT_VALUE);
             case StatType.DEFENSE:
-                return Math.min(this.baseDefense + this.defenseUpgrades + this.defensePoints, Player.MAX_STAT_VALUE);
+                return Math.min(this.baseDefense + this.defenseUpgrades + this.defensePoints, this.MAX_STAT_VALUE);
             case StatType.HP:
-                return Math.min(100 + (this.hpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
+                return Math.min(100 + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT), this.MAX_STAT_VALUE);
             case StatType.TP:
-                return Math.min(100 + (this.tpUpgrades * Player.HP_TP_UPGRADE_AMOUNT), Player.MAX_STAT_VALUE);
+                return Math.min(100 + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT), this.MAX_STAT_VALUE);
             case StatType.AGILITY:
-                return Math.min(this.baseAgility + this.agilityUpgrades + this.agilityPoints, Player.MAX_STAT_VALUE);
+                return Math.min(this.baseAgility + this.agilityUpgrades + this.agilityPoints, this.MAX_STAT_VALUE);
             case StatType.LUCK:
-                return Math.min(this.baseLuck + this.luckUpgrades + this.luckPoints, Player.MAX_STAT_VALUE);
+                return Math.min(this.baseLuck + this.luckUpgrades + this.luckPoints, this.MAX_STAT_VALUE);
         }
     }
 
@@ -1128,8 +1128,8 @@ export class Player extends BaseMesh {
                 return false;
         }
 
-        if (currentValue >= Player.MAX_STAT_VALUE) {
-            console.log(`${statType} is already at max value (${Player.MAX_STAT_VALUE})`);
+        if (currentValue >= this.MAX_STAT_VALUE) {
+            console.log(`${statType} is already at max value (${this.MAX_STAT_VALUE})`);
             return false;
         }
 

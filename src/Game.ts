@@ -69,7 +69,7 @@ export class Game {
     lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
 
     // Camera follow offset
-    cameraOffset: THREE.Vector3 = new THREE.Vector3(8, 10, 8);
+    cameraOffset: THREE.Vector3 = new THREE.Vector3(7, 9, 7);
 
     constructor() {
         // Setup Three.js
