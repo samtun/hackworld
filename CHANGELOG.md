@@ -1,3 +1,10 @@
+# [1.27.0](https://github.com/samtun/hackworld/compare/v1.26.0...v1.27.0) (2026-01-09)
+
+
+### Features
+
+* move initial player position to stages ([f7862b5](https://github.com/samtun/hackworld/commit/f7862b5f33216ff5e2d9c2dc701769cd9d08c421))
+
 # [1.26.0](https://github.com/samtun/hackworld/compare/v1.25.0...v1.26.0) (2026-01-09)
 
 
