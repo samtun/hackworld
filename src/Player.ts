@@ -380,12 +380,12 @@ export class Player extends BaseMesh {
         return damage;
     }
 
-    update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
+    update(dt: number, isNearInteractive: boolean = false) {
         // Skip all updates if player is dead
         if (this.isDead) return;
 
         // Handle dash and charging (these short-circuit the rest of the update)
-        if (this.handleDash(dt, enemies)) return;
+        if (this.handleDash(dt)) return;
         if (this.handleCharging(dt)) return;
 
         // Movement and physics sync
@@ -393,7 +393,7 @@ export class Player extends BaseMesh {
         this.syncPosition();
 
         // Combat (attacks / charge start / weapon updates)
-        this.handleCombat(dt, enemies);
+        this.handleCombat(dt);
 
         // Clear attack lock when button released
         if (this.input.isAttackReleased()) this.attackLockedUntilRelease = false;
@@ -406,7 +406,7 @@ export class Player extends BaseMesh {
         this.input.updateState();
     }
 
-    private handleDash(dt: number, enemies: Enemy[]): boolean {
+    private handleDash(dt: number): boolean {
         if (!this.isDashing) return false;
         this.dashTimer += dt;
         this.body.velocity.x = this.dashDirection.x * this.DASH_SPEED;
@@ -500,7 +500,7 @@ export class Player extends BaseMesh {
         }
     }
 
-    private handleCombat(dt: number, enemies: Enemy[]) {
+    private handleCombat(dt: number) {
         if (this.attackLockedUntilRelease) return;
 
         // Track attack press for charge timer

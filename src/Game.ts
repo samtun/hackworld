@@ -567,7 +567,7 @@ export class Game {
 
             // Prevent jumping in the frame(s) immediately after interacting
             const preventJump = isNearInteractive || this.wasJustInteracted;
-            this.player.update(dt, this.world.enemies, preventJump);
+            this.player.update(dt, preventJump);
             this.world.update(dt, this.player, this.camera.position);
         }
 
