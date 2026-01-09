@@ -31,9 +31,6 @@ export class Player extends BaseMesh {
     // For dual blade, this gets reset between phases to allow double-hitting
     private enemiesHitThisPhase: Set<Enemy> = new Set();
 
-    // Ground detection threshold
-    private readonly GROUND_VELOCITY_THRESHOLD = 0.05;
-
     // Knockback strength
     private readonly KNOCKBACK_FORCE = 80;
 
@@ -63,7 +60,8 @@ export class Player extends BaseMesh {
 
     // Movement speed constant
     private readonly WALK_SPEED = 6;
-    private readonly JUMP_FORCE = 5;
+    // Can jump onto 1m high platforms
+    private readonly JUMP_FORCE = 6.6;
 
     // Base Stats (without equipment modifiers or upgrades)
     private baseHp: number = 170;
@@ -146,6 +144,7 @@ export class Player extends BaseMesh {
     // Ground contact tracking
     private isGrounded: boolean = false;
     private stunTimer: number = 0;
+    private jumpCooldownTimer: number = 0;
 
     // Death state
     isDead: boolean = false;
@@ -209,16 +208,21 @@ export class Player extends BaseMesh {
         const center = new THREE.Vector3();
         box.getCenter(center);
 
-        const halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
-        const shape = new CANNON.Box(halfExtents);
+        const radius = size.x / 2;
+        const bodyHeight = size.y - radius;
+        const cylinderShape = new CANNON.Cylinder(radius, radius, bodyHeight, 12);
 
+        // Add base body collider
         this.body = new CANNON.Body({
             mass: 3, // Dynamic body
-            position: new CANNON.Vec3(position.x, halfExtents.y, position.z),
-            shape: shape,
+            position: new CANNON.Vec3(position.x, position.y, position.z),
+            shape: cylinderShape,
             fixedRotation: true,
             material: physicsMaterial
         });
+
+        // Add head (to make objects colliding from above slide off)
+        this.body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, bodyHeight - 0.75, 0));
 
         // Damping to stop sliding
         this.body.linearDamping = 0.9;
@@ -322,7 +326,7 @@ export class Player extends BaseMesh {
     }
 
     // Increment tech for the currently equipped weapon
-    incrementTechForCurrentWeapon(dropRateFactor: number) {
+    tryIncrementWeaponTech(dropRateFactor: number) {
         const key = this.currentWeaponType;
         const x = this.tech[key];
         if (x >= this.TECH_POINT_CAP) {
@@ -429,6 +433,10 @@ export class Player extends BaseMesh {
     private handleMovement(dt: number, isNearInteractive: boolean) {
         const inputVector = this.input.getMovementVector();
 
+        if (this.jumpCooldownTimer > 0) {
+            this.jumpCooldownTimer -= dt;
+        }
+
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
             this.body.velocity.x *= 0.9;
@@ -458,9 +466,23 @@ export class Player extends BaseMesh {
             this.body.velocity.x = moveX * effectiveSpeed;
             this.body.velocity.z = moveZ * effectiveSpeed;
 
-            this.isGrounded = Math.abs(this.body.velocity.y) < this.GROUND_VELOCITY_THRESHOLD;
-            if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive) {
+            // Check if grounded using raycast
+            const start = this.body.position;
+            const shape = this.body.shapes[0] as CANNON.Cylinder;
+            const halfHeight = shape?.height / 2.0;
+            const end = new CANNON.Vec3(start.x, start.y - halfHeight - 0.2, start.z);
+
+            const ray = new CANNON.Ray(start, end);
+            ray.skipBackfaces = true;
+            const result = new CANNON.RaycastResult();
+            ray.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: result, skipBackfaces: true });
+
+            this.isGrounded = result.hasHit && result.body !== this.body;
+
+            if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
                 this.body.velocity.y = this.JUMP_FORCE;
+                console.warn('Player jumped');
+                this.jumpCooldownTimer = 1.0;
             }
         } else {
             this.body.velocity.x *= 0.8;
@@ -518,9 +540,9 @@ export class Player extends BaseMesh {
         let y = this.body.position.y;
         const primaryShape = this.body.shapes[0];
 
-        if (primaryShape instanceof CANNON.Box) {
+        if (primaryShape instanceof CANNON.Cylinder) {
             // Place the mesh origin at the bottom of the box by subtracting half the height.
-            y = this.body.position.y - primaryShape.halfExtents.y;
+            y = this.body.position.y - primaryShape.height / 2.0;
         }
 
         const newPosition = new THREE.Vector3(this.body.position.x, y, this.body.position.z);
@@ -551,7 +573,7 @@ export class Player extends BaseMesh {
                     enemy.takeDamage(damage, this.body.position);
                     console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
-                    this.incrementTechForCurrentWeapon(enemy.techDropRateFactor);
+                    this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
                     // Mark this enemy as hit for this attack phase
                     this.enemiesHitThisPhase.add(enemy);
@@ -879,7 +901,7 @@ export class Player extends BaseMesh {
                 enemy.takeDamage(damage, this.body.position);
                 console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
 
-                this.incrementTechForCurrentWeapon(enemy.techDropRateFactor);
+                this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
                 // Mark this enemy as hit during this dash
                 this.dashHitEnemies.add(enemy);
