@@ -1,3 +1,10 @@
+# [1.28.0](https://github.com/samtun/hackworld/compare/v1.27.0...v1.28.0) (2026-01-09)
+
+
+### Features
+
+* add player and enemy models ([c0e7b20](https://github.com/samtun/hackworld/commit/c0e7b20bf1d5c1de60b3bbe853a75ebd39706aa6))
+
 # [1.27.0](https://github.com/samtun/hackworld/compare/v1.26.0...v1.27.0) (2026-01-09)
 
 
