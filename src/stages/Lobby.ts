@@ -10,6 +10,7 @@ import { WeaponTrader } from '../items/weapons/WeaponTrader';
 import { Npc } from '../npcs/Npc';
 import { CoreTrader } from '../items/cores/CoreTrader';
 import { CardManager } from '../items/cards/CardManager';
+import { ShaderUtils } from '../ShaderUtils';
 
 export class Lobby extends BaseStage {
     id = 'lobby';
@@ -73,9 +74,20 @@ export class Lobby extends BaseStage {
             this.scene.add(lobbyScene);
             this.meshes.push(lobbyScene);
             lobbyScene.traverse((node) => {
-                // Get texture for banner mesh to animate it later
-                if (node.name === "Lobby_Banner" && node instanceof THREE.Mesh && node.material.map) {
-                    this.bannerTexture = node.material.map;
+                if (!(node instanceof THREE.Mesh)) return;
+                console.log(`Lobby Mesh: ${node.name}`);
+                if (node.name === "Banner") {
+                    const material = node.material as THREE.MeshStandardMaterial;
+
+                    // Get texture for banner mesh to animate it later
+                    if (material.map) {
+                        this.bannerTexture = material.map;
+                    }
+                } else if (node.material.name === "StageWalls") {
+                    const material = node.material as THREE.MeshStandardMaterial;
+
+                    // Fade out to alpha=0 at -15.0 to 0.0 in Y axis direction
+                    ShaderUtils.applyVerticalFade(material, -15.0, 0.0);
                 }
             });
         }
