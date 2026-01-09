@@ -99,6 +99,8 @@ export class World {
             'models/trader_weapons.glb',
             'models/npc_placeholder.glb',
             'models/healing_station.glb',
+            'models/lobby.glb',
+            'models/lobby_collider.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);
@@ -146,7 +148,7 @@ export class World {
 
             // Load the stage
             this.currentStage = newStage;
-            this.currentStage.load();
+            await this.currentStage.load();
         } catch (error) {
             console.error(`Error loading stage ${stageId}:`, error);
             throw error; // Re-throw to allow caller to handle

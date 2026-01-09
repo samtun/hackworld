@@ -81,9 +81,10 @@ export class Game {
         this.camera.position.copy(this.cameraOffset);
         this.camera.lookAt(0, 4, 0);
 
-        this.renderer = new THREE.WebGLRenderer({ antialias: true });
+        this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = true;
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.getElementById('app')!.appendChild(this.renderer.domElement);
 
         // Lights
@@ -97,7 +98,7 @@ export class Game {
 
         // Setup Physics
         this.physicsWorld = new CANNON.World();
-        this.physicsWorld.gravity.set(0, -30, 0);
+        this.physicsWorld.gravity.set(0, -9.82, 0);
 
         // Create a slippery material (friction = 0)
         this.defaultMaterial = new CANNON.Material('default');

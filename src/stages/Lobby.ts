@@ -1,4 +1,5 @@
 import * as CANNON from 'cannon-es';
+import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { HealingStation } from '../HealingStation';
 import { Player } from '../Player';
@@ -9,11 +10,13 @@ import { WeaponTrader } from '../items/weapons/WeaponTrader';
 import { Npc } from '../npcs/Npc';
 import { CoreTrader } from '../items/cores/CoreTrader';
 import { CardManager } from '../items/cards/CardManager';
+import { ShaderUtils } from '../ShaderUtils';
 
 export class Lobby extends BaseStage {
     id = 'lobby';
     name = 'Lobby';
     description = 'Safe hub area';
+    environmentMap: string = 'textures/environments/lobby_env.exr';
 
     static getMetadata() {
         return {
@@ -48,6 +51,8 @@ export class Lobby extends BaseStage {
     private xDataUpgradeManager?: XDataUpgradeManager;
     private cardManager?: CardManager;
 
+    private bannerTexture?: THREE.Texture | null = null;
+
     // Healing Station
     healingStation?: HealingStation;
     private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
@@ -58,12 +63,40 @@ export class Lobby extends BaseStage {
     // Callback for Save Manager interaction (set by Game)
     saveManagerInteractionCallback?: () => void;
 
-    load(): void {
+    async load(): Promise<void> {
         this.clear();
         console.log("Loading Lobby...");
+        await this.loadEnvironmentMap();
+        const lobbyGltf = this.assetManager.get('models/lobby.glb');
+        if (lobbyGltf) {
+            const lobbyScene = lobbyGltf.scene.clone();
+            lobbyScene.position.set(0, 0, 0);
+            this.scene.add(lobbyScene);
+            this.meshes.push(lobbyScene);
+            lobbyScene.traverse((node) => {
+                if (!(node instanceof THREE.Mesh)) return;
+                console.log(`Lobby Mesh: ${node.name}`);
+                if (node.name === "Banner") {
+                    const material = node.material as THREE.MeshStandardMaterial;
 
-        // Floor
-        this.createFloor(20, 0x808080);
+                    // Get texture for banner mesh to animate it later
+                    if (material.map) {
+                        this.bannerTexture = material.map;
+                    }
+                } else if (node.material.name === "StageWalls") {
+                    const material = node.material as THREE.MeshStandardMaterial;
+
+                    // Fade out to alpha=0 at -15.0 to 0.0 in Y axis direction
+                    ShaderUtils.applyVerticalFade(material, -15.0, 0.0);
+                }
+            });
+        }
+
+        const lobbyColliderModel = this.assetManager.get('models/lobby_collider.glb');
+        if (lobbyColliderModel) {
+            const lobbyColliderScene = lobbyColliderModel.scene.clone();
+            this.createLobbyColliders(lobbyColliderScene);
+        }
 
         // Portal
         this.createPortal(new CANNON.Vec3(5, 0.05, 5), 0x00ff00, 'selection');
@@ -227,8 +260,73 @@ export class Lobby extends BaseStage {
     update(dt: number, player: Player) {
         super.update(dt, player);
 
+        // Animate banner texture
+        if (this.bannerTexture) {
+            const speed = 0.04;
+            const time = performance.now() * 0.001;
+            this.bannerTexture.offset.x = (time * speed) % 1;
+        }
+
         if (!this.healingStation) return;
         this.healingStation.update(dt);
+    }
+
+    private createLobbyColliders(modelScene: THREE.Group | THREE.Object3D): void {
+        modelScene.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                this.createColliderFromMesh(child);
+            }
+        });
+    }
+
+    private createColliderFromMesh(mesh: THREE.Mesh): void {
+        const geometry = mesh.geometry;
+
+        // 1. calculate Bounding Box (if not already done)
+        geometry.computeBoundingBox();
+        const box = geometry.boundingBox!;
+
+        // 2. calculate size (Max - Min)
+        const size = new THREE.Vector3();
+        box.getSize(size);
+
+        // 3. calculate half-extents considering scaling
+        // Cannon needs the radius from the center to the edge
+        const halfExtents = new CANNON.Vec3(
+            (size.x * mesh.scale.x) / 2,
+            (size.y * mesh.scale.y) / 2,
+            (size.z * mesh.scale.z) / 2
+        );
+
+        const boxShape = new CANNON.Box(halfExtents);
+
+        // 4. Create Body
+        const body = new CANNON.Body({
+            mass: 0, // Static
+            material: this.physicsMaterial
+        });
+
+        // 5. Consider offset
+        // If the geometry center is not at (0,0,0),
+        // we need to move the shape within the body.
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        center.multiply(mesh.scale); // Also apply scaling to the offset
+
+        const cannonOffset = new CANNON.Vec3(center.x, center.y, center.z);
+        body.addShape(boxShape, cannonOffset);
+
+        // 6. Synchronize world position and rotation
+        const worldPos = new THREE.Vector3();
+        const worldQuat = new THREE.Quaternion();
+        mesh.getWorldPosition(worldPos);
+        mesh.getWorldQuaternion(worldQuat);
+
+        body.position.set(worldPos.x, worldPos.y, worldPos.z);
+        body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);
+
+        this.physicsWorld.addBody(body);
+        this.bodies.push(body);
     }
 
     /**

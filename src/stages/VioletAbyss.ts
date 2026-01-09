@@ -6,6 +6,7 @@ export class VioletAbyss extends BaseStage {
     id = 'violetAbyss';
     name = 'Violet Abyss';
     description = 'A mysterious purple realm';
+    environmentMap: string = 'textures/environments/lobby_env.exr';
 
     static getMetadata() {
         return {
@@ -24,12 +25,11 @@ export class VioletAbyss extends BaseStage {
         ];
     }
 
-    load(): void {
+    async load(): Promise<void> {
         this.clear();
         console.log("Loading Dungeon 2...");
-
-        // Different themed floor - Dark Purple
-        this.createFloor(50, 0x1a0033);
+        await this.loadEnvironmentMap();
+        this.createFloorCollider();
 
         // Portal back to Lobby
         this.createPortal(new CANNON.Vec3(12, 0.05, 12), 0x0000ff, Lobby.getMetadata().id);
