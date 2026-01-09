@@ -184,7 +184,7 @@ export class World {
                 };
             }
 
-            enemy.update(dt, player);
+            enemy.update(dt);
 
             if (enemy.isDead) {
                 // Grant EXP to player

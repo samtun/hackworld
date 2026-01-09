@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import { AssetManager } from './AssetManager';
 
 export abstract class BaseMesh {
-    protected mesh: THREE.Group;
+    public mesh: THREE.Group;
     protected mixers: THREE.AnimationMixer[] = [];
 
     constructor(modelAsset: string) {
