@@ -6,7 +6,7 @@
         "sellPrice": 50,
         "weaponType": "sword",
         "damage": 10,
-        "model": "models/sword.glb",
+        "model": "models/aegis_sword.glb",
         "level": 1
     },
     {
@@ -16,7 +16,7 @@
         "sellPrice": 90,
         "weaponType": "sword",
         "damage": 18,
-        "model": "models/sword.glb",
+        "model": "models/aegis_sword.glb",
         "level": 2
     },
     {
@@ -26,7 +26,7 @@
         "sellPrice": 160,
         "weaponType": "sword",
         "damage": 32,
-        "model": "models/sword.glb",
+        "model": "models/aegis_sword.glb",
         "level": 3
     },
     {
@@ -36,7 +36,7 @@
         "sellPrice": 310,
         "weaponType": "sword",
         "damage": 62,
-        "model": "models/sword.glb",
+        "model": "models/aegis_sword.glb",
         "level": 4
     },
     {
@@ -46,7 +46,7 @@
         "sellPrice": 490,
         "weaponType": "sword",
         "damage": 98,
-        "model": "models/sword.glb",
+        "model": "models/aegis_sword.glb",
         "level": 5
     },
     {
@@ -56,7 +56,7 @@
         "sellPrice": 700,
         "weaponType": "sword",
         "damage": 140,
-        "model": "models/sword.glb",
+        "model": "models/aegis_sword.glb",
         "level": 6
     },
     {
@@ -66,7 +66,7 @@
         "sellPrice": 80,
         "weaponType": "dual_blade",
         "damage": 8,
-        "model": "models/double_sword.glb",
+        "model": "models/rune_blade.glb",
         "level": 1
     },
     {
@@ -76,7 +76,7 @@
         "sellPrice": 140,
         "weaponType": "dual_blade",
         "damage": 14,
-        "model": "models/double_sword.glb",
+        "model": "models/rune_blade.glb",
         "level": 2
     },
     {
@@ -86,7 +86,7 @@
         "sellPrice": 240,
         "weaponType": "dual_blade",
         "damage": 26,
-        "model": "models/double_sword.glb",
+        "model": "models/rune_blade.glb",
         "level": 3
     },
     {
@@ -96,7 +96,7 @@
         "sellPrice": 470,
         "weaponType": "dual_blade",
         "damage": 50,
-        "model": "models/double_sword.glb",
+        "model": "models/rune_blade.glb",
         "level": 4
     },
     {
@@ -106,7 +106,7 @@
         "sellPrice": 740,
         "weaponType": "dual_blade",
         "damage": 78,
-        "model": "models/double_sword.glb",
+        "model": "models/rune_blade.glb",
         "level": 5
     },
     {
@@ -116,7 +116,7 @@
         "sellPrice": 1050,
         "weaponType": "dual_blade",
         "damage": 112,
-        "model": "models/double_sword.glb",
+        "model": "models/rune_blade.glb",
         "level": 6
     },
     {
@@ -126,7 +126,7 @@
         "sellPrice": 60,
         "weaponType": "lance",
         "damage": 13,
-        "model": "models/lance.glb",
+        "model": "models/fierce_lance.glb",
         "level": 1
     },
     {
@@ -136,7 +136,7 @@
         "sellPrice": 110,
         "weaponType": "lance",
         "damage": 23,
-        "model": "models/lance.glb",
+        "model": "models/fierce_lance.glb",
         "level": 2
     },
     {
@@ -146,7 +146,7 @@
         "sellPrice": 190,
         "weaponType": "lance",
         "damage": 42,
-        "model": "models/lance.glb",
+        "model": "models/fierce_lance.glb",
         "level": 3
     },
     {
@@ -156,7 +156,7 @@
         "sellPrice": 370,
         "weaponType": "lance",
         "damage": 81,
-        "model": "models/lance.glb",
+        "model": "models/fierce_lance.glb",
         "level": 4
     },
     {
@@ -166,7 +166,7 @@
         "sellPrice": 590,
         "weaponType": "lance",
         "damage": 127,
-        "model": "models/lance.glb",
+        "model": "models/fierce_lance.glb",
         "level": 5
     },
     {
@@ -176,7 +176,7 @@
         "sellPrice": 840,
         "weaponType": "lance",
         "damage": 182,
-        "model": "models/lance.glb",
+        "model": "models/fierce_lance.glb",
         "level": 6
     },
     {
@@ -186,7 +186,7 @@
         "sellPrice": 90,
         "weaponType": "hammer",
         "damage": 14,
-        "model": "models/hammer.glb",
+        "model": "models/battle_hawk.glb",
         "level": 1
     },
     {
@@ -196,7 +196,7 @@
         "sellPrice": 160,
         "weaponType": "hammer",
         "damage": 25,
-        "model": "models/hammer.glb",
+        "model": "models/battle_hawk.glb",
         "level": 2
     },
     {
@@ -206,7 +206,7 @@
         "sellPrice": 290,
         "weaponType": "hammer",
         "damage": 45,
-        "model": "models/hammer.glb",
+        "model": "models/battle_hawk.glb",
         "level": 3
     },
     {
@@ -216,7 +216,7 @@
         "sellPrice": 560,
         "weaponType": "hammer",
         "damage": 87,
-        "model": "models/hammer.glb",
+        "model": "models/battle_hawk.glb",
         "level": 4
     },
     {
@@ -226,7 +226,7 @@
         "sellPrice": 880,
         "weaponType": "hammer",
         "damage": 137,
-        "model": "models/hammer.glb",
+        "model": "models/battle_hawk.glb",
         "level": 5
     },
     {
@@ -236,7 +236,7 @@
         "sellPrice": 1260,
         "weaponType": "hammer",
         "damage": 196,
-        "model": "models/hammer.glb",
+        "model": "models/battle_hawk.glb",
         "level": 6
     }
 ]

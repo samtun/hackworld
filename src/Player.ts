@@ -31,6 +31,7 @@ export class Player extends BaseMesh {
     currentWeaponType: WeaponType = WeaponType.SWORD;
     innerMesh?: THREE.Mesh;
     position: THREE.Vector3;
+    private rightHandBone?: THREE.Bone;
 
     // Scene and World references for items
     public scene: THREE.Scene;
@@ -197,28 +198,34 @@ export class Player extends BaseMesh {
             throw new Error("The default sword could not be loaded");
         }
 
-        // Initialize weapon visual
-        this.weapon = new Weapon(swordItem.model, swordItem.weaponType, swordItem.damage, scene, world);
+        // Visual Mesh and Bone references - must be done before weapon setup
+        this.mesh.traverse(obj => {
+            if (obj instanceof THREE.Mesh) {
+                this.innerMesh = obj;
+            }
+            if (obj instanceof THREE.Bone && obj.name === 'HandR') {
+                this.rightHandBone = obj;
+            }
+        });
+
+        if (!this.innerMesh) {
+            console.warn(
+                '[Player] No THREE.Mesh found in player model hierarchy; some visual effects may not render.'
+            );
+        }
+
+        if (!this.rightHandBone) {
+            console.warn('[Player] HandR bone not found in player model; weapon will not follow hand.');
+        }
+
+        // Initialize weapon visual (after bone references are set)
+        this.weapon = new Weapon(swordItem.model, swordItem.weaponType, swordItem.damage, world);
         this.setWeapon(swordItem);
 
         this.inventory.push(swordItem);
         // We manually equip it here to sync state without triggering full equip logic yet
         swordItem.isEquipped = true;
         this.currentWeaponType = swordItem.weaponType;
-
-        // Visual Mesh
-        this.mesh.traverse(obj => {
-            if (obj instanceof THREE.Mesh) {
-                this.innerMesh = obj;
-            }
-        });
-
-        if (!this.innerMesh) {
-            // Log a warning so missing effects are not silent failures.
-            console.warn(
-                '[Player] No THREE.Mesh found in player model hierarchy; some visual effects may not render.'
-            );
-        }
 
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
@@ -227,11 +234,9 @@ export class Player extends BaseMesh {
         const box = new THREE.Box3().setFromObject(this.mesh);
         const size = new THREE.Vector3();
         box.getSize(size);
-        const center = new THREE.Vector3();
-        box.getCenter(center);
 
-        const radius = size.x / 2;
-        const bodyHeight = size.y - radius;
+        const radius = 0.3;
+        const bodyHeight = 1.5;
         const cylinderShape = new CANNON.Cylinder(radius, radius, bodyHeight, 12);
 
         // Add base body collider
@@ -270,7 +275,7 @@ export class Player extends BaseMesh {
 
     public setWeapon(weaponItem: WeaponItem) {
         this.currentWeaponType = weaponItem.weaponType;
-        this.weapon.changeWeaponType(this.mesh, weaponItem.weaponType, weaponItem.damage);
+        this.weapon.changeWeaponType(this.rightHandBone ?? this.mesh, weaponItem.weaponType, weaponItem.damage);
     }
 
     equipCore(itemId: string) {
@@ -489,7 +494,7 @@ export class Player extends BaseMesh {
         // High priority: Attack
         if (this.weapon.isAttacking) {
             if (this.currentAction !== this.actions[ActionType.AttackOneHand]) {
-                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? ActionType.AttackTwoHand : ActionType.AttackOneHand, 0.1);
+                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? ActionType.AttackTwoHand : ActionType.AttackOneHand, 0.001);
             }
             return;
         }
@@ -670,7 +675,7 @@ export class Player extends BaseMesh {
         }
 
         // Weapon update & hit checks
-        this.weapon.update(dt, this.position, this.mesh.quaternion);
+        this.weapon.update(dt);
     }
 
     private handleInvulnerability(dt: number) {
