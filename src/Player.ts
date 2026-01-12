@@ -39,10 +39,6 @@ export class Player extends BaseMesh {
 
     private weaponRepository: WeaponRepository;
 
-    // Track enemies hit during current attack phase to prevent multiple hits
-    // For dual blade, this gets reset between phases to allow double-hitting
-    private enemiesHitThisPhase: Set<Enemy> = new Set();
-
     // Knockback strength
     private readonly KNOCKBACK_FORCE = 80;
 
@@ -220,6 +216,12 @@ export class Player extends BaseMesh {
 
         // Initialize weapon visual (after bone references are set)
         this.weapon = new Weapon(swordItem.model, swordItem.weaponType, swordItem.damage, world);
+        this.weapon.onHit = (e: any) => {
+            const entity = e.body.entity;
+            if (entity && entity instanceof Enemy) {
+                this.handleAttackHit(entity);
+            }
+        };
         this.setWeapon(swordItem);
 
         this.inventory.push(swordItem);
@@ -658,21 +660,7 @@ export class Player extends BaseMesh {
 
         // Immediate attack (requires fresh press and not charging)
         if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
-            if (this.weapon.attack(this.getWeaponRangeMultiplier())) {
-                this.enemiesHitThisPhase.clear();
-                if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
-                    this.weapon.onDamageFrame = () => this.enemiesHitThisPhase.clear();
-                }
-
-                if (this.weapon.body) {
-                    this.weapon.body.addEventListener('collide', (e: any) => {
-                        const entity = e.body.entity;
-                        if (entity && entity instanceof Enemy) {
-                            this.handleAttackHit(entity);
-                        }
-                    });
-                }
-            }
+            this.weapon.attack(this.getWeaponRangeMultiplier());
         }
 
         // Charging
@@ -684,7 +672,7 @@ export class Player extends BaseMesh {
         }
 
         // Weapon update & hit checks
-        this.weapon.update();
+        this.weapon.update(dt);
     }
 
     private handleInvulnerability(dt: number) {
@@ -743,22 +731,19 @@ export class Player extends BaseMesh {
     private handleAttackHit(enemy: Enemy) {
         if (enemy.isDead || enemy.isDying) return;
 
-        // Skip if we already hit this enemy during this attack phase
-        if (this.enemiesHitThisPhase.has(enemy)) return;
-
         const damage = this.getHitDamage();
         enemy.takeDamage(damage, this.body.position);
         console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
-
-        // Mark this enemy as hit for this attack phase
-        this.enemiesHitThisPhase.add(enemy);
     }
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
         console.log(`Player taking ${amount} damage. Timer: ${this.invulnerableTimer}`);
         if (this.invulnerableTimer > 0 || this.isDashing || this.isDead) return;
+
+        // Stop any ongoing attack
+        this.weapon.stopAttack();
 
         // Apply defense multiplier to reduce damage
         const defenseMultiplier = 1 - this.getDefenseMultiplier();

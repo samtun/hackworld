@@ -54,6 +54,14 @@ export class Weapon extends BaseMesh {
         }
     };
 
+    // Delay before attack hitbox becomes active (in seconds)
+    private static WEAPON_ATTACK_DELAYS: Record<WeaponType, number> = {
+        [WeaponType.SWORD]: 0.12,       // 120ms
+        [WeaponType.DUAL_BLADE]: 0.07, // 70ms
+        [WeaponType.LANCE]: 0.12,       // 120ms
+        [WeaponType.HAMMER]: 0.15      // 150ms
+    };
+
     // Hitbox configurations that roughly fit each weapon model
     private static WEAPON_HITBOX_CONFIGS: Record<WeaponType, WeaponHitboxConfig> = {
         [WeaponType.SWORD]: {
@@ -86,12 +94,18 @@ export class Weapon extends BaseMesh {
 
     private assetManager: AssetManager;
     onDamageFrame?: () => void; // Callback for when damage should be dealt
+    onHit?: (event: any) => void; // Callback for when weapon hits something
 
     // Physics bodies for attack hitboxes
     private physicsWorld?: CANNON.World;
 
     // Parent bone reference for world position calculations
     private parentBone?: THREE.Object3D;
+
+    // Attack delay tracking
+    private attackDelayTimer: number = 0;
+    private pendingRangeMultiplier: number = 1.0;
+    private hitboxActive: boolean = false;
 
     constructor(
         modelAsset: string,
@@ -133,8 +147,10 @@ export class Weapon extends BaseMesh {
         if (this.isAttacking) return false;
         this.isAttacking = true;
 
-        // Create attack hitbox collider with range multiplier
-        this.createAttackHitbox(rangeMultiplier);
+        // Store range multiplier and reset delay timer - hitbox will be created after delay
+        this.pendingRangeMultiplier = rangeMultiplier;
+        this.attackDelayTimer = 0;
+        this.hitboxActive = false;
 
         return true;
     }
@@ -164,6 +180,11 @@ export class Weapon extends BaseMesh {
         (this.body as any).isAttackHitbox = true;
         (this.body as any).weaponType = this.weaponType;
 
+        // Register collision callback if set
+        if (this.onHit) {
+            this.body.addEventListener('collide', this.onHit);
+        }
+
         this.physicsWorld.addBody(this.body);
     }
 
@@ -186,11 +207,23 @@ export class Weapon extends BaseMesh {
         this.body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);
     }
 
-    update() {
+    update(dt: number) {
         if (!this.isAttacking) return;
 
+        // Handle attack delay before activating hitbox
+        if (!this.hitboxActive) {
+            this.attackDelayTimer += dt;
+            const delay = Weapon.WEAPON_ATTACK_DELAYS[this.weaponType];
+            if (this.attackDelayTimer >= delay) {
+                this.createAttackHitbox(this.pendingRangeMultiplier);
+                this.hitboxActive = true;
+            }
+        }
+
         // Update attack hitbox position to follow the weapon (which follows the hand bone)
-        this.updateAttackHitbox();
+        if (this.hitboxActive) {
+            this.updateAttackHitbox();
+        }
     }
 
     /**
@@ -200,6 +233,7 @@ export class Weapon extends BaseMesh {
         if (!this.isAttacking) return;
 
         this.isAttacking = false;
+        this.hitboxActive = false;
 
         // Remove attack hitbox
         if (this.body && this.physicsWorld) {

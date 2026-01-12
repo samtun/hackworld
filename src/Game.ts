@@ -209,7 +209,7 @@ export class Game {
             this.lastTeleporterPosition.copy(this.player.body.position);
 
             // Snap camera
-            this.resetCameraPosition()
+            this.resetCameraPosition();
             this.currentScene = destination;
         });
     }
