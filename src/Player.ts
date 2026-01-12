@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { AssetManager } from './AssetManager';
 import { InputManager } from './InputManager';
 import { Weapon } from './items/weapons/Weapon';
 import { WeaponType } from './items/weapons/WeaponType';
@@ -11,6 +12,16 @@ import { ChipItem } from './items/chips/ChipItem';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { BaseMesh } from './BaseMesh';
 import { StatType } from './StatType';
+
+
+enum ActionType {
+    Idle = 'Idle',
+    Run = 'Run',
+    Jump = 'JumpUp',
+    AttackOneHand = 'AttackOneHand',
+    AttackTwoHand = 'AttackTwoHand',
+    TakeHit = "TakeHit"
+};
 
 export class Player extends BaseMesh {
     id: string;
@@ -62,6 +73,9 @@ export class Player extends BaseMesh {
     private readonly WALK_SPEED = 6;
     // Can jump onto 1m high platforms
     private readonly JUMP_FORCE = 6.6;
+
+    // Stun mechanic
+    private readonly STUN_TIME = 0.5;
 
     // Base Stats (without equipment modifiers or upgrades)
     private baseHp: number = 170;
@@ -160,6 +174,11 @@ export class Player extends BaseMesh {
     inventory: Item[] = [];
     money: number = 500; // Starting money
 
+    // Animations
+    private mixer!: THREE.AnimationMixer;
+    private actions: Record<string, THREE.AnimationAction> = {};
+    private currentAction: THREE.AnimationAction | null = null;
+
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
         super('models/main_character.glb');
         this.scene = scene;
@@ -168,6 +187,9 @@ export class Player extends BaseMesh {
         this.input = input;
         this.weaponRepository = WeaponRepository.Instance;
         this.position = position.clone() as any;
+
+        // Setup Animations
+        this.setupAnimations();
 
         // Initial weapon from repository (already cloned with unique ID)
         const swordItem = this.weaponRepository.getWeaponById('aegis_sword_alpha');
@@ -380,9 +402,123 @@ export class Player extends BaseMesh {
         return damage;
     }
 
+    private setupAnimations() {
+        // Clear BaseMesh mixer to avoid conflict
+        this.mixers = [];
+
+        this.mixer = new THREE.AnimationMixer(this.mesh);
+
+        const gltf = AssetManager.Instance.get('models/main_character.glb');
+        const animations = gltf.animations;
+
+        console.log(animations);
+        if (animations && animations.length > 0) {
+            // Helper to find animation by name
+            const getClip = (name: string) => animations.find(a => a.name === name);
+
+            const idleClip = getClip(ActionType.Idle);
+            const runClip = getClip(ActionType.Run);
+            const jumpClip = getClip(ActionType.Jump);
+            const takeHitClip = getClip(ActionType.TakeHit);
+            const attackOneHandClip = getClip(ActionType.AttackOneHand);
+            const attackTwoHandClip = getClip(ActionType.AttackTwoHand);
+            if (idleClip) {
+                const action = this.mixer.clipAction(idleClip);
+                this.actions[ActionType.Idle] = action;
+            }
+            if (runClip) {
+                const action = this.mixer.clipAction(runClip);
+                this.actions[ActionType.Run] = action;
+            }
+            if (jumpClip) {
+                let action = this.mixer.clipAction(jumpClip);
+                action.loop = THREE.LoopOnce;
+                action.timeScale = 1.3;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.Jump] = action;
+            }
+            if (takeHitClip) {
+                const action = this.mixer.clipAction(takeHitClip);
+                action.timeScale = 1.6;
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.TakeHit] = action;
+            }
+            if (attackOneHandClip) {
+                const action = this.mixer.clipAction(attackOneHandClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                // Speed up attack animation to match gameplay feel if needed
+                action.timeScale = 1.6;
+                this.actions[ActionType.AttackOneHand] = action;
+            }
+            if (attackTwoHandClip) {
+                const action = this.mixer.clipAction(attackTwoHandClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                // Speed up attack animation to match gameplay feel if needed
+                action.timeScale = 1.6;
+                this.actions[ActionType.AttackTwoHand] = action;
+            }
+        }
+
+        // Start Idle
+        this.fadeToAction(ActionType.Idle, 0.0);
+    }
+
+    private fadeToAction(actionType: ActionType, duration: number) {
+        const activeAction = this.actions[actionType];
+        const previousAction = this.currentAction;
+
+        if (previousAction !== activeAction && activeAction) {
+            if (previousAction) {
+                previousAction.fadeOut(duration);
+            }
+            activeAction.reset().fadeIn(duration).play();
+            this.currentAction = activeAction;
+        }
+    }
+
+    private updateAnimations() {
+        // Highest priority: Take Hit
+        const takeHitAction = this.actions[ActionType.TakeHit];
+        if (this.currentAction === takeHitAction && takeHitAction && takeHitAction.isRunning()) {
+            return;
+        }
+
+        // High priority: Attack
+        if (this.weapon.isAttacking) {
+            if (this.currentAction !== this.actions[ActionType.AttackOneHand]) {
+                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? ActionType.AttackTwoHand : ActionType.AttackOneHand, 0.1);
+            }
+            return;
+        }
+
+        // Jump / Fall
+        // Only trigger jump animation if strictly not grounded
+        if (!this.isGrounded) {
+            if (this.currentAction !== this.actions[ActionType.Jump]) {
+                this.fadeToAction(ActionType.Jump, 0.1);
+            }
+            return;
+        }
+
+        // Run / Idle
+        const isMoving = this.input.getMovementVector().length() > 0.1;
+        if (isMoving) {
+            this.fadeToAction(ActionType.Run, 0.2);
+        } else {
+            this.fadeToAction(ActionType.Idle, 0.2);
+        }
+    }
+
     update(dt: number, isNearInteractive: boolean = false) {
         // Skip all updates if player is dead
         if (this.isDead) return;
+
+        // Update animations
+        if (this.mixer) this.mixer.update(dt);
+        this.updateAnimations();
 
         // Handle dash and charging (these short-circuit the rest of the update)
         if (this.handleDash(dt)) return;
@@ -630,9 +766,12 @@ export class Player extends BaseMesh {
         // Apply brief invulnerability
         this.invulnerableTimer = 1.0; // 1 second invulnerability
 
+        // Trigger hit animation
+        this.fadeToAction(ActionType.TakeHit, 0.1);
+
         // Knockback: push player away from source horizontally and give small upward impulse
         if (sourcePos) {
-            this.stunTimer = 0.3; // 0.3 seconds stun
+            this.stunTimer = this.STUN_TIME;
             const knockDir = this.body.position.vsub(sourcePos);
             knockDir.y = 0;
             if (knockDir.length() > 0) {
