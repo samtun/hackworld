@@ -465,6 +465,15 @@ export class Player extends BaseMesh {
                 action.timeScale = 1.6;
                 this.actions[ActionType.AttackTwoHand] = action;
             }
+
+            // Listen for attack animation finished events to stop weapon attack
+            this.mixer.addEventListener('finished', (e) => {
+                const finishedAction = e.action;
+                if (finishedAction === this.actions[ActionType.AttackOneHand] ||
+                    finishedAction === this.actions[ActionType.AttackTwoHand]) {
+                    this.weapon.stopAttack();
+                }
+            });
         }
 
         // Start Idle
@@ -675,7 +684,7 @@ export class Player extends BaseMesh {
         }
 
         // Weapon update & hit checks
-        this.weapon.update(dt);
+        this.weapon.update();
     }
 
     private handleInvulnerability(dt: number) {

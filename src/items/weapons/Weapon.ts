@@ -57,22 +57,22 @@ export class Weapon extends BaseMesh {
     // Hitbox configurations that roughly fit each weapon model
     private static WEAPON_HITBOX_CONFIGS: Record<WeaponType, WeaponHitboxConfig> = {
         [WeaponType.SWORD]: {
-            radius: 0.22,
+            radius: 0.42,
             height: 1.5,
             offset: new THREE.Vector3(0, 0.75, 0)
         },
         [WeaponType.DUAL_BLADE]: {
-            radius: 0.17,
+            radius: 0.37,
             height: 1.3,
             offset: new THREE.Vector3(0, 0.65, 0)
         },
         [WeaponType.LANCE]: {
-            radius: 0.12,
+            radius: 0.32,
             height: 2.2,
             offset: new THREE.Vector3(0, 1.1, 0)
         },
         [WeaponType.HAMMER]: {
-            radius: 0.3,
+            radius: 0.5,
             height: 1.5,
             offset: new THREE.Vector3(0, 0.75, 0)
         }
@@ -80,13 +80,11 @@ export class Weapon extends BaseMesh {
 
     body?: CANNON.Body;
     isAttacking: boolean = false;
-    private attackTimer: number = 0;
     weaponType: WeaponType;
     stats: WeaponStats;
     damage: number; // Actual damage value for this weapon instance
 
     private assetManager: AssetManager;
-    private attackPhase: number = 0; // For multi-phase attacks like dual blade
     onDamageFrame?: () => void; // Callback for when damage should be dealt
 
     // Physics bodies for attack hitboxes
@@ -134,8 +132,6 @@ export class Weapon extends BaseMesh {
     attack(rangeMultiplier: number = 1.0): boolean {
         if (this.isAttacking) return false;
         this.isAttacking = true;
-        this.attackTimer = 0;
-        this.attackPhase = 0;
 
         // Create attack hitbox collider with range multiplier
         this.createAttackHitbox(rangeMultiplier);
@@ -190,30 +186,25 @@ export class Weapon extends BaseMesh {
         this.body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);
     }
 
-    update(dt: number) {
+    update() {
         if (!this.isAttacking) return;
-
-        this.attackTimer += dt;
-        const progress = this.attackTimer / this.stats.attackSpeed;
-
-        if (progress >= 1) {
-            this.isAttacking = false;
-
-            // Remove attack hitbox
-            if (this.body && this.physicsWorld) {
-                this.physicsWorld.removeBody(this.body);
-            }
-            return;
-        }
-
-        // Trigger damage callback for dual blade at mid-attack
-        if (this.weaponType === WeaponType.DUAL_BLADE && progress > 0.4 && progress < 0.6 && this.attackPhase === 0) {
-            this.attackPhase = 1;
-            if (this.onDamageFrame) this.onDamageFrame();
-        }
 
         // Update attack hitbox position to follow the weapon (which follows the hand bone)
         this.updateAttackHitbox();
+    }
+
+    /**
+     * Stop the current attack. Called by Player when attack animation ends.
+     */
+    stopAttack() {
+        if (!this.isAttacking) return;
+
+        this.isAttacking = false;
+
+        // Remove attack hitbox
+        if (this.body && this.physicsWorld) {
+            this.physicsWorld.removeBody(this.body);
+        }
     }
 
     changeWeaponType(parent: THREE.Object3D, newType: WeaponType, newDamage: number) {
