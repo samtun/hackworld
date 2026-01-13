@@ -25,6 +25,7 @@ enum ActionType {
     Death = "Death",
     StartCharge = "StartCharge",
     Dash = "Dash",
+    PowerUp = "PowerUp"
 };
 
 export class Player extends BaseMesh {
@@ -72,11 +73,15 @@ export class Player extends BaseMesh {
 
     // Movement speed constant
     private readonly WALK_SPEED = 6;
+
     // Can jump onto 1m high platforms
     private readonly JUMP_FORCE = 10;
 
     // Stun mechanic
     private readonly STUN_TIME = 0.5;
+
+    // Invulnerability duration
+    private readonly HIT_INVULNERABILITY: number = 1.0;
 
     // Base Stats (without equipment modifiers or upgrades)
     private baseHp: number = 170;
@@ -156,6 +161,11 @@ export class Player extends BaseMesh {
     private levelUpParticleTimer: number = 0;
     private readonly LEVEL_UP_PARTICLE_LIFETIME: number = 0.6; // 0.6 seconds for the explosion
 
+    // Level up shockwave timing
+    private readonly LEVEL_UP_SHOCKWAVE_DELAY: number = 0.4;
+    private levelUpShockwaveTimer: number = 0;
+    private shockwavePending: boolean = false;
+
     // Ground contact tracking
     private isGrounded: boolean = false;
     private stunTimer: number = 0;
@@ -164,6 +174,9 @@ export class Player extends BaseMesh {
     // Death state
     isDead: boolean = false;
     private deathCallback?: () => void;
+
+    // Level up animation state
+    private isLevelingUp: boolean = false;
 
     // Callback for spawning damage numbers
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
@@ -437,6 +450,7 @@ export class Player extends BaseMesh {
             const startChargeClip = getClip(ActionType.StartCharge);
             const dashClip = getClip(ActionType.Dash);
             const deathClip = getClip(ActionType.Death);
+            const powerUpClip = getClip(ActionType.PowerUp);
 
             if (idleClip) {
                 const action = this.mixer.clipAction(idleClip);
@@ -498,13 +512,23 @@ export class Player extends BaseMesh {
                 action.clampWhenFinished = true;
                 this.actions[ActionType.Death] = action;
             }
+            if (powerUpClip) {
+                const action = this.mixer.clipAction(powerUpClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.PowerUp] = action;
+            }
 
-            // Listen for attack animation finished events to stop weapon attack
+            // Listen for animation finished events
             this.mixer.addEventListener('finished', (e) => {
                 const finishedAction = e.action;
                 if (finishedAction === this.actions[ActionType.AttackOneHanded] ||
                     finishedAction === this.actions[ActionType.AttackTwoHanded]) {
                     this.weapon.stopAttack();
+                }
+                // Handle PowerUp animation completion
+                if (finishedAction === this.actions[ActionType.PowerUp]) {
+                    this.isLevelingUp = false;
                 }
             });
         }
@@ -532,7 +556,13 @@ export class Player extends BaseMesh {
             return;
         }
 
-        // Highest priority: Take Hit
+        // Highest priority: Level up PowerUp animation
+        const powerUpAction = this.actions[ActionType.PowerUp];
+        if (this.isLevelingUp && powerUpAction && powerUpAction.isRunning()) {
+            return;
+        }
+
+        // High priority: Take Hit
         const takeHitAction = this.actions[ActionType.TakeHit];
         if (this.currentAction === takeHitAction && takeHitAction && takeHitAction.isRunning()) {
             return;
@@ -589,6 +619,9 @@ export class Player extends BaseMesh {
         // Invulnerability flash and timers
         this.handleInvulnerability(dt)
 
+        // Update level-up shockwave timer
+        this.updateLevelUpShockwave(dt);
+
         // Update level-up particles and input state
         this.updateLevelUpParticles(dt);
         this.input.updateState();
@@ -636,6 +669,13 @@ export class Player extends BaseMesh {
 
         if (this.jumpCooldownTimer > 0) {
             this.jumpCooldownTimer -= dt;
+        }
+
+        // Block movement during level-up animation
+        if (this.isLevelingUp) {
+            this.body.velocity.x = 0;
+            this.body.velocity.z = 0;
+            return;
         }
 
         if (this.stunTimer > 0) {
@@ -779,7 +819,7 @@ export class Player extends BaseMesh {
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
         console.log(`Player taking ${amount} damage. Timer: ${this.invulnerableTimer}`);
-        if (this.invulnerableTimer > 0 || this.isDashing || this.isDead) return;
+        if (this.invulnerableTimer > 0 || this.isLevelingUp || this.isDashing || this.isDead) return;
 
         // Stop any ongoing attack
         this.weapon.stopAttack();
@@ -802,7 +842,7 @@ export class Player extends BaseMesh {
         }
 
         // Apply brief invulnerability
-        this.invulnerableTimer = 1.0; // 1 second invulnerability
+        this.invulnerableTimer = this.HIT_INVULNERABILITY; // 1 second invulnerability
 
         // Trigger hit animation
         this.fadeToAction(ActionType.TakeHit, 0.1);
@@ -968,13 +1008,13 @@ export class Player extends BaseMesh {
 
     private createLevelUpParticles() {
         // Create a burst of yellow particles that explode outward from the player
-        const particleCount = 30;
-        // Create shared geometry for all particles
-        const particleGeometry = new THREE.BoxGeometry(0.15, 0.15, 0.15);
+        const particleCount = 100;
+
+        // Create shared material for all particles
         const particleMaterial = new THREE.MeshStandardMaterial({
             color: 0xffff00, // Yellow
             emissive: 0xffff00,
-            emissiveIntensity: 1.5, // Increased for brighter particles
+            emissiveIntensity: 1, // Increased for brighter particles
             transparent: true,
             opacity: 1.0
         });
@@ -986,12 +1026,15 @@ export class Player extends BaseMesh {
             const phi = Math.random() * Math.PI; // Polar angle (0 to π)
 
             // Convert to Cartesian coordinates for velocity
-            const speed = 3 + Math.random() * 2; // Random speed between 3-5 units/sec
+            const randomSeed = Math.random();
+            const speed = 8 + randomSeed; // Random speed between 8-9 units/sec
             const vx = speed * Math.sin(phi) * Math.cos(theta);
-            const vy = speed * Math.sin(phi) * Math.sin(theta);
+            const vy = speed * Math.sin(phi) * Math.sin(theta) * 0.2 + 5;
             const vz = speed * Math.cos(phi);
 
             // Clone material for each particle (needed for independent opacity during fade)
+            const particleSize = 0.075 + (1 - randomSeed) * 0.1;
+            const particleGeometry = new THREE.SphereGeometry(particleSize, 12, 12).scale(1, 0.5, 1);
             const particle = new THREE.Mesh(particleGeometry, particleMaterial.clone());
             particle.position.copy(this.mesh.position);
             particle.position.y += 0.5; // Start at player center
@@ -1130,13 +1173,48 @@ export class Player extends BaseMesh {
         // Recalculate stats with level multiplier
         this.recalculateStats();
 
-        // Trigger level up particle explosion
-        this.createLevelUpParticles();
-
         // Heal player up to max HP and TP
         this.heal(this.maxHp, this.maxTp);
 
+        // Start level-up animation (movement blocked until animation completes)
+        this.isLevelingUp = true;
+        this.fadeToAction(ActionType.PowerUp, 0.1);
+
+        // Start shockwave timer
+        this.shockwavePending = true;
+        this.levelUpShockwaveTimer = 0;
+
         console.log(`Level Up! Now level ${this.level}. Next level requires ${this.expRequired} EXP. ${this.statPointsAvailable} stat points available.`);
+    }
+
+    /**
+     * Update level-up shockwave timer and trigger shockwave after delay
+     */
+    private updateLevelUpShockwave(dt: number): void {
+        if (!this.shockwavePending) return;
+
+        this.levelUpShockwaveTimer += dt;
+        if (this.levelUpShockwaveTimer >= this.LEVEL_UP_SHOCKWAVE_DELAY) {
+            this.executeLevelUpShockwave();
+            this.createLevelUpParticles();
+            this.shockwavePending = false;
+        }
+    }
+
+    /**
+     * Execute shockwave attack hitting all nearby enemies
+     */
+    private executeLevelUpShockwave(): void {
+        const damage = this.getHitDamage();
+
+        // Find all enemies in the world and damage them
+        for (const body of this.world.bodies) {
+            const entity = (body as any).entity;
+            if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
+                entity.takeDamage(damage, this.body.position);
+                console.log(`Level-up shockwave hit enemy for ${damage} damage`);
+            }
+        }
     }
 
     /**
