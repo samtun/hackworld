@@ -33,12 +33,17 @@ export class Enemy extends BaseMesh {
 
     private materials: THREE.Material[] = [];
     private player: Player;
+    protected scene: THREE.Scene;
+    protected world: CANNON.World;
 
     // Callback for spawning damage numbers
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
         super('models/monster.glb');
+
+        this.scene = scene;
+        this.world = world;
 
         // Visual
         scene.add(this.mesh);
@@ -248,5 +253,14 @@ export class Enemy extends BaseMesh {
      */
     getDeathPosition(): CANNON.Vec3 {
         return this.body.position.clone();
+    }
+
+    /**
+     * Clean up enemy resources and remove from scene/world
+     */
+    cleanup(): void {
+        this.scene.remove(this.mesh);
+        this.world.removeBody(this.body);
+        this.disposeMesh();
     }
 }

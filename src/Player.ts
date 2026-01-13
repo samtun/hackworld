@@ -538,7 +538,6 @@ export class Player extends BaseMesh {
     }
 
     private fadeToAction(actionType: ActionType, duration: number) {
-        console.log(`Fading to action: ${actionType}`);
         const activeAction = this.actions[actionType];
         const previousAction = this.currentAction;
 
@@ -722,7 +721,6 @@ export class Player extends BaseMesh {
 
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
                 this.body.velocity.y = this.JUMP_FORCE;
-                console.warn('Player jumped');
                 this.jumpCooldownTimer = 1.0;
             }
         } else {
