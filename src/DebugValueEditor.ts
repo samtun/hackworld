@@ -16,6 +16,11 @@ export class DebugValueEditor {
     private isExpanded: boolean = false;
     isVisible: boolean = false;
 
+    // Collider visibility
+    collidersVisible: boolean = true;
+    onCollidersToggle?: (visible: boolean) => void;
+    private colliderToggleButton?: HTMLButtonElement;
+
     // Track input elements for updating
     private inputElements: Map<string, HTMLInputElement> = new Map();
 
@@ -101,6 +106,18 @@ export class DebugValueEditor {
         title.style.paddingBottom = '10px';
         panel.appendChild(title);
 
+        // Collider toggle button at the top
+        this.colliderToggleButton = this.createButton('Colliders: ON', () => {
+            this.collidersVisible = !this.collidersVisible;
+            this.updateColliderButtonText();
+            if (this.onCollidersToggle) {
+                this.onCollidersToggle(this.collidersVisible);
+            }
+        });
+        this.colliderToggleButton.style.marginBottom = '15px';
+        this.colliderToggleButton.style.backgroundColor = '#4a4';
+        panel.appendChild(this.colliderToggleButton);
+
         // Stats Section - using regular grid without auto-flow for precise placement
         const statsSection = this.createSection('Player Stats');
         const statsContainer = document.createElement('div');
@@ -158,7 +175,7 @@ export class DebugValueEditor {
         statsContainer.appendChild(xDataMoneyRow);
 
         statsSection.appendChild(statsContainer);
-        
+
         // Add Level Up button
         const levelUpButton = this.createButton('Level Up', () => {
             if (this.player) {
@@ -169,7 +186,7 @@ export class DebugValueEditor {
         });
         levelUpButton.style.marginTop = '10px';
         statsSection.appendChild(levelUpButton);
-        
+
         panel.appendChild(statsSection);
 
         // Weapon Tech Section with two-column layout
@@ -547,6 +564,13 @@ export class DebugValueEditor {
     show(): void {
         this.isVisible = true;
         this.container.style.display = 'block';
+
+        // Enable colliders by default when showing
+        this.collidersVisible = true;
+        this.updateColliderButtonText();
+        if (this.onCollidersToggle) {
+            this.onCollidersToggle(true);
+        }
     }
 
     hide(): void {
@@ -555,6 +579,20 @@ export class DebugValueEditor {
         this.container.style.display = 'none';
         this.contentPanel.style.display = 'none';
         this.toggleButton.innerHTML = '▼';
+
+        // Hide colliders when hiding editor
+        this.collidersVisible = false;
+        this.updateColliderButtonText();
+        if (this.onCollidersToggle) {
+            this.onCollidersToggle(false);
+        }
+    }
+
+    private updateColliderButtonText(): void {
+        if (this.colliderToggleButton) {
+            this.colliderToggleButton.textContent = `Colliders: ${this.collidersVisible ? 'ON' : 'OFF'}`;
+            this.colliderToggleButton.style.backgroundColor = this.collidersVisible ? '#4a4' : '#666';
+        }
     }
 
     update(player: Player): void {

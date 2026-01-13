@@ -139,14 +139,18 @@ export class Game {
             // Create debug value editor
             this.debugValueEditor = new DebugValueEditor();
 
+            // Subscribe to collider toggle from debug editor
+            this.debugValueEditor.onCollidersToggle = (visible: boolean) => {
+                this.debugMeshes.forEach(mesh => {
+                    mesh.visible = visible;
+                });
+            };
+
             window.addEventListener('keydown', (e) => {
                 if (e.code === 'F8') {
                     this.debugMode = !this.debugMode;
-                    this.debugMeshes.forEach(mesh => {
-                        mesh.visible = this.debugMode;
-                    });
 
-                    // Toggle debug value editor visibility
+                    // Toggle debug value editor visibility (colliders handled by editor callback)
                     if (this.debugMode) {
                         this.debugValueEditor?.show();
                     } else {
@@ -358,9 +362,13 @@ export class Game {
             const isR3Pressed = this.input.isR3Pressed();
             if (isR3Pressed && !this.wasR3Pressed) {
                 this.debugMode = !this.debugMode;
-                this.debugMeshes.forEach(mesh => {
-                    mesh.visible = this.debugMode;
-                });
+
+                // Toggle debug value editor visibility (colliders handled by editor callback)
+                if (this.debugMode) {
+                    this.debugValueEditor?.show();
+                } else {
+                    this.debugValueEditor?.hide();
+                }
 
                 console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'} (via R3 button)`);
             }
