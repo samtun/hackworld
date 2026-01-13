@@ -69,7 +69,7 @@ export class Player extends BaseMesh {
     // Movement speed constant
     private readonly WALK_SPEED = 6;
     // Can jump onto 1m high platforms
-    private readonly JUMP_FORCE = 6.6;
+    private readonly JUMP_FORCE = 10;
 
     // Stun mechanic
     private readonly STUN_TIME = 0.5;

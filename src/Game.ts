@@ -98,7 +98,7 @@ export class Game {
 
         // Setup Physics
         this.physicsWorld = new CANNON.World();
-        this.physicsWorld.gravity.set(0, -9.82, 0);
+        this.physicsWorld.gravity.set(0, -25, 0); // Stronger gravity for snappier gameplay feel
 
         // Create a slippery material (friction = 0)
         this.defaultMaterial = new CANNON.Material('default');
@@ -263,7 +263,7 @@ export class Game {
     }
 
     private resetCameraPosition() {
-        this.camera.position.copy(this.cameraOffset.add(this.player.position));
+        this.camera.position.copy(this.cameraOffset.clone().add(this.player.position));
     }
 
     /**
