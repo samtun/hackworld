@@ -16,11 +16,15 @@ import { StatType } from './StatType';
 
 enum ActionType {
     Idle = 'Idle',
-    Run = 'Run',
-    Jump = 'JumpUp',
-    AttackOneHand = 'AttackOneHand',
-    AttackTwoHand = 'AttackTwoHand',
-    TakeHit = "TakeHit"
+    RunOneHanded = 'RunOneHanded',
+    RunTwoHanded = "RunTwoHanded",
+    Jump = 'Jump',
+    AttackOneHanded = 'AttackOneHanded',
+    AttackTwoHanded = 'AttackTwoHanded',
+    TakeHit = "TakeHit",
+    Death = "Death",
+    StartCharge = "StartCharge",
+    Dash = "Dash",
 };
 
 export class Player extends BaseMesh {
@@ -424,18 +428,27 @@ export class Player extends BaseMesh {
             const getClip = (name: string) => animations.find(a => a.name === name);
 
             const idleClip = getClip(ActionType.Idle);
-            const runClip = getClip(ActionType.Run);
+            const runOneHandedClip = getClip(ActionType.RunOneHanded);
+            const runTwoHandedClip = getClip(ActionType.RunTwoHanded);
             const jumpClip = getClip(ActionType.Jump);
             const takeHitClip = getClip(ActionType.TakeHit);
-            const attackOneHandClip = getClip(ActionType.AttackOneHand);
-            const attackTwoHandClip = getClip(ActionType.AttackTwoHand);
+            const attackOneHandClip = getClip(ActionType.AttackOneHanded);
+            const attackTwoHandClip = getClip(ActionType.AttackTwoHanded);
+            const startChargeClip = getClip(ActionType.StartCharge);
+            const dashClip = getClip(ActionType.Dash);
+            const deathClip = getClip(ActionType.Death);
+
             if (idleClip) {
                 const action = this.mixer.clipAction(idleClip);
                 this.actions[ActionType.Idle] = action;
             }
-            if (runClip) {
-                const action = this.mixer.clipAction(runClip);
-                this.actions[ActionType.Run] = action;
+            if (runOneHandedClip) {
+                const action = this.mixer.clipAction(runOneHandedClip);
+                this.actions[ActionType.RunOneHanded] = action;
+            }
+            if (runTwoHandedClip) {
+                const action = this.mixer.clipAction(runTwoHandedClip);
+                this.actions[ActionType.RunTwoHanded] = action;
             }
             if (jumpClip) {
                 let action = this.mixer.clipAction(jumpClip);
@@ -451,13 +464,25 @@ export class Player extends BaseMesh {
                 action.clampWhenFinished = true;
                 this.actions[ActionType.TakeHit] = action;
             }
+            if (startChargeClip) {
+                const action = this.mixer.clipAction(startChargeClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.StartCharge] = action;
+            }
+            if (dashClip) {
+                const action = this.mixer.clipAction(dashClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.Dash] = action;
+            }
             if (attackOneHandClip) {
                 const action = this.mixer.clipAction(attackOneHandClip);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
                 // Speed up attack animation to match gameplay feel if needed
                 action.timeScale = 1.6;
-                this.actions[ActionType.AttackOneHand] = action;
+                this.actions[ActionType.AttackOneHanded] = action;
             }
             if (attackTwoHandClip) {
                 const action = this.mixer.clipAction(attackTwoHandClip);
@@ -465,14 +490,20 @@ export class Player extends BaseMesh {
                 action.clampWhenFinished = true;
                 // Speed up attack animation to match gameplay feel if needed
                 action.timeScale = 1.6;
-                this.actions[ActionType.AttackTwoHand] = action;
+                this.actions[ActionType.AttackTwoHanded] = action;
+            }
+            if (deathClip) {
+                const action = this.mixer.clipAction(deathClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.Death] = action;
             }
 
             // Listen for attack animation finished events to stop weapon attack
             this.mixer.addEventListener('finished', (e) => {
                 const finishedAction = e.action;
-                if (finishedAction === this.actions[ActionType.AttackOneHand] ||
-                    finishedAction === this.actions[ActionType.AttackTwoHand]) {
+                if (finishedAction === this.actions[ActionType.AttackOneHanded] ||
+                    finishedAction === this.actions[ActionType.AttackTwoHanded]) {
                     this.weapon.stopAttack();
                 }
             });
@@ -483,6 +514,7 @@ export class Player extends BaseMesh {
     }
 
     private fadeToAction(actionType: ActionType, duration: number) {
+        console.log(`Fading to action: ${actionType}`);
         const activeAction = this.actions[actionType];
         const previousAction = this.currentAction;
 
@@ -496,6 +528,10 @@ export class Player extends BaseMesh {
     }
 
     private updateAnimations() {
+        if (this.isDead) {
+            return;
+        }
+
         // Highest priority: Take Hit
         const takeHitAction = this.actions[ActionType.TakeHit];
         if (this.currentAction === takeHitAction && takeHitAction && takeHitAction.isRunning()) {
@@ -504,8 +540,8 @@ export class Player extends BaseMesh {
 
         // High priority: Attack
         if (this.weapon.isAttacking) {
-            if (this.currentAction !== this.actions[ActionType.AttackOneHand]) {
-                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? ActionType.AttackTwoHand : ActionType.AttackOneHand, 0.001);
+            if (this.currentAction !== this.actions[ActionType.AttackOneHanded]) {
+                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? ActionType.AttackTwoHanded : ActionType.AttackOneHanded, 0.001);
             }
             return;
         }
@@ -522,19 +558,19 @@ export class Player extends BaseMesh {
         // Run / Idle
         const isMoving = this.input.getMovementVector().length() > 0.1;
         if (isMoving) {
-            this.fadeToAction(ActionType.Run, 0.2);
-        } else {
+            const action = this.weapon.weaponType !== WeaponType.HAMMER ? ActionType.RunOneHanded : ActionType.RunTwoHanded;
+            this.fadeToAction(action, 0.2);
+        } else if (!this.isChargingAttack) {
             this.fadeToAction(ActionType.Idle, 0.2);
         }
     }
 
     update(dt: number, isNearInteractive: boolean = false) {
-        // Skip all updates if player is dead
-        if (this.isDead) return;
-
         // Update animations
         if (this.mixer) this.mixer.update(dt);
         this.updateAnimations();
+
+        if (this.isDead) return;
 
         // Handle dash and charging (these short-circuit the rest of the update)
         if (this.handleDash(dt)) return;
@@ -560,6 +596,7 @@ export class Player extends BaseMesh {
 
     private handleDash(dt: number): boolean {
         if (!this.isDashing) return false;
+        this.fadeToAction(ActionType.Dash, 0.0);
         this.dashTimer += dt;
         this.body.velocity.x = this.dashDirection.x * this.DASH_SPEED;
         this.body.velocity.z = this.dashDirection.z * this.DASH_SPEED;
@@ -574,6 +611,8 @@ export class Player extends BaseMesh {
 
     private handleCharging(dt: number): boolean {
         if (!this.isChargingAttack) return false;
+
+        this.fadeToAction(ActionType.StartCharge, 0.1);
         this.chargeTimer += dt;
         this.invulnerableTimer = 0; // allow damage while charging
         this.updateChargeParticles();
@@ -666,7 +705,9 @@ export class Player extends BaseMesh {
         // Charging
         if (this.input.isAttackHeld() && !this.isChargingAttack) {
             this.chargeDelayTimer += dt;
-            if (this.chargeDelayTimer >= this.CHARGE_DELAY && !this.weapon.isAttacking) this.startChargeAttack();
+            if (this.chargeDelayTimer >= this.CHARGE_DELAY && !this.weapon.isAttacking) {
+                this.startChargeAttack();
+            }
         } else if (!this.input.isAttackHeld()) {
             this.chargeDelayTimer = 0;
         }
@@ -679,14 +720,12 @@ export class Player extends BaseMesh {
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= dt;
             if (Math.floor(this.invulnerableTimer * 10) % 2 === 0) {
-                (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 0.5;
-                (this.innerMesh?.material as THREE.MeshStandardMaterial).transparent = true;
+                (this.innerMesh?.material as THREE.MeshStandardMaterial).color = new THREE.Color(0x888888);
             } else {
-                (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 1.0;
+                (this.innerMesh?.material as THREE.MeshStandardMaterial).color = new THREE.Color(0xffffff);
             }
         } else {
-            (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 1.0;
-            (this.innerMesh?.material as THREE.MeshStandardMaterial).transparent = false;
+            (this.innerMesh?.material as THREE.MeshStandardMaterial).color = new THREE.Color(0xffffff);
         }
     }
 
@@ -792,10 +831,7 @@ export class Player extends BaseMesh {
         this.isDead = true;
         console.log('Player died');
 
-        // TODO: Add death animation here (placeholder for future implementation)
-
-        // Hide player mesh
-        this.mesh.visible = false;
+        this.fadeToAction(ActionType.Death, 0.1);
 
         // Trigger death callback if set
         if (this.deathCallback) {
@@ -822,9 +858,6 @@ export class Player extends BaseMesh {
         // Reset position and velocity
         this.body.position.copy(position);
         this.body.velocity.set(0, 0, 0);
-
-        // Make player visible again
-        this.mesh.visible = true;
 
         console.log('Player respawned at', position);
     }

@@ -20,7 +20,6 @@ export interface WeaponStats {
 interface WeaponHitboxConfig {
     radius: number; // Radius of the weapon collider
     height: number; // Height of the weapon collider
-    offset: THREE.Vector3; // Offset from weapon origin to position the hitbox correctly
 }
 
 export class Weapon extends BaseMesh {
@@ -67,22 +66,18 @@ export class Weapon extends BaseMesh {
         [WeaponType.SWORD]: {
             radius: 0.42,
             height: 1.5,
-            offset: new THREE.Vector3(0, 0.75, 0)
         },
         [WeaponType.DUAL_BLADE]: {
             radius: 0.37,
             height: 1.3,
-            offset: new THREE.Vector3(0, 0.65, 0)
         },
         [WeaponType.LANCE]: {
             radius: 0.32,
             height: 2.2,
-            offset: new THREE.Vector3(0, 1.1, 0)
         },
         [WeaponType.HAMMER]: {
             radius: 0.5,
-            height: 1.5,
-            offset: new THREE.Vector3(0, 0.75, 0)
+            height: 1.65,
         }
     };
 
@@ -199,7 +194,8 @@ export class Weapon extends BaseMesh {
 
         // Apply the weapon-specific offset in local space, then transform to world
         const config = Weapon.WEAPON_HITBOX_CONFIGS[this.weaponType];
-        const offset = config.offset.clone().applyQuaternion(worldQuat);
+        const yOffset = config.height / 2; // Center the hitbox on the weapon
+        const offset = new THREE.Vector3(0, yOffset, 0).applyQuaternion(worldQuat);
         worldPos.add(offset);
 
         // Update the physics body position and rotation

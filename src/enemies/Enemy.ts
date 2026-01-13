@@ -22,6 +22,7 @@ export class Enemy extends BaseMesh {
     itemDropChance: number = 0.04;
     xDataDropChance: number = 0.02;
     expAmount: number = 10; // EXP granted on defeat
+    damage: number = 10;
 
     // Animation
     isAttacking: boolean = false;
@@ -108,8 +109,6 @@ export class Enemy extends BaseMesh {
 
         // Sync mesh with body
         this.mesh.position.copy(this.body.position as any);
-        // We handle rotation manually for AI facing
-        // this.mesh.quaternion.copy(this.body.quaternion as any);
 
         // Flash Effect
         if (this.flashTimer > 0) {
@@ -133,6 +132,13 @@ export class Enemy extends BaseMesh {
         }
 
         // AI Logic
+        if (this.player.isDead) {
+            // Idle friction
+            this.body.velocity.x *= 0.9;
+            this.body.velocity.z *= 0.9;
+            return;
+        }
+
         const playerPos = this.player.body.position;
         const myPos = this.body.position;
 
@@ -192,7 +198,7 @@ export class Enemy extends BaseMesh {
         this.attackAnimTimer = 0;
 
         console.log("Enemy attacks player!");
-        player.takeDamage(10, this.body.position);
+        player.takeDamage(this.damage, this.body.position);
     }
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
