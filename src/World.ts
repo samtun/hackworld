@@ -201,8 +201,7 @@ export class World {
                     this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, enemy, player);
                 }
 
-                this.scene.remove(enemy.mesh);
-                this.physicsWorld.removeBody(enemy.body);
+                enemy.cleanup();
                 this.currentStage.enemies.splice(i, 1);
             }
         }

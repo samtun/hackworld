@@ -43,8 +43,6 @@ export class Game {
     playerRegistry!: PlayerRegistry;
 
     clock!: THREE.Clock;
-    debugOutputFrequency: number = 1
-    debugOutputDelta: number = 0
     currentScene: string = 'startScreen';
 
     // Debug
@@ -586,7 +584,7 @@ export class Game {
 
         // Update debug value editor if visible
         if (this.debugMode && this.debugValueEditor) {
-            this.debugValueEditor.update(this.player);
+            this.debugValueEditor.update(this.player, dt);
         }
 
         // Camera Follow
@@ -625,18 +623,7 @@ export class Game {
             this.wasJustInteracted = false;
         }
 
-        // Handle extra debug outputs
-        if (this.debugMode) {
-            if (this.debugOutputDelta >= this.debugOutputFrequency) {
-                console.log("Player position: " + this.player.body.position);
-                this.debugOutputDelta = 0;
-            } else {
-                this.debugOutputDelta += dt;
-            }
-        }
-
         this.wasSelectPressed = isSelectPressed;
-
         this.renderer.render(this.scene, this.camera);
     }
 }
