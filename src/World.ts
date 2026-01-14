@@ -83,12 +83,53 @@ export class World {
                 uniform float u_time;
                 uniform vec3 u_cameraPosition;
 
+                // 2D Random
+                float random (in vec2 st) {
+                    return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
+                }
+
+                // 2D Noise based on Morgan McGuire @morgan3d
+                // https://www.shadertoy.com/view/4dS3Wd
+                float noise (in vec2 st) {
+                    vec2 i = floor(st);
+                    vec2 f = fract(st);
+
+                    // Four corners in 2D of a tile
+                    float a = random(i);
+                    float b = random(i + vec2(1.0, 0.0));
+                    float c = random(i + vec2(0.0, 1.0));
+                    float d = random(i + vec2(1.0, 1.0));
+
+                    vec2 u = f*f*(3.0-2.0*f);
+
+                    return mix(a, b, u.x) +
+                            (c - a)* u.y * (1.0 - u.x) +
+                            (d - b) * u.x * u.y;
+                }
+
+                #define NUM_OCTAVES 5
+
+                float fbm ( in vec2 _st) {
+                    float v = 0.0;
+                    float a = 0.5;
+                    vec2 shift = vec2(100.0);
+                    // Rotate to reduce axial bias
+                    mat2 rot = mat2(cos(0.5), sin(0.5),
+                                    -sin(0.5), cos(0.50));
+                    for (int i = 0; i < NUM_OCTAVES; ++i) {
+                        v += a * noise(_st);
+                        _st = rot * _st * 2.0 + shift;
+                        a *= 0.5;
+                    }
+                    return v;
+                }
+
                 void main() {
                     // Increase the multiplier to make the grid denser on the plane
                     vec2 uv = vUv * 140.0; 
                     
                     // Scrolling effect
-                    vec2 grid = fract(uv - vec2(0.0, sin(u_time * 0.2)));
+                    vec2 grid = fract(uv - vec2(0.0, sin(u_time * 80.0) * 0.01));
                     
                     float lineThickness = 0.03;
                     vec2 dist = abs(grid - 0.5);
@@ -97,13 +138,27 @@ export class World {
                     float line = smoothstep(0.5 - lineThickness, 0.5, gridLine);
                     float glow = pow(0.08 / (0.75 - gridLine), 2.0) * 0.4;
 
-                    vec3 color = (line * vec3(0.4, 0.9, 1.0)) + (glow * vec3(0.0, 0.4, 1.0));
+                    vec3 gridColor = (line * vec3(0.4, 0.9, 1.0)) + (glow * vec3(0.0, 0.4, 1.0));
+
+                    // Generate cloudy noise
+                    vec2 cloudUv = vUv * 40.0 + vec2(u_time * 0.06, u_time * 0.03);
+                    float f = fbm(cloudUv);
+                    
+                    // Increase contrast
+                    f = smoothstep(0.1, 0.6, f);
+
+                    // Create cloud color (darkish blue-grey) with more variation
+                    vec3 cloudColor = mix(vec3(0.12, 0.12, 0.12), vec3(0.3, 0.5, 1.0), f);
+                    float mixFactor = clamp(cloudColor.b - 0.08, 0.0, 1.0);
+                    cloudColor.b *= 0.7;
+                    // Mix grid color with cloud color with global factor of 0.6
+                    vec3 color = mix(gridColor, cloudColor, mixFactor);
                     
                     // Fade out based on distance from camera in XZ plane
                     float distFromCamera = length(vWorldPosition.xz - u_cameraPosition.xz);
-                    float depthFade = 1.0 - clamp(distFromCamera / 130.0, 0.0, 1.0);
+                    float depthFade = 1.0 - clamp(distFromCamera / 100.0, 0.0, 1.0);
 
-                    gl_FragColor = vec4(color * depthFade, 1.0);
+                    gl_FragColor = vec4(color * depthFade, 1.0 * depthFade);
                 }
             `,
             side: THREE.FrontSide,

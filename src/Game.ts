@@ -72,7 +72,7 @@ export class Game {
     constructor() {
         // Setup Three.js
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x202020);
+        this.scene.background = new THREE.Color(0x121212);
 
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
         // Isometric-ish view
