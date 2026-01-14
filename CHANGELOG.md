@@ -1,3 +1,16 @@
+# [1.30.0](https://github.com/samtun/hackworld/compare/v1.29.0...v1.30.0) (2026-01-14)
+
+
+### Bug Fixes
+
+* enemy attack and death ([d029898](https://github.com/samtun/hackworld/commit/d02989827842a466b76295ee0bdb810ba44810b7))
+
+
+### Features
+
+* add monster model with animations ([7560447](https://github.com/samtun/hackworld/commit/7560447979e66612a573b36713f541dc2f76a998))
+* make attack animation faster ([e9ec633](https://github.com/samtun/hackworld/commit/e9ec633264146fa1c535102ce362d89602e3817d))
+
 # [1.29.0](https://github.com/samtun/hackworld/compare/v1.28.1...v1.29.0) (2026-01-14)
 
 
