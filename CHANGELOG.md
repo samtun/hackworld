@@ -1,3 +1,26 @@
+# [1.29.0](https://github.com/samtun/hackworld/compare/v1.28.1...v1.29.0) (2026-01-14)
+
+
+### Bug Fixes
+
+* enemy mesh position and hit detection ([b8e03ab](https://github.com/samtun/hackworld/commit/b8e03abd6120e7ed89658683600743727735cec2))
+* fix attack animations ([5b2df54](https://github.com/samtun/hackworld/commit/5b2df54da81f8ceefb3eeb291c800466ce6b9b63))
+* fix build errors ([8ce0d92](https://github.com/samtun/hackworld/commit/8ce0d924acf4de3dd0a462b9b6a8696b0f9e87a4))
+* fix collision checks with player and attack hitboxes ([b58694c](https://github.com/samtun/hackworld/commit/b58694cdda90597b2a6f9f1f32bdd12597b16cc2))
+* fix weapon attack collider check ([c7b1180](https://github.com/samtun/hackworld/commit/c7b1180434a0d847496c03747f4fe0124f095ca0))
+* gravity ([3e81d31](https://github.com/samtun/hackworld/commit/3e81d314225831529e61b4fad0c001b644d53580))
+* remove unused enemies from player update call ([86020f8](https://github.com/samtun/hackworld/commit/86020f8a5e7aad6f5c0b2fc590851e09f43242b6))
+
+
+### Features
+
+* add first animations to player character ([005da46](https://github.com/samtun/hackworld/commit/005da466b623dcf0d84f14ad4b1906738a0b82e5))
+* add further player animations ([336b3cf](https://github.com/samtun/hackworld/commit/336b3cfd46a768ed96c3ff1c6c5a404cd747e26a))
+* add level up shockwave ([ea7e555](https://github.com/samtun/hackworld/commit/ea7e5556a7a60f9926420172e29ae63cedfc7eb3))
+* add power up animation to player model ([c21cd78](https://github.com/samtun/hackworld/commit/c21cd78fdb87c88fb0d68bc088667b27d7fb35ae))
+* add show colliders button to DebugValueEditor ([12e0581](https://github.com/samtun/hackworld/commit/12e0581545b530a7155a85f02b6f22dadea920c1))
+* use actual weapon colliders from attacks ([a902f97](https://github.com/samtun/hackworld/commit/a902f97daee798bba09524638b3ac18616e8e56b))
+
 ## [1.28.1](https://github.com/samtun/hackworld/compare/v1.28.0...v1.28.1) (2026-01-09)
 
 
