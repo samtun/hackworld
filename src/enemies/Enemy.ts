@@ -36,6 +36,8 @@ export class Enemy extends BaseMesh {
     returnToBaseTimer: number = 0;
     isReturningToBase: boolean = false;
     aggroRange: number = 15;
+    returnWaitTime: number = 2.0; // Wait 2 seconds before returning to base
+    baseArrivalThreshold: number = 0.5; // Distance to consider arrived at base
 
     // Animation
     isAttacking: boolean = false;
@@ -397,8 +399,8 @@ export class Enemy extends BaseMesh {
                     // Start the wait timer
                     this.returnToBaseTimer += dt;
                     
-                    // After 2 seconds, start returning
-                    if (this.returnToBaseTimer >= 2.0) {
+                    // After wait time, start returning
+                    if (this.returnToBaseTimer >= this.returnWaitTime) {
                         this.isReturningToBase = true;
                     } else {
                         // Still waiting - apply idle friction
@@ -407,8 +409,7 @@ export class Enemy extends BaseMesh {
                     }
                 } else {
                     // Return to base position
-                    const threshold = 0.5; // Stop when within this distance
-                    if (distToBase > threshold) {
+                    if (distToBase > this.baseArrivalThreshold) {
                         const dir = this.basePosition.vsub(myPos);
                         dir.y = 0;
                         if (dir.length() > 0) {
@@ -443,10 +444,9 @@ export class Enemy extends BaseMesh {
             this.attackTimer -= dt;
         }
 
-        // Attack Trigger (with randomness: +/- 0.4 units) - only if player in aggro range
-        const attackRangeVariance = (Math.random() * 0.8 - 0.4);
-        if (distToPlayer < this.aggroRange && distToPlayer < this.attackRange + attackRangeVariance && this.attackTimer <= 0 && !this.isAttacking) {
-            console.log(`Attack range check: dist=${distToPlayer.toFixed(2)}, threshold=${(this.attackRange + attackRangeVariance).toFixed(2)}`);
+        // Attack Trigger
+        if (this.canAttackPlayer(distToPlayer)) {
+            console.log(`Attack range check: dist=${distToPlayer.toFixed(2)}`);
             this.attack();
         }
 
@@ -489,6 +489,17 @@ export class Enemy extends BaseMesh {
                 mat.emissive.setHex(color);
             }
         });
+    }
+
+    /**
+     * Check if the enemy can attack the player
+     */
+    private canAttackPlayer(distToPlayer: number): boolean {
+        const attackRangeVariance = (Math.random() * 0.8 - 0.4);
+        return distToPlayer < this.aggroRange && 
+               distToPlayer < this.attackRange + attackRangeVariance && 
+               this.attackTimer <= 0 && 
+               !this.isAttacking;
     }
 
     attack() {
