@@ -1,3 +1,11 @@
+# [1.34.0](https://github.com/samtun/hackworld/compare/v1.33.0...v1.34.0) (2026-01-14)
+
+
+### Features
+
+* add xdata terminal model ([96148d1](https://github.com/samtun/hackworld/commit/96148d1471bcd91565b0a41a6c5d761590509b40))
+* split materials on xdata terminal ([dbf86ca](https://github.com/samtun/hackworld/commit/dbf86ca0457888ffef44a254fc87a9711ff79e61))
+
 # [1.33.0](https://github.com/samtun/hackworld/compare/v1.32.0...v1.33.0) (2026-01-14)
 
 
