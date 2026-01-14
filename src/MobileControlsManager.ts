@@ -89,9 +89,10 @@ export class MobileControlsManager {
         this.buttonsContainer.className = 'mobile-buttons-container';
         document.body.appendChild(this.buttonsContainer);
 
-        // Create action buttons (Jump and Attack only)
-        this.jumpButton = this.createButton('Jump', 'mobile-jump-btn');
-        this.attackButton = this.createButton('Attack', 'mobile-attack-btn');
+        // Create action buttons (A for Jump, X for Attack)
+        // Using Xbox controller button names for consistency
+        this.jumpButton = this.createButton('A', 'mobile-jump-btn');
+        this.attackButton = this.createButton('X', 'mobile-attack-btn');
 
         this.buttonsContainer.appendChild(this.jumpButton);
         this.buttonsContainer.appendChild(this.attackButton);
@@ -100,26 +101,21 @@ export class MobileControlsManager {
         this.setupButtonListeners(this.jumpButton, 'isJumpPressed');
         this.setupButtonListeners(this.attackButton, 'isAttackPressed');
 
-        // Create inventory button (top center)
-        this.inventoryButton = this.createButton('Inventory', 'mobile-inventory-btn');
+        // Create inventory button (top center) - using Select button convention
+        this.inventoryButton = this.createButton('Select', 'mobile-inventory-btn');
         document.body.appendChild(this.inventoryButton);
         this.setupButtonListeners(this.inventoryButton, 'isInventoryPressed');
 
-        // Create close button (top center, initially hidden)
-        this.closeButton = this.createButton('Close', 'mobile-close-btn');
+        // Create close button (top center, initially hidden) - using B button for cancel
+        this.closeButton = this.createButton('B', 'mobile-close-btn');
         this.closeButton.style.display = 'none'; // Hidden by default
         document.body.appendChild(this.closeButton);
         this.setupButtonListeners(this.closeButton, 'isCancelPressed');
 
         // Setup screen tap for interaction
-        // Any tap on the screen (not on a button/joystick) triggers interaction
-        // But only when no menu is open (to avoid interfering with menu button selection)
+        // Any tap on the screen (not on a control element) triggers interaction
+        // This is used for NPC dialogues and interactions in the game world
         this.screenTapHandler = (e: TouchEvent) => {
-            // Don't trigger interaction when a menu is open
-            if (this.isMenuOpen) {
-                return;
-            }
-            
             // Debounce rapid taps
             const now = Date.now();
             if (now - this.lastTapTime < this.TAP_DEBOUNCE_MS) {
