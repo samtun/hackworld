@@ -2,15 +2,25 @@ import * as THREE from 'three';
 import { MobileControlsManager } from './MobileControlsManager';
 
 export class InputManager {
+    private static instance: InputManager; // Singleton
+
     keys: { [key: string]: boolean } = {};
     gamepadIndex: number | null = null;
-    mobileControls: MobileControlsManager;
-    
+    mobileControls?: MobileControlsManager;
+
     // Track previous button states for detecting press and release
     private previousAttackState: boolean = false;
     private previousSelectState: boolean = false;
 
-    constructor() {
+    public static get Instance(): InputManager {
+        return this.instance || (this.instance = new this());
+    }
+
+    public get isMobile(): boolean {
+        return this.mobileControls?.isMobile || false;
+    }
+
+    private constructor() {
         window.addEventListener('keydown', (e) => this.keys[e.code] = true);
         window.addEventListener('keyup', (e) => this.keys[e.code] = false);
         window.addEventListener('gamepadconnected', (e) => {
@@ -26,16 +36,21 @@ export class InputManager {
                 this.gamepadIndex = null;
             }
         });
-        
-        // Initialize mobile controls singleton
+    }
+
+    initializeMobileControls() {
         this.mobileControls = MobileControlsManager.Instance;
     }
-    
+
+    public setMenuOpen(isOpen: boolean) {
+        this.mobileControls?.setMenuOpen(isOpen);
+    }
+
     // Call this at the end of each frame to update state tracking
     updateState() {
         this.previousAttackState = this.isAttackPressed();
         this.previousSelectState = this.isSelectPressed();
-        this.mobileControls.updateState();
+        this.mobileControls?.updateState();
     }
 
     getMovementVector(): THREE.Vector2 {
@@ -60,9 +75,9 @@ export class InputManager {
                 if (Math.abs(axisY) > 0.1) move.y += axisY;
             }
         }
-        
+
         // Mobile joystick
-        if (this.mobileControls.isMobile) {
+        if (this.mobileControls?.isMobile) {
             move.x += this.mobileControls.movementVector.x;
             move.y += this.mobileControls.movementVector.y;
         }
@@ -87,25 +102,25 @@ export class InputManager {
                 if (gp.buttons[2].pressed) return true;
             }
         }
-        
+
         // Mobile touch button
-        if (this.mobileControls.isMobile && this.mobileControls.isAttackPressed) {
+        if (this.mobileControls?.isMobile && this.mobileControls?.isAttackPressed) {
             return true;
         }
-        
+
         return false;
     }
-    
+
     isAttackHeld(): boolean {
         return this.isAttackPressed();
     }
-    
+
     isAttackReleased(): boolean {
         const currentState = this.isAttackPressed();
         const wasReleased = this.previousAttackState && !currentState;
         return wasReleased;
     }
-    
+
     isAttackJustPressed(): boolean {
         const currentState = this.isAttackPressed();
         const justPressed = !this.previousAttackState && currentState;
@@ -123,12 +138,12 @@ export class InputManager {
                 if (gp.buttons[0].pressed) return true;
             }
         }
-        
+
         // Mobile touch button
-        if (this.mobileControls.isMobile && this.mobileControls.isJumpPressed) {
+        if (this.mobileControls?.isMobile && this.mobileControls?.isJumpPressed) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -142,12 +157,12 @@ export class InputManager {
                 if (gp.buttons[8].pressed) return true;
             }
         }
-        
+
         // Mobile touch button
-        if (this.mobileControls.isMobile && this.mobileControls.isInventoryPressed) {
+        if (this.mobileControls?.isMobile && this.mobileControls?.isInventoryPressed) {
             return true;
         }
-        
+
         return false;
     }
 
@@ -222,15 +237,15 @@ export class InputManager {
                 if (gp.buttons[0]?.pressed) return true;
             }
         }
-        
+
         // Mobile interact button also acts as select in menus
-        if (this.mobileControls.isMobile && this.mobileControls.isInteractPressed) {
+        if (this.mobileControls?.isMobile && this.mobileControls?.isInteractPressed) {
             return true;
         }
-        
+
         return false;
     }
-    
+
     isSelectJustPressed(): boolean {
         const currentState = this.isSelectPressed();
         return !this.previousSelectState && currentState;
@@ -246,12 +261,12 @@ export class InputManager {
                 if (gp.buttons[1]?.pressed) return true;
             }
         }
-        
+
         // Mobile close button
-        if (this.mobileControls.isMobile && this.mobileControls.isCancelPressed) {
+        if (this.mobileControls?.isMobile && this.mobileControls?.isCancelPressed) {
             return true;
         }
-        
+
         return false;
     }
 
