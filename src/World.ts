@@ -38,6 +38,10 @@ export class World {
     // Save manager interaction callback (set by Game)
     private saveManagerInteractionCallback?: () => void;
 
+    // Grid plane shader
+    private gridPlaneMaterial: THREE.ShaderMaterial;
+    private gridPlane: THREE.Mesh;
+
     constructor(
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
@@ -56,6 +60,60 @@ export class World {
 
         // Initialize floating indicator manager
         this.floatingIndicatorManager = new FloatingIndicatorManager(scene);
+
+        // Create grid plane at y=-5
+        this.gridPlaneMaterial = new THREE.ShaderMaterial({
+            uniforms: {
+                u_time: { value: 0.0 },
+                u_cameraPosition: { value: new THREE.Vector3() }
+            },
+            vertexShader: `
+                varying vec2 vUv;
+                varying vec3 vWorldPosition;
+                void main() {
+                    vUv = uv;
+                    vec4 worldPos = modelMatrix * vec4(position, 1.0);
+                    vWorldPosition = worldPos.xyz;
+                    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+                }
+            `,
+            fragmentShader: `
+                varying vec2 vUv;
+                varying vec3 vWorldPosition;
+                uniform float u_time;
+                uniform vec3 u_cameraPosition;
+
+                void main() {
+                    // Increase the multiplier to make the grid denser on the plane
+                    vec2 uv = vUv * 140.0; 
+                    
+                    // Scrolling effect
+                    vec2 grid = fract(uv - vec2(0.0, sin(u_time * 0.2)));
+                    
+                    float lineThickness = 0.03;
+                    vec2 dist = abs(grid - 0.5);
+                    float gridLine = max(dist.x, dist.y);
+                    
+                    float line = smoothstep(0.5 - lineThickness, 0.5, gridLine);
+                    float glow = pow(0.08 / (0.75 - gridLine), 2.0) * 0.4;
+
+                    vec3 color = (line * vec3(0.4, 0.9, 1.0)) + (glow * vec3(0.0, 0.4, 1.0));
+                    
+                    // Fade out based on distance from camera in XZ plane
+                    float distFromCamera = length(vWorldPosition.xz - u_cameraPosition.xz);
+                    float depthFade = 1.0 - clamp(distFromCamera / 130.0, 0.0, 1.0);
+
+                    gl_FragColor = vec4(color * depthFade, 1.0);
+                }
+            `,
+            side: THREE.FrontSide,
+            transparent: true
+        });
+        const gridGeometry = new THREE.PlaneGeometry(500, 500);
+        this.gridPlane = new THREE.Mesh(gridGeometry, this.gridPlaneMaterial);
+        this.gridPlane.rotation.x = -Math.PI / 2;
+        this.gridPlane.position.y = -18;
+        scene.add(this.gridPlane);
 
         // Drop strategies are now registered internally by ItemDropManager
 
@@ -167,6 +225,10 @@ export class World {
 
     update(dt: number, player: Player, cameraPosition: THREE.Vector3) {
         if (!this.currentStage) return;
+
+        // Update grid plane shader time uniform
+        this.gridPlaneMaterial.uniforms.u_time.value += dt;
+        this.gridPlaneMaterial.uniforms.u_cameraPosition.value.copy(cameraPosition);
 
         // Update stage (portals, etc.)
         this.currentStage.update(dt, player);

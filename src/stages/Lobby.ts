@@ -87,8 +87,8 @@ export class Lobby extends BaseStage {
                 } else if (node.material.name === "StageWalls") {
                     const material = node.material as THREE.MeshStandardMaterial;
 
-                    // Fade out to alpha=0 at -15.0 to 0.0 in Y axis direction
-                    ShaderUtils.applyVerticalFade(material, -15.0, 0.0);
+                    // Fade out to alpha=0 at -18.0 to -5.0 in Y axis direction
+                    ShaderUtils.applyVerticalFade(material, -18.0, -5.0);
                 }
             });
         }
