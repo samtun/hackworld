@@ -18,7 +18,7 @@ export class Enemy extends BaseMesh {
     hp: number = 60;
     maxHp: number = 60;
     speed: number = 3;
-    attackRange: number = 1.5;
+    attackRange: number = 2.0;
     attackCooldown: number = 1.0;
     attackTimer: number = 0;
     isDead: boolean = false;
@@ -45,7 +45,7 @@ export class Enemy extends BaseMesh {
     // Attack hitbox
     protected attackHitboxBody: CANNON.Body | null = null;
     protected attackHitboxActive: boolean = false;
-    protected attackHitboxDelay: number = 0.3;
+    protected attackHitboxDelay: number = 0.42;
     protected attackHitboxSize: CANNON.Vec3 = new CANNON.Vec3(0.5, 0.5, 0.8);
     protected attackHitboxOffset: number = 1.0;
     private hasDealtDamageThisAttack: boolean = false;
