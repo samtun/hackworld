@@ -17,8 +17,12 @@ export class UIManager {
     private retryButton?: HTMLButtonElement;
     private lobbyButton?: HTMLButtonElement;
     private deathOverlaySelectedIndex: number = 0; // 0 = Retry, 1 = Return to Lobby
-    public startScreenTapped: boolean = false;
+    private _startScreenTapped: boolean = false;
     private startScreenTapHandler?: (e: TouchEvent) => void;
+    
+    public get startScreenTapped(): boolean {
+        return this._startScreenTapped;
+    }
 
     constructor() {
         this.startScreen = document.getElementById('start-screen') as HTMLDivElement;
@@ -29,7 +33,7 @@ export class UIManager {
         // Add touch handler for start screen
         this.startScreenTapHandler = (e: TouchEvent) => {
             e.preventDefault();
-            this.startScreenTapped = true;
+            this._startScreenTapped = true;
         };
         if (this.startScreen) {
             this.startScreen.addEventListener('touchstart', this.startScreenTapHandler);
@@ -300,7 +304,7 @@ export class UIManager {
             const video = this.startScreen.querySelector('video');
             if (video) video.play().catch(e => console.log("Video play failed", e));
             // Reset tap state when showing
-            this.startScreenTapped = false;
+            this._startScreenTapped = false;
         }
     }
 
@@ -310,7 +314,7 @@ export class UIManager {
             const video = this.startScreen.querySelector('video');
             if (video) video.pause();
             // Reset tap state when hiding
-            this.startScreenTapped = false;
+            this._startScreenTapped = false;
         }
     }
 

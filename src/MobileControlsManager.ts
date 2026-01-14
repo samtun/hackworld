@@ -34,6 +34,8 @@ export class MobileControlsManager {
     
     // Screen tap handler for interaction
     private screenTapHandler?: (e: TouchEvent) => void;
+    private lastTapTime: number = 0;
+    private readonly TAP_DEBOUNCE_MS = 200; // Prevent rapid taps
 
     private constructor() {
         // Check if device is mobile
@@ -101,6 +103,13 @@ export class MobileControlsManager {
         // Setup screen tap for interaction
         // Any tap on the screen (not on a button/joystick) triggers interaction
         this.screenTapHandler = (e: TouchEvent) => {
+            // Debounce rapid taps
+            const now = Date.now();
+            if (now - this.lastTapTime < this.TAP_DEBOUNCE_MS) {
+                return;
+            }
+            this.lastTapTime = now;
+            
             // Check if tap is on a control element
             const target = e.target as HTMLElement;
             const isOnControl = target.closest('.mobile-joystick-container') ||
@@ -140,7 +149,7 @@ export class MobileControlsManager {
         const isSmallScreen = window.innerWidth <= 1024; // Tablets and phones
         
         // Show controls only if device has touch AND is small screen
-        // This prevents showing on desktop browsers or touch laptops with large screens
+        // This prevents showing on desktops (even in responsive mode without actual touch hardware)
         return hasTouchScreen && isSmallScreen;
     }
     
