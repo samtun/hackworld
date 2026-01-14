@@ -99,10 +99,19 @@ export class MobileControlsManager {
     }
     
     private detectMobile(): boolean {
+        // Check for URL parameter to force mobile mode (useful for testing)
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('mobile') === 'true') {
+            return true;
+        }
+        
         // Check for touch support and screen size
         const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         const isSmallScreen = window.innerWidth <= 1024; // Tablets and phones
-        return hasTouchScreen && isSmallScreen;
+        
+        // Show controls if device has touch OR if screen is mobile-sized
+        // This allows testing in responsive mode and supports touch laptops
+        return hasTouchScreen || isSmallScreen;
     }
     
     private createButton(label: string, className: string): HTMLButtonElement {
