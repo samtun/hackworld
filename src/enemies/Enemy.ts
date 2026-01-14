@@ -22,6 +22,7 @@ export class Enemy extends BaseMesh {
     itemDropChance: number = 0.04;
     xDataDropChance: number = 0.02;
     expAmount: number = 10; // EXP granted on defeat
+    damage: number = 10;
 
     // Animation
     isAttacking: boolean = false;
@@ -29,15 +30,21 @@ export class Enemy extends BaseMesh {
     attackAnimTimer: number = 0;
     weaponBaseRotation: THREE.Euler;
     techDropRateFactor: number = 1.0;
+    bodyHalfExtentY: number;
 
     private materials: THREE.Material[] = [];
     private player: Player;
+    protected scene: THREE.Scene;
+    protected world: CANNON.World;
 
     // Callback for spawning damage numbers
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
         super('models/monster.glb');
+
+        this.scene = scene;
+        this.world = world;
 
         // Visual
         scene.add(this.mesh);
@@ -57,7 +64,8 @@ export class Enemy extends BaseMesh {
         this.mesh.add(this.weaponMesh);
 
         // Physics
-        const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+        const shape = new CANNON.Cylinder(0.6, 0.6, 1.75, 8);
+        this.bodyHalfExtentY = shape.height / 2;
         this.body = new CANNON.Body({
             mass: 5,
             material: physicsMaterial,
@@ -65,6 +73,7 @@ export class Enemy extends BaseMesh {
         });
         this.body.addShape(shape);
         this.body.position.copy(position);
+        (this.body as any).entity = this;
         world.addBody(this.body);
 
         this.player = PlayerRegistry.Instance.activePlayers[0];
@@ -89,7 +98,7 @@ export class Enemy extends BaseMesh {
                 this.mesh.position.z = this.body.position.z;
 
                 // Animate Y (Sink)
-                this.mesh.position.y = this.body.position.y - (0.5 * progress);
+                this.mesh.position.y = this.body.position.y - this.bodyHalfExtentY - (0.5 * progress);
 
                 // Flatten
                 this.mesh.scale.y = 1 - progress;
@@ -107,8 +116,7 @@ export class Enemy extends BaseMesh {
 
         // Sync mesh with body
         this.mesh.position.copy(this.body.position as any);
-        // We handle rotation manually for AI facing
-        // this.mesh.quaternion.copy(this.body.quaternion as any);
+        this.mesh.position.y -= this.bodyHalfExtentY; // Ground the mesh by subtracting half-extent
 
         // Flash Effect
         if (this.flashTimer > 0) {
@@ -132,6 +140,13 @@ export class Enemy extends BaseMesh {
         }
 
         // AI Logic
+        if (this.player.isDead) {
+            // Idle friction
+            this.body.velocity.x *= 0.9;
+            this.body.velocity.z *= 0.9;
+            return;
+        }
+
         const playerPos = this.player.body.position;
         const myPos = this.body.position;
 
@@ -191,7 +206,7 @@ export class Enemy extends BaseMesh {
         this.attackAnimTimer = 0;
 
         console.log("Enemy attacks player!");
-        player.takeDamage(10, this.body.position);
+        player.takeDamage(this.damage, this.body.position);
     }
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
@@ -241,5 +256,14 @@ export class Enemy extends BaseMesh {
      */
     getDeathPosition(): CANNON.Vec3 {
         return this.body.position.clone();
+    }
+
+    /**
+     * Clean up enemy resources and remove from scene/world
+     */
+    cleanup(): void {
+        this.scene.remove(this.mesh);
+        this.world.removeBody(this.body);
+        this.disposeMesh();
     }
 }

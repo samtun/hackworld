@@ -43,8 +43,6 @@ export class Game {
     playerRegistry!: PlayerRegistry;
 
     clock!: THREE.Clock;
-    debugOutputFrequency: number = 1
-    debugOutputDelta: number = 0
     currentScene: string = 'startScreen';
 
     // Debug
@@ -98,7 +96,7 @@ export class Game {
 
         // Setup Physics
         this.physicsWorld = new CANNON.World();
-        this.physicsWorld.gravity.set(0, -9.82, 0);
+        this.physicsWorld.gravity.set(0, -25, 0); // Stronger gravity for snappier gameplay feel
 
         // Create a slippery material (friction = 0)
         this.defaultMaterial = new CANNON.Material('default');
@@ -139,14 +137,18 @@ export class Game {
             // Create debug value editor
             this.debugValueEditor = new DebugValueEditor();
 
+            // Subscribe to collider toggle from debug editor
+            this.debugValueEditor.onCollidersToggle = (visible: boolean) => {
+                this.debugMeshes.forEach(mesh => {
+                    mesh.visible = visible;
+                });
+            };
+
             window.addEventListener('keydown', (e) => {
                 if (e.code === 'F8') {
                     this.debugMode = !this.debugMode;
-                    this.debugMeshes.forEach(mesh => {
-                        mesh.visible = this.debugMode;
-                    });
 
-                    // Toggle debug value editor visibility
+                    // Toggle debug value editor visibility (colliders handled by editor callback)
                     if (this.debugMode) {
                         this.debugValueEditor?.show();
                     } else {
@@ -209,7 +211,7 @@ export class Game {
             this.lastTeleporterPosition.copy(this.player.body.position);
 
             // Snap camera
-            this.resetCameraPosition()
+            this.resetCameraPosition();
             this.currentScene = destination;
         });
     }
@@ -263,7 +265,7 @@ export class Game {
     }
 
     private resetCameraPosition() {
-        this.camera.position.copy(this.cameraOffset.add(this.player.position));
+        this.camera.position.copy(this.cameraOffset.clone().add(this.player.position));
     }
 
     /**
@@ -358,9 +360,13 @@ export class Game {
             const isR3Pressed = this.input.isR3Pressed();
             if (isR3Pressed && !this.wasR3Pressed) {
                 this.debugMode = !this.debugMode;
-                this.debugMeshes.forEach(mesh => {
-                    mesh.visible = this.debugMode;
-                });
+
+                // Toggle debug value editor visibility (colliders handled by editor callback)
+                if (this.debugMode) {
+                    this.debugValueEditor?.show();
+                } else {
+                    this.debugValueEditor?.hide();
+                }
 
                 console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'} (via R3 button)`);
             }
@@ -567,7 +573,7 @@ export class Game {
 
             // Prevent jumping in the frame(s) immediately after interacting
             const preventJump = isNearInteractive || this.wasJustInteracted;
-            this.player.update(dt, this.world.enemies, preventJump);
+            this.player.update(dt, preventJump);
             this.world.update(dt, this.player, this.camera.position);
         }
 
@@ -578,7 +584,7 @@ export class Game {
 
         // Update debug value editor if visible
         if (this.debugMode && this.debugValueEditor) {
-            this.debugValueEditor.update(this.player);
+            this.debugValueEditor.update(this.player, dt);
         }
 
         // Camera Follow
@@ -617,18 +623,7 @@ export class Game {
             this.wasJustInteracted = false;
         }
 
-        // Handle extra debug outputs
-        if (this.debugMode) {
-            if (this.debugOutputDelta >= this.debugOutputFrequency) {
-                console.log("Player position: " + this.player.body.position);
-                this.debugOutputDelta = 0;
-            } else {
-                this.debugOutputDelta += dt;
-            }
-        }
-
         this.wasSelectPressed = isSelectPressed;
-
         this.renderer.render(this.scene, this.camera);
     }
 }

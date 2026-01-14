@@ -86,8 +86,7 @@ export abstract class BaseStage {
 
         // Remove enemies
         for (const enemy of this.enemies) {
-            this.scene.remove(enemy.mesh);
-            this.physicsWorld.removeBody(enemy.body);
+            enemy.cleanup();
         }
         this.enemies = [];
 

@@ -15,6 +15,7 @@ export class LargeEnemy extends Enemy {
         this.xDataDropChance = 0.04;
         this.expAmount = 25;
         this.techDropRateFactor = 1.3;
+        this.damage = 15;
 
         // Replace the mesh
         scene.remove(this.mesh);
@@ -26,7 +27,8 @@ export class LargeEnemy extends Enemy {
 
         // Update physics body size
         world.removeBody(this.body);
-        const shape = new CANNON.Box(new CANNON.Vec3(0.75, 0.75, 0.75)); // 1.5 / 2
+        const shape = new CANNON.Cylinder(0.85, 0.85, 2.75, 8);
+        this.bodyHalfExtentY = shape.height / 2;
         this.body = new CANNON.Body({
             mass: 17, // Proportional to volume: 5 * (1.5^3) ≈ 17
             material: physicsMaterial,
@@ -34,6 +36,7 @@ export class LargeEnemy extends Enemy {
         });
         this.body.addShape(shape);
         this.body.position.copy(position);
+        (this.body as any).entity = this;
         world.addBody(this.body);
     }
 

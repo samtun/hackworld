@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { AssetManager } from './AssetManager';
 import { InputManager } from './InputManager';
 import { Weapon } from './items/weapons/Weapon';
 import { WeaponType } from './items/weapons/WeaponType';
@@ -12,6 +13,21 @@ import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { BaseMesh } from './BaseMesh';
 import { StatType } from './StatType';
 
+
+enum ActionType {
+    Idle = 'Idle',
+    RunOneHanded = 'RunOneHanded',
+    RunTwoHanded = "RunTwoHanded",
+    Jump = 'Jump',
+    AttackOneHanded = 'AttackOneHanded',
+    AttackTwoHanded = 'AttackTwoHanded',
+    TakeHit = "TakeHit",
+    Death = "Death",
+    StartCharge = "StartCharge",
+    Dash = "Dash",
+    PowerUp = "PowerUp"
+};
+
 export class Player extends BaseMesh {
     id: string;
     body: CANNON.Body;
@@ -20,16 +36,13 @@ export class Player extends BaseMesh {
     currentWeaponType: WeaponType = WeaponType.SWORD;
     innerMesh?: THREE.Mesh;
     position: THREE.Vector3;
+    private rightHandBone?: THREE.Bone;
 
     // Scene and World references for items
     public scene: THREE.Scene;
     public world: CANNON.World;
 
     private weaponRepository: WeaponRepository;
-
-    // Track enemies hit during current attack phase to prevent multiple hits
-    // For dual blade, this gets reset between phases to allow double-hitting
-    private enemiesHitThisPhase: Set<Enemy> = new Set();
 
     // Knockback strength
     private readonly KNOCKBACK_FORCE = 80;
@@ -60,8 +73,15 @@ export class Player extends BaseMesh {
 
     // Movement speed constant
     private readonly WALK_SPEED = 6;
+
     // Can jump onto 1m high platforms
-    private readonly JUMP_FORCE = 6.6;
+    private readonly JUMP_FORCE = 10;
+
+    // Stun mechanic
+    private readonly STUN_TIME = 0.5;
+
+    // Invulnerability duration
+    private readonly HIT_INVULNERABILITY: number = 1.0;
 
     // Base Stats (without equipment modifiers or upgrades)
     private baseHp: number = 170;
@@ -129,6 +149,7 @@ export class Player extends BaseMesh {
     private dashDirection: THREE.Vector3 = new THREE.Vector3();
     private chargeParticles: THREE.Mesh[] = [];
     private dashHitEnemies: Set<Enemy> = new Set();
+    private attackHitEnemies: Set<Enemy> = new Set();
     private attackLockedUntilRelease: boolean = false;
 
     // Particle wall constants
@@ -141,6 +162,11 @@ export class Player extends BaseMesh {
     private levelUpParticleTimer: number = 0;
     private readonly LEVEL_UP_PARTICLE_LIFETIME: number = 0.6; // 0.6 seconds for the explosion
 
+    // Level up shockwave timing
+    private readonly LEVEL_UP_SHOCKWAVE_DELAY: number = 0.4;
+    private levelUpShockwaveTimer: number = 0;
+    private shockwavePending: boolean = false;
+
     // Ground contact tracking
     private isGrounded: boolean = false;
     private stunTimer: number = 0;
@@ -149,6 +175,9 @@ export class Player extends BaseMesh {
     // Death state
     isDead: boolean = false;
     private deathCallback?: () => void;
+
+    // Level up animation state
+    private isLevelingUp: boolean = false;
 
     // Callback for spawning damage numbers
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
@@ -160,6 +189,11 @@ export class Player extends BaseMesh {
     inventory: Item[] = [];
     money: number = 500; // Starting money
 
+    // Animations
+    private mixer!: THREE.AnimationMixer;
+    private actions: Record<string, THREE.AnimationAction> = {};
+    private currentAction: THREE.AnimationAction | null = null;
+
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
         super('models/main_character.glb');
         this.scene = scene;
@@ -169,34 +203,49 @@ export class Player extends BaseMesh {
         this.weaponRepository = WeaponRepository.Instance;
         this.position = position.clone() as any;
 
+        // Setup Animations
+        this.setupAnimations();
+
         // Initial weapon from repository (already cloned with unique ID)
         const swordItem = this.weaponRepository.getWeaponById('aegis_sword_alpha');
         if (!swordItem) {
             throw new Error("The default sword could not be loaded");
         }
 
-        // Initialize weapon visual
-        this.weapon = new Weapon(swordItem.model, swordItem.weaponType, swordItem.damage, scene, world);
+        // Visual Mesh and Bone references - must be done before weapon setup
+        this.mesh.traverse(obj => {
+            if (obj instanceof THREE.Mesh) {
+                this.innerMesh = obj;
+            }
+            if (obj instanceof THREE.Bone && obj.name === 'HandR') {
+                this.rightHandBone = obj;
+            }
+        });
+
+        if (!this.innerMesh) {
+            console.warn(
+                '[Player] No THREE.Mesh found in player model hierarchy; some visual effects may not render.'
+            );
+        }
+
+        if (!this.rightHandBone) {
+            console.warn('[Player] HandR bone not found in player model; weapon will not follow hand.');
+        }
+
+        // Initialize weapon visual (after bone references are set)
+        this.weapon = new Weapon(swordItem.model, swordItem.weaponType, swordItem.damage, world);
+        this.weapon.onHit = (e: any) => {
+            const entity = e.body.entity;
+            if (entity && entity instanceof Enemy) {
+                this.handleAttackHit(entity);
+            }
+        };
         this.setWeapon(swordItem);
 
         this.inventory.push(swordItem);
         // We manually equip it here to sync state without triggering full equip logic yet
         swordItem.isEquipped = true;
         this.currentWeaponType = swordItem.weaponType;
-
-        // Visual Mesh
-        this.mesh.traverse(obj => {
-            if (obj instanceof THREE.Mesh) {
-                this.innerMesh = obj;
-            }
-        });
-
-        if (!this.innerMesh) {
-            // Log a warning so missing effects are not silent failures.
-            console.warn(
-                '[Player] No THREE.Mesh found in player model hierarchy; some visual effects may not render.'
-            );
-        }
 
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
@@ -205,11 +254,9 @@ export class Player extends BaseMesh {
         const box = new THREE.Box3().setFromObject(this.mesh);
         const size = new THREE.Vector3();
         box.getSize(size);
-        const center = new THREE.Vector3();
-        box.getCenter(center);
 
-        const radius = size.x / 2;
-        const bodyHeight = size.y - radius;
+        const radius = 0.3;
+        const bodyHeight = 1.5;
         const cylinderShape = new CANNON.Cylinder(radius, radius, bodyHeight, 12);
 
         // Add base body collider
@@ -226,6 +273,16 @@ export class Player extends BaseMesh {
 
         // Damping to stop sliding
         this.body.linearDamping = 0.9;
+
+        this.body.addEventListener('collide', (e: any) => {
+            const entity = e.body.entity;
+            if (entity && entity instanceof Enemy) {
+                if (this.isDashing) {
+                    this.handleDashHit(entity);
+                }
+            }
+        });
+
         world.addBody(this.body);
     }
 
@@ -238,7 +295,7 @@ export class Player extends BaseMesh {
 
     public setWeapon(weaponItem: WeaponItem) {
         this.currentWeaponType = weaponItem.weaponType;
-        this.weapon.changeWeaponType(this.mesh, weaponItem.weaponType, weaponItem.damage);
+        this.weapon.changeWeaponType(this.rightHandBone ?? this.mesh, weaponItem.weaponType, weaponItem.damage);
     }
 
     equipCore(itemId: string) {
@@ -370,12 +427,184 @@ export class Player extends BaseMesh {
         return damage;
     }
 
-    update(dt: number, enemies: Enemy[] = [], isNearInteractive: boolean = false) {
-        // Skip all updates if player is dead
+    private setupAnimations() {
+        // Clear BaseMesh mixer to avoid conflict
+        this.mixers = [];
+
+        this.mixer = new THREE.AnimationMixer(this.mesh);
+
+        const gltf = AssetManager.Instance.get('models/main_character.glb');
+        const animations = gltf.animations;
+
+        console.log(animations);
+        if (animations && animations.length > 0) {
+            // Helper to find animation by name
+            const getClip = (name: string) => animations.find(a => a.name === name);
+
+            const idleClip = getClip(ActionType.Idle);
+            const runOneHandedClip = getClip(ActionType.RunOneHanded);
+            const runTwoHandedClip = getClip(ActionType.RunTwoHanded);
+            const jumpClip = getClip(ActionType.Jump);
+            const takeHitClip = getClip(ActionType.TakeHit);
+            const attackOneHandClip = getClip(ActionType.AttackOneHanded);
+            const attackTwoHandClip = getClip(ActionType.AttackTwoHanded);
+            const startChargeClip = getClip(ActionType.StartCharge);
+            const dashClip = getClip(ActionType.Dash);
+            const deathClip = getClip(ActionType.Death);
+            const powerUpClip = getClip(ActionType.PowerUp);
+
+            if (idleClip) {
+                const action = this.mixer.clipAction(idleClip);
+                this.actions[ActionType.Idle] = action;
+            }
+            if (runOneHandedClip) {
+                const action = this.mixer.clipAction(runOneHandedClip);
+                this.actions[ActionType.RunOneHanded] = action;
+            }
+            if (runTwoHandedClip) {
+                const action = this.mixer.clipAction(runTwoHandedClip);
+                this.actions[ActionType.RunTwoHanded] = action;
+            }
+            if (jumpClip) {
+                let action = this.mixer.clipAction(jumpClip);
+                action.loop = THREE.LoopOnce;
+                action.timeScale = 1.3;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.Jump] = action;
+            }
+            if (takeHitClip) {
+                const action = this.mixer.clipAction(takeHitClip);
+                action.timeScale = 1.6;
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.TakeHit] = action;
+            }
+            if (startChargeClip) {
+                const action = this.mixer.clipAction(startChargeClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.StartCharge] = action;
+            }
+            if (dashClip) {
+                const action = this.mixer.clipAction(dashClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.Dash] = action;
+            }
+            if (attackOneHandClip) {
+                const action = this.mixer.clipAction(attackOneHandClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                // Speed up attack animation to match gameplay feel if needed
+                action.timeScale = 1.6;
+                this.actions[ActionType.AttackOneHanded] = action;
+            }
+            if (attackTwoHandClip) {
+                const action = this.mixer.clipAction(attackTwoHandClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                // Speed up attack animation to match gameplay feel if needed
+                action.timeScale = 1.6;
+                this.actions[ActionType.AttackTwoHanded] = action;
+            }
+            if (deathClip) {
+                const action = this.mixer.clipAction(deathClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.Death] = action;
+            }
+            if (powerUpClip) {
+                const action = this.mixer.clipAction(powerUpClip);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                this.actions[ActionType.PowerUp] = action;
+            }
+
+            // Listen for animation finished events
+            this.mixer.addEventListener('finished', (e) => {
+                const finishedAction = e.action;
+                if (finishedAction === this.actions[ActionType.AttackOneHanded] ||
+                    finishedAction === this.actions[ActionType.AttackTwoHanded]) {
+                    this.weapon.stopAttack();
+                    this.attackHitEnemies.clear();
+                }
+                // Handle PowerUp animation completion
+                if (finishedAction === this.actions[ActionType.PowerUp]) {
+                    this.isLevelingUp = false;
+                }
+            });
+        }
+
+        // Start Idle
+        this.fadeToAction(ActionType.Idle, 0.0);
+    }
+
+    private fadeToAction(actionType: ActionType, duration: number) {
+        const activeAction = this.actions[actionType];
+        const previousAction = this.currentAction;
+
+        if (previousAction !== activeAction && activeAction) {
+            if (previousAction) {
+                previousAction.fadeOut(duration);
+            }
+            activeAction.reset().fadeIn(duration).play();
+            this.currentAction = activeAction;
+        }
+    }
+
+    private updateAnimations() {
+        if (this.isDead) {
+            return;
+        }
+
+        // Highest priority: Level up PowerUp animation
+        const powerUpAction = this.actions[ActionType.PowerUp];
+        if (this.isLevelingUp && powerUpAction && powerUpAction.isRunning()) {
+            return;
+        }
+
+        // High priority: Take Hit
+        const takeHitAction = this.actions[ActionType.TakeHit];
+        if (this.currentAction === takeHitAction && takeHitAction && takeHitAction.isRunning()) {
+            return;
+        }
+
+        // High priority: Attack
+        if (this.weapon.isAttacking) {
+            if (this.currentAction !== this.actions[ActionType.AttackOneHanded]) {
+                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? ActionType.AttackTwoHanded : ActionType.AttackOneHanded, 0.001);
+            }
+            return;
+        }
+
+        // Jump / Fall
+        // Only trigger jump animation if strictly not grounded
+        if (!this.isGrounded) {
+            if (this.currentAction !== this.actions[ActionType.Jump]) {
+                this.fadeToAction(ActionType.Jump, 0.1);
+            }
+            return;
+        }
+
+        // Run / Idle
+        const isMoving = this.input.getMovementVector().length() > 0.1;
+        if (isMoving) {
+            const action = this.weapon.weaponType !== WeaponType.HAMMER ? ActionType.RunOneHanded : ActionType.RunTwoHanded;
+            this.fadeToAction(action, 0.2);
+        } else if (!this.isChargingAttack) {
+            this.fadeToAction(ActionType.Idle, 0.2);
+        }
+    }
+
+    update(dt: number, isNearInteractive: boolean = false) {
+        // Update animations
+        if (this.mixer) this.mixer.update(dt);
+        this.updateAnimations();
+
         if (this.isDead) return;
 
         // Handle dash and charging (these short-circuit the rest of the update)
-        if (this.handleDash(dt, enemies)) return;
+        if (this.handleDash(dt)) return;
         if (this.handleCharging(dt)) return;
 
         // Movement and physics sync
@@ -383,7 +612,7 @@ export class Player extends BaseMesh {
         this.syncPosition();
 
         // Combat (attacks / charge start / weapon updates)
-        this.handleCombat(dt, enemies);
+        this.handleCombat(dt);
 
         // Clear attack lock when button released
         if (this.input.isAttackReleased()) this.attackLockedUntilRelease = false;
@@ -391,17 +620,21 @@ export class Player extends BaseMesh {
         // Invulnerability flash and timers
         this.handleInvulnerability(dt)
 
+        // Update level-up shockwave timer
+        this.updateLevelUpShockwave(dt);
+
         // Update level-up particles and input state
         this.updateLevelUpParticles(dt);
         this.input.updateState();
     }
 
-    private handleDash(dt: number, enemies: Enemy[]): boolean {
+    private handleDash(dt: number): boolean {
         if (!this.isDashing) return false;
+        this.fadeToAction(ActionType.Dash, 0.0);
         this.dashTimer += dt;
         this.body.velocity.x = this.dashDirection.x * this.DASH_SPEED;
         this.body.velocity.z = this.dashDirection.z * this.DASH_SPEED;
-        this.checkDashHits(enemies);
+
         if (this.dashTimer >= this.DASH_DURATION) {
             this.isDashing = false;
             this.dashHitEnemies.clear();
@@ -412,6 +645,8 @@ export class Player extends BaseMesh {
 
     private handleCharging(dt: number): boolean {
         if (!this.isChargingAttack) return false;
+
+        this.fadeToAction(ActionType.StartCharge, 0.1);
         this.chargeTimer += dt;
         this.invulnerableTimer = 0; // allow damage while charging
         this.updateChargeParticles();
@@ -435,6 +670,13 @@ export class Player extends BaseMesh {
 
         if (this.jumpCooldownTimer > 0) {
             this.jumpCooldownTimer -= dt;
+        }
+
+        // Block movement during level-up animation
+        if (this.isLevelingUp) {
+            this.body.velocity.x = 0;
+            this.body.velocity.z = 0;
+            return;
         }
 
         if (this.stunTimer > 0) {
@@ -481,7 +723,6 @@ export class Player extends BaseMesh {
 
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
                 this.body.velocity.y = this.JUMP_FORCE;
-                console.warn('Player jumped');
                 this.jumpCooldownTimer = 1.0;
             }
         } else {
@@ -490,7 +731,7 @@ export class Player extends BaseMesh {
         }
     }
 
-    private handleCombat(dt: number, enemies: Enemy[]) {
+    private handleCombat(dt: number) {
         if (this.attackLockedUntilRelease) return;
 
         // Track attack press for charge timer
@@ -498,43 +739,37 @@ export class Player extends BaseMesh {
 
         // Immediate attack (requires fresh press and not charging)
         if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
-            if (this.weapon.attack(this.getWeaponRangeMultiplier())) {
-                this.enemiesHitThisPhase.clear();
-                if (this.currentWeaponType === WeaponType.DUAL_BLADE) {
-                    this.weapon.onDamageFrame = () => this.enemiesHitThisPhase.clear();
-                }
-            }
+            this.weapon.attack(this.getWeaponRangeMultiplier());
         }
 
         // Charging
         if (this.input.isAttackHeld() && !this.isChargingAttack) {
             this.chargeDelayTimer += dt;
-            if (this.chargeDelayTimer >= this.CHARGE_DELAY && !this.weapon.isAttacking) this.startChargeAttack();
+            if (this.chargeDelayTimer >= this.CHARGE_DELAY && !this.weapon.isAttacking) {
+                this.startChargeAttack();
+            }
         } else if (!this.input.isAttackHeld()) {
             this.chargeDelayTimer = 0;
         }
 
         // Weapon update & hit checks
-        this.weapon.update(dt, this.position, this.mesh.quaternion);
-        if (this.weapon.isAttacking && this.weapon.body) this.checkAttackHits(enemies);
+        this.weapon.update(dt);
     }
 
     private handleInvulnerability(dt: number) {
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= dt;
             if (Math.floor(this.invulnerableTimer * 10) % 2 === 0) {
-                (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 0.5;
-                (this.innerMesh?.material as THREE.MeshStandardMaterial).transparent = true;
+                (this.innerMesh?.material as THREE.MeshStandardMaterial).color = new THREE.Color(0x888888);
             } else {
-                (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 1.0;
+                (this.innerMesh?.material as THREE.MeshStandardMaterial).color = new THREE.Color(0xffffff);
             }
         } else {
-            (this.innerMesh?.material as THREE.MeshStandardMaterial).opacity = 1.0;
-            (this.innerMesh?.material as THREE.MeshStandardMaterial).transparent = false;
+            (this.innerMesh?.material as THREE.MeshStandardMaterial).color = new THREE.Color(0xffffff);
         }
     }
 
-    private syncPosition() {
+    syncPosition() {
         // Align the visual mesh with the physics body using the body's shape dimensions,
         // not the world-space AABB, to avoid incorrect offsets as the player moves.
         let y = this.body.position.y;
@@ -555,58 +790,45 @@ export class Player extends BaseMesh {
         this.syncPosition();
     }
 
-    checkAttackHits(enemies: Enemy[]) {
-        // Compute damage for this hit (applies tech multiplier)
-        const damage = this.getHitDamage();
-        const attackBody = this.weapon.body;
+    private handleDashHit(enemy: Enemy) {
+        if (enemy.isDead || enemy.isDying) return;
 
-        if (attackBody) {
-            attackBody.position.set(attackBody.position.x, this.position.y + 1.0, attackBody.position.z);
-            for (const enemy of enemies) {
-                if (enemy.isDead || enemy.isDying) continue;
+        // Skip if we already hit this enemy during this dash
+        if (this.dashHitEnemies.has(enemy)) return;
 
-                // Skip if we already hit this enemy during this attack phase
-                if (this.enemiesHitThisPhase.has(enemy)) continue;
+        // Deal 3x weapon damage with tech multiplier
+        const damage = this.getHitDamage(3);
+        enemy.takeDamage(damage, this.body.position);
+        console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
 
-                // Check if attack hitbox overlaps with enemy body
-                if (this.checkCollision(attackBody, enemy.body)) {
-                    enemy.takeDamage(damage, this.body.position);
-                    console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
+        this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
-                    this.tryIncrementWeaponTech(enemy.techDropRateFactor);
-
-                    // Mark this enemy as hit for this attack phase
-                    this.enemiesHitThisPhase.add(enemy);
-                }
-            }
-        }
+        // Mark this enemy as hit during this dash
+        this.dashHitEnemies.add(enemy);
     }
 
-    private checkCollision(body1: CANNON.Body, body2: CANNON.Body): boolean {
-        // Simple AABB (Axis-Aligned Bounding Box) collision check
-        const shape1 = body1.shapes[0];
-        const shape2 = body2.shapes[0];
+    private handleAttackHit(enemy: Enemy) {
+        if (enemy.isDead || enemy.isDying) return;
 
-        if (shape1 instanceof CANNON.Box && shape2 instanceof CANNON.Box) {
-            const pos1 = body1.position;
-            const pos2 = body2.position;
-            const halfExtents1 = shape1.halfExtents;
-            const halfExtents2 = shape2.halfExtents;
+        // Skip if we already hit this enemy during this attack
+        if (this.attackHitEnemies.has(enemy)) return;
 
-            // Check overlap on all three axes
-            const overlapX = Math.abs(pos1.x - pos2.x) < (halfExtents1.x + halfExtents2.x);
-            const overlapY = Math.abs(pos1.y - pos2.y) < (halfExtents1.y + halfExtents2.y);
-            const overlapZ = Math.abs(pos1.z - pos2.z) < (halfExtents1.z + halfExtents2.z);
+        const damage = this.getHitDamage();
+        enemy.takeDamage(damage, this.body.position);
+        console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
-            return overlapX && overlapY && overlapZ;
-        }
+        this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
-        return false;
+        // Mark this enemy as hit during this attack
+        this.attackHitEnemies.add(enemy);
     }
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
         console.log(`Player taking ${amount} damage. Timer: ${this.invulnerableTimer}`);
-        if (this.invulnerableTimer > 0 || this.isDashing || this.isDead) return;
+        if (this.invulnerableTimer > 0 || this.isLevelingUp || this.isDashing || this.isDead) return;
+
+        // Stop any ongoing attack
+        this.weapon.stopAttack();
 
         // Apply defense multiplier to reduce damage
         const defenseMultiplier = 1 - this.getDefenseMultiplier();
@@ -626,11 +848,14 @@ export class Player extends BaseMesh {
         }
 
         // Apply brief invulnerability
-        this.invulnerableTimer = 1.0; // 1 second invulnerability
+        this.invulnerableTimer = this.HIT_INVULNERABILITY; // 1 second invulnerability
+
+        // Trigger hit animation
+        this.fadeToAction(ActionType.TakeHit, 0.1);
 
         // Knockback: push player away from source horizontally and give small upward impulse
         if (sourcePos) {
-            this.stunTimer = 0.3; // 0.3 seconds stun
+            this.stunTimer = this.STUN_TIME;
             const knockDir = this.body.position.vsub(sourcePos);
             knockDir.y = 0;
             if (knockDir.length() > 0) {
@@ -652,10 +877,7 @@ export class Player extends BaseMesh {
         this.isDead = true;
         console.log('Player died');
 
-        // TODO: Add death animation here (placeholder for future implementation)
-
-        // Hide player mesh
-        this.mesh.visible = false;
+        this.fadeToAction(ActionType.Death, 0.1);
 
         // Trigger death callback if set
         if (this.deathCallback) {
@@ -682,9 +904,6 @@ export class Player extends BaseMesh {
         // Reset position and velocity
         this.body.position.copy(position);
         this.body.velocity.set(0, 0, 0);
-
-        // Make player visible again
-        this.mesh.visible = true;
 
         console.log('Player respawned at', position);
     }
@@ -795,13 +1014,13 @@ export class Player extends BaseMesh {
 
     private createLevelUpParticles() {
         // Create a burst of yellow particles that explode outward from the player
-        const particleCount = 30;
-        // Create shared geometry for all particles
-        const particleGeometry = new THREE.BoxGeometry(0.15, 0.15, 0.15);
+        const particleCount = 100;
+
+        // Create shared material for all particles
         const particleMaterial = new THREE.MeshStandardMaterial({
             color: 0xffff00, // Yellow
             emissive: 0xffff00,
-            emissiveIntensity: 1.5, // Increased for brighter particles
+            emissiveIntensity: 1, // Increased for brighter particles
             transparent: true,
             opacity: 1.0
         });
@@ -813,12 +1032,15 @@ export class Player extends BaseMesh {
             const phi = Math.random() * Math.PI; // Polar angle (0 to π)
 
             // Convert to Cartesian coordinates for velocity
-            const speed = 3 + Math.random() * 2; // Random speed between 3-5 units/sec
+            const randomSeed = Math.random();
+            const speed = 8 + randomSeed; // Random speed between 8-9 units/sec
             const vx = speed * Math.sin(phi) * Math.cos(theta);
-            const vy = speed * Math.sin(phi) * Math.sin(theta);
+            const vy = speed * Math.sin(phi) * Math.sin(theta) * 0.2 + 5;
             const vz = speed * Math.cos(phi);
 
             // Clone material for each particle (needed for independent opacity during fade)
+            const particleSize = 0.075 + (1 - randomSeed) * 0.1;
+            const particleGeometry = new THREE.SphereGeometry(particleSize, 12, 12).scale(1, 0.5, 1);
             const particle = new THREE.Mesh(particleGeometry, particleMaterial.clone());
             particle.position.copy(this.mesh.position);
             particle.position.y += 0.5; // Start at player center
@@ -886,28 +1108,7 @@ export class Player extends BaseMesh {
         this.levelUpParticleTimer = 0;
     }
 
-    private checkDashHits(enemies: Enemy[]) {
-        // Check collision with player body during dash
-        for (const enemy of enemies) {
-            if (enemy.isDead || enemy.isDying) continue;
 
-            // Skip if we already hit this enemy during this dash
-            if (this.dashHitEnemies.has(enemy)) continue;
-
-            // Check if player body overlaps with enemy body
-            if (this.checkCollision(this.body, enemy.body)) {
-                // Deal 3x weapon damage with tech multiplier
-                const damage = this.getHitDamage(3);
-                enemy.takeDamage(damage, this.body.position);
-                console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
-
-                this.tryIncrementWeaponTech(enemy.techDropRateFactor);
-
-                // Mark this enemy as hit during this dash
-                this.dashHitEnemies.add(enemy);
-            }
-        }
-    }
 
     /**
      * Collect X-Data
@@ -978,13 +1179,48 @@ export class Player extends BaseMesh {
         // Recalculate stats with level multiplier
         this.recalculateStats();
 
-        // Trigger level up particle explosion
-        this.createLevelUpParticles();
-
         // Heal player up to max HP and TP
         this.heal(this.maxHp, this.maxTp);
 
+        // Start level-up animation (movement blocked until animation completes)
+        this.isLevelingUp = true;
+        this.fadeToAction(ActionType.PowerUp, 0.1);
+
+        // Start shockwave timer
+        this.shockwavePending = true;
+        this.levelUpShockwaveTimer = 0;
+
         console.log(`Level Up! Now level ${this.level}. Next level requires ${this.expRequired} EXP. ${this.statPointsAvailable} stat points available.`);
+    }
+
+    /**
+     * Update level-up shockwave timer and trigger shockwave after delay
+     */
+    private updateLevelUpShockwave(dt: number): void {
+        if (!this.shockwavePending) return;
+
+        this.levelUpShockwaveTimer += dt;
+        if (this.levelUpShockwaveTimer >= this.LEVEL_UP_SHOCKWAVE_DELAY) {
+            this.executeLevelUpShockwave();
+            this.createLevelUpParticles();
+            this.shockwavePending = false;
+        }
+    }
+
+    /**
+     * Execute shockwave attack hitting all nearby enemies
+     */
+    private executeLevelUpShockwave(): void {
+        const damage = this.getHitDamage();
+
+        // Find all enemies in the world and damage them
+        for (const body of this.world.bodies) {
+            const entity = (body as any).entity;
+            if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
+                entity.takeDamage(damage, this.body.position);
+                console.log(`Level-up shockwave hit enemy for ${damage} damage`);
+            }
+        }
     }
 
     /**

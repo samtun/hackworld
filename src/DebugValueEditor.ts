@@ -16,6 +16,17 @@ export class DebugValueEditor {
     private isExpanded: boolean = false;
     isVisible: boolean = false;
 
+    // Collider visibility
+    collidersVisible: boolean = true;
+    onCollidersToggle?: (visible: boolean) => void;
+    private colliderToggleButton?: HTMLButtonElement;
+
+    // Position logging
+    positionLoggingEnabled: boolean = false;
+    private positionLogButton?: HTMLButtonElement;
+    private readonly POSITION_LOG_INTERVAL: number = 0.5;
+    private positionLogTimer: number = 0;
+
     // Track input elements for updating
     private inputElements: Map<string, HTMLInputElement> = new Map();
 
@@ -101,6 +112,35 @@ export class DebugValueEditor {
         title.style.paddingBottom = '10px';
         panel.appendChild(title);
 
+        // Top row with toggle buttons
+        const topButtonRow = document.createElement('div');
+        topButtonRow.style.display = 'flex';
+        topButtonRow.style.gap = '10px';
+        topButtonRow.style.marginBottom = '15px';
+
+        // Collider toggle button
+        this.colliderToggleButton = this.createButton('Colliders: ON', () => {
+            this.collidersVisible = !this.collidersVisible;
+            this.updateColliderButtonText();
+            if (this.onCollidersToggle) {
+                this.onCollidersToggle(this.collidersVisible);
+            }
+        });
+        this.colliderToggleButton.style.flex = '1';
+        this.colliderToggleButton.style.backgroundColor = '#4a4';
+        topButtonRow.appendChild(this.colliderToggleButton);
+
+        // Position logging toggle button
+        this.positionLogButton = this.createButton('Pos Log: OFF', () => {
+            this.positionLoggingEnabled = !this.positionLoggingEnabled;
+            this.updatePositionLogButtonText();
+        });
+        this.positionLogButton.style.flex = '1';
+        this.positionLogButton.style.backgroundColor = '#666';
+        topButtonRow.appendChild(this.positionLogButton);
+
+        panel.appendChild(topButtonRow);
+
         // Stats Section - using regular grid without auto-flow for precise placement
         const statsSection = this.createSection('Player Stats');
         const statsContainer = document.createElement('div');
@@ -158,7 +198,7 @@ export class DebugValueEditor {
         statsContainer.appendChild(xDataMoneyRow);
 
         statsSection.appendChild(statsContainer);
-        
+
         // Add Level Up button
         const levelUpButton = this.createButton('Level Up', () => {
             if (this.player) {
@@ -169,7 +209,7 @@ export class DebugValueEditor {
         });
         levelUpButton.style.marginTop = '10px';
         statsSection.appendChild(levelUpButton);
-        
+
         panel.appendChild(statsSection);
 
         // Weapon Tech Section with two-column layout
@@ -547,6 +587,13 @@ export class DebugValueEditor {
     show(): void {
         this.isVisible = true;
         this.container.style.display = 'block';
+
+        // Enable colliders by default when showing
+        this.collidersVisible = true;
+        this.updateColliderButtonText();
+        if (this.onCollidersToggle) {
+            this.onCollidersToggle(true);
+        }
     }
 
     hide(): void {
@@ -555,13 +602,43 @@ export class DebugValueEditor {
         this.container.style.display = 'none';
         this.contentPanel.style.display = 'none';
         this.toggleButton.innerHTML = '▼';
+
+        // Hide colliders when hiding editor
+        this.collidersVisible = false;
+        this.updateColliderButtonText();
+        if (this.onCollidersToggle) {
+            this.onCollidersToggle(false);
+        }
     }
 
-    update(player: Player): void {
+    private updateColliderButtonText(): void {
+        if (this.colliderToggleButton) {
+            this.colliderToggleButton.textContent = `Colliders: ${this.collidersVisible ? 'ON' : 'OFF'}`;
+            this.colliderToggleButton.style.backgroundColor = this.collidersVisible ? '#4a4' : '#666';
+        }
+    }
+
+    private updatePositionLogButtonText(): void {
+        if (this.positionLogButton) {
+            this.positionLogButton.textContent = `Pos Log: ${this.positionLoggingEnabled ? 'ON' : 'OFF'}`;
+            this.positionLogButton.style.backgroundColor = this.positionLoggingEnabled ? '#4a4' : '#666';
+        }
+    }
+
+    update(player: Player, dt: number): void {
         if (!this.isVisible || !this.isExpanded) return;
 
         // Store player reference for button callbacks
         this.player = player;
+
+        // Log player position if enabled (throttled to every 0.5s)
+        if (this.positionLoggingEnabled) {
+            this.positionLogTimer += dt;
+            if (this.positionLogTimer >= this.POSITION_LOG_INTERVAL) {
+                this.positionLogTimer = 0;
+                console.log(`Player position: x=${player.position.x.toFixed(2)}, y=${player.position.y.toFixed(2)}, z=${player.position.z.toFixed(2)}`);
+            }
+        }
 
         // Update all input values from player
         this.updateInputValue('hp', player.hp);

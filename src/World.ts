@@ -92,10 +92,10 @@ export class World {
     async preloadCommonAssets(): Promise<void> {
         console.log("Preloading common assets ...");
         const commonAssets = [
-            'models/sword.glb',
-            'models/double_sword.glb',
-            'models/lance.glb',
-            'models/hammer.glb',
+            'models/aegis_sword.glb',
+            'models/rune_blade.glb',
+            'models/fierce_lance.glb',
+            'models/battle_hawk.glb',
             'models/trader_weapons.glb',
             'models/npc_placeholder.glb',
             'models/healing_station.glb',
@@ -184,7 +184,7 @@ export class World {
                 };
             }
 
-            enemy.update(dt, player);
+            enemy.update(dt);
 
             if (enemy.isDead) {
                 // Grant EXP to player
@@ -201,8 +201,7 @@ export class World {
                     this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, enemy, player);
                 }
 
-                this.scene.remove(enemy.mesh);
-                this.physicsWorld.removeBody(enemy.body);
+                enemy.cleanup();
                 this.currentStage.enemies.splice(i, 1);
             }
         }
