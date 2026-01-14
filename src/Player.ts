@@ -724,7 +724,8 @@ export class Player extends BaseMesh {
             // Prevent sliding on slopes less than 45 degrees
             if (this.isGrounded && result.hitNormalWorld) {
                 const normal = result.hitNormalWorld;
-                const slopeAngle = Math.acos(normal.y); // Angle from vertical (up vector is 0,1,0)
+                // Clamp normal.y to prevent Math.acos errors due to floating point precision
+                const slopeAngle = Math.acos(Math.max(-1, Math.min(1, normal.y))); // Angle from vertical (up vector is 0,1,0)
                 const slopeAngleDegrees = slopeAngle * (180 / Math.PI);
                 
                 // If on a slope less than 45 degrees, cancel downward velocity to prevent sliding
