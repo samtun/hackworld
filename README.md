@@ -54,14 +54,23 @@ Play the game at: [https://samtun.github.io/hackworld/](https://samtun.github.io
 
 ### Controls
 
-The game is fully playable with keyboard and controller (tested with XBox controller).
+The game is fully playable with keyboard, controller (tested with XBox controller), and mobile touch controls.
 
+#### Keyboard & Controller
 - **WASD / Arrow Keys / LStick**: Move player
 - **Space / A**: Jump
 - **K / X**: Attack (tap for normal attack, hold for 1s then release for charged dash attack)
 - **I / Select**: Toggle inventory
 - **Enter / A**: Interact and select in menus
 - **ESC / B**: Close menus
+
+#### Mobile Touch Controls
+Mobile devices (phones and tablets) automatically display on-screen touch controls:
+- **Virtual Joystick (left side)**: Move player
+- **Jump Button (bottom right)**: Jump
+- **Attack Button (bottom right)**: Attack (tap for normal attack, hold for 1s then release for charged dash attack)
+- **Interact Button (bottom right)**: Interact with NPCs and objects, select in menus
+- **Inventory Button (top center)**: Toggle inventory
 
 ## Development
 

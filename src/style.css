@@ -192,3 +192,105 @@ body {
     border-radius: 4px;
     text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
 }
+
+/* Mobile Controls */
+.mobile-joystick-container {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    width: 160px;
+    height: 160px;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.mobile-buttons-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    z-index: 1000;
+}
+
+.mobile-control-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.8);
+    background: rgba(50, 50, 50, 0.7);
+    color: #fff;
+    font-family: 'Share Tech', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    pointer-events: auto;
+}
+
+.mobile-control-btn:active {
+    background: rgba(100, 100, 100, 0.9);
+    transform: scale(0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.mobile-jump-btn {
+    background: rgba(50, 120, 50, 0.7);
+}
+
+.mobile-jump-btn:active {
+    background: rgba(80, 180, 80, 0.9);
+}
+
+.mobile-attack-btn {
+    background: rgba(180, 50, 50, 0.7);
+}
+
+.mobile-attack-btn:active {
+    background: rgba(220, 80, 80, 0.9);
+}
+
+.mobile-interact-btn {
+    background: rgba(50, 100, 180, 0.7);
+}
+
+.mobile-interact-btn:active {
+    background: rgba(80, 150, 220, 0.9);
+}
+
+.mobile-inventory-btn {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 50px;
+    border-radius: 8px;
+    border: 3px solid rgba(255, 255, 255, 0.8);
+    background: rgba(100, 50, 150, 0.7);
+    color: #fff;
+    font-family: 'Share Tech', sans-serif;
+    font-size: 14px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 1000;
+    pointer-events: auto;
+}
+
+.mobile-inventory-btn:active {
+    background: rgba(150, 80, 200, 0.9);
+    transform: translateX(-50%) scale(0.95);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}

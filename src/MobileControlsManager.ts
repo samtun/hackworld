@@ -1,0 +1,217 @@
+import nipplejs from 'nipplejs';
+import * as THREE from 'three';
+
+/**
+ * Manages mobile touch controls including virtual joystick and action buttons
+ */
+export class MobileControlsManager {
+    private joystickManager: any;
+    private joystickContainer!: HTMLDivElement;
+    private buttonsContainer!: HTMLDivElement;
+    private inventoryButton!: HTMLButtonElement;
+    
+    // Button elements
+    private jumpButton!: HTMLButtonElement;
+    private attackButton!: HTMLButtonElement;
+    private interactButton!: HTMLButtonElement;
+    
+    // Input state
+    public movementVector: THREE.Vector2 = new THREE.Vector2(0, 0);
+    public isJumpPressed: boolean = false;
+    public isAttackPressed: boolean = false;
+    public isInteractPressed: boolean = false;
+    public isInventoryPressed: boolean = false;
+    
+    // Track previous states for edge detection
+    private previousJumpState: boolean = false;
+    private previousAttackState: boolean = false;
+    private previousInteractState: boolean = false;
+    private previousInventoryState: boolean = false;
+    
+    // Mobile detection
+    private isMobileDevice: boolean = false;
+
+    constructor() {
+        // Check if device is mobile
+        this.isMobileDevice = this.detectMobile();
+        
+        if (!this.isMobileDevice) {
+            // Don't create controls on desktop
+            return;
+        }
+        
+        // Create joystick container
+        this.joystickContainer = document.createElement('div');
+        this.joystickContainer.id = 'mobile-joystick';
+        this.joystickContainer.className = 'mobile-joystick-container';
+        document.body.appendChild(this.joystickContainer);
+        
+        // Initialize nipplejs joystick
+        this.joystickManager = nipplejs.create({
+            zone: this.joystickContainer,
+            mode: 'static',
+            position: { left: '80px', bottom: '80px' },
+            color: 'cyan',
+            size: 120,
+            restOpacity: 0.5,
+        });
+        
+        // Setup joystick event listeners
+        this.joystickManager.on('move', (_evt: any, data: any) => {
+            const force = Math.min(data.force, 1); // Cap at 1
+            const angle = data.angle.radian;
+            
+            // Convert polar coordinates to cartesian
+            // Note: nipplejs uses standard math coords, we need game coords
+            // In nipplejs: 0° is right, 90° is up
+            // We want: positive X = right, negative Y = up (screen coords)
+            this.movementVector.x = Math.cos(angle) * force;
+            this.movementVector.y = -Math.sin(angle) * force;
+        });
+        
+        this.joystickManager.on('end', () => {
+            this.movementVector.set(0, 0);
+        });
+        
+        // Create buttons container (right side)
+        this.buttonsContainer = document.createElement('div');
+        this.buttonsContainer.className = 'mobile-buttons-container';
+        document.body.appendChild(this.buttonsContainer);
+        
+        // Create action buttons
+        this.jumpButton = this.createButton('Jump', 'mobile-jump-btn');
+        this.attackButton = this.createButton('Attack', 'mobile-attack-btn');
+        this.interactButton = this.createButton('Interact', 'mobile-interact-btn');
+        
+        this.buttonsContainer.appendChild(this.jumpButton);
+        this.buttonsContainer.appendChild(this.attackButton);
+        this.buttonsContainer.appendChild(this.interactButton);
+        
+        // Setup button event listeners
+        this.setupButtonListeners(this.jumpButton, 'isJumpPressed');
+        this.setupButtonListeners(this.attackButton, 'isAttackPressed');
+        this.setupButtonListeners(this.interactButton, 'isInteractPressed');
+        
+        // Create inventory button (top center)
+        this.inventoryButton = this.createButton('Inventory', 'mobile-inventory-btn');
+        document.body.appendChild(this.inventoryButton);
+        this.setupButtonListeners(this.inventoryButton, 'isInventoryPressed');
+    }
+    
+    private detectMobile(): boolean {
+        // Check for touch support and screen size
+        const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        const isSmallScreen = window.innerWidth <= 1024; // Tablets and phones
+        return hasTouchScreen && isSmallScreen;
+    }
+    
+    private createButton(label: string, className: string): HTMLButtonElement {
+        const button = document.createElement('button');
+        button.textContent = label;
+        button.className = `mobile-control-btn ${className}`;
+        
+        // Prevent default touch behaviors
+        button.addEventListener('touchstart', (e) => e.preventDefault());
+        
+        return button;
+    }
+    
+    private setupButtonListeners(button: HTMLButtonElement, stateKey: keyof MobileControlsManager) {
+        button.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            (this as any)[stateKey] = true;
+        });
+        
+        button.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            (this as any)[stateKey] = false;
+        });
+        
+        button.addEventListener('touchcancel', (e) => {
+            e.preventDefault();
+            (this as any)[stateKey] = false;
+        });
+    }
+    
+    /**
+     * Check if a button was just pressed this frame (edge detection)
+     */
+    public wasJustPressed(button: 'jump' | 'attack' | 'interact' | 'inventory'): boolean {
+        switch (button) {
+            case 'jump':
+                return this.isJumpPressed && !this.previousJumpState;
+            case 'attack':
+                return this.isAttackPressed && !this.previousAttackState;
+            case 'interact':
+                return this.isInteractPressed && !this.previousInteractState;
+            case 'inventory':
+                return this.isInventoryPressed && !this.previousInventoryState;
+        }
+    }
+    
+    /**
+     * Check if a button was just released this frame
+     */
+    public wasJustReleased(button: 'jump' | 'attack' | 'interact' | 'inventory'): boolean {
+        switch (button) {
+            case 'jump':
+                return !this.isJumpPressed && this.previousJumpState;
+            case 'attack':
+                return !this.isAttackPressed && this.previousAttackState;
+            case 'interact':
+                return !this.isInteractPressed && this.previousInteractState;
+            case 'inventory':
+                return !this.isInventoryPressed && this.previousInventoryState;
+        }
+    }
+    
+    /**
+     * Update state tracking - call at end of each frame
+     */
+    public updateState() {
+        this.previousJumpState = this.isJumpPressed;
+        this.previousAttackState = this.isAttackPressed;
+        this.previousInteractState = this.isInteractPressed;
+        this.previousInventoryState = this.isInventoryPressed;
+    }
+    
+    /**
+     * Show or hide mobile controls
+     */
+    public setVisible(visible: boolean) {
+        if (!this.isMobileDevice) return;
+        
+        const display = visible ? 'block' : 'none';
+        if (this.joystickContainer) this.joystickContainer.style.display = display;
+        if (this.buttonsContainer) this.buttonsContainer.style.display = display;
+        if (this.inventoryButton) this.inventoryButton.style.display = display;
+    }
+    
+    /**
+     * Check if mobile controls are active on this device
+     */
+    public get isMobile(): boolean {
+        return this.isMobileDevice;
+    }
+    
+    /**
+     * Cleanup resources
+     */
+    public destroy() {
+        if (this.joystickManager) {
+            this.joystickManager.destroy();
+        }
+        
+        if (this.joystickContainer && this.joystickContainer.parentNode) {
+            this.joystickContainer.parentNode.removeChild(this.joystickContainer);
+        }
+        
+        if (this.buttonsContainer && this.buttonsContainer.parentNode) {
+            this.buttonsContainer.parentNode.removeChild(this.buttonsContainer);
+        }
+        
+        if (this.inventoryButton && this.inventoryButton.parentNode) {
+            this.inventoryButton.parentNode.removeChild(this.inventoryButton);
+        }
+    }
+}

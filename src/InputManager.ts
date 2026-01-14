@@ -1,8 +1,10 @@
 import * as THREE from 'three';
+import { MobileControlsManager } from './MobileControlsManager';
 
 export class InputManager {
     keys: { [key: string]: boolean } = {};
     gamepadIndex: number | null = null;
+    mobileControls: MobileControlsManager;
     
     // Track previous button states for detecting press and release
     private previousAttackState: boolean = false;
@@ -24,12 +26,16 @@ export class InputManager {
                 this.gamepadIndex = null;
             }
         });
+        
+        // Initialize mobile controls
+        this.mobileControls = new MobileControlsManager();
     }
     
     // Call this at the end of each frame to update state tracking
     updateState() {
         this.previousAttackState = this.isAttackPressed();
         this.previousSelectState = this.isSelectPressed();
+        this.mobileControls.updateState();
     }
 
     getMovementVector(): THREE.Vector2 {
@@ -54,6 +60,12 @@ export class InputManager {
                 if (Math.abs(axisY) > 0.1) move.y += axisY;
             }
         }
+        
+        // Mobile joystick
+        if (this.mobileControls.isMobile) {
+            move.x += this.mobileControls.movementVector.x;
+            move.y += this.mobileControls.movementVector.y;
+        }
 
         // Normalize if length > 1 to prevent faster diagonal movement
         if (move.length() > 1) {
@@ -75,6 +87,12 @@ export class InputManager {
                 if (gp.buttons[2].pressed) return true;
             }
         }
+        
+        // Mobile touch button
+        if (this.mobileControls.isMobile && this.mobileControls.isAttackPressed) {
+            return true;
+        }
+        
         return false;
     }
     
@@ -105,6 +123,12 @@ export class InputManager {
                 if (gp.buttons[0].pressed) return true;
             }
         }
+        
+        // Mobile touch button
+        if (this.mobileControls.isMobile && this.mobileControls.isJumpPressed) {
+            return true;
+        }
+        
         return false;
     }
 
@@ -118,6 +142,12 @@ export class InputManager {
                 if (gp.buttons[8].pressed) return true;
             }
         }
+        
+        // Mobile touch button
+        if (this.mobileControls.isMobile && this.mobileControls.isInventoryPressed) {
+            return true;
+        }
+        
         return false;
     }
 
@@ -192,6 +222,12 @@ export class InputManager {
                 if (gp.buttons[0]?.pressed) return true;
             }
         }
+        
+        // Mobile interact button also acts as select in menus
+        if (this.mobileControls.isMobile && this.mobileControls.isInteractPressed) {
+            return true;
+        }
+        
         return false;
     }
     
