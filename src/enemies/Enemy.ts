@@ -31,6 +31,12 @@ export class Enemy extends BaseMesh {
     expAmount: number = 10; // EXP granted on defeat
     damage: number = 10;
 
+    // Base position tracking for return behavior
+    basePosition: CANNON.Vec3;
+    returnToBaseTimer: number = 0;
+    isReturningToBase: boolean = false;
+    aggroRange: number = 15;
+
     // Animation
     isAttacking: boolean = false;
     attackAnimTimer: number = 0;
@@ -76,6 +82,9 @@ export class Enemy extends BaseMesh {
         this.scene = scene;
         this.world = world;
         this.physicsMaterial = physicsMaterial;
+
+        // Store base position for return behavior
+        this.basePosition = position.clone();
 
         // Visual
         scene.add(this.mesh);
@@ -354,14 +363,19 @@ export class Enemy extends BaseMesh {
         const playerPos = this.player.body.position;
         const myPos = this.body.position;
 
-        const dist = myPos.distanceTo(playerPos);
+        const distToPlayer = myPos.distanceTo(playerPos);
+        const distToBase = myPos.distanceTo(this.basePosition);
 
         let isMoving = false;
 
         // Don't move while attacking
         if (!this.isAttacking) {
-            // Chase
-            if (dist < 15) { // Aggro range
+            // Check if player is in aggro range
+            if (distToPlayer < this.aggroRange) {
+                // Player in range - chase player
+                this.isReturningToBase = false;
+                this.returnToBaseTimer = 0;
+
                 const dir = playerPos.vsub(myPos);
                 dir.y = 0; // Don't fly
                 if (dir.length() > 0) {
@@ -378,9 +392,45 @@ export class Enemy extends BaseMesh {
                     this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
                 }
             } else {
-                // Idle friction
-                this.body.velocity.x *= 0.9;
-                this.body.velocity.z *= 0.9;
+                // Player out of range - return to base after delay
+                if (!this.isReturningToBase) {
+                    // Start the wait timer
+                    this.returnToBaseTimer += dt;
+                    
+                    // After 2 seconds, start returning
+                    if (this.returnToBaseTimer >= 2.0) {
+                        this.isReturningToBase = true;
+                    } else {
+                        // Still waiting - apply idle friction
+                        this.body.velocity.x *= 0.9;
+                        this.body.velocity.z *= 0.9;
+                    }
+                } else {
+                    // Return to base position
+                    const threshold = 0.5; // Stop when within this distance
+                    if (distToBase > threshold) {
+                        const dir = this.basePosition.vsub(myPos);
+                        dir.y = 0;
+                        if (dir.length() > 0) {
+                            dir.normalize();
+                            this.body.velocity.x = dir.x * this.speed;
+                            this.body.velocity.z = dir.z * this.speed;
+                            isMoving = true;
+
+                            // Rotate to face base position
+                            const angle = Math.atan2(dir.x, dir.z);
+                            const targetQuaternion = new THREE.Quaternion();
+                            targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+                            this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
+                        }
+                    } else {
+                        // Reached base - stop and reset
+                        this.body.velocity.x *= 0.9;
+                        this.body.velocity.z *= 0.9;
+                        this.isReturningToBase = false;
+                        this.returnToBaseTimer = 0;
+                    }
+                }
             }
         } else {
             // Stop movement while attacking
@@ -393,10 +443,10 @@ export class Enemy extends BaseMesh {
             this.attackTimer -= dt;
         }
 
-        // Attack Trigger (with randomness: +/- 0.4 units)
+        // Attack Trigger (with randomness: +/- 0.4 units) - only if player in aggro range
         const attackRangeVariance = (Math.random() * 0.8 - 0.4);
-        if (dist < this.attackRange + attackRangeVariance && this.attackTimer <= 0 && !this.isAttacking) {
-            console.log(`Attack range check: dist=${dist.toFixed(2)}, threshold=${(this.attackRange + attackRangeVariance).toFixed(2)}`);
+        if (distToPlayer < this.aggroRange && distToPlayer < this.attackRange + attackRangeVariance && this.attackTimer <= 0 && !this.isAttacking) {
+            console.log(`Attack range check: dist=${distToPlayer.toFixed(2)}, threshold=${(this.attackRange + attackRangeVariance).toFixed(2)}`);
             this.attack();
         }
 
@@ -455,6 +505,10 @@ export class Enemy extends BaseMesh {
         if (this.isDying || this.isDead) return;
 
         this.hp -= amount;
+
+        // Reset return-to-base behavior when taking damage
+        this.isReturningToBase = false;
+        this.returnToBaseTimer = 0;
 
         // Spawn damage number if callback is set
         if (this.onDamageTaken) {
