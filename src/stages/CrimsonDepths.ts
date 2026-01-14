@@ -40,12 +40,12 @@ export class CrimsonDepths extends BaseStage {
         this.createBox(1, 4, 1, new CANNON.Vec3(-5, 2, 5));
 
         // Spawn Enemies
-        this.spawnEnemy(new CANNON.Vec3(5, 2, -5));
-        this.spawnEnemy(new CANNON.Vec3(-5, 2, -5));
-        this.spawnEnemy(new CANNON.Vec3(8, 2, 8));
+        this.spawnEnemy(new CANNON.Vec3(5, 0.5, -5));
+        this.spawnEnemy(new CANNON.Vec3(-5, 0.5, -5));
+        this.spawnEnemy(new CANNON.Vec3(8, 0.5, 8));
 
         // Spawn Large Enemies
-        this.spawnLargeEnemy(new CANNON.Vec3(0, 2, 10));
-        this.spawnLargeEnemy(new CANNON.Vec3(10, 2, 0));
+        this.spawnLargeEnemy(new CANNON.Vec3(0, 1, 10));
+        this.spawnLargeEnemy(new CANNON.Vec3(10, 1, 0));
     }
 }

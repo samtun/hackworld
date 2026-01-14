@@ -41,10 +41,10 @@ export class VioletAbyss extends BaseStage {
         this.createBox(5, 1, 2, new CANNON.Vec3(-8, 0.5, 8));
 
         // Spawn more enemies - harder stage
-        this.spawnEnemy(new CANNON.Vec3(6, 2, 6));
-        this.spawnEnemy(new CANNON.Vec3(-6, 2, 6));
-        this.spawnEnemy(new CANNON.Vec3(6, 2, -6));
-        this.spawnEnemy(new CANNON.Vec3(-6, 2, -6));
-        this.spawnEnemy(new CANNON.Vec3(0, 2, -10));
+        this.spawnEnemy(new CANNON.Vec3(6, 0.5, 6));
+        this.spawnEnemy(new CANNON.Vec3(-6, 0.5, 6));
+        this.spawnEnemy(new CANNON.Vec3(6, 0.5, -6));
+        this.spawnEnemy(new CANNON.Vec3(-6, 0.5, -6));
+        this.spawnEnemy(new CANNON.Vec3(0, 0.5, -10));
     }
 }
