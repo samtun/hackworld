@@ -42,10 +42,6 @@ export class InputManager {
         this.mobileControls = MobileControlsManager.Instance;
     }
 
-    public setMenuOpen(isOpen: boolean) {
-        this.mobileControls?.setMenuOpen(isOpen);
-    }
-
     // Call this at the end of each frame to update state tracking
     updateState() {
         this.previousAttackState = this.isAttackPressed();
@@ -179,6 +175,12 @@ export class InputManager {
                 if (gp.axes[1] < -0.5) return true;
             }
         }
+
+        // Mobile joystick
+        if (this.mobileControls?.isMobile) {
+            return this.mobileControls.movementVector.y < -0.5;
+        }
+
         return false;
     }
 
@@ -194,6 +196,12 @@ export class InputManager {
                 if (gp.axes[1] > 0.5) return true;
             }
         }
+
+        // Mobile joystick
+        if (this.mobileControls?.isMobile) {
+            return this.mobileControls.movementVector.y > 0.5;
+        }
+
         return false;
     }
 
@@ -209,6 +217,13 @@ export class InputManager {
                 if (gp.axes[0] < -0.5) return true;
             }
         }
+
+
+        // Mobile joystick
+        if (this.mobileControls?.isMobile) {
+            return this.mobileControls.movementVector.x < -0.5;
+        }
+
         return false;
     }
 
@@ -224,6 +239,12 @@ export class InputManager {
                 if (gp.axes[0] > 0.5) return true;
             }
         }
+
+        // Mobile joystick
+        if (this.mobileControls?.isMobile) {
+            return this.mobileControls.movementVector.x > 0.5;
+        }
+
         return false;
     }
 
@@ -239,7 +260,7 @@ export class InputManager {
         }
 
         // Mobile interact button also acts as select in menus
-        if (this.mobileControls?.isMobile && this.mobileControls?.isInteractPressed) {
+        if (this.mobileControls?.isMobile && this.mobileControls?.isJumpPressed) {
             return true;
         }
 

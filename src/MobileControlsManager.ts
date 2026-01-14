@@ -21,26 +21,16 @@ export class MobileControlsManager {
     public movementVector: THREE.Vector2 = new THREE.Vector2(0, 0);
     public isJumpPressed: boolean = false;
     public isAttackPressed: boolean = false;
-    public isInteractPressed: boolean = false;
     public isInventoryPressed: boolean = false;
     public isCancelPressed: boolean = false;
 
     // Track previous states for edge detection
     private previousJumpState: boolean = false;
     private previousAttackState: boolean = false;
-    private previousInteractState: boolean = false;
     private previousInventoryState: boolean = false;
 
     // Mobile detection
     private isMobileDevice: boolean = false;
-    
-    // Menu state tracking
-    private isMenuOpen: boolean = false;
-
-    // Screen tap handler for interaction
-    private screenTapHandler?: (e: TouchEvent) => void;
-    private lastTapTime: number = 0;
-    private readonly TAP_DEBOUNCE_MS = 200; // Prevent rapid taps
 
     private constructor() {
         // Check if device is mobile
@@ -92,56 +82,22 @@ export class MobileControlsManager {
         // Create action buttons (A for Jump, X for Attack)
         // Using Xbox controller button names for consistency
         this.jumpButton = this.createButton('A', 'mobile-jump-btn');
+        this.closeButton = this.createButton('B', 'mobile-close-btn');
         this.attackButton = this.createButton('X', 'mobile-attack-btn');
 
         this.buttonsContainer.appendChild(this.jumpButton);
+        this.buttonsContainer.appendChild(this.closeButton);
         this.buttonsContainer.appendChild(this.attackButton);
 
         // Setup button event listeners
         this.setupButtonListeners(this.jumpButton, 'isJumpPressed');
         this.setupButtonListeners(this.attackButton, 'isAttackPressed');
-
-        // Create inventory button (top center) - using Select button convention
-        this.inventoryButton = this.createButton('Select', 'mobile-inventory-btn');
-        document.body.appendChild(this.inventoryButton);
-        this.setupButtonListeners(this.inventoryButton, 'isInventoryPressed');
-
-        // Create close button (top center, initially hidden) - using B button for cancel
-        this.closeButton = this.createButton('B', 'mobile-close-btn');
-        this.closeButton.style.display = 'none'; // Hidden by default
-        document.body.appendChild(this.closeButton);
         this.setupButtonListeners(this.closeButton, 'isCancelPressed');
 
-        // Setup screen tap for interaction
-        // Any tap on the screen (not on a control element) triggers interaction
-        // This is used for NPC dialogues and interactions in the game world
-        this.screenTapHandler = (e: TouchEvent) => {
-            // Debounce rapid taps
-            const now = Date.now();
-            if (now - this.lastTapTime < this.TAP_DEBOUNCE_MS) {
-                return;
-            }
-            this.lastTapTime = now;
-
-            // Check if tap is on a control element
-            const target = e.target as HTMLElement;
-            const isOnControl = target.closest('.mobile-joystick-container') ||
-                target.closest('.mobile-buttons-container') ||
-                target.closest('.mobile-inventory-btn') ||
-                target.closest('.mobile-close-btn') ||
-                target.classList.contains('mobile-control-btn');
-
-            if (!isOnControl) {
-                // Trigger interaction
-                this.isInteractPressed = true;
-                // Auto-release after a short delay
-                setTimeout(() => {
-                    this.isInteractPressed = false;
-                }, 100);
-            }
-        };
-
-        document.addEventListener('touchstart', this.screenTapHandler);
+        // Create inventory button (top center) - using Select button convention
+        this.inventoryButton = this.createButton('', 'mobile-inventory-btn');
+        document.body.appendChild(this.inventoryButton);
+        this.setupButtonListeners(this.inventoryButton, 'isInventoryPressed');
     }
 
     public static get Instance(): MobileControlsManager {
@@ -172,13 +128,10 @@ export class MobileControlsManager {
         button.textContent = label;
         button.className = `mobile-control-btn ${className}`;
 
-        // Prevent default touch behaviors
-        button.addEventListener('touchstart', (e) => e.preventDefault());
-
         return button;
     }
 
-    private setupButtonListeners(button: HTMLButtonElement, stateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInteractPressed' | 'isInventoryPressed' | 'isCancelPressed') {
+    private setupButtonListeners(button: HTMLButtonElement, stateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInventoryPressed' | 'isCancelPressed') {
         button.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this[stateKey] = true;
@@ -198,14 +151,12 @@ export class MobileControlsManager {
     /**
      * Check if a button was just pressed this frame (edge detection)
      */
-    public wasJustPressed(button: 'jump' | 'attack' | 'interact' | 'inventory'): boolean {
+    public wasJustPressed(button: 'jump' | 'attack' | 'inventory'): boolean {
         switch (button) {
             case 'jump':
                 return this.isJumpPressed && !this.previousJumpState;
             case 'attack':
                 return this.isAttackPressed && !this.previousAttackState;
-            case 'interact':
-                return this.isInteractPressed && !this.previousInteractState;
             case 'inventory':
                 return this.isInventoryPressed && !this.previousInventoryState;
             default:
@@ -216,14 +167,12 @@ export class MobileControlsManager {
     /**
      * Check if a button was just released this frame
      */
-    public wasJustReleased(button: 'jump' | 'attack' | 'interact' | 'inventory'): boolean {
+    public wasJustReleased(button: 'jump' | 'attack' | 'inventory'): boolean {
         switch (button) {
             case 'jump':
                 return !this.isJumpPressed && this.previousJumpState;
             case 'attack':
                 return !this.isAttackPressed && this.previousAttackState;
-            case 'interact':
-                return !this.isInteractPressed && this.previousInteractState;
             case 'inventory':
                 return !this.isInventoryPressed && this.previousInventoryState;
             default:
@@ -237,7 +186,6 @@ export class MobileControlsManager {
     public updateState() {
         this.previousJumpState = this.isJumpPressed;
         this.previousAttackState = this.isAttackPressed;
-        this.previousInteractState = this.isInteractPressed;
         this.previousInventoryState = this.isInventoryPressed;
     }
 
@@ -250,27 +198,8 @@ export class MobileControlsManager {
         const display = visible ? 'block' : 'none';
         if (this.joystickContainer) this.joystickContainer.style.display = display;
         if (this.buttonsContainer) this.buttonsContainer.style.display = display;
-        // Don't hide inventory/close buttons here, they're managed by setMenuOpen
-    }
-
-    /**
-     * Show close button when menu is open, show inventory button when closed
-     */
-    public setMenuOpen(isOpen: boolean) {
-        if (!this.isMobileDevice) return;
-        
-        // Track menu state to disable screen-wide interaction when menus are open
-        this.isMenuOpen = isOpen;
-
-        if (isOpen) {
-            // Show close button, hide inventory button
-            if (this.inventoryButton) this.inventoryButton.style.display = 'none';
-            if (this.closeButton) this.closeButton.style.display = 'block';
-        } else {
-            // Show inventory button, hide close button
-            if (this.inventoryButton) this.inventoryButton.style.display = 'block';
-            if (this.closeButton) this.closeButton.style.display = 'none';
-        }
+        if (this.inventoryButton) this.inventoryButton.style.display = display;
+        if (this.closeButton) this.closeButton.style.display = display;
     }
 
     /**
@@ -302,10 +231,6 @@ export class MobileControlsManager {
 
         if (this.closeButton && this.closeButton.parentNode) {
             this.closeButton.parentNode.removeChild(this.closeButton);
-        }
-
-        if (this.screenTapHandler) {
-            document.removeEventListener('touchstart', this.screenTapHandler);
         }
     }
 }

@@ -432,11 +432,6 @@ export class Game {
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.isAnyMenuOpen();
 
-        // Update mobile controls button state (show close button when menu is open)
-        if (this.input?.isMobile) {
-            this.input.setMenuOpen(anyMenuOpen);
-        }
-
         // Define interactive entity types
         interface InteractiveEntity {
             type: InteractiveEntityType;
