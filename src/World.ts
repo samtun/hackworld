@@ -217,6 +217,7 @@ export class World {
             'models/lobby.glb',
             'models/lobby_collider.glb',
             'models/main_character.glb',
+            'models/xdata_terminal.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);

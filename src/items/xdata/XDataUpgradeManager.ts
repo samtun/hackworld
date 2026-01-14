@@ -99,20 +99,6 @@ export class XDataUpgradeManager {
         });
         windowDiv.appendChild(titleDiv);
 
-        // Subtitle (Ford's message)
-        const subtitleDiv = document.createElement('div');
-        subtitleDiv.innerText = 'Welcome! I can help you unlock your potential with X-Data.';
-        Object.assign(subtitleDiv.style, {
-            textAlign: 'center',
-            fontSize: '16px',
-            fontStyle: 'italic',
-            color: COLORS.TEXT,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: '5px',
-            marginBottom: '15px'
-        });
-        windowDiv.appendChild(subtitleDiv);
-
         // X-Data Display
         this.xDataDisplay = document.createElement('div');
         Object.assign(this.xDataDisplay.style, {
@@ -235,7 +221,7 @@ export class XDataUpgradeManager {
         if (input) {
             // Update hints based on input method
             this.hintDiv.innerHTML = getHint(HintConfigs.upgradeClose, input);
-            
+
             const oldIndex = this.selectedIndex;
             this.handleNavigation(player, input);
 
