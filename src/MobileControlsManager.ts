@@ -1,11 +1,11 @@
-import nipplejs from 'nipplejs';
+import nipplejs, { JoystickManager } from 'nipplejs';
 import * as THREE from 'three';
 
 /**
  * Manages mobile touch controls including virtual joystick and action buttons
  */
 export class MobileControlsManager {
-    private joystickManager: any;
+    private joystickManager?: JoystickManager;
     private joystickContainer!: HTMLDivElement;
     private buttonsContainer!: HTMLDivElement;
     private inventoryButton!: HTMLButtonElement;
@@ -125,20 +125,20 @@ export class MobileControlsManager {
         return button;
     }
     
-    private setupButtonListeners(button: HTMLButtonElement, stateKey: keyof MobileControlsManager) {
+    private setupButtonListeners(button: HTMLButtonElement, stateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInteractPressed' | 'isInventoryPressed') {
         button.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            (this as any)[stateKey] = true;
+            this[stateKey] = true;
         });
         
         button.addEventListener('touchend', (e) => {
             e.preventDefault();
-            (this as any)[stateKey] = false;
+            this[stateKey] = false;
         });
         
         button.addEventListener('touchcancel', (e) => {
             e.preventDefault();
-            (this as any)[stateKey] = false;
+            this[stateKey] = false;
         });
     }
     
@@ -155,6 +155,8 @@ export class MobileControlsManager {
                 return this.isInteractPressed && !this.previousInteractState;
             case 'inventory':
                 return this.isInventoryPressed && !this.previousInventoryState;
+            default:
+                return false;
         }
     }
     
@@ -171,6 +173,8 @@ export class MobileControlsManager {
                 return !this.isInteractPressed && this.previousInteractState;
             case 'inventory':
                 return !this.isInventoryPressed && this.previousInventoryState;
+            default:
+                return false;
         }
     }
     
