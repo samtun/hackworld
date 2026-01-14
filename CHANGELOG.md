@@ -1,3 +1,15 @@
+# [1.32.0](https://github.com/samtun/hackworld/compare/v1.31.0...v1.32.0) (2026-01-14)
+
+
+### Bug Fixes
+
+* move down enemy spawn positions ([977c562](https://github.com/samtun/hackworld/commit/977c562d50491baa9f071da47547a2d8df5e9902))
+
+
+### Features
+
+* add base position return behavior to enemies ([74b8ec3](https://github.com/samtun/hackworld/commit/74b8ec3476d0ab8b996d8243e19daee1b297dd5b))
+
 # [1.31.0](https://github.com/samtun/hackworld/compare/v1.30.0...v1.31.0) (2026-01-14)
 
 
