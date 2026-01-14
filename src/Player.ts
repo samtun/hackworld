@@ -721,6 +721,18 @@ export class Player extends BaseMesh {
 
             this.isGrounded = result.hasHit && result.body !== this.body;
 
+            // Prevent sliding on slopes less than 45 degrees
+            if (this.isGrounded && result.hitNormalWorld) {
+                const normal = result.hitNormalWorld;
+                const slopeAngle = Math.acos(normal.y); // Angle from vertical (up vector is 0,1,0)
+                const slopeAngleDegrees = slopeAngle * (180 / Math.PI);
+                
+                // If on a slope less than 45 degrees, cancel downward velocity to prevent sliding
+                if (slopeAngleDegrees < 45 && this.body.velocity.y < 0) {
+                    this.body.velocity.y = 0;
+                }
+            }
+
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
                 this.body.velocity.y = this.JUMP_FORCE;
                 this.jumpCooldownTimer = 1.0;
