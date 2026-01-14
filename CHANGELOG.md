@@ -1,3 +1,12 @@
+# [1.31.0](https://github.com/samtun/hackworld/compare/v1.30.0...v1.31.0) (2026-01-14)
+
+
+### Features
+
+* add grid to base of world ([50ea737](https://github.com/samtun/hackworld/commit/50ea7374f95179c590f2597e791fa6172e99c83f))
+* improve grid shader ([acaa5d0](https://github.com/samtun/hackworld/commit/acaa5d0b5768a44d416c0a0c4eff819da9a7cc35))
+* improve grid shader further ([003e02f](https://github.com/samtun/hackworld/commit/003e02f0a9adb2f7f0f619f233e55e8b9edbce61))
+
 # [1.30.0](https://github.com/samtun/hackworld/compare/v1.29.0...v1.30.0) (2026-01-14)
 
 
