@@ -107,8 +107,8 @@ export class Game {
         this.physicsWorld.addContactMaterial(defaultContactMaterial);
 
         // Setup Game Objects
-        this.input = new InputManager();
-        this.ui = new UIManager();
+        this.input = InputManager.Instance;
+        this.ui = UIManager.Instance;
         this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial, () => {
             this.ui.hideLoadingScreen();
             this.ui.showStartScreen();
@@ -308,12 +308,12 @@ export class Game {
 
         if (this.currentScene === 'startScreen') {
             this.ui.showStartScreen();
-
-            if (!this.isTransitioning && (this.input.isStartPressed() || import.meta.env.DEV)) {
+            if (!this.isTransitioning && (this.input.isStartPressed() || this.ui.startScreenTapped || import.meta.env.DEV)) {
                 this.isTransitioning = true;
                 this.ui.triggerStartTransition(() => {
                     this.ui.hideStartScreen();
                     this.currentScene = Lobby.getMetadata().id;
+                    this.input.initializeMobileControls();
                     this.clock.getDelta(); // Reset clock
                     this.isTransitioning = false;
                 });

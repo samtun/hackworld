@@ -10,9 +10,14 @@ export interface HintConfig {
 }
 
 /**
- * Returns the appropriate hint text based on whether a controller is connected
+ * Returns the appropriate hint text based on whether a controller is connected or mobile device
  */
 export function getHint(config: HintConfig, inputManager: InputManager): string {
+    // On mobile devices, always show controller hints (A/B buttons match mobile controls)
+    if (inputManager.isMobile) {
+        return config.controller;
+    }
+    // Otherwise, show controller hints if gamepad is connected, keyboard hints otherwise
     return inputManager.isControllerConnected() ? config.controller : config.keyboard;
 }
 

@@ -1,6 +1,8 @@
 import { Player } from '../Player';
 
 export class UIManager {
+    private static instance: UIManager; // Singleton
+
     container: HTMLDivElement;
     hpPath: SVGPathElement;
     tpPath: SVGPathElement;
@@ -17,12 +19,31 @@ export class UIManager {
     private retryButton?: HTMLButtonElement;
     private lobbyButton?: HTMLButtonElement;
     private deathOverlaySelectedIndex: number = 0; // 0 = Retry, 1 = Return to Lobby
+    private startScreenTapHandler?: (e: TouchEvent) => void;
 
-    constructor() {
+    public startScreenTapped: boolean = false;
+
+    private constructor() {
         this.startScreen = document.getElementById('start-screen') as HTMLDivElement;
         this.fadeOverlay = document.getElementById('fade-overlay') as HTMLDivElement;
         this.loadingScreen = document.getElementById('loading-screen') as HTMLDivElement;
         this.progressBarFill = document.getElementById('progress-bar-fill') as HTMLDivElement;
+
+        // Add touch handler for start screen
+        this.startScreenTapHandler = (e: TouchEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.startScreenTapped = true;
+            console.log('Start screen tapped!'); // Debug log
+        };
+        if (this.startScreen) {
+            this.startScreen.addEventListener('touchstart', this.startScreenTapHandler, { passive: false });
+            // Also add click for fallback
+            this.startScreen.addEventListener('click', () => {
+                this.startScreenTapped = true;
+                console.log('Start screen clicked!'); // Debug log
+            });
+        }
 
         // Set version text
         const versionBox = document.getElementById('version-box');
@@ -216,6 +237,10 @@ export class UIManager {
         document.body.appendChild(this.deathOverlay);
     }
 
+    public static get Instance(): UIManager {
+        return this.instance || (this.instance = new this());
+    }
+
     update(player: Player) {
         // Update Text
         this.hpText.innerText = `${Math.ceil(player.hp)}`;
@@ -296,6 +321,8 @@ export class UIManager {
             this.startScreen.classList.add('hidden');
             const video = this.startScreen.querySelector('video');
             if (video) video.pause();
+            // Reset tap state when hiding
+            this.startScreenTapped = false;
         }
     }
 
@@ -329,7 +356,7 @@ export class UIManager {
         this.retryCallback = onRetry;
         this.lobbyCallback = onReturnToLobby;
         this.deathOverlaySelectedIndex = 0; // Reset to first button
-        
+
         if (this.deathOverlay) {
             this.deathOverlay.style.display = 'flex';
             // Trigger fade-in after a small delay to ensure display change is applied
@@ -345,7 +372,7 @@ export class UIManager {
      */
     private updateDeathOverlaySelection() {
         if (!this.retryButton || !this.lobbyButton) return;
-        
+
         // Update retry button
         if (this.deathOverlaySelectedIndex === 0) {
             this.retryButton.style.backgroundColor = '#666';
@@ -354,7 +381,7 @@ export class UIManager {
             this.retryButton.style.backgroundColor = '#444';
             this.retryButton.style.transform = 'scale(1)';
         }
-        
+
         // Update lobby button
         if (this.deathOverlaySelectedIndex === 1) {
             this.lobbyButton.style.backgroundColor = '#666';
@@ -370,7 +397,7 @@ export class UIManager {
      */
     handleDeathOverlayInput(input: any): void {
         if (!this.deathOverlay || this.deathOverlay.style.display === 'none') return;
-        
+
         // Navigate left (previous button)
         const navigateLeft = input.isNavigateLeftPressed();
         if (navigateLeft && !this.lastNavigateLeftState) {
@@ -380,7 +407,7 @@ export class UIManager {
             }
         }
         this.lastNavigateLeftState = navigateLeft;
-        
+
         // Navigate right (next button)
         const navigateRight = input.isNavigateRightPressed();
         if (navigateRight && !this.lastNavigateRightState) {
@@ -390,7 +417,7 @@ export class UIManager {
             }
         }
         this.lastNavigateRightState = navigateRight;
-        
+
         // Select button
         const select = input.isSelectPressed();
         if (select && !this.lastSelectState) {
