@@ -1,3 +1,18 @@
+# [1.33.0](https://github.com/samtun/hackworld/compare/v1.32.0...v1.33.0) (2026-01-14)
+
+
+### Bug Fixes
+
+* disable screen-wide interaction when menus are open ([874b3e9](https://github.com/samtun/hackworld/commit/874b3e9b6bd72ff6ca77a1dbee96a0c150411bbc))
+* fix mobile controls ([864566e](https://github.com/samtun/hackworld/commit/864566e9f5d08f6c528ff99d9ebe9c2870fb5eb1))
+* fix start screen continuation on mobile ([68481f4](https://github.com/samtun/hackworld/commit/68481f42111b96303e20b0781e980e215ba79700))
+
+
+### Features
+
+* add close button and improve start screen touch ([f9b7c0a](https://github.com/samtun/hackworld/commit/f9b7c0a9c70c71d43d8b1ab284a7ef3d94375c5e))
+* add mobile touch controls with virtual joystick ([d811a02](https://github.com/samtun/hackworld/commit/d811a024b939dbf6c691a12259860f007b9dfc16))
+
 # [1.32.0](https://github.com/samtun/hackworld/compare/v1.31.0...v1.32.0) (2026-01-14)
 
 
