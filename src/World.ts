@@ -174,8 +174,8 @@ export class World {
         // Update systems that operate across stages (healing, etc.)
         HealingSystem.Instance.update(dt);
 
-        for (let i = this.currentStage.enemies.length - 1; i >= 0; i--) {
-            const enemy = this.currentStage.enemies[i];
+        for (let i = this.enemies.length - 1; i >= 0; i--) {
+            const enemy = this.enemies[i];
 
             // Set up damage callback if not already set
             if (!enemy.onDamageTaken) {
@@ -184,23 +184,28 @@ export class World {
                 };
             }
 
+            // Set up death fade callback if not already set
+            if (!enemy.onDeathFadeStart) {
+                enemy.onDeathFadeStart = (e: Enemy) => {
+                    // Grant EXP to player
+                    player.gainExp(e.expAmount);
+
+                    // Spawn EXP number visual
+                    this.spawnEXPNumber(e.getDeathPosition(), e.expAmount);
+
+                    // Try to drop an item (weapon, chip, core, or booster pack)
+                    // The ItemDropManager will select one strategy based on probabilities
+                    // and each strategy will check enemy.itemDropChance internally
+                    if (!(this.itemDropManager.tryDropItem(this.scene, this.physicsWorld, e, player))) {
+                        // Try to drop X-Data separately (independent of item drops) if no item was dropped
+                        this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, e, player);
+                    }
+                };
+            }
+
             enemy.update(dt);
 
             if (enemy.isDead) {
-                // Grant EXP to player
-                player.gainExp(enemy.expAmount);
-
-                // Spawn EXP number visual
-                this.spawnEXPNumber(enemy.getDeathPosition(), enemy.expAmount);
-
-                // Try to drop an item (weapon, chip, core, or booster pack)
-                // The ItemDropManager will select one strategy based on probabilities
-                // and each strategy will check enemy.itemDropChance internally
-                if (!(this.itemDropManager.tryDropItem(this.scene, this.physicsWorld, enemy, player))) {
-                    // Try to drop X-Data separately (independent of item drops) if no item was dropped
-                    this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, enemy, player);
-                }
-
                 enemy.cleanup();
                 this.currentStage.enemies.splice(i, 1);
             }

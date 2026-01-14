@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Enemy } from './Enemy';
-import { Player } from '../Player';
 
 export class LargeEnemy extends Enemy {
 
@@ -17,13 +16,10 @@ export class LargeEnemy extends Enemy {
         this.techDropRateFactor = 1.3;
         this.damage = 15;
 
-        // Replace the mesh
+        // Scale up the mesh
         scene.remove(this.mesh);
         this.mesh.scale.set(1.5, 1.5, 1.5);
         scene.add(this.mesh);
-
-        // Re-attach weapon to new mesh
-        this.mesh.add(this.weaponMesh);
 
         // Update physics body size
         world.removeBody(this.body);
@@ -38,14 +34,9 @@ export class LargeEnemy extends Enemy {
         this.body.position.copy(position);
         (this.body as any).entity = this;
         world.addBody(this.body);
-    }
 
-    attack(player: Player) {
-        this.attackTimer = this.attackCooldown;
-        this.isAttacking = true;
-        this.attackAnimTimer = 0;
-
-        console.log("Large Enemy attacks player!");
-        player.takeDamage(13, this.body.position);
+        // Larger attack hitbox for larger enemy
+        this.attackHitboxSize = new CANNON.Vec3(0.75, 0.75, 1.0);
+        this.attackHitboxOffset = 1.5;
     }
 }
