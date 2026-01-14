@@ -19,12 +19,13 @@ export class ShaderUtils {
                 ${shader.vertexShader}
             `;
 
-            // Calculate world position
+            // Calculate world position using position attribute instead of transformed
+            // Using position ensures the calculation works correctly even when frustum culling occurs
             shader.vertexShader = shader.vertexShader.replace(
                 '#include <worldpos_vertex>',
                 `
                 #include <worldpos_vertex>
-                vWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;
+                vWorldPosition = (modelMatrix * vec4(position, 1.0)).xyz;
                 `
             );
 
