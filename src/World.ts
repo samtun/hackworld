@@ -129,7 +129,9 @@ export class World {
                     vec2 uv = vUv * 140.0; 
                     
                     // Scrolling effect
-                    vec2 grid = fract(uv - vec2(0.0, sin(u_time * 80.0) * 0.01));
+                    float randomX = noise(vec2(u_time * 220.0, 0.0)) * 0.015;
+                    float randomY = noise(vec2(u_time * 220.0, 0.0)) * 0.015;
+                    vec2 grid = fract(uv - vec2(randomX, randomY));
                     
                     float lineThickness = 0.03;
                     vec2 dist = abs(grid - 0.5);
