@@ -89,6 +89,10 @@ export class Lobby extends BaseStage {
 
                     // Fade out to alpha=0 at -18.0 to -5.0 in Y axis direction
                     ShaderUtils.applyVerticalFade(material, -18.0, -5.0);
+                    
+                    // Disable frustum culling for this mesh to prevent the shader from stopping
+                    // when parts of the geometry move off-screen as the player moves
+                    node.frustumCulled = false;
                 }
             });
         }
