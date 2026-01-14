@@ -27,7 +27,8 @@ export class LargeEnemy extends Enemy {
 
         // Update physics body size
         world.removeBody(this.body);
-        const shape = new CANNON.Box(new CANNON.Vec3(0.75, 0.75, 0.75)); // 1.5 / 2
+        const shape = new CANNON.Cylinder(0.85, 0.85, 2.75, 8);
+        this.bodyHalfExtentY = shape.height / 2;
         this.body = new CANNON.Body({
             mass: 17, // Proportional to volume: 5 * (1.5^3) ≈ 17
             material: physicsMaterial,

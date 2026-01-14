@@ -149,6 +149,7 @@ export class Player extends BaseMesh {
     private dashDirection: THREE.Vector3 = new THREE.Vector3();
     private chargeParticles: THREE.Mesh[] = [];
     private dashHitEnemies: Set<Enemy> = new Set();
+    private attackHitEnemies: Set<Enemy> = new Set();
     private attackLockedUntilRelease: boolean = false;
 
     // Particle wall constants
@@ -525,6 +526,7 @@ export class Player extends BaseMesh {
                 if (finishedAction === this.actions[ActionType.AttackOneHanded] ||
                     finishedAction === this.actions[ActionType.AttackTwoHanded]) {
                     this.weapon.stopAttack();
+                    this.attackHitEnemies.clear();
                 }
                 // Handle PowerUp animation completion
                 if (finishedAction === this.actions[ActionType.PowerUp]) {
@@ -808,11 +810,17 @@ export class Player extends BaseMesh {
     private handleAttackHit(enemy: Enemy) {
         if (enemy.isDead || enemy.isDying) return;
 
+        // Skip if we already hit this enemy during this attack
+        if (this.attackHitEnemies.has(enemy)) return;
+
         const damage = this.getHitDamage();
         enemy.takeDamage(damage, this.body.position);
         console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
+
+        // Mark this enemy as hit during this attack
+        this.attackHitEnemies.add(enemy);
     }
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3) {

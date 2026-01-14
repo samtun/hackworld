@@ -30,6 +30,7 @@ export class Enemy extends BaseMesh {
     attackAnimTimer: number = 0;
     weaponBaseRotation: THREE.Euler;
     techDropRateFactor: number = 1.0;
+    bodyHalfExtentY: number;
 
     private materials: THREE.Material[] = [];
     private player: Player;
@@ -63,7 +64,8 @@ export class Enemy extends BaseMesh {
         this.mesh.add(this.weaponMesh);
 
         // Physics
-        const shape = new CANNON.Box(new CANNON.Vec3(0.5, 0.5, 0.5));
+        const shape = new CANNON.Cylinder(0.6, 0.6, 1.75, 8);
+        this.bodyHalfExtentY = shape.height / 2;
         this.body = new CANNON.Body({
             mass: 5,
             material: physicsMaterial,
@@ -96,7 +98,7 @@ export class Enemy extends BaseMesh {
                 this.mesh.position.z = this.body.position.z;
 
                 // Animate Y (Sink)
-                this.mesh.position.y = this.body.position.y - (0.5 * progress);
+                this.mesh.position.y = this.body.position.y - this.bodyHalfExtentY - (0.5 * progress);
 
                 // Flatten
                 this.mesh.scale.y = 1 - progress;
@@ -114,6 +116,7 @@ export class Enemy extends BaseMesh {
 
         // Sync mesh with body
         this.mesh.position.copy(this.body.position as any);
+        this.mesh.position.y -= this.bodyHalfExtentY; // Ground the mesh by subtracting half-extent
 
         // Flash Effect
         if (this.flashTimer > 0) {
