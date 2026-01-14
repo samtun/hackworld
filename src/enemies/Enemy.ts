@@ -46,6 +46,8 @@ export class Enemy extends BaseMesh {
     protected attackHitboxBody: CANNON.Body | null = null;
     protected attackHitboxActive: boolean = false;
     protected attackHitboxDelay: number = 0.42;
+    protected attackHitboxDuration: number = 0.2;
+    protected attackMaxDuration: number = 1.0;
     protected attackHitboxSize: CANNON.Vec3 = new CANNON.Vec3(0.5, 0.5, 0.8);
     protected attackHitboxOffset: number = 1.0;
     private hasDealtDamageThisAttack: boolean = false;
@@ -391,8 +393,10 @@ export class Enemy extends BaseMesh {
             this.attackTimer -= dt;
         }
 
-        // Attack Trigger
-        if (dist < this.attackRange && this.attackTimer <= 0 && !this.isAttacking) {
+        // Attack Trigger (with randomness: +/- 0.4 units)
+        const attackRangeVariance = (Math.random() * 0.8 - 0.4);
+        if (dist < this.attackRange + attackRangeVariance && this.attackTimer <= 0 && !this.isAttacking) {
+            console.log(`Attack range check: dist=${dist.toFixed(2)}, threshold=${(this.attackRange + attackRangeVariance).toFixed(2)}`);
             this.attack();
         }
 
@@ -400,15 +404,26 @@ export class Enemy extends BaseMesh {
         if (this.isAttacking) {
             this.attackAnimTimer += dt;
 
-            // Activate hitbox after delay
-            if (this.attackAnimTimer >= this.attackHitboxDelay && !this.attackHitboxActive) {
-                this.activateAttackHitbox();
-            }
+            // Fallback: end attack after max duration in case animation event doesn't fire
+            if (this.attackAnimTimer >= this.attackMaxDuration) {
+                this.isAttacking = false;
+                this.deactivateAttackHitbox();
+            } else {
+                // Activate hitbox after delay
+                if (this.attackAnimTimer >= this.attackHitboxDelay && !this.attackHitboxActive) {
+                    this.activateAttackHitbox();
+                }
 
-            // Update hitbox position and check collision
-            if (this.attackHitboxActive) {
-                this.updateAttackHitboxPosition();
-                this.checkAttackHitboxCollision();
+                // Deactivate hitbox after its active duration
+                if (this.attackHitboxActive && this.attackAnimTimer >= this.attackHitboxDelay + this.attackHitboxDuration) {
+                    this.deactivateAttackHitbox();
+                }
+
+                // Update hitbox position and check collision while active
+                if (this.attackHitboxActive) {
+                    this.updateAttackHitboxPosition();
+                    this.checkAttackHitboxCollision();
+                }
             }
         }
 
