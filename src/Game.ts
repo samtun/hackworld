@@ -98,10 +98,11 @@ export class Game {
         this.physicsWorld = new CANNON.World();
         this.physicsWorld.gravity.set(0, -25, 0); // Stronger gravity for snappier gameplay feel
 
-        // Create a slippery material (friction = 0)
+        // Create physics material with friction to prevent sliding on minor slopes
+        // Friction = 1.0 prevents sliding on slopes less than 45° (tan(45°) = 1.0)
         this.defaultMaterial = new CANNON.Material('default');
         const defaultContactMaterial = new CANNON.ContactMaterial(this.defaultMaterial, this.defaultMaterial, {
-            friction: 0,
+            friction: 1.0,
             restitution: 0
         });
         this.physicsWorld.addContactMaterial(defaultContactMaterial);
