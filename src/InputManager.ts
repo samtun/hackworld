@@ -246,6 +246,12 @@ export class InputManager {
                 if (gp.buttons[1]?.pressed) return true;
             }
         }
+        
+        // Mobile close button
+        if (this.mobileControls.isMobile && this.mobileControls.isCancelPressed) {
+            return true;
+        }
+        
         return false;
     }
 

@@ -11,6 +11,7 @@ export class MobileControlsManager {
     private joystickContainer!: HTMLDivElement;
     private buttonsContainer!: HTMLDivElement;
     private inventoryButton!: HTMLButtonElement;
+    private closeButton!: HTMLButtonElement;
     
     // Button elements
     private jumpButton!: HTMLButtonElement;
@@ -22,12 +23,14 @@ export class MobileControlsManager {
     public isAttackPressed: boolean = false;
     public isInteractPressed: boolean = false;
     public isInventoryPressed: boolean = false;
+    public isCancelPressed: boolean = false;
     
     // Track previous states for edge detection
     private previousJumpState: boolean = false;
     private previousAttackState: boolean = false;
     private previousInteractState: boolean = false;
     private previousInventoryState: boolean = false;
+    private previousCancelState: boolean = false;
     
     // Mobile detection
     private isMobileDevice: boolean = false;
@@ -100,6 +103,12 @@ export class MobileControlsManager {
         document.body.appendChild(this.inventoryButton);
         this.setupButtonListeners(this.inventoryButton, 'isInventoryPressed');
         
+        // Create close button (top center, initially hidden)
+        this.closeButton = this.createButton('Close', 'mobile-close-btn');
+        this.closeButton.style.display = 'none'; // Hidden by default
+        document.body.appendChild(this.closeButton);
+        this.setupButtonListeners(this.closeButton, 'isCancelPressed');
+        
         // Setup screen tap for interaction
         // Any tap on the screen (not on a button/joystick) triggers interaction
         this.screenTapHandler = (e: TouchEvent) => {
@@ -164,7 +173,7 @@ export class MobileControlsManager {
         return button;
     }
     
-    private setupButtonListeners(button: HTMLButtonElement, stateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInteractPressed' | 'isInventoryPressed') {
+    private setupButtonListeners(button: HTMLButtonElement, stateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInteractPressed' | 'isInventoryPressed' | 'isCancelPressed') {
         button.addEventListener('touchstart', (e) => {
             e.preventDefault();
             this[stateKey] = true;
@@ -225,6 +234,7 @@ export class MobileControlsManager {
         this.previousAttackState = this.isAttackPressed;
         this.previousInteractState = this.isInteractPressed;
         this.previousInventoryState = this.isInventoryPressed;
+        this.previousCancelState = this.isCancelPressed;
     }
     
     /**
@@ -236,7 +246,24 @@ export class MobileControlsManager {
         const display = visible ? 'block' : 'none';
         if (this.joystickContainer) this.joystickContainer.style.display = display;
         if (this.buttonsContainer) this.buttonsContainer.style.display = display;
-        if (this.inventoryButton) this.inventoryButton.style.display = display;
+        // Don't hide inventory/close buttons here, they're managed by setMenuOpen
+    }
+    
+    /**
+     * Show close button when menu is open, show inventory button when closed
+     */
+    public setMenuOpen(isOpen: boolean) {
+        if (!this.isMobileDevice) return;
+        
+        if (isOpen) {
+            // Show close button, hide inventory button
+            if (this.inventoryButton) this.inventoryButton.style.display = 'none';
+            if (this.closeButton) this.closeButton.style.display = 'block';
+        } else {
+            // Show inventory button, hide close button
+            if (this.inventoryButton) this.inventoryButton.style.display = 'block';
+            if (this.closeButton) this.closeButton.style.display = 'none';
+        }
     }
     
     /**
@@ -264,6 +291,10 @@ export class MobileControlsManager {
         
         if (this.inventoryButton && this.inventoryButton.parentNode) {
             this.inventoryButton.parentNode.removeChild(this.inventoryButton);
+        }
+        
+        if (this.closeButton && this.closeButton.parentNode) {
+            this.closeButton.parentNode.removeChild(this.closeButton);
         }
         
         if (this.screenTapHandler) {

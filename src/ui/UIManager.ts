@@ -33,10 +33,17 @@ export class UIManager {
         // Add touch handler for start screen
         this.startScreenTapHandler = (e: TouchEvent) => {
             e.preventDefault();
+            e.stopPropagation();
             this._startScreenTapped = true;
+            console.log('Start screen tapped!'); // Debug log
         };
         if (this.startScreen) {
-            this.startScreen.addEventListener('touchstart', this.startScreenTapHandler);
+            this.startScreen.addEventListener('touchstart', this.startScreenTapHandler, { passive: false });
+            // Also add click for fallback
+            this.startScreen.addEventListener('click', () => {
+                this._startScreenTapped = true;
+                console.log('Start screen clicked!'); // Debug log
+            });
         }
 
         // Set version text
