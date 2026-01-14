@@ -200,7 +200,7 @@ body {
     left: 20px;
     width: 160px;
     height: 160px;
-    z-index: 1000;
+    z-index: 2000;
     pointer-events: auto;
 }
 
@@ -211,7 +211,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    z-index: 1000;
+    z-index: 2000;
 }
 
 .mobile-control-btn {
@@ -256,14 +256,6 @@ body {
     background: rgba(220, 80, 80, 0.9);
 }
 
-.mobile-interact-btn {
-    background: rgba(50, 100, 180, 0.7);
-}
-
-.mobile-interact-btn:active {
-    background: rgba(80, 150, 220, 0.9);
-}
-
 .mobile-inventory-btn {
     position: fixed;
     top: 20px;
@@ -285,7 +277,7 @@ body {
     user-select: none;
     -webkit-user-select: none;
     -webkit-tap-highlight-color: transparent;
-    z-index: 1000;
+    z-index: 2000;
     pointer-events: auto;
 }
 

@@ -309,7 +309,7 @@ export class Game {
         if (this.currentScene === 'startScreen') {
             this.ui.showStartScreen();
 
-            if (!this.isTransitioning && (this.input.isStartPressed() || import.meta.env.DEV)) {
+            if (!this.isTransitioning && (this.input.isStartPressed() || this.ui.startScreenTapped || import.meta.env.DEV)) {
                 this.isTransitioning = true;
                 this.ui.triggerStartTransition(() => {
                     this.ui.hideStartScreen();

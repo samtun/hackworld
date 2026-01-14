@@ -5,6 +5,8 @@ import * as THREE from 'three';
  * Manages mobile touch controls including virtual joystick and action buttons
  */
 export class MobileControlsManager {
+    private static instance: MobileControlsManager;
+    
     private joystickManager?: JoystickManager;
     private joystickContainer!: HTMLDivElement;
     private buttonsContainer!: HTMLDivElement;
@@ -13,7 +15,6 @@ export class MobileControlsManager {
     // Button elements
     private jumpButton!: HTMLButtonElement;
     private attackButton!: HTMLButtonElement;
-    private interactButton!: HTMLButtonElement;
     
     // Input state
     public movementVector: THREE.Vector2 = new THREE.Vector2(0, 0);
@@ -30,8 +31,11 @@ export class MobileControlsManager {
     
     // Mobile detection
     private isMobileDevice: boolean = false;
+    
+    // Screen tap handler for interaction
+    private screenTapHandler?: (e: TouchEvent) => void;
 
-    constructor() {
+    private constructor() {
         // Check if device is mobile
         this.isMobileDevice = this.detectMobile();
         
@@ -78,24 +82,50 @@ export class MobileControlsManager {
         this.buttonsContainer.className = 'mobile-buttons-container';
         document.body.appendChild(this.buttonsContainer);
         
-        // Create action buttons
+        // Create action buttons (Jump and Attack only)
         this.jumpButton = this.createButton('Jump', 'mobile-jump-btn');
         this.attackButton = this.createButton('Attack', 'mobile-attack-btn');
-        this.interactButton = this.createButton('Interact', 'mobile-interact-btn');
         
         this.buttonsContainer.appendChild(this.jumpButton);
         this.buttonsContainer.appendChild(this.attackButton);
-        this.buttonsContainer.appendChild(this.interactButton);
         
         // Setup button event listeners
         this.setupButtonListeners(this.jumpButton, 'isJumpPressed');
         this.setupButtonListeners(this.attackButton, 'isAttackPressed');
-        this.setupButtonListeners(this.interactButton, 'isInteractPressed');
         
         // Create inventory button (top center)
         this.inventoryButton = this.createButton('Inventory', 'mobile-inventory-btn');
         document.body.appendChild(this.inventoryButton);
         this.setupButtonListeners(this.inventoryButton, 'isInventoryPressed');
+        
+        // Setup screen tap for interaction
+        // Any tap on the screen (not on a button/joystick) triggers interaction
+        this.screenTapHandler = (e: TouchEvent) => {
+            // Check if tap is on a control element
+            const target = e.target as HTMLElement;
+            const isOnControl = target.closest('.mobile-joystick-container') ||
+                               target.closest('.mobile-buttons-container') ||
+                               target.closest('.mobile-inventory-btn') ||
+                               target.classList.contains('mobile-control-btn');
+            
+            if (!isOnControl) {
+                // Trigger interaction
+                this.isInteractPressed = true;
+                // Auto-release after a short delay
+                setTimeout(() => {
+                    this.isInteractPressed = false;
+                }, 100);
+            }
+        };
+        
+        document.addEventListener('touchstart', this.screenTapHandler);
+    }
+    
+    public static get Instance(): MobileControlsManager {
+        if (!MobileControlsManager.instance) {
+            MobileControlsManager.instance = new MobileControlsManager();
+        }
+        return MobileControlsManager.instance;
     }
     
     private detectMobile(): boolean {
@@ -105,13 +135,13 @@ export class MobileControlsManager {
             return true;
         }
         
-        // Check for touch support and screen size
+        // Check for touch support AND screen size
         const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         const isSmallScreen = window.innerWidth <= 1024; // Tablets and phones
         
-        // Show controls if device has touch OR if screen is mobile-sized
-        // This allows testing in responsive mode and supports touch laptops
-        return hasTouchScreen || isSmallScreen;
+        // Show controls only if device has touch AND is small screen
+        // This prevents showing on desktop browsers or touch laptops with large screens
+        return hasTouchScreen && isSmallScreen;
     }
     
     private createButton(label: string, className: string): HTMLButtonElement {
@@ -225,6 +255,10 @@ export class MobileControlsManager {
         
         if (this.inventoryButton && this.inventoryButton.parentNode) {
             this.inventoryButton.parentNode.removeChild(this.inventoryButton);
+        }
+        
+        if (this.screenTapHandler) {
+            document.removeEventListener('touchstart', this.screenTapHandler);
         }
     }
 }

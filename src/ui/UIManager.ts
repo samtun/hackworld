@@ -17,12 +17,23 @@ export class UIManager {
     private retryButton?: HTMLButtonElement;
     private lobbyButton?: HTMLButtonElement;
     private deathOverlaySelectedIndex: number = 0; // 0 = Retry, 1 = Return to Lobby
+    public startScreenTapped: boolean = false;
+    private startScreenTapHandler?: (e: TouchEvent) => void;
 
     constructor() {
         this.startScreen = document.getElementById('start-screen') as HTMLDivElement;
         this.fadeOverlay = document.getElementById('fade-overlay') as HTMLDivElement;
         this.loadingScreen = document.getElementById('loading-screen') as HTMLDivElement;
         this.progressBarFill = document.getElementById('progress-bar-fill') as HTMLDivElement;
+        
+        // Add touch handler for start screen
+        this.startScreenTapHandler = (e: TouchEvent) => {
+            e.preventDefault();
+            this.startScreenTapped = true;
+        };
+        if (this.startScreen) {
+            this.startScreen.addEventListener('touchstart', this.startScreenTapHandler);
+        }
 
         // Set version text
         const versionBox = document.getElementById('version-box');
@@ -288,6 +299,8 @@ export class UIManager {
             this.startScreen.classList.remove('hidden');
             const video = this.startScreen.querySelector('video');
             if (video) video.play().catch(e => console.log("Video play failed", e));
+            // Reset tap state when showing
+            this.startScreenTapped = false;
         }
     }
 
@@ -296,6 +309,8 @@ export class UIManager {
             this.startScreen.classList.add('hidden');
             const video = this.startScreen.querySelector('video');
             if (video) video.pause();
+            // Reset tap state when hiding
+            this.startScreenTapped = false;
         }
     }
 

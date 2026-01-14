@@ -27,8 +27,8 @@ export class InputManager {
             }
         });
         
-        // Initialize mobile controls
-        this.mobileControls = new MobileControlsManager();
+        // Initialize mobile controls singleton
+        this.mobileControls = MobileControlsManager.Instance;
     }
     
     // Call this at the end of each frame to update state tracking
