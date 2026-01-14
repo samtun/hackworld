@@ -33,6 +33,9 @@ export class MobileControlsManager {
 
     // Mobile detection
     private isMobileDevice: boolean = false;
+    
+    // Menu state tracking
+    private isMenuOpen: boolean = false;
 
     // Screen tap handler for interaction
     private screenTapHandler?: (e: TouchEvent) => void;
@@ -110,7 +113,13 @@ export class MobileControlsManager {
 
         // Setup screen tap for interaction
         // Any tap on the screen (not on a button/joystick) triggers interaction
+        // But only when no menu is open (to avoid interfering with menu button selection)
         this.screenTapHandler = (e: TouchEvent) => {
+            // Don't trigger interaction when a menu is open
+            if (this.isMenuOpen) {
+                return;
+            }
+            
             // Debounce rapid taps
             const now = Date.now();
             if (now - this.lastTapTime < this.TAP_DEBOUNCE_MS) {
@@ -123,6 +132,7 @@ export class MobileControlsManager {
             const isOnControl = target.closest('.mobile-joystick-container') ||
                 target.closest('.mobile-buttons-container') ||
                 target.closest('.mobile-inventory-btn') ||
+                target.closest('.mobile-close-btn') ||
                 target.classList.contains('mobile-control-btn');
 
             if (!isOnControl) {
@@ -252,6 +262,9 @@ export class MobileControlsManager {
      */
     public setMenuOpen(isOpen: boolean) {
         if (!this.isMobileDevice) return;
+        
+        // Track menu state to disable screen-wide interaction when menus are open
+        this.isMenuOpen = isOpen;
 
         if (isOpen) {
             // Show close button, hide inventory button
