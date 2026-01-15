@@ -256,20 +256,26 @@ export class Player extends BaseMesh {
         box.getSize(size);
 
         const radius = 0.5;
-        const bodyHeight = 1.5;
-        const cylinderShape = new CANNON.Cylinder(radius, radius, bodyHeight, 12);
+        const bodyHeight = 1.6;
+        const endSphereRadius = radius * 0.6;
 
         // Add base body collider
         this.body = new CANNON.Body({
             mass: 3, // Dynamic body
-            position: new CANNON.Vec3(position.x, position.y, position.z),
-            shape: cylinderShape,
+            position: new CANNON.Vec3(position.x, bodyHeight / 2, position.z),
             fixedRotation: true,
             material: physicsMaterial
         });
 
+        // Add foot sphere to enable skipping over small obstacles
+        // Needs to be added first to be the first shape accessed via [0]
+        this.body.addShape(new CANNON.Sphere(endSphereRadius), new CANNON.Vec3(0, 0, 0));
+
+        // Add center sphere for most hit and collision detection
+        this.body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, bodyHeight / 3, 0));
+
         // Add head (to make objects colliding from above slide off)
-        this.body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, bodyHeight / 2, 0));
+        this.body.addShape(new CANNON.Sphere(endSphereRadius), new CANNON.Vec3(0, bodyHeight / 2 + endSphereRadius, 0));
 
         // Damping to stop sliding
         this.body.linearDamping = 0.9;
@@ -709,8 +715,8 @@ export class Player extends BaseMesh {
 
             // Check if grounded using raycast
             const start = this.body.position;
-            const shape = this.body.shapes[0] as CANNON.Cylinder;
-            const halfHeight = shape?.height / 2.0;
+            const shape = this.body.shapes[0] as CANNON.Sphere;
+            const halfHeight = shape?.radius;
             const end = new CANNON.Vec3(start.x, start.y - halfHeight - 0.2, start.z);
 
             // Main ray at the center of the body
@@ -718,7 +724,7 @@ export class Player extends BaseMesh {
             centerRay.skipBackfaces = true;
 
             // Additional rays around the base perimeter
-            const offset = shape.radiusBottom * 0.7;
+            const offset = shape.radius * 0.7;
 
             const perimeterRayResults = [];
             for (let i = 0; i < 5; i++) {
@@ -818,9 +824,9 @@ export class Player extends BaseMesh {
         let y = this.body.position.y;
         const primaryShape = this.body.shapes[0];
 
-        if (primaryShape instanceof CANNON.Cylinder) {
+        if (primaryShape instanceof CANNON.Sphere) {
             // Place the mesh origin at the bottom of the box by subtracting half the height.
-            y = this.body.position.y - primaryShape.height / 2.0;
+            y = this.body.position.y - primaryShape.radius;
         }
 
         const newPosition = new THREE.Vector3(this.body.position.x, y, this.body.position.z);
