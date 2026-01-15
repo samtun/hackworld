@@ -58,7 +58,7 @@ export class Lobby extends BaseStage {
     healingStation?: HealingStation;
     private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
 
-    // Callback for Ford interaction (set by Game)
+    // Callback for XData Terminal interaction (set by Game)
     xDataInteractionCallback?: () => void;
 
     // Callback for Save Manager interaction (set by Game)
@@ -130,8 +130,8 @@ export class Lobby extends BaseStage {
 
         // Create XData Manager NPC
         const xDataManagerDialogue = [
-            "Welcome! I'm Ford, the X-Data Manager.",
-            "I can help you unlock your potential using the X-Data you collect from enemies.",
+            "Welcome to the upgrade terminal.",
+            "Here you can unlock your full potential by using X-Data you collect from enemies.",
             "Step closer if you'd like to upgrade your stats!"
         ];
 
@@ -140,8 +140,8 @@ export class Lobby extends BaseStage {
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,
-            "models/npc_placeholder.glb",
-            "Ford",
+            "models/xdata_terminal.glb",
+            "XData Terminal",
             "Upgrade with X-Data",
             new CANNON.Vec3(5, 0, -5),
             xDataManagerDialogue,
