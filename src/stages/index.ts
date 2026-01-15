@@ -24,7 +24,7 @@ type StageConstructor = new (
 ) => BaseStage;
 
 // Stage registry mapping stage IDs to their constructors
-const stageRegistry: Map<string, StageConstructor> = new Map([
+const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstructor>([
     [Lobby.getMetadata().id, Lobby],
     [CrimsonDepths.getMetadata().id, CrimsonDepths],
     [VioletAbyss.getMetadata().id, VioletAbyss],
