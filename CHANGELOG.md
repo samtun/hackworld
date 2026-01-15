@@ -1,3 +1,19 @@
+# [1.35.0](https://github.com/samtun/hackworld/compare/v1.34.0...v1.35.0) (2026-01-15)
+
+
+### Bug Fixes
+
+* clamp normal.y to prevent Math.acos errors ([560d938](https://github.com/samtun/hackworld/commit/560d938f8a2c0363764d19690ff5a3f462e152d7))
+* player collider setup ([f75806b](https://github.com/samtun/hackworld/commit/f75806b67323aa5fdfa9068aba8aafeacc2cc5dd))
+* prevent player sliding on minor slopes by adding friction ([381d0a9](https://github.com/samtun/hackworld/commit/381d0a9db9ad854cc4978ef4a95378adc62ca832))
+* restore player movement by detecting slopes instead of using friction ([c129ea7](https://github.com/samtun/hackworld/commit/c129ea7f102519815a3d3e6e58d1a5a27a79d963))
+* stage map initialization ([b38b2a8](https://github.com/samtun/hackworld/commit/b38b2a801cb215aef6414657d5697fd313c9ba20))
+
+
+### Features
+
+* add movement test stage ([daac864](https://github.com/samtun/hackworld/commit/daac8644cd9abb2f002817f13a673494e164ea70))
+
 # [1.34.0](https://github.com/samtun/hackworld/compare/v1.33.0...v1.34.0) (2026-01-14)
 
 
