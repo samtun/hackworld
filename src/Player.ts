@@ -255,7 +255,7 @@ export class Player extends BaseMesh {
         const size = new THREE.Vector3();
         box.getSize(size);
 
-        const radius = 0.3;
+        const radius = 0.5;
         const bodyHeight = 1.5;
         const cylinderShape = new CANNON.Cylinder(radius, radius, bodyHeight, 12);
 
@@ -269,7 +269,7 @@ export class Player extends BaseMesh {
         });
 
         // Add head (to make objects colliding from above slide off)
-        this.body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, bodyHeight - 0.75, 0));
+        this.body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, bodyHeight / 2, 0));
 
         // Damping to stop sliding
         this.body.linearDamping = 0.9;
@@ -436,7 +436,6 @@ export class Player extends BaseMesh {
         const gltf = AssetManager.Instance.get('models/main_character.glb');
         const animations = gltf.animations;
 
-        console.log(animations);
         if (animations && animations.length > 0) {
             // Helper to find animation by name
             const getClip = (name: string) => animations.find(a => a.name === name);
@@ -590,9 +589,9 @@ export class Player extends BaseMesh {
         const isMoving = this.input.getMovementVector().length() > 0.1;
         if (isMoving) {
             const action = this.weapon.weaponType !== WeaponType.HAMMER ? ActionType.RunOneHanded : ActionType.RunTwoHanded;
-            this.fadeToAction(action, 0.2);
+            this.fadeToAction(action, 0.05);
         } else if (!this.isChargingAttack) {
-            this.fadeToAction(ActionType.Idle, 0.2);
+            this.fadeToAction(ActionType.Idle, 0.15);
         }
     }
 
@@ -646,7 +645,7 @@ export class Player extends BaseMesh {
     private handleCharging(dt: number): boolean {
         if (!this.isChargingAttack) return false;
 
-        this.fadeToAction(ActionType.StartCharge, 0.1);
+        this.fadeToAction(ActionType.StartCharge, 0.05);
         this.chargeTimer += dt;
         this.invulnerableTimer = 0; // allow damage while charging
         this.updateChargeParticles();
@@ -714,24 +713,55 @@ export class Player extends BaseMesh {
             const halfHeight = shape?.height / 2.0;
             const end = new CANNON.Vec3(start.x, start.y - halfHeight - 0.2, start.z);
 
-            const ray = new CANNON.Ray(start, end);
-            ray.skipBackfaces = true;
-            const result = new CANNON.RaycastResult();
-            ray.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: result, skipBackfaces: true });
+            // Main ray at the center of the body
+            const centerRay = new CANNON.Ray(start, end);
+            centerRay.skipBackfaces = true;
 
-            this.isGrounded = result.hasHit && result.body !== this.body;
+            // Additional rays around the base perimeter
+            const offset = shape.radiusBottom * 0.7;
+
+            const perimeterRayResults = [];
+            for (let i = 0; i < 5; i++) {
+                const angle = (i * Math.PI) / 2;
+                const xOffset = Math.cos(angle) * offset;
+                const zOffset = Math.sin(angle) * offset;
+                const rayStart = new CANNON.Vec3(start.x + xOffset, start.y, start.z + zOffset);
+                const rayEnd = new CANNON.Vec3(rayStart.x, rayStart.y - halfHeight - 0.2, rayStart.z)
+                const perimeterRay = new CANNON.Ray(rayStart, rayEnd);
+                perimeterRay.skipBackfaces = true;
+                const result = new CANNON.RaycastResult();
+                perimeterRay.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: result, skipBackfaces: true });
+                perimeterRayResults.push(result);
+            }
+
+            const centerRayResult = new CANNON.RaycastResult();
+
+            centerRay.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: centerRayResult, skipBackfaces: true });
+
+            this.isGrounded = centerRayResult.hasHit && centerRayResult.body !== this.body
+                || perimeterRayResults.some(result => result.hasHit && result.body !== this.body);
 
             // Prevent sliding on slopes less than 45 degrees
-            if (this.isGrounded && result.hitNormalWorld) {
-                const normal = result.hitNormalWorld;
+            if (this.isGrounded && centerRayResult.hitNormalWorld) {
+                const normal = centerRayResult.hitNormalWorld;
                 // Clamp normal.y to prevent Math.acos errors due to floating point precision
                 const slopeAngle = Math.acos(Math.max(-1, Math.min(1, normal.y))); // Angle from vertical (up vector is 0,1,0)
                 const slopeAngleDegrees = slopeAngle * (180 / Math.PI);
-                
-                // If on a slope less than 45 degrees, cancel downward velocity to prevent sliding
-                if (slopeAngleDegrees < 45 && this.body.velocity.y < 0) {
-                    this.body.velocity.y = 0;
+
+                console.log(`Slope angle: ${slopeAngleDegrees.toFixed(2)} degrees`);
+
+                // If on a slope less than 45 degrees make the body static to avoid sliding
+                if (slopeAngleDegrees < 45
+                    && this.body.velocity.y < 0
+                    && Math.abs(this.body.velocity.x) < Number.EPSILON
+                    && Math.abs(this.body.velocity.z) < Number.EPSILON) {
+                    this.body.type = CANNON.Body.STATIC;
                 }
+            }
+
+            // If the player starts moving again make the body dynamic again
+            if (this.input.isJumpPressed() || Math.abs(inputVector.x) > Number.EPSILON || Math.abs(inputVector.y) > Number.EPSILON) {
+                this.body.type = CANNON.Body.DYNAMIC;
             }
 
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
@@ -812,7 +842,6 @@ export class Player extends BaseMesh {
         // Deal 3x weapon damage with tech multiplier
         const damage = this.getHitDamage(3);
         enemy.takeDamage(damage, this.body.position);
-        console.log(`Dash hit enemy! Damage: ${damage} (3x)`);
 
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
@@ -837,7 +866,6 @@ export class Player extends BaseMesh {
     }
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
-        console.log(`Player taking ${amount} damage. Timer: ${this.invulnerableTimer}`);
         if (this.invulnerableTimer > 0 || this.isLevelingUp || this.isDashing || this.isDead) return;
 
         // Stop any ongoing attack
@@ -864,7 +892,7 @@ export class Player extends BaseMesh {
         this.invulnerableTimer = this.HIT_INVULNERABILITY; // 1 second invulnerability
 
         // Trigger hit animation
-        this.fadeToAction(ActionType.TakeHit, 0.1);
+        this.fadeToAction(ActionType.TakeHit, 0.05);
 
         // Knockback: push player away from source horizontally and give small upward impulse
         if (sourcePos) {
@@ -939,7 +967,6 @@ export class Player extends BaseMesh {
         this.isChargingAttack = true;
         this.chargeTimer = 0;
         this.createChargeParticles();
-        console.log('Started charging attack');
     }
 
     private cancelChargeAttack() {
@@ -947,8 +974,6 @@ export class Player extends BaseMesh {
         this.chargeTimer = 0;
         this.removeChargeParticles();
         this.attackLockedUntilRelease = true;
-
-        console.log('Cancelled charge attack');
     }
 
     private executeDashAttack() {
@@ -963,8 +988,6 @@ export class Player extends BaseMesh {
 
         // Remove charge particles
         this.removeChargeParticles();
-
-        console.log('Executing dash attack');
     }
 
     private createChargeParticles() {
@@ -1120,8 +1143,6 @@ export class Player extends BaseMesh {
         this.levelUpParticles = [];
         this.levelUpParticleTimer = 0;
     }
-
-
 
     /**
      * Collect X-Data

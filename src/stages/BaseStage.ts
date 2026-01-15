@@ -125,11 +125,14 @@ export abstract class BaseStage {
     /**
      * Create a box obstacle
      */
-    protected createBox(w: number, h: number, d: number, pos: CANNON.Vec3): void {
+    protected createBox(w: number, h: number, d: number, pos: CANNON.Vec3, rot?: CANNON.Quaternion): void {
         const geo = new THREE.BoxGeometry(w, h, d);
         const mat = new THREE.MeshStandardMaterial({ color: 0x555555 });
         const mesh = new THREE.Mesh(geo, mat);
         mesh.position.copy(pos as any);
+        if (rot) {
+            mesh.quaternion.copy(rot as any);
+        }
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         this.scene.add(mesh);
@@ -139,6 +142,9 @@ export abstract class BaseStage {
         const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
         body.addShape(shape);
         body.position.copy(pos);
+        if (rot) {
+            body.quaternion.copy(rot);
+        }
         this.physicsWorld.addBody(body);
         this.bodies.push(body);
     }
