@@ -3,17 +3,21 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 
 export class VioletAbyss extends BaseStage {
-    id = 'violetAbyss';
-    name = 'Violet Abyss';
-    description = 'A mysterious purple realm';
+    private static id: string = "violetAbyss";
+    private static name: string = "Violet Abyss";
+    private static description: string = "A mysterious and challenging abyss filled with dangers";
+
+    id = VioletAbyss.id;
+    name = VioletAbyss.name;
+    description = VioletAbyss.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
 
     static getMetadata() {
         return {
-            id: 'violetAbyss',
-            name: 'Violet Abyss',
-            description: 'A mysterious purple realm'
+            id: VioletAbyss.id,
+            name: VioletAbyss.name,
+            description: VioletAbyss.description
         };
     }
 
@@ -28,12 +32,11 @@ export class VioletAbyss extends BaseStage {
 
     async load(): Promise<void> {
         this.clear();
-        console.log("Loading Dungeon 2...");
         await this.loadEnvironmentMap();
         this.createFloorCollider();
 
         // Portal back to Lobby
-        this.createPortal(new CANNON.Vec3(12, 0.05, 12), 0x0000ff, Lobby.getMetadata().id);
+        this.createPortal(new CANNON.Vec3(12, 0.02, 12), 0x0088ff, Lobby.getMetadata().id);
 
         // Different dungeon layout with more obstacles
         this.createBox(3, 2, 3, new CANNON.Vec3(-8, 1, -8));

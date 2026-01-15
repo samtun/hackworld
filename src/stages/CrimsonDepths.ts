@@ -3,17 +3,21 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 
 export class CrimsonDepths extends BaseStage {
-    id = 'crimsonDepths';
-    name = 'Crimson Depths';
-    description = 'A dark dungeon with red hues';
+    private static id: string = "crimsonDepths";
+    private static name: string = "Crimson Depths";
+    private static description: string = "A dark dungeon with red hues";
+
+    id = CrimsonDepths.id;
+    name = CrimsonDepths.name;
+    description = CrimsonDepths.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
 
     static getMetadata() {
         return {
-            id: 'crimsonDepths',
-            name: 'Crimson Depths',
-            description: 'A dark dungeon with red hues'
+            id: CrimsonDepths.id,
+            name: CrimsonDepths.name,
+            description: CrimsonDepths.description
         };
     }
 
@@ -28,12 +32,11 @@ export class CrimsonDepths extends BaseStage {
 
     async load(): Promise<void> {
         this.clear();
-        console.log("Loading Crimson Depths...");
         await this.loadEnvironmentMap();
         this.createFloorCollider();
 
         // Portal back to Lobby
-        this.createPortal(new CANNON.Vec3(-10, 0.05, -10), 0x0000ff, Lobby.getMetadata().id);
+        this.createPortal(new CANNON.Vec3(-10, 0.02, -10), 0x0088ff, Lobby.getMetadata().id);
 
         // Dungeon Obstacles
         this.createBox(4, 1, 4, new CANNON.Vec3(5, 0.5, 5));

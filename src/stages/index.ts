@@ -4,6 +4,7 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { CrimsonDepths } from './CrimsonDepths';
 import { VioletAbyss } from './VioletAbyss';
+import { MovementTest } from './MovementTest';
 
 // Re-export for convenience
 export { BaseStage, Lobby, CrimsonDepths, VioletAbyss };
@@ -11,7 +12,8 @@ export { BaseStage, Lobby, CrimsonDepths, VioletAbyss };
 // Registry of all available dungeons for selection UI
 export const AVAILABLE_DUNGEONS = [
     CrimsonDepths,
-    VioletAbyss
+    VioletAbyss,
+    MovementTest
 ];
 
 // Stage factory type
@@ -22,10 +24,11 @@ type StageConstructor = new (
 ) => BaseStage;
 
 // Stage registry mapping stage IDs to their constructors
-const stageRegistry: Map<string, StageConstructor> = new Map([
+const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstructor>([
     [Lobby.getMetadata().id, Lobby],
     [CrimsonDepths.getMetadata().id, CrimsonDepths],
-    [VioletAbyss.getMetadata().id, VioletAbyss]
+    [VioletAbyss.getMetadata().id, VioletAbyss],
+    [MovementTest.getMetadata().id, MovementTest]
 ]);
 
 /**
