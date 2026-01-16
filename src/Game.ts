@@ -429,6 +429,11 @@ export class Game {
             this.cardManager.update(this.player, this.input);
         }
 
+        // Update mobile skills button visibility based on any menu being open
+        if (this.input.mobileControls) {
+            this.input.mobileControls.setSkillsButtonVisible(!this.isAnyMenuOpen());
+        }
+
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.isAnyMenuOpen();
 

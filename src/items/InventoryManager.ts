@@ -203,12 +203,6 @@ export class InventoryManager {
             this.selectedIndex = 0;
             this.needsRender = true;
         }
-
-        // Hide/show skills button when inventory is toggled
-        const mobileControls = InputManager.Instance.mobileControls;
-        if (mobileControls) {
-            mobileControls.setSkillsButtonVisible(!this.isVisible);
-        }
     }
 
     update(player: Player, input?: InputManager) {

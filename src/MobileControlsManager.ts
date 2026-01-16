@@ -89,6 +89,11 @@ export class MobileControlsManager {
         this.buttonsContainer.className = 'mobile-buttons-container';
         document.body.appendChild(this.buttonsContainer);
 
+        // Create skill toggle button (at top of button stack)
+        this.skillToggleButton = this.createButton('Skills', 'mobile-skill-toggle-btn');
+        this.buttonsContainer.appendChild(this.skillToggleButton);
+        this.setupSkillToggleListener();
+
         // Create action buttons (A for Jump, X for Attack)
         // Using Xbox controller button names for consistency
         this.jumpButton = this.createButton('A', 'mobile-jump-btn');
@@ -103,11 +108,6 @@ export class MobileControlsManager {
         this.setupButtonListeners(this.jumpButton, 'isJumpPressed', 'isSkill1Pressed');
         this.setupButtonListeners(this.attackButton, 'isAttackPressed', 'isSkill3Pressed');
         this.setupButtonListeners(this.closeButton, 'isCancelPressed', 'isSkill2Pressed');
-
-        // Create skill toggle button (top-left corner near joystick)
-        this.skillToggleButton = this.createButton('Skills', 'mobile-skill-toggle-btn');
-        document.body.appendChild(this.skillToggleButton);
-        this.setupSkillToggleListener();
 
         // Create inventory button (top center) - using Select button convention
         this.inventoryButton = this.createButton('', 'mobile-inventory-btn');
