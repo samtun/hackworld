@@ -647,11 +647,11 @@ export class Player extends BaseMesh {
         this.handleMovement(dt, isNearInteractive);
         this.syncPosition();
 
-        // Combat (attacks / charge start / weapon updates)
-        this.handleCombat(dt);
-
         // Skills handling
         this.handleSkills();
+
+        // Combat (attacks / charge start / weapon updates)
+        this.handleCombat(dt);
 
         // Clear attack lock when button released
         if (this.input.isAttackReleased()) this.attackLockedUntilRelease = false;
@@ -895,11 +895,11 @@ export class Player extends BaseMesh {
         // Execute the skill
         if (skill.use(this, this.scene, this.world)) {
             console.log(`Used skill: ${skill.name}`);
-            
+
             // Start skill animation
             this.isUsingSkill = true;
             this.skillAnimationTimer = 0;
-            
+
             // Stop movement during skill
             this.body.velocity.x = 0;
             this.body.velocity.z = 0;

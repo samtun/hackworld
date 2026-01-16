@@ -21,7 +21,7 @@ export class LaserBeamSkill extends Skill {
     private readonly PARTICLE_LIFETIME = 0.5;
 
     constructor() {
-        super('Laser Beam', 10, 0); // 10s cooldown, no TP cost
+        super('Laser Beam', 5, 25);
     }
 
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
@@ -39,7 +39,7 @@ export class LaserBeamSkill extends Skill {
 
         // Create cylinder collider for hit detection
         const hitEnemies = new Set<Enemy>();
-        
+
         // Check all enemies in the beam path
         for (let distance = 0; distance <= this.RANGE; distance += 1) {
             const checkPos = new CANNON.Vec3(
@@ -80,7 +80,7 @@ export class LaserBeamSkill extends Skill {
 
         for (let i = 0; i < particleCount; i++) {
             const distance = (i / particleCount) * this.RANGE;
-            
+
             // Main beam particles
             const geometry = new THREE.CylinderGeometry(0.15, 0.15, 1, 8);
             const material = new THREE.MeshStandardMaterial({

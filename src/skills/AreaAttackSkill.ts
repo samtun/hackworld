@@ -18,7 +18,7 @@ export class AreaAttackSkill extends Skill {
     private readonly PARTICLE_LIFETIME = 0.6;
 
     constructor() {
-        super('Area Attack', 10, 0); // 10s cooldown, no TP cost
+        super('Area Attack', 10, 30); // 10s cooldown, no TP cost
     }
 
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
@@ -26,7 +26,7 @@ export class AreaAttackSkill extends Skill {
 
         // Find all enemies within range
         const hitEnemies = new Set<Enemy>();
-        
+
         for (const body of world.bodies) {
             const entity = (body as any).entity;
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
@@ -153,7 +153,7 @@ export class AreaAttackSkill extends Skill {
                             particle.position.x += velocity.x * dt;
                             particle.position.y += velocity.y * dt;
                             particle.position.z += velocity.z * dt;
-                            
+
                             // Apply gravity to particles
                             velocity.y -= 9.8 * dt;
                         }

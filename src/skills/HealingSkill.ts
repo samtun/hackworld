@@ -15,7 +15,7 @@ export class HealingSkill extends Skill {
     private readonly PARTICLE_LIFETIME = 0.8;
 
     constructor() {
-        super('Healing', 5, 0); // 5s cooldown, no TP cost
+        super('Healing', 10, 20);
     }
 
     protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {
