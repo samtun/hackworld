@@ -388,18 +388,13 @@ export class World {
         if (this.enemies.length === 0) {
             this.hasNotifiedStageCompletion = true;
             
-            // Determine which stage was completed
-            const progressManager = GameProgressManager.Instance;
-            let stageIndex = -1;
+            // Get stage index from metadata
+            const stageClass = this.currentStage.constructor as typeof BaseStage;
+            const metadata = stageClass.getMetadata();
+            const stageIndex = metadata.stageIndex;
             
-            if (this.currentStage.id === 'crimsonDepths') {
-                stageIndex = 1;
-            } else if (this.currentStage.id === 'violetAbyss') {
-                stageIndex = 2;
-            }
-            // Add more stages here as they are created
-            
-            if (stageIndex > 0) {
+            if (stageIndex && stageIndex > 0) {
+                const progressManager = GameProgressManager.Instance;
                 progressManager.markBossDefeated(stageIndex);
                 console.log(`Stage ${stageIndex} completed! Progress now:`, progressManager.progress);
                 console.log('Return to the Mainframe in the Lobby for your next assignment.');

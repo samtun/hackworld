@@ -25,6 +25,7 @@ export class Lobby extends BaseStage {
             id: 'lobby',
             name: 'Lobby',
             description: 'Safe hub area'
+            // No stageIndex - lobby is not a dungeon stage
         };
     }
     /**
@@ -277,35 +278,21 @@ export class Lobby extends BaseStage {
         const interactionCallback = () => {
             const currentProgress = progressManager.progress;
             
-            // Progress 0 -> 1: First time talking unlocks first stage
-            if (currentProgress === 0) {
+            // Check if we should advance progress (player is at a "talk to mainframe" checkpoint)
+            // Progress points where talking advances: 0, 2, 4, 6, etc. (even numbers or 0)
+            if (currentProgress === 0 || (currentProgress > 0 && currentProgress % 2 === 0)) {
                 progressManager.advanceProgress();
-                console.log('Mainframe: First stage unlocked! Progress now:', progressManager.progress);
+                console.log('Mainframe: New stage unlocked! Progress now:', progressManager.progress);
                 // Update dialogue for next visit
                 this.updateMainframeDialogue();
             }
-            // Progress 2 -> 3: After first boss, talking unlocks second stage
-            else if (currentProgress === 2) {
-                progressManager.advanceProgress();
-                console.log('Mainframe: Second stage unlocked! Progress now:', progressManager.progress);
-                // Update dialogue for next visit
-                this.updateMainframeDialogue();
-            }
-            // Progress 4 -> 5: After second boss, talking unlocks third stage (for future)
-            else if (currentProgress === 4) {
-                progressManager.advanceProgress();
-                console.log('Mainframe: Third stage unlocked! Progress now:', progressManager.progress);
-                // Update dialogue for next visit
-                this.updateMainframeDialogue();
-            }
-            // Add more progression points for future stages as needed
         };
         
         this.mainframeNpc = new Npc(
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,
-            "models/xdata_terminal.glb", // Reuse terminal model for now
+            "models/xdata_terminal.glb", // TODO: Create dedicated Mainframe model asset
             "The Mainframe",
             "Access System",
             new CANNON.Vec3(0, 0, -7),

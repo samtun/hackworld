@@ -17,7 +17,8 @@ export class CrimsonDepths extends BaseStage {
         return {
             id: CrimsonDepths.id,
             name: CrimsonDepths.name,
-            description: CrimsonDepths.description
+            description: CrimsonDepths.description,
+            stageIndex: 1 // First dungeon stage
         };
     }
 

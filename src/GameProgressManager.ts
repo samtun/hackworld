@@ -41,9 +41,10 @@ export class GameProgressManager {
     
     /**
      * Set the game progress value
-     * @param value - The progress value to set
+     * @param value - The progress value to set (will be floored to nearest integer)
      */
     set progress(value: number) {
+        // Progress is always an integer value (no fractional progress)
         this._progress = Math.max(0, Math.floor(value));
     }
     

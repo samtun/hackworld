@@ -19,6 +19,7 @@ export class MovementTest extends BaseStage {
             id: MovementTest.id,
             name: MovementTest.name,
             description: MovementTest.description
+            // No stageIndex - this is a test stage, not part of progression
         };
     }
 

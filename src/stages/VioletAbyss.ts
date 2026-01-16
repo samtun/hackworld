@@ -17,7 +17,8 @@ export class VioletAbyss extends BaseStage {
         return {
             id: VioletAbyss.id,
             name: VioletAbyss.name,
-            description: VioletAbyss.description
+            description: VioletAbyss.description,
+            stageIndex: 2 // Second dungeon stage
         };
     }
 
