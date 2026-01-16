@@ -4,8 +4,8 @@ import { Lobby } from './Lobby';
 
 export class CrimsonDepths extends BaseStage {
     private static id: string = "crimsonDepths";
-    private static name: string = "Crimson Depths";
-    private static description: string = "A dark dungeon with red hues";
+    private static name: string = "Security Core";
+    private static description: string = "The first layer of defense - cleanse the malware infection";
 
     id = CrimsonDepths.id;
     name = CrimsonDepths.name;
@@ -13,11 +13,12 @@ export class CrimsonDepths extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
 
-    static getMetadata() {
+    static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
             id: CrimsonDepths.id,
             name: CrimsonDepths.name,
-            description: CrimsonDepths.description
+            description: CrimsonDepths.description,
+            stageIndex: 1 // First dungeon stage
         };
     }
 

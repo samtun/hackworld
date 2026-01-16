@@ -4,8 +4,8 @@ import { Lobby } from './Lobby';
 
 export class VioletAbyss extends BaseStage {
     private static id: string = "violetAbyss";
-    private static name: string = "Violet Abyss";
-    private static description: string = "A mysterious and challenging abyss filled with dangers";
+    private static name: string = "Network Matrix";
+    private static description: string = "The communication hub - eliminate the spreading malware";
 
     id = VioletAbyss.id;
     name = VioletAbyss.name;
@@ -13,11 +13,12 @@ export class VioletAbyss extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
 
-    static getMetadata() {
+    static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
             id: VioletAbyss.id,
             name: VioletAbyss.name,
-            description: VioletAbyss.description
+            description: VioletAbyss.description,
+            stageIndex: 2 // Second dungeon stage
         };
     }
 

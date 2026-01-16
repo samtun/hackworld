@@ -7,7 +7,7 @@
  */
 export class NpcRegistry {
     private static instance: NpcRegistry;
-    
+
     // Track which NPCs have shown their dialogue by NPC name
     private shownDialogue: Set<string> = new Set<string>();
 
@@ -26,6 +26,9 @@ export class NpcRegistry {
      * Mark an NPC's dialogue as shown
      */
     markDialogueShown(npcName: string): void {
+        if (npcName === "The Mainframe") {
+            return; // Special case: Mainframe dialogue can be repeated
+        }
         this.shownDialogue.add(npcName);
     }
 
@@ -33,6 +36,9 @@ export class NpcRegistry {
      * Check if an NPC's dialogue has been shown
      */
     hasShownDialogue(npcName: string): boolean {
+        if (npcName === "The Mainframe") {
+            return false; // Special case: Mainframe dialogue can be repeated
+        }
         return this.shownDialogue.has(npcName);
     }
 

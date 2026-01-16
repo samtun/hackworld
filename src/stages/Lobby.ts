@@ -8,9 +8,11 @@ import { SaveManager } from '../SaveManager';
 import { XDataUpgradeManager } from '../items/xdata/XDataUpgradeManager';
 import { WeaponTrader } from '../items/weapons/WeaponTrader';
 import { Npc } from '../npcs/Npc';
+import { MainframeNpc } from '../npcs/MainframeNpc';
 import { CoreTrader } from '../items/cores/CoreTrader';
 import { CardManager } from '../items/cards/CardManager';
 import { ShaderUtils } from '../ShaderUtils';
+import { GameProgressManager } from '../GameProgressManager';
 
 export class Lobby extends BaseStage {
     id = 'lobby';
@@ -19,11 +21,12 @@ export class Lobby extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
 
-    static getMetadata() {
+    static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
             id: 'lobby',
             name: 'Lobby',
-            description: 'Safe hub area'
+            description: 'Safe hub area',
+            stageIndex: 0,
         };
     }
     /**
@@ -36,6 +39,7 @@ export class Lobby extends BaseStage {
     }
 
     // NPCs
+    mainframeNpc?: Npc;
     nylethNpc?: Npc;
     xDataManagerNpc?: Npc;
     saveManagerNpc?: Npc;
@@ -68,6 +72,10 @@ export class Lobby extends BaseStage {
         this.clear();
         console.log("Loading Lobby...");
         await this.loadEnvironmentMap();
+
+        // Update Mainframe dialogue on each load (in case progress changed)
+        this.updateMainframeDialogue();
+
         const lobbyGltf = this.assetManager.get('models/lobby.glb');
         if (lobbyGltf) {
             const lobbyScene = lobbyGltf.scene.clone();
@@ -105,7 +113,33 @@ export class Lobby extends BaseStage {
         // Healing Station
         this.healingStation = new HealingStation(this.scene, this.healingStationPosition);
 
-        // Create Nyleth NPC
+        // Create Mainframe NPC - Main quest giver
+        this.createMainframeNpc();
+
+        this.createNylethNpc();
+
+        this.createXDataManagerNpc();
+
+        this.createSaveManagerNpc();
+
+        this.createChipTraderNpc();
+
+        this.createCoreTraderNpc();
+
+        this.createWeaponTraderNpc();
+
+        this.createIrkelNpc();
+    }
+
+    /**
+     * Create the Mainframe NPC with progressive dialogue based on game progress
+     */
+    private createMainframeNpc(): void {
+        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld, this.physicsMaterial, new CANNON.Vec3(0, 0, -7));
+        this.npcs.add(this.mainframeNpc);
+    }
+
+    private createNylethNpc(): void {
         const nylethDialogue = [
             "Hey there, never seen you around. You look like you pack some punches. Interested in joining our fight?",
             "There are hordes of corrupted files running around our servers and we could really need some help with that.",
@@ -123,8 +157,9 @@ export class Lobby extends BaseStage {
             nylethDialogue
         );
         this.npcs.add(this.nylethNpc);
+    }
 
-        // Create XData Manager NPC
+    private createXDataManagerNpc(): void {
         const xDataManagerDialogue = [
             "Welcome to the upgrade terminal.",
             "Here you can unlock your full potential by using X-Data you collect from enemies.",
@@ -144,8 +179,9 @@ export class Lobby extends BaseStage {
             () => this.xDataUpgradeManager?.show()
         );
         this.npcs.add(this.xDataManagerNpc);
+    }
 
-        // Create Save Manager NPC
+    private createSaveManagerNpc(): void {
         const saveManagerDialogue = [
             "Hello! I'm the Save Manager.",
             "I can help you save your current game progress to a file, or load a previously saved game.",
@@ -166,8 +202,9 @@ export class Lobby extends BaseStage {
             () => this.saveManager?.show(),
         );
         this.npcs.add(this.saveManagerNpc);
+    }
 
-        // Create Chip Trader NPC
+    private createChipTraderNpc(): void {
         const chipTraderDialogue = [
             "Hi, I'm Kelly.",
             "Are you looking for some upgrades?",
@@ -187,8 +224,9 @@ export class Lobby extends BaseStage {
             () => this.chipTrader?.show()
         );
         this.npcs.add(this.chipTraderNpc);
+    }
 
-        // Create Core Trader NPC
+    private createCoreTraderNpc(): void {
         const coreTraderDialogue = [
             "Hey you. You look like you could use some upgrades for your systems.",
             "I've got just what you need."
@@ -206,10 +244,10 @@ export class Lobby extends BaseStage {
             coreTraderDialogue,
             () => this.coreTrader?.show()
         );
-
         this.npcs.add(this.coreTraderNpc);
+    }
 
-        // Create Weapon Trader NPC
+    private createWeaponTraderNpc(): void {
         const weaponTraderDialogue = [
             "Looking for some new gear?",
             "Trying to inflict some serious damage?",
@@ -228,10 +266,10 @@ export class Lobby extends BaseStage {
             weaponTraderDialogue,
             () => this.weaponTraderManager?.show()
         );
-
         this.npcs.add(this.weaponTraderNpc);
+    }
 
-        // Create Irkel NPC (Card Manager)
+    private createIrkelNpc(): void {
         const irkelDialogue = [
             "Hey there, collector! I'm Irkel.",
             "I've got booster packs and can help you manage your card collection.",
@@ -254,6 +292,19 @@ export class Lobby extends BaseStage {
 
         this.npcs.add(this.irkelNpc);
     }
+
+    /**
+     * Update Mainframe dialogue based on current progress
+     */
+    private updateMainframeDialogue(): void {
+        if (this.mainframeNpc) {
+            const progressManager = GameProgressManager.Instance;
+            // mainframeNpc is a MainframeNpc instance and exposes updateDialogue
+            (this.mainframeNpc as any).updateDialogue(progressManager.progress);
+        }
+    }
+
+    
 
     /*
      * Override BaseStage update method to include healing station

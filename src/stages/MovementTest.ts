@@ -14,11 +14,12 @@ export class MovementTest extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
 
-    static getMetadata() {
+    static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
             id: MovementTest.id,
             name: MovementTest.name,
-            description: MovementTest.description
+            description: MovementTest.description,
+            stageIndex: -1,
         };
     }
 
@@ -40,7 +41,9 @@ export class MovementTest extends BaseStage {
         const geo = new THREE.PlaneGeometry(50, 50);
         geo.rotateX(-Math.PI / 2);
         const mat = new THREE.MeshStandardMaterial({ color: 0x222222, side: THREE.FrontSide });
-        this.scene.add(new THREE.Mesh(geo, mat));
+        const floorPlane = new THREE.Mesh(geo, mat);
+        this.scene.add(floorPlane);
+        this.meshes.push(floorPlane);
 
         // Obstacles
         for (let i = 0; i < 5; i++) {

@@ -10,11 +10,10 @@ import { MovementTest } from './MovementTest';
 export { BaseStage, Lobby, CrimsonDepths, VioletAbyss };
 
 // Registry of all available dungeons for selection UI
-export const AVAILABLE_DUNGEONS = [
-    CrimsonDepths,
-    VioletAbyss,
-    MovementTest
-];
+// MovementTest is only included in dev builds
+export const AVAILABLE_DUNGEONS = import.meta.env.DEV 
+    ? [CrimsonDepths, VioletAbyss, MovementTest]
+    : [CrimsonDepths, VioletAbyss];
 
 // Stage factory type
 type StageConstructor = new (
@@ -28,7 +27,7 @@ const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstr
     [Lobby.getMetadata().id, Lobby],
     [CrimsonDepths.getMetadata().id, CrimsonDepths],
     [VioletAbyss.getMetadata().id, VioletAbyss],
-    [MovementTest.getMetadata().id, MovementTest]
+    ...(import.meta.env.DEV ? [[MovementTest.getMetadata().id, MovementTest] as [string, StageConstructor]] : [])
 ]);
 
 /**

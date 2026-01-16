@@ -4,6 +4,7 @@ import { CoreRepository } from './items/cores/CoreRepository';
 import { ChipRepository } from './items/chips/ChipRepository';
 import { WeaponType } from './items/weapons/WeaponType';
 import { ItemLevelHelper } from './items/ItemLevelHelper';
+import { GameProgressManager } from './GameProgressManager';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -196,6 +197,14 @@ export class DebugValueEditor {
         this.createStatInputInRow(xDataMoneyRow, 'xData', 'X-Data:', 'number');
         this.createStatInputInRow(xDataMoneyRow, 'money', 'Money:', 'number');
         statsContainer.appendChild(xDataMoneyRow);
+
+        // Row 7: Game Progress (full width)
+        const progressRow = document.createElement('div');
+        progressRow.style.display = 'grid';
+        progressRow.style.gridTemplateColumns = '1fr';
+        progressRow.style.gap = '10px';
+        this.createStatInputInRow(progressRow, 'gameProgress', 'Quest Progress:', 'number');
+        statsContainer.appendChild(progressRow);
 
         statsSection.appendChild(statsContainer);
 
@@ -652,6 +661,11 @@ export class DebugValueEditor {
         this.updateInputValue('level', player.level);
         this.updateInputValue('xData', player.xData);
         this.updateInputValue('money', player.money);
+        
+        // Update game progress
+        const progressManager = GameProgressManager.Instance;
+        this.updateInputValue('gameProgress', progressManager.progress);
+        
         const playerTech = (player as any).tech || {};
         this.updateInputValue('swordTech', playerTech[WeaponType.SWORD] || 0);
         this.updateInputValue('doubleSwordTech', playerTech[WeaponType.DUAL_BLADE] || 0);
@@ -670,6 +684,13 @@ export class DebugValueEditor {
         this.applyInputValue('level', (val) => { player.level = Math.max(1, val); });
         this.applyInputValue('xData', (val) => { player.xData = Math.max(0, val); });
         this.applyInputValue('money', (val) => { player.money = Math.max(0, val); });
+        
+        // Apply game progress changes
+        this.applyInputValue('gameProgress', (val) => { 
+            const progressManager = GameProgressManager.Instance;
+            progressManager.progress = Math.max(0, val);
+        });
+        
         this.applyInputValue('swordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.SWORD] = Math.max(0, val); });
         this.applyInputValue('doubleSwordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.DUAL_BLADE] = Math.max(0, val); });
         this.applyInputValue('lanceTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.LANCE] = Math.max(0, val); });
