@@ -1,3 +1,20 @@
+# [1.36.0](https://github.com/samtun/hackworld/compare/v1.35.0...v1.36.0) (2026-01-16)
+
+
+### Bug Fixes
+
+* add explicit return type annotations to getMetadata methods ([84347e0](https://github.com/samtun/hackworld/commit/84347e09b2295d56eeb919f42383bdae1939246c))
+* add missing commas in metadata return statements ([fbba193](https://github.com/samtun/hackworld/commit/fbba193bbffccfc02b77faa856cdde98164c8e6b))
+* base stage implementation ([cc6b937](https://github.com/samtun/hackworld/commit/cc6b937bda25a1e3e8332c7d3a4839a1c3e69f70))
+* make mainframe dialogue always show ([4cb3ca9](https://github.com/samtun/hackworld/commit/4cb3ca9a844c4efec5a30e6a846432cfed51fb2d))
+* movement test stage not showing up in dungeon selection ([460b56c](https://github.com/samtun/hackworld/commit/460b56c1628d7074cb55b0d3c22cfea4e416f297))
+* use stageIndex metadata instead of array position for unlocking ([0097ca2](https://github.com/samtun/hackworld/commit/0097ca274ec8f78685218200a22896d7b7fe72e3))
+
+
+### Features
+
+* add mainframe NPC and quest progression system ([51e2874](https://github.com/samtun/hackworld/commit/51e2874f3be0a1b91b7ebe8b9ab59c6bd0b71665))
+
 # [1.35.0](https://github.com/samtun/hackworld/compare/v1.34.0...v1.35.0) (2026-01-15)
 
 
