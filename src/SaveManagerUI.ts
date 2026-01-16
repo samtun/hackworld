@@ -182,6 +182,12 @@ export class SaveManagerUI {
 
         // Reset input states to prevent immediate action on open
         resetInputDebounce(this as any);
+
+        // Hide skills button when save manager is open
+        const mobileControls = InputManager.Instance.mobileControls;
+        if (mobileControls) {
+            mobileControls.setSkillsButtonVisible(false);
+        }
     }
 
     /**
@@ -197,6 +203,12 @@ export class SaveManagerUI {
         if (this.autoCloseTimer !== undefined) {
             clearTimeout(this.autoCloseTimer);
             this.autoCloseTimer = undefined;
+        }
+
+        // Show skills button when save manager is closed
+        const mobileControls = InputManager.Instance.mobileControls;
+        if (mobileControls) {
+            mobileControls.setSkillsButtonVisible(true);
         }
     }
 

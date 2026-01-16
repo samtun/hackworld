@@ -276,6 +276,16 @@ export class MobileControlsManager {
     }
 
     /**
+     * Show or hide skills toggle button (for hiding when menus/inventory are open)
+     */
+    public setSkillsButtonVisible(visible: boolean) {
+        if (!this.isMobileDevice) return;
+        
+        const display = visible ? 'block' : 'none';
+        if (this.skillToggleButton) this.skillToggleButton.style.display = display;
+    }
+
+    /**
      * Check if mobile controls are active on this device
      */
     public get isMobile(): boolean {

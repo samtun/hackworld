@@ -274,8 +274,8 @@ body {
 
 .mobile-skill-toggle-btn {
     position: fixed;
-    top: 20px;
-    left: 20px;
+    bottom: 270px;
+    right: 20px;
     width: 100px;
     height: 50px;
     border-radius: 25px;
