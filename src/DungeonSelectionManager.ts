@@ -182,9 +182,12 @@ export class DungeonSelectionManager {
         const progressManager = GameProgressManager.Instance;
         
         // Filter dungeons based on progress - only show unlocked ones
-        const unlockedDungeons = this.dungeonClasses.filter((_, index) => {
-            const stageIndex = index + 1; // 1-based indexing
-            return progressManager.isStageUnlocked(stageIndex);
+        // Use stageIndex from metadata, not array position
+        const unlockedDungeons = this.dungeonClasses.filter((DungeonClass) => {
+            const metadata = DungeonClass.getMetadata();
+            // Skip stages without stageIndex (like MovementTest)
+            if (!metadata.stageIndex) return false;
+            return progressManager.isStageUnlocked(metadata.stageIndex);
         });
 
         // If no dungeons unlocked, show a message
@@ -245,11 +248,13 @@ export class DungeonSelectionManager {
         const isSelectPressed = input.isSelectPressed();
         const isCancelPressed = input.isCancelPressed();
 
-        // Get unlocked dungeons count
+        // Get unlocked dungeons count using stageIndex from metadata
         const progressManager = GameProgressManager.Instance;
-        const unlockedDungeons = this.dungeonClasses.filter((_, index) => {
-            const stageIndex = index + 1;
-            return progressManager.isStageUnlocked(stageIndex);
+        const unlockedDungeons = this.dungeonClasses.filter((DungeonClass) => {
+            const metadata = DungeonClass.getMetadata();
+            // Skip stages without stageIndex (like MovementTest)
+            if (!metadata.stageIndex) return false;
+            return progressManager.isStageUnlocked(metadata.stageIndex);
         });
         
         // If no dungeons available, only allow cancel
