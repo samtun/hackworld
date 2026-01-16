@@ -643,12 +643,12 @@ export class Player extends BaseMesh {
         if (this.handleDash(dt)) return;
         if (this.handleCharging(dt)) return;
 
+        // Skills handling
+        this.handleSkills();
+
         // Movement and physics sync
         this.handleMovement(dt, isNearInteractive);
         this.syncPosition();
-
-        // Skills handling
-        this.handleSkills();
 
         // Combat (attacks / charge start / weapon updates)
         this.handleCombat(dt);
