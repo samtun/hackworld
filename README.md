@@ -9,6 +9,7 @@ A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 - Hack and slash gameplay
 - Hub based game world with multiple dungeon stages
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
+- **Active Skills** - Use three unique skills: Laser Beam (ranged attack), Healing (restore HP), and Area Attack (circular damage)
 - Inventory system with looting mechanics
 - **Save/Load system** - Save your game progress to a JSON file or load a previously saved game through the Save Manager NPC in the lobby
 
@@ -60,6 +61,9 @@ The game is fully playable with keyboard, controller (tested with XBox controlle
 - **WASD / Arrow Keys / LStick**: Move player
 - **Space / A**: Jump
 - **K / X**: Attack (tap for normal attack, hold for 1s then release for charged dash attack)
+- **Q + Space / L1 + A**: Laser Beam skill (ranged attack, 30m range, 20 damage, 10s cooldown)
+- **Q + Escape / L1 + B**: Healing skill (heal 40 HP, 5s cooldown)
+- **Q + K / L1 + X**: Area Attack skill (5m circular area, 18 damage, 10s cooldown)
 - **I / Select**: Toggle inventory
 - **Enter / A**: Interact and select in menus
 - **ESC / B**: Close menus

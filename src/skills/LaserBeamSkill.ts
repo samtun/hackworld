@@ -29,8 +29,19 @@ export class LaserBeamSkill extends Skill {
 
         // Get player's forward direction
         const forward = new THREE.Vector3(0, 0, 1);
-        forward.applyQuaternion(player.mesh.quaternion);
-        forward.y = 0;
+        const playerQuaternion = new THREE.Quaternion();
+        playerQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.atan2(player.body.velocity.x, player.body.velocity.z));
+        
+        // Use the player's rotation from their position facing
+        const playerRotation = new THREE.Euler();
+        playerRotation.setFromQuaternion(playerQuaternion);
+        
+        // Calculate forward based on player body rotation
+        forward.set(
+            Math.sin(playerRotation.y),
+            0,
+            Math.cos(playerRotation.y)
+        );
         forward.normalize();
 
         // Create laser beam starting position (in front of player)
@@ -96,9 +107,9 @@ export class LaserBeamSkill extends Skill {
 
             const particle = new THREE.Mesh(geometry, material);
             particle.position.set(
-                player.mesh.position.x + forward.x * distance,
-                player.mesh.position.y + 0.5,
-                player.mesh.position.z + forward.z * distance
+                player.position.x + forward.x * distance,
+                player.position.y + 0.5,
+                player.position.z + forward.z * distance
             );
 
             // Orient particle along beam direction

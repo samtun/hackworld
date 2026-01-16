@@ -76,7 +76,7 @@ export class AreaAttackSkill extends Skill {
             });
 
             const particle = new THREE.Mesh(geometry, material);
-            particle.position.copy(player.mesh.position);
+            particle.position.copy(player.position);
             particle.position.y += 0.3;
 
             // Store velocity
@@ -97,7 +97,7 @@ export class AreaAttackSkill extends Skill {
         });
 
         const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-        ring.position.copy(player.mesh.position);
+        ring.position.copy(player.position);
         ring.position.y += 0.2;
         ring.rotation.x = Math.PI / 2;
 

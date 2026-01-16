@@ -18,7 +18,7 @@ export class HealingSkill extends Skill {
         super('Healing', 5, 0); // 5s cooldown, no TP cost
     }
 
-    protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
+    protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {
         console.log('Executing Healing skill');
 
         // Heal the player
@@ -52,9 +52,9 @@ export class HealingSkill extends Skill {
 
             const particle = new THREE.Mesh(geometry, material);
             particle.position.set(
-                player.mesh.position.x + Math.cos(angle) * radius,
-                player.mesh.position.y + height,
-                player.mesh.position.z + Math.sin(angle) * radius
+                player.position.x + Math.cos(angle) * radius,
+                player.position.y + height,
+                player.position.z + Math.sin(angle) * radius
             );
 
             // Store velocity for upward movement
@@ -79,7 +79,7 @@ export class HealingSkill extends Skill {
         });
 
         const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-        glow.position.copy(player.mesh.position);
+        glow.position.copy(player.position);
         glow.position.y += 1;
         scene.add(glow);
         this.particles.push(glow);
