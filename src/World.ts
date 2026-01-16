@@ -44,7 +44,6 @@ export class World {
     private gridPlane: THREE.Mesh;
 
     // Track stage completion for progression
-    private stageEnemiesCleared: Set<string> = new Set<string>();
     private hasNotifiedStageCompletion: boolean = false;
 
     constructor(
