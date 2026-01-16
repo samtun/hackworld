@@ -8,6 +8,7 @@ import { SaveManager } from '../SaveManager';
 import { XDataUpgradeManager } from '../items/xdata/XDataUpgradeManager';
 import { WeaponTrader } from '../items/weapons/WeaponTrader';
 import { Npc } from '../npcs/Npc';
+import { MainframeNpc } from '../npcs/MainframeNpc';
 import { CoreTrader } from '../items/cores/CoreTrader';
 import { CardManager } from '../items/cards/CardManager';
 import { ShaderUtils } from '../ShaderUtils';
@@ -134,37 +135,7 @@ export class Lobby extends BaseStage {
      * Create the Mainframe NPC with progressive dialogue based on game progress
      */
     private createMainframeNpc(): void {
-        const progressManager = GameProgressManager.Instance;
-
-        // Get dialogue based on current progress
-        const dialogue = this.getMainframeDialogue(progressManager.progress);
-
-        // Create callback that advances progress when dialogue completes
-        const interactionCallback = () => {
-            const currentProgress = progressManager.progress;
-
-            // Check if we should advance progress (player is at a "talk to mainframe" checkpoint)
-            // Progress points where talking advances: 0, 2, 4, 6, etc. (even numbers or 0)
-            if (currentProgress === 0 || (currentProgress > 0 && currentProgress % 2 === 0)) {
-                progressManager.advanceProgress();
-                console.log('Mainframe: New stage unlocked! Progress now:', progressManager.progress);
-                // Update dialogue for next visit
-                this.updateMainframeDialogue();
-            }
-        };
-
-        this.mainframeNpc = new Npc(
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
-            "models/xdata_terminal.glb", // TODO: Create dedicated Mainframe model asset
-            "The Mainframe",
-            "Access System",
-            new CANNON.Vec3(0, 0, -7),
-            dialogue,
-            interactionCallback
-        );
-
+        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld, this.physicsMaterial, new CANNON.Vec3(0, 0, -7));
         this.npcs.add(this.mainframeNpc);
     }
 
@@ -328,83 +299,12 @@ export class Lobby extends BaseStage {
     private updateMainframeDialogue(): void {
         if (this.mainframeNpc) {
             const progressManager = GameProgressManager.Instance;
-            this.mainframeNpc.dialogue = this.getMainframeDialogue(progressManager.progress);
+            // mainframeNpc is a MainframeNpc instance and exposes updateDialogue
+            (this.mainframeNpc as any).updateDialogue(progressManager.progress);
         }
     }
 
-    /**
-     * Get Mainframe dialogue based on current game progress
-     */
-    private getMainframeDialogue(progress: number): string[] {
-        // Progress 0: Initial meeting
-        if (progress === 0) {
-            return [
-                "CONNECTION ESTABLISHED...",
-                "Greetings, consciousness. I am the Mainframe, the central intelligence of the Ometec corporation.",
-                "The year is 2053. A catastrophic system failure has begun tearing through our infrastructure.",
-                "A technician was summoned when our automated systems failed to contain the corruption.",
-                "Upon interfacing with our servers, his neural patterns manifested within our digital realm.",
-                "You are that manifestation - his mind given form within the machine.",
-                "The world you perceive is the company's vast digital infrastructure, now under siege.",
-                "Multiple system layers are infected with aggressive malware, self-replicating and destructive.",
-                "I require your assistance to cleanse these corrupted sectors before total system collapse.",
-                "The Security Core is the first line of defense. It has been completely overrun.",
-                "Navigate to the southern teleporter when you are ready. Eliminate the virus at its source.",
-                "The fate of Ometec's entire digital existence rests in your hands."
-            ];
-        }
-        // Progress 1: After unlocking first stage, before defeating boss
-        else if (progress === 1) {
-            return [
-                "The Security Core awaits cleansing.",
-                "Locate and eliminate the primary virus threat within.",
-                "Until it is destroyed, the infection will continue to spread.",
-                "Use the southern teleporter to access the corrupted sector."
-            ];
-        }
-        // Progress 2: After defeating first boss
-        else if (progress === 2) {
-            return [
-                "POSITIVE FEEDBACK DETECTED...",
-                "The Security Core has been successfully sanitized. Excellent work.",
-                "However, the malware has already spread to secondary systems.",
-                "The Network Matrix - our communication infrastructure - is now under heavy attack.",
-                "Multiple malicious entities have established themselves throughout the network.",
-                "These must be purged before they can compromise our data integrity.",
-                "The Network Matrix is now accessible through the teleporter.",
-                "Proceed with extreme caution. The malware is evolving."
-            ];
-        }
-        // Progress 3: After unlocking second stage, before defeating boss
-        else if (progress === 3) {
-            return [
-                "The Network Matrix infection is severe.",
-                "Multiple malware instances detected within the communication hub.",
-                "Systematic elimination is required to restore network functionality.",
-                "Access the sector via the teleporter when ready."
-            ];
-        }
-        // Progress 4: After defeating second boss (for future expansion)
-        else if (progress === 4) {
-            return [
-                "ANALYSIS COMPLETE...",
-                "Network Matrix successfully restored. Communication channels are secure.",
-                "Further system layers require attention, but diagnostics are still in progress.",
-                "Return here when additional sectors come online.",
-                "Your efficiency has been... remarkable."
-            ];
-        }
-        // Progress 5+: Future content placeholder
-        else {
-            return [
-                "SYSTEM STATUS: STABLE",
-                "All currently accessible sectors have been cleansed.",
-                "Additional infrastructure layers are being analyzed.",
-                "Stand by for further mission parameters.",
-                "Your contributions to system integrity are invaluable."
-            ];
-        }
-    }
+    
 
     /*
      * Override BaseStage update method to include healing station
