@@ -11,6 +11,7 @@ import { Npc } from '../npcs/Npc';
 import { CoreTrader } from '../items/cores/CoreTrader';
 import { CardManager } from '../items/cards/CardManager';
 import { ShaderUtils } from '../ShaderUtils';
+import { GameProgressManager } from '../GameProgressManager';
 
 export class Lobby extends BaseStage {
     id = 'lobby';
@@ -36,6 +37,7 @@ export class Lobby extends BaseStage {
     }
 
     // NPCs
+    mainframeNpc?: Npc;
     nylethNpc?: Npc;
     xDataManagerNpc?: Npc;
     saveManagerNpc?: Npc;
@@ -68,6 +70,10 @@ export class Lobby extends BaseStage {
         this.clear();
         console.log("Loading Lobby...");
         await this.loadEnvironmentMap();
+        
+        // Update Mainframe dialogue on each load (in case progress changed)
+        this.updateMainframeDialogue();
+        
         const lobbyGltf = this.assetManager.get('models/lobby.glb');
         if (lobbyGltf) {
             const lobbyScene = lobbyGltf.scene.clone();
@@ -104,6 +110,9 @@ export class Lobby extends BaseStage {
 
         // Healing Station
         this.healingStation = new HealingStation(this.scene, this.healingStationPosition);
+
+        // Create Mainframe NPC - Main quest giver
+        this.createMainframeNpc();
 
         // Create Nyleth NPC
         const nylethDialogue = [
@@ -253,6 +262,142 @@ export class Lobby extends BaseStage {
         );
 
         this.npcs.add(this.irkelNpc);
+    }
+
+    /**
+     * Create the Mainframe NPC with progressive dialogue based on game progress
+     */
+    private createMainframeNpc(): void {
+        const progressManager = GameProgressManager.Instance;
+        
+        // Get dialogue based on current progress
+        const dialogue = this.getMainframeDialogue(progressManager.progress);
+        
+        // Create callback that advances progress when dialogue completes
+        const interactionCallback = () => {
+            const currentProgress = progressManager.progress;
+            
+            // Progress 0 -> 1: First time talking unlocks first stage
+            if (currentProgress === 0) {
+                progressManager.advanceProgress();
+                console.log('Mainframe: First stage unlocked! Progress now:', progressManager.progress);
+                // Update dialogue for next visit
+                this.updateMainframeDialogue();
+            }
+            // Progress 2 -> 3: After first boss, talking unlocks second stage
+            else if (currentProgress === 2) {
+                progressManager.advanceProgress();
+                console.log('Mainframe: Second stage unlocked! Progress now:', progressManager.progress);
+                // Update dialogue for next visit
+                this.updateMainframeDialogue();
+            }
+            // Progress 4 -> 5: After second boss, talking unlocks third stage (for future)
+            else if (currentProgress === 4) {
+                progressManager.advanceProgress();
+                console.log('Mainframe: Third stage unlocked! Progress now:', progressManager.progress);
+                // Update dialogue for next visit
+                this.updateMainframeDialogue();
+            }
+            // Add more progression points for future stages as needed
+        };
+        
+        this.mainframeNpc = new Npc(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            "models/xdata_terminal.glb", // Reuse terminal model for now
+            "The Mainframe",
+            "Access System",
+            new CANNON.Vec3(0, 0, -7),
+            dialogue,
+            interactionCallback
+        );
+        
+        this.npcs.add(this.mainframeNpc);
+    }
+
+    /**
+     * Update Mainframe dialogue based on current progress
+     */
+    private updateMainframeDialogue(): void {
+        if (this.mainframeNpc) {
+            const progressManager = GameProgressManager.Instance;
+            this.mainframeNpc.dialogue = this.getMainframeDialogue(progressManager.progress);
+        }
+    }
+
+    /**
+     * Get Mainframe dialogue based on current game progress
+     */
+    private getMainframeDialogue(progress: number): string[] {
+        // Progress 0: Initial meeting
+        if (progress === 0) {
+            return [
+                "CONNECTION ESTABLISHED...",
+                "Greetings, consciousness. I am the Mainframe, the central intelligence of the Ometec corporation.",
+                "The year is 2053. A catastrophic system failure has begun tearing through our infrastructure.",
+                "A technician was summoned when our automated systems failed to contain the corruption.",
+                "Upon interfacing with our servers, his neural patterns manifested within our digital realm.",
+                "You are that manifestation - his mind given form within the machine.",
+                "The world you perceive is the company's vast digital infrastructure, now under siege.",
+                "Multiple system layers are infected with aggressive malware, self-replicating and destructive.",
+                "I require your assistance to cleanse these corrupted sectors before total system collapse.",
+                "The Security Core is the first line of defense. It has been completely overrun.",
+                "Navigate to the southern teleporter when you are ready. Eliminate the virus at its source.",
+                "The fate of Ometec's entire digital existence rests in your hands."
+            ];
+        }
+        // Progress 1: After unlocking first stage, before defeating boss
+        else if (progress === 1) {
+            return [
+                "The Security Core awaits cleansing.",
+                "Locate and eliminate the primary virus threat within.",
+                "Until it is destroyed, the infection will continue to spread.",
+                "Use the southern teleporter to access the corrupted sector."
+            ];
+        }
+        // Progress 2: After defeating first boss
+        else if (progress === 2) {
+            return [
+                "POSITIVE FEEDBACK DETECTED...",
+                "The Security Core has been successfully sanitized. Excellent work.",
+                "However, the malware has already spread to secondary systems.",
+                "The Network Matrix - our communication infrastructure - is now under heavy attack.",
+                "Multiple malicious entities have established themselves throughout the network.",
+                "These must be purged before they can compromise our data integrity.",
+                "The Network Matrix is now accessible through the teleporter.",
+                "Proceed with extreme caution. The malware is evolving."
+            ];
+        }
+        // Progress 3: After unlocking second stage, before defeating boss
+        else if (progress === 3) {
+            return [
+                "The Network Matrix infection is severe.",
+                "Multiple malware instances detected within the communication hub.",
+                "Systematic elimination is required to restore network functionality.",
+                "Access the sector via the teleporter when ready."
+            ];
+        }
+        // Progress 4: After defeating second boss (for future expansion)
+        else if (progress === 4) {
+            return [
+                "ANALYSIS COMPLETE...",
+                "Network Matrix successfully restored. Communication channels are secure.",
+                "Further system layers require attention, but diagnostics are still in progress.",
+                "Return here when additional sectors come online.",
+                "Your efficiency has been... remarkable."
+            ];
+        }
+        // Progress 5+: Future content placeholder
+        else {
+            return [
+                "SYSTEM STATUS: STABLE",
+                "All currently accessible sectors have been cleansed.",
+                "Additional infrastructure layers are being analyzed.",
+                "Stand by for further mission parameters.",
+                "Your contributions to system integrity are invaluable."
+            ];
+        }
     }
 
     /*

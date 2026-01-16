@@ -1,5 +1,6 @@
 import { InputManager } from './InputManager';
 import { AVAILABLE_DUNGEONS, BaseStage } from './stages';
+import { GameProgressManager } from './GameProgressManager';
 
 // --- Constants (matching InventoryManager style) ---
 const COLORS = {
@@ -178,7 +179,26 @@ export class DungeonSelectionManager {
         this.dungeonList.innerHTML = '';
         this.dungeonElements = [];
 
-        this.dungeonClasses.forEach((DungeonClass, index) => {
+        const progressManager = GameProgressManager.Instance;
+        
+        // Filter dungeons based on progress - only show unlocked ones
+        const unlockedDungeons = this.dungeonClasses.filter((_, index) => {
+            const stageIndex = index + 1; // 1-based indexing
+            return progressManager.isStageUnlocked(stageIndex);
+        });
+
+        // If no dungeons unlocked, show a message
+        if (unlockedDungeons.length === 0) {
+            const messageDiv = document.createElement('div');
+            messageDiv.innerText = 'No dungeons available yet. Talk to the Mainframe to begin your mission.';
+            messageDiv.style.textAlign = 'center';
+            messageDiv.style.color = '#aaa';
+            messageDiv.style.padding = '20px';
+            this.dungeonList.appendChild(messageDiv);
+            return;
+        }
+
+        unlockedDungeons.forEach((DungeonClass, index) => {
             // Get metadata from static method
             const metadata = DungeonClass.getMetadata();
 
@@ -195,7 +215,7 @@ export class DungeonSelectionManager {
             });
 
             // Add separator between items
-            if (index < this.dungeonClasses.length - 1) {
+            if (index < unlockedDungeons.length - 1) {
                 dungeonDiv.style.borderBottom = `1px solid ${COLORS.SEPARATOR}`;
             }
 
@@ -225,6 +245,22 @@ export class DungeonSelectionManager {
         const isSelectPressed = input.isSelectPressed();
         const isCancelPressed = input.isCancelPressed();
 
+        // Get unlocked dungeons count
+        const progressManager = GameProgressManager.Instance;
+        const unlockedDungeons = this.dungeonClasses.filter((_, index) => {
+            const stageIndex = index + 1;
+            return progressManager.isStageUnlocked(stageIndex);
+        });
+        
+        // If no dungeons available, only allow cancel
+        if (unlockedDungeons.length === 0) {
+            if (isCancelPressed && !this.lastCancelState) {
+                this.hide();
+            }
+            this.lastCancelState = isCancelPressed;
+            return;
+        }
+
         // Wait for select key release to prevent accidental selection
         if (this.waitForRelease) {
             if (!isSelectPressed) {
@@ -240,13 +276,13 @@ export class DungeonSelectionManager {
 
         // Navigate Down
         if (isDownPressed && !this.lastNavigateDownState) {
-            this.selectedIndex = Math.min(this.dungeonClasses.length - 1, this.selectedIndex + 1);
+            this.selectedIndex = Math.min(unlockedDungeons.length - 1, this.selectedIndex + 1);
         }
         this.lastNavigateDownState = isDownPressed;
 
         // Select
         if (isSelectPressed && !this.lastSelectState && !this.waitForRelease) {
-            const metadata = this.dungeonClasses[this.selectedIndex].getMetadata();
+            const metadata = unlockedDungeons[this.selectedIndex].getMetadata();
             this.selectDungeon(metadata.id);
         }
         this.lastSelectState = isSelectPressed;

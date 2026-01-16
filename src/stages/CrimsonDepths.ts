@@ -4,8 +4,8 @@ import { Lobby } from './Lobby';
 
 export class CrimsonDepths extends BaseStage {
     private static id: string = "crimsonDepths";
-    private static name: string = "Crimson Depths";
-    private static description: string = "A dark dungeon with red hues";
+    private static name: string = "Security Core";
+    private static description: string = "The first layer of defense - cleanse the malware infection";
 
     id = CrimsonDepths.id;
     name = CrimsonDepths.name;

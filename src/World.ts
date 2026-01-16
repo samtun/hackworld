@@ -13,6 +13,7 @@ import { BoosterPackDrop } from './items/cards/BoosterPackDrop';
 import { XDataDrop } from './items/xdata/XDataDrop';
 import { HealingSystem } from './systems/HealingSystem';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
+import { GameProgressManager } from './GameProgressManager';
 
 export class World {
     scene: THREE.Scene;
@@ -41,6 +42,10 @@ export class World {
     // Grid plane shader
     private gridPlaneMaterial: THREE.ShaderMaterial;
     private gridPlane: THREE.Mesh;
+
+    // Track stage completion for progression
+    private stageEnemiesCleared: Set<string> = new Set<string>();
+    private hasNotifiedStageCompletion: boolean = false;
 
     constructor(
         scene: THREE.Scene,
@@ -240,6 +245,9 @@ export class World {
             }
             this.itemDropManager.clear(this.scene, this.physicsWorld);
 
+            // Reset stage completion notification flag
+            this.hasNotifiedStageCompletion = false;
+
             // Create new stage instance
             const newStage = createStage(stageId, this.scene, this.physicsWorld, this.physicsMaterial);
             if (!newStage) {
@@ -328,6 +336,9 @@ export class World {
             if (enemy.isDead) {
                 enemy.cleanup();
                 this.currentStage.enemies.splice(i, 1);
+                
+                // Check if all enemies are defeated in a dungeon stage
+                this.checkStageCompletion();
             }
         }
 
@@ -358,6 +369,42 @@ export class World {
      */
     spawnTechIndicator(position: CANNON.Vec3): void {
         this.floatingIndicatorManager.spawnTech(position);
+    }
+
+    /**
+     * Check if the current stage has been completed (all enemies defeated)
+     * and update game progress accordingly
+     */
+    private checkStageCompletion(): void {
+        if (!this.currentStage) return;
+        
+        // Only check for dungeon stages (not lobby)
+        if (this.currentStage.id === 'lobby') return;
+        
+        // Only notify once per stage load
+        if (this.hasNotifiedStageCompletion) return;
+        
+        // Check if all enemies are defeated
+        if (this.enemies.length === 0) {
+            this.hasNotifiedStageCompletion = true;
+            
+            // Determine which stage was completed
+            const progressManager = GameProgressManager.Instance;
+            let stageIndex = -1;
+            
+            if (this.currentStage.id === 'crimsonDepths') {
+                stageIndex = 1;
+            } else if (this.currentStage.id === 'violetAbyss') {
+                stageIndex = 2;
+            }
+            // Add more stages here as they are created
+            
+            if (stageIndex > 0) {
+                progressManager.markBossDefeated(stageIndex);
+                console.log(`Stage ${stageIndex} completed! Progress now:`, progressManager.progress);
+                console.log('Return to the Mainframe in the Lobby for your next assignment.');
+            }
+        }
     }
 
     checkPortalInteraction(playerPosition: THREE.Vector3): string | null {

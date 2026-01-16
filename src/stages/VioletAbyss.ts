@@ -4,8 +4,8 @@ import { Lobby } from './Lobby';
 
 export class VioletAbyss extends BaseStage {
     private static id: string = "violetAbyss";
-    private static name: string = "Violet Abyss";
-    private static description: string = "A mysterious and challenging abyss filled with dangers";
+    private static name: string = "Network Matrix";
+    private static description: string = "The communication hub - eliminate the spreading malware";
 
     id = VioletAbyss.id;
     name = VioletAbyss.name;

@@ -2,15 +2,20 @@
 
 ![Hackworld promo image](public/images/promo.png)
 
-A 3D web game developed with TypeScript, Three.js, and Cannon-es.
+A 3D web game developed with TypeScript, Three.js, and Cannon-es. In 2053, a technician's mind becomes trapped within a corrupted corporate server system. Fight through infected digital sectors to cleanse the malware and save Ometec's infrastructure.
+
+## Story
+
+Ometec corporation's systems are self-destructing due to a catastrophic malware infection. When a technician interfaced with the servers to fix the issue, his neural patterns manifested within the digital realm as the player character. Now you must navigate through multiple corrupted system layers, guided by the Mainframe AI, and eliminate the spreading malware before total system collapse.
 
 ## Features
 
-- Hack and slash gameplay
-- Hub based game world with multiple dungeon stages
+- Hack and slash gameplay with quest progression
+- **Quest System** - Talk to the Mainframe NPC to unlock new stages as you cleanse infected sectors
+- **Hub-based game world** - Multiple dungeon stages progressively unlocked through gameplay
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
 - Inventory system with looting mechanics
-- **Save/Load system** - Save your game progress to a JSON file or load a previously saved game through the Save Manager NPC in the lobby
+- **Save/Load system** - Save your game progress including quest progression to a JSON file or load a previously saved game through the Save Manager NPC in the lobby
 
 ## Tech Stack
 
@@ -107,9 +112,11 @@ When debug mode is enabled (F8), you get access to:
 
 1. **Physics Colliders Visualization**: Red wireframe boxes show all physics collision boundaries
 2. **Debug Value Editor**: A powerful overlay for live editing and testing
-   - **Player Stats Editor**: Modify HP, TP, Strength, Defense, Speed, Level, X-Data, and Money in real-time
+   - **Player Stats Editor**: Modify HP, TP, Strength, Defense, Speed, Level, X-Data, Money, and Quest Progress in real-time
    - **Add Items**: Add any weapons, cores and chips to the player inventory
    - **Collapsible UI**: Click the arrow button (▼/▲) to expand or collapse the editor panel
+
+**Note**: The Movement Test stage is only available in debug/development builds and will not appear in production.
 
 ## Deployment
 
