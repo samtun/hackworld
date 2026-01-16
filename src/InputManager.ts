@@ -376,6 +376,11 @@ export class InputManager {
             }
         }
 
+        // Mobile: Skill toggle mode + Jump button
+        if (this.mobileControls?.isMobile && this.mobileControls?.isSkill1Pressed) {
+            return true;
+        }
+
         return false;
     }
 
@@ -397,6 +402,11 @@ export class InputManager {
             }
         }
 
+        // Mobile: Skill toggle mode + Close button
+        if (this.mobileControls?.isMobile && this.mobileControls?.isSkill2Pressed) {
+            return true;
+        }
+
         return false;
     }
 
@@ -416,6 +426,11 @@ export class InputManager {
             if (gp) {
                 if (gp.buttons[4]?.pressed && gp.buttons[2]?.pressed) return true;
             }
+        }
+
+        // Mobile: Skill toggle mode + Attack button
+        if (this.mobileControls?.isMobile && this.mobileControls?.isSkill3Pressed) {
+            return true;
         }
 
         return false;
