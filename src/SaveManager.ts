@@ -9,6 +9,7 @@ import { CoreItem } from './items/cores/CoreItem';
 import { ChipRepository } from './items/chips/ChipRepository';
 import { ChipItem } from './items/chips/ChipItem';
 import { NpcRegistry } from './npcs/NpcRegistry';
+import { GameProgressManager } from './GameProgressManager';
 
 /**
  * Interface representing the complete save data structure
@@ -17,6 +18,7 @@ export interface SaveData {
     version: string;
     timestamp: string;
     playtime: number; // in seconds
+    gameProgress: number; // Quest progression state
     player: {
         // Stats
         level: number;
@@ -147,10 +149,13 @@ export class SaveManager {
     save(): SaveData {
         const player = this.playerRegistry.activePlayers[0];
         const cardCollection = CardCollection.Instance;
+        const progressManager = GameProgressManager.Instance;
+        
         const saveData: SaveData = {
             version: SaveManager.SAVE_VERSION,
             timestamp: new Date().toISOString(),
             playtime: this.playTimeSeconds,
+            gameProgress: progressManager.progress,
             player: {
                 level: player.level,
                 exp: player.exp,
@@ -286,6 +291,13 @@ export class SaveManager {
             if (!player) {
                 throw new Error('No active player found');
             }
+
+            // Load game progress
+            const progressManager = GameProgressManager.Instance;
+            progressManager.load(saveData.gameProgress || 0);
+
+            // Load playtime
+            this.playTimeSeconds = saveData.playtime || 0;
 
             // Restore player stats
             player.level = saveData.player.level;
