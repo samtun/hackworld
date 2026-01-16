@@ -15,7 +15,7 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 - **Hub-based game world** - Multiple dungeon stages progressively unlocked through gameplay
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
 - Inventory system with looting mechanics
-- **Save/Load system** - Save your game progress including quest progression to a JSON file or load a previously saved game through the Save Manager NPC in the lobby
+- **Save/Load system** - Save your game progress to a JSON file or load a previously saved game through the Save Manager NPC in the lobby
 
 ## Tech Stack
 
