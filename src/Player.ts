@@ -945,6 +945,17 @@ export class Player extends BaseMesh {
         this.syncPosition();
     }
 
+    /**
+     * Get the player's forward direction vector
+     */
+    getForwardDirection(): THREE.Vector3 {
+        const forward = new THREE.Vector3(0, 0, 1);
+        forward.applyQuaternion(this.mesh.quaternion);
+        forward.y = 0;
+        forward.normalize();
+        return forward;
+    }
+
     private handleDashHit(enemy: Enemy) {
         if (enemy.isDead || enemy.isDying) return;
 

@@ -52,9 +52,9 @@ export class HealingSkill extends Skill {
 
             const particle = new THREE.Mesh(geometry, material);
             particle.position.set(
-                player.position.x + Math.cos(angle) * radius,
-                player.position.y + height,
-                player.position.z + Math.sin(angle) * radius
+                player.body.position.x + Math.cos(angle) * radius,
+                player.body.position.y + height,
+                player.body.position.z + Math.sin(angle) * radius
             );
 
             // Store velocity for upward movement
@@ -79,8 +79,11 @@ export class HealingSkill extends Skill {
         });
 
         const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-        glow.position.copy(player.position);
-        glow.position.y += 1;
+        glow.position.set(
+            player.body.position.x,
+            player.body.position.y + 1,
+            player.body.position.z
+        );
         scene.add(glow);
         this.particles.push(glow);
 

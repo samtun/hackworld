@@ -66,7 +66,7 @@ export class AreaAttackSkill extends Skill {
 
             // Create particle
             const particleSize = 0.08 + (1 - randomSeed) * 0.12;
-            const geometry = new THREE.SphereGeometry(particleSize, 8, 8).scale(1, 0.5, 1);
+            const geometry = new THREE.SphereGeometry(particleSize, 8, 8);
             const material = new THREE.MeshStandardMaterial({
                 color: attackColor,
                 emissive: attackColor,
@@ -76,8 +76,12 @@ export class AreaAttackSkill extends Skill {
             });
 
             const particle = new THREE.Mesh(geometry, material);
-            particle.position.copy(player.position);
-            particle.position.y += 0.3;
+            particle.position.set(
+                player.body.position.x,
+                player.body.position.y + 0.3,
+                player.body.position.z
+            );
+            particle.scale.set(1, 0.5, 1);
 
             // Store velocity
             (particle as any).velocity = new THREE.Vector3(vx, vy, vz);
@@ -97,8 +101,11 @@ export class AreaAttackSkill extends Skill {
         });
 
         const ring = new THREE.Mesh(ringGeometry, ringMaterial);
-        ring.position.copy(player.position);
-        ring.position.y += 0.2;
+        ring.position.set(
+            player.body.position.x,
+            player.body.position.y + 0.2,
+            player.body.position.z
+        );
         ring.rotation.x = Math.PI / 2;
 
         // Store initial scale for animation
