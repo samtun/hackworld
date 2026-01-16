@@ -25,7 +25,7 @@ export class Lobby extends BaseStage {
             id: 'lobby',
             name: 'Lobby',
             description: 'Safe hub area',
-            // No stageIndex - lobby is not a dungeon stage
+            stageIndex: 0,
         };
     }
     /**

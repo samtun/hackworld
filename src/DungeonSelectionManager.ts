@@ -185,8 +185,8 @@ export class DungeonSelectionManager {
         // Use stageIndex from metadata, not array position
         const unlockedDungeons = this.dungeonClasses.filter((DungeonClass) => {
             const metadata = DungeonClass.getMetadata();
-            if (!import.meta.env.DEV && metadata.stageIndex < 0) {
-                // Skip stages with negative stageIndex (like MovementTest)
+            if (!import.meta.env.DEV && metadata.stageIndex < 0 || metadata.stageIndex === 0) {
+                // Skip stages with negative stageIndex (like MovementTest) and skip Lobby (0)
                 return false;
             }
             return progressManager.isStageUnlocked(metadata.stageIndex);

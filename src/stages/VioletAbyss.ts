@@ -13,7 +13,7 @@ export class VioletAbyss extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
 
-    static getMetadata(): { id: string; name: string; description: string; stageIndex?: number } {
+    static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
             id: VioletAbyss.id,
             name: VioletAbyss.name,

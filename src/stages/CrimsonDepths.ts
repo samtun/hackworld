@@ -13,7 +13,7 @@ export class CrimsonDepths extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
 
-    static getMetadata(): { id: string; name: string; description: string; stageIndex?: number } {
+    static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
             id: CrimsonDepths.id,
             name: CrimsonDepths.name,
