@@ -11,6 +11,9 @@ export class InputManager {
     // Track previous button states for detecting press and release
     private previousAttackState: boolean = false;
     private previousSelectState: boolean = false;
+    private previousSkill1State: boolean = false; // L1 + A
+    private previousSkill2State: boolean = false; // L1 + B
+    private previousSkill3State: boolean = false; // L1 + X
 
     public static get Instance(): InputManager {
         return this.instance || (this.instance = new this());
@@ -46,6 +49,9 @@ export class InputManager {
     updateState() {
         this.previousAttackState = this.isAttackPressed();
         this.previousSelectState = this.isSelectPressed();
+        this.previousSkill1State = this.isSkill1Pressed();
+        this.previousSkill2State = this.isSkill2Pressed();
+        this.previousSkill3State = this.isSkill3Pressed();
         this.mobileControls?.updateState();
     }
 
@@ -339,5 +345,84 @@ export class InputManager {
 
     isControllerConnected(): boolean {
         return this.gamepadIndex !== null;
+    }
+
+    // L1 shoulder button (typically button 4)
+    isL1Pressed(): boolean {
+        // Q key for keyboard
+        if (this.keys['KeyQ']) return true;
+
+        // Gamepad L1 (button 4)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[4]?.pressed) return true;
+            }
+        }
+
+        return false;
+    }
+
+    // Skill 1: L1 + A (Laser Beam)
+    isSkill1Pressed(): boolean {
+        // Keyboard: Q + Space
+        if (this.keys['KeyQ'] && this.keys['Space']) return true;
+
+        // Gamepad: L1 (button 4) + A (button 0)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[4]?.pressed && gp.buttons[0]?.pressed) return true;
+            }
+        }
+
+        return false;
+    }
+
+    isSkill1JustPressed(): boolean {
+        const currentState = this.isSkill1Pressed();
+        return !this.previousSkill1State && currentState;
+    }
+
+    // Skill 2: L1 + B (Healing)
+    isSkill2Pressed(): boolean {
+        // Keyboard: Q + Escape
+        if (this.keys['KeyQ'] && this.keys['Escape']) return true;
+
+        // Gamepad: L1 (button 4) + B (button 1)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[4]?.pressed && gp.buttons[1]?.pressed) return true;
+            }
+        }
+
+        return false;
+    }
+
+    isSkill2JustPressed(): boolean {
+        const currentState = this.isSkill2Pressed();
+        return !this.previousSkill2State && currentState;
+    }
+
+    // Skill 3: L1 + X (Area Attack)
+    isSkill3Pressed(): boolean {
+        // Keyboard: Q + K
+        if (this.keys['KeyQ'] && this.keys['KeyK']) return true;
+
+        // Gamepad: L1 (button 4) + X (button 2)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[4]?.pressed && gp.buttons[2]?.pressed) return true;
+            }
+        }
+
+        return false;
+    }
+
+    isSkill3JustPressed(): boolean {
+        const currentState = this.isSkill3Pressed();
+        return !this.previousSkill3State && currentState;
     }
 }

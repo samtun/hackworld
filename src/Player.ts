@@ -12,6 +12,10 @@ import { ChipItem } from './items/chips/ChipItem';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { BaseMesh } from './BaseMesh';
 import { StatType } from './StatType';
+import { Skill } from './skills/Skill';
+import { LaserBeamSkill } from './skills/LaserBeamSkill';
+import { HealingSkill } from './skills/HealingSkill';
+import { AreaAttackSkill } from './skills/AreaAttackSkill';
 
 
 enum ActionType {
@@ -194,6 +198,12 @@ export class Player extends BaseMesh {
     private actions: Record<string, THREE.AnimationAction> = {};
     private currentAction: THREE.AnimationAction | null = null;
 
+    // Skills
+    public skills: Skill[] = [];
+    private isUsingSkill: boolean = false;
+    private skillAnimationTimer: number = 0;
+    private readonly SKILL_ANIMATION_DURATION: number = 0.8; // Duration to show attack animation
+
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
         super('models/main_character.glb');
         this.scene = scene;
@@ -290,6 +300,13 @@ export class Player extends BaseMesh {
         });
 
         world.addBody(this.body);
+
+        // Initialize skills
+        this.skills = [
+            new LaserBeamSkill(),  // Skill 1: L1 + A
+            new HealingSkill(),     // Skill 2: L1 + B
+            new AreaAttackSkill()   // Skill 3: L1 + X
+        ];
     }
 
     equipWeapon(itemId: string) {
@@ -574,6 +591,14 @@ export class Player extends BaseMesh {
             return;
         }
 
+        // High priority: Skill animation
+        if (this.isUsingSkill) {
+            if (this.currentAction !== this.actions[ActionType.AttackOneHanded]) {
+                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? ActionType.AttackTwoHanded : ActionType.AttackOneHanded, 0.001);
+            }
+            return;
+        }
+
         // High priority: Attack
         if (this.weapon.isAttacking) {
             if (this.currentAction !== this.actions[ActionType.AttackOneHanded]) {
@@ -608,6 +633,12 @@ export class Player extends BaseMesh {
 
         if (this.isDead) return;
 
+        // Update skills
+        this.updateSkills(dt);
+
+        // Handle skill animation (short-circuits the rest of the update)
+        if (this.handleSkillAnimation(dt)) return;
+
         // Handle dash and charging (these short-circuit the rest of the update)
         if (this.handleDash(dt)) return;
         if (this.handleCharging(dt)) return;
@@ -618,6 +649,9 @@ export class Player extends BaseMesh {
 
         // Combat (attacks / charge start / weapon updates)
         this.handleCombat(dt);
+
+        // Skills handling
+        this.handleSkills();
 
         // Clear attack lock when button released
         if (this.input.isAttackReleased()) this.attackLockedUntilRelease = false;
@@ -679,6 +713,13 @@ export class Player extends BaseMesh {
 
         // Block movement during level-up animation
         if (this.isLevelingUp) {
+            this.body.velocity.x = 0;
+            this.body.velocity.z = 0;
+            return;
+        }
+
+        // Block movement during skill usage
+        if (this.isUsingSkill) {
             this.body.velocity.x = 0;
             this.body.velocity.z = 0;
             return;
@@ -816,6 +857,71 @@ export class Player extends BaseMesh {
         } else {
             (this.innerMesh?.material as THREE.MeshStandardMaterial).color = new THREE.Color(0xffffff);
         }
+    }
+
+    private updateSkills(dt: number): void {
+        // Update all skill cooldowns and particles
+        this.skills.forEach(skill => skill.update(dt));
+    }
+
+    private handleSkills(): void {
+        // Check for skill inputs
+        if (this.input.isSkill1JustPressed()) {
+            this.useSkill(0); // Laser Beam
+        } else if (this.input.isSkill2JustPressed()) {
+            this.useSkill(1); // Healing
+        } else if (this.input.isSkill3JustPressed()) {
+            this.useSkill(2); // Area Attack
+        }
+    }
+
+    private useSkill(skillIndex: number): void {
+        if (this.isUsingSkill || this.weapon.isAttacking || this.isChargingAttack || this.isDashing) {
+            console.log('Cannot use skill - busy with another action');
+            return;
+        }
+
+        const skill = this.skills[skillIndex];
+        if (!skill) {
+            console.log('Skill not found');
+            return;
+        }
+
+        if (!skill.canUse(this)) {
+            console.log(`Cannot use ${skill.name} - not ready or insufficient TP`);
+            return;
+        }
+
+        // Execute the skill
+        if (skill.use(this, this.scene, this.world)) {
+            console.log(`Used skill: ${skill.name}`);
+            
+            // Start skill animation
+            this.isUsingSkill = true;
+            this.skillAnimationTimer = 0;
+            
+            // Stop movement during skill
+            this.body.velocity.x = 0;
+            this.body.velocity.z = 0;
+        }
+    }
+
+    private handleSkillAnimation(dt: number): boolean {
+        if (!this.isUsingSkill) return false;
+
+        this.skillAnimationTimer += dt;
+
+        // Keep player stopped during animation
+        this.body.velocity.x = 0;
+        this.body.velocity.z = 0;
+
+        if (this.skillAnimationTimer >= this.SKILL_ANIMATION_DURATION) {
+            this.isUsingSkill = false;
+            this.skillAnimationTimer = 0;
+        }
+
+        this.syncPosition();
+        return true;
     }
 
     syncPosition() {
