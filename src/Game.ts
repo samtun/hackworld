@@ -582,7 +582,7 @@ export class Game {
             this.world.update(dt, this.player, this.camera.position);
         }
 
-        this.ui.update(this.player);
+        this.ui.update(this.player, dt);
 
         // Handle death overlay input
         this.ui.handleDeathOverlayInput(this.input);

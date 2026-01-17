@@ -17,7 +17,6 @@ import { LaserBeamSkill } from './skills/LaserBeamSkill';
 import { HealingSkill } from './skills/HealingSkill';
 import { AreaAttackSkill } from './skills/AreaAttackSkill';
 
-
 enum ActionType {
     Idle = 'Idle',
     RunOneHanded = 'RunOneHanded',
@@ -884,11 +883,6 @@ export class Player extends BaseMesh {
         const skill = this.skills[skillIndex];
         if (!skill) {
             console.log('Skill not found');
-            return;
-        }
-
-        if (!skill.canUse(this)) {
-            console.log(`Cannot use ${skill.name} - not ready or insufficient TP`);
             return;
         }
 

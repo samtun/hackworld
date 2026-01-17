@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
+import { UIManager } from '../ui/UIManager';
 
 /**
  * Base class for all player skills
@@ -18,10 +19,17 @@ export abstract class Skill {
     }
 
     /**
-     * Check if the skill is ready to be used (cooldown expired and enough TP)
+     * Check if the cooldown has completed
+     */
+    isReady(): boolean {
+        return this.cooldownTimer <= 0;
+    }
+
+    /**
+     * Check if the player has enough TP to use the skill
      */
     canUse(player: Player): boolean {
-        return this.cooldownTimer <= 0 && player.tp >= this.tpCost;
+        return player.tp >= this.tpCost;
     }
 
     /**
@@ -29,7 +37,12 @@ export abstract class Skill {
      * @returns true if skill was successfully executed
      */
     use(player: Player, scene: THREE.Scene, world: CANNON.World): boolean {
+        if (!this.isReady()) {
+            return false;
+        }
+
         if (!this.canUse(player)) {
+            UIManager.Instance.displayInsufficientTPWarning();
             return false;
         }
 

@@ -6,6 +6,7 @@ export class UIManager {
     container: HTMLDivElement;
     hpPath: SVGPathElement;
     tpPath: SVGPathElement;
+    tpTrack: SVGPathElement;
     hpText: HTMLDivElement;
     tpText: HTMLDivElement;
     interactionHint: HTMLDivElement;
@@ -22,6 +23,10 @@ export class UIManager {
     private startScreenTapHandler?: (e: TouchEvent) => void;
 
     public startScreenTapped: boolean = false;
+    private tpWarningTimer: number = 0.0
+    private readonly TP_WARNING_DURATION: number = 2.0;
+    private readonly TP_TRACK_COLOR = "#000055";
+    private readonly TP_TRACK_FLASH_COLOR = "#2222AA";
 
     private constructor() {
         this.startScreen = document.getElementById('start-screen') as HTMLDivElement;
@@ -105,13 +110,13 @@ export class UIManager {
 
         // TP Ring (Left - Blue)
         // Background Track
-        const tpTrack = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        tpTrack.setAttribute("fill", "none");
-        tpTrack.setAttribute("stroke", "#000055");
-        tpTrack.setAttribute("stroke-width", "8");
-        tpTrack.setAttribute("stroke-linecap", "round");
-        this.setArc(tpTrack, 60, 60, 50, -Math.PI / 2 - gap + rotationOffset, -Math.PI * 1.5 + gap + rotationOffset, 1, true);
-        svg.appendChild(tpTrack);
+        this.tpTrack = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        this.tpTrack.setAttribute("fill", "none");
+        this.tpTrack.setAttribute("stroke", "#000055");
+        this.tpTrack.setAttribute("stroke-width", "8");
+        this.tpTrack.setAttribute("stroke-linecap", "round");
+        this.setArc(this.tpTrack, 60, 60, 50, -Math.PI / 2 - gap + rotationOffset, -Math.PI * 1.5 + gap + rotationOffset, 1, true);
+        svg.appendChild(this.tpTrack);
 
         this.tpPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
         this.tpPath.setAttribute("fill", "none");
@@ -241,7 +246,11 @@ export class UIManager {
         return this.instance || (this.instance = new this());
     }
 
-    update(player: Player) {
+    public displayInsufficientTPWarning() {
+        this.tpWarningTimer = this.TP_WARNING_DURATION;
+    }
+
+    update(player: Player, deltaTime: number): void {
         // Update Text
         this.hpText.innerText = `${Math.ceil(player.hp)}`;
         this.tpText.innerText = `${Math.ceil(player.tp)}`;
@@ -258,6 +267,17 @@ export class UIManager {
 
         // TP: Left side
         this.setArc(this.tpPath, 60, 60, 50, -Math.PI / 2 - gap + rotationOffset, -Math.PI * 1.5 + gap + rotationOffset, tpRatio, true);
+
+        // Handle TP warning flash
+        if (this.tpWarningTimer > 0) {
+            const flash = Math.floor(this.tpWarningTimer * 10) % 2 === 0;
+            console.log(`TP Warning ${this.tpWarningTimer}, deltaTime: ${deltaTime} Flash: ${flash}`); // Debug log
+            this.tpTrack.setAttribute("stroke", flash ? this.TP_TRACK_FLASH_COLOR : this.TP_TRACK_COLOR);
+            this.tpWarningTimer -= deltaTime;
+            if (this.tpWarningTimer <= 0) {
+                this.tpTrack.setAttribute("stroke", this.TP_TRACK_COLOR);
+            }
+        }
     }
 
     showInteractionHint(show: boolean, text: string = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Interact') {
