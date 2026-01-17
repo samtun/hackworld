@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
 import { Skill } from './Skill';
+import { AssetManager } from '../AssetManager';
 
 /**
  * Healing Skill (L1 + B)
@@ -15,7 +16,7 @@ export class HealingSkill extends Skill {
     private readonly PARTICLE_LIFETIME = 0.8;
 
     constructor() {
-        super('Healing', 10, 20);
+        super('Healing', 0, 20);
     }
 
     protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {
@@ -32,16 +33,16 @@ export class HealingSkill extends Skill {
 
     private createHealingParticles(player: Player, scene: THREE.Scene): void {
         // Create healing particle effect (green/white glow)
-        const particleCount = 40;
-        const healColor = 0x00ff88; // Green/cyan healing color
+        const particleCount = 60;
+        const healColor = 0x00CC22; // Green healing color
 
         for (let i = 0; i < particleCount; i++) {
             // Random position around player
             const angle = Math.random() * Math.PI * 2;
-            const radius = Math.random() * 1.5;
-            const height = Math.random() * 2;
+            const radius = Math.random();
+            const height = Math.random() * 0.5;
 
-            const geometry = new THREE.SphereGeometry(0.1 + Math.random() * 0.1, 8, 8);
+            const geometry = new THREE.SphereGeometry(0.03 + Math.random() * 0.03, 8, 8);
             const material = new THREE.MeshStandardMaterial({
                 color: healColor,
                 emissive: healColor,
@@ -68,24 +69,14 @@ export class HealingSkill extends Skill {
             this.particles.push(particle);
         }
 
-        // Add a central glow
-        const glowGeometry = new THREE.SphereGeometry(1.5, 16, 16);
-        const glowMaterial = new THREE.MeshStandardMaterial({
-            color: healColor,
-            emissive: healColor,
-            emissiveIntensity: 1.5,
-            transparent: true,
-            opacity: 0.4
-        });
-
-        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-        glow.position.set(
+        const healFx = AssetManager.Instance.get('models/heal_fx.glb');
+        const fxMesh = healFx.scene.clone();
+        fxMesh.position.set(
             player.body.position.x,
-            player.body.position.y + 1,
+            player.body.position.y,
             player.body.position.z
         );
-        scene.add(glow);
-        this.particles.push(glow);
+        scene.add(fxMesh);
 
         this.particleTimer = 0;
     }
@@ -113,7 +104,7 @@ export class HealingSkill extends Skill {
                     const material = particle.material as THREE.MeshStandardMaterial;
                     material.opacity = (1 - progress) * 0.9;
 
-                    // Move particles upward (except the central glow)
+                    // Move particles upward
                     const velocity = (particle as any).velocity;
                     if (velocity) {
                         particle.position.y += velocity.y * dt;
