@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
 import { Skill } from './Skill';
-import { AssetManager } from '../AssetManager';
+import { BaseMesh } from '../BaseMesh';
 
 /**
  * Healing Skill (L1 + B)
@@ -13,10 +13,12 @@ export class HealingSkill extends Skill {
     private readonly HEAL_AMOUNT = 40;
     private particles: THREE.Mesh[] = [];
     private particleTimer: number = 0;
-    private readonly PARTICLE_LIFETIME = 0.8;
+    private readonly DURATION;
+    private healEffect: HealEffect | undefined;
 
-    constructor() {
+    constructor(duration: number) {
         super('Healing', 0, 20);
+        this.DURATION = duration;
     }
 
     protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {
@@ -27,8 +29,29 @@ export class HealingSkill extends Skill {
         player.hp += actualHeal;
         console.log(`Healed ${actualHeal} HP (${player.hp}/${player.maxHp})`);
 
+        // Clean up any existing effects to prevent leaks
+        this.cleanupEffects();
+
         // Create visual particle effect
         this.createHealingParticles(player, scene);
+    }
+
+    private cleanupEffects(): void {
+        if (this.particles.length > 0) {
+            this.particles.forEach(particle => {
+                particle.parent?.remove(particle);
+                particle.geometry.dispose();
+                if (particle.material instanceof THREE.Material) {
+                    particle.material.dispose();
+                } else if (Array.isArray(particle.material)) {
+                    particle.material.forEach(m => m.dispose());
+                }
+            });
+            this.particles = [];
+        }
+
+        this.particleTimer = 0;
+        this.healEffect?.removeFromScene();
     }
 
     private createHealingParticles(player: Player, scene: THREE.Scene): void {
@@ -40,7 +63,7 @@ export class HealingSkill extends Skill {
             // Random position around player
             const angle = Math.random() * Math.PI * 2;
             const radius = Math.random();
-            const height = Math.random() * 0.5;
+            const height = Math.random() * 0.3;
 
             const geometry = new THREE.SphereGeometry(0.03 + Math.random() * 0.03, 8, 8);
             const material = new THREE.MeshStandardMaterial({
@@ -54,14 +77,14 @@ export class HealingSkill extends Skill {
             const particle = new THREE.Mesh(geometry, material);
             particle.position.set(
                 player.body.position.x + Math.cos(angle) * radius,
-                player.body.position.y + height,
+                player.body.position.y + height - player.body.position.y * 0.5,
                 player.body.position.z + Math.sin(angle) * radius
             );
 
             // Store velocity for upward movement
             (particle as any).velocity = new THREE.Vector3(
                 0,
-                2 + Math.random() * 2, // Upward movement
+                1 + Math.random() * 0.8, // Upward movement
                 0
             );
 
@@ -69,14 +92,11 @@ export class HealingSkill extends Skill {
             this.particles.push(particle);
         }
 
-        const healFx = AssetManager.Instance.get('models/heal_fx.glb');
-        const fxMesh = healFx.scene.clone();
-        fxMesh.position.set(
-            player.body.position.x,
-            player.body.position.y,
-            player.body.position.z
-        );
-        scene.add(fxMesh);
+        if (!this.healEffect) {
+            this.healEffect = new HealEffect(this.DURATION);
+        }
+        this.healEffect.setPosition(player.position as any);
+        this.healEffect.addToScene(scene);
 
         this.particleTimer = 0;
     }
@@ -87,17 +107,11 @@ export class HealingSkill extends Skill {
         // Update particles
         if (this.particles.length > 0) {
             this.particleTimer += dt;
-            const progress = this.particleTimer / this.PARTICLE_LIFETIME;
+            const progress = this.particleTimer / this.DURATION;
 
             if (progress >= 1) {
                 // Remove all particles
-                this.particles.forEach(particle => {
-                    particle.parent?.remove(particle);
-                    particle.geometry.dispose();
-                    (particle.material as THREE.Material).dispose();
-                });
-                this.particles = [];
-                this.particleTimer = 0;
+                this.cleanupEffects();
             } else {
                 // Update particle positions and fade out
                 this.particles.forEach(particle => {
@@ -110,7 +124,51 @@ export class HealingSkill extends Skill {
                         particle.position.y += velocity.y * dt;
                     }
                 });
+
+                // Update heal effect animation
+                this.healEffect?.update(dt);
             }
         }
+    }
+}
+
+class HealEffect extends BaseMesh {
+    private time: number = 0;
+    private duration: number;
+    private material: THREE.MeshStandardMaterial | null = null;
+
+    constructor(duration: number) {
+        super('models/heal_fx.glb');
+        this.duration = duration;
+        this.mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                this.material = child.material as THREE.MeshStandardMaterial;
+            }
+        });
+    }
+
+    public update(dt: number) {
+        super.update(dt);
+        this.time += dt;
+        const progress = this.time / this.duration;
+        const horizontalScale = 1.2 + Math.sin(Math.PI * progress * 4.5) * 0.1;
+        this.mesh.scale.copy(new THREE.Vector3(horizontalScale, progress, horizontalScale));
+        if (this.material) {
+            this.material.opacity = Math.sin(Math.PI * progress);
+        }
+    }
+
+    public setPosition(pos: CANNON.Vec3) {
+        this.mesh.position.set(pos.x, pos.y, pos.z);
+    }
+
+    public addToScene(scene: THREE.Scene) {
+        this.time = 0;
+        this.update(0); // Initialize scale and opacity
+        scene.add(this.mesh);
+    }
+
+    public removeFromScene() {
+        this.mesh.parent?.remove(this.mesh);
     }
 }

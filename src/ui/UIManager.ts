@@ -271,7 +271,6 @@ export class UIManager {
         // Handle TP warning flash
         if (this.tpWarningTimer > 0) {
             const flash = Math.floor(this.tpWarningTimer * 10) % 2 === 0;
-            console.log(`TP Warning ${this.tpWarningTimer}, deltaTime: ${deltaTime} Flash: ${flash}`); // Debug log
             this.tpTrack.setAttribute("stroke", flash ? this.TP_TRACK_FLASH_COLOR : this.TP_TRACK_COLOR);
             this.tpWarningTimer -= deltaTime;
             if (this.tpWarningTimer <= 0) {

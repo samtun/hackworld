@@ -201,7 +201,7 @@ export class Player extends BaseMesh {
     public skills: Skill[] = [];
     private isUsingSkill: boolean = false;
     private skillAnimationTimer: number = 0;
-    private readonly SKILL_ANIMATION_DURATION: number = 0.8; // Duration to show attack animation
+    private readonly SKILL_ANIMATION_DURATION: number = 1.5; // Duration to show attack animation
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
         super('models/main_character.glb');
@@ -302,9 +302,9 @@ export class Player extends BaseMesh {
 
         // Initialize skills
         this.skills = [
-            new LaserBeamSkill(),  // Skill 1: L1 + A
-            new HealingSkill(),     // Skill 2: L1 + B
-            new AreaAttackSkill()   // Skill 3: L1 + X
+            new LaserBeamSkill(this.SKILL_ANIMATION_DURATION),
+            new HealingSkill(this.SKILL_ANIMATION_DURATION),
+            new AreaAttackSkill(this.SKILL_ANIMATION_DURATION)
         ];
     }
 

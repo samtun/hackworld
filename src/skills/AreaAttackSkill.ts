@@ -15,10 +15,11 @@ export class AreaAttackSkill extends Skill {
     private readonly RANGE = 5;
     private particles: THREE.Mesh[] = [];
     private particleTimer: number = 0;
-    private readonly PARTICLE_LIFETIME = 0.6;
+    private readonly DURATION: number;
 
-    constructor() {
+    constructor(duration: number) {
         super('Area Attack', 10, 30); // 10s cooldown, no TP cost
+        this.DURATION = duration;
     }
 
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
@@ -124,7 +125,7 @@ export class AreaAttackSkill extends Skill {
         // Update particles
         if (this.particles.length > 0) {
             this.particleTimer += dt;
-            const progress = this.particleTimer / this.PARTICLE_LIFETIME;
+            const progress = this.particleTimer / this.DURATION;
 
             if (progress >= 1) {
                 // Remove all particles
