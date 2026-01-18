@@ -221,6 +221,8 @@ export class World {
             'models/npc_placeholder.glb',
             'models/healing_station.glb',
             'models/xdata_terminal.glb',
+            'models/mainframe.glb',
+            'models/teleporter.glb',
             // Stages
             'models/lobby.glb',
             'models/lobby_collider.glb',

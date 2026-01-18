@@ -13,7 +13,7 @@ export class MainframeNpc extends Npc {
         const progressManager = GameProgressManager.Instance;
         const dialogue = MainframeNpc.getDialogueForProgress(progressManager.progress);
 
-        super(scene, world, physicsMaterial, "models/xdata_terminal.glb", "The Mainframe", "Access System", position, dialogue);
+        super(scene, world, physicsMaterial, "models/mainframe.glb", "The Mainframe", "Access System", position, dialogue);
 
         // bind interaction callback to mainframe-specific logic
         this.interactionCallback = this.onInteract.bind(this);

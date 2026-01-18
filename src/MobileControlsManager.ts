@@ -90,7 +90,7 @@ export class MobileControlsManager {
         document.body.appendChild(this.buttonsContainer);
 
         // Create skill toggle button (at top of button stack)
-        this.skillToggleButton = this.createButton('Skills', 'mobile-skill-toggle-btn');
+        this.skillToggleButton = this.createButton('', 'mobile-skill-toggle-btn');
         this.buttonsContainer.appendChild(this.skillToggleButton);
         this.setupSkillToggleListener();
 
@@ -186,21 +186,27 @@ export class MobileControlsManager {
 
     private toggleSkillMode() {
         this.isSkillMode = !this.isSkillMode;
-        this.updateButtonLabels();
+        this.updateButtons();
     }
 
-    private updateButtonLabels() {
+    private updateButtons() {
         if (this.isSkillMode) {
             // Change to skill labels
-            this.jumpButton.textContent = 'Laser';
-            this.closeButton.textContent = 'Heal';
-            this.attackButton.textContent = 'Area';
+            this.jumpButton.textContent = '';
+            this.jumpButton.classList.add('skill');
+            this.closeButton.textContent = '';
+            this.closeButton.classList.add('skill');
+            this.attackButton.textContent = '';
+            this.attackButton.classList.add('skill');
             this.skillToggleButton.classList.add('active');
         } else {
             // Change back to normal labels
             this.jumpButton.textContent = 'A';
+            this.jumpButton.classList.remove('skill');
             this.closeButton.textContent = 'B';
+            this.closeButton.classList.remove('skill');
             this.attackButton.textContent = 'X';
+            this.attackButton.classList.remove('skill');
             this.skillToggleButton.classList.remove('active');
         }
     }
@@ -280,7 +286,7 @@ export class MobileControlsManager {
      */
     public setSkillsButtonVisible(visible: boolean) {
         if (!this.isMobileDevice) return;
-        
+
         const display = visible ? 'block' : 'none';
         if (this.skillToggleButton) this.skillToggleButton.style.display = display;
     }

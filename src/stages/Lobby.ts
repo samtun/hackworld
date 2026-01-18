@@ -135,7 +135,7 @@ export class Lobby extends BaseStage {
      * Create the Mainframe NPC with progressive dialogue based on game progress
      */
     private createMainframeNpc(): void {
-        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld, this.physicsMaterial, new CANNON.Vec3(0, 0, -7));
+        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld, this.physicsMaterial, new CANNON.Vec3(0, 0, -14));
         this.npcs.add(this.mainframeNpc);
     }
 
@@ -304,7 +304,7 @@ export class Lobby extends BaseStage {
         }
     }
 
-    
+
 
     /*
      * Override BaseStage update method to include healing station
