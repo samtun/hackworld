@@ -24,9 +24,9 @@ export class UIManager {
 
     public startScreenTapped: boolean = false;
     private tpWarningTimer: number = 0.0
-    private readonly TP_WARNING_DURATION: number = 2.0;
+    private readonly TP_WARNING_DURATION: number = 1.0;
     private readonly TP_TRACK_COLOR = "#000055";
-    private readonly TP_TRACK_FLASH_COLOR = "#2222AA";
+    private readonly TP_TRACK_FLASH_COLOR = "#AAAADD";
 
     private constructor() {
         this.startScreen = document.getElementById('start-screen') as HTMLDivElement;

@@ -5,24 +5,24 @@ import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
 
 /**
- * Healing Skill (L1 + B)
- * - Heals 40 HP
- * - 5s cooldown
+ * Healing Skill
  */
 export class HealingSkill extends Skill {
     private readonly HEAL_AMOUNT = 40;
     private particles: THREE.Mesh[] = [];
     private effectTimer: number = 0;
-    private readonly DURATION;
     private healEffect: HealEffect | undefined;
+    private readonly DURATION = 1.5;
+    private readonly PARTICLE_COUNT = 60;
+    private readonly SPAWN_DURATION = this.DURATION * 0.5; // Spawn particles over first half of duration
 
     private activePlayer: Player | null = null;
     private activeScene: THREE.Scene | null = null;
     private spawnedCount: number = 0;
+    private isBeingExecuted: boolean = false;
 
-    constructor(duration: number) {
-        super('Healing', 0, 20);
-        this.DURATION = duration;
+    constructor(onCompletedCallback: () => void) {
+        super('Healing', 0, 20, onCompletedCallback);
     }
 
     protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {
@@ -34,18 +34,19 @@ export class HealingSkill extends Skill {
         console.log(`Healed ${actualHeal} HP (${player.hp}/${player.maxHp})`);
 
         // Clean up any existing effects to prevent leaks
-        this.cleanupEffects();
+        this.cleanup();
 
         // Setup execution state
         this.activePlayer = player;
         this.activeScene = scene;
         this.spawnedCount = 0;
+        this.isBeingExecuted = true;
 
         // Create visual particle effect
         this.createHealingParticles(player, scene);
     }
 
-    private cleanupEffects(): void {
+    cleanup(): void {
         if (this.particles.length > 0) {
             this.particles.forEach(particle => {
                 particle.parent?.remove(particle);
@@ -61,8 +62,12 @@ export class HealingSkill extends Skill {
 
         this.effectTimer = 0;
         this.healEffect?.removeFromScene();
+        this.healEffect = undefined;
         this.activePlayer = null;
         this.activeScene = null;
+        this.isBeingExecuted = false;
+
+        this.onCompletedCallback();
     }
 
     private createHealingParticles(player: Player, scene: THREE.Scene): void {
@@ -112,23 +117,25 @@ export class HealingSkill extends Skill {
     update(dt: number): void {
         super.update(dt);
 
+        if (!this.isBeingExecuted) {
+            return;
+        }
+
         if (this.activePlayer && this.activeScene) {
             this.effectTimer += dt;
-            const maxParticles = 60;
-            const spawnDuration = this.DURATION * 0.5;
 
             // Spawn particles
-            if (this.effectTimer <= spawnDuration) {
-                const targetCount = Math.floor((this.effectTimer / spawnDuration) * maxParticles);
-                const toSpawn = Math.min(targetCount - this.spawnedCount, maxParticles - this.spawnedCount);
+            if (this.effectTimer <= this.SPAWN_DURATION) {
+                const targetCount = Math.floor((this.effectTimer / this.SPAWN_DURATION) * this.PARTICLE_COUNT);
+                const toSpawn = Math.min(targetCount - this.spawnedCount, this.PARTICLE_COUNT - this.spawnedCount);
 
                 for (let i = 0; i < toSpawn; i++) {
                     this.spawnParticle(this.activePlayer, this.activeScene);
                     this.spawnedCount++;
                 }
-            } else if (this.spawnedCount < maxParticles) {
+            } else if (this.spawnedCount < this.PARTICLE_COUNT) {
                 // Ensure all are spawned if we passed the window
-                const toSpawn = maxParticles - this.spawnedCount;
+                const toSpawn = this.PARTICLE_COUNT - this.spawnedCount;
                 for (let i = 0; i < toSpawn; i++) {
                     this.spawnParticle(this.activePlayer, this.activeScene);
                     this.spawnedCount++;
@@ -138,8 +145,7 @@ export class HealingSkill extends Skill {
             const progress = this.effectTimer / this.DURATION;
 
             if (progress >= 1) {
-                // Remove all particles
-                this.cleanupEffects();
+                this.cleanup();
             } else {
                 // Update particle positions and fade out
                 this.particles.forEach(particle => {

@@ -201,7 +201,6 @@ export class Player extends BaseMesh {
     public skills: Skill[] = [];
     private isUsingSkill: boolean = false;
     private skillAnimationTimer: number = 0;
-    private readonly SKILL_ANIMATION_DURATION: number = 1.5; // Duration to show attack animation
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
         super('models/main_character.glb');
@@ -300,13 +299,19 @@ export class Player extends BaseMesh {
 
         world.addBody(this.body);
 
+
         // Initialize skills
         this.skills = [
-            new LaserBeamSkill(this.SKILL_ANIMATION_DURATION),
-            new HealingSkill(this.SKILL_ANIMATION_DURATION),
-            new AreaAttackSkill(this.SKILL_ANIMATION_DURATION)
+            new LaserBeamSkill(this.resetSkillUsage),
+            new HealingSkill(this.resetSkillUsage),
+            new AreaAttackSkill(this.resetSkillUsage)
         ];
     }
+
+    private resetSkillUsage = () => {
+        this.isUsingSkill = false;
+        this.skillAnimationTimer = 0;
+    };
 
     equipWeapon(itemId: string) {
         const weaponItem = this.inventory.find(item => item.id === itemId);
@@ -799,8 +804,6 @@ export class Player extends BaseMesh {
                 const slopeAngle = Math.acos(Math.max(-1, Math.min(1, normal.y))); // Angle from vertical (up vector is 0,1,0)
                 const slopeAngleDegrees = slopeAngle * (180 / Math.PI);
 
-                console.log(`Slope angle: ${slopeAngleDegrees.toFixed(2)} degrees`);
-
                 // If on a slope less than 45 degrees make the body static to avoid sliding
                 if (slopeAngleDegrees < 45
                     && this.body.velocity.y < 0
@@ -910,12 +913,6 @@ export class Player extends BaseMesh {
 
         // Keep player stopped during animation
         this.haltMovement();
-
-        if (this.skillAnimationTimer >= this.SKILL_ANIMATION_DURATION) {
-            this.isUsingSkill = false;
-            this.skillAnimationTimer = 0;
-        }
-
         this.syncPosition();
         return true;
     }

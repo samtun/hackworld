@@ -18,11 +18,10 @@ export class LaserBeamSkill extends Skill {
     private readonly RADIUS = 1;
     private particles: THREE.Mesh[] = [];
     private particleTimer: number = 0;
-    private readonly DURATION: number;
+    private readonly DURATION: number = 0.6;
 
-    constructor(duration: number) {
-        super('Laser Beam', 5, 25);
-        this.DURATION = duration;
+    constructor(onCompletedCallback: () => void) {
+        super('Laser Beam', 5, 25, onCompletedCallback);
     }
 
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
@@ -138,14 +137,7 @@ export class LaserBeamSkill extends Skill {
             const progress = this.particleTimer / this.DURATION;
 
             if (progress >= 1) {
-                // Remove all particles
-                this.particles.forEach(particle => {
-                    particle.parent?.remove(particle);
-                    particle.geometry.dispose();
-                    (particle.material as THREE.Material).dispose();
-                });
-                this.particles = [];
-                this.particleTimer = 0;
+                this.cleanup();
             } else {
                 // Fade out particles
                 this.particles.forEach(particle => {
@@ -154,5 +146,17 @@ export class LaserBeamSkill extends Skill {
                 });
             }
         }
+    }
+
+    cleanup(): void {
+        // Remove all particles
+        this.particles.forEach(particle => {
+            particle.parent?.remove(particle);
+            particle.geometry.dispose();
+            (particle.material as THREE.Material).dispose();
+        });
+        this.particles = [];
+        this.particleTimer = 0;
+        this.onCompletedCallback();
     }
 }

@@ -230,6 +230,8 @@ export class World {
             'models/main_character.glb',
             // Effects
             'models/heal_fx.glb',
+            'models/area_fx.glb',
+            'models/laser_fx.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);

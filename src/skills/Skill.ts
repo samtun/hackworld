@@ -11,12 +11,19 @@ export abstract class Skill {
     cooldown: number; // Cooldown duration in seconds
     tpCost: number; // TP cost to use the skill
     protected cooldownTimer: number = 0; // Current cooldown timer
+    protected onCompletedCallback: () => void; // To be called when skill effect is completed
 
-    constructor(name: string, cooldown: number, tpCost: number = 0) {
+    constructor(name: string, cooldown: number, tpCost: number, onCompletedCallback: () => void) {
         this.name = name;
         this.cooldown = cooldown;
         this.tpCost = tpCost;
+        this.onCompletedCallback = onCompletedCallback;
     }
+
+    /**
+     * Cleanup resources used by the skill and call the onCompleted callback
+     */
+    abstract cleanup(): void;
 
     /**
      * Check if the cooldown has completed
