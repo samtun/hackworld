@@ -573,7 +573,7 @@ export class Player extends BaseMesh {
         }
     }
 
-    private updateAnimations() {
+    private updateAnimations(preventMovement: boolean) {
         if (this.isDead) {
             return;
         }
@@ -616,7 +616,7 @@ export class Player extends BaseMesh {
         }
 
         // Run / Idle
-        const isMoving = this.input.getMovementVector().length() > 0.1;
+        const isMoving = !preventMovement && this.input.getMovementVector().length() > 0.1;
         if (isMoving) {
             const action = this.weapon.weaponType !== WeaponType.HAMMER ? ActionType.RunOneHanded : ActionType.RunTwoHanded;
             this.fadeToAction(action, 0.05);
@@ -625,10 +625,19 @@ export class Player extends BaseMesh {
         }
     }
 
-    update(dt: number, isNearInteractive: boolean = false) {
+    update(dt: number, isNearInteractive: boolean = false, preventMovement: boolean = false) {
         // Update animations
-        if (this.mixer) this.mixer.update(dt);
-        this.updateAnimations();
+        if (this.mixer) {
+            this.mixer.update(dt);
+        }
+
+        this.updateAnimations(preventMovement);
+
+        if (preventMovement) {
+            this.haltMovement();
+            this.syncPosition();
+            return;
+        }
 
         if (this.isDead) return;
 
@@ -697,8 +706,7 @@ export class Player extends BaseMesh {
             }
         }
 
-        this.body.velocity.x = 0;
-        this.body.velocity.z = 0;
+        this.haltMovement();
         this.syncPosition();
         return true;
     }
@@ -712,22 +720,19 @@ export class Player extends BaseMesh {
 
         // Block movement during level-up animation
         if (this.isLevelingUp) {
-            this.body.velocity.x = 0;
-            this.body.velocity.z = 0;
+            this.haltMovement();
             return;
         }
 
         // Block movement during skill usage
         if (this.isUsingSkill) {
-            this.body.velocity.x = 0;
-            this.body.velocity.z = 0;
+            this.haltMovement();
             return;
         }
 
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
-            this.body.velocity.x *= 0.9;
-            this.body.velocity.z *= 0.9;
+            this.haltMovement();
             return;
         }
 
@@ -815,8 +820,7 @@ export class Player extends BaseMesh {
                 this.jumpCooldownTimer = 1.0;
             }
         } else {
-            this.body.velocity.x *= 0.8;
-            this.body.velocity.z *= 0.8;
+            this.haltMovement();
         }
     }
 
@@ -895,8 +899,7 @@ export class Player extends BaseMesh {
             this.skillAnimationTimer = 0;
 
             // Stop movement during skill
-            this.body.velocity.x = 0;
-            this.body.velocity.z = 0;
+            this.haltMovement();
         }
     }
 
@@ -906,8 +909,7 @@ export class Player extends BaseMesh {
         this.skillAnimationTimer += dt;
 
         // Keep player stopped during animation
-        this.body.velocity.x = 0;
-        this.body.velocity.z = 0;
+        this.haltMovement();
 
         if (this.skillAnimationTimer >= this.SKILL_ANIMATION_DURATION) {
             this.isUsingSkill = false;
@@ -932,6 +934,14 @@ export class Player extends BaseMesh {
         const newPosition = new THREE.Vector3(this.body.position.x, y, this.body.position.z);
         this.position.copy(newPosition);
         this.mesh.position.copy(newPosition);
+    }
+
+    /**
+     * Gradually slow down horizontal movement by a factor
+     */
+    private haltMovement(): void {
+        this.body.velocity.x = 0;
+        this.body.velocity.z = 0;
     }
 
     move(position: CANNON.Vec3): void {

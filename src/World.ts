@@ -409,11 +409,6 @@ export class World {
         }
     }
 
-    checkTeleporterInteraction(playerPosition: THREE.Vector3): string | null {
-        if (!this.currentStage) return null;
-        return this.currentStage.checkTeleporterInteraction(playerPosition);
-    }
-
     getAllNpcs(): Set<Npc> {
         if (!this.currentStage) return new Set<Npc>();
 

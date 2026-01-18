@@ -111,15 +111,14 @@ export abstract class BaseStage {
         }
         this.meshes = [];
 
+        // Clean up all NPCs (including teleporter)
         for (const npc of this.npcs) {
             npc.cleanup(this.scene, this.physicsWorld);
         }
+        this.npcs.clear();
 
-        // Remove teleporter if exists
-        if (this.teleporter) {
-            this.teleporter.cleanup(this.scene);
-            this.teleporter = undefined;
-        }
+        // Clear teleporter reference
+        this.teleporter = undefined;
     }
 
     /**
@@ -168,7 +167,15 @@ export abstract class BaseStage {
      * Create teleporter
      */
     protected createTeleporter(position: CANNON.Vec3, destination: string): void {
-        this.teleporter = new Teleporter(this.scene, position, destination);
+        this.teleporter = new Teleporter(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            position,
+            destination
+        );
+        // Add teleporter to npcs set so it's handled like any other NPC
+        this.npcs.add(this.teleporter);
     }
 
     /**
@@ -205,16 +212,4 @@ export abstract class BaseStage {
         }
     }
 
-    /**
-     * Check if player is near teleporter
-     */
-    checkTeleporterInteraction(playerPosition: THREE.Vector3): string | null {
-        if (this.teleporter) {
-            const dist = playerPosition.distanceTo(this.teleporter.mesh.position);
-            if (dist < 1.5) {
-                return this.teleporter.destination || null;
-            }
-        }
-        return null;
-    }
 }

@@ -1,15 +1,22 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { createParticleShaderMaterial, updateParticleScaleFactor } from './ParticleShaderUtils';
-import { BaseMesh } from './BaseMesh';
+import { Npc } from './npcs/Npc';
+
+/**
+ * Callback type for teleporter interactions
+ * @param destination - The destination stage ID or 'selection' for dungeon selection
+ */
+export type TeleporterCallback = (destination: string) => void;
 
 /**
  * Teleporter entity with particle effects
- * Particles emit from the teleporter and move along the local -Z axis
+ * Extends Npc to provide collision and interaction hints
+ * Particles emit from the teleporter and move along the Z axis
  */
-export class Teleporter extends BaseMesh {
-    particles: THREE.Points;
-    particleSystem: {
+export class Teleporter extends Npc {
+    particles!: THREE.Points;
+    particleSystem!: {
         positions: Float32Array;
         velocities: Float32Array;
         lifetimes: Float32Array;
@@ -19,28 +26,56 @@ export class Teleporter extends BaseMesh {
         sizes: Float32Array;
         count: number;
     };
-    color: THREE.Color;
-    destination: string;
+    color!: THREE.Color;
 
     private readonly PARTICLE_COUNT = 300;
-    private readonly SPAWN_RADIUS = 1.2;
-    private readonly PARTICLE_LIFETIME = 0.6; // seconds
-    private readonly Z_TRAVEL_DISTANCE = 3.0;
+    private readonly SPAWN_RADIUS = 2.5;
+    private readonly PARTICLE_LIFETIME = 1.3; // seconds
+    private readonly Z_TRAVEL_DISTANCE = 0.9;
     private readonly Z_OFFSET = 1.3;
     private readonly BASE_PARTICLE_SIZE = 0.3;
     private time: number = 0;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, destination: string) {
-        super('models/teleporter.glb');
+    // Static callback for handling teleporter interactions
+    private static teleporterCallback: TeleporterCallback | null = null;
+
+    /**
+     * Set the global teleporter callback (called by Game)
+     */
+    static setTeleporterCallback(callback: TeleporterCallback): void {
+        Teleporter.teleporterCallback = callback;
+    }
+
+    constructor(
+        scene: THREE.Scene,
+        world: CANNON.World,
+        physicsMaterial: CANNON.Material,
+        position: CANNON.Vec3,
+        destination: string
+    ) {
+        // Call Npc constructor with teleporter-specific settings
+        super(
+            scene,
+            world,
+            physicsMaterial,
+            'models/teleporter.glb',
+            `Teleporter_${destination}`,
+            'Enter',
+            position,
+            [], // No dialogue for teleporters
+            () => {
+                // Use the static callback when interacted with
+                if (Teleporter.teleporterCallback) {
+                    Teleporter.teleporterCallback(destination);
+                }
+            }
+        );
+
+        // Store destination in mesh userData for backwards compatibility
+        this.mesh.userData = { destination };
 
         // Blue color for particles
         this.color = new THREE.Color(0x44BBff);
-        this.destination = destination;
-
-        // Position the model
-        this.mesh.position.set(position.x, position.y, position.z);
-        this.mesh.userData = { destination };
-        scene.add(this.mesh);
 
         // Initialize particle system
         this.particleSystem = {
@@ -72,6 +107,16 @@ export class Teleporter extends BaseMesh {
     }
 
     /**
+     * Check if player is within interaction range
+     */
+    override isPlayerNearby(playerPosition: THREE.Vector3): boolean {
+        const dist = playerPosition.distanceTo(
+            new THREE.Vector3(this.position.x, this.position.y, this.position.z + this.Z_OFFSET)
+        );
+        return dist < 1.7; // Interaction range
+    }
+
+    /**
      * Reset a particle to its initial state
      * @param index - Particle index
      * @param isInitialSpawn - If true, staggers the spawn time for initial setup
@@ -80,10 +125,8 @@ export class Teleporter extends BaseMesh {
         const teleporterPos = this.mesh.position;
 
         // Random position within spawn radius (circular distribution)
-        const angle = Math.random() * Math.PI * 2;
-        const radius = Math.random() * this.SPAWN_RADIUS;
-        const offsetX = Math.cos(angle) * radius;
-        const offsetY = Math.sin(angle) * radius + this.SPAWN_RADIUS;
+        const offsetX = this.SPAWN_RADIUS * (Math.random() - 0.5);
+        const offsetY = this.SPAWN_RADIUS * (Math.random() - 0.5) + 1.0;
 
         // Store initial X/Y offsets for this particle
         this.particleSystem.initialX[index] = offsetX;
@@ -170,15 +213,21 @@ export class Teleporter extends BaseMesh {
     }
 
     /**
+     * Get the destination of this teleporter
+     */
+    get destination(): string {
+        return this.mesh.userData.destination;
+    }
+
+    /**
      * Clean up resources
      */
-    cleanup(scene: THREE.Scene): void {
-        scene.remove(this.mesh);
+    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+        // Call parent cleanup for mesh and physics body
+        super.cleanup(scene, world);
+
+        // Clean up particles
         scene.remove(this.particles);
-
-        // Use BaseMesh's disposeMesh method
-        this.disposeMesh();
-
         if (this.particles.geometry) this.particles.geometry.dispose();
         const particleMaterial = this.particles.material as THREE.ShaderMaterial;
         if (particleMaterial) {

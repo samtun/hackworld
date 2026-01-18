@@ -4,6 +4,5 @@ export enum InteractiveEntityType {
     CHIP_DROP = 'chipDrop',
     CORE_DROP = 'coreDrop',
     BOOSTER_PACK_DROP = 'boosterPackDrop',
-    XDATA_DROP = 'xDataDrop',
-    TELEPORTER = 'teleporter'
+    XDATA_DROP = 'xDataDrop'
 }
