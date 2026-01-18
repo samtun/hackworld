@@ -18,7 +18,7 @@ export class AreaAttackSkill extends Skill {
     private readonly DURATION: number;
 
     constructor(duration: number) {
-        super('Area Attack', 10, 30); // 10s cooldown, no TP cost
+        super('Area Attack', 10, 30);
         this.DURATION = duration;
     }
 

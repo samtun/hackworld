@@ -35,8 +35,8 @@ export class MovementTest extends BaseStage {
         await this.loadEnvironmentMap();
         this.createFloorCollider();
 
-        // Portal back to Lobby
-        this.createPortal(new CANNON.Vec3(0, 0.02, 0), 0x0000ff, Lobby.getMetadata().id);
+        // Teleporter back to Lobby
+        this.createTeleporter(new CANNON.Vec3(0, 0.02, 0), Lobby.getMetadata().id);
 
         const geo = new THREE.PlaneGeometry(50, 50);
         geo.rotateX(-Math.PI / 2);

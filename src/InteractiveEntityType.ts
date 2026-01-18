@@ -5,5 +5,5 @@ export enum InteractiveEntityType {
     CORE_DROP = 'coreDrop',
     BOOSTER_PACK_DROP = 'boosterPackDrop',
     XDATA_DROP = 'xDataDrop',
-    PORTAL = 'portal'
+    TELEPORTER = 'teleporter'
 }

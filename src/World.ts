@@ -303,7 +303,7 @@ export class World {
         this.gridPlaneMaterial.uniforms.u_time.value += dt;
         this.gridPlaneMaterial.uniforms.u_cameraPosition.value.copy(cameraPosition);
 
-        // Update stage (portals, etc.)
+        // Update stage (teleporters, etc.)
         this.currentStage.update(dt, player);
 
         // Update systems that operate across stages (healing, etc.)
@@ -409,9 +409,9 @@ export class World {
         }
     }
 
-    checkPortalInteraction(playerPosition: THREE.Vector3): string | null {
+    checkTeleporterInteraction(playerPosition: THREE.Vector3): string | null {
         if (!this.currentStage) return null;
-        return this.currentStage.checkPortalInteraction(playerPosition);
+        return this.currentStage.checkTeleporterInteraction(playerPosition);
     }
 
     getAllNpcs(): Set<Npc> {

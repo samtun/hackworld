@@ -107,8 +107,8 @@ export class Lobby extends BaseStage {
             this.createLobbyColliders(lobbyColliderScene);
         }
 
-        // Portal
-        this.createPortal(new CANNON.Vec3(5, 0.05, 5), 0x00ff00, 'selection');
+        // Teleporter
+        this.createTeleporter(new CANNON.Vec3(5, 0.05, 5), 'selection');
 
         // Healing Station
         this.healingStation = new HealingStation(this.scene, this.healingStationPosition);

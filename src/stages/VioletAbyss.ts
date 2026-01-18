@@ -36,8 +36,8 @@ export class VioletAbyss extends BaseStage {
         await this.loadEnvironmentMap();
         this.createFloorCollider();
 
-        // Portal back to Lobby
-        this.createPortal(new CANNON.Vec3(12, 0.02, 12), 0x0088ff, Lobby.getMetadata().id);
+        // Teleporter back to Lobby
+        this.createTeleporter(new CANNON.Vec3(12, 0.02, 12), Lobby.getMetadata().id);
 
         // Different dungeon layout with more obstacles
         this.createBox(3, 2, 3, new CANNON.Vec3(-8, 1, -8));

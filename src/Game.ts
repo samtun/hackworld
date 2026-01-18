@@ -206,7 +206,7 @@ export class Game {
             this.player.body.velocity.set(0, 0, 0);
             if (this.player.body.angularVelocity) this.player.body.angularVelocity.set(0, 0, 0);
 
-            // Update last teleporter position when entering a stage via portal
+            // Update last teleporter position when entering a stage via teleporter
             // This is used as the respawn point if the player dies
             this.lastTeleporterPosition.copy(this.player.body.position);
 
@@ -290,9 +290,9 @@ export class Game {
 
         // Update particle scale factors for screen-independent sizing
         if (this.world.currentStage) {
-            // Update portal particles if exists
-            if (this.world.currentStage.portal) {
-                this.world.currentStage.portal.updateScaleFactor();
+            // Update teleporter particles if exists
+            if (this.world.currentStage.teleporter) {
+                this.world.currentStage.teleporter.updateScaleFactor();
             }
 
             // Update healing station particles if exists (Lobby specific)
@@ -543,14 +543,14 @@ export class Game {
                 }
             }
 
-            // Check portal
+            // Check teleporter
             if (!nearbyInteractive) {
-                const destination = this.world.checkPortalInteraction(this.player.position);
+                const destination = this.world.checkTeleporterInteraction(this.player.position);
                 if (destination) {
                     nearbyInteractive = {
-                        type: InteractiveEntityType.PORTAL,
+                        type: InteractiveEntityType.TELEPORTER,
                         data: destination,
-                        hint: getHint(HintConfigs.enterPortal, this.input),
+                        hint: getHint(HintConfigs.enterTeleporter, this.input),
                         action: () => {
                             if (destination === 'selection') {
                                 this.dungeonSelection.show((dungeonId: string) => {
