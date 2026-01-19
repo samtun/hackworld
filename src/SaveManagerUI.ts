@@ -1,6 +1,8 @@
 import { InputManager } from './InputManager';
 import { resetInputDebounce } from './ui/UiUtils';
 import { getHint } from './ui/InputHints';
+import { MenuManager, MENU_COLORS, MENU_STYLES } from './ui/MenuManager';
+import { UIManager } from './ui/UIManager';
 
 /**
  * UI Manager for the save system
@@ -20,14 +22,18 @@ export class SaveManagerUI {
     private fileInput!: HTMLInputElement;
     private playtimeDisplay!: HTMLDivElement;
     private saveStatusText!: HTMLDivElement;
-    private instructionsDiv!: HTMLDivElement;
     private autoCloseTimer?: number;
     private lastSelectState: boolean = false;
     private lastNavigateLeftState: boolean = false;
     private lastNavigateRightState: boolean = false;
     private selectedButton: 'save' | 'load' = 'save';
 
+    private menuManager: MenuManager;
+    private uiManager: UIManager;
+
     private constructor() {
+        this.menuManager = MenuManager.Instance;
+        this.uiManager = UIManager.Instance;
         this.createUI();
     }
 
@@ -36,36 +42,23 @@ export class SaveManagerUI {
     }
 
     private createUI(): void {
-        // Main Container Overlay
-        this.container = document.createElement('div');
-        this.container.style.position = 'fixed';
-        this.container.style.top = '0';
-        this.container.style.left = '0';
-        this.container.style.width = '100%';
-        this.container.style.height = '100%';
-        this.container.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
-        this.container.style.display = 'none';
-        this.container.style.justifyContent = 'center';
-        this.container.style.alignItems = 'center';
-        this.container.style.zIndex = '1000';
-        this.container.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        // Main Container Overlay - using MenuManager
+        this.container = this.menuManager.createOverlay();
+        document.body.appendChild(this.container);
 
-        // Window
-        const modalWindow = document.createElement('div');
-        modalWindow.style.backgroundColor = '#333';
-        modalWindow.style.border = '2px solid #000';
-        modalWindow.style.borderRadius = '10px';
-        modalWindow.style.padding = '30px';
-        modalWindow.style.minWidth = '400px';
-        modalWindow.style.color = '#fff';
+        // Window - using MenuManager
+        const modalWindow = this.menuManager.createFlexWindow('column', {
+            width: 'auto',
+            height: 'auto',
+        });
+        Object.assign(modalWindow.style, {
+            minWidth: '400px'
+        });
+        this.container.appendChild(modalWindow);
 
-        // Title
-        const title = document.createElement('div');
-        title.textContent = 'Save Manager';
-        title.style.fontSize = '28px';
-        title.style.fontWeight = 'bold';
+        // Title - using MenuManager
+        const title = this.menuManager.createTitle('Save Manager');
         title.style.marginBottom = '20px';
-        title.style.textAlign = 'center';
         modalWindow.appendChild(title);
 
         // Info text
@@ -81,7 +74,7 @@ export class SaveManagerUI {
         this.playtimeDisplay.style.fontSize = '18px';
         this.playtimeDisplay.style.marginBottom = '25px';
         this.playtimeDisplay.style.textAlign = 'center';
-        this.playtimeDisplay.style.color = '#ffd700';
+        this.playtimeDisplay.style.color = MENU_COLORS.COST_COLOR;
         modalWindow.appendChild(this.playtimeDisplay);
 
         // Save status text (shown after save)
@@ -111,6 +104,7 @@ export class SaveManagerUI {
         this.saveButton.style.fontSize = '16px';
         this.saveButton.style.textAlign = 'center';
         this.saveButton.style.minWidth = '120px';
+        this.saveButton.style.fontFamily = MENU_STYLES.FONT_FAMILY;
         buttonContainer.appendChild(this.saveButton);
 
         // Load button
@@ -124,6 +118,7 @@ export class SaveManagerUI {
         this.loadButton.style.fontSize = '16px';
         this.loadButton.style.textAlign = 'center';
         this.loadButton.style.minWidth = '120px';
+        this.loadButton.style.fontFamily = MENU_STYLES.FONT_FAMILY;
         buttonContainer.appendChild(this.loadButton);
 
         // Hidden file input for load functionality
@@ -150,18 +145,6 @@ export class SaveManagerUI {
         buttonContainer.appendChild(this.fileInput);
 
         modalWindow.appendChild(buttonContainer);
-
-        // Instructions
-        this.instructionsDiv = document.createElement('div');
-        this.instructionsDiv.innerHTML = '<span class="key-icon">LEFT</span> / <span class="key-icon">RIGHT</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Cancel';
-        this.instructionsDiv.style.marginTop = '20px';
-        this.instructionsDiv.style.fontSize = '12px';
-        this.instructionsDiv.style.textAlign = 'center';
-        this.instructionsDiv.style.color = '#aaa';
-        modalWindow.appendChild(this.instructionsDiv);
-
-        this.container.appendChild(modalWindow);
-        document.body.appendChild(this.container);
     }
 
     /**
@@ -192,6 +175,9 @@ export class SaveManagerUI {
         this.container.style.display = 'none';
         this.saveCallback = undefined;
         this.loadCallback = undefined;
+
+        // Hide centralized control hints when menu closes
+        this.uiManager.hideControlHints();
 
         // Clear auto-close timer if it exists
         if (this.autoCloseTimer !== undefined) {
@@ -224,17 +210,17 @@ export class SaveManagerUI {
     update(input: InputManager): void {
         if (!this.isVisible) return;
 
-        // Update hints based on input method
+        // Update centralized control hints based on input method
         const hintConfig = {
             keyboard: '<span class="key-icon">LEFT</span> / <span class="key-icon">RIGHT</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Cancel',
             controller: '<span class="btn-icon xbox-dpad">D-PAD</span> Navigate | <span class="btn-icon xbox-a">A</span> Select | <span class="btn-icon xbox-b">B</span> Cancel'
         };
-        this.instructionsDiv.innerHTML = getHint(hintConfig, input);
+        this.uiManager.showControlHints(getHint(hintConfig, input));
 
         // Navigate between buttons with left/right
         const leftPressed = input.isNavigateLeftPressed();
         const rightPressed = input.isNavigateRightPressed();
-        
+
         // Only change selection on button press (not held) and respect boundaries
         if (leftPressed && !this.lastNavigateLeftState) {
             // Only switch if we're on the right button (load)
@@ -243,7 +229,7 @@ export class SaveManagerUI {
                 this.updateButtonHighlight();
             }
         }
-        
+
         if (rightPressed && !this.lastNavigateRightState) {
             // Only switch if we're on the left button (save)
             if (this.selectedButton === 'save') {

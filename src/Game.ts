@@ -178,7 +178,7 @@ export class Game {
 
         // Set up player
         this.playerRegistry = PlayerRegistry.Instance;
-        const initialSpawn = this.world.currentStage ? this.world.currentStage.spawnPosition : new CANNON.Vec3(0, 0.5, 0);
+        const initialSpawn = this.world.currentStage ? this.world.currentStage.spawnPosition : new CANNON.Vec3(0, 0.4, 0);
         this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, initialSpawn, this.input, this.defaultMaterial));
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
@@ -211,7 +211,7 @@ export class Game {
             // Get spawn position from stage configuration
             const targetPos = this.world.currentStage
                 ? this.world.currentStage.spawnPosition
-                : new CANNON.Vec3(0, 0.5, 0);
+                : new CANNON.Vec3(0, 0.4, 0);
 
             // Move player and clear velocities/rotation to prevent any impulse from previous physics steps
             this.player.move(targetPos);

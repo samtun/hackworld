@@ -930,17 +930,8 @@ export class Player extends BaseMesh {
     }
 
     syncPosition() {
-        // Align the visual mesh with the physics body using the body's shape dimensions,
-        // not the world-space AABB, to avoid incorrect offsets as the player moves.
-        let y = this.body.position.y;
-        const primaryShape = this.body.shapes[0];
-
-        if (primaryShape instanceof CANNON.Sphere) {
-            // Place the mesh origin at the bottom of the box by subtracting half the height.
-            y = this.body.position.y - primaryShape.radius;
-        }
-
-        const newPosition = new THREE.Vector3(this.body.position.x, y, this.body.position.z);
+        // Align the visual mesh with the physics body (position offset for proper height)
+        const newPosition = new THREE.Vector3(this.body.position.x, this.body.position.y - 0.3, this.body.position.z);
         this.position.copy(newPosition);
         this.mesh.position.copy(newPosition);
     }
@@ -954,6 +945,8 @@ export class Player extends BaseMesh {
     }
 
     move(position: CANNON.Vec3): void {
+        console.log('Moving player to', position);
+        this.body.type = CANNON.Body.DYNAMIC;
         this.body.position.copy(position);
         this.syncPosition();
     }

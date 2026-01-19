@@ -3,30 +3,8 @@ import { InputManager } from '../../InputManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
 import { StatType } from '../../StatType';
 import { getHint, HintConfigs } from '../../ui/InputHints';
-
-// --- Constants ---
-const COLORS = {
-    OVERLAY: 'rgba(0, 0, 0, 0.8)',
-    WINDOW_BG: '#333',
-    BORDER: '#000',
-    TEXT: '#fff',
-    PANEL_BG: '#2a2a2a',
-    ITEM_SELECTED: '#888',
-    TRANSPARENT: 'transparent',
-    SEPARATOR: '#BBBBBB',
-    XDATA_COLOR: '#00ffff',
-    COST_COLOR: '#ffd700',
-    MAXED_COLOR: '#ff6666'
-};
-
-const STYLES = {
-    FONT_FAMILY: '"Share Tech", Arial, sans-serif',
-    BORDER_RADIUS: '10px',
-    BORDER_WIDTH: '2px',
-    WINDOW_PADDING: '20px',
-    PANEL_PADDING: '20px',
-    GRID_GAP: '10px'
-};
+import { MenuManager, MENU_COLORS, MENU_STYLES } from '../../ui/MenuManager';
+import { UIManager } from '../../ui/UIManager';
 
 interface StatInfo {
     type: StatType;
@@ -44,7 +22,6 @@ export class XDataUpgradeManager {
     // UI Elements
     xDataDisplay!: HTMLDivElement;
     statList!: HTMLDivElement;
-    hintDiv!: HTMLDivElement;
     itemElements: HTMLDivElement[] = [];
 
     // Navigation state
@@ -67,7 +44,12 @@ export class XDataUpgradeManager {
         { type: StatType.TP, label: 'TP', description: 'Increases max tech points', upgradeEffect: '+5 per upgrade' }
     ];
 
+    private menuManager: MenuManager;
+    private uiManager: UIManager;
+
     private constructor() {
+        this.menuManager = MenuManager.Instance;
+        this.uiManager = UIManager.Instance;
         this.createUI();
     }
 
@@ -76,27 +58,18 @@ export class XDataUpgradeManager {
     }
 
     private createUI() {
-        // Main Container Overlay
-        this.container = this.createOverlay();
+        // Main Container Overlay - using MenuManager
+        this.container = this.menuManager.createOverlay();
         document.body.appendChild(this.container);
 
-        // Main Window
-        const windowDiv = this.createWindow();
+        // Main Window - using MenuManager
+        const windowDiv = this.menuManager.createFlexWindow('column', {
+            width: '800px',
+        });
         this.container.appendChild(windowDiv);
 
-        // Title
-        const titleDiv = document.createElement('div');
-        titleDiv.innerText = 'X-DATA UPGRADES';
-        Object.assign(titleDiv.style, {
-            textAlign: 'center',
-            fontSize: '28px',
-            fontWeight: 'bold',
-            color: COLORS.XDATA_COLOR,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: '10px',
-            borderBottom: `2px solid ${COLORS.SEPARATOR}`,
-            marginBottom: '15px'
-        });
+        // Title - using MenuManager
+        const titleDiv = this.menuManager.createTitle('X-DATA UPGRADES', MENU_COLORS.XDATA_COLOR);
         windowDiv.appendChild(titleDiv);
 
         // X-Data Display
@@ -105,18 +78,20 @@ export class XDataUpgradeManager {
             textAlign: 'center',
             fontSize: '24px',
             fontWeight: 'bold',
-            color: COLORS.XDATA_COLOR,
-            fontFamily: STYLES.FONT_FAMILY,
+            color: MENU_COLORS.XDATA_COLOR,
+            fontFamily: MENU_STYLES.FONT_FAMILY,
             padding: '15px',
-            backgroundColor: COLORS.PANEL_BG,
-            borderRadius: STYLES.BORDER_RADIUS,
-            border: `${STYLES.BORDER_WIDTH} solid ${COLORS.BORDER}`,
+            backgroundColor: MENU_COLORS.PANEL_BG,
+            borderRadius: MENU_STYLES.BORDER_RADIUS,
+            border: `${MENU_STYLES.BORDER_WIDTH} solid ${MENU_COLORS.BORDER}`,
             marginBottom: '20px'
         });
         windowDiv.appendChild(this.xDataDisplay);
 
-        // Stats Panel
-        const statsPanel = this.createPanel();
+        // Stats Panel - using MenuManager
+        const statsPanel = this.menuManager.createPanel();
+        statsPanel.style.overflowY = 'auto';
+        statsPanel.style.flex = '1';
         windowDiv.appendChild(statsPanel);
 
         const statsTitle = document.createElement('div');
@@ -128,68 +103,6 @@ export class XDataUpgradeManager {
 
         this.statList = document.createElement('div');
         statsPanel.appendChild(this.statList);
-
-        // Controls hint
-        this.hintDiv = document.createElement('div');
-        this.hintDiv.innerHTML = '<span class="key-icon">ENTER</span> Upgrade <span style="margin: 0 15px;"></span> <span class="key-icon">ESC</span> Close';
-        Object.assign(this.hintDiv.style, {
-            textAlign: 'center',
-            fontSize: '14px',
-            color: COLORS.TEXT,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: '10px',
-            marginTop: '15px',
-            borderTop: `2px solid ${COLORS.SEPARATOR}`
-        });
-        windowDiv.appendChild(this.hintDiv);
-    }
-
-    private createOverlay(): HTMLDivElement {
-        const el = document.createElement('div');
-        Object.assign(el.style, {
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            backgroundColor: COLORS.OVERLAY,
-            display: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '1000'
-        });
-        return el;
-    }
-
-    private createWindow(): HTMLDivElement {
-        const el = document.createElement('div');
-        Object.assign(el.style, {
-            width: '600px',
-            maxHeight: '80vh',
-            backgroundColor: COLORS.WINDOW_BG,
-            borderRadius: '15px',
-            border: `2px solid ${COLORS.BORDER}`,
-            padding: STYLES.WINDOW_PADDING,
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column'
-        });
-        return el;
-    }
-
-    private createPanel(): HTMLDivElement {
-        const el = document.createElement('div');
-        Object.assign(el.style, {
-            backgroundColor: COLORS.PANEL_BG,
-            borderRadius: STYLES.BORDER_RADIUS,
-            border: `${STYLES.BORDER_WIDTH} solid ${COLORS.BORDER}`,
-            color: COLORS.TEXT,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: STYLES.PANEL_PADDING,
-            overflowY: 'auto',
-            flex: '1'
-        });
-        return el;
     }
 
     show() {
@@ -204,6 +117,8 @@ export class XDataUpgradeManager {
     hide() {
         this.isVisible = false;
         this.container.style.display = 'none';
+        // Hide centralized control hints when menu closes
+        this.uiManager.hideControlHints();
     }
 
     toggle() {
@@ -219,8 +134,8 @@ export class XDataUpgradeManager {
 
         // Handle keyboard/gamepad navigation
         if (input) {
-            // Update hints based on input method
-            this.hintDiv.innerHTML = getHint(HintConfigs.upgradeClose, input);
+            // Update centralized control hints based on input method
+            this.uiManager.showControlHints(getHint(HintConfigs.upgradeClose, input));
 
             const oldIndex = this.selectedIndex;
             this.handleNavigation(player, input);
@@ -298,9 +213,9 @@ export class XDataUpgradeManager {
             // Build the stat display
             let statusText = '';
             if (isMaxed) {
-                statusText = `<span style="color: ${COLORS.MAXED_COLOR};">MAX (9999)</span>`;
+                statusText = `<span style="color: ${MENU_COLORS.MAXED_COLOR};">MAX (9999)</span>`;
             } else {
-                const costColor = canAfford ? COLORS.COST_COLOR : COLORS.MAXED_COLOR;
+                const costColor = canAfford ? MENU_COLORS.COST_COLOR : MENU_COLORS.MAXED_COLOR;
                 statusText = `<span style="color: ${costColor};">Cost: ${cost} X-Data</span>`;
             }
 
@@ -321,8 +236,8 @@ export class XDataUpgradeManager {
             Object.assign(statDiv.style, {
                 padding: '12px',
                 marginBottom: '8px',
-                backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
-                border: isSelected ? `2px solid ${COLORS.XDATA_COLOR}` : '2px solid transparent',
+                backgroundColor: isSelected ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.TRANSPARENT,
+                border: isSelected ? `2px solid ${MENU_COLORS.XDATA_COLOR}` : '2px solid transparent',
                 borderRadius: '5px',
                 opacity: (isMaxed || !canAfford) ? '0.6' : '1',
                 cursor: 'pointer',

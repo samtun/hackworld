@@ -5,45 +5,19 @@ import { Card, CardDefinitions, CardRarity } from './Card';
 import { CardCollection } from './CardCollection';
 import { ViewMode } from './ViewMode';
 import { getHint, HintConfigs } from '../../ui/InputHints';
-
-// --- Constants ---
-const COLORS = {
-    OVERLAY: 'rgba(0, 0, 0, 0.8)',
-    WINDOW_BG: '#333',
-    BORDER: '#000',
-    TEXT: '#fff',
-    PANEL_BG: '#2a2a2a',
-    ITEM_SELECTED: '#888',
-    TRANSPARENT: 'transparent',
-    SEPARATOR: '#BBBBBB',
-    CARD_BG: '#1a1a1a',
-    NORMAL: '#aaaaaa',
-    UNCOMMON: '#4ec9ff',
-    SPECIAL: '#ff69b4',
-    COLLECTED: '#44ff44',
-    MISSING: '#444444'
-};
-
-const STYLES = {
-    FONT_FAMILY: '"Share Tech", Arial, sans-serif',
-    BORDER_RADIUS: '10px',
-    BORDER_WIDTH: '2px',
-    WINDOW_PADDING: '20px',
-    PANEL_PADDING: '20px',
-    GRID_GAP: '10px'
-};
+import { MenuManager, MENU_COLORS, MENU_STYLES } from '../../ui/MenuManager';
+import { UIManager } from '../../ui/UIManager';
 
 export class CardManager {
     private static instance: CardManager;
-    
+
     container!: HTMLDivElement;
     isVisible: boolean = false;
-    
+
     // UI Elements
     private mainContent!: HTMLDivElement;
     private packCountDisplay!: HTMLDivElement;
-    private controlsDiv!: HTMLDivElement;
-    
+
     // Navigation state
     private viewMode: ViewMode = ViewMode.MENU;
     private selectedMenuIndex: number = 0;
@@ -52,145 +26,93 @@ export class CardManager {
     private revealedCards: Card[] = [];
     private flippedCardIndices: Set<number> = new Set(); // Track which cards have been flipped
     private flippingInProgress: boolean = false; // Track if flip animation is in progress
-    
+
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
     private lastNavigateDownState: boolean = false;
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
-    
+
     private cardCollection: CardCollection;
     private currentInputManager?: InputManager; // Store input manager for dynamic hints
-    
+    private menuManager: MenuManager;
+    private uiManager: UIManager;
+
     private constructor() {
         this.cardCollection = CardCollection.Instance;
+        this.menuManager = MenuManager.Instance;
+        this.uiManager = UIManager.Instance;
         this.createUI();
     }
-    
+
     public static get Instance(): CardManager {
         return this.instance || (this.instance = new this());
     }
-    
+
     private createUI() {
         // Main Container Overlay
-        this.container = this.createOverlay();
+        this.container = this.menuManager.createOverlay();
         document.body.appendChild(this.container);
-        
+
         // Main Window
-        const windowDiv = this.createWindow();
-        this.container.appendChild(windowDiv);
-        
-        // Title
-        const titleDiv = document.createElement('div');
-        titleDiv.innerText = 'CARD COLLECTION';
-        Object.assign(titleDiv.style, {
-            textAlign: 'center',
-            fontSize: '28px',
-            fontWeight: 'bold',
-            color: COLORS.SPECIAL,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: '10px',
-            borderBottom: `2px solid ${COLORS.SEPARATOR}`,
-            marginBottom: '15px'
+        const windowDiv = this.menuManager.createFlexWindow('column', {
+            maxWidth: '800px',
+            width: '90%',
         });
+        this.container.appendChild(windowDiv);
+
+        // Title
+        const titleDiv = this.menuManager.createTitle('CARD COLLECTION', MENU_COLORS.SPECIAL);
         windowDiv.appendChild(titleDiv);
-        
+
         // Pack count display
         this.packCountDisplay = document.createElement('div');
         Object.assign(this.packCountDisplay.style, {
             textAlign: 'center',
             fontSize: '18px',
-            color: COLORS.TEXT,
-            fontFamily: STYLES.FONT_FAMILY,
+            color: MENU_COLORS.TEXT,
+            fontFamily: MENU_STYLES.FONT_FAMILY,
             marginBottom: '15px'
         });
         windowDiv.appendChild(this.packCountDisplay);
-        
+
         // Main content area
         this.mainContent = document.createElement('div');
         Object.assign(this.mainContent.style, {
             flex: '1',
             overflowY: 'auto',
-            fontFamily: STYLES.FONT_FAMILY
+            fontFamily: MENU_STYLES.FONT_FAMILY
         });
         windowDiv.appendChild(this.mainContent);
-        
-        // Controls hint
-        this.controlsDiv = document.createElement('div');
-        this.controlsDiv.innerHTML = '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back';
-        Object.assign(this.controlsDiv.style, {
-            textAlign: 'center',
-            fontSize: '14px',
-            color: COLORS.SEPARATOR,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: '10px',
-            borderTop: `2px solid ${COLORS.SEPARATOR}`,
-            marginTop: '10px'
-        });
-        windowDiv.appendChild(this.controlsDiv);
     }
-    
-    private createOverlay(): HTMLDivElement {
-        const overlay = document.createElement('div');
-        Object.assign(overlay.style, {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: COLORS.OVERLAY,
-            display: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '1000'
-        });
-        return overlay;
-    }
-    
-    private createWindow(): HTMLDivElement {
-        const windowDiv = document.createElement('div');
-        Object.assign(windowDiv.style, {
-            backgroundColor: COLORS.WINDOW_BG,
-            border: `${STYLES.BORDER_WIDTH} solid ${COLORS.BORDER}`,
-            borderRadius: STYLES.BORDER_RADIUS,
-            padding: STYLES.WINDOW_PADDING,
-            maxWidth: '800px',
-            width: '90%',
-            maxHeight: '80vh',
-            display: 'flex',
-            flexDirection: 'column',
-            fontFamily: STYLES.FONT_FAMILY
-        });
-        return windowDiv;
-    }
-    
+
     private getRarityColor(rarity: CardRarity): string {
         switch (rarity) {
             case CardRarity.NORMAL:
-                return COLORS.NORMAL;
+                return MENU_COLORS.NORMAL;
             case CardRarity.UNCOMMON:
-                return COLORS.UNCOMMON;
+                return MENU_COLORS.UNCOMMON;
             case CardRarity.SPECIAL:
-                return COLORS.SPECIAL;
+                return MENU_COLORS.SPECIAL;
         }
     }
-    
+
     private renderMenu(player: Player) {
         this.mainContent.innerHTML = '';
-        
+
         const menuItems = [
             { label: 'Open Booster Pack', enabled: player.boosterPacks > 0 },
             { label: 'View Albums', enabled: true }
         ];
-        
+
         menuItems.forEach((item, index) => {
             const menuItem = document.createElement('div');
             menuItem.innerText = item.label;
             Object.assign(menuItem.style, {
                 padding: '15px',
                 margin: '5px 0',
-                backgroundColor: this.selectedMenuIndex === index ? COLORS.ITEM_SELECTED : COLORS.PANEL_BG,
-                color: item.enabled ? COLORS.TEXT : '#666',
+                backgroundColor: this.selectedMenuIndex === index ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.PANEL_BG,
+                color: item.enabled ? MENU_COLORS.TEXT : '#666',
                 fontSize: '20px',
                 borderRadius: '5px',
                 cursor: item.enabled ? 'pointer' : 'not-allowed',
@@ -198,7 +120,7 @@ export class CardManager {
             });
             this.mainContent.appendChild(menuItem);
         });
-        
+
         // Show collection progress
         const progressDiv = document.createElement('div');
         const collected = this.cardCollection.getTotalCollected();
@@ -207,19 +129,19 @@ export class CardManager {
         Object.assign(progressDiv.style, {
             textAlign: 'center',
             fontSize: '16px',
-            color: COLORS.TEXT,
+            color: MENU_COLORS.TEXT,
             marginTop: '20px'
         });
         this.mainContent.appendChild(progressDiv);
     }
-    
+
     private renderOpenPack() {
         const containerId = 'pack-cards-container';
         let cardsContainer = document.getElementById(containerId) as HTMLDivElement;
-        
+
         if (!cardsContainer) {
             this.mainContent.innerHTML = '';
-            
+
             // Title
             const titleDiv = document.createElement('div');
             titleDiv.innerText = 'Pack Contents';
@@ -227,11 +149,11 @@ export class CardManager {
                 textAlign: 'center',
                 fontSize: '24px',
                 fontWeight: 'bold',
-                color: COLORS.TEXT,
+                color: MENU_COLORS.TEXT,
                 marginBottom: '20px'
             });
             this.mainContent.appendChild(titleDiv);
-            
+
             // Container for all cards in a single row
             cardsContainer = document.createElement('div');
             cardsContainer.id = containerId;
@@ -242,7 +164,7 @@ export class CardManager {
                 marginBottom: '20px',
                 flexWrap: 'nowrap' // Keep all cards in a single row
             });
-            
+
             // Display all 4 cards
             this.revealedCards.forEach((card) => {
                 // Outer container for 3D perspective
@@ -252,7 +174,7 @@ export class CardManager {
                     minWidth: '150px',
                     minHeight: '200px'
                 });
-                
+
                 // Inner flipper element
                 const cardFlipper = document.createElement('div');
                 cardFlipper.className = 'card-flipper';
@@ -264,7 +186,7 @@ export class CardManager {
                     transformStyle: 'preserve-3d',
                     transform: 'rotateY(0deg)'
                 });
-                
+
                 // Card back (face down)
                 const cardBack = document.createElement('div');
                 Object.assign(cardBack.style, {
@@ -272,7 +194,7 @@ export class CardManager {
                     width: '100%',
                     height: '100%',
                     padding: '20px',
-                    backgroundColor: COLORS.CARD_BG,
+                    backgroundColor: MENU_COLORS.CARD_BG,
                     border: '3px solid #666',
                     borderRadius: '10px',
                     textAlign: 'center',
@@ -282,7 +204,7 @@ export class CardManager {
                     backfaceVisibility: 'hidden',
                     boxSizing: 'border-box'
                 });
-                
+
                 const backText = document.createElement('div');
                 backText.innerText = '?';
                 Object.assign(backText.style, {
@@ -291,7 +213,7 @@ export class CardManager {
                     color: '#666'
                 });
                 cardBack.appendChild(backText);
-                
+
                 // Card front (face up)
                 const cardFront = document.createElement('div');
                 Object.assign(cardFront.style, {
@@ -299,7 +221,7 @@ export class CardManager {
                     width: '100%',
                     height: '100%',
                     padding: '20px',
-                    backgroundColor: COLORS.CARD_BG,
+                    backgroundColor: MENU_COLORS.CARD_BG,
                     border: `3px solid ${this.getRarityColor(card.rarity)}`,
                     borderRadius: '10px',
                     textAlign: 'center',
@@ -310,9 +232,9 @@ export class CardManager {
                     transform: 'rotateY(180deg)',
                     boxSizing: 'border-box'
                 });
-                
+
                 const isNew = !this.cardCollection.hasCard(card);
-                
+
                 const albumText = document.createElement('div');
                 albumText.innerText = card.album;
                 Object.assign(albumText.style, {
@@ -322,16 +244,16 @@ export class CardManager {
                     marginBottom: '8px'
                 });
                 cardFront.appendChild(albumText);
-                
+
                 const slotText = document.createElement('div');
                 slotText.innerText = `#${card.slot}`;
                 Object.assign(slotText.style, {
                     fontSize: '18px',
-                    color: COLORS.TEXT,
+                    color: MENU_COLORS.TEXT,
                     marginBottom: '8px'
                 });
                 cardFront.appendChild(slotText);
-                
+
                 const rarityText = document.createElement('div');
                 rarityText.innerText = card.rarity.toUpperCase();
                 Object.assign(rarityText.style, {
@@ -362,23 +284,23 @@ export class CardManager {
                 }
 
                 cardFront.appendChild(statusContainer);
-                
+
                 // Assemble the card structure
                 cardFlipper.appendChild(cardBack);
                 cardFlipper.appendChild(cardFront);
                 cardContainer.appendChild(cardFlipper);
                 cardsContainer.appendChild(cardContainer);
             });
-            
+
             this.mainContent.appendChild(cardsContainer);
-            
+
             // Instructions
             const instructionsText = document.createElement('div');
             instructionsText.id = 'pack-instructions';
             Object.assign(instructionsText.style, {
                 textAlign: 'center',
                 fontSize: '16px',
-                color: COLORS.SEPARATOR,
+                color: MENU_COLORS.SEPARATOR,
                 marginTop: '10px'
             });
             this.mainContent.appendChild(instructionsText);
@@ -390,7 +312,7 @@ export class CardManager {
             const isFlipped = this.flippedCardIndices.has(index);
             (flipper as HTMLElement).style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
         });
-        
+
         // Update instructions text
         const instructionsText = document.getElementById('pack-instructions');
         if (instructionsText && this.currentInputManager) {
@@ -404,21 +326,21 @@ export class CardManager {
             }
         }
     }
-    
+
     private renderAlbumList() {
         this.mainContent.innerHTML = '';
-        
+
         const albums = CardDefinitions.getAlbums();
         albums.forEach((album, index) => {
             const progress = this.cardCollection.getAlbumProgress(album);
-            
+
             const albumDiv = document.createElement('div');
             albumDiv.innerHTML = `<strong>${album}</strong> - ${progress.collected} / ${progress.total}`;
             Object.assign(albumDiv.style, {
                 padding: '15px',
                 margin: '5px 0',
-                backgroundColor: this.selectedAlbumIndex === index ? COLORS.ITEM_SELECTED : COLORS.PANEL_BG,
-                color: COLORS.TEXT,
+                backgroundColor: this.selectedAlbumIndex === index ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.PANEL_BG,
+                color: MENU_COLORS.TEXT,
                 fontSize: '18px',
                 borderRadius: '5px',
                 cursor: 'pointer'
@@ -426,21 +348,21 @@ export class CardManager {
             this.mainContent.appendChild(albumDiv);
         });
     }
-    
+
     private renderAlbumDetail() {
         this.mainContent.innerHTML = '';
-        
+
         const titleDiv = document.createElement('div');
         titleDiv.innerText = `Album: ${this.currentAlbum}`;
         Object.assign(titleDiv.style, {
             fontSize: '24px',
             fontWeight: 'bold',
-            color: COLORS.TEXT,
+            color: MENU_COLORS.TEXT,
             textAlign: 'center',
             marginBottom: '20px'
         });
         this.mainContent.appendChild(titleDiv);
-        
+
         const cards = CardDefinitions.getAlbumCards(this.currentAlbum);
         const gridDiv = document.createElement('div');
         Object.assign(gridDiv.style, {
@@ -448,13 +370,13 @@ export class CardManager {
             gridTemplateColumns: 'repeat(4, 1fr)',
             gap: '10px'
         });
-        
+
         cards.forEach(card => {
             const collected = this.cardCollection.hasCard(card);
             const cardDiv = document.createElement('div');
             Object.assign(cardDiv.style, {
                 padding: '15px',
-                backgroundColor: collected ? COLORS.PANEL_BG : COLORS.MISSING,
+                backgroundColor: collected ? MENU_COLORS.PANEL_BG : MENU_COLORS.MISSING,
                 border: `2px solid ${this.getRarityColor(card.rarity)}`,
                 borderRadius: '5px',
                 textAlign: 'center',
@@ -464,7 +386,7 @@ export class CardManager {
                 minHeight: '100px',
                 justifyContent: 'center'
             });
-            
+
             const slotText = document.createElement('div');
             slotText.innerText = `#${card.slot}`;
             Object.assign(slotText.style, {
@@ -473,33 +395,33 @@ export class CardManager {
                 color: this.getRarityColor(card.rarity)
             });
             cardDiv.appendChild(slotText);
-            
+
             const rarityText = document.createElement('div');
             rarityText.innerText = card.rarity.toUpperCase();
             Object.assign(rarityText.style, {
                 fontSize: '14px',
-                color: COLORS.TEXT,
+                color: MENU_COLORS.TEXT,
                 marginTop: '5px'
             });
             cardDiv.appendChild(rarityText);
-            
+
             // Always create checkmark container to maintain consistent height
             const checkmark = document.createElement('div');
             checkmark.innerText = collected ? '✓' : '';
             Object.assign(checkmark.style, {
                 fontSize: '24px',
-                color: COLORS.COLLECTED,
+                color: MENU_COLORS.COLLECTED,
                 marginTop: '5px',
                 height: '29px' // Reserve space for checkmark
             });
             cardDiv.appendChild(checkmark);
-            
+
             gridDiv.appendChild(cardDiv);
         });
-        
+
         this.mainContent.appendChild(gridDiv);
     }
-    
+
     public show() {
         if (this.isVisible) return;
         this.isVisible = true;
@@ -508,26 +430,18 @@ export class CardManager {
         this.selectedMenuIndex = 0;
         resetInputDebounce(this as any);
     }
-    
+
     public hide() {
         if (!this.isVisible) return;
         this.isVisible = false;
         this.container.style.display = 'none';
+        this.uiManager.hideControlHints();
         resetInputDebounce(this as any);
     }
-    
+
     private render(player: Player) {
         this.packCountDisplay.innerText = `Booster Packs: ${player.boosterPacks}`;
-        
-        // Update controls hint based on input method
-        if (this.currentInputManager) {
-            const hintConfig = {
-                keyboard: '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back',
-                controller: '<span class="btn-icon xbox-dpad">D-Pad</span> Navigate | <span class="btn-icon xbox-a">A</span> Select | <span class="btn-icon xbox-b">B</span> Back'
-            };
-            this.controlsDiv.innerHTML = getHint(hintConfig, this.currentInputManager);
-        }
-        
+
         switch (this.viewMode) {
             case ViewMode.MENU:
                 this.renderMenu(player);
@@ -543,43 +457,46 @@ export class CardManager {
                 break;
         }
     }
-    
+
     public update(player: Player, input: InputManager) {
         if (!this.isVisible) return;
-        
+
         // Store input manager for dynamic hints
         this.currentInputManager = input;
-        
+
+        // Update centralized control hints based on input method
+        this.uiManager.showControlHints(getHint(HintConfigs.menuNavigate, input));
+
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();
         const select = input.isSelectPressed();
         const cancel = input.isCancelPressed();
-        
+
         // Debounced navigation
         if (navigateUp && !this.lastNavigateUpState) {
             this.handleNavigateUp();
         }
         this.lastNavigateUpState = navigateUp;
-        
+
         if (navigateDown && !this.lastNavigateDownState) {
             this.handleNavigateDown();
         }
         this.lastNavigateDownState = navigateDown;
-        
+
         if (select && !this.lastSelectState) {
             this.handleSelect(player);
         }
         this.lastSelectState = select;
-        
+
         if (cancel && !this.lastCancelState) {
             this.handleCancel();
         }
         this.lastCancelState = cancel;
-        
+
         // Always render
         this.render(player);
     }
-    
+
     private handleNavigateUp() {
         if (this.viewMode === ViewMode.MENU) {
             this.selectedMenuIndex = Math.max(0, this.selectedMenuIndex - 1);
@@ -587,7 +504,7 @@ export class CardManager {
             this.selectedAlbumIndex = Math.max(0, this.selectedAlbumIndex - 1);
         }
     }
-    
+
     private handleNavigateDown() {
         if (this.viewMode === ViewMode.MENU) {
             this.selectedMenuIndex = Math.min(1, this.selectedMenuIndex + 1);
@@ -596,7 +513,7 @@ export class CardManager {
             this.selectedAlbumIndex = Math.min(maxIndex, this.selectedAlbumIndex + 1);
         }
     }
-    
+
     private handleSelect(player: Player) {
         if (this.viewMode === ViewMode.MENU) {
             if (this.selectedMenuIndex === 0 && player.boosterPacks > 0) {
@@ -609,7 +526,7 @@ export class CardManager {
                 this.flippedCardIndices.clear();
                 this.flippingInProgress = false;
                 this.viewMode = ViewMode.OPEN_PACK;
-                
+
                 // Start flipping immediately
                 this.startCardFlipAnimation(player);
             } else if (this.selectedMenuIndex === 1) {
@@ -630,16 +547,16 @@ export class CardManager {
             this.viewMode = ViewMode.VIEW_ALBUM;
         }
     }
-    
+
     private async startCardFlipAnimation(player: Player) {
         this.flippingInProgress = true;
         this.render(player);
-        
+
         // Add cards to collection before flipping
         this.revealedCards.forEach(card => {
             this.cardCollection.addCard(card);
         });
-        
+
         // Flip cards one by one with a delay
         for (let i = 0; i < this.revealedCards.length; i++) {
             // Wait 400ms between each card flip
@@ -648,11 +565,11 @@ export class CardManager {
             // Re-render to show the flipped state
             this.render(player);
         }
-        
+
         this.flippingInProgress = false;
         this.render(player);
     }
-    
+
     private handleCancel() {
         if (this.viewMode === ViewMode.MENU) {
             this.hide();

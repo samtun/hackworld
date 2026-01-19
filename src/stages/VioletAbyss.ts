@@ -11,7 +11,7 @@ export class VioletAbyss extends BaseStage {
     name = VioletAbyss.name;
     description = VioletAbyss.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
-    spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
+    spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
@@ -37,7 +37,7 @@ export class VioletAbyss extends BaseStage {
         this.createFloorCollider();
 
         // Teleporter back to Lobby
-        this.createTeleporter(new CANNON.Vec3(12, 0.02, 12), Lobby.getMetadata().id);
+        this.createTeleporter(new CANNON.Vec3(12, 0, 12), Lobby.getMetadata().id);
 
         // Different dungeon layout with more obstacles
         this.createBox(3, 2, 3, new CANNON.Vec3(-8, 1, -8));

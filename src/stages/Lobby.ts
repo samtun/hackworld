@@ -19,7 +19,7 @@ export class Lobby extends BaseStage {
     name = 'Lobby';
     description = 'Safe hub area';
     environmentMap: string = 'textures/environments/lobby_env.exr';
-    spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
+    spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
@@ -83,8 +83,10 @@ export class Lobby extends BaseStage {
             this.scene.add(lobbyScene);
             this.meshes.push(lobbyScene);
             lobbyScene.traverse((node) => {
-                if (!(node instanceof THREE.Mesh)) return;
-                console.log(`Lobby Mesh: ${node.name}`);
+                if (!(node instanceof THREE.Mesh)) {
+                    return;
+                }
+
                 if (node.name === "Banner") {
                     const material = node.material as THREE.MeshStandardMaterial;
 
@@ -108,7 +110,7 @@ export class Lobby extends BaseStage {
         }
 
         // Teleporter
-        this.createTeleporter(new CANNON.Vec3(5, 0.05, 5), 'selection');
+        this.createTeleporter(new CANNON.Vec3(5, 0, 5), 'selection');
 
         // Healing Station
         this.healingStation = new HealingStation(this.scene, this.healingStationPosition);
