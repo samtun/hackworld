@@ -6,6 +6,7 @@ export class UIManager {
     container: HTMLDivElement;
     hpPath: SVGPathElement;
     tpPath: SVGPathElement;
+    tpTrack: SVGPathElement;
     hpText: HTMLDivElement;
     tpText: HTMLDivElement;
     interactionHint: HTMLDivElement;
@@ -22,6 +23,10 @@ export class UIManager {
     private startScreenTapHandler?: (e: TouchEvent) => void;
 
     public startScreenTapped: boolean = false;
+    private tpWarningTimer: number = 0.0
+    private readonly TP_WARNING_DURATION: number = 1.0;
+    private readonly TP_TRACK_COLOR = "#000055";
+    private readonly TP_TRACK_FLASH_COLOR = "#AAAADD";
 
     private constructor() {
         this.startScreen = document.getElementById('start-screen') as HTMLDivElement;
@@ -72,15 +77,41 @@ export class UIManager {
         svg.style.left = "0";
         this.container.appendChild(svg);
 
-        // Background Circle (Portrait Placeholder)
+
+        const characterProfile = document.createElement("div");
+        characterProfile.id = 'character-profile';
+        characterProfile.style.backgroundImage = 'url(./images/character_portrait.png)';
+        characterProfile.style.width = '80px';
+        characterProfile.style.height = '80px';
+        characterProfile.style.position = 'absolute';
+        characterProfile.style.top = '50%';
+        characterProfile.style.left = '50%';
+        characterProfile.style.transform = 'translate(-50%, -50%)';
+        characterProfile.style.backgroundSize = 'cover';
+        characterProfile.style.backgroundPosition = 'center';
+        characterProfile.style.backgroundRepeat = 'no-repeat';
+        characterProfile.style.borderRadius = '50%';
+        this.container.appendChild(characterProfile);
+
+        // Background Circle
         const bgCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
         bgCircle.setAttribute("cx", "60");
         bgCircle.setAttribute("cy", "60");
-        bgCircle.setAttribute("r", "40");
-        bgCircle.setAttribute("fill", "#222");
-        bgCircle.setAttribute("stroke", "#444");
-        bgCircle.setAttribute("stroke-width", "2");
+        bgCircle.setAttribute("r", "56");
+        bgCircle.setAttribute("fill", "rgb(38, 31, 44)");
+        bgCircle.setAttribute("stroke", "rgba(38, 31, 44, 0.44)");
+        bgCircle.setAttribute("stroke-width", "4");
         svg.appendChild(bgCircle);
+
+        // Portrait background Circle
+        const portraitBgCircle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        portraitBgCircle.setAttribute("cx", "60");
+        portraitBgCircle.setAttribute("cy", "60");
+        portraitBgCircle.setAttribute("r", "40");
+        portraitBgCircle.setAttribute("fill", "rgb(48, 35, 57)");
+        portraitBgCircle.setAttribute("stroke", "rgb(104, 104, 152)");
+        portraitBgCircle.setAttribute("stroke-width", "2");
+        svg.appendChild(portraitBgCircle);
 
         // Angles for gaps (in radians)
         const gap = 0.6; // ~35 degrees gap at top and bottom
@@ -91,33 +122,33 @@ export class UIManager {
         const hpTrack = document.createElementNS("http://www.w3.org/2000/svg", "path");
         hpTrack.setAttribute("fill", "none");
         hpTrack.setAttribute("stroke", "#550000");
-        hpTrack.setAttribute("stroke-width", "8");
-        hpTrack.setAttribute("stroke-linecap", "round");
-        this.setArc(hpTrack, 60, 60, 50, -Math.PI / 2 + gap + rotationOffset, Math.PI / 2 - gap + rotationOffset, 1, false);
+        hpTrack.setAttribute("stroke-width", "14");
+        hpTrack.setAttribute("stroke-linecap", "square");
+        this.setArc(hpTrack, 60, 60, 48, -Math.PI / 2 + gap + rotationOffset, Math.PI / 2 - gap + rotationOffset, 1, false);
         svg.appendChild(hpTrack);
 
         this.hpPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
         this.hpPath.setAttribute("fill", "none");
-        this.hpPath.setAttribute("stroke", "#ff3333");
-        this.hpPath.setAttribute("stroke-width", "8");
-        this.hpPath.setAttribute("stroke-linecap", "round");
+        this.hpPath.setAttribute("stroke", "#CC2222");
+        this.hpPath.setAttribute("stroke-width", "14");
+        this.hpPath.setAttribute("stroke-linecap", "square");
         svg.appendChild(this.hpPath);
 
         // TP Ring (Left - Blue)
         // Background Track
-        const tpTrack = document.createElementNS("http://www.w3.org/2000/svg", "path");
-        tpTrack.setAttribute("fill", "none");
-        tpTrack.setAttribute("stroke", "#000055");
-        tpTrack.setAttribute("stroke-width", "8");
-        tpTrack.setAttribute("stroke-linecap", "round");
-        this.setArc(tpTrack, 60, 60, 50, -Math.PI / 2 - gap + rotationOffset, -Math.PI * 1.5 + gap + rotationOffset, 1, true);
-        svg.appendChild(tpTrack);
+        this.tpTrack = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        this.tpTrack.setAttribute("fill", "none");
+        this.tpTrack.setAttribute("stroke", "#000055");
+        this.tpTrack.setAttribute("stroke-width", "14");
+        this.tpTrack.setAttribute("stroke-linecap", "square");
+        this.setArc(this.tpTrack, 60, 60, 48, -Math.PI / 2 - gap + rotationOffset, -Math.PI * 1.5 + gap + rotationOffset, 1, true);
+        svg.appendChild(this.tpTrack);
 
         this.tpPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
         this.tpPath.setAttribute("fill", "none");
-        this.tpPath.setAttribute("stroke", "#3333ff");
-        this.tpPath.setAttribute("stroke-width", "8");
-        this.tpPath.setAttribute("stroke-linecap", "round");
+        this.tpPath.setAttribute("stroke", "#3333BB");
+        this.tpPath.setAttribute("stroke-width", "14");
+        this.tpPath.setAttribute("stroke-linecap", "square");
         svg.appendChild(this.tpPath);
 
         // Text Elements
@@ -125,7 +156,7 @@ export class UIManager {
         this.hpText.style.position = 'absolute';
         this.hpText.style.left = '125px'; // Moved further right (was 110)
         this.hpText.style.top = '65px';
-        this.hpText.style.color = '#ff8888';
+        this.hpText.style.color = '#97cb92';
         this.hpText.style.fontSize = '24px';
         this.hpText.style.textShadow = '2px 2px 0px #000';
         this.container.appendChild(this.hpText);
@@ -134,7 +165,7 @@ export class UIManager {
         this.tpText.style.position = 'absolute';
         this.tpText.style.left = '105px'; // Moved further right (was 90)
         this.tpText.style.top = '95px';
-        this.tpText.style.color = '#8888ff';
+        this.tpText.style.color = '#9a7ae9';
         this.tpText.style.fontSize = '20px';
         this.tpText.style.textShadow = '2px 2px 0px #000';
         this.container.appendChild(this.tpText);
@@ -241,7 +272,11 @@ export class UIManager {
         return this.instance || (this.instance = new this());
     }
 
-    update(player: Player) {
+    public displayInsufficientTPWarning() {
+        this.tpWarningTimer = this.TP_WARNING_DURATION;
+    }
+
+    update(player: Player, deltaTime: number): void {
         // Update Text
         this.hpText.innerText = `${Math.ceil(player.hp)}`;
         this.tpText.innerText = `${Math.ceil(player.tp)}`;
@@ -254,10 +289,20 @@ export class UIManager {
         const rotationOffset = -20 * (Math.PI / 180);
 
         // HP: Right side
-        this.setArc(this.hpPath, 60, 60, 50, -Math.PI / 2 + gap + rotationOffset, Math.PI / 2 - gap + rotationOffset, hpRatio, false);
+        this.setArc(this.hpPath, 60, 60, 48, -Math.PI / 2 + gap + rotationOffset, Math.PI / 2 - gap + rotationOffset, hpRatio, false);
 
         // TP: Left side
-        this.setArc(this.tpPath, 60, 60, 50, -Math.PI / 2 - gap + rotationOffset, -Math.PI * 1.5 + gap + rotationOffset, tpRatio, true);
+        this.setArc(this.tpPath, 60, 60, 48, -Math.PI / 2 - gap + rotationOffset, -Math.PI * 1.5 + gap + rotationOffset, tpRatio, true);
+
+        // Handle TP warning flash
+        if (this.tpWarningTimer > 0) {
+            const flash = Math.floor(this.tpWarningTimer * 10) % 2 === 0;
+            this.tpTrack.setAttribute("stroke", flash ? this.TP_TRACK_FLASH_COLOR : this.TP_TRACK_COLOR);
+            this.tpWarningTimer -= deltaTime;
+            if (this.tpWarningTimer <= 0) {
+                this.tpTrack.setAttribute("stroke", this.TP_TRACK_COLOR);
+            }
+        }
     }
 
     showInteractionHint(show: boolean, text: string = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Interact') {

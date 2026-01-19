@@ -16,6 +16,7 @@ export class MobileControlsManager {
     // Button elements
     private jumpButton!: HTMLButtonElement;
     private attackButton!: HTMLButtonElement;
+    private skillToggleButton!: HTMLButtonElement;
 
     // Input state
     public movementVector: THREE.Vector2 = new THREE.Vector2(0, 0);
@@ -24,10 +25,19 @@ export class MobileControlsManager {
     public isInventoryPressed: boolean = false;
     public isCancelPressed: boolean = false;
 
+    // Skill mode state
+    private isSkillMode: boolean = false;
+    public isSkill1Pressed: boolean = false; // Laser (was Jump/A)
+    public isSkill2Pressed: boolean = false; // Heal (was Close/B)
+    public isSkill3Pressed: boolean = false; // Area (was Attack/X)
+
     // Track previous states for edge detection
     private previousJumpState: boolean = false;
     private previousAttackState: boolean = false;
     private previousInventoryState: boolean = false;
+    private previousSkill1State: boolean = false;
+    private previousSkill2State: boolean = false;
+    private previousSkill3State: boolean = false;
 
     // Mobile detection
     private isMobileDevice: boolean = false;
@@ -79,6 +89,11 @@ export class MobileControlsManager {
         this.buttonsContainer.className = 'mobile-buttons-container';
         document.body.appendChild(this.buttonsContainer);
 
+        // Create skill toggle button (at top of button stack)
+        this.skillToggleButton = this.createButton('', 'mobile-skill-toggle-btn');
+        this.buttonsContainer.appendChild(this.skillToggleButton);
+        this.setupSkillToggleListener();
+
         // Create action buttons (A for Jump, X for Attack)
         // Using Xbox controller button names for consistency
         this.jumpButton = this.createButton('A', 'mobile-jump-btn');
@@ -89,10 +104,10 @@ export class MobileControlsManager {
         this.buttonsContainer.appendChild(this.closeButton);
         this.buttonsContainer.appendChild(this.attackButton);
 
-        // Setup button event listeners
-        this.setupButtonListeners(this.jumpButton, 'isJumpPressed');
-        this.setupButtonListeners(this.attackButton, 'isAttackPressed');
-        this.setupButtonListeners(this.closeButton, 'isCancelPressed');
+        // Setup button event listeners with skill mode support
+        this.setupButtonListeners(this.jumpButton, 'isJumpPressed', 'isSkill1Pressed');
+        this.setupButtonListeners(this.attackButton, 'isAttackPressed', 'isSkill3Pressed');
+        this.setupButtonListeners(this.closeButton, 'isCancelPressed', 'isSkill2Pressed');
 
         // Create inventory button (top center) - using Select button convention
         this.inventoryButton = this.createButton('', 'mobile-inventory-btn');
@@ -131,27 +146,75 @@ export class MobileControlsManager {
         return button;
     }
 
-    private setupButtonListeners(button: HTMLButtonElement, stateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInventoryPressed' | 'isCancelPressed') {
+    private setupButtonListeners(button: HTMLButtonElement, normalStateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInventoryPressed' | 'isCancelPressed', skillStateKey?: 'isSkill1Pressed' | 'isSkill2Pressed' | 'isSkill3Pressed') {
         button.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            this[stateKey] = true;
+            if (this.isSkillMode && skillStateKey) {
+                this[skillStateKey] = true;
+            } else {
+                this[normalStateKey] = true;
+            }
         });
 
         button.addEventListener('touchend', (e) => {
             e.preventDefault();
-            this[stateKey] = false;
+            if (this.isSkillMode && skillStateKey) {
+                this[skillStateKey] = false;
+                // Exit skill mode after using a skill
+                this.toggleSkillMode();
+            } else {
+                this[normalStateKey] = false;
+            }
         });
 
         button.addEventListener('touchcancel', (e) => {
             e.preventDefault();
-            this[stateKey] = false;
+            if (this.isSkillMode && skillStateKey) {
+                this[skillStateKey] = false;
+            } else {
+                this[normalStateKey] = false;
+            }
         });
+    }
+
+    private setupSkillToggleListener() {
+        this.skillToggleButton.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            this.toggleSkillMode();
+        });
+    }
+
+    private toggleSkillMode() {
+        this.isSkillMode = !this.isSkillMode;
+        this.updateButtons();
+    }
+
+    private updateButtons() {
+        if (this.isSkillMode) {
+            // Change to skill labels
+            this.jumpButton.textContent = '';
+            this.jumpButton.classList.add('skill');
+            this.closeButton.textContent = '';
+            this.closeButton.classList.add('skill');
+            this.attackButton.textContent = '';
+            this.attackButton.classList.add('skill');
+            this.skillToggleButton.classList.add('active');
+        } else {
+            // Change back to normal labels
+            this.jumpButton.textContent = 'A';
+            this.jumpButton.classList.remove('skill');
+            this.closeButton.textContent = 'B';
+            this.closeButton.classList.remove('skill');
+            this.attackButton.textContent = 'X';
+            this.attackButton.classList.remove('skill');
+            this.skillToggleButton.classList.remove('active');
+        }
     }
 
     /**
      * Check if a button was just pressed this frame (edge detection)
      */
-    public wasJustPressed(button: 'jump' | 'attack' | 'inventory'): boolean {
+    public wasJustPressed(button: 'jump' | 'attack' | 'inventory' | 'skill1' | 'skill2' | 'skill3'): boolean {
         switch (button) {
             case 'jump':
                 return this.isJumpPressed && !this.previousJumpState;
@@ -159,6 +222,12 @@ export class MobileControlsManager {
                 return this.isAttackPressed && !this.previousAttackState;
             case 'inventory':
                 return this.isInventoryPressed && !this.previousInventoryState;
+            case 'skill1':
+                return this.isSkill1Pressed && !this.previousSkill1State;
+            case 'skill2':
+                return this.isSkill2Pressed && !this.previousSkill2State;
+            case 'skill3':
+                return this.isSkill3Pressed && !this.previousSkill3State;
             default:
                 return false;
         }
@@ -167,7 +236,7 @@ export class MobileControlsManager {
     /**
      * Check if a button was just released this frame
      */
-    public wasJustReleased(button: 'jump' | 'attack' | 'inventory'): boolean {
+    public wasJustReleased(button: 'jump' | 'attack' | 'inventory' | 'skill1' | 'skill2' | 'skill3'): boolean {
         switch (button) {
             case 'jump':
                 return !this.isJumpPressed && this.previousJumpState;
@@ -175,6 +244,12 @@ export class MobileControlsManager {
                 return !this.isAttackPressed && this.previousAttackState;
             case 'inventory':
                 return !this.isInventoryPressed && this.previousInventoryState;
+            case 'skill1':
+                return !this.isSkill1Pressed && this.previousSkill1State;
+            case 'skill2':
+                return !this.isSkill2Pressed && this.previousSkill2State;
+            case 'skill3':
+                return !this.isSkill3Pressed && this.previousSkill3State;
             default:
                 return false;
         }
@@ -187,6 +262,9 @@ export class MobileControlsManager {
         this.previousJumpState = this.isJumpPressed;
         this.previousAttackState = this.isAttackPressed;
         this.previousInventoryState = this.isInventoryPressed;
+        this.previousSkill1State = this.isSkill1Pressed;
+        this.previousSkill2State = this.isSkill2Pressed;
+        this.previousSkill3State = this.isSkill3Pressed;
     }
 
     /**
@@ -200,6 +278,17 @@ export class MobileControlsManager {
         if (this.buttonsContainer) this.buttonsContainer.style.display = display;
         if (this.inventoryButton) this.inventoryButton.style.display = display;
         if (this.closeButton) this.closeButton.style.display = display;
+        if (this.skillToggleButton) this.skillToggleButton.style.display = display;
+    }
+
+    /**
+     * Show or hide skills toggle button (for hiding when menus/inventory are open)
+     */
+    public setSkillsButtonVisible(visible: boolean) {
+        if (!this.isMobileDevice) return;
+
+        const display = visible ? 'block' : 'none';
+        if (this.skillToggleButton) this.skillToggleButton.style.display = display;
     }
 
     /**
@@ -231,6 +320,10 @@ export class MobileControlsManager {
 
         if (this.closeButton && this.closeButton.parentNode) {
             this.closeButton.parentNode.removeChild(this.closeButton);
+        }
+
+        if (this.skillToggleButton && this.skillToggleButton.parentNode) {
+            this.skillToggleButton.parentNode.removeChild(this.skillToggleButton);
         }
     }
 }

@@ -2,7 +2,7 @@ import * as THREE from 'three';
 
 /**
  * Shared utilities for particle shader calculations
- * Used by particle systems (Portal, HealingStation, etc.)
+ * Used by particle systems (Teleporter, HealingStation, etc.)
  */
 
 // Camera FOV constant (45 degrees) - matches Game.ts camera setup

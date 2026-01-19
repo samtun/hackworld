@@ -268,3 +268,40 @@ The game includes a comprehensive save/load system managed by `SaveManager.ts` a
 - ❌ Don't leave excessive debug logging (use console.log sparingly for important events only)
 - ❌ Don't forget to dispose of resources (geometries, materials, bodies)
 - ❌ Don't add or change comments in the code to explain changes to previous versions
+- ❌ Don't forget to consider all control schemes when implementing new controls or input features
+
+## Control Schemes
+The game supports three control schemes that must all be considered when adding or modifying controls:
+
+### 1. Keyboard Controls
+- WASD/Arrow keys for movement
+- Space for jump
+- K for attack
+- Q for modifier (skills)
+- I for inventory
+- Enter for interact/select
+- Escape for cancel/close
+
+### 2. Gamepad Controls (Xbox Controller)
+- Left Stick for movement
+- A button (button 0) for jump/interact
+- B button (button 1) for cancel
+- X button (button 2) for attack
+- L1 shoulder button (button 4) for skill modifier
+- Select (button 8) for inventory
+- D-Pad for navigation
+
+### 3. Mobile Touch Controls
+- Virtual joystick for movement (bottom-left)
+- A, B, X buttons (bottom-right) for jump, cancel, attack
+- Skills button (top-left) toggles A/B/X buttons between normal mode and skill mode
+- When in skill mode: A=Laser, B=Heal, X=Area
+- Buttons automatically revert to normal mode after using a skill
+- Inventory button (top-right)
+
+**CRITICAL**: When adding new input features:
+1. Implement for all three control schemes (keyboard, gamepad, mobile)
+2. Update `InputManager.ts` with keyboard and gamepad mappings
+3. Update `MobileControlsManager.ts` with mobile touch controls
+4. Test all control schemes to ensure feature parity
+5. Update README.md with all control mappings

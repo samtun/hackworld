@@ -35,8 +35,8 @@ export class MovementTest extends BaseStage {
         await this.loadEnvironmentMap();
         this.createFloorCollider();
 
-        // Portal back to Lobby
-        this.createPortal(new CANNON.Vec3(0, 0.02, 0), 0x0000ff, Lobby.getMetadata().id);
+        // Teleporter back to Lobby
+        this.createTeleporter(new CANNON.Vec3(0, 0, -8), Lobby.getMetadata().id);
 
         const geo = new THREE.PlaneGeometry(50, 50);
         geo.rotateX(-Math.PI / 2);
@@ -46,12 +46,18 @@ export class MovementTest extends BaseStage {
         this.meshes.push(floorPlane);
 
         // Obstacles
-        for (let i = 0; i < 5; i++) {
-            this.createBox(2, 0.1, 2, new CANNON.Vec3(4 + i * 2, i * 0.2, 0));
+        let yPos = -0.45;
+        for (let i = 0; i < 10; i++) {
+            this.createBox(2, 1.0, 2, new CANNON.Vec3(4 + i * 2, yPos, 0));
+            yPos += i * 0.05;
         }
 
-        for (let i = 0; i < 5; i++) {
-            this.createBox(2, 1, 2, new CANNON.Vec3(-4 - i * 2, 0.5 + i * 1, 0));
+        let xDepth = 1;
+        let accXDepth = xDepth;
+        for (let i = 0; i < 10; i++) {
+            this.createBox(xDepth, 1, 3, new CANNON.Vec3(-4 - accXDepth, i, 0));
+            accXDepth += xDepth;
+            xDepth += i * 0.2;
         }
 
         for (let i = 0; i <= 24; i++) {

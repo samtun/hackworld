@@ -4,7 +4,7 @@ import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { Enemy } from '../enemies/Enemy';
 import { LargeEnemy } from '../enemies/LargeEnemy';
 import { AssetManager } from '../AssetManager';
-import { Portal } from '../Portal';
+import { Teleporter } from '../Teleporter';
 import { Player } from '../Player';
 import { Npc } from '../npcs/Npc';
 
@@ -29,7 +29,7 @@ export abstract class BaseStage {
     protected physicsMaterial: CANNON.Material;
     protected assetManager: AssetManager;
 
-    portal?: Portal;
+    teleporter?: Teleporter;
     bodies: CANNON.Body[] = [];
     meshes: (THREE.Mesh | THREE.Group | THREE.Object3D)[] = [];
     enemies: Enemy[] = [];
@@ -111,15 +111,14 @@ export abstract class BaseStage {
         }
         this.meshes = [];
 
+        // Clean up all NPCs (including teleporter)
         for (const npc of this.npcs) {
             npc.cleanup(this.scene, this.physicsWorld);
         }
+        this.npcs.clear();
 
-        // Remove portal if exists
-        if (this.portal) {
-            this.portal.cleanup(this.scene);
-            this.portal = undefined;
-        }
+        // Clear teleporter reference
+        this.teleporter = undefined;
     }
 
     /**
@@ -165,10 +164,18 @@ export abstract class BaseStage {
     }
 
     /**
-     * Create portal
+     * Create teleporter
      */
-    protected createPortal(position: CANNON.Vec3, color: number, destination: string): void {
-        this.portal = new Portal(this.scene, position, color, destination);
+    protected createTeleporter(position: CANNON.Vec3, destination: string): void {
+        this.teleporter = new Teleporter(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            position,
+            destination
+        );
+        // Add teleporter to npcs set so it's handled like any other NPC
+        this.npcs.add(this.teleporter);
     }
 
     /**
@@ -188,11 +195,11 @@ export abstract class BaseStage {
     }
 
     /**
-     * Update portal particles
+     * Update teleporter particles
      */
     update(dt: number, _: Player): void {
-        if (this.portal) {
-            this.portal.update(dt);
+        if (this.teleporter) {
+            this.teleporter.update(dt);
         }
 
         // Update mixers
@@ -205,16 +212,4 @@ export abstract class BaseStage {
         }
     }
 
-    /**
-     * Check if player is near portal
-     */
-    checkPortalInteraction(playerPosition: THREE.Vector3): string | null {
-        if (this.portal) {
-            const dist = playerPosition.distanceTo(this.portal.mesh.position);
-            if (dist < 1.5) {
-                return this.portal.destination || null;
-            }
-        }
-        return null;
-    }
 }

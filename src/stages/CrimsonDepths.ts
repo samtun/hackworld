@@ -36,8 +36,8 @@ export class CrimsonDepths extends BaseStage {
         await this.loadEnvironmentMap();
         this.createFloorCollider();
 
-        // Portal back to Lobby
-        this.createPortal(new CANNON.Vec3(-10, 0.02, -10), 0x0088ff, Lobby.getMetadata().id);
+        // Teleporter back to Lobby
+        this.createTeleporter(new CANNON.Vec3(-10, 0.02, -10), Lobby.getMetadata().id);
 
         // Dungeon Obstacles
         this.createBox(4, 1, 4, new CANNON.Vec3(5, 0.5, 5));

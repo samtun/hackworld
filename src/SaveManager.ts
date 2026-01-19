@@ -150,7 +150,7 @@ export class SaveManager {
         const player = this.playerRegistry.activePlayers[0];
         const cardCollection = CardCollection.Instance;
         const progressManager = GameProgressManager.Instance;
-        
+
         const saveData: SaveData = {
             version: SaveManager.SAVE_VERSION,
             timestamp: new Date().toISOString(),

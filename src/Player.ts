@@ -12,7 +12,10 @@ import { ChipItem } from './items/chips/ChipItem';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { BaseMesh } from './BaseMesh';
 import { StatType } from './StatType';
-
+import { Skill } from './skills/Skill';
+import { LaserBeamSkill } from './skills/LaserBeamSkill';
+import { HealingSkill } from './skills/HealingSkill';
+import { AreaAttackSkill } from './skills/AreaAttackSkill';
 
 enum ActionType {
     Idle = 'Idle',
@@ -194,6 +197,11 @@ export class Player extends BaseMesh {
     private actions: Record<string, THREE.AnimationAction> = {};
     private currentAction: THREE.AnimationAction | null = null;
 
+    // Skills
+    public skills: Skill[] = [];
+    private isUsingSkill: boolean = false;
+    private skillAnimationTimer: number = 0;
+
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
         super('models/main_character.glb');
         this.scene = scene;
@@ -290,7 +298,20 @@ export class Player extends BaseMesh {
         });
 
         world.addBody(this.body);
+
+
+        // Initialize skills
+        this.skills = [
+            new LaserBeamSkill(this.resetSkillUsage),
+            new HealingSkill(this.resetSkillUsage),
+            new AreaAttackSkill(this.resetSkillUsage)
+        ];
     }
+
+    private resetSkillUsage = () => {
+        this.isUsingSkill = false;
+        this.skillAnimationTimer = 0;
+    };
 
     equipWeapon(itemId: string) {
         const weaponItem = this.inventory.find(item => item.id === itemId);
@@ -557,7 +578,7 @@ export class Player extends BaseMesh {
         }
     }
 
-    private updateAnimations() {
+    private updateAnimations(preventMovement: boolean) {
         if (this.isDead) {
             return;
         }
@@ -571,6 +592,14 @@ export class Player extends BaseMesh {
         // High priority: Take Hit
         const takeHitAction = this.actions[ActionType.TakeHit];
         if (this.currentAction === takeHitAction && takeHitAction && takeHitAction.isRunning()) {
+            return;
+        }
+
+        // High priority: Skill animation
+        if (this.isUsingSkill) {
+            if (this.currentAction !== this.actions[ActionType.AttackOneHanded]) {
+                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? ActionType.AttackTwoHanded : ActionType.AttackOneHanded, 0.001);
+            }
             return;
         }
 
@@ -592,7 +621,7 @@ export class Player extends BaseMesh {
         }
 
         // Run / Idle
-        const isMoving = this.input.getMovementVector().length() > 0.1;
+        const isMoving = !preventMovement && this.input.getMovementVector().length() > 0.1;
         if (isMoving) {
             const action = this.weapon.weaponType !== WeaponType.HAMMER ? ActionType.RunOneHanded : ActionType.RunTwoHanded;
             this.fadeToAction(action, 0.05);
@@ -601,16 +630,34 @@ export class Player extends BaseMesh {
         }
     }
 
-    update(dt: number, isNearInteractive: boolean = false) {
+    update(dt: number, isNearInteractive: boolean = false, preventMovement: boolean = false) {
         // Update animations
-        if (this.mixer) this.mixer.update(dt);
-        this.updateAnimations();
+        if (this.mixer) {
+            this.mixer.update(dt);
+        }
+
+        this.updateAnimations(preventMovement);
+
+        if (preventMovement) {
+            this.haltMovement();
+            this.syncPosition();
+            return;
+        }
 
         if (this.isDead) return;
+
+        // Update skills
+        this.updateSkills(dt);
+
+        // Handle skill animation (short-circuits the rest of the update)
+        if (this.handleSkillAnimation(dt)) return;
 
         // Handle dash and charging (these short-circuit the rest of the update)
         if (this.handleDash(dt)) return;
         if (this.handleCharging(dt)) return;
+
+        // Skills handling
+        this.handleSkills();
 
         // Movement and physics sync
         this.handleMovement(dt, isNearInteractive);
@@ -664,8 +711,7 @@ export class Player extends BaseMesh {
             }
         }
 
-        this.body.velocity.x = 0;
-        this.body.velocity.z = 0;
+        this.haltMovement();
         this.syncPosition();
         return true;
     }
@@ -679,15 +725,19 @@ export class Player extends BaseMesh {
 
         // Block movement during level-up animation
         if (this.isLevelingUp) {
-            this.body.velocity.x = 0;
-            this.body.velocity.z = 0;
+            this.haltMovement();
+            return;
+        }
+
+        // Block movement during skill usage
+        if (this.isUsingSkill) {
+            this.haltMovement();
             return;
         }
 
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
-            this.body.velocity.x *= 0.9;
-            this.body.velocity.z *= 0.9;
+            this.haltMovement();
             return;
         }
 
@@ -754,8 +804,6 @@ export class Player extends BaseMesh {
                 const slopeAngle = Math.acos(Math.max(-1, Math.min(1, normal.y))); // Angle from vertical (up vector is 0,1,0)
                 const slopeAngleDegrees = slopeAngle * (180 / Math.PI);
 
-                console.log(`Slope angle: ${slopeAngleDegrees.toFixed(2)} degrees`);
-
                 // If on a slope less than 45 degrees make the body static to avoid sliding
                 if (slopeAngleDegrees < 45
                     && this.body.velocity.y < 0
@@ -775,8 +823,7 @@ export class Player extends BaseMesh {
                 this.jumpCooldownTimer = 1.0;
             }
         } else {
-            this.body.velocity.x *= 0.8;
-            this.body.velocity.z *= 0.8;
+            this.haltMovement();
         }
     }
 
@@ -818,6 +865,58 @@ export class Player extends BaseMesh {
         }
     }
 
+    private updateSkills(dt: number): void {
+        // Update all skill cooldowns and particles
+        this.skills.forEach(skill => skill.update(dt));
+    }
+
+    private handleSkills(): void {
+        // Check for skill inputs
+        if (this.input.isSkill1JustPressed()) {
+            this.useSkill(0); // Laser Beam
+        } else if (this.input.isSkill2JustPressed()) {
+            this.useSkill(1); // Healing
+        } else if (this.input.isSkill3JustPressed()) {
+            this.useSkill(2); // Area Attack
+        }
+    }
+
+    private useSkill(skillIndex: number): void {
+        if (this.isUsingSkill || this.weapon.isAttacking || this.isChargingAttack || this.isDashing) {
+            console.log('Cannot use skill - busy with another action');
+            return;
+        }
+
+        const skill = this.skills[skillIndex];
+        if (!skill) {
+            console.log('Skill not found');
+            return;
+        }
+
+        // Execute the skill
+        if (skill.use(this, this.scene, this.world)) {
+            console.log(`Used skill: ${skill.name}`);
+
+            // Start skill animation
+            this.isUsingSkill = true;
+            this.skillAnimationTimer = 0;
+
+            // Stop movement during skill
+            this.haltMovement();
+        }
+    }
+
+    private handleSkillAnimation(dt: number): boolean {
+        if (!this.isUsingSkill) return false;
+
+        this.skillAnimationTimer += dt;
+
+        // Keep player stopped during animation
+        this.haltMovement();
+        this.syncPosition();
+        return true;
+    }
+
     syncPosition() {
         // Align the visual mesh with the physics body using the body's shape dimensions,
         // not the world-space AABB, to avoid incorrect offsets as the player moves.
@@ -834,9 +933,36 @@ export class Player extends BaseMesh {
         this.mesh.position.copy(newPosition);
     }
 
+    /**
+     * Gradually slow down horizontal movement by a factor
+     */
+    private haltMovement(): void {
+        this.body.velocity.x = 0;
+        this.body.velocity.z = 0;
+    }
+
     move(position: CANNON.Vec3): void {
         this.body.position.copy(position);
         this.syncPosition();
+    }
+
+    /**
+     * Get the player's forward direction vector
+     */
+    getForwardDirection(): THREE.Vector3 {
+        const forward = new THREE.Vector3(0, 0, 1);
+        forward.applyQuaternion(this.mesh.quaternion);
+        forward.y = 0;
+        forward.normalize();
+        return forward;
+    }
+
+    /**
+     * Get the player's Y-axis rotation in radians
+     */
+    getRotationY(): number {
+        const forward = this.getForwardDirection();
+        return Math.atan2(forward.x, forward.z);
     }
 
     private handleDashHit(enemy: Enemy) {

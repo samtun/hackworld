@@ -211,17 +211,27 @@ export class World {
     async preloadCommonAssets(): Promise<void> {
         console.log("Preloading common assets ...");
         const commonAssets = [
+            // Weapons
             'models/aegis_sword.glb',
             'models/rune_blade.glb',
             'models/fierce_lance.glb',
             'models/battle_hawk.glb',
+            // NPCs
             'models/trader_weapons.glb',
             'models/npc_placeholder.glb',
             'models/healing_station.glb',
+            'models/xdata_terminal.glb',
+            'models/mainframe.glb',
+            'models/teleporter.glb',
+            // Stages
             'models/lobby.glb',
             'models/lobby_collider.glb',
+            // Characters
             'models/main_character.glb',
-            'models/xdata_terminal.glb',
+            // Effects
+            'models/heal_fx.glb',
+            'models/area_fx.glb',
+            'models/laser_fx.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);
@@ -295,7 +305,7 @@ export class World {
         this.gridPlaneMaterial.uniforms.u_time.value += dt;
         this.gridPlaneMaterial.uniforms.u_cameraPosition.value.copy(cameraPosition);
 
-        // Update stage (portals, etc.)
+        // Update stage (teleporters, etc.)
         this.currentStage.update(dt, player);
 
         // Update systems that operate across stages (healing, etc.)
@@ -335,7 +345,7 @@ export class World {
             if (enemy.isDead) {
                 enemy.cleanup();
                 this.currentStage.enemies.splice(i, 1);
-                
+
                 // Check if all enemies are defeated in a dungeon stage
                 this.checkStageCompletion();
             }
@@ -376,22 +386,22 @@ export class World {
      */
     private checkStageCompletion(): void {
         if (!this.currentStage) return;
-        
+
         // Only check for dungeon stages (not lobby)
         if (this.currentStage.id === 'lobby') return;
-        
+
         // Only notify once per stage load
         if (this.hasNotifiedStageCompletion) return;
-        
+
         // Check if all enemies are defeated
         if (this.enemies.length === 0) {
             this.hasNotifiedStageCompletion = true;
-            
+
             // Get stage index from metadata
             const stageClass = this.currentStage.constructor as typeof BaseStage;
             const metadata = stageClass.getMetadata();
             const stageIndex = metadata.stageIndex;
-            
+
             if (stageIndex && stageIndex > 0) {
                 const progressManager = GameProgressManager.Instance;
                 progressManager.markBossDefeated(stageIndex);
@@ -399,11 +409,6 @@ export class World {
                 console.log('Return to the Mainframe in the Lobby for your next assignment.');
             }
         }
-    }
-
-    checkPortalInteraction(playerPosition: THREE.Vector3): string | null {
-        if (!this.currentStage) return null;
-        return this.currentStage.checkPortalInteraction(playerPosition);
     }
 
     getAllNpcs(): Set<Npc> {

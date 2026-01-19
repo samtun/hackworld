@@ -40,9 +40,9 @@ export const HintConfigs = {
         keyboard: '<span class="key-icon">ENTER</span> Pick up',
         controller: '<span class="btn-icon xbox-a">A</span> Pick up'
     },
-    enterPortal: {
-        keyboard: '<span class="key-icon">ENTER</span> Enter Portal',
-        controller: '<span class="btn-icon xbox-a">A</span> Enter Portal'
+    enterTeleporter: {
+        keyboard: '<span class="key-icon">ENTER</span> Enter Teleporter',
+        controller: '<span class="btn-icon xbox-a">A</span> Enter Teleporter'
     },
     continue: {
         keyboard: '<span class="key-icon">ENTER</span> Continue',

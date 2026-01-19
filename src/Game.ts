@@ -19,6 +19,7 @@ import { CoreTrader } from './items/cores/CoreTrader';
 import { CardManager } from './items/cards/CardManager';
 import { InteractiveEntityType } from './InteractiveEntityType';
 import { getHint, HintConfigs } from './ui/InputHints';
+import { Teleporter } from './Teleporter';
 
 export class Game {
     scene: THREE.Scene;
@@ -191,6 +192,17 @@ export class Game {
         this.player.onTechGained = (position: CANNON.Vec3) => {
             this.world.spawnTechIndicator(position);
         };
+
+        // Set up teleporter callback for handling teleporter interactions
+        Teleporter.setTeleporterCallback((destination: string) => {
+            if (destination === 'selection') {
+                this.dungeonSelection.show((dungeonId: string) => {
+                    this.switchScene(dungeonId);
+                });
+            } else {
+                this.switchScene(destination);
+            }
+        });
     }
 
     switchScene(destination: string) {
@@ -206,7 +218,7 @@ export class Game {
             this.player.body.velocity.set(0, 0, 0);
             if (this.player.body.angularVelocity) this.player.body.angularVelocity.set(0, 0, 0);
 
-            // Update last teleporter position when entering a stage via portal
+            // Update last teleporter position when entering a stage via teleporter
             // This is used as the respawn point if the player dies
             this.lastTeleporterPosition.copy(this.player.body.position);
 
@@ -290,9 +302,9 @@ export class Game {
 
         // Update particle scale factors for screen-independent sizing
         if (this.world.currentStage) {
-            // Update portal particles if exists
-            if (this.world.currentStage.portal) {
-                this.world.currentStage.portal.updateScaleFactor();
+            // Update teleporter particles if exists
+            if (this.world.currentStage.teleporter) {
+                this.world.currentStage.teleporter.updateScaleFactor();
             }
 
             // Update healing station particles if exists (Lobby specific)
@@ -429,6 +441,11 @@ export class Game {
             this.cardManager.update(this.player, this.input);
         }
 
+        // Update mobile skills button visibility based on any menu being open
+        if (this.input.mobileControls) {
+            this.input.mobileControls.setSkillsButtonVisible(!this.isAnyMenuOpen());
+        }
+
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.isAnyMenuOpen();
 
@@ -449,7 +466,7 @@ export class Game {
                 this.world.pickupXDataDrop(xDataDropNearby, this.player);
             }
 
-            // Check NPCs (including dialogue NPCs and Ford)
+            // Check NPCs
             const allNpcs = this.world.getAllNpcs();
             for (const npc of allNpcs) {
                 if (npc.isPlayerNearby(this.player.position)) {
@@ -471,7 +488,7 @@ export class Game {
                                 if (npc.interactionCallback) {
                                     npc.interact();
                                 } else {
-                                    // Fallback for NPCs with no callback (like Nyleth) - show dialogue again
+                                    // Fallback for NPCs with no callback (dialogue only NPCs) - show dialogue again
                                     this.npcDialogue.show(npc);
                                 }
                             }
@@ -537,47 +554,24 @@ export class Game {
                     }
                 }
             }
-
-            // Check portal
-            if (!nearbyInteractive) {
-                const destination = this.world.checkPortalInteraction(this.player.position);
-                if (destination) {
-                    nearbyInteractive = {
-                        type: InteractiveEntityType.PORTAL,
-                        data: destination,
-                        hint: getHint(HintConfigs.enterPortal, this.input),
-                        action: () => {
-                            if (destination === 'selection') {
-                                this.dungeonSelection.show((dungeonId: string) => {
-                                    this.switchScene(dungeonId);
-                                });
-                            } else {
-                                this.switchScene(destination);
-                            }
-                        }
-                    };
-                }
-            }
         }
 
         const isNearInteractive = nearbyInteractive !== null;
 
-        // Update Game Logic (only if no menu is open)
-        if (!anyMenuOpen) {
-            // Step Physics
-            this.physicsWorld.step(1 / 60, dt, 3);
+        // Update Game Logic
+        this.physicsWorld.step(1 / 60, dt, 3);
 
-            if (this.debugMode && this.physicsDebugger) {
-                this.physicsDebugger.update();
-            }
-
-            // Prevent jumping in the frame(s) immediately after interacting
-            const preventJump = isNearInteractive || this.wasJustInteracted;
-            this.player.update(dt, preventJump);
-            this.world.update(dt, this.player, this.camera.position);
+        if (this.debugMode && this.physicsDebugger) {
+            this.physicsDebugger.update();
         }
 
-        this.ui.update(this.player);
+        // Prevent jumping in the frame(s) immediately after interacting
+        const preventJump = isNearInteractive || this.wasJustInteracted;
+        // Prevent movement when in a menu
+        this.player.update(dt, preventJump, anyMenuOpen);
+        this.world.update(dt, this.player, this.camera.position);
+
+        this.ui.update(this.player, dt);
 
         // Handle death overlay input
         this.ui.handleDeathOverlayInput(this.input);

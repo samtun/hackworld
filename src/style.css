@@ -252,6 +252,13 @@ body {
     border-color: rgb(80, 180, 80);
 }
 
+.mobile-jump-btn.skill {
+    background-image: url('/images/ui_icons/laser.png');
+    background-size: 70% 70%;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
 .mobile-attack-btn {
     color: rgb(60, 169, 232);
     border-color: rgb(60, 169, 232);
@@ -260,6 +267,13 @@ body {
 .mobile-attack-btn:active {
     color: rgb(30, 144, 255);
     border-color: rgb(30, 144, 255);
+}
+
+.mobile-attack-btn.skill {
+    background-image: url('/images/ui_icons/area.png');
+    background-size: 70% 70%;
+    background-repeat: no-repeat;
+    background-position: center;
 }
 
 .mobile-close-btn {
@@ -272,13 +286,44 @@ body {
     border-color: rgb(250, 80, 80);
 }
 
+.mobile-close-btn.skill {
+    background-image: url('/images/ui_icons/heal.png');
+    background-size: 70% 70%;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.mobile-skill-toggle-btn {
+    width: 65px;
+    height: 65px;
+    font-size: 14px;
+    margin: 0 auto;
+    color: rgba(200, 200, 200, 0.9);
+    background-image: url('/images/ui_icons/switch.png');
+    background-size: 50% 50%;
+    background-repeat: no-repeat;
+    background-position: center;
+    border-color: rgba(200, 200, 200, 0.6);
+}
+
+.mobile-skill-toggle-btn.active {
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.9);
+}
+
+.mobile-skill-toggle-btn:active {
+    color: rgba(180, 180, 180, 0.9);
+    border-color: rgba(180, 180, 180, 0.6);
+}
+
 .mobile-inventory-btn {
     position: fixed;
     top: 20px;
     right: 20px;
     color: #ffffff;
-    background-image: url('/images/user_icon.png');
+    background-image: url('/images/ui_icons/inventory.png');
     background-repeat: no-repeat;
+    background-size: 70% 70%;
     background-position: center;
     font-family: 'Share Tech', sans-serif;
     font-size: 18px;
