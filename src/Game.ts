@@ -125,6 +125,16 @@ export class Game {
         // Resize Handler
         window.addEventListener('resize', () => this.onWindowResize(), false);
 
+        // Auto-save when tab becomes hidden (mobile/desktop)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                // Only auto-save if we're not on the start screen and have an active player
+                if (this.currentScene !== 'startScreen' && this.saveManager) {
+                    this.saveManager.saveToLocalStorage();
+                }
+            }
+        });
+
         // Debug Mode Setup
         if (import.meta.env.DEV) {
             this.physicsDebugger = CannonDebugger(this.scene, this.physicsWorld, {
@@ -328,6 +338,14 @@ export class Game {
                     this.input.initializeMobileControls();
                     this.clock.getDelta(); // Reset clock
                     this.isTransitioning = false;
+                    
+                    // Try to load auto-save after transition
+                    if (this.saveManager.hasLocalStorageSave()) {
+                        const loaded = this.saveManager.loadFromLocalStorage();
+                        if (loaded) {
+                            console.log('Auto-save loaded successfully');
+                        }
+                    }
                 });
             }
             return;

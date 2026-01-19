@@ -15,10 +15,12 @@ export class SaveManagerUI {
     isVisible: boolean = false;
     private saveCallback?: () => void;
     private loadCallback?: (file: File) => Promise<void>;
+    private resetCallback?: () => void;
 
     // UI Elements
     private saveButton!: HTMLDivElement;
     private loadButton!: HTMLDivElement;
+    private resetButton!: HTMLDivElement;
     private fileInput!: HTMLInputElement;
     private playtimeDisplay!: HTMLDivElement;
     private saveStatusText!: HTMLDivElement;
@@ -26,7 +28,7 @@ export class SaveManagerUI {
     private lastSelectState: boolean = false;
     private lastNavigateLeftState: boolean = false;
     private lastNavigateRightState: boolean = false;
-    private selectedButton: 'save' | 'load' = 'save';
+    private selectedButton: 'save' | 'load' | 'reset' = 'save';
 
     private menuManager: MenuManager;
     private uiManager: UIManager;
@@ -121,6 +123,20 @@ export class SaveManagerUI {
         this.loadButton.style.fontFamily = MENU_STYLES.FONT_FAMILY;
         buttonContainer.appendChild(this.loadButton);
 
+        // Reset button
+        this.resetButton = document.createElement('div');
+        this.resetButton.textContent = 'Reset Game';
+        this.resetButton.style.padding = '10px 20px';
+        this.resetButton.style.backgroundColor = '#f44336';
+        this.resetButton.style.border = '2px solid #aaa';
+        this.resetButton.style.borderRadius = '5px';
+        this.resetButton.style.cursor = 'pointer';
+        this.resetButton.style.fontSize = '16px';
+        this.resetButton.style.textAlign = 'center';
+        this.resetButton.style.minWidth = '120px';
+        this.resetButton.style.fontFamily = MENU_STYLES.FONT_FAMILY;
+        buttonContainer.appendChild(this.resetButton);
+
         // Hidden file input for load functionality
         this.fileInput = document.createElement('input');
         this.fileInput.type = 'file';
@@ -152,12 +168,14 @@ export class SaveManagerUI {
      * @param playtime - Current playtime formatted as HH:MM:SS
      * @param onSave - Callback to execute when save is confirmed
      * @param onLoad - Callback to execute when a file is selected for loading
+     * @param onReset - Callback to execute when reset is confirmed
      */
-    show(playtime: string, onSave: () => void, onLoad: (file: File) => Promise<void>): void {
+    show(playtime: string, onSave: () => void, onLoad: (file: File) => Promise<void>, onReset: () => void): void {
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.saveCallback = onSave;
         this.loadCallback = onLoad;
+        this.resetCallback = onReset;
         this.playtimeDisplay.textContent = `Playtime: ${playtime}`;
         this.saveStatusText.style.display = 'none';
         this.selectedButton = 'save';
@@ -175,6 +193,7 @@ export class SaveManagerUI {
         this.container.style.display = 'none';
         this.saveCallback = undefined;
         this.loadCallback = undefined;
+        this.resetCallback = undefined;
 
         // Hide centralized control hints when menu closes
         this.uiManager.hideControlHints();
@@ -195,11 +214,22 @@ export class SaveManagerUI {
             this.saveButton.style.backgroundColor = '#4CAF50';
             this.loadButton.style.border = '2px solid #aaa';
             this.loadButton.style.backgroundColor = '#2196F3';
-        } else {
+            this.resetButton.style.border = '2px solid #aaa';
+            this.resetButton.style.backgroundColor = '#f44336';
+        } else if (this.selectedButton === 'load') {
             this.saveButton.style.border = '2px solid #aaa';
             this.saveButton.style.backgroundColor = '#4CAF50';
             this.loadButton.style.border = '2px solid #fff';
             this.loadButton.style.backgroundColor = '#2196F3';
+            this.resetButton.style.border = '2px solid #aaa';
+            this.resetButton.style.backgroundColor = '#f44336';
+        } else {
+            this.saveButton.style.border = '2px solid #aaa';
+            this.saveButton.style.backgroundColor = '#4CAF50';
+            this.loadButton.style.border = '2px solid #aaa';
+            this.loadButton.style.backgroundColor = '#2196F3';
+            this.resetButton.style.border = '2px solid #fff';
+            this.resetButton.style.backgroundColor = '#f44336';
         }
     }
 
@@ -223,17 +253,21 @@ export class SaveManagerUI {
 
         // Only change selection on button press (not held) and respect boundaries
         if (leftPressed && !this.lastNavigateLeftState) {
-            // Only switch if we're on the right button (load)
             if (this.selectedButton === 'load') {
                 this.selectedButton = 'save';
+                this.updateButtonHighlight();
+            } else if (this.selectedButton === 'reset') {
+                this.selectedButton = 'load';
                 this.updateButtonHighlight();
             }
         }
 
         if (rightPressed && !this.lastNavigateRightState) {
-            // Only switch if we're on the left button (save)
             if (this.selectedButton === 'save') {
                 this.selectedButton = 'load';
+                this.updateButtonHighlight();
+            } else if (this.selectedButton === 'load') {
+                this.selectedButton = 'reset';
                 this.updateButtonHighlight();
             }
         }
@@ -251,6 +285,8 @@ export class SaveManagerUI {
             } else if (this.selectedButton === 'load') {
                 // Trigger file input
                 this.fileInput.click();
+            } else if (this.selectedButton === 'reset' && this.resetCallback) {
+                this.resetCallback();
             }
         }
 
