@@ -150,6 +150,10 @@ export class SaveManager {
      */
     save(): SaveData {
         const player = this.playerRegistry.activePlayers[0];
+        if (!player) {
+            throw new Error('Cannot save: No active player found');
+        }
+        
         const cardCollection = CardCollection.Instance;
         const progressManager = GameProgressManager.Instance;
 
@@ -279,6 +283,11 @@ export class SaveManager {
     saveToLocalStorage(): void {
         try {
             const player = this.playerRegistry.activePlayers[0];
+            if (!player) {
+                console.warn('Cannot auto-save: No active player found');
+                return;
+            }
+            
             const cardCollection = CardCollection.Instance;
             const progressManager = GameProgressManager.Instance;
 

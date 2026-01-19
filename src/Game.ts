@@ -128,8 +128,8 @@ export class Game {
         // Auto-save when tab becomes hidden (mobile/desktop)
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
-                // Only auto-save if we're not on the start screen and have an active player
-                if (this.currentScene !== 'startScreen' && this.saveManager) {
+                // Only auto-save if we're not on the start screen, have saveManager initialized, and have an active player
+                if (this.currentScene !== 'startScreen' && this.saveManager && this.playerRegistry?.activePlayers[0]) {
                     this.saveManager.saveToLocalStorage();
                 }
             }
