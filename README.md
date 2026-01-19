@@ -17,6 +17,7 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 - **Active Skills** - Use three unique skills: Laser Beam (ranged attack), Healing (restore HP), and Area Attack (circular damage)
 - Inventory system with looting mechanics
 - **Save/Load system** - Save your game progress to a JSON file or load a previously saved game through the Save Manager NPC in the lobby
+- **Auto-Save** - Your progress is automatically saved to browser storage when you switch tabs or close the browser, preventing data loss on mobile devices and automatically restored when you return
 
 ## Tech Stack
 
