@@ -75,5 +75,9 @@ export const HintConfigs = {
     inventoryNavigate: {
         keyboard: '<span class="key-icon">UP</span> / <span class="key-icon">DOWN</span> Navigate | <span class="key-icon">ENTER</span> Equip | <span class="key-icon">ESC</span> Close',
         controller: '<span class="btn-icon xbox-dpad">D-PAD</span> Navigate | <span class="btn-icon xbox-a">A</span> Equip | <span class="btn-icon xbox-b">B</span> Close'
+    },
+    menuNavigate: {
+        keyboard: '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back',
+        controller: '<span class="btn-icon xbox-dpad">D-Pad</span> Navigate | <span class="btn-icon xbox-a">A</span> Select | <span class="btn-icon xbox-b">B</span> Back'
     }
 };

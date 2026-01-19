@@ -63,18 +63,7 @@ export class CardManager {
         this.container.appendChild(windowDiv);
         
         // Title
-        const titleDiv = document.createElement('div');
-        titleDiv.innerText = 'CARD COLLECTION';
-        Object.assign(titleDiv.style, {
-            textAlign: 'center',
-            fontSize: '28px',
-            fontWeight: 'bold',
-            color: MENU_COLORS.SPECIAL,
-            fontFamily: MENU_STYLES.FONT_FAMILY,
-            padding: '10px',
-            borderBottom: `2px solid ${MENU_COLORS.SEPARATOR}`,
-            marginBottom: '15px'
-        });
+        const titleDiv = this.menuManager.createTitle('CARD COLLECTION', MENU_COLORS.SPECIAL);
         windowDiv.appendChild(titleDiv);
         
         // Pack count display
@@ -477,11 +466,7 @@ export class CardManager {
         this.currentInputManager = input;
         
         // Update centralized control hints based on input method
-        const hintConfig = {
-            keyboard: '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back',
-            controller: '<span class="btn-icon xbox-dpad">D-Pad</span> Navigate | <span class="btn-icon xbox-a">A</span> Select | <span class="btn-icon xbox-b">B</span> Back'
-        };
-        this.uiManager.showControlHints(getHint(hintConfig, input));
+        this.uiManager.showControlHints(getHint(HintConfigs.menuNavigate, input));
         
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();
