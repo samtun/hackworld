@@ -1,3 +1,17 @@
+# [1.38.0](https://github.com/samtun/hackworld/compare/v1.37.1...v1.38.0) (2026-01-19)
+
+
+### Bug Fixes
+
+* fix mobile button styles ([26792d7](https://github.com/samtun/hackworld/commit/26792d73eee4470deca02458b3a3a7513f4ec803))
+* fix player spawn location and body sync position ([038e767](https://github.com/samtun/hackworld/commit/038e76750db1335bcb03e14ee752ac57426f0414))
+* menu bottom margin ([079a88a](https://github.com/samtun/hackworld/commit/079a88acbda23eb361c174775b7d9b7a3979e260))
+
+
+### Features
+
+* add MenuManager and centralized control hints system ([d384dab](https://github.com/samtun/hackworld/commit/d384dab3906ee5dce6eeb96187474f3283f8f874))
+
 ## [1.37.1](https://github.com/samtun/hackworld/compare/v1.37.0...v1.37.1) (2026-01-19)
 
 
