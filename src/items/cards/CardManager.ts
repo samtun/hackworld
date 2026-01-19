@@ -5,33 +5,8 @@ import { Card, CardDefinitions, CardRarity } from './Card';
 import { CardCollection } from './CardCollection';
 import { ViewMode } from './ViewMode';
 import { getHint, HintConfigs } from '../../ui/InputHints';
-
-// --- Constants ---
-const COLORS = {
-    OVERLAY: 'rgba(0, 0, 0, 0.8)',
-    WINDOW_BG: '#333',
-    BORDER: '#000',
-    TEXT: '#fff',
-    PANEL_BG: '#2a2a2a',
-    ITEM_SELECTED: '#888',
-    TRANSPARENT: 'transparent',
-    SEPARATOR: '#BBBBBB',
-    CARD_BG: '#1a1a1a',
-    NORMAL: '#aaaaaa',
-    UNCOMMON: '#4ec9ff',
-    SPECIAL: '#ff69b4',
-    COLLECTED: '#44ff44',
-    MISSING: '#444444'
-};
-
-const STYLES = {
-    FONT_FAMILY: '"Share Tech", Arial, sans-serif',
-    BORDER_RADIUS: '10px',
-    BORDER_WIDTH: '2px',
-    WINDOW_PADDING: '20px',
-    PANEL_PADDING: '20px',
-    GRID_GAP: '10px'
-};
+import { MenuManager, MENU_COLORS, MENU_STYLES } from '../../ui/MenuManager';
+import { UIManager } from '../../ui/UIManager';
 
 export class CardManager {
     private static instance: CardManager;
@@ -42,7 +17,6 @@ export class CardManager {
     // UI Elements
     private mainContent!: HTMLDivElement;
     private packCountDisplay!: HTMLDivElement;
-    private controlsDiv!: HTMLDivElement;
     
     // Navigation state
     private viewMode: ViewMode = ViewMode.MENU;
@@ -61,9 +35,13 @@ export class CardManager {
     
     private cardCollection: CardCollection;
     private currentInputManager?: InputManager; // Store input manager for dynamic hints
+    private menuManager: MenuManager;
+    private uiManager: UIManager;
     
     private constructor() {
         this.cardCollection = CardCollection.Instance;
+        this.menuManager = MenuManager.Instance;
+        this.uiManager = UIManager.Instance;
         this.createUI();
     }
     
@@ -73,11 +51,15 @@ export class CardManager {
     
     private createUI() {
         // Main Container Overlay
-        this.container = this.createOverlay();
+        this.container = this.menuManager.createFixedOverlay();
         document.body.appendChild(this.container);
         
         // Main Window
-        const windowDiv = this.createWindow();
+        const windowDiv = this.menuManager.createFlexWindow('column', {
+            maxWidth: '800px',
+            width: '90%',
+            maxHeight: '80vh'
+        });
         this.container.appendChild(windowDiv);
         
         // Title
@@ -87,10 +69,10 @@ export class CardManager {
             textAlign: 'center',
             fontSize: '28px',
             fontWeight: 'bold',
-            color: COLORS.SPECIAL,
-            fontFamily: STYLES.FONT_FAMILY,
+            color: MENU_COLORS.SPECIAL,
+            fontFamily: MENU_STYLES.FONT_FAMILY,
             padding: '10px',
-            borderBottom: `2px solid ${COLORS.SEPARATOR}`,
+            borderBottom: `2px solid ${MENU_COLORS.SEPARATOR}`,
             marginBottom: '15px'
         });
         windowDiv.appendChild(titleDiv);
@@ -100,8 +82,8 @@ export class CardManager {
         Object.assign(this.packCountDisplay.style, {
             textAlign: 'center',
             fontSize: '18px',
-            color: COLORS.TEXT,
-            fontFamily: STYLES.FONT_FAMILY,
+            color: MENU_COLORS.TEXT,
+            fontFamily: MENU_STYLES.FONT_FAMILY,
             marginBottom: '15px'
         });
         windowDiv.appendChild(this.packCountDisplay);
@@ -111,67 +93,19 @@ export class CardManager {
         Object.assign(this.mainContent.style, {
             flex: '1',
             overflowY: 'auto',
-            fontFamily: STYLES.FONT_FAMILY
+            fontFamily: MENU_STYLES.FONT_FAMILY
         });
         windowDiv.appendChild(this.mainContent);
-        
-        // Controls hint
-        this.controlsDiv = document.createElement('div');
-        this.controlsDiv.innerHTML = '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back';
-        Object.assign(this.controlsDiv.style, {
-            textAlign: 'center',
-            fontSize: '14px',
-            color: COLORS.SEPARATOR,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: '10px',
-            borderTop: `2px solid ${COLORS.SEPARATOR}`,
-            marginTop: '10px'
-        });
-        windowDiv.appendChild(this.controlsDiv);
-    }
-    
-    private createOverlay(): HTMLDivElement {
-        const overlay = document.createElement('div');
-        Object.assign(overlay.style, {
-            position: 'fixed',
-            top: '0',
-            left: '0',
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: COLORS.OVERLAY,
-            display: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '1000'
-        });
-        return overlay;
-    }
-    
-    private createWindow(): HTMLDivElement {
-        const windowDiv = document.createElement('div');
-        Object.assign(windowDiv.style, {
-            backgroundColor: COLORS.WINDOW_BG,
-            border: `${STYLES.BORDER_WIDTH} solid ${COLORS.BORDER}`,
-            borderRadius: STYLES.BORDER_RADIUS,
-            padding: STYLES.WINDOW_PADDING,
-            maxWidth: '800px',
-            width: '90%',
-            maxHeight: '80vh',
-            display: 'flex',
-            flexDirection: 'column',
-            fontFamily: STYLES.FONT_FAMILY
-        });
-        return windowDiv;
     }
     
     private getRarityColor(rarity: CardRarity): string {
         switch (rarity) {
             case CardRarity.NORMAL:
-                return COLORS.NORMAL;
+                return MENU_COLORS.NORMAL;
             case CardRarity.UNCOMMON:
-                return COLORS.UNCOMMON;
+                return MENU_COLORS.UNCOMMON;
             case CardRarity.SPECIAL:
-                return COLORS.SPECIAL;
+                return MENU_COLORS.SPECIAL;
         }
     }
     
@@ -189,8 +123,8 @@ export class CardManager {
             Object.assign(menuItem.style, {
                 padding: '15px',
                 margin: '5px 0',
-                backgroundColor: this.selectedMenuIndex === index ? COLORS.ITEM_SELECTED : COLORS.PANEL_BG,
-                color: item.enabled ? COLORS.TEXT : '#666',
+                backgroundColor: this.selectedMenuIndex === index ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.PANEL_BG,
+                color: item.enabled ? MENU_COLORS.TEXT : '#666',
                 fontSize: '20px',
                 borderRadius: '5px',
                 cursor: item.enabled ? 'pointer' : 'not-allowed',
@@ -207,7 +141,7 @@ export class CardManager {
         Object.assign(progressDiv.style, {
             textAlign: 'center',
             fontSize: '16px',
-            color: COLORS.TEXT,
+            color: MENU_COLORS.TEXT,
             marginTop: '20px'
         });
         this.mainContent.appendChild(progressDiv);
@@ -227,7 +161,7 @@ export class CardManager {
                 textAlign: 'center',
                 fontSize: '24px',
                 fontWeight: 'bold',
-                color: COLORS.TEXT,
+                color: MENU_COLORS.TEXT,
                 marginBottom: '20px'
             });
             this.mainContent.appendChild(titleDiv);
@@ -272,7 +206,7 @@ export class CardManager {
                     width: '100%',
                     height: '100%',
                     padding: '20px',
-                    backgroundColor: COLORS.CARD_BG,
+                    backgroundColor: MENU_COLORS.CARD_BG,
                     border: '3px solid #666',
                     borderRadius: '10px',
                     textAlign: 'center',
@@ -299,7 +233,7 @@ export class CardManager {
                     width: '100%',
                     height: '100%',
                     padding: '20px',
-                    backgroundColor: COLORS.CARD_BG,
+                    backgroundColor: MENU_COLORS.CARD_BG,
                     border: `3px solid ${this.getRarityColor(card.rarity)}`,
                     borderRadius: '10px',
                     textAlign: 'center',
@@ -327,7 +261,7 @@ export class CardManager {
                 slotText.innerText = `#${card.slot}`;
                 Object.assign(slotText.style, {
                     fontSize: '18px',
-                    color: COLORS.TEXT,
+                    color: MENU_COLORS.TEXT,
                     marginBottom: '8px'
                 });
                 cardFront.appendChild(slotText);
@@ -378,7 +312,7 @@ export class CardManager {
             Object.assign(instructionsText.style, {
                 textAlign: 'center',
                 fontSize: '16px',
-                color: COLORS.SEPARATOR,
+                color: MENU_COLORS.SEPARATOR,
                 marginTop: '10px'
             });
             this.mainContent.appendChild(instructionsText);
@@ -417,8 +351,8 @@ export class CardManager {
             Object.assign(albumDiv.style, {
                 padding: '15px',
                 margin: '5px 0',
-                backgroundColor: this.selectedAlbumIndex === index ? COLORS.ITEM_SELECTED : COLORS.PANEL_BG,
-                color: COLORS.TEXT,
+                backgroundColor: this.selectedAlbumIndex === index ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.PANEL_BG,
+                color: MENU_COLORS.TEXT,
                 fontSize: '18px',
                 borderRadius: '5px',
                 cursor: 'pointer'
@@ -435,7 +369,7 @@ export class CardManager {
         Object.assign(titleDiv.style, {
             fontSize: '24px',
             fontWeight: 'bold',
-            color: COLORS.TEXT,
+            color: MENU_COLORS.TEXT,
             textAlign: 'center',
             marginBottom: '20px'
         });
@@ -454,7 +388,7 @@ export class CardManager {
             const cardDiv = document.createElement('div');
             Object.assign(cardDiv.style, {
                 padding: '15px',
-                backgroundColor: collected ? COLORS.PANEL_BG : COLORS.MISSING,
+                backgroundColor: collected ? MENU_COLORS.PANEL_BG : MENU_COLORS.MISSING,
                 border: `2px solid ${this.getRarityColor(card.rarity)}`,
                 borderRadius: '5px',
                 textAlign: 'center',
@@ -478,7 +412,7 @@ export class CardManager {
             rarityText.innerText = card.rarity.toUpperCase();
             Object.assign(rarityText.style, {
                 fontSize: '14px',
-                color: COLORS.TEXT,
+                color: MENU_COLORS.TEXT,
                 marginTop: '5px'
             });
             cardDiv.appendChild(rarityText);
@@ -488,7 +422,7 @@ export class CardManager {
             checkmark.innerText = collected ? '✓' : '';
             Object.assign(checkmark.style, {
                 fontSize: '24px',
-                color: COLORS.COLLECTED,
+                color: MENU_COLORS.COLLECTED,
                 marginTop: '5px',
                 height: '29px' // Reserve space for checkmark
             });
@@ -513,20 +447,12 @@ export class CardManager {
         if (!this.isVisible) return;
         this.isVisible = false;
         this.container.style.display = 'none';
+        this.uiManager.hideControlHints();
         resetInputDebounce(this as any);
     }
     
     private render(player: Player) {
         this.packCountDisplay.innerText = `Booster Packs: ${player.boosterPacks}`;
-        
-        // Update controls hint based on input method
-        if (this.currentInputManager) {
-            const hintConfig = {
-                keyboard: '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back',
-                controller: '<span class="btn-icon xbox-dpad">D-Pad</span> Navigate | <span class="btn-icon xbox-a">A</span> Select | <span class="btn-icon xbox-b">B</span> Back'
-            };
-            this.controlsDiv.innerHTML = getHint(hintConfig, this.currentInputManager);
-        }
         
         switch (this.viewMode) {
             case ViewMode.MENU:
@@ -549,6 +475,13 @@ export class CardManager {
         
         // Store input manager for dynamic hints
         this.currentInputManager = input;
+        
+        // Update centralized control hints based on input method
+        const hintConfig = {
+            keyboard: '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back',
+            controller: '<span class="btn-icon xbox-dpad">D-Pad</span> Navigate | <span class="btn-icon xbox-a">A</span> Select | <span class="btn-icon xbox-b">B</span> Back'
+        };
+        this.uiManager.showControlHints(getHint(hintConfig, input));
         
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();
