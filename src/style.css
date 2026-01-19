@@ -237,7 +237,7 @@ body {
 }
 
 .mobile-control-btn:active {
-    background: rgba(0, 0, 0, 0.6);
+    background-color: rgba(0, 0, 0, 0.6);
     transform: scale(0.95);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
 }
@@ -314,6 +314,7 @@ body {
 .mobile-skill-toggle-btn:active {
     color: rgba(180, 180, 180, 0.9);
     border-color: rgba(180, 180, 180, 0.6);
+    background-size: 45% 45%;
 }
 
 .mobile-inventory-btn {
@@ -337,4 +338,8 @@ body {
     -webkit-tap-highlight-color: transparent;
     z-index: 2000;
     pointer-events: auto;
+}
+
+.mobile.mobile-inventory-btn:active {
+    background-size: 65% 65%;
 }
