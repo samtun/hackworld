@@ -194,10 +194,10 @@ export class UIManager {
         this.controlHints.style.transform = 'translateX(-50%)';
         this.controlHints.style.color = '#fff';
         this.controlHints.style.fontSize = '16px';
-        this.controlHints.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        this.controlHints.style.fontFamily = MENU_STYLES.FONT_FAMILY;
         this.controlHints.style.textShadow = '2px 2px 0px #000';
         this.controlHints.style.display = 'none';
-        this.controlHints.style.zIndex = MENU_STYLES.Z_INDEX_HINTS;
+        this.controlHints.style.zIndex = String(MENU_STYLES.Z_INDEX_HINTS);
         this.controlHints.style.textAlign = 'center';
         this.controlHints.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
         this.controlHints.style.padding = '10px 20px';
