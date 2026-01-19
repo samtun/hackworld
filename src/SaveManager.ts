@@ -80,12 +80,16 @@ export class SaveManager {
 
     private static readonly SAVE_VERSION = __APP_VERSION__;
     private static readonly LOCAL_STORAGE_KEY = 'hackworld_autosave';
+    private static readonly RESET_FLAG_KEY = 'hackworld_resetting';
     private playTimeSeconds: number = 0;
     private playerRegistry: PlayerRegistry;
 
     private constructor() {
         this.saveManagerUi = SaveManagerUI.Instance;
         this.playerRegistry = PlayerRegistry.Instance;
+        
+        // Clear reset flag if it exists (from a previous reset operation)
+        sessionStorage.removeItem(SaveManager.RESET_FLAG_KEY);
     }
 
     public static get Instance(): SaveManager {
@@ -282,6 +286,12 @@ export class SaveManager {
      */
     saveToLocalStorage(): void {
         try {
+            // Skip auto-save if we're in the middle of a reset operation
+            if (sessionStorage.getItem(SaveManager.RESET_FLAG_KEY)) {
+                console.log('Skipping auto-save during reset operation');
+                return;
+            }
+
             const player = this.playerRegistry.activePlayers[0];
             if (!player) {
                 console.warn('Cannot auto-save: No active player found');
@@ -426,6 +436,8 @@ export class SaveManager {
      */
     resetGame(): void {
         if (confirm('Are you sure you want to reset the game? This will delete all progress and cannot be undone.')) {
+            // Set a flag in sessionStorage to prevent auto-save during reload
+            sessionStorage.setItem(SaveManager.RESET_FLAG_KEY, 'true');
             this.clearLocalStorage();
             // Reload the page to restart the game
             window.location.reload();
