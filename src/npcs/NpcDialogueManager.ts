@@ -2,17 +2,8 @@ import { InputManager } from '../InputManager';
 import { Npc } from './Npc';
 import { resetInputDebounce } from '../ui/UiUtils';
 import { getHint, getKeyboardHint, HintConfigs } from '../ui/InputHints';
-
-const COLORS = {
-    OVERLAY: 'rgba(0, 0, 0, 0.85)',
-    TEXT: '#fff',
-    NAME_BG: 'rgba(0, 0, 0, 0.7)',
-    NAME_TEXT: '#ffd700'
-};
-
-const STYLES = {
-    FONT_FAMILY: '"Share Tech", Arial, sans-serif'
-};
+import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
+import { UIManager } from '../ui/UIManager';
 
 export class NpcDialogueManager {
     private static instance: NpcDialogueManager; // Singleton
@@ -24,7 +15,6 @@ export class NpcDialogueManager {
     // UI Elements
     nameBox!: HTMLDivElement;
     dialogueText!: HTMLDivElement;
-    continueHint!: HTMLDivElement;
 
     // Input tracking for debouncing
     private lastSelectState: boolean = false;
@@ -36,40 +26,30 @@ export class NpcDialogueManager {
     // Callback to execute after dialogue completes
     private onDialogueCompleteCallback?: () => void;
 
+    private menuManager: MenuManager;
+    private uiManager: UIManager;
+
     public static get Instance(): NpcDialogueManager {
         return this.instance || (this.instance = new this());
     }
 
     private constructor() {
+        this.menuManager = MenuManager.Instance;
+        this.uiManager = UIManager.Instance;
         this.createUI();
     }
 
     private createUI() {
-        // Main Container - Lower third of screen
-        this.container = document.createElement('div');
-        Object.assign(this.container.style, {
-            position: 'fixed',
-            bottom: '0',
-            left: '0',
-            width: '100%',
-            height: '33.33%',
-            backgroundColor: COLORS.OVERLAY,
-            display: 'none',
-            flexDirection: 'column',
-            justifyContent: 'flex-start',
-            alignItems: 'flex-start',
-            padding: '20px',
-            boxSizing: 'border-box',
-            zIndex: '1000'
-        });
+        // Main Container - Lower third of screen - using MenuManager
+        this.container = this.menuManager.createDialogueOverlay();
         document.body.appendChild(this.container);
 
         // Name Box (Top Left)
         this.nameBox = document.createElement('div');
         Object.assign(this.nameBox.style, {
-            backgroundColor: COLORS.NAME_BG,
-            color: COLORS.NAME_TEXT,
-            fontFamily: STYLES.FONT_FAMILY,
+            backgroundColor: MENU_COLORS.NAME_BG,
+            color: MENU_COLORS.NAME_TEXT,
+            fontFamily: MENU_STYLES.FONT_FAMILY,
             fontSize: '24px',
             fontWeight: 'bold',
             padding: '10px 20px',
@@ -81,8 +61,8 @@ export class NpcDialogueManager {
         // Dialogue Text
         this.dialogueText = document.createElement('div');
         Object.assign(this.dialogueText.style, {
-            color: COLORS.TEXT,
-            fontFamily: STYLES.FONT_FAMILY,
+            color: MENU_COLORS.TEXT,
+            fontFamily: MENU_STYLES.FONT_FAMILY,
             fontSize: '20px',
             lineHeight: '1.6',
             padding: '10px 20px',
@@ -92,18 +72,6 @@ export class NpcDialogueManager {
             maxWidth: '90%'
         });
         this.container.appendChild(this.dialogueText);
-
-        // Continue Hint (Bottom Right)
-        this.continueHint = document.createElement('div');
-        Object.assign(this.continueHint.style, {
-            alignSelf: 'flex-end',
-            color: COLORS.TEXT,
-            fontFamily: STYLES.FONT_FAMILY,
-            fontSize: '16px',
-            padding: '10px 20px'
-        });
-        this.continueHint.innerHTML = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Continue | <span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Exit';
-        this.container.appendChild(this.continueHint);
     }
 
     /**
@@ -129,6 +97,8 @@ export class NpcDialogueManager {
         this.currentLineIndex = 0;
         this.onDialogueCompleteCallback = undefined;
         this.container.style.display = 'none';
+        // Hide centralized control hints when dialogue closes
+        this.uiManager.hideControlHints();
     }
 
     /**
@@ -140,19 +110,19 @@ export class NpcDialogueManager {
         this.nameBox.innerText = this.currentNpc.name;
         this.dialogueText.innerText = this.currentNpc.dialogue[this.currentLineIndex];
 
-        // Update continue hint based on input method if InputManager is available
+        // Update centralized control hints based on input method if InputManager is available
         if (input) {
             if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
-                this.continueHint.innerHTML = getHint(HintConfigs.continueExit, input);
+                this.uiManager.showControlHints(getHint(HintConfigs.continueExit, input));
             } else {
-                this.continueHint.innerHTML = getHint(HintConfigs.closeExit, input);
+                this.uiManager.showControlHints(getHint(HintConfigs.closeExit, input));
             }
         } else {
             // Fallback to keyboard hints if InputManager not available
             if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
-                this.continueHint.innerHTML = getKeyboardHint(HintConfigs.continueExit);
+                this.uiManager.showControlHints(getKeyboardHint(HintConfigs.continueExit));
             } else {
-                this.continueHint.innerHTML = getKeyboardHint(HintConfigs.closeExit);
+                this.uiManager.showControlHints(getKeyboardHint(HintConfigs.closeExit));
             }
         }
     }
