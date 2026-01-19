@@ -709,7 +709,7 @@ export class Player extends BaseMesh {
         if (this.currentAction !== this.actions[ActionType.StartCharge]) {
             this.fadeToAction(ActionType.StartCharge, 0.05);
         }
-        
+
         this.chargeTimer += dt;
         this.invulnerableTimer = 0; // allow damage while charging
         this.updateChargeParticles();
@@ -748,7 +748,8 @@ export class Player extends BaseMesh {
 
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
-            this.haltMovement();
+            this.body.velocity.x *= 0.9;
+            this.body.velocity.z *= 0.9;
             return;
         }
 
