@@ -96,10 +96,10 @@ class AreaAttackEffect extends BaseMesh {
         super.update(dt);
         this.time += dt;
         const progress = this.time / this.duration;
-        const scale = ((this.range * progress) * 3.0) % this.range;
+        const scale = ((this.range * progress) * 2.0) % this.range;
         this.mesh.scale.copy(new THREE.Vector3(scale, scale, scale));
         if (this.material) {
-            this.material.opacity = (1.0 - ((progress * 3.0 % 1.0) - 0.7) / 0.3);
+            this.material.opacity = (1.0 - ((progress * 2.0 % 1.0) - 0.7) / 0.3);
         }
     }
 
