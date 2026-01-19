@@ -1,3 +1,30 @@
+# [1.37.0](https://github.com/samtun/hackworld/compare/v1.36.0...v1.37.0) (2026-01-19)
+
+
+### Bug Fixes
+
+* fix skill handling order and tp cost ([6e7f2a0](https://github.com/samtun/hackworld/commit/6e7f2a004660c6d5fe37d7299d94510925cd4bec))
+* improve skill implementation based on code review ([7a47f8a](https://github.com/samtun/hackworld/commit/7a47f8a342f19db4e28fbc311dd4e25924e4cb0c))
+* remove jump when executing skill ([6a1117e](https://github.com/samtun/hackworld/commit/6a1117e6f2e289583621a663d24a82b932036c98))
+* reposition skills button and hide when menus are open ([85de664](https://github.com/samtun/hackworld/commit/85de664164b8eb56bec37d8cf9148f6fd885b5c9))
+
+
+### Features
+
+* (WIP) add heal fx model ([52c9d44](https://github.com/samtun/hackworld/commit/52c9d441c59b3c6b5ee9baba4cd95d7e1fbbac10))
+* add character profile image ([5261e0a](https://github.com/samtun/hackworld/commit/5261e0a2691bd740c8ce5219c06dd08e90014df7))
+* add insufficient tp warning to skill use ([afb991a](https://github.com/samtun/hackworld/commit/afb991ac586dff157d1b0afb62ff4318d492a3e1))
+* add mobile skill controls with toggle button ([7d9bc84](https://github.com/samtun/hackworld/commit/7d9bc84a3d61d0576b36d00477647dba7f049e28))
+* add skill system with three active skills ([e2a561a](https://github.com/samtun/hackworld/commit/e2a561a404bab35c956d770eabccf4adcb2e4a35))
+* improve area attack animation ([08863b7](https://github.com/samtun/hackworld/commit/08863b78b78a2e1e34bcc26f4b981a25348ba59f))
+* improve heal skill particles ([b721cb1](https://github.com/samtun/hackworld/commit/b721cb1f0296a7f5b2c9570eb0e4d9e78ec90693))
+* improve laser skill visual ([0ec07f6](https://github.com/samtun/hackworld/commit/0ec07f6b1e49097a2bf6c7e918e3485792cbb388))
+* improve skill visuals further ([0e096e8](https://github.com/samtun/hackworld/commit/0e096e8053efd8af3dd12747da3269f17a2be8a7))
+* improved healing skill visual ([07ce31f](https://github.com/samtun/hackworld/commit/07ce31fb9795ecf8d7836d660e872b3aa2c50f74))
+* make teleporter only interactible at front and keep updating game during menu ([ff88977](https://github.com/samtun/hackworld/commit/ff88977e1e7f4c4d01a3573b650d1452769e57d1))
+* new teleporter visual ([ef91a72](https://github.com/samtun/hackworld/commit/ef91a72ecf9a486ee6587abeaec675575a815a16))
+* use icons for skills on mobile, add mainframe model ([83c87b2](https://github.com/samtun/hackworld/commit/83c87b2f8a7ec3133bb2dda33d712c7b6f2bb68f))
+
 # [1.36.0](https://github.com/samtun/hackworld/compare/v1.35.0...v1.36.0) (2026-01-16)
 
 
