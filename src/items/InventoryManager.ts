@@ -2,33 +2,9 @@ import { Player } from '../Player';
 import { InputManager } from '../InputManager';
 import { shakeElement } from '../ui/UiUtils';
 import { StatType } from '../StatType';
-
-// --- Constants ---
-const COLORS = {
-    OVERLAY: 'rgba(0, 0, 0, 0.8)',
-    WINDOW_BG: '#333',
-    BORDER: '#000',
-    TEXT: '#fff',
-    PANEL_EQUIPPED: '#90a4ae',
-    PANEL_STATS: '#424242',
-    PANEL_LOOT: '#555',
-    SLOT_BG: '#cfd8dc',
-    ITEM_HOVER: '#666',
-    ITEM_SELECTED: '#888',
-    TRANSPARENT: 'transparent',
-    SEPARATOR: '#BBBBBB'
-};
-
-const STYLES = {
-    FONT_FAMILY: '"Share Tech", Arial, sans-serif',
-    BORDER_RADIUS: '10px',
-    BORDER_WIDTH: '2px',
-    WINDOW_PADDING: '20px',
-    PANEL_PADDING: '20px',
-    GRID_GAP: '20px',
-    SLOT_GAP: '15px'
-};
-
+import { MenuManager, MENU_COLORS } from '../ui/MenuManager';
+import { UIManager } from '../ui/UIManager';
+import { getHint } from '../ui/InputHints';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
@@ -60,7 +36,12 @@ export class InventoryManager {
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
 
+    private menuManager: MenuManager;
+    private uiManager: UIManager;
+
     private constructor() {
+        this.menuManager = MenuManager.Instance;
+        this.uiManager = UIManager.Instance;
         this.createUI();
     }
 
@@ -70,15 +51,19 @@ export class InventoryManager {
 
     private createUI() {
         // Main Container Overlay
-        this.container = this.createOverlay();
+        this.container = this.menuManager.createOverlay();
         document.body.appendChild(this.container);
 
         // Main Window
-        const windowDiv = this.createWindow();
+        const windowDiv = this.menuManager.createGridWindow('30% 1fr', '1fr 1fr');
         this.container.appendChild(windowDiv);
 
         // 2. Stats Panel (Left Column - Full Height)
-        const statsPanel = this.createPanel(COLORS.PANEL_STATS, '1 / 3', '1 / 2');
+        const statsPanel = this.menuManager.createPanel({
+            backgroundColor: MENU_COLORS.PANEL_STATS,
+            gridRow: '1 / 3',
+            gridColumn: '1 / 2'
+        });
         statsPanel.style.fontSize = '18px';
         statsPanel.style.display = 'flex';
         statsPanel.style.flexDirection = 'column';
@@ -115,7 +100,11 @@ export class InventoryManager {
         statsPanel.appendChild(this.statsText);
 
         // 3. Loot Panel (Top Right)
-        this.lootPanel = this.createPanel(COLORS.PANEL_LOOT, '1 / 2', '2 / 3');
+        this.lootPanel = this.menuManager.createPanel({
+            backgroundColor: MENU_COLORS.PANEL_LOOT,
+            gridRow: '1 / 2',
+            gridColumn: '2 / 3'
+        });
         this.lootPanel.style.overflowY = 'auto';
         windowDiv.appendChild(this.lootPanel);
 
@@ -129,7 +118,11 @@ export class InventoryManager {
         this.lootPanel.appendChild(this.lootList);
 
         // 4. Extra Panel (Bottom Right) - Item Details
-        const extraPanel = this.createPanel(COLORS.PANEL_LOOT, '2 / 3', '2 / 3');
+        const extraPanel = this.menuManager.createPanel({
+            backgroundColor: MENU_COLORS.PANEL_LOOT,
+            gridRow: '2 / 3',
+            gridColumn: '2 / 3'
+        });
         extraPanel.style.position = 'relative';
         windowDiv.appendChild(extraPanel);
 
@@ -144,56 +137,6 @@ export class InventoryManager {
         extraPanel.appendChild(this.itemDetailsPanel);
     }
 
-    private createOverlay(): HTMLDivElement {
-        const el = document.createElement('div');
-        Object.assign(el.style, {
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            backgroundColor: COLORS.OVERLAY,
-            display: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '1000'
-        });
-        return el;
-    }
-
-    private createWindow(): HTMLDivElement {
-        const el = document.createElement('div');
-        Object.assign(el.style, {
-            width: '92vw',
-            height: '92vh',
-            backgroundColor: COLORS.WINDOW_BG,
-            borderRadius: '15px',
-            border: `2px solid ${COLORS.BORDER}`,
-            display: 'grid',
-            gridTemplateColumns: '30% 1fr',
-            gridTemplateRows: '1fr 1fr', // Use fr to respect gap and padding
-            gap: STYLES.GRID_GAP,
-            padding: STYLES.WINDOW_PADDING,
-            boxSizing: 'border-box'
-        });
-        return el;
-    }
-
-    private createPanel(bgColor: string, row: string, col: string): HTMLDivElement {
-        const el = document.createElement('div');
-        Object.assign(el.style, {
-            backgroundColor: bgColor,
-            borderRadius: STYLES.BORDER_RADIUS,
-            border: `${STYLES.BORDER_WIDTH} solid ${COLORS.BORDER}`,
-            gridRow: row,
-            gridColumn: col,
-            color: COLORS.TEXT,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: STYLES.PANEL_PADDING
-        });
-        return el;
-    }
-
     toggle() {
         this.isVisible = !this.isVisible;
         this.container.style.display = this.isVisible ? 'flex' : 'none';
@@ -202,6 +145,9 @@ export class InventoryManager {
         if (this.isVisible) {
             this.selectedIndex = 0;
             this.needsRender = true;
+        } else {
+            // Hide centralized control hints when menu closes
+            this.uiManager.hideControlHints();
         }
     }
 
@@ -210,6 +156,13 @@ export class InventoryManager {
 
         // Handle keyboard/gamepad navigation
         if (input) {
+            // Update centralized control hints based on input method
+            const hintConfig = {
+                keyboard: '<span class="key-icon">UP</span> / <span class="key-icon">DOWN</span> Navigate | <span class="key-icon">ENTER</span> Equip | <span class="key-icon">ESC</span> Close',
+                controller: '<span class="btn-icon xbox-dpad">D-PAD</span> Navigate | <span class="btn-icon xbox-a">A</span> Equip | <span class="btn-icon xbox-b">B</span> Close'
+            };
+            this.uiManager.showControlHints(getHint(hintConfig, input));
+
             const oldIndex = this.selectedIndex;
             this.handleNavigation(player, input);
 
@@ -271,7 +224,7 @@ export class InventoryManager {
 
             Object.assign(itemDiv.style, {
                 padding: '5px',
-                backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
+                backgroundColor: isSelected ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.TRANSPARENT,
                 border: isSelected ? '2px solid #fff' : '2px solid transparent',
                 position: 'relative',
                 opacity: canEquip ? '1' : '0.5'
@@ -292,7 +245,7 @@ export class InventoryManager {
 
             // Add separator between items
             if (index < player.inventory.length - 1) {
-                itemDiv.style.borderBottom = `1px solid ${COLORS.SEPARATOR}`;
+                itemDiv.style.borderBottom = `1px solid ${MENU_COLORS.SEPARATOR}`;
             }
 
             this.itemElements.push(itemDiv);
@@ -406,11 +359,11 @@ export class InventoryManager {
             createStatRow('Bits', player.money)
         ];
 
-        const statsHTML = stats.join(`<div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>`);
+        const statsHTML = stats.join(`<div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%;"></div>`);
 
         // Add X-Data display
         const xDataHTML = `
-            <div style="height: 2px; background-color: ${COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
+            <div style="height: 2px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
             <div style="display:flex; justify-content:space-between; padding: 5px 0;">
                 <span style="color: #00ffff;">X-Data</span> <span style="color: #00ffff;">${player.xData}</span>
             </div>
@@ -418,7 +371,7 @@ export class InventoryManager {
 
         // Add Booster Packs display
         const boosterPacksHTML = `
-            <div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>
+            <div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%;"></div>
             <div style="display:flex; justify-content:space-between; padding: 5px 0;">
                 <span style="color: #ffaa00;">Booster Packs</span> <span style="color: #ffaa00;">${player.boosterPacks}</span>
             </div>
@@ -426,7 +379,7 @@ export class InventoryManager {
 
         // Add EXP display
         const expHTML = `
-            <div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
+            <div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
             <div style="display:flex; justify-content:space-between; padding: 5px 0;">
                 <span style="color: #ffaa00;">EXP to Next</span> <span style="color: #ffaa00;">${player.expRequired - player.exp}</span>
             </div>
@@ -434,9 +387,9 @@ export class InventoryManager {
 
         // Add Tech display
         const techHTML = `
-            <div style="height: 2px; background-color: ${COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
+            <div style="height: 2px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
             <div style="font-weight: bold; padding: 5px 0;">Tech</div>
-            <div style="height: 1px; background-color: ${COLORS.SEPARATOR}; width: 100%;"></div>
+            <div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%;"></div>
             <div style="display:flex; justify-content:space-between; padding: 5px 0;">
                 <span>Sword</span> <span>${player.tech[WeaponType.SWORD]}</span>
             </div>
