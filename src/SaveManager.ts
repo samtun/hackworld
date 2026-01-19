@@ -78,7 +78,7 @@ export class SaveManager {
 
     private saveManagerUi: SaveManagerUI
 
-    private static readonly SAVE_VERSION = '1.0.0';
+    private static readonly SAVE_VERSION = __APP_VERSION__;
     private static readonly LOCAL_STORAGE_KEY = 'hackworld_autosave';
     private playTimeSeconds: number = 0;
     private playerRegistry: PlayerRegistry;
@@ -153,7 +153,7 @@ export class SaveManager {
         if (!player) {
             throw new Error('Cannot save: No active player found');
         }
-        
+
         const cardCollection = CardCollection.Instance;
         const progressManager = GameProgressManager.Instance;
 
@@ -287,7 +287,7 @@ export class SaveManager {
                 console.warn('Cannot auto-save: No active player found');
                 return;
             }
-            
+
             const cardCollection = CardCollection.Instance;
             const progressManager = GameProgressManager.Instance;
 
