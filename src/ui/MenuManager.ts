@@ -89,7 +89,7 @@ export class MenuManager {
             display: 'none',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: MENU_STYLES.Z_INDEX
+            zIndex: String(MENU_STYLES.Z_INDEX)
         });
         return overlay;
     }
@@ -109,7 +109,7 @@ export class MenuManager {
             display: 'none',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: MENU_STYLES.Z_INDEX
+            zIndex: String(MENU_STYLES.Z_INDEX)
         });
         return overlay;
     }
@@ -243,7 +243,7 @@ export class MenuManager {
             alignItems: 'flex-start',
             padding: '20px',
             boxSizing: 'border-box',
-            zIndex: MENU_STYLES.Z_INDEX,
+            zIndex: String(MENU_STYLES.Z_INDEX),
             fontFamily: MENU_STYLES.FONT_FAMILY
         });
         return overlay;
