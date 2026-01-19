@@ -299,7 +299,7 @@ body {
     font-size: 14px;
     margin: 0 auto;
     color: rgba(200, 200, 200, 0.9);
-    background-image: url('images/ui_icons/switch.png');
+    background-image: url('/images/ui_icons/switch.png');
     background-size: 50% 50%;
     background-repeat: no-repeat;
     background-position: center;

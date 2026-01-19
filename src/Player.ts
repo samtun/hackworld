@@ -957,6 +957,14 @@ export class Player extends BaseMesh {
         return forward;
     }
 
+    /**
+     * Get the player's Y-axis rotation in radians
+     */
+    getRotationY(): number {
+        const forward = this.getForwardDirection();
+        return Math.atan2(forward.x, forward.z);
+    }
+
     private handleDashHit(enemy: Enemy) {
         if (enemy.isDead || enemy.isDying) return;
 

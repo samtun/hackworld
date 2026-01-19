@@ -3,56 +3,90 @@ import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
 import { Enemy } from '../enemies/Enemy';
 import { Skill } from './Skill';
+import { BaseMesh } from '../BaseMesh';
 
 /**
- * Laser Beam Skill (L1 + A)
- * - Ranged attack
- * - Deals 20 damage
- * - 30m range
- * - 1m radius (cylinder collider)
- * - 10s cooldown
+ * Laser Beam Skill
  */
 export class LaserBeamSkill extends Skill {
     private readonly DAMAGE = 20;
-    private readonly RANGE = 30;
+    private readonly RANGE = 10;
     private readonly RADIUS = 1;
-    private particles: THREE.Mesh[] = [];
-    private particleTimer: number = 0;
+    private effectTimer: number = 0;
     private readonly DURATION: number = 0.6;
+    private laserAttackEffect: LaserAttackEffect | undefined;
+    private isBeingExecuted: boolean = false;
+
+    private world: CANNON.World | undefined;
+    private player: Player | undefined;
+    private startPos: CANNON.Vec3 | undefined;
+    private forward: THREE.Vector3 | undefined;
+    private hitEnemies: Set<Enemy> = new Set();
 
     constructor(onCompletedCallback: () => void) {
-        super('Laser Beam', 5, 25, onCompletedCallback);
+        super('Laser Beam', 0, 0, onCompletedCallback);
     }
 
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
         console.log('Executing Laser Beam skill');
 
+        this.world = world;
+        this.player = player;
+        this.hitEnemies.clear();
+
         // Get player's forward direction
-        const forward = player.getForwardDirection();
+        this.forward = player.getForwardDirection();
 
         // Create laser beam starting position (in front of player)
-        const startPos = new CANNON.Vec3(
-            player.body.position.x + forward.x * 0.5,
+        this.startPos = new CANNON.Vec3(
+            player.body.position.x + this.forward.x * 0.5,
             player.body.position.y + 0.5,
-            player.body.position.z + forward.z * 0.5
+            player.body.position.z + this.forward.z * 0.5
         );
 
-        // Create cylinder collider for hit detection
-        const hitEnemies = new Set<Enemy>();
+        // Create visual particle effect
+        this.isBeingExecuted = true;
+        this.effectTimer = 0;
+        this.createVisual(player, scene, this.startPos, this.forward);
+    }
 
-        // Check all enemies in the beam path
-        for (let distance = 0; distance <= this.RANGE; distance += 1) {
-            const checkPos = new CANNON.Vec3(
-                startPos.x + forward.x * distance,
-                startPos.y,
-                startPos.z + forward.z * distance
-            );
+    private createVisual(player: Player, scene: THREE.Scene, startPos: CANNON.Vec3, forward: THREE.Vector3): void {
+        if (!this.laserAttackEffect) {
+            this.laserAttackEffect = new LaserAttackEffect(
+                this.DURATION,
+                this.RANGE,
+                player.getRotationY(),
+                new THREE.Vector3(startPos.x, startPos.y, startPos.z),
+                forward);
+        }
+        this.laserAttackEffect.addToScene(scene);
+    }
 
-            // Check for enemies within radius at this distance
-            for (const body of world.bodies) {
-                const entity = (body as any).entity;
-                if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                    if (hitEnemies.has(entity)) continue;
+    update(dt: number): void {
+        super.update(dt);
+        if (!this.isBeingExecuted || !this.world || !this.startPos || !this.forward || !this.player) {
+            return;
+        }
+
+        this.effectTimer += dt;
+        const progress = this.effectTimer / this.DURATION;
+
+        // Calculate current beam length based on progress (matching visual effect)
+        const currentLength = this.RANGE * Math.pow(progress, 2);
+
+        // Check for hits
+        for (const body of this.world.bodies) {
+            const entity = (body as any).entity;
+            if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
+                if (this.hitEnemies.has(entity)) continue;
+
+                // Check distance along the beam
+                for (let distance = 0; distance <= currentLength; distance += 1) {
+                    const checkPos = new CANNON.Vec3(
+                        this.startPos.x + this.forward.x * distance,
+                        this.startPos.y,
+                        this.startPos.z + this.forward.z * distance
+                    );
 
                     const dx = body.position.x - checkPos.x;
                     const dy = body.position.y - checkPos.y;
@@ -61,102 +95,87 @@ export class LaserBeamSkill extends Skill {
 
                     if (distanceToBeam <= this.RADIUS && Math.abs(dy) <= 2) {
                         // Hit!
-                        entity.takeDamage(this.DAMAGE, player.body.position);
-                        hitEnemies.add(entity);
+                        entity.takeDamage(this.DAMAGE, this.player.body.position);
+                        this.hitEnemies.add(entity);
                         console.log(`Laser beam hit enemy for ${this.DAMAGE} damage`);
+                        break;
                     }
                 }
             }
         }
 
-        // Create visual particle effect
-        this.createLaserParticles(player, scene, forward);
-    }
-
-    private createLaserParticles(player: Player, scene: THREE.Scene, forward: THREE.Vector3): void {
-        // Create a beam-like particle effect
-        const particleCount = 30;
-        const beamColor = 0x00ffff; // Cyan/blue laser
-
-        for (let i = 0; i < particleCount; i++) {
-            const distance = (i / particleCount) * this.RANGE;
-
-            // Main beam particles
-            const geometry = new THREE.CylinderGeometry(0.15, 0.15, 1, 8);
-            const material = new THREE.MeshStandardMaterial({
-                color: beamColor,
-                emissive: beamColor,
-                emissiveIntensity: 2,
-                transparent: true,
-                opacity: 0.8
-            });
-
-            const particle = new THREE.Mesh(geometry, material);
-            particle.position.set(
-                player.body.position.x + forward.x * distance,
-                player.body.position.y + 0.5,
-                player.body.position.z + forward.z * distance
-            );
-
-            // Orient particle along beam direction
-            const axis = new THREE.Vector3(1, 0, 0);
-            const angle = Math.atan2(forward.z, forward.x);
-            particle.rotateOnAxis(axis, Math.PI / 2);
-            particle.rotateOnAxis(new THREE.Vector3(0, 1, 0), angle - Math.PI / 2);
-
-            scene.add(particle);
-            this.particles.push(particle);
-
-            // Add some glow particles around the beam
-            if (i % 3 === 0) {
-                const glowGeometry = new THREE.SphereGeometry(0.2, 8, 8);
-                const glowMaterial = new THREE.MeshStandardMaterial({
-                    color: beamColor,
-                    emissive: beamColor,
-                    emissiveIntensity: 3,
-                    transparent: true,
-                    opacity: 0.6
-                });
-
-                const glow = new THREE.Mesh(glowGeometry, glowMaterial);
-                glow.position.copy(particle.position);
-                scene.add(glow);
-                this.particles.push(glow);
-            }
-        }
-
-        this.particleTimer = 0;
-    }
-
-    update(dt: number): void {
-        super.update(dt);
-
-        // Update particles
-        if (this.particles.length > 0) {
-            this.particleTimer += dt;
-            const progress = this.particleTimer / this.DURATION;
-
-            if (progress >= 1) {
-                this.cleanup();
-            } else {
-                // Fade out particles
-                this.particles.forEach(particle => {
-                    const material = particle.material as THREE.MeshStandardMaterial;
-                    material.opacity = 1 - progress;
-                });
-            }
+        if (progress >= 1) {
+            this.cleanup();
+        } else {
+            this.laserAttackEffect?.update(dt);
         }
     }
 
     cleanup(): void {
-        // Remove all particles
-        this.particles.forEach(particle => {
-            particle.parent?.remove(particle);
-            particle.geometry.dispose();
-            (particle.material as THREE.Material).dispose();
-        });
-        this.particles = [];
-        this.particleTimer = 0;
+        this.effectTimer = 0;
+        this.laserAttackEffect?.removeFromScene();
+        this.laserAttackEffect = undefined;
+        this.isBeingExecuted = false;
+
+        this.world = undefined;
+        this.player = undefined;
+        this.startPos = undefined;
+        this.forward = undefined;
+        this.hitEnemies.clear();
+
         this.onCompletedCallback();
+    }
+}
+
+class LaserAttackEffect extends BaseMesh {
+    private time: number = 0;
+    private duration: number;
+    private range: number;
+    private material: THREE.MeshStandardMaterial | null = null;
+    private forward: THREE.Vector3;
+    private initialPosition: THREE.Vector3;
+
+    constructor(duration: number, range: number, rotationY: number, position: THREE.Vector3, forward: THREE.Vector3) {
+        super('models/laser_fx.glb');
+        this.duration = duration;
+        this.range = range;
+        this.mesh.rotation.y = rotationY;
+        this.initialPosition = position;
+        this.forward = forward.clone().normalize();
+        this.mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                this.material = child.material as THREE.MeshStandardMaterial;
+            }
+        });
+    }
+
+    public update(dt: number) {
+        super.update(dt);
+        this.time += dt;
+        const progress = this.time / this.duration;
+        const scale = this.range * Math.pow(progress, 2);
+        this.mesh.scale.z = scale;
+        const scaledForward = this.forward.clone().multiplyScalar(scale)
+        this.mesh.position.set(
+            this.initialPosition.x + scaledForward.x,
+            this.initialPosition.y,
+            this.initialPosition.z + scaledForward.z
+        );
+        if (this.material && progress >= 0.8) {
+            this.material.opacity = 1.0 - (progress - 0.8) / 0.2;
+        }
+    }
+
+    public addToScene(scene: THREE.Scene) {
+        this.time = 0;
+        this.update(0); // Initialize scale and opacity
+        scene.add(this.mesh);
+        if (this.material) {
+            this.material.opacity = 1.0;
+        }
+    }
+
+    public removeFromScene() {
+        this.mesh.parent?.remove(this.mesh);
     }
 }

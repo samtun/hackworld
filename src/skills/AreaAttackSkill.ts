@@ -63,8 +63,6 @@ export class AreaAttackSkill extends Skill {
         if (progress >= 1) {
             this.cleanup();
         } else {
-            // Update area attack effect animation
-            console.log("AreaAttackSkill update called", this.effectTimer, dt);
             this.areaAttackEffect?.update(dt);
         }
     }
@@ -72,7 +70,6 @@ export class AreaAttackSkill extends Skill {
     cleanup(): void {
         this.effectTimer = 0;
         this.areaAttackEffect?.removeFromScene();
-        this.areaAttackEffect = undefined;
         this.isBeingExecuted = false;
         this.onCompletedCallback();
     }
@@ -97,13 +94,12 @@ class AreaAttackEffect extends BaseMesh {
 
     public update(dt: number) {
         super.update(dt);
-        console.log("AreaAttackEffect update called", this.time, dt);
         this.time += dt;
         const progress = this.time / this.duration;
-        const scale = 1.0 + this.range * Math.pow(progress, 2);
-        this.mesh.scale.copy(new THREE.Vector3(scale - 1.0, scale, scale - 1.0));
-        if (this.material && progress > 0.8) {
-            this.material.opacity = 1.0 - (progress - 0.8) / 0.2;
+        const scale = ((this.range * progress) * 3.0) % this.range;
+        this.mesh.scale.copy(new THREE.Vector3(scale, scale, scale));
+        if (this.material) {
+            this.material.opacity = (1.0 - ((progress * 3.0 % 1.0) - 0.7) / 0.3);
         }
     }
 

@@ -62,7 +62,6 @@ export class HealingSkill extends Skill {
 
         this.effectTimer = 0;
         this.healEffect?.removeFromScene();
-        this.healEffect = undefined;
         this.activePlayer = null;
         this.activeScene = null;
         this.isBeingExecuted = false;
