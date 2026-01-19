@@ -595,6 +595,11 @@ export class Player extends BaseMesh {
             return;
         }
 
+        // High priority: Charging attack - block other animations
+        if (this.isChargingAttack) {
+            return;
+        }
+
         // High priority: Skill animation
         if (this.isUsingSkill) {
             if (this.currentAction !== this.actions[ActionType.AttackOneHanded]) {
@@ -625,7 +630,7 @@ export class Player extends BaseMesh {
         if (isMoving) {
             const action = this.weapon.weaponType !== WeaponType.HAMMER ? ActionType.RunOneHanded : ActionType.RunTwoHanded;
             this.fadeToAction(action, 0.05);
-        } else if (!this.isChargingAttack) {
+        } else {
             this.fadeToAction(ActionType.Idle, 0.15);
         }
     }
@@ -684,6 +689,8 @@ export class Player extends BaseMesh {
         if (!this.isDashing) return false;
         this.fadeToAction(ActionType.Dash, 0.0);
         this.dashTimer += dt;
+        // Ensure body is dynamic for dash movement
+        this.body.type = CANNON.Body.DYNAMIC;
         this.body.velocity.x = this.dashDirection.x * this.DASH_SPEED;
         this.body.velocity.z = this.dashDirection.z * this.DASH_SPEED;
 
@@ -698,7 +705,11 @@ export class Player extends BaseMesh {
     private handleCharging(dt: number): boolean {
         if (!this.isChargingAttack) return false;
 
-        this.fadeToAction(ActionType.StartCharge, 0.05);
+        // Force charging animation regardless of other states
+        if (this.currentAction !== this.actions[ActionType.StartCharge]) {
+            this.fadeToAction(ActionType.StartCharge, 0.05);
+        }
+
         this.chargeTimer += dt;
         this.invulnerableTimer = 0; // allow damage while charging
         this.updateChargeParticles();
@@ -737,7 +748,8 @@ export class Player extends BaseMesh {
 
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
-            this.haltMovement();
+            this.body.velocity.x *= 0.9;
+            this.body.velocity.z *= 0.9;
             return;
         }
 
@@ -1029,6 +1041,8 @@ export class Player extends BaseMesh {
         // Knockback: push player away from source horizontally and give small upward impulse
         if (sourcePos) {
             this.stunTimer = this.STUN_TIME;
+            // Ensure body is dynamic for knockback to work
+            this.body.type = CANNON.Body.DYNAMIC;
             const knockDir = this.body.position.vsub(sourcePos);
             knockDir.y = 0;
             if (knockDir.length() > 0) {

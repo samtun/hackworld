@@ -1,3 +1,11 @@
+## [1.37.1](https://github.com/samtun/hackworld/compare/v1.37.0...v1.37.1) (2026-01-19)
+
+
+### Bug Fixes
+
+* dash movement, animation, and knockback issues ([9534685](https://github.com/samtun/hackworld/commit/9534685e1e6f52fae551651265dafd88c4bf4540))
+* fix player knockback behavior ([ac3faea](https://github.com/samtun/hackworld/commit/ac3faeaa58f126d9b5d48006dd22a7d1163ce08b))
+
 # [1.37.0](https://github.com/samtun/hackworld/compare/v1.36.0...v1.37.0) (2026-01-19)
 
 
