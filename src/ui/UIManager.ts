@@ -10,6 +10,7 @@ export class UIManager {
     hpText: HTMLDivElement;
     tpText: HTMLDivElement;
     interactionHint: HTMLDivElement;
+    controlHints: HTMLDivElement; // Centralized control hints display
     startScreen: HTMLDivElement;
     fadeOverlay: HTMLDivElement;
     loadingScreen: HTMLDivElement;
@@ -183,6 +184,24 @@ export class UIManager {
         this.interactionHint.style.display = 'none';
         this.interactionHint.innerText = '[ENTER] / (A) Interact';
         document.body.appendChild(this.interactionHint);
+
+        // Centralized Control Hints (for menus)
+        this.controlHints = document.createElement('div');
+        this.controlHints.style.position = 'fixed';
+        this.controlHints.style.bottom = '20px';
+        this.controlHints.style.left = '50%';
+        this.controlHints.style.transform = 'translateX(-50%)';
+        this.controlHints.style.color = '#fff';
+        this.controlHints.style.fontSize = '16px';
+        this.controlHints.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        this.controlHints.style.textShadow = '2px 2px 0px #000';
+        this.controlHints.style.display = 'none';
+        this.controlHints.style.zIndex = '1100'; // Above menus (1000)
+        this.controlHints.style.textAlign = 'center';
+        this.controlHints.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
+        this.controlHints.style.padding = '10px 20px';
+        this.controlHints.style.borderRadius = '5px';
+        document.body.appendChild(this.controlHints);
 
         // Death Overlay
         this.deathOverlay = document.createElement('div');
@@ -478,6 +497,22 @@ export class UIManager {
     private lastNavigateLeftState: boolean = false;
     private lastNavigateRightState: boolean = false;
     private lastSelectState: boolean = false;
+
+    /**
+     * Show centralized control hints at bottom center of screen
+     * @param html - HTML content for the control hints
+     */
+    showControlHints(html: string) {
+        this.controlHints.innerHTML = html;
+        this.controlHints.style.display = 'block';
+    }
+
+    /**
+     * Hide centralized control hints
+     */
+    hideControlHints() {
+        this.controlHints.style.display = 'none';
+    }
 
     /**
      * Hide the death overlay with fade-out animation
