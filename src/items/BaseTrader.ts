@@ -8,6 +8,8 @@ import { TradeMode } from './TradeMode';
 import { TraderPanel } from './TraderPanel';
 import { EquippableItem } from './EquippableItem';
 import { getHint, HintConfigs } from '../ui/InputHints';
+import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
+import { UIManager } from '../ui/UIManager';
 
 export { TradeMode } from './TradeMode';
 
@@ -36,7 +38,6 @@ export abstract class BaseTrader {
     playerPanel!: HTMLDivElement;
     playerMoneyText!: HTMLDivElement;
     itemDetailsPanel!: HTMLDivElement;
-    hintDiv!: HTMLDivElement;
 
     selectedIndex: number = 0;
     activePanel: TraderPanel = TraderPanel.TRADER;
@@ -54,9 +55,13 @@ export abstract class BaseTrader {
     traderInventory: Item[] = [];
 
     protected uiConfig: TraderUIConfig;
+    protected menuManager: MenuManager;
+    protected uiManager: UIManager;
 
     constructor(uiConfig?: TraderUIConfig) {
         this.uiConfig = uiConfig || {};
+        this.menuManager = MenuManager.Instance;
+        this.uiManager = UIManager.Instance;
         this.createUI();
     }
 
@@ -69,59 +74,25 @@ export abstract class BaseTrader {
     }
 
     protected createUI() {
-        // Default colors and styles
+        // Default colors
         const colors = Object.assign({
-            overlay: 'rgba(0, 0, 0, 0.8)',
-            windowBg: '#333',
-            separator: '#BBBBBB',
-            panelTrader: '#4a3520',
-            panelPlayer: '#203a4a',
-            moneyColor: '#ffd700',
-            text: '#fff'
+            panelTrader: MENU_COLORS.PANEL_TRADER,
+            panelPlayer: MENU_COLORS.PANEL_PLAYER,
+            moneyColor: MENU_COLORS.COST_COLOR,
+            text: MENU_COLORS.TEXT
         }, this.uiConfig.colors || {});
 
-        const STYLES = {
-            FONT_FAMILY: '"Share Tech", Arial, sans-serif',
-            BORDER_RADIUS: '10px',
-            BORDER_WIDTH: '2px',
-            WINDOW_PADDING: '20px',
-            PANEL_PADDING: '20px',
-            GRID_GAP: '2px'
-        };
-
         // Build container overlay
-        this.container = document.createElement('div');
-        Object.assign(this.container.style, {
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            backgroundColor: colors.overlay,
-            display: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '1000'
-        });
+        this.container = this.menuManager.createOverlay();
         document.body.appendChild(this.container);
 
         // Main Window
-        const windowDiv = document.createElement('div');
-        Object.assign(windowDiv.style, {
-            width: '92vw',
-            height: '92vh',
-            backgroundColor: colors.windowBg,
-            borderRadius: '15px',
-            border: `${STYLES.BORDER_WIDTH} solid #000`,
-            display: 'grid',
-            gridTemplateColumns: '1fr 1fr',
-            gridTemplateRows: 'auto 1fr auto 1fr auto',
-            gap: STYLES.GRID_GAP,
-            padding: STYLES.WINDOW_PADDING,
-            boxSizing: 'border-box',
-            color: colors.text,
-            fontFamily: STYLES.FONT_FAMILY
-        });
+        const windowDiv = this.menuManager.createGridWindow(
+            '1fr 1fr',
+            'auto 1fr auto 1fr auto',
+            { width: '92vw', height: '92vh' }
+        );
+        windowDiv.style.gap = '2px';
         this.container.appendChild(windowDiv);
 
         // Title
@@ -133,23 +104,17 @@ export abstract class BaseTrader {
             fontSize: '28px',
             fontWeight: 'bold',
             padding: '10px',
-            borderBottom: `2px solid ${colors.separator}`
+            borderBottom: `2px solid ${MENU_COLORS.SEPARATOR}`
         });
         windowDiv.appendChild(titleDiv);
 
         // Trader Panel (Left)
-        this.traderPanel = document.createElement('div');
-        Object.assign(this.traderPanel.style, {
+        this.traderPanel = this.menuManager.createPanel({
             backgroundColor: this.uiConfig.colors?.panelTrader || colors.panelTrader,
-            borderRadius: STYLES.BORDER_RADIUS,
-            border: `${STYLES.BORDER_WIDTH} solid #000`,
             gridRow: '2 / 3',
-            gridColumn: '1 / 2',
-            color: colors.text,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: STYLES.PANEL_PADDING,
-            overflowY: 'auto'
+            gridColumn: '1 / 2'
         });
+        this.traderPanel.style.overflowY = 'auto';
         windowDiv.appendChild(this.traderPanel);
 
         const traderTitle = document.createElement('div');
@@ -163,18 +128,12 @@ export abstract class BaseTrader {
         this.traderPanel.appendChild(this.traderList);
 
         // Player Panel (Right)
-        this.playerPanel = document.createElement('div');
-        Object.assign(this.playerPanel.style, {
+        this.playerPanel = this.menuManager.createPanel({
             backgroundColor: this.uiConfig.colors?.panelPlayer || colors.panelPlayer,
-            borderRadius: STYLES.BORDER_RADIUS,
-            border: `${STYLES.BORDER_WIDTH} solid #000`,
             gridRow: '2 / 3',
-            gridColumn: '2 / 3',
-            color: colors.text,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: STYLES.PANEL_PADDING,
-            overflowY: 'auto'
+            gridColumn: '2 / 3'
         });
+        this.playerPanel.style.overflowY = 'auto';
         windowDiv.appendChild(this.playerPanel);
 
         const playerTitle = document.createElement('div');
@@ -193,21 +152,15 @@ export abstract class BaseTrader {
             gridColumn: '1 / 3',
             gridRow: '3 / 4',
             height: '2px',
-            backgroundColor: colors.separator
+            backgroundColor: MENU_COLORS.SEPARATOR
         });
         windowDiv.appendChild(separatorDiv);
 
         // Single Item Details Panel (Bottom - spans both columns)
-        const statsPanel = document.createElement('div');
-        Object.assign(statsPanel.style, {
-            backgroundColor: colors.windowBg,
-            borderRadius: STYLES.BORDER_RADIUS,
-            border: `${STYLES.BORDER_WIDTH} solid #000`,
+        const statsPanel = this.menuManager.createPanel({
+            backgroundColor: MENU_COLORS.WINDOW_BG,
             gridRow: '4 / 5',
-            gridColumn: '1 / 3',
-            color: colors.text,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: STYLES.PANEL_PADDING
+            gridColumn: '1 / 3'
         });
         windowDiv.appendChild(statsPanel);
 
@@ -228,21 +181,16 @@ export abstract class BaseTrader {
             gridColumn: '1 / 3',
             gridRow: '5 / 6',
             display: 'flex',
-            justifyContent: 'space-around',
+            justifyContent: 'center',
             alignItems: 'center',
             padding: '10px',
-            borderTop: `2px solid ${colors.separator}`,
+            borderTop: `2px solid ${MENU_COLORS.SEPARATOR}`,
             color: colors.text,
-            fontFamily: STYLES.FONT_FAMILY,
+            fontFamily: MENU_STYLES.FONT_FAMILY,
             fontSize: '18px',
             fontWeight: 'bold'
         });
         windowDiv.appendChild(moneyDiv);
-
-        this.hintDiv = document.createElement('div');
-        this.hintDiv.innerHTML = '<span class="key-icon">ENTER</span> Buy/Sell <span style="margin: 0 15px;"></span> <span class="key-icon">ESC</span> Close';
-        this.hintDiv.style.fontSize = '14px';
-        moneyDiv.appendChild(this.hintDiv);
 
         this.playerMoneyText = document.createElement('div');
         this.playerMoneyText.style.color = this.uiConfig.colors?.moneyColor || colors.moneyColor;
@@ -261,6 +209,7 @@ export abstract class BaseTrader {
     hide() {
         this.isVisible = false;
         this.container.style.display = 'none';
+        this.uiManager.hideControlHints();
     }
 
     toggle() { if (this.isVisible) this.hide(); else this.show(); }
@@ -268,8 +217,8 @@ export abstract class BaseTrader {
     update(player: Player, input?: InputManager) {
         if (!this.isVisible) return;
         if (input) {
-            // Update hints based on input method
-            this.hintDiv.innerHTML = getHint(HintConfigs.buySellClose, input);
+            // Update centralized control hints based on input method
+            this.uiManager.showControlHints(getHint(HintConfigs.buySellClose, input));
             
             const oldIndex = this.selectedIndex;
             const oldPanel = this.activePanel;
@@ -302,12 +251,12 @@ export abstract class BaseTrader {
             const canAfford = mode === TradeMode.SELL || (price !== undefined && player.money >= price);
             itemDiv.innerHTML = formatItemLabel(item, priceText);
             const isSelected = isActive && index === this.selectedIndex;
-            Object.assign(itemDiv.style, { padding: '8px', backgroundColor: isSelected ? '#888' : 'transparent', border: isSelected ? '2px solid #fff' : '2px solid transparent', opacity: canAfford ? '1' : '0.5', transition: 'transform 0.1s', position: 'relative' });
+            Object.assign(itemDiv.style, { padding: '8px', backgroundColor: isSelected ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.TRANSPARENT, border: isSelected ? '2px solid #fff' : '2px solid transparent', opacity: canAfford ? '1' : '0.5', transition: 'transform 0.1s', position: 'relative' });
             if ((item as any).isEquipped) {
                 const triangle = document.createElement('div');
                 triangle.style.position = 'absolute'; triangle.style.top = '0'; triangle.style.left = '0'; triangle.style.width = '0'; triangle.style.height = '0'; triangle.style.borderLeft = '12px solid #ffd700'; triangle.style.borderBottom = '12px solid transparent'; itemDiv.appendChild(triangle);
             }
-            if (index < items.length - 1) itemDiv.style.borderBottom = '1px solid #BBBBBB';
+            if (index < items.length - 1) itemDiv.style.borderBottom = `1px solid ${MENU_COLORS.SEPARATOR}`;
             if (isActive) this.itemElements.push(itemDiv);
             container.appendChild(itemDiv);
         });
