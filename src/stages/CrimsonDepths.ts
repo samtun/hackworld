@@ -11,7 +11,7 @@ export class CrimsonDepths extends BaseStage {
     name = CrimsonDepths.name;
     description = CrimsonDepths.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
-    spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 1, 0);
+    spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
@@ -37,7 +37,7 @@ export class CrimsonDepths extends BaseStage {
         this.createFloorCollider();
 
         // Teleporter back to Lobby
-        this.createTeleporter(new CANNON.Vec3(-10, 0.02, -10), Lobby.getMetadata().id);
+        this.createTeleporter(new CANNON.Vec3(-10, 0, -10), Lobby.getMetadata().id);
 
         // Dungeon Obstacles
         this.createBox(4, 1, 4, new CANNON.Vec3(5, 0.5, 5));
