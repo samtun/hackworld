@@ -43,14 +43,13 @@ export class SaveManagerUI {
 
     private createUI(): void {
         // Main Container Overlay - using MenuManager
-        this.container = this.menuManager.createFixedOverlay();
+        this.container = this.menuManager.createOverlay();
         document.body.appendChild(this.container);
 
         // Window - using MenuManager
         const modalWindow = this.menuManager.createFlexWindow('column', {
             width: 'auto',
             height: 'auto',
-            padding: '30px'
         });
         Object.assign(modalWindow.style, {
             minWidth: '400px'
@@ -221,7 +220,7 @@ export class SaveManagerUI {
         // Navigate between buttons with left/right
         const leftPressed = input.isNavigateLeftPressed();
         const rightPressed = input.isNavigateRightPressed();
-        
+
         // Only change selection on button press (not held) and respect boundaries
         if (leftPressed && !this.lastNavigateLeftState) {
             // Only switch if we're on the right button (load)
@@ -230,7 +229,7 @@ export class SaveManagerUI {
                 this.updateButtonHighlight();
             }
         }
-        
+
         if (rightPressed && !this.lastNavigateRightState) {
             // Only switch if we're on the left button (save)
             if (this.selectedButton === 'save') {

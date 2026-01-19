@@ -53,6 +53,7 @@ export interface MenuConfig {
     maxHeight?: string;
     backgroundColor?: string;
     padding?: string;
+    margin?: string;
 }
 
 export interface PanelConfig {
@@ -60,6 +61,7 @@ export interface PanelConfig {
     gridRow?: string;
     gridColumn?: string;
     padding?: string;
+    margin?: string;
 }
 
 /**
@@ -68,36 +70,16 @@ export interface PanelConfig {
 export class MenuManager {
     private static instance: MenuManager;
 
-    private constructor() {}
+    private constructor() { }
 
     public static get Instance(): MenuManager {
         return this.instance || (this.instance = new this());
     }
 
     /**
-     * Create a full-screen overlay for menus
-     */
-    createOverlay(): HTMLDivElement {
-        const overlay = document.createElement('div');
-        Object.assign(overlay.style, {
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            backgroundColor: MENU_COLORS.OVERLAY,
-            display: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: String(MENU_STYLES.Z_INDEX)
-        });
-        return overlay;
-    }
-
-    /**
      * Create a fixed-position overlay (for menus that use fixed positioning)
      */
-    createFixedOverlay(): HTMLDivElement {
+    createOverlay(): HTMLDivElement {
         const overlay = document.createElement('div');
         Object.assign(overlay.style, {
             position: 'fixed',
@@ -121,7 +103,7 @@ export class MenuManager {
         const window = document.createElement('div');
         Object.assign(window.style, {
             width: config?.width || '92vw',
-            height: config?.height || '92vh',
+            height: config?.height || '90vh',
             maxWidth: config?.maxWidth,
             maxHeight: config?.maxHeight,
             backgroundColor: config?.backgroundColor || MENU_COLORS.WINDOW_BG,
@@ -130,7 +112,8 @@ export class MenuManager {
             padding: config?.padding || MENU_STYLES.WINDOW_PADDING,
             boxSizing: 'border-box',
             color: MENU_COLORS.TEXT,
-            fontFamily: MENU_STYLES.FONT_FAMILY
+            fontFamily: MENU_STYLES.FONT_FAMILY,
+            margin: config?.margin || '0 0 6vh 0',
         });
         return window;
     }
@@ -146,7 +129,8 @@ export class MenuManager {
             border: `${MENU_STYLES.BORDER_WIDTH} solid ${MENU_COLORS.BORDER}`,
             color: MENU_COLORS.TEXT,
             fontFamily: MENU_STYLES.FONT_FAMILY,
-            padding: config?.padding || MENU_STYLES.PANEL_PADDING
+            padding: config?.padding || MENU_STYLES.PANEL_PADDING,
+            margin: config?.margin,
         });
 
         if (config?.gridRow) {

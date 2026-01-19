@@ -10,14 +10,14 @@ import { UIManager } from '../../ui/UIManager';
 
 export class CardManager {
     private static instance: CardManager;
-    
+
     container!: HTMLDivElement;
     isVisible: boolean = false;
-    
+
     // UI Elements
     private mainContent!: HTMLDivElement;
     private packCountDisplay!: HTMLDivElement;
-    
+
     // Navigation state
     private viewMode: ViewMode = ViewMode.MENU;
     private selectedMenuIndex: number = 0;
@@ -26,46 +26,45 @@ export class CardManager {
     private revealedCards: Card[] = [];
     private flippedCardIndices: Set<number> = new Set(); // Track which cards have been flipped
     private flippingInProgress: boolean = false; // Track if flip animation is in progress
-    
+
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
     private lastNavigateDownState: boolean = false;
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
-    
+
     private cardCollection: CardCollection;
     private currentInputManager?: InputManager; // Store input manager for dynamic hints
     private menuManager: MenuManager;
     private uiManager: UIManager;
-    
+
     private constructor() {
         this.cardCollection = CardCollection.Instance;
         this.menuManager = MenuManager.Instance;
         this.uiManager = UIManager.Instance;
         this.createUI();
     }
-    
+
     public static get Instance(): CardManager {
         return this.instance || (this.instance = new this());
     }
-    
+
     private createUI() {
         // Main Container Overlay
-        this.container = this.menuManager.createFixedOverlay();
+        this.container = this.menuManager.createOverlay();
         document.body.appendChild(this.container);
-        
+
         // Main Window
         const windowDiv = this.menuManager.createFlexWindow('column', {
             maxWidth: '800px',
             width: '90%',
-            maxHeight: '80vh'
         });
         this.container.appendChild(windowDiv);
-        
+
         // Title
         const titleDiv = this.menuManager.createTitle('CARD COLLECTION', MENU_COLORS.SPECIAL);
         windowDiv.appendChild(titleDiv);
-        
+
         // Pack count display
         this.packCountDisplay = document.createElement('div');
         Object.assign(this.packCountDisplay.style, {
@@ -76,7 +75,7 @@ export class CardManager {
             marginBottom: '15px'
         });
         windowDiv.appendChild(this.packCountDisplay);
-        
+
         // Main content area
         this.mainContent = document.createElement('div');
         Object.assign(this.mainContent.style, {
@@ -86,7 +85,7 @@ export class CardManager {
         });
         windowDiv.appendChild(this.mainContent);
     }
-    
+
     private getRarityColor(rarity: CardRarity): string {
         switch (rarity) {
             case CardRarity.NORMAL:
@@ -97,15 +96,15 @@ export class CardManager {
                 return MENU_COLORS.SPECIAL;
         }
     }
-    
+
     private renderMenu(player: Player) {
         this.mainContent.innerHTML = '';
-        
+
         const menuItems = [
             { label: 'Open Booster Pack', enabled: player.boosterPacks > 0 },
             { label: 'View Albums', enabled: true }
         ];
-        
+
         menuItems.forEach((item, index) => {
             const menuItem = document.createElement('div');
             menuItem.innerText = item.label;
@@ -121,7 +120,7 @@ export class CardManager {
             });
             this.mainContent.appendChild(menuItem);
         });
-        
+
         // Show collection progress
         const progressDiv = document.createElement('div');
         const collected = this.cardCollection.getTotalCollected();
@@ -135,14 +134,14 @@ export class CardManager {
         });
         this.mainContent.appendChild(progressDiv);
     }
-    
+
     private renderOpenPack() {
         const containerId = 'pack-cards-container';
         let cardsContainer = document.getElementById(containerId) as HTMLDivElement;
-        
+
         if (!cardsContainer) {
             this.mainContent.innerHTML = '';
-            
+
             // Title
             const titleDiv = document.createElement('div');
             titleDiv.innerText = 'Pack Contents';
@@ -154,7 +153,7 @@ export class CardManager {
                 marginBottom: '20px'
             });
             this.mainContent.appendChild(titleDiv);
-            
+
             // Container for all cards in a single row
             cardsContainer = document.createElement('div');
             cardsContainer.id = containerId;
@@ -165,7 +164,7 @@ export class CardManager {
                 marginBottom: '20px',
                 flexWrap: 'nowrap' // Keep all cards in a single row
             });
-            
+
             // Display all 4 cards
             this.revealedCards.forEach((card) => {
                 // Outer container for 3D perspective
@@ -175,7 +174,7 @@ export class CardManager {
                     minWidth: '150px',
                     minHeight: '200px'
                 });
-                
+
                 // Inner flipper element
                 const cardFlipper = document.createElement('div');
                 cardFlipper.className = 'card-flipper';
@@ -187,7 +186,7 @@ export class CardManager {
                     transformStyle: 'preserve-3d',
                     transform: 'rotateY(0deg)'
                 });
-                
+
                 // Card back (face down)
                 const cardBack = document.createElement('div');
                 Object.assign(cardBack.style, {
@@ -205,7 +204,7 @@ export class CardManager {
                     backfaceVisibility: 'hidden',
                     boxSizing: 'border-box'
                 });
-                
+
                 const backText = document.createElement('div');
                 backText.innerText = '?';
                 Object.assign(backText.style, {
@@ -214,7 +213,7 @@ export class CardManager {
                     color: '#666'
                 });
                 cardBack.appendChild(backText);
-                
+
                 // Card front (face up)
                 const cardFront = document.createElement('div');
                 Object.assign(cardFront.style, {
@@ -233,9 +232,9 @@ export class CardManager {
                     transform: 'rotateY(180deg)',
                     boxSizing: 'border-box'
                 });
-                
+
                 const isNew = !this.cardCollection.hasCard(card);
-                
+
                 const albumText = document.createElement('div');
                 albumText.innerText = card.album;
                 Object.assign(albumText.style, {
@@ -245,7 +244,7 @@ export class CardManager {
                     marginBottom: '8px'
                 });
                 cardFront.appendChild(albumText);
-                
+
                 const slotText = document.createElement('div');
                 slotText.innerText = `#${card.slot}`;
                 Object.assign(slotText.style, {
@@ -254,7 +253,7 @@ export class CardManager {
                     marginBottom: '8px'
                 });
                 cardFront.appendChild(slotText);
-                
+
                 const rarityText = document.createElement('div');
                 rarityText.innerText = card.rarity.toUpperCase();
                 Object.assign(rarityText.style, {
@@ -285,16 +284,16 @@ export class CardManager {
                 }
 
                 cardFront.appendChild(statusContainer);
-                
+
                 // Assemble the card structure
                 cardFlipper.appendChild(cardBack);
                 cardFlipper.appendChild(cardFront);
                 cardContainer.appendChild(cardFlipper);
                 cardsContainer.appendChild(cardContainer);
             });
-            
+
             this.mainContent.appendChild(cardsContainer);
-            
+
             // Instructions
             const instructionsText = document.createElement('div');
             instructionsText.id = 'pack-instructions';
@@ -313,7 +312,7 @@ export class CardManager {
             const isFlipped = this.flippedCardIndices.has(index);
             (flipper as HTMLElement).style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
         });
-        
+
         // Update instructions text
         const instructionsText = document.getElementById('pack-instructions');
         if (instructionsText && this.currentInputManager) {
@@ -327,14 +326,14 @@ export class CardManager {
             }
         }
     }
-    
+
     private renderAlbumList() {
         this.mainContent.innerHTML = '';
-        
+
         const albums = CardDefinitions.getAlbums();
         albums.forEach((album, index) => {
             const progress = this.cardCollection.getAlbumProgress(album);
-            
+
             const albumDiv = document.createElement('div');
             albumDiv.innerHTML = `<strong>${album}</strong> - ${progress.collected} / ${progress.total}`;
             Object.assign(albumDiv.style, {
@@ -349,10 +348,10 @@ export class CardManager {
             this.mainContent.appendChild(albumDiv);
         });
     }
-    
+
     private renderAlbumDetail() {
         this.mainContent.innerHTML = '';
-        
+
         const titleDiv = document.createElement('div');
         titleDiv.innerText = `Album: ${this.currentAlbum}`;
         Object.assign(titleDiv.style, {
@@ -363,7 +362,7 @@ export class CardManager {
             marginBottom: '20px'
         });
         this.mainContent.appendChild(titleDiv);
-        
+
         const cards = CardDefinitions.getAlbumCards(this.currentAlbum);
         const gridDiv = document.createElement('div');
         Object.assign(gridDiv.style, {
@@ -371,7 +370,7 @@ export class CardManager {
             gridTemplateColumns: 'repeat(4, 1fr)',
             gap: '10px'
         });
-        
+
         cards.forEach(card => {
             const collected = this.cardCollection.hasCard(card);
             const cardDiv = document.createElement('div');
@@ -387,7 +386,7 @@ export class CardManager {
                 minHeight: '100px',
                 justifyContent: 'center'
             });
-            
+
             const slotText = document.createElement('div');
             slotText.innerText = `#${card.slot}`;
             Object.assign(slotText.style, {
@@ -396,7 +395,7 @@ export class CardManager {
                 color: this.getRarityColor(card.rarity)
             });
             cardDiv.appendChild(slotText);
-            
+
             const rarityText = document.createElement('div');
             rarityText.innerText = card.rarity.toUpperCase();
             Object.assign(rarityText.style, {
@@ -405,7 +404,7 @@ export class CardManager {
                 marginTop: '5px'
             });
             cardDiv.appendChild(rarityText);
-            
+
             // Always create checkmark container to maintain consistent height
             const checkmark = document.createElement('div');
             checkmark.innerText = collected ? '✓' : '';
@@ -416,13 +415,13 @@ export class CardManager {
                 height: '29px' // Reserve space for checkmark
             });
             cardDiv.appendChild(checkmark);
-            
+
             gridDiv.appendChild(cardDiv);
         });
-        
+
         this.mainContent.appendChild(gridDiv);
     }
-    
+
     public show() {
         if (this.isVisible) return;
         this.isVisible = true;
@@ -431,7 +430,7 @@ export class CardManager {
         this.selectedMenuIndex = 0;
         resetInputDebounce(this as any);
     }
-    
+
     public hide() {
         if (!this.isVisible) return;
         this.isVisible = false;
@@ -439,10 +438,10 @@ export class CardManager {
         this.uiManager.hideControlHints();
         resetInputDebounce(this as any);
     }
-    
+
     private render(player: Player) {
         this.packCountDisplay.innerText = `Booster Packs: ${player.boosterPacks}`;
-        
+
         switch (this.viewMode) {
             case ViewMode.MENU:
                 this.renderMenu(player);
@@ -458,46 +457,46 @@ export class CardManager {
                 break;
         }
     }
-    
+
     public update(player: Player, input: InputManager) {
         if (!this.isVisible) return;
-        
+
         // Store input manager for dynamic hints
         this.currentInputManager = input;
-        
+
         // Update centralized control hints based on input method
         this.uiManager.showControlHints(getHint(HintConfigs.menuNavigate, input));
-        
+
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();
         const select = input.isSelectPressed();
         const cancel = input.isCancelPressed();
-        
+
         // Debounced navigation
         if (navigateUp && !this.lastNavigateUpState) {
             this.handleNavigateUp();
         }
         this.lastNavigateUpState = navigateUp;
-        
+
         if (navigateDown && !this.lastNavigateDownState) {
             this.handleNavigateDown();
         }
         this.lastNavigateDownState = navigateDown;
-        
+
         if (select && !this.lastSelectState) {
             this.handleSelect(player);
         }
         this.lastSelectState = select;
-        
+
         if (cancel && !this.lastCancelState) {
             this.handleCancel();
         }
         this.lastCancelState = cancel;
-        
+
         // Always render
         this.render(player);
     }
-    
+
     private handleNavigateUp() {
         if (this.viewMode === ViewMode.MENU) {
             this.selectedMenuIndex = Math.max(0, this.selectedMenuIndex - 1);
@@ -505,7 +504,7 @@ export class CardManager {
             this.selectedAlbumIndex = Math.max(0, this.selectedAlbumIndex - 1);
         }
     }
-    
+
     private handleNavigateDown() {
         if (this.viewMode === ViewMode.MENU) {
             this.selectedMenuIndex = Math.min(1, this.selectedMenuIndex + 1);
@@ -514,7 +513,7 @@ export class CardManager {
             this.selectedAlbumIndex = Math.min(maxIndex, this.selectedAlbumIndex + 1);
         }
     }
-    
+
     private handleSelect(player: Player) {
         if (this.viewMode === ViewMode.MENU) {
             if (this.selectedMenuIndex === 0 && player.boosterPacks > 0) {
@@ -527,7 +526,7 @@ export class CardManager {
                 this.flippedCardIndices.clear();
                 this.flippingInProgress = false;
                 this.viewMode = ViewMode.OPEN_PACK;
-                
+
                 // Start flipping immediately
                 this.startCardFlipAnimation(player);
             } else if (this.selectedMenuIndex === 1) {
@@ -548,16 +547,16 @@ export class CardManager {
             this.viewMode = ViewMode.VIEW_ALBUM;
         }
     }
-    
+
     private async startCardFlipAnimation(player: Player) {
         this.flippingInProgress = true;
         this.render(player);
-        
+
         // Add cards to collection before flipping
         this.revealedCards.forEach(card => {
             this.cardCollection.addCard(card);
         });
-        
+
         // Flip cards one by one with a delay
         for (let i = 0; i < this.revealedCards.length; i++) {
             // Wait 400ms between each card flip
@@ -566,11 +565,11 @@ export class CardManager {
             // Re-render to show the flipped state
             this.render(player);
         }
-        
+
         this.flippingInProgress = false;
         this.render(player);
     }
-    
+
     private handleCancel() {
         if (this.viewMode === ViewMode.MENU) {
             this.hide();

@@ -64,8 +64,7 @@ export class XDataUpgradeManager {
 
         // Main Window - using MenuManager
         const windowDiv = this.menuManager.createFlexWindow('column', {
-            width: '600px',
-            maxHeight: '80vh'
+            width: '800px',
         });
         this.container.appendChild(windowDiv);
 

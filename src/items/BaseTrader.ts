@@ -90,7 +90,7 @@ export abstract class BaseTrader {
         const windowDiv = this.menuManager.createGridWindow(
             '1fr 1fr',
             'auto 1fr auto 1fr auto',
-            { width: '92vw', height: '92vh' }
+            { width: '92vw' }
         );
         windowDiv.style.gap = '2px';
         this.container.appendChild(windowDiv);
@@ -219,7 +219,7 @@ export abstract class BaseTrader {
         if (input) {
             // Update centralized control hints based on input method
             this.uiManager.showControlHints(getHint(HintConfigs.buySellClose, input));
-            
+
             const oldIndex = this.selectedIndex;
             const oldPanel = this.activePanel;
             this.handleNavigation(player, input);
