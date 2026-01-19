@@ -1,27 +1,9 @@
 import { InputManager } from './InputManager';
 import { AVAILABLE_DUNGEONS, BaseStage } from './stages';
 import { GameProgressManager } from './GameProgressManager';
-
-// --- Constants (matching InventoryManager style) ---
-const COLORS = {
-    OVERLAY: 'rgba(0, 0, 0, 0.8)',
-    WINDOW_BG: '#333',
-    BORDER: '#000',
-    TEXT: '#fff',
-    PANEL_BG: '#424242',
-    ITEM_HOVER: '#666',
-    ITEM_SELECTED: '#888',
-    TRANSPARENT: 'transparent',
-    SEPARATOR: '#BBBBBB'
-};
-
-const STYLES = {
-    FONT_FAMILY: '"Share Tech", Arial, sans-serif',
-    BORDER_RADIUS: '10px',
-    BORDER_WIDTH: '2px',
-    WINDOW_PADDING: '20px',
-    PANEL_PADDING: '20px'
-};
+import { MenuManager, MENU_COLORS, MENU_STYLES } from './ui/MenuManager';
+import { UIManager } from './ui/UIManager';
+import { getHint, HintConfigs } from './ui/InputHints';
 
 export class DungeonSelectionManager {
     static _instance: DungeonSelectionManager; // Singleton
@@ -46,8 +28,13 @@ export class DungeonSelectionManager {
     private waitForRelease: boolean = false;
     private onDungeonSelected?: (dungeonId: string) => void;
 
+    private menuManager: MenuManager;
+    private uiManager: UIManager;
+
     private constructor(dungeonClasses: (typeof BaseStage)[]) {
         this.dungeonClasses = dungeonClasses;
+        this.menuManager = MenuManager.Instance;
+        this.uiManager = UIManager.Instance;
         this.createUI();
     }
 
@@ -57,11 +44,14 @@ export class DungeonSelectionManager {
 
     private createUI() {
         // Main Container Overlay
-        this.container = this.createOverlay();
+        this.container = this.menuManager.createOverlay();
         document.body.appendChild(this.container);
 
         // Main Window
-        const windowDiv = this.createWindow();
+        const windowDiv = this.menuManager.createFlexWindow('column', {
+            width: '500px',
+            maxHeight: '600px'
+        });
         this.container.appendChild(windowDiv);
 
         // Title
@@ -71,74 +61,18 @@ export class DungeonSelectionManager {
         title.style.fontWeight = 'bold';
         title.style.marginBottom = '20px';
         title.style.textAlign = 'center';
-        title.style.fontFamily = STYLES.FONT_FAMILY;
-        title.style.color = COLORS.TEXT;
+        title.style.fontFamily = MENU_STYLES.FONT_FAMILY;
+        title.style.color = MENU_COLORS.TEXT;
         windowDiv.appendChild(title);
 
         // Dungeon List Panel
-        const listPanel = this.createPanel();
+        const listPanel = this.menuManager.createPanel();
         listPanel.style.overflowY = 'auto';
         listPanel.style.flex = '1';
         windowDiv.appendChild(listPanel);
 
         this.dungeonList = document.createElement('div');
         listPanel.appendChild(this.dungeonList);
-
-        // Instructions
-        const instructions = document.createElement('div');
-        instructions.innerText = "Use W/S or ↑/↓ to navigate, Space/Enter to select, ESC/B to close";
-        instructions.style.marginTop = '15px';
-        instructions.style.textAlign = 'center';
-        instructions.style.fontSize = '14px';
-        instructions.style.color = '#aaa';
-        instructions.style.fontFamily = STYLES.FONT_FAMILY;
-        windowDiv.appendChild(instructions);
-    }
-
-    private createOverlay(): HTMLDivElement {
-        const el = document.createElement('div');
-        Object.assign(el.style, {
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            width: '100%',
-            height: '100%',
-            backgroundColor: COLORS.OVERLAY,
-            display: 'none',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: '1000'
-        });
-        return el;
-    }
-
-    private createWindow(): HTMLDivElement {
-        const el = document.createElement('div');
-        Object.assign(el.style, {
-            width: '500px',
-            maxHeight: '600px',
-            backgroundColor: COLORS.WINDOW_BG,
-            borderRadius: '15px',
-            border: `2px solid ${COLORS.BORDER}`,
-            display: 'flex',
-            flexDirection: 'column',
-            padding: STYLES.WINDOW_PADDING,
-            boxSizing: 'border-box'
-        });
-        return el;
-    }
-
-    private createPanel(): HTMLDivElement {
-        const el = document.createElement('div');
-        Object.assign(el.style, {
-            backgroundColor: COLORS.PANEL_BG,
-            borderRadius: STYLES.BORDER_RADIUS,
-            border: `${STYLES.BORDER_WIDTH} solid ${COLORS.BORDER}`,
-            color: COLORS.TEXT,
-            fontFamily: STYLES.FONT_FAMILY,
-            padding: STYLES.PANEL_PADDING
-        });
-        return el;
     }
 
     show(onDungeonSelected: (dungeonId: string) => void) {
@@ -154,10 +88,14 @@ export class DungeonSelectionManager {
     hide() {
         this.isVisible = false;
         this.container.style.display = 'none';
+        this.uiManager.hideControlHints();
     }
 
     update(input: InputManager) {
         if (!this.isVisible) return;
+
+        // Update centralized control hints based on input method
+        this.uiManager.showControlHints(getHint(HintConfigs.menuNavigate, input));
 
         const oldIndex = this.selectedIndex;
         this.handleNavigation(input);
@@ -214,14 +152,14 @@ export class DungeonSelectionManager {
 
             Object.assign(dungeonDiv.style, {
                 padding: '15px',
-                backgroundColor: isSelected ? COLORS.ITEM_SELECTED : COLORS.TRANSPARENT,
+                backgroundColor: isSelected ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.TRANSPARENT,
                 border: isSelected ? '2px solid #fff' : '2px solid transparent',
                 borderRadius: '8px'
             });
 
             // Add separator between items
             if (index < unlockedDungeons.length - 1) {
-                dungeonDiv.style.borderBottom = `1px solid ${COLORS.SEPARATOR}`;
+                dungeonDiv.style.borderBottom = `1px solid ${MENU_COLORS.SEPARATOR}`;
             }
 
             // Dungeon name
