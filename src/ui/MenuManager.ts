@@ -42,7 +42,8 @@ export const MENU_STYLES = {
     PANEL_PADDING: '20px',
     GRID_GAP: '20px',
     SLOT_GAP: '15px',
-    Z_INDEX: '1000'
+    Z_INDEX: '1000',
+    Z_INDEX_HINTS: '1100' // Above menus
 };
 
 export interface MenuConfig {

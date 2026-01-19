@@ -1,4 +1,5 @@
 import { Player } from '../Player';
+import { MENU_STYLES } from './MenuManager';
 
 export class UIManager {
     private static instance: UIManager; // Singleton
@@ -196,7 +197,7 @@ export class UIManager {
         this.controlHints.style.fontFamily = '"Share Tech", Arial, sans-serif';
         this.controlHints.style.textShadow = '2px 2px 0px #000';
         this.controlHints.style.display = 'none';
-        this.controlHints.style.zIndex = '1100'; // Above menus (1000)
+        this.controlHints.style.zIndex = MENU_STYLES.Z_INDEX_HINTS;
         this.controlHints.style.textAlign = 'center';
         this.controlHints.style.backgroundColor = 'rgba(0, 0, 0, 0.6)';
         this.controlHints.style.padding = '10px 20px';
