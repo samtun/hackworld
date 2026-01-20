@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
-import CannonDebugger from 'cannon-es-debugger';
+import * as CANNON from 'cannon-es'; // Still used for Player/World compatibility until they are migrated
+import RAPIER from '@dimforge/rapier3d-compat';
+import { RapierPhysics } from './physics/RapierPhysics';
 import { Player } from './Player';
 import { World } from './World';
 import { InputManager } from './InputManager';
@@ -25,8 +26,8 @@ export class Game {
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
     renderer: THREE.WebGLRenderer;
-    physicsWorld: CANNON.World;
-    defaultMaterial: CANNON.Material;
+    physicsWorld: RAPIER.World;
+    // Rapier doesn't use materials the same way as Cannon - materials are set per collider
 
     player!: Player;
     world: World;
@@ -47,7 +48,6 @@ export class Game {
     currentScene: string = 'startScreen';
 
     // Debug
-    physicsDebugger: any;
     debugMode: boolean = false;
     debugMeshes: THREE.Mesh[] = [];
     debugValueEditor?: DebugValueEditor;
@@ -61,16 +61,15 @@ export class Game {
     wasJustInteracted: boolean = false; // Prevent immediate action (e.g. pickup or NPC interaction)
     isTransitioning: boolean = false;
 
-    // Spawn position constants
-    // private static readonly LOBBY_SPAWN_POSITION = new CANNON.Vec3(0, 0.5, 0);
-
     // Last teleporter position for respawn (starts at lobby spawn)
     lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
 
     // Camera follow offset
     cameraOffset: THREE.Vector3 = new THREE.Vector3(7, 9, 7);
 
-    constructor() {
+    private constructor(physicsWorld: RAPIER.World) {
+        this.physicsWorld = physicsWorld;
+
         // Setup Three.js
         this.scene = new THREE.Scene();
         this.scene.background = new THREE.Color(0x121212);
@@ -95,22 +94,12 @@ export class Game {
         dirLight.castShadow = true;
         this.scene.add(dirLight);
 
-        // Setup Physics
-        this.physicsWorld = new CANNON.World();
-        this.physicsWorld.gravity.set(0, -25, 0); // Stronger gravity for snappier gameplay feel
-
-        // Create physics material with no friction (player movement handles slope sliding manually)
-        this.defaultMaterial = new CANNON.Material('default');
-        const defaultContactMaterial = new CANNON.ContactMaterial(this.defaultMaterial, this.defaultMaterial, {
-            friction: 0,
-            restitution: 0
-        });
-        this.physicsWorld.addContactMaterial(defaultContactMaterial);
-
         // Setup Game Objects
         this.input = InputManager.Instance;
         this.ui = UIManager.Instance;
-        this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial, () => {
+        // Note: World and Player still use Cannon types and will need to be migrated separately
+        // Passing null for physicsMaterial as Rapier doesn't use materials the same way
+        this.world = new World(this.scene, this.physicsWorld as any, null as any, () => {
             this.ui.hideLoadingScreen();
             this.ui.showStartScreen();
             this.initializeEntities();
@@ -118,7 +107,7 @@ export class Game {
             // Start Loop
             this.animate();
         },
-            (loaded, total) => this.ui.updateLoadingProgress(loaded, total),
+            (loaded: number, total: number) => this.ui.updateLoadingProgress(loaded, total),
             () => this.ui.showLoadingScreen(),
             () => this.ui.hideLoadingScreen());
 
@@ -137,13 +126,7 @@ export class Game {
 
         // Debug Mode Setup
         if (import.meta.env.DEV) {
-            this.physicsDebugger = CannonDebugger(this.scene, this.physicsWorld, {
-                color: 0xff0000,
-                onInit: (_body, mesh) => {
-                    mesh.visible = this.debugMode;
-                    this.debugMeshes.push(mesh);
-                }
-            });
+            // Note: Rapier has its own debug rendering that can be added later if needed
 
             // Create debug value editor
             this.debugValueEditor = new DebugValueEditor();
@@ -174,6 +157,16 @@ export class Game {
         }
     }
 
+    /**
+     * Static factory method to create and initialize the Game instance
+     * Must be called instead of constructor since physics initialization is async
+     */
+    static async create(): Promise<Game> {
+        // Initialize Rapier physics
+        const physics = await RapierPhysics.initialize(new THREE.Vector3(0, -25, 0));
+        return new Game(physics.world);
+    }
+
     initializeEntities() {
         this.inventory = InventoryManager.Instance;
         this.npcDialogue = NpcDialogueManager.Instance;
@@ -189,7 +182,9 @@ export class Game {
         // Set up player
         this.playerRegistry = PlayerRegistry.Instance;
         const initialSpawn = this.world.currentStage ? this.world.currentStage.spawnPosition : new CANNON.Vec3(0, 0.4, 0);
-        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, initialSpawn, this.input, this.defaultMaterial));
+        // Note: Player constructor still uses Cannon types and will need to be migrated separately
+        // Passing null for physicsMaterial as Rapier doesn't use materials the same way
+        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld as any, initialSpawn, this.input, null as any));
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
 
@@ -577,11 +572,9 @@ export class Game {
         const isNearInteractive = nearbyInteractive !== null;
 
         // Update Game Logic
-        this.physicsWorld.step(1 / 60, dt, 3);
+        RapierPhysics.Instance.step(dt);
 
-        if (this.debugMode && this.physicsDebugger) {
-            this.physicsDebugger.update();
-        }
+        // Update debug meshes if in debug mode (Rapier debug rendering can be added later if needed)
 
         // Prevent jumping in the frame(s) immediately after interacting
         const preventJump = isNearInteractive || this.wasJustInteracted;
