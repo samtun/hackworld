@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import RAPIER from '@dimforge/rapier3d-compat';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { CrimsonDepths } from './CrimsonDepths';
@@ -15,7 +16,7 @@ export const AVAILABLE_DUNGEONS = import.meta.env.DEV
     ? [CrimsonDepths, VioletAbyss, MovementTest]
     : [CrimsonDepths, VioletAbyss];
 
-// Stage factory type
+// Stage factory type (still uses CANNON types since stages haven't been migrated yet)
 type StageConstructor = new (
     scene: THREE.Scene,
     physicsWorld: CANNON.World,
@@ -32,17 +33,19 @@ const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstr
 
 /**
  * Create a stage instance by ID
+ * Note: Accepts RAPIER.World but casts to CANNON.World for backward compatibility
+ * until stages are migrated to Rapier
  */
 export function createStage(
     stageId: string,
     scene: THREE.Scene,
-    physicsWorld: CANNON.World,
-    physicsMaterial: CANNON.Material
+    physicsWorld: RAPIER.World
 ): BaseStage | null {
     const StageClass = stageRegistry.get(stageId);
     if (!StageClass) {
         console.warn(`Unknown stage ID: ${stageId}`);
         return null;
     }
-    return new StageClass(scene, physicsWorld, physicsMaterial);
+    // Temporarily cast to CANNON types until stages are migrated
+    return new StageClass(scene, physicsWorld as any, null as any);
 }

@@ -97,9 +97,8 @@ export class Game {
         // Setup Game Objects
         this.input = InputManager.Instance;
         this.ui = UIManager.Instance;
-        // Note: World and Player still use Cannon types and will need to be migrated separately
-        // Passing null for physicsMaterial as Rapier doesn't use materials the same way
-        this.world = new World(this.scene, this.physicsWorld as any, null as any, () => {
+        // Note: World now uses RAPIER.World, physicsMaterial parameter removed
+        this.world = new World(this.scene, this.physicsWorld as any, () => {
             this.ui.hideLoadingScreen();
             this.ui.showStartScreen();
             this.initializeEntities();

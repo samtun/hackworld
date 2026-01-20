@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
+import * as CANNON from 'cannon-es'; // Kept for CANNON.Vec3 in callbacks - will be migrated later
+import RAPIER from '@dimforge/rapier3d-compat';
 import { Enemy } from './enemies/Enemy';
 import { Player } from './Player';
 import { AssetManager } from './AssetManager';
@@ -17,8 +18,9 @@ import { GameProgressManager } from './GameProgressManager';
 
 export class World {
     scene: THREE.Scene;
-    physicsWorld: CANNON.World;
-    physicsMaterial: CANNON.Material;
+    physicsWorld: RAPIER.World;
+    // Note: Rapier uses different material/friction handling than Cannon.js
+    // Material properties are set per-collider, not as separate objects
     assetManager: AssetManager;
     onLoadProgressCallback: (loaded: number, total: number) => void;
     onStageLoadStartCallback: () => void;
@@ -48,15 +50,13 @@ export class World {
 
     constructor(
         scene: THREE.Scene,
-        physicsWorld: CANNON.World,
-        physicsMaterial: CANNON.Material,
+        physicsWorld: RAPIER.World,
         onLoadComplete: () => void,
         onLoadProgress: (loaded: number, total: number) => void,
         onStart: () => void,
         onComplete: () => void,) {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
-        this.physicsMaterial = physicsMaterial;
         this.assetManager = AssetManager.Instance;
         this.onLoadProgressCallback = onLoadProgress;
 
@@ -252,13 +252,13 @@ export class World {
                 this.currentStage.clear();
                 this.currentStage = undefined;
             }
-            this.itemDropManager.clear(this.scene, this.physicsWorld);
+            this.itemDropManager.clear(this.scene, this.physicsWorld as any);
 
             // Reset stage completion notification flag
             this.hasNotifiedStageCompletion = false;
 
             // Create new stage instance
-            const newStage = createStage(stageId, this.scene, this.physicsWorld, this.physicsMaterial);
+            const newStage = createStage(stageId, this.scene, this.physicsWorld);
             if (!newStage) {
                 throw new Error(`Failed to create stage: ${stageId}`);
             }
@@ -316,6 +316,7 @@ export class World {
 
             // Set up damage callback if not already set
             if (!enemy.onDamageTaken) {
+                // Note: Still using CANNON.Vec3 for compatibility with unmigrated Enemy class
                 enemy.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
                     this.spawnDamageNumber(position, amount, '#fdc650ff');
                 };
@@ -333,9 +334,10 @@ export class World {
                     // Try to drop an item (weapon, chip, core, or booster pack)
                     // The ItemDropManager will select one strategy based on probabilities
                     // and each strategy will check enemy.itemDropChance internally
-                    if (!(this.itemDropManager.tryDropItem(this.scene, this.physicsWorld, e, player))) {
+                    // Note: Casting physicsWorld to any for compatibility with unmigrated ItemDropManager
+                    if (!(this.itemDropManager.tryDropItem(this.scene, this.physicsWorld as any, e, player))) {
                         // Try to drop X-Data separately (independent of item drops) if no item was dropped
-                        this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, e, player);
+                        this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld as any, e, player);
                     }
                 };
             }
@@ -360,6 +362,7 @@ export class World {
 
     /**
      * Spawn EXP number visual at the given position
+     * Note: Still using CANNON.Vec3 for compatibility with unmigrated classes
      */
     spawnEXPNumber(position: CANNON.Vec3, amount: number): void {
         // Use new floating indicator manager for consistent styling
@@ -368,6 +371,7 @@ export class World {
 
     /**
      * Spawn damage number visual at the given position
+     * Note: Still using CANNON.Vec3 for compatibility with unmigrated classes
      */
     spawnDamageNumber(position: CANNON.Vec3, amount: number, color: string): void {
         this.floatingIndicatorManager.spawnDamage(position, amount, color);
@@ -375,6 +379,7 @@ export class World {
 
     /**
      * Spawn tech point indicator visual at the given position
+     * Note: Still using CANNON.Vec3 for compatibility with unmigrated classes
      */
     spawnTechIndicator(position: CANNON.Vec3): void {
         this.floatingIndicatorManager.spawnTech(position);
@@ -429,7 +434,7 @@ export class World {
      * Pick up a weapon drop
      */
     pickupWeaponDrop(drop: WeaponDrop, player: Player): void {
-        this.itemDropManager.pickup('weapon', this.scene, this.physicsWorld, drop, player);
+        this.itemDropManager.pickup('weapon', this.scene, this.physicsWorld as any, drop, player);
     }
 
     /**
@@ -443,7 +448,7 @@ export class World {
      * Pick up a chip drop
      */
     pickupChipDrop(drop: ChipDrop, player: Player): void {
-        this.itemDropManager.pickup('chip', this.scene, this.physicsWorld, drop, player);
+        this.itemDropManager.pickup('chip', this.scene, this.physicsWorld as any, drop, player);
     }
 
     /**
@@ -457,7 +462,7 @@ export class World {
      * Pick up a core drop
      */
     pickupCoreDrop(drop: CoreDrop, player: Player): void {
-        this.itemDropManager.pickup('core', this.scene, this.physicsWorld, drop, player);
+        this.itemDropManager.pickup('core', this.scene, this.physicsWorld as any, drop, player);
     }
 
     /**
@@ -471,7 +476,7 @@ export class World {
      * Pick up a booster pack drop
      */
     pickupBoosterPackDrop(drop: BoosterPackDrop, player: Player): void {
-        this.itemDropManager.pickup('boosterPack', this.scene, this.physicsWorld, drop, player);
+        this.itemDropManager.pickup('boosterPack', this.scene, this.physicsWorld as any, drop, player);
     }
 
     /**
@@ -485,6 +490,6 @@ export class World {
      * Pick up an X-Data drop
      */
     pickupXDataDrop(drop: XDataDrop, player: Player): void {
-        this.itemDropManager.pickup('xData', this.scene, this.physicsWorld, drop, player);
+        this.itemDropManager.pickup('xData', this.scene, this.physicsWorld as any, drop, player);
     }
 }
