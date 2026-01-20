@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
@@ -16,11 +15,10 @@ export const AVAILABLE_DUNGEONS = import.meta.env.DEV
     ? [CrimsonDepths, VioletAbyss, MovementTest]
     : [CrimsonDepths, VioletAbyss];
 
-// Stage factory type (uses RAPIER.World now, but still passes CANNON types to entities for backward compatibility)
 type StageConstructor = new (
     scene: THREE.Scene,
     physicsWorld: RAPIER.World,
-    physicsMaterial: CANNON.Material
+    physicsMaterial: any
 ) => BaseStage;
 
 // Stage registry mapping stage IDs to their constructors

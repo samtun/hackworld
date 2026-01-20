@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es'; // Kept for CANNON.Vec3 in callbacks - will be migrated later
 import RAPIER from '@dimforge/rapier3d-compat';
 import { Enemy } from './enemies/Enemy';
 import { Player } from './Player';
@@ -316,8 +315,7 @@ export class World {
 
             // Set up damage callback if not already set
             if (!enemy.onDamageTaken) {
-                // Note: Still using CANNON.Vec3 for compatibility with unmigrated Enemy class
-                enemy.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
+                enemy.onDamageTaken = (position: THREE.Vector3, amount: number) => {
                     this.spawnDamageNumber(position, amount, '#fdc650ff');
                 };
             }
@@ -362,26 +360,23 @@ export class World {
 
     /**
      * Spawn EXP number visual at the given position
-     * Note: Still using CANNON.Vec3 for compatibility with unmigrated classes
      */
-    spawnEXPNumber(position: CANNON.Vec3, amount: number): void {
+    spawnEXPNumber(position: THREE.Vector3, amount: number): void {
         // Use new floating indicator manager for consistent styling
         this.floatingIndicatorManager.spawnEXP(position, amount);
     }
 
     /**
      * Spawn damage number visual at the given position
-     * Note: Still using CANNON.Vec3 for compatibility with unmigrated classes
      */
-    spawnDamageNumber(position: CANNON.Vec3, amount: number, color: string): void {
+    spawnDamageNumber(position: THREE.Vector3, amount: number, color: string): void {
         this.floatingIndicatorManager.spawnDamage(position, amount, color);
     }
 
     /**
      * Spawn tech point indicator visual at the given position
-     * Note: Still using CANNON.Vec3 for compatibility with unmigrated classes
      */
-    spawnTechIndicator(position: CANNON.Vec3): void {
+    spawnTechIndicator(position: THREE.Vector3): void {
         this.floatingIndicatorManager.spawnTech(position);
     }
 

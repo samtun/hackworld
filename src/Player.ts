@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { RapierPhysics, setBodyPosition, setLinearVelocity, getLinearVelocity } from './physics/RapierPhysics';
 import { AssetManager } from './AssetManager';
@@ -187,10 +186,10 @@ export class Player extends BaseMesh {
     private isLevelingUp: boolean = false;
 
     // Callback for spawning damage numbers
-    onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
+    onDamageTaken?: (position: THREE.Vector3, amount: number) => void;
 
     // Callback for spawning tech indicators
-    onTechGained?: (position: CANNON.Vec3) => void;
+    onTechGained?: (position: THREE.Vector3) => void;
 
     // Inventory
     inventory: Item[] = [];
@@ -206,7 +205,7 @@ export class Player extends BaseMesh {
     private isUsingSkill: boolean = false;
     private skillAnimationTimer: number = 0;
 
-    constructor(scene: THREE.Scene, world: any, position: CANNON.Vec3, input: InputManager) {
+    constructor(scene: THREE.Scene, world: any, position: THREE.Vector3, input: InputManager) {
         super('models/main_character.glb');
         this.scene = scene;
         this.world = world;
@@ -414,8 +413,8 @@ export class Player extends BaseMesh {
             // Spawn tech indicator at player position
             if (this.onTechGained) {
                 const bodyPos = this.body.translation();
-                const cannonPos = new CANNON.Vec3(bodyPos.x, bodyPos.y, bodyPos.z);
-                this.onTechGained(cannonPos);
+                const threePos = new THREE.Vector3(bodyPos.x, bodyPos.y, bodyPos.z);
+                this.onTechGained(threePos);
             }
         }
     }
@@ -939,7 +938,7 @@ export class Player extends BaseMesh {
         setLinearVelocity(this.body, vel);
     }
 
-    move(position: CANNON.Vec3): void {
+    move(position: THREE.Vector3): void {
         console.log('Moving player to', position);
         const newPos = new THREE.Vector3(position.x, position.y, position.z);
         setBodyPosition(this.body, newPos);
@@ -971,13 +970,12 @@ export class Player extends BaseMesh {
         // Skip if we already hit this enemy during this dash
         if (this.dashHitEnemies.has(enemy)) return;
 
-        // Convert body position to CANNON.Vec3 for compatibility
         const bodyPos = this.body.translation();
-        const cannonPos = new CANNON.Vec3(bodyPos.x, bodyPos.y, bodyPos.z);
+        const threePos = new THREE.Vector3(bodyPos.x, bodyPos.y, bodyPos.z);
 
         // Deal 3x weapon damage with tech multiplier
         const damage = this.getHitDamage(3);
-        enemy.takeDamage(damage, cannonPos);
+        enemy.takeDamage(damage, threePos);
 
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
@@ -991,12 +989,11 @@ export class Player extends BaseMesh {
         // Skip if we already hit this enemy during this attack
         if (this.attackHitEnemies.has(enemy)) return;
 
-        // Convert body position to CANNON.Vec3 for compatibility
         const bodyPos = this.body.translation();
-        const cannonPos = new CANNON.Vec3(bodyPos.x, bodyPos.y, bodyPos.z);
+        const threePos = new THREE.Vector3(bodyPos.x, bodyPos.y, bodyPos.z);
 
         const damage = this.getHitDamage();
-        enemy.takeDamage(damage, cannonPos);
+        enemy.takeDamage(damage, threePos);
         console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
@@ -1005,7 +1002,7 @@ export class Player extends BaseMesh {
         this.attackHitEnemies.add(enemy);
     }
 
-    takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
+    takeDamage(amount: number, sourcePos?: THREE.Vector3) {
         if (this.invulnerableTimer > 0 || this.isLevelingUp || this.isDashing || this.isDead) return;
 
         // Stop any ongoing attack
@@ -1019,10 +1016,9 @@ export class Player extends BaseMesh {
 
         // Spawn damage number if callback is set
         if (this.onDamageTaken) {
-            // Convert body position to CANNON.Vec3 for callback compatibility
             const bodyPos = this.body.translation();
-            const cannonPos = new CANNON.Vec3(bodyPos.x, bodyPos.y, bodyPos.z);
-            this.onDamageTaken(cannonPos, reducedDamage);
+            const threePos = new THREE.Vector3(bodyPos.x, bodyPos.y, bodyPos.z);
+            this.onDamageTaken(threePos, reducedDamage);
         }
 
         if (this.hp <= 0) {
@@ -1089,7 +1085,7 @@ export class Player extends BaseMesh {
     /**
      * Respawn the player at specified position
      */
-    respawn(position: CANNON.Vec3): void {
+    respawn(position: THREE.Vector3): void {
         this.isDead = false;
         this.hp = this.maxHp;
         this.tp = this.maxTp;
@@ -1401,14 +1397,14 @@ export class Player extends BaseMesh {
     private executeLevelUpShockwave(): void {
         const damage = this.getHitDamage();
         const playerPos = this.body.translation();
-        const cannonPos = new CANNON.Vec3(playerPos.x, playerPos.y, playerPos.z);
+        const threePos = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
 
         // Find all enemies in the Rapier world and damage them
         const rapierWorld = RapierPhysics.Instance.world;
         rapierWorld.forEachCollider((collider: RAPIER.Collider) => {
             const entity = (collider as any).entity;
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                entity.takeDamage(damage, cannonPos);
+                entity.takeDamage(damage, threePos);
                 console.log(`Level-up shockwave hit enemy for ${damage} damage`);
             }
         });

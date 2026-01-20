@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es'; // Still used for Player/World compatibility until they are migrated
 import RAPIER from '@dimforge/rapier3d-compat';
 import { RapierPhysics, setLinearVelocity } from './physics/RapierPhysics';
 import { Player } from './Player';
@@ -62,7 +61,7 @@ export class Game {
     isTransitioning: boolean = false;
 
     // Last teleporter position for respawn (starts at lobby spawn)
-    lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
+    lastTeleporterPosition: THREE.Vector3 = new THREE.Vector3(0, 0.5, 0);
 
     // Camera follow offset
     cameraOffset: THREE.Vector3 = new THREE.Vector3(7, 9, 7);
@@ -181,24 +180,24 @@ export class Game {
         // Set up player
         this.playerRegistry = PlayerRegistry.Instance;
         const initialSpawn = this.world.currentStage 
-            ? new CANNON.Vec3(
+            ? new THREE.Vector3(
                 this.world.currentStage.spawnPosition.x,
                 this.world.currentStage.spawnPosition.y,
                 this.world.currentStage.spawnPosition.z
             )
-            : new CANNON.Vec3(0, 0.4, 0);
+            : new THREE.Vector3(0, 0.4, 0);
         // Player now uses Rapier physics with CharacterController
         this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld as any, initialSpawn, this.input));
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
 
         // Set up damage number callback for player
-        this.player.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
+        this.player.onDamageTaken = (position: THREE.Vector3, amount: number) => {
             this.world.spawnDamageNumber(position, amount, '#ff2424ff');
         };
 
         // Set up tech indicator callback for player
-        this.player.onTechGained = (position: CANNON.Vec3) => {
+        this.player.onTechGained = (position: THREE.Vector3) => {
             this.world.spawnTechIndicator(position);
         };
 
@@ -217,14 +216,13 @@ export class Game {
     switchScene(destination: string) {
         // Use loadStage helper method
         this.world.loadStageById(destination).then(() => {
-            // Get spawn position from stage configuration and convert to CANNON.Vec3
             const targetPos = this.world.currentStage
-                ? new CANNON.Vec3(
+                ? new THREE.Vector3(
                     this.world.currentStage.spawnPosition.x,
                     this.world.currentStage.spawnPosition.y,
                     this.world.currentStage.spawnPosition.z
                 )
-                : new CANNON.Vec3(0, 0.4, 0);
+                : new THREE.Vector3(0, 0.4, 0);
 
             // Move player and clear velocities/rotation to prevent any impulse from previous physics steps
             this.player.move(targetPos);
@@ -280,7 +278,7 @@ export class Game {
         // We don't update lastTeleporterPosition here because death returns shouldn't
         // change the respawn point for future deaths
         // Note: The actual position will be corrected when switchScene loads the lobby
-        this.player.respawn(new CANNON.Vec3(0, 0.5, 0));
+        this.player.respawn(new THREE.Vector3(0, 0.5, 0));
 
         // Switch to lobby
         this.switchScene(Lobby.getMetadata().id);

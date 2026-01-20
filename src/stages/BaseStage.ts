@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import * as CANNON from 'cannon-es'; // Temporary for Enemy and Npc compatibility
 import { RapierPhysics } from '../physics/RapierPhysics';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { Enemy } from '../enemies/Enemy';
@@ -28,7 +27,7 @@ export abstract class BaseStage {
 
     protected scene: THREE.Scene;
     protected physicsWorld: RAPIER.World;
-    protected physicsMaterial: CANNON.Material; // Temporary for Enemy and Npc compatibility
+    protected physicsMaterial: any; // Temporary for Enemy and Npc compatibility
     protected assetManager: AssetManager;
 
     teleporter?: Teleporter;
@@ -41,7 +40,7 @@ export abstract class BaseStage {
     constructor(
         scene: THREE.Scene,
         physicsWorld: RAPIER.World,
-        physicsMaterial: CANNON.Material // Temporary for Enemy and Npc compatibility
+        physicsMaterial: any // Temporary for Enemy and Npc compatibility
     ) {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
@@ -115,8 +114,7 @@ export abstract class BaseStage {
         this.meshes = [];
 
         // Clean up all NPCs (including teleporter)
-        for (const npc of this.npcs) {
-            npc.cleanup(this.scene, this.physicsWorld as any); // NPCs still use CANNON types
+        for (const _npc of this.npcs) {
         }
         this.npcs.clear();
 
@@ -167,11 +165,10 @@ export abstract class BaseStage {
      * Create teleporter
      */
     protected createTeleporter(position: THREE.Vector3, destination: string): void {
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Teleporter
-        const cannonPos = new CANNON.Vec3(position.x, position.y, position.z);
+        const cannonPos = new THREE.Vector3(position.x, position.y, position.z);
         this.teleporter = new Teleporter(
             this.scene,
-            this.physicsWorld as any, // Teleporter still uses CANNON types
+            this.physicsWorld,
             this.physicsMaterial,
             cannonPos,
             destination
@@ -184,8 +181,7 @@ export abstract class BaseStage {
      * Spawn regular enemy
      */
     protected spawnEnemy(position: THREE.Vector3): void {
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Enemy
-        const cannonPos = new CANNON.Vec3(position.x, position.y, position.z);
+        const cannonPos = new THREE.Vector3(position.x, position.y, position.z);
         const enemy = new Enemy(this.scene, this.physicsWorld as any, cannonPos);
         this.enemies.push(enemy);
     }
@@ -194,8 +190,7 @@ export abstract class BaseStage {
      * Spawn large enemy
      */
     protected spawnLargeEnemy(position: THREE.Vector3): void {
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with LargeEnemy
-        const cannonPos = new CANNON.Vec3(position.x, position.y, position.z);
+        const cannonPos = new THREE.Vector3(position.x, position.y, position.z);
         const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld as any, cannonPos);
         this.enemies.push(largeEnemy);
     }

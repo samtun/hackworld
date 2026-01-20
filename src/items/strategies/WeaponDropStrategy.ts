@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { WeaponDrop } from '../weapons/WeaponDrop';
 import { WeaponRepository } from '../weapons/WeaponRepository';
@@ -14,7 +13,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
     private static readonly HIGHER_LEVEL_THRESHOLD = 0.8;
     private readonly DROP_PROBABILITY = 0.43; // 43% of total drops
 
-    tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, _physicsWorld: any, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
         const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
         const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
@@ -41,7 +40,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const finalSellPrice = Math.round(weaponItem.sellPrice * damageFactor);
 
         const bodyPos = enemy.body.translation();
-        const dropPosition = new CANNON.Vec3(bodyPos.x, 0.5, bodyPos.z);
+        const dropPosition = new THREE.Vector3(bodyPos.x, 0.5, bodyPos.z);
 
         const wd = new WeaponDrop(
             weaponItem.id,
@@ -123,7 +122,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         return baseLevel;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: WeaponDrop, player: Player): void {
+    pickup(_scene: THREE.Scene, _physicsWorld: any, drop: WeaponDrop, player: Player): void {
         const weaponItem = WeaponRepository.Instance.getWeaponById(drop.weaponId);
         if (!weaponItem) {
             console.warn(`Weapon not found for ${drop.weaponId}`);

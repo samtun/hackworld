@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { Enemy } from '../enemies/Enemy';
 import { Player } from '../Player';
 import { ItemDrop } from './ItemDrop';
@@ -13,9 +12,9 @@ export interface ItemDropStrategy {
     // unique identifier for this strategy type
     readonly key: string;
     // returns the created drop object or null when no drop occurred
-    tryDrop(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): ItemDrop | null;
+    tryDrop(scene: THREE.Scene, world: any, enemy: Enemy, player: Player): ItemDrop | null;
     // perform pickup logic (add item to inventory); do NOT cleanup the drop visuals/bodies
-    pickup(scene: THREE.Scene, world: CANNON.World, drop: ItemDrop, player: Player): void;
+    pickup(scene: THREE.Scene, world: any, drop: ItemDrop, player: Player): void;
     // return the probability weight for this drop type (e.g., 0.43 for weapon)
     getDropProbability(): number;
 }
@@ -78,7 +77,7 @@ export class ItemDropManager {
      * Strategies are tried in order weighted by their drop probability.
      * @returns true if an item was dropped, false otherwise
      */
-    tryDropItem(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): boolean {
+    tryDropItem(scene: THREE.Scene, world: any, enemy: Enemy, player: Player): boolean {
         const strategy = this.selectRandomStrategy();
         if (!strategy) return false;
 
@@ -87,7 +86,7 @@ export class ItemDropManager {
         if (drop) {
             const arr = this.drops.get(strategy.key)!;
             // Add physics body to world if provided by the drop
-            if (drop.body instanceof CANNON.Body) {
+            if (drop.body) {
                 world.addBody(drop.body);
             }
             arr.push(drop);
@@ -97,14 +96,14 @@ export class ItemDropManager {
         return false;
     }
 
-    tryDrop(key: string, scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): boolean {
+    tryDrop(key: string, scene: THREE.Scene, world: any, enemy: Enemy, player: Player): boolean {
         const s = this.strategies.get(key);
         if (!s) return false;
         const drop = s.tryDrop(scene, world, enemy, player);
         if (drop) {
             const arr = this.drops.get(key)!;
             // Add physics body to world if provided by the drop
-            if (drop.body instanceof CANNON.Body) {
+            if (drop.body) {
                 world.addBody(drop.body);
             }
             arr.push(drop);
@@ -133,7 +132,7 @@ export class ItemDropManager {
     }
 
     // Delegate pickup to strategy, then cleanup and remove the drop from internal storage
-    pickup(key: string, scene: THREE.Scene, world: CANNON.World, drop: ItemDrop, player: Player) {
+    pickup(key: string, scene: THREE.Scene, world: any, drop: ItemDrop, player: Player) {
         const s = this.strategies.get(key);
         if (!s) return;
         s.pickup(scene, world, drop, player);
@@ -147,7 +146,7 @@ export class ItemDropManager {
     }
 
     // Clear all drops for all strategies
-    clear(scene: THREE.Scene, world: CANNON.World) {
+    clear(scene: THREE.Scene, world: any) {
         for (const [, arr] of this.drops.entries()) {
             for (const d of arr) {
                 if (typeof d.cleanup === 'function') d.cleanup(scene, world);

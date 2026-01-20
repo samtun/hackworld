@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { ChipType } from './Chip';
@@ -22,7 +21,7 @@ export class ChipDrop extends ItemDrop {
     private readonly FLOAT_SPEED: number = 1.2;
     private readonly FLOAT_AMPLITUDE: number = 0.12;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, chipId: string, chipName: string, chipType: ChipType, buyPrice: number, sellPrice: number, level: number) {
+    constructor(scene: THREE.Scene, position: THREE.Vector3, chipId: string, chipName: string, chipType: ChipType, buyPrice: number, sellPrice: number, level: number) {
         super();
         this.chipId = chipId;
         this.chipName = chipName;

@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { ItemDrop } from '../ItemDrop';
@@ -20,7 +19,7 @@ export class CoreDrop extends ItemDrop {
     private readonly FLOAT_SPEED: number = 1.0;
     private readonly FLOAT_AMPLITUDE: number = 0.14;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, coreId: string, coreName: string, buyPrice: number, sellPrice: number, level: number) {
+    constructor(scene: THREE.Scene, position: THREE.Vector3, coreId: string, coreName: string, buyPrice: number, sellPrice: number, level: number) {
         super();
         this.coreId = coreId;
         this.coreName = coreName;

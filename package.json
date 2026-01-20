@@ -25,7 +25,6 @@
   "dependencies": {
     "@dimforge/rapier3d-compat": "^0.14.0",
     "@types/three": "^0.160.0",
-    "cannon-es": "^0.20.0",
     "nipplejs": "^0.10.2",
     "three": "^0.160.0"
   }

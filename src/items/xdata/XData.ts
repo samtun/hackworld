@@ -1,14 +1,13 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 
 export class XData {
     mesh: THREE.Object3D;
-    body: CANNON.Body;
+    body: any;
     amount: number;
     private bobTimer: number = 0;
     private baseHeight: number;
     
-    constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, amount: number) {
+    constructor(scene: THREE.Scene, _world: any, position: THREE.Vector3, amount: number) {
         this.amount = amount;
         this.baseHeight = position.y;
         
@@ -41,16 +40,8 @@ export class XData {
         // Store the group as Object3D (base class of both Mesh and Group)
         this.mesh = group;
         
-        // Physics Body (small trigger body)
-        const shape = new CANNON.Box(new CANNON.Vec3(0.2, 0.2, 0.2));
-        this.body = new CANNON.Body({
-            mass: 0, // Static body
-            position: position,
-            shape: shape,
-            isTrigger: true, // Make it a trigger so it doesn't collide physically
-            collisionResponse: false // Don't respond to collisions
-        });
-        world.addBody(this.body);
+        // No physics body for XData anymore (we use distance checks for pickup)
+        this.body = null;
     }
     
     update(dt: number): void {
@@ -59,16 +50,12 @@ export class XData {
         const bobOffset = Math.sin(this.bobTimer * 2) * 0.15; // Bob up and down by 0.15 units
         this.mesh.position.y = this.baseHeight + bobOffset;
         
-        // Sync body position with mesh
-        this.body.position.y = this.mesh.position.y;
-        
         // Rotate the X
         this.mesh.rotation.y += dt * 2; // Rotate 2 radians per second
     }
     
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, _world: any): void {
         scene.remove(this.mesh);
-        world.removeBody(this.body);
         
         // Dispose of geometries and materials
         this.mesh.traverse((child) => {

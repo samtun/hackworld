@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { CoreDrop } from '../cores/CoreDrop';
 import { CoreRepository } from '../cores/CoreRepository';
@@ -11,7 +10,7 @@ export class CoreDropStrategy implements ItemDropStrategy {
     readonly key = 'core';
     private readonly DROP_PROBABILITY = 0.27; // 27% of total drops
 
-    tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, _physicsWorld: any, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
         const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
         const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
@@ -26,14 +25,14 @@ export class CoreDropStrategy implements ItemDropStrategy {
         if (!coreItem) return null;
 
         const bodyPos = enemy.body.translation();
-        const pos = new CANNON.Vec3(bodyPos.x, 0.5, bodyPos.z);
+        const pos = new THREE.Vector3(bodyPos.x, 0.5, bodyPos.z);
 
         const drop = new CoreDrop(scene, pos, coreItem.id, coreItem.name, coreItem.buyPrice, coreItem.sellPrice, level);
         console.log(`Enemy dropped ${drop}`);
         return drop;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: CoreDrop, player: Player): void {
+    pickup(_scene: THREE.Scene, _physicsWorld: any, drop: CoreDrop, player: Player): void {
         // Get the core from repository by ID to find its name
         const coreItem = CoreRepository.Instance.getCoreById(drop.coreId);
         if (!coreItem) {

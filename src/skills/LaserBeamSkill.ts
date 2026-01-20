@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
 import { Enemy } from '../enemies/Enemy';
 import { Skill } from './Skill';
@@ -17,9 +16,9 @@ export class LaserBeamSkill extends Skill {
     private laserAttackEffect: LaserAttackEffect | undefined;
     private isBeingExecuted: boolean = false;
 
-    private world: CANNON.World | undefined;
+    private world: any | undefined;
     private player: Player | undefined;
-    private startPos: CANNON.Vec3 | undefined;
+    private startPos: THREE.Vector3 | undefined;
     private forward: THREE.Vector3 | undefined;
     private hitEnemies: Set<Enemy> = new Set();
 
@@ -27,7 +26,7 @@ export class LaserBeamSkill extends Skill {
         super('Laser Beam', 5, 25, onCompletedCallback);
     }
 
-    protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
+    protected execute(player: Player, scene: THREE.Scene, world: any): void {
         console.log('Executing Laser Beam skill');
 
         this.world = world;
@@ -39,7 +38,7 @@ export class LaserBeamSkill extends Skill {
 
         // Create laser beam starting position (in front of player)
         const playerPos = player.body.translation();
-        this.startPos = new CANNON.Vec3(
+        this.startPos = new THREE.Vector3(
             playerPos.x + this.forward.x * 0.5,
             playerPos.y + 0.5,
             playerPos.z + this.forward.z * 0.5
@@ -51,7 +50,7 @@ export class LaserBeamSkill extends Skill {
         this.createVisual(player, scene, this.startPos, this.forward);
     }
 
-    private createVisual(player: Player, scene: THREE.Scene, startPos: CANNON.Vec3, forward: THREE.Vector3): void {
+    private createVisual(player: Player, scene: THREE.Scene, startPos: THREE.Vector3, forward: THREE.Vector3): void {
         if (!this.laserAttackEffect) {
             this.laserAttackEffect = new LaserAttackEffect(
                 this.DURATION,
@@ -83,7 +82,7 @@ export class LaserBeamSkill extends Skill {
 
                 // Check distance along the beam
                 for (let distance = 0; distance <= currentLength; distance += 1) {
-                    const checkPos = new CANNON.Vec3(
+                    const checkPos = new THREE.Vector3(
                         this.startPos.x + this.forward.x * distance,
                         this.startPos.y,
                         this.startPos.z + this.forward.z * distance
@@ -97,7 +96,7 @@ export class LaserBeamSkill extends Skill {
                     if (distanceToBeam <= this.RADIUS && Math.abs(dy) <= 2) {
                         // Hit!
                         const playerPos = this.player.body.translation();
-                        const cannonPos = new CANNON.Vec3(playerPos.x, playerPos.y, playerPos.z);
+                        const cannonPos = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
                         entity.takeDamage(this.DAMAGE, cannonPos);
                         this.hitEnemies.add(entity);
                         console.log(`Laser beam hit enemy for ${this.DAMAGE} damage`);

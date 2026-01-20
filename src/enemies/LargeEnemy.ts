@@ -1,11 +1,10 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { RapierPhysics } from '../physics/RapierPhysics';
 import { Enemy } from './Enemy';
 
 export class LargeEnemy extends Enemy {
 
-    constructor(scene: THREE.Scene, world: any, position: CANNON.Vec3) {
+    constructor(scene: THREE.Scene, world: any, position: THREE.Vector3) {
         super(scene, world, position);
 
         // Adjust stats for LargeEnemy
@@ -49,7 +48,7 @@ export class LargeEnemy extends Enemy {
         // Character controller is already created by parent, reuse it
 
         // Larger attack hitbox for larger enemy
-        this.attackHitboxSize = new CANNON.Vec3(0.75, 0.75, 1.0);
+        this.attackHitboxSize = new THREE.Vector3(0.75, 0.75, 1.0);
         this.attackHitboxOffset = 1.5;
     }
 }

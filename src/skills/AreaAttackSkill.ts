@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
 import { Enemy } from '../enemies/Enemy';
 import { Skill } from './Skill';
@@ -20,7 +19,7 @@ export class AreaAttackSkill extends Skill {
         super('Area Attack', 10, 30, onCompletedCallback);
     }
 
-    protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
+    protected execute(player: Player, scene: THREE.Scene, world: any): void {
         console.log('Executing Area Attack skill');
 
         // Find all enemies within range
@@ -35,7 +34,7 @@ export class AreaAttackSkill extends Skill {
                 const distance = Math.sqrt(dx * dx + dz * dz);
 
                 if (distance <= this.RANGE) {
-                    const cannonPos = new CANNON.Vec3(playerPos.x, playerPos.y, playerPos.z);
+                    const cannonPos = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
                     entity.takeDamage(this.DAMAGE, cannonPos);
                     hitEnemies.add(entity);
                     console.log(`Area attack hit enemy for ${this.DAMAGE} damage`);
@@ -105,7 +104,7 @@ class AreaAttackEffect extends BaseMesh {
         }
     }
 
-    public setPosition(pos: CANNON.Vec3) {
+    public setPosition(pos: THREE.Vector3) {
         this.mesh.position.set(pos.x, pos.y, pos.z);
     }
 

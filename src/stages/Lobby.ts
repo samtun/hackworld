@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es'; // Temporary for Npc compatibility
 import { RapierPhysics } from '../physics/RapierPhysics';
 import { BaseStage } from './BaseStage';
 import { HealingStation } from '../HealingStation';
@@ -114,7 +113,7 @@ export class Lobby extends BaseStage {
         this.createTeleporter(new THREE.Vector3(5, 0, 5), 'selection');
 
         // Healing Station
-        const cannonHealingPos = new CANNON.Vec3(
+        const cannonHealingPos = new THREE.Vector3(
             this.healingStationPosition.x,
             this.healingStationPosition.y,
             this.healingStationPosition.z
@@ -140,8 +139,7 @@ export class Lobby extends BaseStage {
     }
 
     private createMainframeNpc(): void {
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
-        const cannonPos = new CANNON.Vec3(0, 0, -14);
+        const cannonPos = new THREE.Vector3(0, 0, -14);
         this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld as any, this.physicsMaterial, cannonPos);
         this.npcs.add(this.mainframeNpc);
     }
@@ -153,8 +151,7 @@ export class Lobby extends BaseStage {
             "If you are interested, the teleporter to the south can take you to our main server."
         ];
 
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
-        const cannonPos = new CANNON.Vec3(-5, 0, 0);
+        const cannonPos = new THREE.Vector3(-5, 0, 0);
         this.nylethNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -176,8 +173,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.xDataUpgradeManager = XDataUpgradeManager.Instance;
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
-        const cannonPos = new CANNON.Vec3(5, 0, -5);
+        const cannonPos = new THREE.Vector3(5, 0, -5);
         this.xDataManagerNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -201,8 +197,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.saveManager = SaveManager.Instance;
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
-        const cannonPos = new CANNON.Vec3(0, 0, 5);
+        const cannonPos = new THREE.Vector3(0, 0, 5);
         this.saveManagerNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -225,8 +220,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.chipTrader = ChipTrader.Instance;
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
-        const cannonPos = new CANNON.Vec3(-5, 0, -5);
+        const cannonPos = new THREE.Vector3(-5, 0, -5);
         this.chipTraderNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -248,8 +242,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.coreTrader = CoreTrader.Instance;
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
-        const cannonPos = new CANNON.Vec3(5, 0, 0);
+        const cannonPos = new THREE.Vector3(5, 0, 0);
         this.coreTraderNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -272,8 +265,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.weaponTraderManager = WeaponTrader.Instance;
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
-        const cannonPos = new CANNON.Vec3(0, 0, -5);
+        const cannonPos = new THREE.Vector3(0, 0, -5);
         this.weaponTraderNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -297,8 +289,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.cardManager = CardManager.Instance;
-        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
-        const cannonPos = new CANNON.Vec3(7, 0, 0);
+        const cannonPos = new THREE.Vector3(7, 0, 0);
         this.irkelNpc = new Npc(
             this.scene,
             this.physicsWorld as any,

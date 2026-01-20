@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { ChipDrop } from '../chips/ChipDrop';
 import { ChipRepository } from '../chips/ChipRepository';
@@ -11,7 +10,7 @@ export class ChipDropStrategy implements ItemDropStrategy {
     readonly key = 'chip';
     private readonly DROP_PROBABILITY = 0.27; // 27% of total drops
 
-    tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, _physicsWorld: any, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
         const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
         const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
@@ -26,14 +25,14 @@ export class ChipDropStrategy implements ItemDropStrategy {
         if (!chipItem) return null;
 
         const bodyPos = enemy.body.translation();
-        const pos = new CANNON.Vec3(bodyPos.x, 0.5, bodyPos.z);
+        const pos = new THREE.Vector3(bodyPos.x, 0.5, bodyPos.z);
 
         const drop = new ChipDrop(scene, pos, chipItem.id, chipItem.name, chipItem.chipType, chipItem.buyPrice, chipItem.sellPrice, level);
         console.log(`Enemy dropped chip ${chipItem.name} (level ${level})`);
         return drop;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: ChipDrop, player: Player): void {
+    pickup(_scene: THREE.Scene, _physicsWorld: any, drop: ChipDrop, player: Player): void {
         // Get the chip from repository by ID to find its type
         const chipItem = ChipRepository.Instance.getChipById(drop.chipId);
         if (!chipItem) {

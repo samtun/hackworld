@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { createParticleShaderMaterial, updateParticleScaleFactor } from './ParticleShaderUtils';
 import { Npc } from './npcs/Npc';
 
@@ -50,7 +49,7 @@ export class Teleporter extends Npc {
         scene: THREE.Scene,
         world: any,
         physicsMaterial: any,
-        position: CANNON.Vec3,
+        position: THREE.Vector3,
         destination: string
     ) {
         // Call Npc constructor with teleporter-specific settings

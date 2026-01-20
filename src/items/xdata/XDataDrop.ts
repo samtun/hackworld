@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { ItemDrop } from '../ItemDrop';
@@ -15,7 +14,7 @@ export class XDataDrop extends ItemDrop {
     private bobTimer: number = 0;
     private baseHeight: number;
     
-    constructor(scene: THREE.Scene, _world: any, position: CANNON.Vec3, amount: number) {
+    constructor(scene: THREE.Scene, _world: any, position: THREE.Vector3, amount: number) {
         super();
         this.amount = amount;
         this.baseHeight = position.y;

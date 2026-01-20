@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
 import { UIManager } from '../ui/UIManager';
 
@@ -43,7 +42,7 @@ export abstract class Skill {
      * Execute the skill
      * @returns true if skill was successfully executed
      */
-    use(player: Player, scene: THREE.Scene, world: CANNON.World): boolean {
+    use(player: Player, scene: THREE.Scene, world: any): boolean {
         if (!this.isReady()) {
             return false;
         }
@@ -91,5 +90,5 @@ export abstract class Skill {
     /**
      * Skill-specific execution logic
      */
-    protected abstract execute(player: Player, scene: THREE.Scene, world: CANNON.World): void;
+    protected abstract execute(player: Player, scene: THREE.Scene, world: any): void;
 }

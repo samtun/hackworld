@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { Npc } from './Npc';
 import { GameProgressManager } from '../GameProgressManager';
 
@@ -8,7 +7,7 @@ export class MainframeNpc extends Npc {
         scene: THREE.Scene,
         world: any,
         physicsMaterial: any,
-        position: CANNON.Vec3
+        position: THREE.Vector3
     ) {
         const progressManager = GameProgressManager.Instance;
         const dialogue = MainframeNpc.getDialogueForProgress(progressManager.progress);

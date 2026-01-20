@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { RapierPhysics } from '../physics/RapierPhysics';
 import { BaseMesh } from '../BaseMesh.ts';
@@ -11,7 +10,7 @@ export class Npc extends BaseMesh {
     name: string;
     body?: RAPIER.RigidBody;
     interactionHint: string;
-    position: CANNON.Vec3;
+    position: THREE.Vector3;
     dialogue: string[];
     interactionCallback?: () => void;
 
@@ -22,7 +21,7 @@ export class Npc extends BaseMesh {
         modelAsset: string,
         name: string,
         interactionHint: string,
-        position: CANNON.Vec3,
+        position: THREE.Vector3,
         dialogue: string[],
         interactionCallback?: () => void
     ) {

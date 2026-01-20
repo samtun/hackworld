@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { WeaponType } from './WeaponType';
@@ -32,7 +31,7 @@ export class WeaponDrop extends ItemDrop {
     constructor(
         weaponId: string,
         scene: THREE.Scene,
-        position: CANNON.Vec3,
+        position: THREE.Vector3,
         weaponType: WeaponType,
         weaponName: string,
         damage: number,

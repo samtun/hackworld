@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { FloatingIndicator, FloatingIndicatorConfig } from './FloatingIndicator';
 
 /**
@@ -17,7 +16,7 @@ export class FloatingIndicatorManager {
     /**
      * Spawn a floating indicator at the given position
      */
-    spawn(position: CANNON.Vec3, config: FloatingIndicatorConfig): void {
+    spawn(position: THREE.Vector3, config: FloatingIndicatorConfig): void {
         const floatingIndicator = new FloatingIndicator(this.scene, position, config);
         this.floatingIndicators.push(floatingIndicator);
     }
@@ -25,7 +24,7 @@ export class FloatingIndicatorManager {
     /**
      * Spawn a damage number
      */
-    spawnDamage(position: CANNON.Vec3, amount: number, color: string): void {
+    spawnDamage(position: THREE.Vector3, amount: number, color: string): void {
         this.spawn(position, {
             text: amount.toString(),
             color: color,
@@ -36,7 +35,7 @@ export class FloatingIndicatorManager {
     /**
      * Spawn an EXP number (white color with EXP suffix)
      */
-    spawnEXP(position: CANNON.Vec3, amount: number): void {
+    spawnEXP(position: THREE.Vector3, amount: number): void {
         this.spawn(position, {
             text: amount.toString(),
             color: '#ffffff',
@@ -49,7 +48,7 @@ export class FloatingIndicatorManager {
     /**
      * Spawn a tech point indicator
      */
-    spawnTech(position: CANNON.Vec3): void {
+    spawnTech(position: THREE.Vector3): void {
         this.spawn(position, {
             text: '⇧ tech',
             color: '#FFFFFF',

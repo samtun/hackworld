@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 
 /**
  * Configuration for a floating indicator display
@@ -36,8 +35,8 @@ export class FloatingIndicator {
     private initialY: number;
     private textTexture: THREE.CanvasTexture;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, config: FloatingIndicatorConfig) {
-        let numberPosition = new CANNON.Vec3(position.x, position.y + 1.0, position.z);
+    constructor(scene: THREE.Scene, position: THREE.Vector3, config: FloatingIndicatorConfig) {
+        let numberPosition = new THREE.Vector3(position.x, position.y + 1.0, position.z);
         this.initialY = numberPosition.y;
         this.holdTime = config.holdTime ?? FloatingIndicator.HOLD_TIME; // seconds
         this.riseTime = config.riseTime ?? FloatingIndicator.DEFAULT_RISE_TIME; // seconds

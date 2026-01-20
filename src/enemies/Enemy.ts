@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { RapierPhysics, setBodyPosition, setLinearVelocity, getLinearVelocity } from '../physics/RapierPhysics';
 import { Player } from '../Player';
@@ -36,7 +35,7 @@ export class Enemy extends BaseMesh {
     damage: number = 10;
 
     // Base position tracking for return behavior
-    basePosition: CANNON.Vec3;
+    basePosition: THREE.Vector3;
     returnToBaseTimer: number = 0;
     isReturningToBase: boolean = false;
     aggroRange: number = 15;
@@ -61,7 +60,7 @@ export class Enemy extends BaseMesh {
     protected attackHitboxDelay: number = 0.42;
     protected attackHitboxDuration: number = 0.2;
     protected attackMaxDuration: number = 1.0;
-    protected attackHitboxSize: CANNON.Vec3 = new CANNON.Vec3(0.5, 0.5, 0.8);
+    protected attackHitboxSize: THREE.Vector3 = new THREE.Vector3(0.5, 0.5, 0.8);
     protected attackHitboxOffset: number = 1.0;
     private hasDealtDamageThisAttack: boolean = false;
 
@@ -77,18 +76,18 @@ export class Enemy extends BaseMesh {
     protected world: any; // RAPIER.World cast from any for compatibility
 
     // Callback for spawning damage numbers
-    onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
+    onDamageTaken?: (position: THREE.Vector3, amount: number) => void;
 
     // Callback when death fade starts (for rewards, drops, etc.)
     onDeathFadeStart?: (enemy: Enemy) => void;
 
-    constructor(scene: THREE.Scene, world: any, position: CANNON.Vec3) {
+    constructor(scene: THREE.Scene, world: any, position: THREE.Vector3) {
         super('models/monster.glb');
 
         this.scene = scene;
         this.world = world;
 
-        // Store base position for return behavior (keep as CANNON.Vec3 for compatibility)
+        // Store base position for return behavior
         this.basePosition = position.clone();
 
         // Visual
@@ -301,10 +300,9 @@ export class Enemy extends BaseMesh {
 
         if (dist < this.attackHitboxSize.x + 0.5) {
             console.log("Enemy attack hits player!");
-            // Convert position to CANNON.Vec3 for compatibility
             const enemyPos = this.body.translation();
-            const cannonPos = new CANNON.Vec3(enemyPos.x, enemyPos.y, enemyPos.z);
-            this.player.takeDamage(this.damage, cannonPos);
+            const threePos = new THREE.Vector3(enemyPos.x, enemyPos.y, enemyPos.z);
+            this.player.takeDamage(this.damage, threePos);
             this.hasDealtDamageThisAttack = true;
         }
     }
@@ -611,7 +609,7 @@ export class Enemy extends BaseMesh {
         this.fadeToAction(EnemyActionType.Attack, 0.1);
     }
 
-    takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
+    takeDamage(amount: number, sourcePos?: THREE.Vector3) {
         if (this.isDying || this.isDead) return;
 
         this.hp -= amount;
@@ -623,8 +621,8 @@ export class Enemy extends BaseMesh {
         // Spawn damage number if callback is set
         if (this.onDamageTaken) {
             const myPos = this.body.translation();
-            const cannonPos = new CANNON.Vec3(myPos.x, myPos.y, myPos.z);
-            this.onDamageTaken(cannonPos, amount);
+            const threePos = new THREE.Vector3(myPos.x, myPos.y, myPos.z);
+            this.onDamageTaken(threePos, amount);
         }
 
         // Knockback
@@ -688,9 +686,9 @@ export class Enemy extends BaseMesh {
     /**
      * Get the position where X-Data should spawn (at enemy's death location)
      */
-    getDeathPosition(): CANNON.Vec3 {
+    getDeathPosition(): THREE.Vector3 {
         const pos = this.body.translation();
-        return new CANNON.Vec3(pos.x, pos.y, pos.z);
+        return new THREE.Vector3(pos.x, pos.y, pos.z);
     }
 
     /**

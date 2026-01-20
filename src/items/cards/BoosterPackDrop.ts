@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { ItemDrop } from '../ItemDrop';
@@ -18,7 +17,7 @@ export class BoosterPackDrop extends ItemDrop {
     private readonly FLOAT_SPEED: number = 1.5;
     private readonly FLOAT_AMPLITUDE: number = 0.15;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3) {
+    constructor(scene: THREE.Scene, position: THREE.Vector3) {
         super();
         this.baseHeight = position.y;
 

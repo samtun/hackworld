@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { BaseMesh } from './BaseMesh';
 import { HealingSystem } from './systems/HealingSystem';
 import { IHealingStation } from './systems/IHealingStation';
@@ -31,7 +30,7 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
     private time: number = 0;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3) {
+    constructor(scene: THREE.Scene, position: THREE.Vector3) {
         super('models/healing_station.glb');
         this.color = new THREE.Color(0x00ff00);
         this.mesh.position.set(position.x, position.y, position.z);

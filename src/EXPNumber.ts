@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 
 /**
  * Visual indicator for EXP gained from defeating enemies
@@ -13,7 +12,7 @@ export class EXPNumber {
     private initialY: number;
     private textTexture: THREE.CanvasTexture;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, expAmount: number) {
+    constructor(scene: THREE.Scene, position: THREE.Vector3, expAmount: number) {
         this.initialY = position.y;
 
         // Create canvas for text texture

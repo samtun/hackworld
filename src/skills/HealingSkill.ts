@@ -1,5 +1,4 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
 import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
@@ -25,7 +24,7 @@ export class HealingSkill extends Skill {
         super('Healing', 0, 20, onCompletedCallback);
     }
 
-    protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {
+    protected execute(player: Player, scene: THREE.Scene, _world: any): void {
         console.log('Executing Healing skill');
 
         // Heal the player
@@ -192,7 +191,7 @@ class HealEffect extends BaseMesh {
         }
     }
 
-    public setPosition(pos: CANNON.Vec3) {
+    public setPosition(pos: THREE.Vector3) {
         this.mesh.position.set(pos.x, pos.y, pos.z);
     }
 
