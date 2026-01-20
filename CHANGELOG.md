@@ -1,3 +1,18 @@
+# [1.39.0](https://github.com/samtun/hackworld/compare/v1.38.0...v1.39.0) (2026-01-20)
+
+
+### Bug Fixes
+
+* add null checks for player before saving ([410d880](https://github.com/samtun/hackworld/commit/410d8804abaef99053013f481ddf0aee162f79d9))
+* prevent auto-save during reset operation ([9764c63](https://github.com/samtun/hackworld/commit/9764c638285f3e1dcf3cc61327eaeddd5a5f2f05))
+
+
+### Features
+
+* add fresh argument to avoid loading game state in dev builds ([cc98fe9](https://github.com/samtun/hackworld/commit/cc98fe904541053a0a08f57e2f09a38889be9ed2))
+* add localStorage auto-save functionality ([46f1c03](https://github.com/samtun/hackworld/commit/46f1c03e36bac78bd632343161337829efb87aea))
+* use project version in save file, remove mobile url switch ([56da16e](https://github.com/samtun/hackworld/commit/56da16ebc66ef57083454bde3e20bba9696e3b7a))
+
 # [1.38.0](https://github.com/samtun/hackworld/compare/v1.37.1...v1.38.0) (2026-01-19)
 
 
