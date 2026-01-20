@@ -2,7 +2,7 @@
 
 ![Hackworld promo image](public/images/promo.png)
 
-A 3D web game developed with TypeScript, Three.js, and Cannon-es. In 2053, a technician's mind becomes trapped within a corrupted corporate server system. Fight through infected digital sectors to cleanse the malware and save Ometec's infrastructure.
+A 3D web game developed with TypeScript, Three.js, and Rapier.js. In 2053, a technician's mind becomes trapped within a corrupted corporate server system. Fight through infected digital sectors to cleanse the malware and save Ometec's infrastructure.
 
 ## Story
 
@@ -25,7 +25,7 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 
 - **Language**: TypeScript
 - **Rendering**: Three.js
-- **Physics**: Cannon-es
+- **Physics**: Rapier.js ([@dimforge/rapier3d-compat](https://rapier.rs/))
 - **Build Tool**: Vite
 - **Hosting**: GitHub Pages
 
