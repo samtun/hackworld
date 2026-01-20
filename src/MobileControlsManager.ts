@@ -123,12 +123,6 @@ export class MobileControlsManager {
     }
 
     private detectMobile(): boolean {
-        // Check for URL parameter to force mobile mode (useful for testing)
-        const urlParams = new URLSearchParams(window.location.search);
-        if (urlParams.get('mobile') === 'true') {
-            return true;
-        }
-
         // Check for touch support AND screen size
         const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
         const isSmallScreen = window.innerWidth <= 1024; // Tablets and phones
