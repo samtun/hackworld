@@ -34,8 +34,20 @@ export class HealingStation extends BaseMesh implements IHealingStation {
 
     constructor(scene: THREE.Scene, position: CANNON.Vec3) {
         super('models/healing_station.glb');
-        this.color = new THREE.Color(0x00ff00);
+        this.color = new THREE.Color(0x00AAFF);
         this.mesh.position.set(position.x, position.y, position.z);
+
+        this.mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                if (child.material instanceof THREE.MeshStandardMaterial && child.material.name === 'Panel') {
+                    child.material.emissive = new THREE.Color(0xFFFFFF);
+                    child.material.emissiveMap = child.material.map;
+                    child.material.emissiveIntensity = 0.8;
+                    child.material.color = this.color;
+                }
+            }
+        });
+
         scene.add(this.mesh);
 
         // Initialize particle system
