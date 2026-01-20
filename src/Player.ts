@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import RAPIER from '@dimforge/rapier3d-compat';
+import { RapierPhysics, setBodyPosition, setLinearVelocity, getLinearVelocity } from './physics/RapierPhysics';
 import { AssetManager } from './AssetManager';
 import { InputManager } from './InputManager';
 import { Weapon } from './items/weapons/Weapon';
@@ -33,7 +35,9 @@ enum ActionType {
 
 export class Player extends BaseMesh {
     id: string;
-    body: CANNON.Body;
+    body: RAPIER.RigidBody;
+    characterController: RAPIER.KinematicCharacterController;
+    collider: RAPIER.Collider;
     input: InputManager;
     weapon: Weapon;
     currentWeaponType: WeaponType = WeaponType.SWORD;
@@ -43,7 +47,7 @@ export class Player extends BaseMesh {
 
     // Scene and World references for items
     public scene: THREE.Scene;
-    public world: CANNON.World;
+    public world: any; // RAPIER.World cast from any for compatibility
 
     private weaponRepository: WeaponRepository;
 
@@ -202,7 +206,7 @@ export class Player extends BaseMesh {
     private isUsingSkill: boolean = false;
     private skillAnimationTimer: number = 0;
 
-    constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
+    constructor(scene: THREE.Scene, world: any, position: CANNON.Vec3, input: InputManager) {
         super('models/main_character.glb');
         this.scene = scene;
         this.world = world;
@@ -258,46 +262,29 @@ export class Player extends BaseMesh {
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
 
-        // Physics Body
-        const box = new THREE.Box3().setFromObject(this.mesh);
-        const size = new THREE.Vector3();
-        box.getSize(size);
-
-        const radius = 0.5;
-        const bodyHeight = 1.6;
-        const endSphereRadius = radius * 0.6;
-
-        // Add base body collider
-        this.body = new CANNON.Body({
-            mass: 3, // Dynamic body
-            position: new CANNON.Vec3(position.x, bodyHeight / 2, position.z),
-            fixedRotation: true,
-            material: physicsMaterial
-        });
-
-        // Add foot sphere to enable skipping over small obstacles
-        // Needs to be added first to be the first shape accessed via [0]
-        this.body.addShape(new CANNON.Sphere(endSphereRadius), new CANNON.Vec3(0, 0, 0));
-
-        // Add center sphere for most hit and collision detection
-        this.body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, bodyHeight / 3, 0));
-
-        // Add head (to make objects colliding from above slide off)
-        this.body.addShape(new CANNON.Sphere(endSphereRadius), new CANNON.Vec3(0, bodyHeight / 2 + endSphereRadius, 0));
-
-        // Damping to stop sliding
-        this.body.linearDamping = 0.9;
-
-        this.body.addEventListener('collide', (e: any) => {
-            const entity = e.body.entity;
-            if (entity && entity instanceof Enemy) {
-                if (this.isDashing) {
-                    this.handleDashHit(entity);
-                }
-            }
-        });
-
-        world.addBody(this.body);
+        // Physics Body - Rapier Kinematic Body with CharacterController
+        const spawnPos = new THREE.Vector3(position.x, position.y, position.z);
+        
+        // Create kinematic body
+        this.body = RapierPhysics.Instance.createKinematicBody(spawnPos);
+        
+        // Add capsule collider (height ~1.6, radius 0.5)
+        const capsuleHalfHeight = 0.4; // Total height = 0.8 + 2*radius = 1.8m
+        const capsuleRadius = 0.5;
+        this.collider = RapierPhysics.Instance.addCapsuleCollider(
+            this.body,
+            capsuleHalfHeight,
+            capsuleRadius,
+            undefined,
+            0.3, // friction
+            0.0  // restitution
+        );
+        
+        // Store entity reference on collider for collision detection
+        (this.collider as any).entity = this;
+        
+        // Create character controller
+        this.characterController = RapierPhysics.Instance.createCharacterController();
 
 
         // Initialize skills
@@ -426,7 +413,9 @@ export class Player extends BaseMesh {
 
             // Spawn tech indicator at player position
             if (this.onTechGained) {
-                this.onTechGained(this.body.position);
+                const bodyPos = this.body.translation();
+                const cannonPos = new CANNON.Vec3(bodyPos.x, bodyPos.y, bodyPos.z);
+                this.onTechGained(cannonPos);
             }
         }
     }
@@ -689,10 +678,37 @@ export class Player extends BaseMesh {
         if (!this.isDashing) return false;
         this.fadeToAction(ActionType.Dash, 0.0);
         this.dashTimer += dt;
-        // Ensure body is dynamic for dash movement
-        this.body.type = CANNON.Body.DYNAMIC;
-        this.body.velocity.x = this.dashDirection.x * this.DASH_SPEED;
-        this.body.velocity.z = this.dashDirection.z * this.DASH_SPEED;
+        
+        // Set dash velocity
+        const dashVel = new THREE.Vector3(
+            this.dashDirection.x * this.DASH_SPEED,
+            0,
+            this.dashDirection.z * this.DASH_SPEED
+        );
+        setLinearVelocity(this.body, dashVel);
+
+        // Check for enemy collisions during dash
+        const rapierWorld = RapierPhysics.Instance.world;
+        const playerPos = this.body.translation();
+        
+        rapierWorld.forEachCollider((collider: RAPIER.Collider) => {
+            const entity = (collider as any).entity;
+            if (entity && entity instanceof Enemy) {
+                const enemyPos = collider.parent()?.translation();
+                if (enemyPos) {
+                    const distance = Math.sqrt(
+                        Math.pow(playerPos.x - enemyPos.x, 2) +
+                        Math.pow(playerPos.y - enemyPos.y, 2) +
+                        Math.pow(playerPos.z - enemyPos.z, 2)
+                    );
+                    
+                    // If within collision range, trigger dash hit
+                    if (distance < 1.5) {
+                        this.handleDashHit(entity);
+                    }
+                }
+            }
+        });
 
         if (this.dashTimer >= this.DASH_DURATION) {
             this.isDashing = false;
@@ -748,8 +764,10 @@ export class Player extends BaseMesh {
 
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
-            this.body.velocity.x *= 0.9;
-            this.body.velocity.z *= 0.9;
+            const vel = getLinearVelocity(this.body);
+            vel.x *= 0.9;
+            vel.z *= 0.9;
+            setLinearVelocity(this.body, vel);
             return;
         }
 
@@ -772,66 +790,40 @@ export class Player extends BaseMesh {
                 effectiveSpeed *= equippedChip.stats.walkSpeedMultiplier;
             }
 
-            this.body.velocity.x = moveX * effectiveSpeed;
-            this.body.velocity.z = moveZ * effectiveSpeed;
+            // Get current velocity
+            const currentVel = getLinearVelocity(this.body);
+            
+            // Compute desired velocity
+            const desiredVelocity = new THREE.Vector3(
+                moveX * effectiveSpeed,
+                currentVel.y, // Keep vertical velocity
+                moveZ * effectiveSpeed
+            );
+            
+            // Use character controller to compute movement
+            this.characterController.computeColliderMovement(
+                this.collider,
+                desiredVelocity
+            );
+            
+            // Get computed movement and apply to body
+            const correctedMovement = this.characterController.computedMovement();
+            const currentPos = this.body.translation();
+            const newPos = new THREE.Vector3(
+                currentPos.x + correctedMovement.x * dt,
+                currentPos.y + correctedMovement.y * dt,
+                currentPos.z + correctedMovement.z * dt
+            );
+            setBodyPosition(this.body, newPos);
+            
+            // Update grounded state using character controller
+            this.isGrounded = this.characterController.computedGrounded();
 
-            // Check if grounded using raycast
-            const start = this.body.position;
-            const shape = this.body.shapes[0] as CANNON.Sphere;
-            const halfHeight = shape?.radius;
-            const end = new CANNON.Vec3(start.x, start.y - halfHeight - 0.2, start.z);
-
-            // Main ray at the center of the body
-            const centerRay = new CANNON.Ray(start, end);
-            centerRay.skipBackfaces = true;
-
-            // Additional rays around the base perimeter
-            const offset = shape.radius * 0.7;
-
-            const perimeterRayResults = [];
-            for (let i = 0; i < 5; i++) {
-                const angle = (i * Math.PI) / 2;
-                const xOffset = Math.cos(angle) * offset;
-                const zOffset = Math.sin(angle) * offset;
-                const rayStart = new CANNON.Vec3(start.x + xOffset, start.y, start.z + zOffset);
-                const rayEnd = new CANNON.Vec3(rayStart.x, rayStart.y - halfHeight - 0.2, rayStart.z)
-                const perimeterRay = new CANNON.Ray(rayStart, rayEnd);
-                perimeterRay.skipBackfaces = true;
-                const result = new CANNON.RaycastResult();
-                perimeterRay.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: result, skipBackfaces: true });
-                perimeterRayResults.push(result);
-            }
-
-            const centerRayResult = new CANNON.RaycastResult();
-
-            centerRay.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: centerRayResult, skipBackfaces: true });
-
-            this.isGrounded = centerRayResult.hasHit && centerRayResult.body !== this.body
-                || perimeterRayResults.some(result => result.hasHit && result.body !== this.body);
-
-            // Prevent sliding on slopes less than 45 degrees
-            if (this.isGrounded && centerRayResult.hitNormalWorld) {
-                const normal = centerRayResult.hitNormalWorld;
-                // Clamp normal.y to prevent Math.acos errors due to floating point precision
-                const slopeAngle = Math.acos(Math.max(-1, Math.min(1, normal.y))); // Angle from vertical (up vector is 0,1,0)
-                const slopeAngleDegrees = slopeAngle * (180 / Math.PI);
-
-                // If on a slope less than 45 degrees make the body static to avoid sliding
-                if (slopeAngleDegrees < 45
-                    && this.body.velocity.y < 0
-                    && Math.abs(this.body.velocity.x) < Number.EPSILON
-                    && Math.abs(this.body.velocity.z) < Number.EPSILON) {
-                    this.body.type = CANNON.Body.STATIC;
-                }
-            }
-
-            // If the player starts moving again make the body dynamic again
-            if (this.input.isJumpPressed() || Math.abs(inputVector.x) > Number.EPSILON || Math.abs(inputVector.y) > Number.EPSILON) {
-                this.body.type = CANNON.Body.DYNAMIC;
-            }
-
+            // Jump
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
-                this.body.velocity.y = this.JUMP_FORCE;
+                const vel = getLinearVelocity(this.body);
+                vel.y = this.JUMP_FORCE;
+                setLinearVelocity(this.body, vel);
                 this.jumpCooldownTimer = 1.0;
             }
         } else {
@@ -931,7 +923,8 @@ export class Player extends BaseMesh {
 
     syncPosition() {
         // Align the visual mesh with the physics body (position offset for proper height)
-        const newPosition = new THREE.Vector3(this.body.position.x, this.body.position.y - 0.3, this.body.position.z);
+        const translation = this.body.translation();
+        const newPosition = new THREE.Vector3(translation.x, translation.y - 0.3, translation.z);
         this.position.copy(newPosition);
         this.mesh.position.copy(newPosition);
     }
@@ -940,14 +933,16 @@ export class Player extends BaseMesh {
      * Gradually slow down horizontal movement by a factor
      */
     private haltMovement(): void {
-        this.body.velocity.x = 0;
-        this.body.velocity.z = 0;
+        const vel = getLinearVelocity(this.body);
+        vel.x = 0;
+        vel.z = 0;
+        setLinearVelocity(this.body, vel);
     }
 
     move(position: CANNON.Vec3): void {
         console.log('Moving player to', position);
-        this.body.type = CANNON.Body.DYNAMIC;
-        this.body.position.copy(position);
+        const newPos = new THREE.Vector3(position.x, position.y, position.z);
+        setBodyPosition(this.body, newPos);
         this.syncPosition();
     }
 
@@ -976,9 +971,13 @@ export class Player extends BaseMesh {
         // Skip if we already hit this enemy during this dash
         if (this.dashHitEnemies.has(enemy)) return;
 
+        // Convert body position to CANNON.Vec3 for compatibility
+        const bodyPos = this.body.translation();
+        const cannonPos = new CANNON.Vec3(bodyPos.x, bodyPos.y, bodyPos.z);
+
         // Deal 3x weapon damage with tech multiplier
         const damage = this.getHitDamage(3);
-        enemy.takeDamage(damage, this.body.position);
+        enemy.takeDamage(damage, cannonPos);
 
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
@@ -992,8 +991,12 @@ export class Player extends BaseMesh {
         // Skip if we already hit this enemy during this attack
         if (this.attackHitEnemies.has(enemy)) return;
 
+        // Convert body position to CANNON.Vec3 for compatibility
+        const bodyPos = this.body.translation();
+        const cannonPos = new CANNON.Vec3(bodyPos.x, bodyPos.y, bodyPos.z);
+
         const damage = this.getHitDamage();
-        enemy.takeDamage(damage, this.body.position);
+        enemy.takeDamage(damage, cannonPos);
         console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
@@ -1016,7 +1019,10 @@ export class Player extends BaseMesh {
 
         // Spawn damage number if callback is set
         if (this.onDamageTaken) {
-            this.onDamageTaken(this.body.position, reducedDamage);
+            // Convert body position to CANNON.Vec3 for callback compatibility
+            const bodyPos = this.body.translation();
+            const cannonPos = new CANNON.Vec3(bodyPos.x, bodyPos.y, bodyPos.z);
+            this.onDamageTaken(cannonPos, reducedDamage);
         }
 
         if (this.hp <= 0) {
@@ -1026,7 +1032,7 @@ export class Player extends BaseMesh {
         }
 
         // Apply brief invulnerability
-        this.invulnerableTimer = this.HIT_INVULNERABILITY; // 1 second invulnerability
+        this.invulnerableTimer = this.HIT_INVULNERABILITY;
 
         // Trigger hit animation
         this.fadeToAction(ActionType.TakeHit, 0.05);
@@ -1034,13 +1040,21 @@ export class Player extends BaseMesh {
         // Knockback: push player away from source horizontally and give small upward impulse
         if (sourcePos) {
             this.stunTimer = this.STUN_TIME;
-            // Ensure body is dynamic for knockback to work
-            this.body.type = CANNON.Body.DYNAMIC;
-            const knockDir = this.body.position.vsub(sourcePos);
-            knockDir.y = 0;
+            const bodyPos = this.body.translation();
+            const knockDir = new THREE.Vector3(
+                bodyPos.x - sourcePos.x,
+                0,
+                bodyPos.z - sourcePos.z
+            );
+            
             if (knockDir.length() > 0) {
                 knockDir.normalize();
-                this.body.applyImpulse(new CANNON.Vec3(knockDir.x * this.KNOCKBACK_FORCE, 5, knockDir.z * this.KNOCKBACK_FORCE), knockDir);
+                const knockbackVel = new THREE.Vector3(
+                    knockDir.x * this.KNOCKBACK_FORCE / 10, // Reduced for better feel with kinematic
+                    5,
+                    knockDir.z * this.KNOCKBACK_FORCE / 10
+                );
+                setLinearVelocity(this.body, knockbackVel);
             }
         }
 
@@ -1082,8 +1096,9 @@ export class Player extends BaseMesh {
         this.invulnerableTimer = 2.0; // 2 seconds invulnerability after respawn
 
         // Reset position and velocity
-        this.body.position.copy(position);
-        this.body.velocity.set(0, 0, 0);
+        const newPos = new THREE.Vector3(position.x, position.y, position.z);
+        setBodyPosition(this.body, newPos);
+        setLinearVelocity(this.body, new THREE.Vector3(0, 0, 0));
 
         console.log('Player respawned at', position);
     }
@@ -1385,15 +1400,18 @@ export class Player extends BaseMesh {
      */
     private executeLevelUpShockwave(): void {
         const damage = this.getHitDamage();
+        const playerPos = this.body.translation();
+        const cannonPos = new CANNON.Vec3(playerPos.x, playerPos.y, playerPos.z);
 
-        // Find all enemies in the world and damage them
-        for (const body of this.world.bodies) {
-            const entity = (body as any).entity;
+        // Find all enemies in the Rapier world and damage them
+        const rapierWorld = RapierPhysics.Instance.world;
+        rapierWorld.forEachCollider((collider: RAPIER.Collider) => {
+            const entity = (collider as any).entity;
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                entity.takeDamage(damage, this.body.position);
+                entity.takeDamage(damage, cannonPos);
                 console.log(`Level-up shockwave hit enemy for ${damage} damage`);
             }
-        }
+        });
     }
 
     /**

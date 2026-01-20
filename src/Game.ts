@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es'; // Still used for Player/World compatibility until they are migrated
 import RAPIER from '@dimforge/rapier3d-compat';
-import { RapierPhysics } from './physics/RapierPhysics';
+import { RapierPhysics, setLinearVelocity } from './physics/RapierPhysics';
 import { Player } from './Player';
 import { World } from './World';
 import { InputManager } from './InputManager';
@@ -187,9 +187,8 @@ export class Game {
                 this.world.currentStage.spawnPosition.z
             )
             : new CANNON.Vec3(0, 0.4, 0);
-        // Note: Player constructor still uses Cannon types and will need to be migrated separately
-        // Passing null for physicsMaterial as Rapier doesn't use materials the same way
-        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld as any, initialSpawn, this.input, null as any));
+        // Player now uses Rapier physics with CharacterController
+        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld as any, initialSpawn, this.input));
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
 
@@ -229,12 +228,12 @@ export class Game {
 
             // Move player and clear velocities/rotation to prevent any impulse from previous physics steps
             this.player.move(targetPos);
-            this.player.body.velocity.set(0, 0, 0);
-            if (this.player.body.angularVelocity) this.player.body.angularVelocity.set(0, 0, 0);
+            setLinearVelocity(this.player.body, new THREE.Vector3(0, 0, 0));
 
             // Update last teleporter position when entering a stage via teleporter
             // This is used as the respawn point if the player dies
-            this.lastTeleporterPosition.copy(this.player.body.position);
+            const bodyPos = this.player.body.translation();
+            this.lastTeleporterPosition.set(bodyPos.x, bodyPos.y, bodyPos.z);
 
             // Snap camera
             this.resetCameraPosition();

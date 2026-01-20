@@ -269,7 +269,7 @@ export class Enemy extends BaseMesh {
 
         const playerBody = this.player.body;
         const hitboxPos = this.attackHitboxBody.position;
-        const playerPos = playerBody.position;
+        const playerPos = playerBody.translation();
 
         // Simple distance check for collision
         const dx = hitboxPos.x - playerPos.x;
@@ -362,10 +362,14 @@ export class Enemy extends BaseMesh {
             return;
         }
 
-        const playerPos = this.player.body.position;
+        const playerPos = this.player.body.translation();
         const myPos = this.body.position;
 
-        const distToPlayer = myPos.distanceTo(playerPos);
+        const distToPlayer = Math.sqrt(
+            Math.pow(myPos.x - playerPos.x, 2) +
+            Math.pow(myPos.y - playerPos.y, 2) +
+            Math.pow(myPos.z - playerPos.z, 2)
+        );
         const distToBase = myPos.distanceTo(this.basePosition);
 
         let isMoving = false;
@@ -378,8 +382,11 @@ export class Enemy extends BaseMesh {
                 this.isReturningToBase = false;
                 this.returnToBaseTimer = 0;
 
-                const dir = playerPos.vsub(myPos);
-                dir.y = 0; // Don't fly
+                const dir = new CANNON.Vec3(
+                    playerPos.x - myPos.x,
+                    0, // Don't fly
+                    playerPos.z - myPos.z
+                );
                 if (dir.length() > 0) {
                     dir.normalize();
                     // Move towards player

@@ -29,12 +29,14 @@ export class AreaAttackSkill extends Skill {
         for (const body of world.bodies) {
             const entity = (body as any).entity;
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                const dx = body.position.x - player.body.position.x;
-                const dz = body.position.z - player.body.position.z;
+                const playerPos = player.body.translation();
+                const dx = body.position.x - playerPos.x;
+                const dz = body.position.z - playerPos.z;
                 const distance = Math.sqrt(dx * dx + dz * dz);
 
                 if (distance <= this.RANGE) {
-                    entity.takeDamage(this.DAMAGE, player.body.position);
+                    const cannonPos = new CANNON.Vec3(playerPos.x, playerPos.y, playerPos.z);
+                    entity.takeDamage(this.DAMAGE, cannonPos);
                     hitEnemies.add(entity);
                     console.log(`Area attack hit enemy for ${this.DAMAGE} damage`);
                 }

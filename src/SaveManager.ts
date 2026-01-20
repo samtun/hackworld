@@ -193,9 +193,9 @@ export class SaveManager {
                 agilityPoints: player.agilityPoints,
                 luckPoints: player.luckPoints,
                 position: {
-                    x: player.body.position.x,
-                    y: player.body.position.y,
-                    z: player.body.position.z
+                    x: player.body.translation().x,
+                    y: player.body.translation().y,
+                    z: player.body.translation().z
                 },
                 // Serialize inventory and include weapon levels
                 inventory: player.inventory.map(i => {
@@ -333,9 +333,9 @@ export class SaveManager {
                     agilityPoints: player.agilityPoints,
                     luckPoints: player.luckPoints,
                     position: {
-                        x: player.body.position.x,
-                        y: player.body.position.y,
-                        z: player.body.position.z
+                        x: player.body.translation().x,
+                        y: player.body.translation().y,
+                        z: player.body.translation().z
                     },
                     inventory: player.inventory.map(i => {
                         if (i instanceof WeaponItem) {

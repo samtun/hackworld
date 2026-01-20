@@ -38,10 +38,11 @@ export class LaserBeamSkill extends Skill {
         this.forward = player.getForwardDirection();
 
         // Create laser beam starting position (in front of player)
+        const playerPos = player.body.translation();
         this.startPos = new CANNON.Vec3(
-            player.body.position.x + this.forward.x * 0.5,
-            player.body.position.y + 0.5,
-            player.body.position.z + this.forward.z * 0.5
+            playerPos.x + this.forward.x * 0.5,
+            playerPos.y + 0.5,
+            playerPos.z + this.forward.z * 0.5
         );
 
         // Create visual particle effect
@@ -95,7 +96,9 @@ export class LaserBeamSkill extends Skill {
 
                     if (distanceToBeam <= this.RADIUS && Math.abs(dy) <= 2) {
                         // Hit!
-                        entity.takeDamage(this.DAMAGE, this.player.body.position);
+                        const playerPos = this.player.body.translation();
+                        const cannonPos = new CANNON.Vec3(playerPos.x, playerPos.y, playerPos.z);
+                        entity.takeDamage(this.DAMAGE, cannonPos);
                         this.hitEnemies.add(entity);
                         console.log(`Laser beam hit enemy for ${this.DAMAGE} damage`);
                         break;
