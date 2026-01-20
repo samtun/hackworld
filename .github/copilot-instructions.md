@@ -64,7 +64,7 @@ This project uses an **entity-based architecture** for game logic. Always follow
 - Entities must encapsulate their own state, behavior, and rendering logic
 - Each entity class should manage:
   - Visual representation (Three.js meshes)
-  - Physics body (Cannon-es body)
+  - Physics body (Rapier.js rigid body)
   - Internal state (health, position, stats, etc.)
   - Update logic (per-frame behavior)
   - Lifecycle methods (initialization, cleanup)
@@ -81,13 +81,13 @@ This project uses an **entity-based architecture** for game logic. Always follow
 ```typescript
 export class NewEntity {
     mesh: THREE.Mesh;           // Visual representation
-    body: CANNON.Body;          // Physics body
+    body: RAPIER.RigidBody;     // Physics body
     // Entity-specific state
     private someState: number;
     
-    constructor(scene: THREE.Scene, world: CANNON.World, params: any) {
+    constructor(scene: THREE.Scene, world: RAPIER.World, params: any) {
         // Initialize mesh and add to scene
-        // Initialize physics body and add to world
+        // Initialize physics body and add to world using RapierPhysics helpers
         // Set up initial state
     }
     
@@ -174,18 +174,24 @@ When updating README.md:
 ## Common Patterns in This Project
 
 ### Physics and Rendering Sync
-Always sync Three.js mesh positions with Cannon-es body positions:
+Always sync Three.js mesh positions with Rapier.js body positions:
 ```typescript
-// Note: Type casting is used due to compatibility between CANNON.Vec3/Quaternion and THREE.Vector3/Quaternion
-this.mesh.position.copy(this.body.position as any);
-this.mesh.quaternion.copy(this.body.quaternion as any);
+// Use the syncMeshWithBody helper from RapierPhysics
+import { syncMeshWithBody } from './physics/RapierPhysics';
+syncMeshWithBody(this.mesh, this.body);
+
+// Or manually:
+const translation = this.body.translation();
+const rotation = this.body.rotation();
+this.mesh.position.set(translation.x, translation.y, translation.z);
+this.mesh.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
 ```
 
 ### Resource Cleanup
 Always clean up resources to prevent memory leaks:
 ```typescript
 scene.remove(this.mesh);
-world.removeBody(this.body);
+RapierPhysics.Instance.removeBody(this.body);
 if (this.mesh.geometry) this.mesh.geometry.dispose();
 // Check if material has dispose method before calling
 const material = this.mesh.material as THREE.Material;

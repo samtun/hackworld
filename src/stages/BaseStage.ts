@@ -165,12 +165,12 @@ export abstract class BaseStage {
      * Create teleporter
      */
     protected createTeleporter(position: THREE.Vector3, destination: string): void {
-        const cannonPos = new THREE.Vector3(position.x, position.y, position.z);
+        const pos = new THREE.Vector3(position.x, position.y, position.z);
         this.teleporter = new Teleporter(
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,
-            cannonPos,
+            pos,
             destination
         );
         // Add teleporter to npcs set so it's handled like any other NPC
@@ -181,8 +181,8 @@ export abstract class BaseStage {
      * Spawn regular enemy
      */
     protected spawnEnemy(position: THREE.Vector3): void {
-        const cannonPos = new THREE.Vector3(position.x, position.y, position.z);
-        const enemy = new Enemy(this.scene, this.physicsWorld as any, cannonPos);
+        const pos = new THREE.Vector3(position.x, position.y, position.z);
+        const enemy = new Enemy(this.scene, this.physicsWorld as any, pos);
         this.enemies.push(enemy);
     }
 
@@ -190,8 +190,8 @@ export abstract class BaseStage {
      * Spawn large enemy
      */
     protected spawnLargeEnemy(position: THREE.Vector3): void {
-        const cannonPos = new THREE.Vector3(position.x, position.y, position.z);
-        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld as any, cannonPos);
+        const pos = new THREE.Vector3(position.x, position.y, position.z);
+        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld as any, pos);
         this.enemies.push(largeEnemy);
     }
 

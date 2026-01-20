@@ -18,8 +18,8 @@ import { GameProgressManager } from './GameProgressManager';
 export class World {
     scene: THREE.Scene;
     physicsWorld: RAPIER.World;
-    // Note: Rapier uses different material/friction handling than Cannon.js
-    // Material properties are set per-collider, not as separate objects
+    // Note: Rapier uses per-collider material properties
+    // Material properties like friction and restitution are set when creating colliders
     assetManager: AssetManager;
     onLoadProgressCallback: (loaded: number, total: number) => void;
     onStageLoadStartCallback: () => void;

@@ -113,12 +113,12 @@ export class Lobby extends BaseStage {
         this.createTeleporter(new THREE.Vector3(5, 0, 5), 'selection');
 
         // Healing Station
-        const cannonHealingPos = new THREE.Vector3(
+        const healingPos = new THREE.Vector3(
             this.healingStationPosition.x,
             this.healingStationPosition.y,
             this.healingStationPosition.z
         );
-        this.healingStation = new HealingStation(this.scene, cannonHealingPos);
+        this.healingStation = new HealingStation(this.scene, healingPos);
 
         // Create Mainframe NPC - Main quest giver
         this.createMainframeNpc();
@@ -139,8 +139,8 @@ export class Lobby extends BaseStage {
     }
 
     private createMainframeNpc(): void {
-        const cannonPos = new THREE.Vector3(0, 0, -14);
-        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld as any, this.physicsMaterial, cannonPos);
+        const position = new THREE.Vector3(0, 0, -14);
+        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld as any, this.physicsMaterial, position);
         this.npcs.add(this.mainframeNpc);
     }
 
@@ -151,7 +151,7 @@ export class Lobby extends BaseStage {
             "If you are interested, the teleporter to the south can take you to our main server."
         ];
 
-        const cannonPos = new THREE.Vector3(-5, 0, 0);
+        const position = new THREE.Vector3(-5, 0, 0);
         this.nylethNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -159,7 +159,7 @@ export class Lobby extends BaseStage {
             "models/npc_placeholder.glb",
             "Nyleth",
             "Talk",
-            cannonPos,
+            position,
             nylethDialogue
         );
         this.npcs.add(this.nylethNpc);
@@ -173,7 +173,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.xDataUpgradeManager = XDataUpgradeManager.Instance;
-        const cannonPos = new THREE.Vector3(5, 0, -5);
+        const position = new THREE.Vector3(5, 0, -5);
         this.xDataManagerNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -181,7 +181,7 @@ export class Lobby extends BaseStage {
             "models/xdata_terminal.glb",
             "XData Terminal",
             "Upgrade with X-Data",
-            cannonPos,
+            position,
             xDataManagerDialogue,
             () => this.xDataUpgradeManager?.show()
         );
@@ -197,7 +197,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.saveManager = SaveManager.Instance;
-        const cannonPos = new THREE.Vector3(0, 0, 5);
+        const position = new THREE.Vector3(0, 0, 5);
         this.saveManagerNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -205,7 +205,7 @@ export class Lobby extends BaseStage {
             'models/npc_placeholder.glb',
             "Grant",
             "Save Game",
-            cannonPos,
+            position,
             saveManagerDialogue,
             () => this.saveManager?.show(),
         );
@@ -220,7 +220,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.chipTrader = ChipTrader.Instance;
-        const cannonPos = new THREE.Vector3(-5, 0, -5);
+        const position = new THREE.Vector3(-5, 0, -5);
         this.chipTraderNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -228,7 +228,7 @@ export class Lobby extends BaseStage {
             "models/npc_placeholder.glb",
             "Kelly",
             "Trade Chips",
-            cannonPos,
+            position,
             chipTraderDialogue,
             () => this.chipTrader?.show()
         );
@@ -242,7 +242,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.coreTrader = CoreTrader.Instance;
-        const cannonPos = new THREE.Vector3(5, 0, 0);
+        const position = new THREE.Vector3(5, 0, 0);
         this.coreTraderNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -250,7 +250,7 @@ export class Lobby extends BaseStage {
             "models/npc_placeholder.glb",
             "Hank",
             "Trade Cores",
-            cannonPos,
+            position,
             coreTraderDialogue,
             () => this.coreTrader?.show()
         );
@@ -265,7 +265,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.weaponTraderManager = WeaponTrader.Instance;
-        const cannonPos = new THREE.Vector3(0, 0, -5);
+        const position = new THREE.Vector3(0, 0, -5);
         this.weaponTraderNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -273,7 +273,7 @@ export class Lobby extends BaseStage {
             "models/trader_weapons.glb",
             "Orim",
             "Trade Weapons",
-            cannonPos,
+            position,
             weaponTraderDialogue,
             () => this.weaponTraderManager?.show()
         );
@@ -289,7 +289,7 @@ export class Lobby extends BaseStage {
         ];
 
         this.cardManager = CardManager.Instance;
-        const cannonPos = new THREE.Vector3(7, 0, 0);
+        const position = new THREE.Vector3(7, 0, 0);
         this.irkelNpc = new Npc(
             this.scene,
             this.physicsWorld as any,
@@ -297,7 +297,7 @@ export class Lobby extends BaseStage {
             "models/npc_placeholder.glb",
             "Irkel",
             "Card Collection",
-            cannonPos,
+            position,
             irkelDialogue,
             () => this.cardManager?.show()
         );

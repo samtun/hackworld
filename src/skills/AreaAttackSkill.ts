@@ -34,8 +34,8 @@ export class AreaAttackSkill extends Skill {
                 const distance = Math.sqrt(dx * dx + dz * dz);
 
                 if (distance <= this.RANGE) {
-                    const cannonPos = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
-                    entity.takeDamage(this.DAMAGE, cannonPos);
+                    const position = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
+                    entity.takeDamage(this.DAMAGE, position);
                     hitEnemies.add(entity);
                     console.log(`Area attack hit enemy for ${this.DAMAGE} damage`);
                 }

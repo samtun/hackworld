@@ -96,8 +96,8 @@ export class LaserBeamSkill extends Skill {
                     if (distanceToBeam <= this.RADIUS && Math.abs(dy) <= 2) {
                         // Hit!
                         const playerPos = this.player.body.translation();
-                        const cannonPos = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
-                        entity.takeDamage(this.DAMAGE, cannonPos);
+                        const position = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
+                        entity.takeDamage(this.DAMAGE, position);
                         this.hitEnemies.add(entity);
                         console.log(`Laser beam hit enemy for ${this.DAMAGE} damage`);
                         break;

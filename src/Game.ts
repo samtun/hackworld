@@ -26,7 +26,7 @@ export class Game {
     camera: THREE.PerspectiveCamera;
     renderer: THREE.WebGLRenderer;
     physicsWorld: RAPIER.World;
-    // Rapier doesn't use materials the same way as Cannon - materials are set per collider
+    // Rapier doesn't use materials the same way as Rapier - materials are set per collider
 
     player!: Player;
     world: World;
