@@ -6,8 +6,8 @@ import { GameProgressManager } from '../GameProgressManager';
 export class MainframeNpc extends Npc {
     constructor(
         scene: THREE.Scene,
-        world: CANNON.World,
-        physicsMaterial: CANNON.Material,
+        world: any,
+        physicsMaterial: any,
         position: CANNON.Vec3
     ) {
         const progressManager = GameProgressManager.Instance;

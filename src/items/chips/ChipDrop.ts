@@ -1,12 +1,14 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import RAPIER from '@dimforge/rapier3d-compat';
+import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { ChipType } from './Chip';
 import { ItemDrop } from '../ItemDrop';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 
 export class ChipDrop extends ItemDrop {
     mesh: THREE.Group;
-    body: CANNON.Body;
+    body: RAPIER.RigidBody;
     chipId: string;
     chipName: string;
     chipType: ChipType;
@@ -48,9 +50,10 @@ export class ChipDrop extends ItemDrop {
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
 
-        const shape = new CANNON.Sphere(0.4);
-        this.body = new CANNON.Body({ mass: 0, isTrigger: true, collisionResponse: false, shape });
-        this.body.position.copy(position);
+        const bodyPosition = new THREE.Vector3(position.x, position.y, position.z);
+        this.body = RapierPhysics.Instance.createKinematicBody(bodyPosition);
+        const collider = RapierPhysics.Instance.addSphereCollider(this.body, 0.4);
+        collider.setSensor(true);
         (this.body as any).isChipDrop = true;
         (this.body as any).chipDrop = this;
     }
@@ -73,12 +76,12 @@ export class ChipDrop extends ItemDrop {
             }
         }
 
-        this.body.position.y = this.mesh.position.y;
+        setBodyPosition(this.body, this.mesh.position);
     }
 
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, _world: any): void {
         scene.remove(this.mesh);
-        world.removeBody(this.body);
+        RapierPhysics.Instance.removeBody(this.body);
         this.mesh.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 if (child.geometry) child.geometry.dispose();

@@ -48,8 +48,8 @@ export class Teleporter extends Npc {
 
     constructor(
         scene: THREE.Scene,
-        world: CANNON.World,
-        physicsMaterial: CANNON.Material,
+        world: any,
+        physicsMaterial: any,
         position: CANNON.Vec3,
         destination: string
     ) {
@@ -222,7 +222,7 @@ export class Teleporter extends Npc {
     /**
      * Clean up resources
      */
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, world: any): void {
         // Call parent cleanup for mesh and physics body
         super.cleanup(scene, world);
 

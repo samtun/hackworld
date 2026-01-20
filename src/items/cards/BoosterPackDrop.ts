@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import RAPIER from '@dimforge/rapier3d-compat';
+import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { ItemDrop } from '../ItemDrop';
 
 /**
@@ -8,7 +10,7 @@ import { ItemDrop } from '../ItemDrop';
  */
 export class BoosterPackDrop extends ItemDrop {
     mesh: THREE.Group;
-    body: CANNON.Body;
+    body: RAPIER.RigidBody;
     textMesh: THREE.Mesh | null = null;
 
     private floatTimer: number = 0;
@@ -45,14 +47,10 @@ export class BoosterPackDrop extends ItemDrop {
         scene.add(this.mesh);
 
         // Create physics body (sensor for detection)
-        const shape = new CANNON.Sphere(0.5);
-        this.body = new CANNON.Body({
-            mass: 0,
-            isTrigger: true,
-            collisionResponse: false,
-            shape: shape
-        });
-        this.body.position.copy(position);
+        const bodyPosition = new THREE.Vector3(position.x, position.y, position.z);
+        this.body = RapierPhysics.Instance.createKinematicBody(bodyPosition);
+        const collider = RapierPhysics.Instance.addSphereCollider(this.body, 0.5);
+        collider.setSensor(true);
 
         // Mark as booster pack drop for detection
         (this.body as any).isBoosterPackDrop = true;
@@ -87,12 +85,12 @@ export class BoosterPackDrop extends ItemDrop {
         }
 
         // Sync body position (mainly Y for floating)
-        this.body.position.y = this.mesh.position.y;
+        setBodyPosition(this.body, this.mesh.position);
     }
 
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, _world: any): void {
         scene.remove(this.mesh);
-        world.removeBody(this.body);
+        RapierPhysics.Instance.removeBody(this.body);
 
         // Dispose of geometries and materials
         this.mesh.traverse((child) => {

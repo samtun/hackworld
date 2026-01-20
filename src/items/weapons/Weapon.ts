@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
+import RAPIER from '@dimforge/rapier3d-compat';
+import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { AssetManager } from '../../AssetManager.ts';
 import { BaseMesh } from '../../BaseMesh.ts';
 import { WeaponType } from './WeaponType';
@@ -81,7 +82,7 @@ export class Weapon extends BaseMesh {
         }
     };
 
-    body?: CANNON.Body;
+    body?: RAPIER.RigidBody;
     isAttacking: boolean = false;
     weaponType: WeaponType;
     stats: WeaponStats;
@@ -91,8 +92,8 @@ export class Weapon extends BaseMesh {
     onDamageFrame?: () => void; // Callback for when damage should be dealt
     onHit?: (event: any) => void; // Callback for when weapon hits something
 
-    // Physics bodies for attack hitboxes
-    private physicsWorld?: CANNON.World;
+    // Physics world reference
+    private physicsWorld?: any; // RAPIER.World cast from any for compatibility
 
     // Parent bone reference for world position calculations
     private parentBone?: THREE.Object3D;
@@ -106,7 +107,7 @@ export class Weapon extends BaseMesh {
         modelAsset: string,
         weaponType: WeaponType = WeaponType.SWORD,
         damage: number = 10,
-        world?: CANNON.World) {
+        world?: any) {
         super(modelAsset);
         this.weaponType = weaponType;
         this.stats = Weapon.WEAPON_CONFIGS[weaponType];
@@ -155,32 +156,28 @@ export class Weapon extends BaseMesh {
 
         // Remove old attack body if it exists
         if (this.body) {
-            this.physicsWorld.removeBody(this.body);
+            RapierPhysics.Instance.removeBody(this.body);
         }
 
         // Get hitbox config for this weapon type
         const config = Weapon.WEAPON_HITBOX_CONFIGS[this.weaponType];
         const weaponRadius = config.radius * rangeMultiplier;
         const weaponHeight = config.height * rangeMultiplier;
-        const shape = new CANNON.Cylinder(weaponRadius, weaponRadius, weaponHeight, 8);
 
-        this.body = new CANNON.Body({
-            mass: 0, // Static/sensor body
-            isTrigger: true,
-            collisionResponse: false,
-            shape: shape
-        });
+        // Create kinematic body for attack hitbox (sensor)
+        this.body = RapierPhysics.Instance.createKinematicBody(new THREE.Vector3());
+        
+        // Add cylinder collider as sensor
+        const collider = RapierPhysics.Instance.addCylinderCollider(
+            this.body,
+            weaponHeight / 2,
+            weaponRadius
+        );
+        collider.setSensor(true);
 
         // Add a custom property to identify this as an attack hitbox
         (this.body as any).isAttackHitbox = true;
         (this.body as any).weaponType = this.weaponType;
-
-        // Register collision callback if set
-        if (this.onHit) {
-            this.body.addEventListener('collide', this.onHit);
-        }
-
-        this.physicsWorld.addBody(this.body);
     }
 
     private updateAttackHitbox() {
@@ -199,8 +196,8 @@ export class Weapon extends BaseMesh {
         worldPos.add(offset);
 
         // Update the physics body position and rotation
-        this.body.position.set(worldPos.x, worldPos.y, worldPos.z);
-        this.body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);
+        setBodyPosition(this.body, worldPos);
+        this.body.setRotation({ x: worldQuat.x, y: worldQuat.y, z: worldQuat.z, w: worldQuat.w }, true);
     }
 
     update(dt: number) {
@@ -233,7 +230,7 @@ export class Weapon extends BaseMesh {
 
         // Remove attack hitbox
         if (this.body && this.physicsWorld) {
-            this.physicsWorld.removeBody(this.body);
+            RapierPhysics.Instance.removeBody(this.body);
         }
     }
 
@@ -248,7 +245,7 @@ export class Weapon extends BaseMesh {
 
         // Remove any existing attack body
         if (this.body && this.physicsWorld) {
-            this.physicsWorld.removeBody(this.body);
+            RapierPhysics.Instance.removeBody(this.body);
         }
 
         // Store the parent bone reference

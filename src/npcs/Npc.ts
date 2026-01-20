@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import RAPIER from '@dimforge/rapier3d-compat';
+import { RapierPhysics } from '../physics/RapierPhysics';
 import { BaseMesh } from '../BaseMesh.ts';
 import { InputManager } from '../InputManager';
 import { getHint } from '../ui/InputHints';
@@ -7,7 +9,7 @@ import { NpcRegistry } from './NpcRegistry';
 
 export class Npc extends BaseMesh {
     name: string;
-    body?: CANNON.Body;
+    body?: RAPIER.RigidBody;
     interactionHint: string;
     position: CANNON.Vec3;
     dialogue: string[];
@@ -15,8 +17,8 @@ export class Npc extends BaseMesh {
 
     constructor(
         scene: THREE.Scene,
-        world: CANNON.World,
-        physicsMaterial: CANNON.Material,
+        _world: any,
+        _physicsMaterial: any,
         modelAsset: string,
         name: string,
         interactionHint: string,
@@ -36,23 +38,16 @@ export class Npc extends BaseMesh {
         const box = new THREE.Box3().setFromObject(this.mesh);
         const size = new THREE.Vector3();
         box.getSize(size);
-        const center = new THREE.Vector3();
-        box.getCenter(center);
 
-        const halfExtents = new CANNON.Vec3(size.x / 2, size.y / 2, size.z / 2);
-        const shape = new CANNON.Box(halfExtents);
+        const halfExtents = new THREE.Vector3(size.x / 2, size.y / 2, size.z / 2);
 
-        this.body = new CANNON.Body({
-            mass: 0, // Static body
-            position: new CANNON.Vec3(position.x, halfExtents.y, position.z),
-            shape: shape,
-            material: physicsMaterial
-        });
+        // Create static body at NPC position
+        const bodyPosition = new THREE.Vector3(position.x, halfExtents.y, position.z);
+        this.body = RapierPhysics.Instance.createStaticBody(bodyPosition);
+        RapierPhysics.Instance.addBoxCollider(this.body, halfExtents);
 
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
-        this.body.addShape(shape);
         scene.add(this.mesh);
-        world.addBody(this.body);
     }
 
     /**
@@ -111,10 +106,10 @@ export class Npc extends BaseMesh {
         NpcRegistry.Instance.markDialogueShown(this.name);
     }
 
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, _world: any): void {
         scene.remove(this.mesh);
         if (this.body) {
-            world.removeBody(this.body);
+            RapierPhysics.Instance.removeBody(this.body);
         }
         this.disposeMesh();
     }

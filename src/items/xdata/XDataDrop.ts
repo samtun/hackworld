@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import RAPIER from '@dimforge/rapier3d-compat';
+import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { ItemDrop } from '../ItemDrop';
 
 /**
@@ -8,12 +10,12 @@ import { ItemDrop } from '../ItemDrop';
  */
 export class XDataDrop extends ItemDrop {
     mesh: THREE.Object3D;
-    body: CANNON.Body;
+    body: RAPIER.RigidBody;
     amount: number;
     private bobTimer: number = 0;
     private baseHeight: number;
     
-    constructor(scene: THREE.Scene, _world: CANNON.World, position: CANNON.Vec3, amount: number) {
+    constructor(scene: THREE.Scene, _world: any, position: CANNON.Vec3, amount: number) {
         super();
         this.amount = amount;
         this.baseHeight = position.y;
@@ -48,15 +50,13 @@ export class XDataDrop extends ItemDrop {
         this.mesh = group;
         
         // Physics Body (small trigger body)
-        const shape = new CANNON.Box(new CANNON.Vec3(0.2, 0.2, 0.2));
-        this.body = new CANNON.Body({
-            mass: 0, // Static body
-            position: position,
-            shape: shape,
-            isTrigger: true, // Make it a trigger so it doesn't collide physically
-            collisionResponse: false // Don't respond to collisions
-        });
-        // Body will be added to world by ItemDropManager
+        const bodyPosition = new THREE.Vector3(position.x, position.y, position.z);
+        this.body = RapierPhysics.Instance.createKinematicBody(bodyPosition);
+        const collider = RapierPhysics.Instance.addBoxCollider(
+            this.body,
+            new THREE.Vector3(0.2, 0.2, 0.2)
+        );
+        collider.setSensor(true);
         
         // Mark as X-Data drop for detection
         (this.body as any).isXDataDrop = true;
@@ -70,15 +70,15 @@ export class XDataDrop extends ItemDrop {
         this.mesh.position.y = this.baseHeight + bobOffset;
         
         // Sync body position with mesh
-        this.body.position.y = this.mesh.position.y;
+        setBodyPosition(this.body, this.mesh.position);
         
         // Rotate the X
         this.mesh.rotation.y += deltaTime * 2; // Rotate 2 radians per second
     }
     
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, _world: any): void {
         scene.remove(this.mesh);
-        world.removeBody(this.body);
+        RapierPhysics.Instance.removeBody(this.body);
         
         // Dispose of geometries and materials
         this.mesh.traverse((child) => {

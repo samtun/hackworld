@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import RAPIER from '@dimforge/rapier3d-compat';
+import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { WeaponType } from './WeaponType';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 import { ItemDrop } from '../ItemDrop';
@@ -11,7 +13,7 @@ import { ItemDrop } from '../ItemDrop';
 export class WeaponDrop extends ItemDrop {
     weaponId: string;
     mesh: THREE.Group;
-    body: CANNON.Body;
+    body: RAPIER.RigidBody;
     weaponType: WeaponType;
     weaponName: string;
     textMesh: THREE.Mesh | null = null;
@@ -80,14 +82,10 @@ export class WeaponDrop extends ItemDrop {
 
         // Create physics body (sensor for detection). Do NOT add to physics world here;
         // caller (ItemDropManager) will add the body to the world.
-        const shape = new CANNON.Sphere(0.5);
-        this.body = new CANNON.Body({
-            mass: 0,
-            isTrigger: true,
-            collisionResponse: false,
-            shape: shape
-        });
-        this.body.position.copy(position);
+        const bodyPosition = new THREE.Vector3(position.x, position.y, position.z);
+        this.body = RapierPhysics.Instance.createKinematicBody(bodyPosition);
+        const collider = RapierPhysics.Instance.addSphereCollider(this.body, 0.5);
+        collider.setSensor(true);
 
         // Mark as weapon drop for detection
         (this.body as any).isWeaponDrop = true;
@@ -122,12 +120,12 @@ export class WeaponDrop extends ItemDrop {
         }
 
         // Sync body position (mainly Y for floating)
-        this.body.position.y = this.mesh.position.y;
+        setBodyPosition(this.body, this.mesh.position);
     }
 
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, _world: any): void {
         scene.remove(this.mesh);
-        world.removeBody(this.body);
+        RapierPhysics.Instance.removeBody(this.body);
 
         // Dispose of geometries and materials
         this.mesh.traverse((child) => {
