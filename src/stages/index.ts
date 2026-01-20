@@ -16,10 +16,10 @@ export const AVAILABLE_DUNGEONS = import.meta.env.DEV
     ? [CrimsonDepths, VioletAbyss, MovementTest]
     : [CrimsonDepths, VioletAbyss];
 
-// Stage factory type (still uses CANNON types since stages haven't been migrated yet)
+// Stage factory type (uses RAPIER.World now, but still passes CANNON types to entities for backward compatibility)
 type StageConstructor = new (
     scene: THREE.Scene,
-    physicsWorld: CANNON.World,
+    physicsWorld: RAPIER.World,
     physicsMaterial: CANNON.Material
 ) => BaseStage;
 
@@ -33,8 +33,6 @@ const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstr
 
 /**
  * Create a stage instance by ID
- * Note: Accepts RAPIER.World but casts to CANNON.World for backward compatibility
- * until stages are migrated to Rapier
  */
 export function createStage(
     stageId: string,
@@ -46,6 +44,5 @@ export function createStage(
         console.warn(`Unknown stage ID: ${stageId}`);
         return null;
     }
-    // Temporarily cast to CANNON types until stages are migrated
-    return new StageClass(scene, physicsWorld as any, null as any);
+    return new StageClass(scene, physicsWorld, null as any);
 }

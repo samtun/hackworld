@@ -1,5 +1,6 @@
-import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
+import * as CANNON from 'cannon-es'; // Temporary for Npc compatibility
+import { RapierPhysics } from '../physics/RapierPhysics';
 import { BaseStage } from './BaseStage';
 import { HealingStation } from '../HealingStation';
 import { Player } from '../Player';
@@ -19,7 +20,7 @@ export class Lobby extends BaseStage {
     name = 'Lobby';
     description = 'Safe hub area';
     environmentMap: string = 'textures/environments/lobby_env.exr';
-    spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
+    spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 0.4, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
@@ -60,7 +61,7 @@ export class Lobby extends BaseStage {
 
     // Healing Station
     healingStation?: HealingStation;
-    private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
+    private healingStationPosition: THREE.Vector3 = new THREE.Vector3(-5, 0.05, 5);
 
     // Callback for XData Terminal interaction (set by Game)
     xDataInteractionCallback?: () => void;
@@ -110,10 +111,15 @@ export class Lobby extends BaseStage {
         }
 
         // Teleporter
-        this.createTeleporter(new CANNON.Vec3(5, 0, 5), 'selection');
+        this.createTeleporter(new THREE.Vector3(5, 0, 5), 'selection');
 
         // Healing Station
-        this.healingStation = new HealingStation(this.scene, this.healingStationPosition);
+        const cannonHealingPos = new CANNON.Vec3(
+            this.healingStationPosition.x,
+            this.healingStationPosition.y,
+            this.healingStationPosition.z
+        );
+        this.healingStation = new HealingStation(this.scene, cannonHealingPos);
 
         // Create Mainframe NPC - Main quest giver
         this.createMainframeNpc();
@@ -133,11 +139,10 @@ export class Lobby extends BaseStage {
         this.createIrkelNpc();
     }
 
-    /**
-     * Create the Mainframe NPC with progressive dialogue based on game progress
-     */
     private createMainframeNpc(): void {
-        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld, this.physicsMaterial, new CANNON.Vec3(0, 0, -14));
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
+        const cannonPos = new CANNON.Vec3(0, 0, -14);
+        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld as any, this.physicsMaterial, cannonPos);
         this.npcs.add(this.mainframeNpc);
     }
 
@@ -148,14 +153,16 @@ export class Lobby extends BaseStage {
             "If you are interested, the teleporter to the south can take you to our main server."
         ];
 
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
+        const cannonPos = new CANNON.Vec3(-5, 0, 0);
         this.nylethNpc = new Npc(
             this.scene,
-            this.physicsWorld,
+            this.physicsWorld as any,
             this.physicsMaterial,
             "models/npc_placeholder.glb",
             "Nyleth",
             "Talk",
-            new CANNON.Vec3(-5, 0, 0),
+            cannonPos,
             nylethDialogue
         );
         this.npcs.add(this.nylethNpc);
@@ -169,14 +176,16 @@ export class Lobby extends BaseStage {
         ];
 
         this.xDataUpgradeManager = XDataUpgradeManager.Instance;
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
+        const cannonPos = new CANNON.Vec3(5, 0, -5);
         this.xDataManagerNpc = new Npc(
             this.scene,
-            this.physicsWorld,
+            this.physicsWorld as any,
             this.physicsMaterial,
             "models/xdata_terminal.glb",
             "XData Terminal",
             "Upgrade with X-Data",
-            new CANNON.Vec3(5, 0, -5),
+            cannonPos,
             xDataManagerDialogue,
             () => this.xDataUpgradeManager?.show()
         );
@@ -192,14 +201,16 @@ export class Lobby extends BaseStage {
         ];
 
         this.saveManager = SaveManager.Instance;
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
+        const cannonPos = new CANNON.Vec3(0, 0, 5);
         this.saveManagerNpc = new Npc(
             this.scene,
-            this.physicsWorld,
+            this.physicsWorld as any,
             this.physicsMaterial,
             'models/npc_placeholder.glb',
             "Grant",
             "Save Game",
-            new CANNON.Vec3(0, 0, 5),
+            cannonPos,
             saveManagerDialogue,
             () => this.saveManager?.show(),
         );
@@ -214,14 +225,16 @@ export class Lobby extends BaseStage {
         ];
 
         this.chipTrader = ChipTrader.Instance;
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
+        const cannonPos = new CANNON.Vec3(-5, 0, -5);
         this.chipTraderNpc = new Npc(
             this.scene,
-            this.physicsWorld,
+            this.physicsWorld as any,
             this.physicsMaterial,
             "models/npc_placeholder.glb",
             "Kelly",
             "Trade Chips",
-            new CANNON.Vec3(-5, 0, -5),
+            cannonPos,
             chipTraderDialogue,
             () => this.chipTrader?.show()
         );
@@ -235,14 +248,16 @@ export class Lobby extends BaseStage {
         ];
 
         this.coreTrader = CoreTrader.Instance;
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
+        const cannonPos = new CANNON.Vec3(5, 0, 0);
         this.coreTraderNpc = new Npc(
             this.scene,
-            this.physicsWorld,
+            this.physicsWorld as any,
             this.physicsMaterial,
             "models/npc_placeholder.glb",
             "Hank",
             "Trade Cores",
-            new CANNON.Vec3(5, 0, 0),
+            cannonPos,
             coreTraderDialogue,
             () => this.coreTrader?.show()
         );
@@ -257,14 +272,16 @@ export class Lobby extends BaseStage {
         ];
 
         this.weaponTraderManager = WeaponTrader.Instance;
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
+        const cannonPos = new CANNON.Vec3(0, 0, -5);
         this.weaponTraderNpc = new Npc(
             this.scene,
-            this.physicsWorld,
+            this.physicsWorld as any,
             this.physicsMaterial,
             "models/trader_weapons.glb",
             "Orim",
             "Trade Weapons",
-            new CANNON.Vec3(0, 0, -5),
+            cannonPos,
             weaponTraderDialogue,
             () => this.weaponTraderManager?.show()
         );
@@ -280,14 +297,16 @@ export class Lobby extends BaseStage {
         ];
 
         this.cardManager = CardManager.Instance;
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Npc
+        const cannonPos = new CANNON.Vec3(7, 0, 0);
         this.irkelNpc = new Npc(
             this.scene,
-            this.physicsWorld,
+            this.physicsWorld as any,
             this.physicsMaterial,
             "models/npc_placeholder.glb",
             "Irkel",
             "Card Collection",
-            new CANNON.Vec3(7, 0, 0),
+            cannonPos,
             irkelDialogue,
             () => this.cardManager?.show()
         );
@@ -345,41 +364,28 @@ export class Lobby extends BaseStage {
         box.getSize(size);
 
         // 3. calculate half-extents considering scaling
-        // Cannon needs the radius from the center to the edge
-        const halfExtents = new CANNON.Vec3(
+        const halfExtents = new THREE.Vector3(
             (size.x * mesh.scale.x) / 2,
             (size.y * mesh.scale.y) / 2,
             (size.z * mesh.scale.z) / 2
         );
 
-        const boxShape = new CANNON.Box(halfExtents);
-
-        // 4. Create Body
-        const body = new CANNON.Body({
-            mass: 0, // Static
-            material: this.physicsMaterial
-        });
-
-        // 5. Consider offset
-        // If the geometry center is not at (0,0,0),
-        // we need to move the shape within the body.
+        // 4. Calculate center and apply scaling
         const center = new THREE.Vector3();
         box.getCenter(center);
-        center.multiply(mesh.scale); // Also apply scaling to the offset
+        center.multiply(mesh.scale);
 
-        const cannonOffset = new CANNON.Vec3(center.x, center.y, center.z);
-        body.addShape(boxShape, cannonOffset);
-
-        // 6. Synchronize world position and rotation
+        // 5. Get world position and rotation
         const worldPos = new THREE.Vector3();
         const worldQuat = new THREE.Quaternion();
         mesh.getWorldPosition(worldPos);
         mesh.getWorldQuaternion(worldQuat);
 
-        body.position.set(worldPos.x, worldPos.y, worldPos.z);
-        body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);
+        // 6. Create Rapier body and collider
+        const physics = RapierPhysics.Instance;
+        const body = physics.createStaticBody(worldPos, worldQuat);
+        physics.addBoxCollider(body, halfExtents, center);
 
-        this.physicsWorld.addBody(body);
         this.bodies.push(body);
     }
 

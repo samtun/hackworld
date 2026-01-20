@@ -180,7 +180,13 @@ export class Game {
 
         // Set up player
         this.playerRegistry = PlayerRegistry.Instance;
-        const initialSpawn = this.world.currentStage ? this.world.currentStage.spawnPosition : new CANNON.Vec3(0, 0.4, 0);
+        const initialSpawn = this.world.currentStage 
+            ? new CANNON.Vec3(
+                this.world.currentStage.spawnPosition.x,
+                this.world.currentStage.spawnPosition.y,
+                this.world.currentStage.spawnPosition.z
+            )
+            : new CANNON.Vec3(0, 0.4, 0);
         // Note: Player constructor still uses Cannon types and will need to be migrated separately
         // Passing null for physicsMaterial as Rapier doesn't use materials the same way
         this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld as any, initialSpawn, this.input, null as any));
@@ -212,9 +218,13 @@ export class Game {
     switchScene(destination: string) {
         // Use loadStage helper method
         this.world.loadStageById(destination).then(() => {
-            // Get spawn position from stage configuration
+            // Get spawn position from stage configuration and convert to CANNON.Vec3
             const targetPos = this.world.currentStage
-                ? this.world.currentStage.spawnPosition
+                ? new CANNON.Vec3(
+                    this.world.currentStage.spawnPosition.x,
+                    this.world.currentStage.spawnPosition.y,
+                    this.world.currentStage.spawnPosition.z
+                )
                 : new CANNON.Vec3(0, 0.4, 0);
 
             // Move player and clear velocities/rotation to prevent any impulse from previous physics steps

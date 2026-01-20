@@ -1,4 +1,4 @@
-import * as CANNON from 'cannon-es';
+import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 
@@ -11,7 +11,7 @@ export class VioletAbyss extends BaseStage {
     name = VioletAbyss.name;
     description = VioletAbyss.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
-    spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
+    spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 0.4, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
@@ -37,18 +37,18 @@ export class VioletAbyss extends BaseStage {
         this.createFloorCollider();
 
         // Teleporter back to Lobby
-        this.createTeleporter(new CANNON.Vec3(12, 0, 12), Lobby.getMetadata().id);
+        this.createTeleporter(new THREE.Vector3(12, 0, 12), Lobby.getMetadata().id);
 
         // Different dungeon layout with more obstacles
-        this.createBox(3, 2, 3, new CANNON.Vec3(-8, 1, -8));
-        this.createBox(2, 2, 5, new CANNON.Vec3(8, 1, -8));
-        this.createBox(5, 1, 2, new CANNON.Vec3(-8, 0.5, 8));
+        this.createBox(3, 2, 3, new THREE.Vector3(-8, 1, -8));
+        this.createBox(2, 2, 5, new THREE.Vector3(8, 1, -8));
+        this.createBox(5, 1, 2, new THREE.Vector3(-8, 0.5, 8));
 
         // Spawn more enemies - harder stage
-        this.spawnEnemy(new CANNON.Vec3(6, 0.5, 6));
-        this.spawnEnemy(new CANNON.Vec3(-6, 0.5, 6));
-        this.spawnEnemy(new CANNON.Vec3(6, 0.5, -6));
-        this.spawnEnemy(new CANNON.Vec3(-6, 0.5, -6));
-        this.spawnEnemy(new CANNON.Vec3(0, 0.5, -10));
+        this.spawnEnemy(new THREE.Vector3(6, 0.5, 6));
+        this.spawnEnemy(new THREE.Vector3(-6, 0.5, 6));
+        this.spawnEnemy(new THREE.Vector3(6, 0.5, -6));
+        this.spawnEnemy(new THREE.Vector3(-6, 0.5, -6));
+        this.spawnEnemy(new THREE.Vector3(0, 0.5, -10));
     }
 }

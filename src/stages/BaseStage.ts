@@ -1,5 +1,7 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
+import RAPIER from '@dimforge/rapier3d-compat';
+import * as CANNON from 'cannon-es'; // Temporary for Enemy and Npc compatibility
+import { RapierPhysics } from '../physics/RapierPhysics';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { Enemy } from '../enemies/Enemy';
 import { LargeEnemy } from '../enemies/LargeEnemy';
@@ -17,7 +19,7 @@ export abstract class BaseStage {
     abstract name: string;
     abstract description: string;
     abstract environmentMap: string
-    abstract spawnPosition: CANNON.Vec3;
+    abstract spawnPosition: THREE.Vector3;
 
     // Static method to get metadata without instantiation
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
@@ -25,12 +27,12 @@ export abstract class BaseStage {
     }
 
     protected scene: THREE.Scene;
-    protected physicsWorld: CANNON.World;
-    protected physicsMaterial: CANNON.Material;
+    protected physicsWorld: RAPIER.World;
+    protected physicsMaterial: CANNON.Material; // Temporary for Enemy and Npc compatibility
     protected assetManager: AssetManager;
 
     teleporter?: Teleporter;
-    bodies: CANNON.Body[] = [];
+    bodies: RAPIER.RigidBody[] = [];
     meshes: (THREE.Mesh | THREE.Group | THREE.Object3D)[] = [];
     enemies: Enemy[] = [];
     mixers: THREE.AnimationMixer[] = [];
@@ -38,8 +40,8 @@ export abstract class BaseStage {
 
     constructor(
         scene: THREE.Scene,
-        physicsWorld: CANNON.World,
-        physicsMaterial: CANNON.Material
+        physicsWorld: RAPIER.World,
+        physicsMaterial: CANNON.Material // Temporary for Enemy and Npc compatibility
     ) {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
@@ -91,8 +93,9 @@ export abstract class BaseStage {
         this.enemies = [];
 
         // Remove physics bodies
+        const physics = RapierPhysics.Instance;
         for (const body of this.bodies) {
-            this.physicsWorld.removeBody(body);
+            physics.removeBody(body);
         }
         this.bodies = [];
 
@@ -113,7 +116,7 @@ export abstract class BaseStage {
 
         // Clean up all NPCs (including teleporter)
         for (const npc of this.npcs) {
-            npc.cleanup(this.scene, this.physicsWorld);
+            npc.cleanup(this.scene, this.physicsWorld as any); // NPCs still use CANNON types
         }
         this.npcs.clear();
 
@@ -124,27 +127,22 @@ export abstract class BaseStage {
     /**
      * Create a box obstacle
      */
-    protected createBox(w: number, h: number, d: number, pos: CANNON.Vec3, rot?: CANNON.Quaternion): void {
+    protected createBox(w: number, h: number, d: number, pos: THREE.Vector3, rot?: THREE.Quaternion): void {
         const geo = new THREE.BoxGeometry(w, h, d);
         const mat = new THREE.MeshStandardMaterial({ color: 0x555555 });
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.copy(pos as any);
+        mesh.position.copy(pos);
         if (rot) {
-            mesh.quaternion.copy(rot as any);
+            mesh.quaternion.copy(rot);
         }
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         this.scene.add(mesh);
         this.meshes.push(mesh);
 
-        const shape = new CANNON.Box(new CANNON.Vec3(w / 2, h / 2, d / 2));
-        const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
-        body.addShape(shape);
-        body.position.copy(pos);
-        if (rot) {
-            body.quaternion.copy(rot);
-        }
-        this.physicsWorld.addBody(body);
+        const physics = RapierPhysics.Instance;
+        const body = physics.createStaticBody(pos, rot);
+        physics.addBoxCollider(body, new THREE.Vector3(w / 2, h / 2, d / 2));
         this.bodies.push(body);
     }
 
@@ -152,26 +150,27 @@ export abstract class BaseStage {
      * Create floor collider plane
      */
     protected createFloorCollider(): void {
-        const floorShape = new CANNON.Plane();
-        const floorBody = new CANNON.Body({
-            mass: 0,
-            material: this.physicsMaterial
-        });
-        floorBody.addShape(floorShape);
-        floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-        this.physicsWorld.addBody(floorBody);
-        this.bodies.push(floorBody);
+        const physics = RapierPhysics.Instance;
+        const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
+        const body = physics.createStaticBody(new THREE.Vector3(0, 0, 0), rotation);
+        
+        // Create a large box collider to simulate the floor plane
+        const halfExtents = new THREE.Vector3(1000, 0.1, 1000);
+        physics.addBoxCollider(body, halfExtents, new THREE.Vector3(0, -0.1, 0));
+        this.bodies.push(body);
     }
 
     /**
      * Create teleporter
      */
-    protected createTeleporter(position: CANNON.Vec3, destination: string): void {
+    protected createTeleporter(position: THREE.Vector3, destination: string): void {
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Teleporter
+        const cannonPos = new CANNON.Vec3(position.x, position.y, position.z);
         this.teleporter = new Teleporter(
             this.scene,
-            this.physicsWorld,
+            this.physicsWorld as any, // Teleporter still uses CANNON types
             this.physicsMaterial,
-            position,
+            cannonPos,
             destination
         );
         // Add teleporter to npcs set so it's handled like any other NPC
@@ -181,16 +180,20 @@ export abstract class BaseStage {
     /**
      * Spawn regular enemy
      */
-    protected spawnEnemy(position: CANNON.Vec3): void {
-        const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+    protected spawnEnemy(position: THREE.Vector3): void {
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Enemy
+        const cannonPos = new CANNON.Vec3(position.x, position.y, position.z);
+        const enemy = new Enemy(this.scene, this.physicsWorld as any, cannonPos, this.physicsMaterial);
         this.enemies.push(enemy);
     }
 
     /**
      * Spawn large enemy
      */
-    protected spawnLargeEnemy(position: CANNON.Vec3): void {
-        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+    protected spawnLargeEnemy(position: THREE.Vector3): void {
+        // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with LargeEnemy
+        const cannonPos = new CANNON.Vec3(position.x, position.y, position.z);
+        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld as any, cannonPos, this.physicsMaterial);
         this.enemies.push(largeEnemy);
     }
 
