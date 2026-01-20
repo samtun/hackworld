@@ -150,13 +150,16 @@ export abstract class BaseStage {
      * Create floor collider plane
      */
     protected createFloorCollider(): void {
+        const FLOOR_SIZE = 1000; // Size of the floor plane in units
+        const FLOOR_THICKNESS = 0.1; // Thickness of the floor collider
+        
         const physics = RapierPhysics.Instance;
         const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
         const body = physics.createStaticBody(new THREE.Vector3(0, 0, 0), rotation);
         
         // Create a large box collider to simulate the floor plane
-        const halfExtents = new THREE.Vector3(1000, 0.1, 1000);
-        physics.addBoxCollider(body, halfExtents, new THREE.Vector3(0, -0.1, 0));
+        const halfExtents = new THREE.Vector3(FLOOR_SIZE, FLOOR_THICKNESS, FLOOR_SIZE);
+        physics.addBoxCollider(body, halfExtents, new THREE.Vector3(0, -FLOOR_THICKNESS, 0));
         this.bodies.push(body);
     }
 
