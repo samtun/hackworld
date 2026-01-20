@@ -87,7 +87,7 @@ export class SaveManager {
     private constructor() {
         this.saveManagerUi = SaveManagerUI.Instance;
         this.playerRegistry = PlayerRegistry.Instance;
-        
+
         // Clear reset flag if it exists (from a previous reset operation)
         sessionStorage.removeItem(SaveManager.RESET_FLAG_KEY);
     }
@@ -393,6 +393,11 @@ export class SaveManager {
      */
     loadFromLocalStorage(): boolean {
         try {
+            if (__FRESH_START__) {
+                console.log('Fresh start requested, skipping auto-load');
+                return false;
+            }
+
             const savedData = localStorage.getItem(SaveManager.LOCAL_STORAGE_KEY);
             if (!savedData) {
                 return false;
@@ -520,13 +525,6 @@ export class SaveManager {
         if (saveData.player.tech) {
             (player as any).tech = structuredClone(saveData.player.tech);
         }
-
-        // Restore position
-        player.body.position.set(
-            saveData.player.position.x,
-            saveData.player.position.y,
-            saveData.player.position.z
-        );
 
         // Restore inventory
         player.inventory = [];

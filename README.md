@@ -12,12 +12,14 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 
 - Hack and slash gameplay with quest progression
 - **Quest System** - Talk to the Mainframe NPC to unlock new stages as you cleanse infected sectors
-- **Hub-based game world** - Multiple dungeon stages progressively unlocked through gameplay
+- **Hub-based game world** - Multiple stages progressively unlocked through gameplay
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
-- **Active Skills** - Use three unique skills: Laser Beam (ranged attack), Healing (restore HP), and Area Attack (circular damage)
-- Inventory system with looting mechanics
+- **Tech Points** - Gain tech points by using a specific weapon type and use those points to equip higher level weapons
+- **Active Skills** - Use unique skills
+- **Loot** - Inventory system with randomized looting mechanics
+- **Card collectibles** - Collectible cards that are dropped by enemies in packs of 4 and can be opened in the lobby
 - **Save/Load system** - Save your game progress to a JSON file or load a previously saved game through the Save Manager NPC in the lobby
-- **Auto-Save** - Your progress is automatically saved to browser storage when you switch tabs or close the browser and reloaded on game start
+- **Auto-Save** - Besides the option to manually save, your progress is automatically saved to the browser storage and restored on game start 
 
 ## Tech Stack
 
@@ -78,6 +80,17 @@ The game is fully playable with keyboard, controller (tested with XBox controlle
 Mobile devices (phones and tablets) automatically display on-screen touch controls.
 
 ## Development
+
+### Testing fresh or saved game
+
+By default the latest saved game state will be restored automatically on game start.
+
+To prevent this use the argument `fresh` on `npm run dev` to always start with a fresh game, avoiding the automatic save game loading.
+
+```
+npm run dev:fresh
+```
+
 
 ### Commit Conventions
 
