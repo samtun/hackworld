@@ -25,8 +25,8 @@ export class ChipDropStrategy implements ItemDropStrategy {
         const chipItem = ChipRepository.Instance.getRandomChipOfLevel(level);
         if (!chipItem) return null;
 
-        const pos = enemy.body.position.clone();
-        pos.y = 0.5;
+        const bodyPos = enemy.body.translation();
+        const pos = new CANNON.Vec3(bodyPos.x, 0.5, bodyPos.z);
 
         const drop = new ChipDrop(scene, pos, chipItem.id, chipItem.name, chipItem.chipType, chipItem.buyPrice, chipItem.sellPrice, level);
         console.log(`Enemy dropped chip ${chipItem.name} (level ${level})`);

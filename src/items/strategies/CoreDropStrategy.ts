@@ -25,8 +25,8 @@ export class CoreDropStrategy implements ItemDropStrategy {
         const coreItem = CoreRepository.Instance.getRandomCoreOfLevel(level);
         if (!coreItem) return null;
 
-        const pos = enemy.body.position.clone();
-        pos.y = 0.5;
+        const bodyPos = enemy.body.translation();
+        const pos = new CANNON.Vec3(bodyPos.x, 0.5, bodyPos.z);
 
         const drop = new CoreDrop(scene, pos, coreItem.id, coreItem.name, coreItem.buyPrice, coreItem.sellPrice, level);
         console.log(`Enemy dropped ${drop}`);

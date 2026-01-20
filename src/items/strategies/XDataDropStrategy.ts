@@ -32,8 +32,8 @@ export class XDataDropStrategy implements ItemDropStrategy {
         const xDataAmount = this.determineAmount(enemy.xDataDropChance);
         if (xDataAmount <= 0) return null;
 
-        const dropPosition = enemy.body.position.clone();
-        dropPosition.y = 0.5;
+        const bodyPos = enemy.body.translation();
+        const dropPosition = new CANNON.Vec3(bodyPos.x, 0.5, bodyPos.z);
 
         const drop = new XDataDrop(scene, world, dropPosition, xDataAmount);
         console.log(`Enemy dropped ${xDataAmount} X-Data`);

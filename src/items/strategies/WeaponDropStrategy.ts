@@ -40,8 +40,8 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const finalBuyPrice = Math.round(weaponItem.buyPrice * damageFactor);
         const finalSellPrice = Math.round(weaponItem.sellPrice * damageFactor);
 
-        const dropPosition = enemy.body.position.clone();
-        dropPosition.y = 0.5;
+        const bodyPos = enemy.body.translation();
+        const dropPosition = new CANNON.Vec3(bodyPos.x, 0.5, bodyPos.z);
 
         const wd = new WeaponDrop(
             weaponItem.id,

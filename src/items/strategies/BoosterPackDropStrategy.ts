@@ -16,8 +16,8 @@ export class BoosterPackDropStrategy implements ItemDropStrategy {
         
         if (Math.random() > effectiveDropChance) return null;
 
-        const dropPosition = enemy.body.position.clone();
-        dropPosition.y = 0.5;
+        const bodyPos = enemy.body.translation();
+        const dropPosition = new CANNON.Vec3(bodyPos.x, 0.5, bodyPos.z);
 
         const drop = new BoosterPackDrop(scene, dropPosition);
         console.log('Enemy dropped Booster Pack');

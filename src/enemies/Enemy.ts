@@ -1,5 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import RAPIER from '@dimforge/rapier3d-compat';
+import { RapierPhysics, setBodyPosition, setLinearVelocity, getLinearVelocity } from '../physics/RapierPhysics';
 import { Player } from '../Player';
 import { BaseMesh } from '../BaseMesh';
 import { PlayerRegistry } from '../PlayerRegistry';
@@ -14,7 +16,9 @@ enum EnemyActionType {
 }
 
 export class Enemy extends BaseMesh {
-    body: CANNON.Body;
+    body: RAPIER.RigidBody;
+    characterController: RAPIER.KinematicCharacterController;
+    collider: RAPIER.Collider;
     hp: number = 60;
     maxHp: number = 60;
     speed: number = 3;
@@ -51,7 +55,8 @@ export class Enemy extends BaseMesh {
     protected currentAction: THREE.AnimationAction | null = null;
 
     // Attack hitbox
-    protected attackHitboxBody: CANNON.Body | null = null;
+    protected attackHitboxBody: RAPIER.RigidBody | null = null;
+    protected attackHitboxCollider: RAPIER.Collider | null = null;
     protected attackHitboxActive: boolean = false;
     protected attackHitboxDelay: number = 0.42;
     protected attackHitboxDuration: number = 0.2;
@@ -69,8 +74,7 @@ export class Enemy extends BaseMesh {
     protected materials: THREE.Material[] = [];
     private player: Player;
     protected scene: THREE.Scene;
-    protected world: CANNON.World;
-    protected physicsMaterial: CANNON.Material;
+    protected world: any; // RAPIER.World cast from any for compatibility
 
     // Callback for spawning damage numbers
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
@@ -78,14 +82,13 @@ export class Enemy extends BaseMesh {
     // Callback when death fade starts (for rewards, drops, etc.)
     onDeathFadeStart?: (enemy: Enemy) => void;
 
-    constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
+    constructor(scene: THREE.Scene, world: any, position: CANNON.Vec3) {
         super('models/monster.glb');
 
         this.scene = scene;
         this.world = world;
-        this.physicsMaterial = physicsMaterial;
 
-        // Store base position for return behavior
+        // Store base position for return behavior (keep as CANNON.Vec3 for compatibility)
         this.basePosition = position.clone();
 
         // Visual
@@ -100,18 +103,30 @@ export class Enemy extends BaseMesh {
         // Setup animations
         this.setupAnimations();
 
-        // Physics
-        const shape = new CANNON.Cylinder(0.6, 0.6, 1.75, 8);
-        this.bodyHalfExtentY = shape.height / 2;
-        this.body = new CANNON.Body({
-            mass: 5,
-            material: physicsMaterial,
-            fixedRotation: true
-        });
-        this.body.addShape(shape);
-        this.body.position.copy(position);
-        (this.body as any).entity = this;
-        world.addBody(this.body);
+        // Physics - Rapier Kinematic Body with CharacterController
+        const spawnPos = new THREE.Vector3(position.x, position.y, position.z);
+        
+        // Create kinematic body
+        this.body = RapierPhysics.Instance.createKinematicBody(spawnPos);
+        
+        // Add capsule collider (height ~1.75, radius 0.6)
+        const capsuleHalfHeight = 0.475; // Total height = 0.95 + 2*radius = 2.15m
+        const capsuleRadius = 0.6;
+        this.bodyHalfExtentY = capsuleHalfHeight + capsuleRadius;
+        this.collider = RapierPhysics.Instance.addCapsuleCollider(
+            this.body,
+            capsuleHalfHeight,
+            capsuleRadius,
+            undefined,
+            0.3, // friction
+            0.0  // restitution
+        );
+        
+        // Store entity reference on collider for collision detection
+        (this.collider as any).entity = this;
+        
+        // Create character controller
+        this.characterController = RapierPhysics.Instance.createCharacterController();
 
         this.player = PlayerRegistry.Instance.activePlayers[0];
     }
@@ -223,14 +238,21 @@ export class Enemy extends BaseMesh {
     }
 
     protected createAttackHitbox() {
-        const shape = new CANNON.Box(this.attackHitboxSize);
-        this.attackHitboxBody = new CANNON.Body({
-            mass: 0,
-            type: CANNON.Body.KINEMATIC,
-            collisionResponse: false,
-            material: this.physicsMaterial
-        });
-        this.attackHitboxBody.addShape(shape);
+        // Create kinematic body for attack hitbox
+        const hitboxPos = this.body.translation();
+        this.attackHitboxBody = RapierPhysics.Instance.createKinematicBody(
+            new THREE.Vector3(hitboxPos.x, hitboxPos.y, hitboxPos.z)
+        );
+        
+        // Add box collider
+        this.attackHitboxCollider = RapierPhysics.Instance.addBoxCollider(
+            this.attackHitboxBody,
+            new THREE.Vector3(this.attackHitboxSize.x, this.attackHitboxSize.y, this.attackHitboxSize.z)
+        );
+        
+        // Set sensor to not affect physics (collision detection only)
+        this.attackHitboxCollider.setSensor(true);
+        
         (this.attackHitboxBody as any).isEnemyAttackHitbox = true;
         (this.attackHitboxBody as any).enemy = this;
     }
@@ -239,15 +261,12 @@ export class Enemy extends BaseMesh {
         if (!this.attackHitboxBody) {
             this.createAttackHitbox();
         }
-        if (this.attackHitboxBody && !this.attackHitboxActive) {
-            this.world.addBody(this.attackHitboxBody);
-            this.attackHitboxActive = true;
-        }
+        this.attackHitboxActive = true;
     }
 
     protected deactivateAttackHitbox() {
         if (this.attackHitboxBody && this.attackHitboxActive) {
-            this.world.removeBody(this.attackHitboxBody);
+            // Just mark as inactive, body stays in world
             this.attackHitboxActive = false;
         }
     }
@@ -257,10 +276,14 @@ export class Enemy extends BaseMesh {
 
         // Position the hitbox in front of the enemy
         const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-        this.attackHitboxBody.position.set(
-            this.body.position.x + forward.x * this.attackHitboxOffset,
-            this.body.position.y,
-            this.body.position.z + forward.z * this.attackHitboxOffset
+        const bodyPos = this.body.translation();
+        setBodyPosition(
+            this.attackHitboxBody,
+            new THREE.Vector3(
+                bodyPos.x + forward.x * this.attackHitboxOffset,
+                bodyPos.y,
+                bodyPos.z + forward.z * this.attackHitboxOffset
+            )
         );
     }
 
@@ -268,7 +291,7 @@ export class Enemy extends BaseMesh {
         if (!this.attackHitboxBody || !this.attackHitboxActive || this.hasDealtDamageThisAttack) return;
 
         const playerBody = this.player.body;
-        const hitboxPos = this.attackHitboxBody.position;
+        const hitboxPos = this.attackHitboxBody.translation();
         const playerPos = playerBody.translation();
 
         // Simple distance check for collision
@@ -278,7 +301,10 @@ export class Enemy extends BaseMesh {
 
         if (dist < this.attackHitboxSize.x + 0.5) {
             console.log("Enemy attack hits player!");
-            this.player.takeDamage(this.damage, this.body.position);
+            // Convert position to CANNON.Vec3 for compatibility
+            const enemyPos = this.body.translation();
+            const cannonPos = new CANNON.Vec3(enemyPos.x, enemyPos.y, enemyPos.z);
+            this.player.takeDamage(this.damage, cannonPos);
             this.hasDealtDamageThisAttack = true;
         }
     }
@@ -291,8 +317,8 @@ export class Enemy extends BaseMesh {
 
         if (this.isDying || this.isDead || this.isDeathFading) {
             // Keep at death height to prevent falling through floor
-            this.body.velocity.y = 0;
-            this.body.position.y = this.deathYPosition;
+            const pos = this.body.translation();
+            setBodyPosition(this.body, new THREE.Vector3(pos.x, this.deathYPosition, pos.z));
         }
 
         // Handle death fade after death animation completes
@@ -313,8 +339,8 @@ export class Enemy extends BaseMesh {
             }
 
             // Sync position during fade
-            this.mesh.position.copy(this.body.position as any);
-            this.mesh.position.y -= this.bodyHalfExtentY;
+            const fadePos = this.body.translation();
+            this.mesh.position.set(fadePos.x, fadePos.y - this.bodyHalfExtentY, fadePos.z);
             return;
         }
 
@@ -330,25 +356,29 @@ export class Enemy extends BaseMesh {
             this.deathTimer += dt;
 
             // Friction for dying body
-            this.body.velocity.x *= 0.9;
-            this.body.velocity.z *= 0.9;
+            const dyingVel = getLinearVelocity(this.body);
+            dyingVel.x *= 0.9;
+            dyingVel.z *= 0.9;
+            setLinearVelocity(this.body, dyingVel);
 
             // Sync position while playing death animation
-            this.mesh.position.copy(this.body.position as any);
-            this.mesh.position.y -= this.bodyHalfExtentY;
+            const dyingPos = this.body.translation();
+            this.mesh.position.set(dyingPos.x, dyingPos.y - this.bodyHalfExtentY, dyingPos.z);
             return;
         }
 
         // Sync mesh with body
-        this.mesh.position.copy(this.body.position as any);
-        this.mesh.position.y -= this.bodyHalfExtentY;
+        const bodyPos = this.body.translation();
+        this.mesh.position.set(bodyPos.x, bodyPos.y - this.bodyHalfExtentY, bodyPos.z);
 
         // Stun Logic
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
             // Apply friction while stunned so they don't slide forever
-            this.body.velocity.x *= 0.9;
-            this.body.velocity.z *= 0.9;
+            const stunVel = getLinearVelocity(this.body);
+            stunVel.x *= 0.9;
+            stunVel.z *= 0.9;
+            setLinearVelocity(this.body, stunVel);
             this.updateAnimations(false);
             return; // Skip AI movement and attack
         }
@@ -356,21 +386,27 @@ export class Enemy extends BaseMesh {
         // AI Logic
         if (this.player.isDead) {
             // Idle friction
-            this.body.velocity.x *= 0.9;
-            this.body.velocity.z *= 0.9;
+            const idleVel = getLinearVelocity(this.body);
+            idleVel.x *= 0.9;
+            idleVel.z *= 0.9;
+            setLinearVelocity(this.body, idleVel);
             this.updateAnimations(false);
             return;
         }
 
         const playerPos = this.player.body.translation();
-        const myPos = this.body.position;
+        const myPos = this.body.translation();
 
         const distToPlayer = Math.sqrt(
             Math.pow(myPos.x - playerPos.x, 2) +
             Math.pow(myPos.y - playerPos.y, 2) +
             Math.pow(myPos.z - playerPos.z, 2)
         );
-        const distToBase = myPos.distanceTo(this.basePosition);
+        const distToBase = Math.sqrt(
+            Math.pow(myPos.x - this.basePosition.x, 2) +
+            Math.pow(myPos.y - this.basePosition.y, 2) +
+            Math.pow(myPos.z - this.basePosition.z, 2)
+        );
 
         let isMoving = false;
 
@@ -382,16 +418,39 @@ export class Enemy extends BaseMesh {
                 this.isReturningToBase = false;
                 this.returnToBaseTimer = 0;
 
-                const dir = new CANNON.Vec3(
+                const dir = new THREE.Vector3(
                     playerPos.x - myPos.x,
                     0, // Don't fly
                     playerPos.z - myPos.z
                 );
                 if (dir.length() > 0) {
                     dir.normalize();
-                    // Move towards player
-                    this.body.velocity.x = dir.x * this.speed;
-                    this.body.velocity.z = dir.z * this.speed;
+                    
+                    // Get current velocity
+                    const currentVel = getLinearVelocity(this.body);
+                    
+                    // Compute desired velocity
+                    const desiredVelocity = new THREE.Vector3(
+                        dir.x * this.speed,
+                        currentVel.y, // Keep vertical velocity
+                        dir.z * this.speed
+                    );
+                    
+                    // Use character controller to compute movement
+                    this.characterController.computeColliderMovement(
+                        this.collider,
+                        desiredVelocity
+                    );
+                    
+                    // Get computed movement and apply to body
+                    const correctedMovement = this.characterController.computedMovement();
+                    const newPos = new THREE.Vector3(
+                        myPos.x + correctedMovement.x * dt,
+                        myPos.y + correctedMovement.y * dt,
+                        myPos.z + correctedMovement.z * dt
+                    );
+                    setBodyPosition(this.body, newPos);
+                    
                     isMoving = true;
 
                     // Rotate to face player
@@ -411,18 +470,47 @@ export class Enemy extends BaseMesh {
                         this.isReturningToBase = true;
                     } else {
                         // Still waiting - apply idle friction
-                        this.body.velocity.x *= 0.9;
-                        this.body.velocity.z *= 0.9;
+                        const waitVel = getLinearVelocity(this.body);
+                        waitVel.x *= 0.9;
+                        waitVel.z *= 0.9;
+                        setLinearVelocity(this.body, waitVel);
                     }
                 } else {
                     // Return to base position
                     if (distToBase > this.baseArrivalThreshold) {
-                        const dir = this.basePosition.vsub(myPos);
-                        dir.y = 0;
+                        const dir = new THREE.Vector3(
+                            this.basePosition.x - myPos.x,
+                            0,
+                            this.basePosition.z - myPos.z
+                        );
                         if (dir.length() > 0) {
                             dir.normalize();
-                            this.body.velocity.x = dir.x * this.speed;
-                            this.body.velocity.z = dir.z * this.speed;
+                            
+                            // Get current velocity
+                            const currentVel = getLinearVelocity(this.body);
+                            
+                            // Compute desired velocity
+                            const desiredVelocity = new THREE.Vector3(
+                                dir.x * this.speed,
+                                currentVel.y, // Keep vertical velocity
+                                dir.z * this.speed
+                            );
+                            
+                            // Use character controller to compute movement
+                            this.characterController.computeColliderMovement(
+                                this.collider,
+                                desiredVelocity
+                            );
+                            
+                            // Get computed movement and apply to body
+                            const correctedMovement = this.characterController.computedMovement();
+                            const newPos = new THREE.Vector3(
+                                myPos.x + correctedMovement.x * dt,
+                                myPos.y + correctedMovement.y * dt,
+                                myPos.z + correctedMovement.z * dt
+                            );
+                            setBodyPosition(this.body, newPos);
+                            
                             isMoving = true;
 
                             // Rotate to face base position
@@ -433,8 +521,10 @@ export class Enemy extends BaseMesh {
                         }
                     } else {
                         // Reached base - stop and reset
-                        this.body.velocity.x *= 0.9;
-                        this.body.velocity.z *= 0.9;
+                        const baseVel = getLinearVelocity(this.body);
+                        baseVel.x *= 0.9;
+                        baseVel.z *= 0.9;
+                        setLinearVelocity(this.body, baseVel);
                         this.isReturningToBase = false;
                         this.returnToBaseTimer = 0;
                     }
@@ -442,8 +532,10 @@ export class Enemy extends BaseMesh {
             }
         } else {
             // Stop movement while attacking
-            this.body.velocity.x *= 0.9;
-            this.body.velocity.z *= 0.9;
+            const attackVel = getLinearVelocity(this.body);
+            attackVel.x *= 0.9;
+            attackVel.z *= 0.9;
+            setLinearVelocity(this.body, attackVel);
         }
 
         // Attack Cooldown
@@ -530,18 +622,26 @@ export class Enemy extends BaseMesh {
 
         // Spawn damage number if callback is set
         if (this.onDamageTaken) {
-            this.onDamageTaken(this.body.position, amount);
+            const myPos = this.body.translation();
+            const cannonPos = new CANNON.Vec3(myPos.x, myPos.y, myPos.z);
+            this.onDamageTaken(cannonPos, amount);
         }
 
         // Knockback
         if (sourcePos) {
-            const knockbackDir = this.body.position.vsub(sourcePos);
-            knockbackDir.y = 0; // Keep it horizontal
+            const myPos = this.body.translation();
+            const knockbackDir = new THREE.Vector3(
+                myPos.x - sourcePos.x,
+                0, // Keep it horizontal
+                myPos.z - sourcePos.z
+            );
             if (knockbackDir.length() > 0) {
                 knockbackDir.normalize();
-                const force = 15; // Increased force
-                this.body.velocity.x = knockbackDir.x * force;
-                this.body.velocity.z = knockbackDir.z * force;
+                const force = 15;
+                const vel = getLinearVelocity(this.body);
+                vel.x = knockbackDir.x * force;
+                vel.z = knockbackDir.z * force;
+                setLinearVelocity(this.body, vel);
             }
         }
 
@@ -569,7 +669,8 @@ export class Enemy extends BaseMesh {
     die() {
         this.isDying = true;
         this.deathTimer = 0;
-        this.deathYPosition = this.body.position.y;
+        const deathPos = this.body.translation();
+        this.deathYPosition = deathPos.y;
 
         // Cancel any ongoing attack
         if (this.isAttacking) {
@@ -577,8 +678,8 @@ export class Enemy extends BaseMesh {
             this.deactivateAttackHitbox();
         }
 
-        // Disable collision with other objects while keeping knockback velocity
-        this.body.collisionResponse = false;
+        // Disable collision with other objects by making collider a sensor
+        this.collider.setSensor(true);
 
         // Play death animation
         this.fadeToAction(EnemyActionType.Death, 0.1);
@@ -588,7 +689,8 @@ export class Enemy extends BaseMesh {
      * Get the position where X-Data should spawn (at enemy's death location)
      */
     getDeathPosition(): CANNON.Vec3 {
-        return this.body.position.clone();
+        const pos = this.body.translation();
+        return new CANNON.Vec3(pos.x, pos.y, pos.z);
     }
 
     /**
@@ -596,8 +698,16 @@ export class Enemy extends BaseMesh {
      */
     cleanup(): void {
         this.deactivateAttackHitbox();
+        
+        // Remove attack hitbox if exists
+        if (this.attackHitboxBody) {
+            RapierPhysics.Instance.removeBody(this.attackHitboxBody);
+            this.attackHitboxBody = null;
+            this.attackHitboxCollider = null;
+        }
+        
         this.scene.remove(this.mesh);
-        this.world.removeBody(this.body);
+        RapierPhysics.Instance.removeBody(this.body);
         this.disposeMesh();
     }
 }

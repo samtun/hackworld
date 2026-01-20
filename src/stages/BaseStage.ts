@@ -183,7 +183,7 @@ export abstract class BaseStage {
     protected spawnEnemy(position: THREE.Vector3): void {
         // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with Enemy
         const cannonPos = new CANNON.Vec3(position.x, position.y, position.z);
-        const enemy = new Enemy(this.scene, this.physicsWorld as any, cannonPos, this.physicsMaterial);
+        const enemy = new Enemy(this.scene, this.physicsWorld as any, cannonPos);
         this.enemies.push(enemy);
     }
 
@@ -193,7 +193,7 @@ export abstract class BaseStage {
     protected spawnLargeEnemy(position: THREE.Vector3): void {
         // Convert THREE.Vector3 to CANNON.Vec3 for backward compatibility with LargeEnemy
         const cannonPos = new CANNON.Vec3(position.x, position.y, position.z);
-        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld as any, cannonPos, this.physicsMaterial);
+        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld as any, cannonPos);
         this.enemies.push(largeEnemy);
     }
 
