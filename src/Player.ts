@@ -89,6 +89,10 @@ export class Player extends BaseMesh {
     // Invulnerability duration
     private readonly HIT_INVULNERABILITY: number = 1.0;
 
+    // Size constants for positioning of mesh and collider
+    private readonly HALF_HEIGHT = 0.45;
+    private readonly RADIUS = 0.45;
+
     // Base Stats (without equipment modifiers or upgrades)
     private baseHp: number = 170;
     private baseTp: number = 60;
@@ -263,30 +267,31 @@ export class Player extends BaseMesh {
 
         // Physics Body - Rapier Kinematic Body with CharacterController
         const spawnPos = new THREE.Vector3(position.x, position.y, position.z);
-        
+
         // Create kinematic body
         this.body = RapierPhysics.Instance.createKinematicBody(spawnPos);
-        
-        // Add capsule collider (height ~1.8, radius 0.5)
-        // Capsule center is at the body position
-        // Total height = 2 * (halfHeight + radius) = 2 * (0.4 + 0.5) = 1.8m
-        const capsuleHalfHeight = 0.4;
-        const capsuleRadius = 0.5;
+
+        // Add capsule collider
         this.collider = RapierPhysics.Instance.addCapsuleCollider(
             this.body,
-            capsuleHalfHeight,
-            capsuleRadius,
-            undefined,
+            this.HALF_HEIGHT,
+            this.RADIUS,
+            new THREE.Vector3(0, this.HALF_HEIGHT, 0),
             0.3, // friction
             0.0  // restitution
         );
-        
+
         // Store entity reference on collider for collision detection
         (this.collider as any).entity = this;
-        
-        // Create character controller
-        this.characterController = RapierPhysics.Instance.createCharacterController();
 
+        // Create character controller
+        this.characterController = RapierPhysics.Instance.createCharacterController(0.01);
+        this.characterController.enableSnapToGround(0.2);
+        this.characterController.enableAutostep(0.2, 0.1, false);
+        // Don’t allow climbing slopes larger than 45 degrees.
+        this.characterController.setMaxSlopeClimbAngle(45 * Math.PI / 180);
+        // Automatically slide down on slopes smaller than 30 degrees.
+        this.characterController.setMinSlopeSlideAngle(30 * Math.PI / 180);
 
         // Initialize skills
         this.skills = [
@@ -679,7 +684,7 @@ export class Player extends BaseMesh {
         if (!this.isDashing) return false;
         this.fadeToAction(ActionType.Dash, 0.0);
         this.dashTimer += dt;
-        
+
         // Set dash velocity
         const dashVel = new THREE.Vector3(
             this.dashDirection.x * this.DASH_SPEED,
@@ -691,7 +696,7 @@ export class Player extends BaseMesh {
         // Check for enemy collisions during dash
         const rapierWorld = RapierPhysics.Instance.world;
         const playerPos = this.body.translation();
-        
+
         rapierWorld.forEachCollider((collider: RAPIER.Collider) => {
             const entity = (collider as any).entity;
             if (entity && entity instanceof Enemy) {
@@ -702,7 +707,7 @@ export class Player extends BaseMesh {
                         Math.pow(playerPos.y - enemyPos.y, 2) +
                         Math.pow(playerPos.z - enemyPos.z, 2)
                     );
-                    
+
                     // If within collision range, trigger dash hit
                     if (distance < 1.5) {
                         this.handleDashHit(entity);
@@ -793,23 +798,23 @@ export class Player extends BaseMesh {
 
             // Get current velocity
             const currentVel = getLinearVelocity(this.body);
-            
+
             // Apply gravity to vertical velocity
             currentVel.y -= 25 * dt; // Gravity (same as world gravity)
-            
+
             // Compute movement for this frame (including gravity)
             const desiredMovement = new THREE.Vector3(
                 moveX * effectiveSpeed * dt,
                 currentVel.y * dt, // Include vertical velocity (gravity/jump)
                 moveZ * effectiveSpeed * dt
             );
-            
+
             // Use character controller to compute collision-aware movement
             this.characterController.computeColliderMovement(
                 this.collider,
                 desiredMovement
             );
-            
+
             // Get computed movement and apply to body
             const correctedMovement = this.characterController.computedMovement();
             const currentPos = this.body.translation();
@@ -819,25 +824,25 @@ export class Player extends BaseMesh {
                 currentPos.z + correctedMovement.z
             );
             setBodyPosition(this.body, newPos);
-            
+
             // Update grounded state using character controller (must be called after computeColliderMovement)
             this.isGrounded = this.characterController.computedGrounded();
-            
+
             // Update velocity for next frame based on actual movement
-            const newVel = new THREE.Vector3(
+            const newVelocity = new THREE.Vector3(
                 correctedMovement.x / dt,
                 correctedMovement.y / dt,
                 correctedMovement.z / dt
             );
-            setLinearVelocity(this.body, newVel);
 
             // Jump
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
-                const vel = getLinearVelocity(this.body);
-                vel.y = this.JUMP_FORCE;
-                setLinearVelocity(this.body, vel);
+                newVelocity.y = this.JUMP_FORCE;
                 this.jumpCooldownTimer = 1.0;
+                console.log('Player jumped');
             }
+
+            setLinearVelocity(this.body, newVelocity);
         } else {
             this.haltMovement();
         }
@@ -866,7 +871,7 @@ export class Player extends BaseMesh {
 
         // Weapon update & hit checks
         this.weapon.update(dt);
-        
+
         // Check for weapon-enemy collisions if weapon is attacking
         if (this.weapon.isAttacking && this.weapon.body) {
             this.checkWeaponCollisions();
@@ -939,12 +944,8 @@ export class Player extends BaseMesh {
     }
 
     syncPosition() {
-        // Capsule total height = 2 * (halfHeight + radius) = 2 * (0.4 + 0.5) = 1.8m
-        // Capsule center is at body position
-        // We want the mesh feet to be at the bottom of the capsule
-        // So mesh should be at body.y - (halfHeight + radius) = body.y - 0.9
         const translation = this.body.translation();
-        const newPosition = new THREE.Vector3(translation.x, translation.y - 0.9, translation.z);
+        const newPosition = new THREE.Vector3(translation.x, translation.y - this.RADIUS, translation.z);
         this.position.copy(newPosition);
         this.mesh.position.copy(newPosition);
     }
@@ -961,7 +962,7 @@ export class Player extends BaseMesh {
 
     move(position: THREE.Vector3): void {
         console.log('Moving player to', position);
-        const newPos = new THREE.Vector3(position.x, position.y, position.z);
+        const newPos = new THREE.Vector3(position.x, position.y - this.HALF_HEIGHT, position.z);
         setBodyPosition(this.body, newPos);
         this.syncPosition();
     }
@@ -1063,7 +1064,7 @@ export class Player extends BaseMesh {
                 0,
                 bodyPos.z - sourcePos.z
             );
-            
+
             if (knockDir.length() > 0) {
                 knockDir.normalize();
                 const knockbackVel = new THREE.Vector3(
@@ -1432,7 +1433,7 @@ export class Player extends BaseMesh {
                 const entity = (parent as any).entity;
                 if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
                     entity.takeDamage(damage, damagePos);
-                    
+
                     // Grant tech points
                     if (this.onTechGained) {
                         this.onTechGained(damagePos);

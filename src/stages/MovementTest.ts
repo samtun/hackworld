@@ -11,7 +11,7 @@ export class MovementTest extends BaseStage {
     name = MovementTest.name;
     description = MovementTest.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
-    spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 0.4, 0);
+    spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 3, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {

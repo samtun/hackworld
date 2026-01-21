@@ -184,7 +184,7 @@ export class RapierPhysics {
     ): RAPIER.Collider {
         const position = geometry.attributes.position;
         const vertices = new Float32Array(position.array);
-        
+
         let indices: Uint32Array;
         if (geometry.index) {
             indices = new Uint32Array(geometry.index.array);
@@ -208,13 +208,13 @@ export class RapierPhysics {
      */
     createCharacterController(offset: number = 0.01): RAPIER.KinematicCharacterController {
         const controller = this.world.createCharacterController(offset);
-        
+
         // Configure character controller defaults
         controller.enableAutostep(0.5, 0.2, true); // maxHeight, minWidth, includeDynamicBodies
         controller.enableSnapToGround(0.5); // distance
         controller.setMaxSlopeClimbAngle(45 * Math.PI / 180); // 45 degrees in radians
         controller.setMinSlopeSlideAngle(30 * Math.PI / 180); // 30 degrees in radians
-        
+
         return controller;
     }
 
@@ -231,7 +231,7 @@ export class RapierPhysics {
         filterExcludeRigidBody?: RAPIER.RigidBody
     ): RAPIER.RayColliderHit | null {
         const ray = new RAPIER.Ray(origin, direction);
-        
+
         return this.world.castRay(ray, maxDistance, true, filterFlags, filterGroups, filterExcludeCollider, filterExcludeRigidBody);
     }
 
@@ -307,12 +307,12 @@ export function isRapierBody(obj: any): obj is RAPIER.RigidBody {
 export function syncMeshWithBody(mesh: THREE.Object3D, body: RAPIER.RigidBody, offset?: THREE.Vector3): void {
     const translation = body.translation();
     const rotation = body.rotation();
-    
+
     mesh.position.set(translation.x, translation.y, translation.z);
     if (offset) {
         mesh.position.add(offset);
     }
-    
+
     mesh.quaternion.set(rotation.x, rotation.y, rotation.z, rotation.w);
 }
 
@@ -372,13 +372,13 @@ export function createDebugRenderer(scene: THREE.Scene, _world: RAPIER.World): T
     const debugRenderer = new THREE.LineSegments(geometry, material);
     debugRenderer.visible = false; // Hidden by default
     scene.add(debugRenderer);
-    
+
     // Store reference in RapierPhysics instance
     const instance = RapierPhysics.getInstance();
     if (instance) {
         instance.debugRenderer = debugRenderer;
     }
-    
+
     return debugRenderer;
 }
 
@@ -387,10 +387,10 @@ export function createDebugRenderer(scene: THREE.Scene, _world: RAPIER.World): T
  */
 export function updateDebugRenderer(world: RAPIER.World, debugRenderer: THREE.LineSegments): void {
     if (!debugRenderer.visible) return;
-    
+
     const buffers = world.debugRender();
     const geometry = debugRenderer.geometry;
-    
+
     geometry.setAttribute('position', new THREE.BufferAttribute(buffers.vertices, 3));
     geometry.setAttribute('color', new THREE.BufferAttribute(buffers.colors, 4));
 }
