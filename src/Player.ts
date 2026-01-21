@@ -792,30 +792,39 @@ export class Player extends BaseMesh {
             // Get current velocity
             const currentVel = getLinearVelocity(this.body);
             
-            // Compute desired velocity
+            // Compute desired velocity for this frame
             const desiredVelocity = new THREE.Vector3(
                 moveX * effectiveSpeed,
-                currentVel.y, // Keep vertical velocity
+                currentVel.y, // Keep vertical velocity (gravity/jump)
                 moveZ * effectiveSpeed
             );
             
-            // Use character controller to compute movement
+            // Set the velocity on the body
+            setLinearVelocity(this.body, desiredVelocity);
+            
+            // Use character controller to compute collision-aware movement
+            const movementDelta = new THREE.Vector3(
+                desiredVelocity.x * dt,
+                desiredVelocity.y * dt,
+                desiredVelocity.z * dt
+            );
+            
             this.characterController.computeColliderMovement(
                 this.collider,
-                desiredVelocity
+                movementDelta
             );
             
             // Get computed movement and apply to body
             const correctedMovement = this.characterController.computedMovement();
             const currentPos = this.body.translation();
             const newPos = new THREE.Vector3(
-                currentPos.x + correctedMovement.x * dt,
-                currentPos.y + correctedMovement.y * dt,
-                currentPos.z + correctedMovement.z * dt
+                currentPos.x + correctedMovement.x,
+                currentPos.y + correctedMovement.y,
+                currentPos.z + correctedMovement.z
             );
             setBodyPosition(this.body, newPos);
             
-            // Update grounded state using character controller
+            // Update grounded state using character controller (must be called after computeColliderMovement)
             this.isGrounded = this.characterController.computedGrounded();
 
             // Jump
@@ -853,6 +862,11 @@ export class Player extends BaseMesh {
 
         // Weapon update & hit checks
         this.weapon.update(dt);
+        
+        // Check for weapon-enemy collisions if weapon is attacking
+        if (this.weapon.isAttacking && this.weapon.body) {
+            this.checkWeaponCollisions();
+        }
     }
 
     private handleInvulnerability(dt: number) {
@@ -1389,6 +1403,37 @@ export class Player extends BaseMesh {
             this.createLevelUpParticles();
             this.shockwavePending = false;
         }
+    }
+
+    /**
+     * Check for weapon-enemy collisions using Rapier intersection tests
+     */
+    private checkWeaponCollisions(): void {
+        if (!this.weapon.body || !this.weapon.collider) return;
+
+        const rapierWorld = RapierPhysics.Instance.world;
+        const weaponPos = this.weapon.body.translation();
+        const weaponRot = this.weapon.body.rotation();
+        const damage = this.getHitDamage();
+        const damagePos = new THREE.Vector3(weaponPos.x, weaponPos.y, weaponPos.z);
+
+        // Check intersection with all colliders
+        rapierWorld.intersectionsWithShape(weaponPos, weaponRot, this.weapon.collider.shape, (collider) => {
+            const parent = collider.parent();
+            if (parent) {
+                // Check if this collider belongs to an enemy
+                const entity = (parent as any).entity;
+                if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
+                    entity.takeDamage(damage, damagePos);
+                    
+                    // Grant tech points
+                    if (this.onTechGained) {
+                        this.onTechGained(damagePos);
+                    }
+                }
+            }
+            return true; // Continue checking other colliders
+        });
     }
 
     /**

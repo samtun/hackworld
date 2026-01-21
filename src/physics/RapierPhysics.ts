@@ -9,6 +9,7 @@ export class RapierPhysics {
     world: RAPIER.World;
     eventQueue: RAPIER.EventQueue;
     private static _instance: RapierPhysics | null = null;
+    debugRenderer: THREE.LineSegments | null = null; // Public for debug access
 
     private constructor(world: RAPIER.World) {
         this.world = world;
@@ -30,6 +31,13 @@ export class RapierPhysics {
         if (!RapierPhysics._instance) {
             throw new Error('RapierPhysics not initialized. Call RapierPhysics.initialize() first.');
         }
+        return RapierPhysics._instance;
+    }
+
+    /**
+     * Get the instance if it exists (for helper functions)
+     */
+    static getInstance(): RapierPhysics | null {
         return RapierPhysics._instance;
     }
 
@@ -350,4 +358,49 @@ export function setLinearVelocity(body: RAPIER.RigidBody, velocity: THREE.Vector
 export function getLinearVelocity(body: RAPIER.RigidBody): THREE.Vector3 {
     const vel = body.linvel();
     return new THREE.Vector3(vel.x, vel.y, vel.z);
+}
+
+/**
+ * Create or update the debug renderer for visualizing physics colliders
+ */
+export function createDebugRenderer(scene: THREE.Scene, _world: RAPIER.World): THREE.LineSegments {
+    const material = new THREE.LineBasicMaterial({
+        color: 0xff0000,
+        vertexColors: true
+    });
+    const geometry = new THREE.BufferGeometry();
+    const debugRenderer = new THREE.LineSegments(geometry, material);
+    debugRenderer.visible = false; // Hidden by default
+    scene.add(debugRenderer);
+    
+    // Store reference in RapierPhysics instance
+    const instance = RapierPhysics.getInstance();
+    if (instance) {
+        instance.debugRenderer = debugRenderer;
+    }
+    
+    return debugRenderer;
+}
+
+/**
+ * Update the debug renderer with current physics state
+ */
+export function updateDebugRenderer(world: RAPIER.World, debugRenderer: THREE.LineSegments): void {
+    if (!debugRenderer.visible) return;
+    
+    const buffers = world.debugRender();
+    const geometry = debugRenderer.geometry;
+    
+    geometry.setAttribute('position', new THREE.BufferAttribute(buffers.vertices, 3));
+    geometry.setAttribute('color', new THREE.BufferAttribute(buffers.colors, 4));
+}
+
+/**
+ * Toggle debug renderer visibility
+ */
+export function setDebugRendererVisible(visible: boolean): void {
+    const instance = RapierPhysics.getInstance();
+    if (instance && instance.debugRenderer) {
+        instance.debugRenderer.visible = visible;
+    }
 }

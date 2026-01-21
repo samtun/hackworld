@@ -83,7 +83,7 @@ export class Weapon extends BaseMesh {
     };
 
     body?: RAPIER.RigidBody;
-    private collider?: RAPIER.Collider; // Track the collider to remove it before removing the body
+    collider?: RAPIER.Collider; // Track the collider (public for collision detection)
     isAttacking: boolean = false;
     weaponType: WeaponType;
     stats: WeaponStats;

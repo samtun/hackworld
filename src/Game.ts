@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { RapierPhysics, setLinearVelocity } from './physics/RapierPhysics';
+import { RapierPhysics, setLinearVelocity, createDebugRenderer, updateDebugRenderer, setDebugRendererVisible } from './physics/RapierPhysics';
 import { Player } from './Player';
 import { World } from './World';
 import { InputManager } from './InputManager';
@@ -50,6 +50,7 @@ export class Game {
     debugMode: boolean = false;
     debugMeshes: THREE.Mesh[] = [];
     debugValueEditor?: DebugValueEditor;
+    debugRenderer?: THREE.LineSegments; // Rapier physics debug renderer
 
     // Input State
     wasInventoryPressed: boolean = false;
@@ -124,16 +125,16 @@ export class Game {
 
         // Debug Mode Setup
         if (import.meta.env.DEV) {
-            // Note: Rapier has its own debug rendering that can be added later if needed
+            // Create Rapier debug renderer
+            this.debugRenderer = createDebugRenderer(this.scene, this.physicsWorld);
 
             // Create debug value editor
             this.debugValueEditor = new DebugValueEditor();
 
             // Subscribe to collider toggle from debug editor
             this.debugValueEditor.onCollidersToggle = (visible: boolean) => {
-                this.debugMeshes.forEach(mesh => {
-                    mesh.visible = visible;
-                });
+                // Toggle Rapier debug renderer
+                setDebugRendererVisible(visible);
             };
 
             window.addEventListener('keydown', (e) => {
@@ -580,7 +581,10 @@ export class Game {
         // Update Game Logic
         RapierPhysics.Instance.step(dt);
 
-        // Update debug meshes if in debug mode (Rapier debug rendering can be added later if needed)
+        // Update debug renderer if in debug mode
+        if (this.debugMode && this.debugRenderer) {
+            updateDebugRenderer(this.physicsWorld, this.debugRenderer);
+        }
 
         // Prevent jumping in the frame(s) immediately after interacting
         const preventJump = isNearInteractive || this.wasJustInteracted;
