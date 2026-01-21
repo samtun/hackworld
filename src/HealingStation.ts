@@ -24,10 +24,10 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     isHealing: boolean = false;
 
     private readonly PARTICLE_COUNT = 300;
-    private readonly RING_RADIUS = 1.3; // Size
-    private readonly PARTICLE_LIFETIME = 1.5; // seconds
-    private readonly NORMAL_RISE_SPEED = 0.6; // Default rise speed
-    private readonly HEALING_RISE_SPEED = 1.8; // Faster rise speed during healing
+    private readonly SIZE = 2.8; // Size
+    private readonly PARTICLE_LIFETIME = 1.8; // seconds
+    private readonly NORMAL_RISE_SPEED = 0.3; // Default rise speed
+    private readonly HEALING_RISE_SPEED = 2.4; // Faster rise speed during healing
     private readonly MAX_PARTICLE_SIZE = 0.5;
     private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
     private time: number = 0;
@@ -87,17 +87,11 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     private resetParticle(index: number, isInitialSpawn: boolean = false): void {
         const stationPos = this.mesh.position;
 
-        // Random angle around the circle
-        const angle = Math.random() * Math.PI * 2;
-
-        // Start at random position within the ring (with slight variation)
-        const radius = Math.random() * this.RING_RADIUS;
-
         // Position on the ring at station height
         const i3 = index * 3;
-        this.particleSystem.positions[i3] = stationPos.x + Math.cos(angle) * radius;
+        this.particleSystem.positions[i3] = stationPos.x + Math.random() * this.SIZE - this.SIZE / 2;
         this.particleSystem.positions[i3 + 1] = stationPos.y;
-        this.particleSystem.positions[i3 + 2] = stationPos.z + Math.sin(angle) * radius;
+        this.particleSystem.positions[i3 + 2] = stationPos.z + Math.random() * this.SIZE - this.SIZE / 2;
 
         // Set lifetime with variation to prevent synchronized spawning
         if (isInitialSpawn) {
@@ -205,7 +199,7 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     }
 
     getRadius(): number {
-        return this.RING_RADIUS;
+        return this.SIZE;
     }
 
     setHealing(isHealing: boolean): void {
