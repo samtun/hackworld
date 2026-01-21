@@ -267,8 +267,10 @@ export class Player extends BaseMesh {
         // Create kinematic body
         this.body = RapierPhysics.Instance.createKinematicBody(spawnPos);
         
-        // Add capsule collider (height ~1.6, radius 0.5)
-        const capsuleHalfHeight = 0.4; // Total height = 0.8 + 2*radius = 1.8m
+        // Add capsule collider (height ~1.8, radius 0.5)
+        // Capsule center is at the body position
+        // Total height = 2 * (halfHeight + radius) = 2 * (0.4 + 0.5) = 1.8m
+        const capsuleHalfHeight = 0.4;
         const capsuleRadius = 0.5;
         this.collider = RapierPhysics.Instance.addCapsuleCollider(
             this.body,
@@ -792,26 +794,20 @@ export class Player extends BaseMesh {
             // Get current velocity
             const currentVel = getLinearVelocity(this.body);
             
-            // Compute desired velocity for this frame
-            const desiredVelocity = new THREE.Vector3(
-                moveX * effectiveSpeed,
-                currentVel.y, // Keep vertical velocity (gravity/jump)
-                moveZ * effectiveSpeed
-            );
+            // Apply gravity to vertical velocity
+            currentVel.y -= 25 * dt; // Gravity (same as world gravity)
             
-            // Set the velocity on the body
-            setLinearVelocity(this.body, desiredVelocity);
+            // Compute movement for this frame (including gravity)
+            const desiredMovement = new THREE.Vector3(
+                moveX * effectiveSpeed * dt,
+                currentVel.y * dt, // Include vertical velocity (gravity/jump)
+                moveZ * effectiveSpeed * dt
+            );
             
             // Use character controller to compute collision-aware movement
-            const movementDelta = new THREE.Vector3(
-                desiredVelocity.x * dt,
-                desiredVelocity.y * dt,
-                desiredVelocity.z * dt
-            );
-            
             this.characterController.computeColliderMovement(
                 this.collider,
-                movementDelta
+                desiredMovement
             );
             
             // Get computed movement and apply to body
@@ -826,6 +822,14 @@ export class Player extends BaseMesh {
             
             // Update grounded state using character controller (must be called after computeColliderMovement)
             this.isGrounded = this.characterController.computedGrounded();
+            
+            // Update velocity for next frame based on actual movement
+            const newVel = new THREE.Vector3(
+                correctedMovement.x / dt,
+                correctedMovement.y / dt,
+                correctedMovement.z / dt
+            );
+            setLinearVelocity(this.body, newVel);
 
             // Jump
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
@@ -935,9 +939,12 @@ export class Player extends BaseMesh {
     }
 
     syncPosition() {
-        // Align the visual mesh with the physics body (position offset for proper height)
+        // Capsule total height = 2 * (halfHeight + radius) = 2 * (0.4 + 0.5) = 1.8m
+        // Capsule center is at body position
+        // We want the mesh feet to be at the bottom of the capsule
+        // So mesh should be at body.y - (halfHeight + radius) = body.y - 0.9
         const translation = this.body.translation();
-        const newPosition = new THREE.Vector3(translation.x, translation.y - 0.3, translation.z);
+        const newPosition = new THREE.Vector3(translation.x, translation.y - 0.9, translation.z);
         this.position.copy(newPosition);
         this.mesh.position.copy(newPosition);
     }
