@@ -697,15 +697,17 @@ export class Enemy extends BaseMesh {
     cleanup(): void {
         this.deactivateAttackHitbox();
         
-        // Remove attack hitbox if exists
+        // Remove attack hitbox (removeBody now automatically removes all colliders)
         if (this.attackHitboxBody) {
             RapierPhysics.Instance.removeBody(this.attackHitboxBody);
             this.attackHitboxBody = null;
             this.attackHitboxCollider = null;
         }
         
+        // Remove character controller and body
         this.scene.remove(this.mesh);
         RapierPhysics.Instance.removeBody(this.body);
+        
         this.disposeMesh();
     }
 }

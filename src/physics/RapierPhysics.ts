@@ -229,8 +229,17 @@ export class RapierPhysics {
 
     /**
      * Remove a rigid body from the world
+     * Automatically removes all attached colliders first to avoid crashes
      */
     removeBody(body: RAPIER.RigidBody): void {
+        // Remove all colliders attached to this body first
+        // Iterate backwards since we're removing items
+        const numColliders = body.numColliders();
+        for (let i = numColliders - 1; i >= 0; i--) {
+            const collider = body.collider(i);
+            this.world.removeCollider(collider, true);
+        }
+        // Now safe to remove the body
         this.world.removeRigidBody(body);
     }
 

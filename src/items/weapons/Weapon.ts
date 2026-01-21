@@ -83,6 +83,7 @@ export class Weapon extends BaseMesh {
     };
 
     body?: RAPIER.RigidBody;
+    private collider?: RAPIER.Collider; // Track the collider to remove it before removing the body
     isAttacking: boolean = false;
     weaponType: WeaponType;
     stats: WeaponStats;
@@ -154,9 +155,12 @@ export class Weapon extends BaseMesh {
     private createAttackHitbox(rangeMultiplier: number = 1.0) {
         if (!this.physicsWorld) return;
 
-        // Remove old attack body if it exists
+        // Remove old collider and body if they exist
+        // Note: removeBody now automatically removes all colliders
         if (this.body) {
             RapierPhysics.Instance.removeBody(this.body);
+            this.body = undefined;
+            this.collider = undefined;
         }
 
         // Get hitbox config for this weapon type
@@ -167,13 +171,13 @@ export class Weapon extends BaseMesh {
         // Create kinematic body for attack hitbox (sensor)
         this.body = RapierPhysics.Instance.createKinematicBody(new THREE.Vector3());
         
-        // Add cylinder collider as sensor
-        const collider = RapierPhysics.Instance.addCylinderCollider(
+        // Add cylinder collider as sensor and store reference
+        this.collider = RapierPhysics.Instance.addCylinderCollider(
             this.body,
             weaponHeight / 2,
             weaponRadius
         );
-        collider.setSensor(true);
+        this.collider.setSensor(true);
 
         // Add a custom property to identify this as an attack hitbox
         (this.body as any).isAttackHitbox = true;
@@ -228,9 +232,11 @@ export class Weapon extends BaseMesh {
         this.isAttacking = false;
         this.hitboxActive = false;
 
-        // Remove attack hitbox
-        if (this.body && this.physicsWorld) {
+        // Remove attack hitbox (removeBody now automatically removes all colliders)
+        if (this.physicsWorld && this.body) {
             RapierPhysics.Instance.removeBody(this.body);
+            this.body = undefined;
+            this.collider = undefined;
         }
     }
 
@@ -243,9 +249,11 @@ export class Weapon extends BaseMesh {
             this.parentBone.remove(this.mesh);
         }
 
-        // Remove any existing attack body
-        if (this.body && this.physicsWorld) {
+        // Remove any existing attack body (removeBody now automatically removes all colliders)
+        if (this.physicsWorld && this.body) {
             RapierPhysics.Instance.removeBody(this.body);
+            this.body = undefined;
+            this.collider = undefined;
         }
 
         // Store the parent bone reference
