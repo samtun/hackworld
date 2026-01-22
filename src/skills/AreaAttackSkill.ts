@@ -3,6 +3,7 @@ import { Player } from '../Player';
 import { Enemy } from '../enemies/Enemy';
 import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 /**
  * Area Attack Skill
@@ -19,14 +20,14 @@ export class AreaAttackSkill extends Skill {
         super('Area Attack', 10, 30, onCompletedCallback);
     }
 
-    protected execute(player: Player, scene: THREE.Scene, world: any): void {
+    protected execute(player: Player, scene: THREE.Scene, world: RAPIER.World): void {
         console.log('Executing Area Attack skill');
 
         // Find all enemies within range
         const hitEnemies = new Set<Enemy>();
 
         // Use world.enemies instead of world.bodies (Rapier doesn't have bodies iterable)
-        for (const entity of world.enemies) {
+        world.bodies.forEach(entity => {
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
                 const playerPos = player.body.translation();
                 const enemyPos = entity.body.translation();
@@ -41,7 +42,7 @@ export class AreaAttackSkill extends Skill {
                     console.log(`Area attack hit enemy for ${this.DAMAGE} damage`);
                 }
             }
-        }
+        });
 
         // Create visual effect
         if (!this.areaAttackEffect) {

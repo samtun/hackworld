@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { Player } from '../Player';
 import { UIManager } from '../ui/UIManager';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 /**
  * Base class for all player skills
@@ -42,7 +43,7 @@ export abstract class Skill {
      * Execute the skill
      * @returns true if skill was successfully executed
      */
-    use(player: Player, scene: THREE.Scene, world: any): boolean {
+    use(player: Player, scene: THREE.Scene, world: RAPIER.World): boolean {
         if (!this.isReady()) {
             return false;
         }
@@ -90,5 +91,5 @@ export abstract class Skill {
     /**
      * Skill-specific execution logic
      */
-    protected abstract execute(player: Player, scene: THREE.Scene, world: any): void;
+    protected abstract execute(player: Player, scene: THREE.Scene, world: RAPIER.World): void;
 }

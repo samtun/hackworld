@@ -46,7 +46,7 @@ export class Player extends BaseMesh {
 
     // Scene and World references for items
     public scene: THREE.Scene;
-    public world: any; // RAPIER.World cast from any for compatibility
+    public world: RAPIER.World;
 
     private weaponRepository: WeaponRepository;
 
@@ -209,7 +209,7 @@ export class Player extends BaseMesh {
     private isUsingSkill: boolean = false;
     private skillAnimationTimer: number = 0;
 
-    constructor(scene: THREE.Scene, world: any, position: THREE.Vector3, input: InputManager) {
+    constructor(scene: THREE.Scene, world: RAPIER.World, position: THREE.Vector3, input: InputManager) {
         super('models/main_character.glb');
         this.scene = scene;
         this.world = world;
@@ -976,7 +976,7 @@ export class Player extends BaseMesh {
         forward.applyQuaternion(this.mesh.quaternion);
         forward.y = 0;
         forward.normalize();
-        return forward;
+        return forward.clone();
     }
 
     /**

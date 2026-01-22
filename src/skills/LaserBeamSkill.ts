@@ -3,6 +3,7 @@ import { Player } from '../Player';
 import { Enemy } from '../enemies/Enemy';
 import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 /**
  * Laser Beam Skill
@@ -16,17 +17,17 @@ export class LaserBeamSkill extends Skill {
     private laserAttackEffect: LaserAttackEffect | undefined;
     private isBeingExecuted: boolean = false;
 
-    private world: any | undefined;
-    private player: Player | undefined;
-    private startPos: THREE.Vector3 | undefined;
-    private forward: THREE.Vector3 | undefined;
+    private world?: RAPIER.World | undefined;
+    private player?: Player | undefined;
+    private startPos: THREE.Vector3 = new THREE.Vector3();
+    private forward: THREE.Vector3 = new THREE.Vector3();
     private hitEnemies: Set<Enemy> = new Set();
 
     constructor(onCompletedCallback: () => void) {
         super('Laser Beam', 5, 25, onCompletedCallback);
     }
 
-    protected execute(player: Player, scene: THREE.Scene, world: any): void {
+    protected execute(player: Player, scene: THREE.Scene, world: RAPIER.World): void {
         console.log('Executing Laser Beam skill');
 
         this.world = world;
@@ -75,9 +76,11 @@ export class LaserBeamSkill extends Skill {
         const currentLength = this.RANGE * Math.pow(progress, 2);
 
         // Check for hits using world.enemies instead of world.bodies (Rapier doesn't have bodies iterable)
-        for (const entity of this.world.enemies) {
+        this.world?.bodies.forEach((entity) => {
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                if (this.hitEnemies.has(entity)) continue;
+                if (this.hitEnemies.has(entity)) {
+                    return;
+                }
 
                 const enemyPos = entity.body.translation();
 
@@ -96,17 +99,20 @@ export class LaserBeamSkill extends Skill {
 
                     if (distanceToBeam <= this.RADIUS && Math.abs(dy) <= 2) {
                         // Hit!
-                        const playerPos = this.player.body.translation();
-                        const position = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
-                        entity.takeDamage(this.DAMAGE, position);
-                        this.hitEnemies.add(entity);
-                        console.log(`Laser beam hit enemy for ${this.DAMAGE} damage`);
-                        break;
+                        if (this.player) {
+                            const playerPos = this.player.position;
+                            const position = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
+                            entity.takeDamage(this.DAMAGE, position);
+                            this.hitEnemies.add(entity);
+                            console.log(`Laser beam hit enemy for ${this.DAMAGE} damage`);
+                            break;
+                        }
                     }
                 }
             }
-        }
+        });
 
+        // Cleanup after duration
         if (progress >= 1) {
             this.cleanup();
         } else {
@@ -122,8 +128,6 @@ export class LaserBeamSkill extends Skill {
 
         this.world = undefined;
         this.player = undefined;
-        this.startPos = undefined;
-        this.forward = undefined;
         this.hitEnemies.clear();
 
         this.onCompletedCallback();
