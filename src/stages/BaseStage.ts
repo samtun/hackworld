@@ -152,12 +152,13 @@ export abstract class BaseStage {
         const FLOOR_THICKNESS = 0.1; // Thickness of the floor collider
         
         const physics = RapierPhysics.Instance;
-        const rotation = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, 0));
-        const body = physics.createStaticBody(new THREE.Vector3(0, 0, 0), rotation);
+        // Create floor at y=0 without rotation - box collider is naturally horizontal
+        const body = physics.createStaticBody(new THREE.Vector3(0, 0, 0));
         
-        // Create a large box collider to simulate the floor plane
+        // Create a large thin box collider for the floor (half extents)
+        // Y extent is small (thickness), X and Z are large (floor size)
         const halfExtents = new THREE.Vector3(FLOOR_SIZE, FLOOR_THICKNESS, FLOOR_SIZE);
-        physics.addBoxCollider(body, halfExtents, new THREE.Vector3(0, -FLOOR_THICKNESS, 0));
+        physics.addBoxCollider(body, halfExtents);
         this.bodies.push(body);
     }
 

@@ -74,11 +74,12 @@ export class LaserBeamSkill extends Skill {
         // Calculate current beam length based on progress (matching visual effect)
         const currentLength = this.RANGE * Math.pow(progress, 2);
 
-        // Check for hits
-        for (const body of this.world.bodies) {
-            const entity = (body as any).entity;
+        // Check for hits using world.enemies instead of world.bodies (Rapier doesn't have bodies iterable)
+        for (const entity of this.world.enemies) {
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
                 if (this.hitEnemies.has(entity)) continue;
+
+                const enemyPos = entity.body.translation();
 
                 // Check distance along the beam
                 for (let distance = 0; distance <= currentLength; distance += 1) {
@@ -88,9 +89,9 @@ export class LaserBeamSkill extends Skill {
                         this.startPos.z + this.forward.z * distance
                     );
 
-                    const dx = body.position.x - checkPos.x;
-                    const dy = body.position.y - checkPos.y;
-                    const dz = body.position.z - checkPos.z;
+                    const dx = enemyPos.x - checkPos.x;
+                    const dy = enemyPos.y - checkPos.y;
+                    const dz = enemyPos.z - checkPos.z;
                     const distanceToBeam = Math.sqrt(dx * dx + dz * dz); // Horizontal distance
 
                     if (distanceToBeam <= this.RADIUS && Math.abs(dy) <= 2) {

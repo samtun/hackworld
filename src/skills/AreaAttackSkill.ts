@@ -25,12 +25,13 @@ export class AreaAttackSkill extends Skill {
         // Find all enemies within range
         const hitEnemies = new Set<Enemy>();
 
-        for (const body of world.bodies) {
-            const entity = (body as any).entity;
+        // Use world.enemies instead of world.bodies (Rapier doesn't have bodies iterable)
+        for (const entity of world.enemies) {
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
                 const playerPos = player.body.translation();
-                const dx = body.position.x - playerPos.x;
-                const dz = body.position.z - playerPos.z;
+                const enemyPos = entity.body.translation();
+                const dx = enemyPos.x - playerPos.x;
+                const dz = enemyPos.z - playerPos.z;
                 const distance = Math.sqrt(dx * dx + dz * dz);
 
                 if (distance <= this.RANGE) {
