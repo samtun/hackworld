@@ -765,6 +765,7 @@ export class Player extends BaseMesh {
 
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
+            // Apply friction during stun
             const vel = getLinearVelocity(this.body);
             vel.x *= 0.9;
             vel.z *= 0.9;
@@ -791,16 +792,22 @@ export class Player extends BaseMesh {
                 effectiveSpeed *= equippedChip.stats.walkSpeedMultiplier;
             }
 
-            // Get current velocity
+            // Get current vertical velocity for jumping
             const currentVel = getLinearVelocity(this.body);
             
-            // Apply gravity to vertical velocity
-            currentVel.y -= 25 * dt; // Gravity (same as world gravity)
+            // Apply gravity
+            currentVel.y -= 25 * dt;
             
-            // Compute movement for this frame (including gravity)
+            // Handle jump input - add jump impulse when grounded
+            if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
+                currentVel.y = this.JUMP_FORCE;
+                this.jumpCooldownTimer = 1.0;
+            }
+            
+            // Compute desired movement for this frame
             const desiredMovement = new THREE.Vector3(
                 moveX * effectiveSpeed * dt,
-                currentVel.y * dt, // Include vertical velocity (gravity/jump)
+                currentVel.y * dt,
                 moveZ * effectiveSpeed * dt
             );
             
@@ -810,8 +817,10 @@ export class Player extends BaseMesh {
                 desiredMovement
             );
             
-            // Get computed movement and apply to body
+            // Get the corrected movement from character controller
             const correctedMovement = this.characterController.computedMovement();
+            
+            // Apply the corrected movement to body position
             const currentPos = this.body.translation();
             const newPos = new THREE.Vector3(
                 currentPos.x + correctedMovement.x,
@@ -820,24 +829,16 @@ export class Player extends BaseMesh {
             );
             setBodyPosition(this.body, newPos);
             
-            // Update grounded state using character controller (must be called after computeColliderMovement)
+            // Update grounded state (must be called after computeColliderMovement)
             this.isGrounded = this.characterController.computedGrounded();
             
-            // Update velocity for next frame based on actual movement
-            const newVel = new THREE.Vector3(
+            // Update stored velocity based on actual movement
+            const actualVel = new THREE.Vector3(
                 correctedMovement.x / dt,
                 correctedMovement.y / dt,
                 correctedMovement.z / dt
             );
-            setLinearVelocity(this.body, newVel);
-
-            // Jump
-            if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
-                const vel = getLinearVelocity(this.body);
-                vel.y = this.JUMP_FORCE;
-                setLinearVelocity(this.body, vel);
-                this.jumpCooldownTimer = 1.0;
-            }
+            setLinearVelocity(this.body, actualVel);
         } else {
             this.haltMovement();
         }
