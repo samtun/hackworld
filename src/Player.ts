@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { RapierPhysics, setBodyPosition, setLinearVelocity, getLinearVelocity } from './physics/RapierPhysics';
+import { RapierPhysics, setBodyPosition } from './physics/RapierPhysics';
 import { AssetManager } from './AssetManager';
 import { InputManager } from './InputManager';
 import { Weapon } from './items/weapons/Weapon';
@@ -50,8 +50,6 @@ export class Player extends BaseMesh {
 
     private weaponRepository: WeaponRepository;
 
-    // Knockback strength
-    private readonly KNOCKBACK_FORCE = 80;
 
     // Stat caps and upgrade amounts
     private readonly MAX_STAT_VALUE = 9999;
@@ -181,6 +179,9 @@ export class Player extends BaseMesh {
     private isGrounded: boolean = false;
     private stunTimer: number = 0;
     private jumpCooldownTimer: number = 0;
+    
+    // Vertical velocity for jumping (tracked separately from CharacterController)
+    private verticalVelocity: number = 0;
 
     // Death state
     isDead: boolean = false;
@@ -685,13 +686,28 @@ export class Player extends BaseMesh {
         this.fadeToAction(ActionType.Dash, 0.0);
         this.dashTimer += dt;
 
-        // Set dash velocity
-        const dashVel = new THREE.Vector3(
-            this.dashDirection.x * this.DASH_SPEED,
+        // Compute dash movement for this frame
+        const dashMovement = new THREE.Vector3(
+            this.dashDirection.x * this.DASH_SPEED * dt,
             0,
-            this.dashDirection.z * this.DASH_SPEED
+            this.dashDirection.z * this.DASH_SPEED * dt
         );
-        setLinearVelocity(this.body, dashVel);
+        
+        // Use CharacterController to handle collisions during dash
+        this.characterController.computeColliderMovement(
+            this.collider,
+            dashMovement
+        );
+        
+        // Apply corrected movement
+        const correctedMovement = this.characterController.computedMovement();
+        const currentPos = this.body.translation();
+        const newPos = new THREE.Vector3(
+            currentPos.x + correctedMovement.x,
+            currentPos.y + correctedMovement.y,
+            currentPos.z + correctedMovement.z
+        );
+        setBodyPosition(this.body, newPos);
 
         // Check for enemy collisions during dash
         const rapierWorld = RapierPhysics.Instance.world;
@@ -758,23 +774,20 @@ export class Player extends BaseMesh {
 
         // Block movement during level-up animation
         if (this.isLevelingUp) {
-            this.haltMovement();
+            this.verticalVelocity = 0;
             return;
         }
 
         // Block movement during skill usage
         if (this.isUsingSkill) {
-            this.haltMovement();
+            this.verticalVelocity = 0;
             return;
         }
 
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
-            // Apply friction during stun
-            const vel = getLinearVelocity(this.body);
-            vel.x *= 0.9;
-            vel.z *= 0.9;
-            setLinearVelocity(this.body, vel);
+            // Apply friction during stun - just reduce vertical velocity
+            this.verticalVelocity *= 0.9;
             return;
         }
 
@@ -797,35 +810,35 @@ export class Player extends BaseMesh {
                 effectiveSpeed *= equippedChip.stats.walkSpeedMultiplier;
             }
 
-            // Get current vertical velocity for jumping
-            const currentVel = getLinearVelocity(this.body);
-
-            // Apply gravity
-            currentVel.y -= 25 * dt;
-
-            // Handle jump input - add jump impulse when grounded
-            if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
-                currentVel.y = this.JUMP_FORCE * dt;
-                this.jumpCooldownTimer = 1.0;
+            // Apply gravity to vertical velocity
+            if (!this.isGrounded) {
+                this.verticalVelocity -= 25 * dt;
+            } else {
+                // On ground, reset vertical velocity with small downward force to maintain contact
+                this.verticalVelocity = -2.0;
             }
-
-            // Compute desired movement for this frame
+            
+            // Handle jump input
+            if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
+                this.verticalVelocity = this.JUMP_FORCE;
+                this.jumpCooldownTimer = 0.3;
+            }
+            
+            // Build desired movement vector (velocity * dt for this frame)
             const desiredMovement = new THREE.Vector3(
                 moveX * effectiveSpeed * dt,
-                currentVel.y * dt,
+                this.verticalVelocity * dt,
                 moveZ * effectiveSpeed * dt
             );
-
-            // Use character controller to compute collision-aware movement
+            
+            // Let CharacterController compute collision-aware movement
             this.characterController.computeColliderMovement(
                 this.collider,
                 desiredMovement
             );
-
-            // Get the corrected movement from character controller
+            
+            // Apply the corrected movement
             const correctedMovement = this.characterController.computedMovement();
-
-            // Apply the corrected movement to body position
             const currentPos = this.body.translation();
             const newPos = new THREE.Vector3(
                 currentPos.x + correctedMovement.x,
@@ -833,19 +846,19 @@ export class Player extends BaseMesh {
                 currentPos.z + correctedMovement.z
             );
             setBodyPosition(this.body, newPos);
-
-            // Update grounded state (must be called after computeColliderMovement)
+            
+            // Update grounded state AFTER movement computation
             this.isGrounded = this.characterController.computedGrounded();
-
-            // Update stored velocity based on actual movement
-            const actualVel = new THREE.Vector3(
-                correctedMovement.x / dt,
-                correctedMovement.y / dt,
-                correctedMovement.z / dt
-            );
-            setLinearVelocity(this.body, actualVel);
-        } else {
-            this.haltMovement();
+            
+            // If we hit a ceiling, stop upward velocity
+            if (correctedMovement.y < desiredMovement.y && this.verticalVelocity > 0) {
+                this.verticalVelocity = 0;
+            }
+            
+            // If we hit the ground, stop downward velocity
+            if (this.isGrounded && this.verticalVelocity < 0) {
+                this.verticalVelocity = 0;
+            }
         }
     }
 
@@ -952,13 +965,11 @@ export class Player extends BaseMesh {
     }
 
     /**
-     * Gradually slow down horizontal movement by a factor
+     * Stop movement (used when attacking, during skills, etc.)
      */
     private haltMovement(): void {
-        const vel = getLinearVelocity(this.body);
-        vel.x = 0;
-        vel.z = 0;
-        setLinearVelocity(this.body, vel);
+        // Reset vertical velocity when halting
+        this.verticalVelocity = 0;
     }
 
     move(position: THREE.Vector3): void {
@@ -1068,12 +1079,8 @@ export class Player extends BaseMesh {
 
             if (knockDir.length() > 0) {
                 knockDir.normalize();
-                const knockbackVel = new THREE.Vector3(
-                    knockDir.x * this.KNOCKBACK_FORCE / 10, // Reduced for better feel with kinematic
-                    5,
-                    knockDir.z * this.KNOCKBACK_FORCE / 10
-                );
-                setLinearVelocity(this.body, knockbackVel);
+                // Apply knockback via vertical velocity (will be applied in next movement frame)
+                this.verticalVelocity = 5;
             }
         }
 
@@ -1114,10 +1121,10 @@ export class Player extends BaseMesh {
         this.tp = this.maxTp;
         this.invulnerableTimer = 2.0; // 2 seconds invulnerability after respawn
 
-        // Reset position and velocity
+        // Reset position and vertical velocity
         const newPos = new THREE.Vector3(position.x, position.y, position.z);
         setBodyPosition(this.body, newPos);
-        setLinearVelocity(this.body, new THREE.Vector3(0, 0, 0));
+        this.verticalVelocity = 0;
 
         console.log('Player respawned at', position);
     }
