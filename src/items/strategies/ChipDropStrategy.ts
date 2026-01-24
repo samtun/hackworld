@@ -5,16 +5,17 @@ import { ChipRepository } from '../chips/ChipRepository';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 export class ChipDropStrategy implements ItemDropStrategy {
     readonly key = 'chip';
     private readonly DROP_PROBABILITY = 0.27; // 27% of total drops
 
-    tryDrop(scene: THREE.Scene, _physicsWorld: any, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, _physicsWorld: RAPIER.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
         const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
         const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
-        
+
         if (Math.random() > effectiveDropChance) return null;
 
         // Use smart level determination based on player level
@@ -32,7 +33,7 @@ export class ChipDropStrategy implements ItemDropStrategy {
         return drop;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: any, drop: ChipDrop, player: Player): void {
+    pickup(_scene: THREE.Scene, _physicsWorld: RAPIER.World, drop: ChipDrop, player: Player): void {
         // Get the chip from repository by ID to find its type
         const chipItem = ChipRepository.Instance.getChipById(drop.chipId);
         if (!chipItem) {

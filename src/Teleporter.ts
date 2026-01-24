@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { createParticleShaderMaterial, updateParticleScaleFactor } from './ParticleShaderUtils';
 import { Npc } from './npcs/Npc';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 /**
  * Callback type for teleporter interactions
@@ -47,7 +48,7 @@ export class Teleporter extends Npc {
 
     constructor(
         scene: THREE.Scene,
-        world: any,
+        world: RAPIER.World,
         physicsMaterial: any,
         position: THREE.Vector3,
         destination: string
@@ -221,7 +222,7 @@ export class Teleporter extends Npc {
     /**
      * Clean up resources
      */
-    cleanup(scene: THREE.Scene, world: any): void {
+    cleanup(scene: THREE.Scene, world: RAPIER.World): void {
         // Call parent cleanup for mesh and physics body
         super.cleanup(scene, world);
 

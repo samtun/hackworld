@@ -81,7 +81,7 @@ export class Player extends BaseMesh {
     private readonly WALK_SPEED = 6;
 
     // Can jump onto 1m high platforms
-    private readonly JUMP_FORCE = 10;
+    private readonly JUMP_FORCE = 4000;
 
     // Stun mechanic
     private readonly STUN_TIME = 0.5;
@@ -286,7 +286,7 @@ export class Player extends BaseMesh {
 
         // Create character controller
         this.characterController = RapierPhysics.Instance.createCharacterController(0.01);
-        this.characterController.enableSnapToGround(0.2);
+        this.characterController.enableSnapToGround(0.5);
         this.characterController.enableAutostep(0.2, 0.1, false);
         // Don’t allow climbing slopes larger than 45 degrees.
         this.characterController.setMaxSlopeClimbAngle(45 * Math.PI / 180);
@@ -805,7 +805,7 @@ export class Player extends BaseMesh {
 
             // Handle jump input - add jump impulse when grounded
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
-                currentVel.y = this.JUMP_FORCE;
+                currentVel.y = this.JUMP_FORCE * dt;
                 this.jumpCooldownTimer = 1.0;
             }
 

@@ -6,6 +6,7 @@ import { WeaponType } from '../weapons/WeaponType';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { WeaponItem } from '../weapons/WeaponItem';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
     readonly key = 'weapon';
@@ -13,11 +14,11 @@ export class WeaponDropStrategy implements ItemDropStrategy {
     private static readonly HIGHER_LEVEL_THRESHOLD = 0.8;
     private readonly DROP_PROBABILITY = 0.43; // 43% of total drops
 
-    tryDrop(scene: THREE.Scene, _physicsWorld: any, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, _physicsWorld: RAPIER.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
         const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
         const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
-        
+
         if (Math.random() > effectiveDropChance) return null;
 
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
@@ -122,7 +123,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         return baseLevel;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: any, drop: WeaponDrop, player: Player): void {
+    pickup(_scene: THREE.Scene, _physicsWorld: RAPIER.World, drop: WeaponDrop, player: Player): void {
         const weaponItem = WeaponRepository.Instance.getWeaponById(drop.weaponId);
         if (!weaponItem) {
             console.warn(`Weapon not found for ${drop.weaponId}`);

@@ -5,16 +5,17 @@ import { CoreRepository } from '../cores/CoreRepository';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 export class CoreDropStrategy implements ItemDropStrategy {
     readonly key = 'core';
     private readonly DROP_PROBABILITY = 0.27; // 27% of total drops
 
-    tryDrop(scene: THREE.Scene, _physicsWorld: any, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, _physicsWorld: RAPIER.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
         const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
         const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
-        
+
         if (Math.random() > effectiveDropChance) return null;
 
         // Use smart level determination based on player level
@@ -32,7 +33,7 @@ export class CoreDropStrategy implements ItemDropStrategy {
         return drop;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: any, drop: CoreDrop, player: Player): void {
+    pickup(_scene: THREE.Scene, _physicsWorld: RAPIER.World, drop: CoreDrop, player: Player): void {
         // Get the core from repository by ID to find its name
         const coreItem = CoreRepository.Instance.getCoreById(drop.coreId);
         if (!coreItem) {

@@ -73,7 +73,7 @@ export class Enemy extends BaseMesh {
     protected materials: THREE.Material[] = [];
     private player: Player;
     protected scene: THREE.Scene;
-    protected world: any; // RAPIER.World cast from any for compatibility
+    protected world: RAPIER.World;
 
     // Callback for spawning damage numbers
     onDamageTaken?: (position: THREE.Vector3, amount: number) => void;
@@ -81,7 +81,7 @@ export class Enemy extends BaseMesh {
     // Callback when death fade starts (for rewards, drops, etc.)
     onDeathFadeStart?: (enemy: Enemy) => void;
 
-    constructor(scene: THREE.Scene, world: any, position: THREE.Vector3) {
+    constructor(scene: THREE.Scene, world: RAPIER.World, position: THREE.Vector3) {
         super('models/monster.glb');
 
         this.scene = scene;
@@ -104,10 +104,10 @@ export class Enemy extends BaseMesh {
 
         // Physics - Rapier Kinematic Body with CharacterController
         const spawnPos = new THREE.Vector3(position.x, position.y, position.z);
-        
+
         // Create kinematic body
         this.body = RapierPhysics.Instance.createKinematicBody(spawnPos);
-        
+
         // Add capsule collider (height ~1.75, radius 0.6)
         const capsuleHalfHeight = 0.475; // Total height = 0.95 + 2*radius = 2.15m
         const capsuleRadius = 0.6;
@@ -120,10 +120,10 @@ export class Enemy extends BaseMesh {
             0.3, // friction
             0.0  // restitution
         );
-        
+
         // Store entity reference on collider for collision detection
         (this.collider as any).entity = this;
-        
+
         // Create character controller
         this.characterController = RapierPhysics.Instance.createCharacterController();
 
@@ -242,16 +242,16 @@ export class Enemy extends BaseMesh {
         this.attackHitboxBody = RapierPhysics.Instance.createKinematicBody(
             new THREE.Vector3(hitboxPos.x, hitboxPos.y, hitboxPos.z)
         );
-        
+
         // Add box collider
         this.attackHitboxCollider = RapierPhysics.Instance.addBoxCollider(
             this.attackHitboxBody,
             new THREE.Vector3(this.attackHitboxSize.x, this.attackHitboxSize.y, this.attackHitboxSize.z)
         );
-        
+
         // Set sensor to not affect physics (collision detection only)
         this.attackHitboxCollider.setSensor(true);
-        
+
         (this.attackHitboxBody as any).isEnemyAttackHitbox = true;
         (this.attackHitboxBody as any).enemy = this;
     }
@@ -423,23 +423,23 @@ export class Enemy extends BaseMesh {
                 );
                 if (dir.length() > 0) {
                     dir.normalize();
-                    
+
                     // Get current velocity
                     const currentVel = getLinearVelocity(this.body);
-                    
+
                     // Compute desired velocity
                     const desiredVelocity = new THREE.Vector3(
                         dir.x * this.speed,
                         currentVel.y, // Keep vertical velocity
                         dir.z * this.speed
                     );
-                    
+
                     // Use character controller to compute movement
                     this.characterController.computeColliderMovement(
                         this.collider,
                         desiredVelocity
                     );
-                    
+
                     // Get computed movement and apply to body
                     const correctedMovement = this.characterController.computedMovement();
                     const newPos = new THREE.Vector3(
@@ -448,7 +448,7 @@ export class Enemy extends BaseMesh {
                         myPos.z + correctedMovement.z * dt
                     );
                     setBodyPosition(this.body, newPos);
-                    
+
                     isMoving = true;
 
                     // Rotate to face player
@@ -462,7 +462,7 @@ export class Enemy extends BaseMesh {
                 if (!this.isReturningToBase) {
                     // Start the wait timer
                     this.returnToBaseTimer += dt;
-                    
+
                     // After wait time, start returning
                     if (this.returnToBaseTimer >= this.returnWaitTime) {
                         this.isReturningToBase = true;
@@ -483,23 +483,23 @@ export class Enemy extends BaseMesh {
                         );
                         if (dir.length() > 0) {
                             dir.normalize();
-                            
+
                             // Get current velocity
                             const currentVel = getLinearVelocity(this.body);
-                            
+
                             // Compute desired velocity
                             const desiredVelocity = new THREE.Vector3(
                                 dir.x * this.speed,
                                 currentVel.y, // Keep vertical velocity
                                 dir.z * this.speed
                             );
-                            
+
                             // Use character controller to compute movement
                             this.characterController.computeColliderMovement(
                                 this.collider,
                                 desiredVelocity
                             );
-                            
+
                             // Get computed movement and apply to body
                             const correctedMovement = this.characterController.computedMovement();
                             const newPos = new THREE.Vector3(
@@ -508,7 +508,7 @@ export class Enemy extends BaseMesh {
                                 myPos.z + correctedMovement.z * dt
                             );
                             setBodyPosition(this.body, newPos);
-                            
+
                             isMoving = true;
 
                             // Rotate to face base position
@@ -593,10 +593,10 @@ export class Enemy extends BaseMesh {
      */
     private canAttackPlayer(distToPlayer: number): boolean {
         const attackRangeVariance = (Math.random() * 0.8 - 0.4);
-        return distToPlayer < this.aggroRange && 
-               distToPlayer < this.attackRange + attackRangeVariance && 
-               this.attackTimer <= 0 && 
-               !this.isAttacking;
+        return distToPlayer < this.aggroRange &&
+            distToPlayer < this.attackRange + attackRangeVariance &&
+            this.attackTimer <= 0 &&
+            !this.isAttacking;
     }
 
     attack() {
@@ -696,18 +696,18 @@ export class Enemy extends BaseMesh {
      */
     cleanup(): void {
         this.deactivateAttackHitbox();
-        
+
         // Remove attack hitbox (removeBody now automatically removes all colliders)
         if (this.attackHitboxBody) {
             RapierPhysics.Instance.removeBody(this.attackHitboxBody);
             this.attackHitboxBody = null;
             this.attackHitboxCollider = null;
         }
-        
+
         // Remove character controller and body
         this.scene.remove(this.mesh);
         RapierPhysics.Instance.removeBody(this.body);
-        
+
         this.disposeMesh();
     }
 }

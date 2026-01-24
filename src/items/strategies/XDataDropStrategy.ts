@@ -4,6 +4,7 @@ import { ItemDrop } from '../ItemDrop';
 import { XDataDrop } from '../xdata/XDataDrop';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 export class XDataDropStrategy implements ItemDropStrategy {
     readonly key = 'xData';
@@ -12,7 +13,7 @@ export class XDataDropStrategy implements ItemDropStrategy {
     private static readonly XDATA_LEVEL_DIVISOR = 428.7453673;
     private static readonly XDATA_LEVEL_MULTIPLIER = 3.285563999;
 
-    tryDrop(scene: THREE.Scene, world: any, enemy: Enemy, player: Player): ItemDrop | null {
+    tryDrop(scene: THREE.Scene, world: RAPIER.World, enemy: Enemy, player: Player): ItemDrop | null {
         // Low level players should not get any X-Data yet
         if (player.level < 10) return null;
 
@@ -20,7 +21,7 @@ export class XDataDropStrategy implements ItemDropStrategy {
         const levelDropChance = player.level >= 100
             ? 1
             : player.level / (XDataDropStrategy.XDATA_LEVEL_DIVISOR - XDataDropStrategy.XDATA_LEVEL_MULTIPLIER * player.level);
-        
+
         // Apply luck multiplier to drop chance
         const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
         const xDataDropChance = levelDropChance * enemy.xDataDropChance * luckMultiplier;
@@ -39,7 +40,7 @@ export class XDataDropStrategy implements ItemDropStrategy {
         return drop;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: any, drop: XDataDrop, player: Player): void {
+    pickup(_scene: THREE.Scene, _physicsWorld: RAPIER.World, drop: XDataDrop, player: Player): void {
         player.collectXData(drop.amount);
         console.log(`Picked up ${drop.amount} X-Data`);
     }

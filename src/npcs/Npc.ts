@@ -16,7 +16,7 @@ export class Npc extends BaseMesh {
 
     constructor(
         scene: THREE.Scene,
-        _world: any,
+        _world: RAPIER.World,
         _physicsMaterial: any,
         modelAsset: string,
         name: string,
@@ -105,7 +105,7 @@ export class Npc extends BaseMesh {
         NpcRegistry.Instance.markDialogueShown(this.name);
     }
 
-    cleanup(scene: THREE.Scene, _world: any): void {
+    cleanup(scene: THREE.Scene, _world: RAPIER.World): void {
         scene.remove(this.mesh);
         if (this.body) {
             RapierPhysics.Instance.removeBody(this.body);

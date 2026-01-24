@@ -94,7 +94,7 @@ export class Weapon extends BaseMesh {
     onHit?: (event: any) => void; // Callback for when weapon hits something
 
     // Physics world reference
-    private physicsWorld?: any; // RAPIER.World cast from any for compatibility
+    private physicsWorld?: RAPIER.World;
 
     // Parent bone reference for world position calculations
     private parentBone?: THREE.Object3D;
@@ -108,7 +108,7 @@ export class Weapon extends BaseMesh {
         modelAsset: string,
         weaponType: WeaponType = WeaponType.SWORD,
         damage: number = 10,
-        world?: any) {
+        world?: RAPIER.World) {
         super(modelAsset);
         this.weaponType = weaponType;
         this.stats = Weapon.WEAPON_CONFIGS[weaponType];
@@ -170,7 +170,7 @@ export class Weapon extends BaseMesh {
 
         // Create kinematic body for attack hitbox (sensor)
         this.body = RapierPhysics.Instance.createKinematicBody(new THREE.Vector3());
-        
+
         // Add cylinder collider as sensor and store reference
         this.collider = RapierPhysics.Instance.addCylinderCollider(
             this.body,

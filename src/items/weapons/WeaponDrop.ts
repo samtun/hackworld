@@ -122,7 +122,7 @@ export class WeaponDrop extends ItemDrop {
         setBodyPosition(this.body, this.mesh.position);
     }
 
-    cleanup(scene: THREE.Scene, _world: any): void {
+    cleanup(scene: THREE.Scene, _world: RAPIER.World): void {
         scene.remove(this.mesh);
         RapierPhysics.Instance.removeBody(this.body);
 

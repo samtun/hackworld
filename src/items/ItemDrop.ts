@@ -6,7 +6,7 @@ export abstract class ItemDrop {
     abstract body?: RAPIER.RigidBody;
 
     abstract update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void;
-    abstract cleanup(scene: THREE.Scene, world: any): void;
+    abstract cleanup(scene: THREE.Scene, world: RAPIER.World): void;
 
     protected readonly PICKUP_DISTANCE: number = 1.5;
 

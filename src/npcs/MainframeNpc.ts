@@ -1,11 +1,12 @@
 import * as THREE from 'three';
 import { Npc } from './Npc';
 import { GameProgressManager } from '../GameProgressManager';
+import RAPIER from '@dimforge/rapier3d-compat';
 
 export class MainframeNpc extends Npc {
     constructor(
         scene: THREE.Scene,
-        world: any,
+        world: RAPIER.World,
         physicsMaterial: any,
         position: THREE.Vector3
     ) {
