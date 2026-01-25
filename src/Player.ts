@@ -79,7 +79,7 @@ export class Player extends BaseMesh {
     private readonly WALK_SPEED = 6;
 
     // Can jump onto 1m high platforms
-    private readonly JUMP_FORCE = 4000;
+    private readonly JUMP_FORCE = 10;
 
     // Stun mechanic
     private readonly STUN_TIME = 0.5;
@@ -198,7 +198,7 @@ export class Player extends BaseMesh {
 
     // Inventory
     inventory: Item[] = [];
-    money: number = 500; // Starting money
+    money: number = 0;
 
     // Animations
     private mixer!: THREE.AnimationMixer;
@@ -286,8 +286,8 @@ export class Player extends BaseMesh {
         (this.collider as any).entity = this;
 
         // Create character controller
-        this.characterController = RapierPhysics.Instance.createCharacterController(0.01);
-        this.characterController.enableSnapToGround(0.5);
+        this.characterController = RapierPhysics.Instance.createCharacterController(0.1);
+        this.characterController.enableSnapToGround(0.7);
         this.characterController.enableAutostep(0.2, 0.1, false);
         // Don’t allow climbing slopes larger than 45 degrees.
         this.characterController.setMaxSlopeClimbAngle(45 * Math.PI / 180);
@@ -625,7 +625,7 @@ export class Player extends BaseMesh {
         const isMoving = !preventMovement && this.input.getMovementVector().length() > 0.1;
         if (isMoving) {
             const action = this.weapon.weaponType !== WeaponType.HAMMER ? ActionType.RunOneHanded : ActionType.RunTwoHanded;
-            this.fadeToAction(action, 0.05);
+            this.fadeToAction(action, 0.15);
         } else {
             this.fadeToAction(ActionType.Idle, 0.15);
         }
@@ -701,13 +701,11 @@ export class Player extends BaseMesh {
         
         // Apply corrected movement
         const correctedMovement = this.characterController.computedMovement();
-        const currentPos = this.body.translation();
-        const newPos = new THREE.Vector3(
-            currentPos.x + correctedMovement.x,
-            currentPos.y + correctedMovement.y,
-            currentPos.z + correctedMovement.z
-        );
-        setBodyPosition(this.body, newPos);
+        let newPos = this.body.translation();
+        newPos.x += correctedMovement.x;
+        newPos.y += correctedMovement.y;
+        newPos.z += correctedMovement.z;
+        this.body.setNextKinematicTranslation(newPos);
 
         // Check for enemy collisions during dash
         const rapierWorld = RapierPhysics.Instance.world;
@@ -811,13 +809,8 @@ export class Player extends BaseMesh {
             }
 
             // Apply gravity to vertical velocity
-            if (!this.isGrounded) {
-                this.verticalVelocity -= 25 * dt;
-            } else {
-                // On ground, reset vertical velocity with small downward force to maintain contact
-                this.verticalVelocity = -2.0;
-            }
-            
+            this.verticalVelocity -= 32 * dt;
+
             // Handle jump input
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
                 this.verticalVelocity = this.JUMP_FORCE;
@@ -839,26 +832,14 @@ export class Player extends BaseMesh {
             
             // Apply the corrected movement
             const correctedMovement = this.characterController.computedMovement();
-            const currentPos = this.body.translation();
-            const newPos = new THREE.Vector3(
-                currentPos.x + correctedMovement.x,
-                currentPos.y + correctedMovement.y,
-                currentPos.z + correctedMovement.z
-            );
-            setBodyPosition(this.body, newPos);
+            let newPos = this.body.translation();
+            newPos.x += correctedMovement.x;
+            newPos.y += correctedMovement.y;
+            newPos.z += correctedMovement.z;
+            this.body.setNextKinematicTranslation(newPos);
             
             // Update grounded state AFTER movement computation
             this.isGrounded = this.characterController.computedGrounded();
-            
-            // If we hit a ceiling, stop upward velocity
-            if (correctedMovement.y < desiredMovement.y && this.verticalVelocity > 0) {
-                this.verticalVelocity = 0;
-            }
-            
-            // If we hit the ground, stop downward velocity
-            if (this.isGrounded && this.verticalVelocity < 0) {
-                this.verticalVelocity = 0;
-            }
         }
     }
 
@@ -869,7 +850,7 @@ export class Player extends BaseMesh {
         if (this.input.isAttackJustPressed()) this.chargeDelayTimer = 0;
 
         // Immediate attack (requires fresh press and not charging)
-        if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
+        if (this.input.isAttackJustPressed() && this.isGrounded && !this.weapon.isAttacking && !this.isChargingAttack) {
             this.weapon.attack(this.getWeaponRangeMultiplier());
         }
 
