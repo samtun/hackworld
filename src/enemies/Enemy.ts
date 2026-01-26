@@ -81,7 +81,7 @@ export class Enemy extends CharacterEntity {
         // Call CharacterEntity constructor with capsule dimensions
         const capsuleHalfHeight = 0.475; // Total height = 0.95 + 2*radius = 2.15m
         const capsuleRadius = 0.6;
-        super('models/monster.glb', scene, world, position, capsuleHalfHeight, capsuleRadius);
+        super('models/monster.glb', scene, world, position, capsuleHalfHeight, capsuleRadius, 0.01);
 
         // Store base position for return behavior
         this.basePosition = position.clone();
@@ -426,14 +426,6 @@ export class Enemy extends CharacterEntity {
         this.syncBodyRotation();
 
         return true;
-    }
-
-    /**
-     * Sync the physics body rotation with the mesh quaternion
-     */
-    private syncBodyRotation(): void {
-        const q = this.mesh.quaternion;
-        this.body.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, true);
     }
 
     /**

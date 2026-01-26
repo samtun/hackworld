@@ -11,7 +11,7 @@ export class VioletAbyss extends BaseStage {
     name = VioletAbyss.name;
     description = VioletAbyss.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
-    spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 3, 0);
+    spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 1, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
@@ -45,10 +45,10 @@ export class VioletAbyss extends BaseStage {
         this.createBox(5, 1, 2, new THREE.Vector3(-8, 0.5, 8));
 
         // Spawn more enemies - harder stage
-        this.spawnEnemy(new THREE.Vector3(6, 0.5, 6));
-        this.spawnEnemy(new THREE.Vector3(-6, 0.5, 6));
-        this.spawnEnemy(new THREE.Vector3(6, 0.5, -6));
-        this.spawnEnemy(new THREE.Vector3(-6, 0.5, -6));
-        this.spawnEnemy(new THREE.Vector3(0, 0.5, -10));
+        this.spawnEnemy(new THREE.Vector3(6, 0.1, 6));
+        this.spawnEnemy(new THREE.Vector3(-6, 0.1, 6));
+        this.spawnEnemy(new THREE.Vector3(6, 0.1, -6));
+        this.spawnEnemy(new THREE.Vector3(-6, 0.1, -6));
+        this.spawnEnemy(new THREE.Vector3(0, 0.1, -10));
     }
 }

@@ -209,12 +209,11 @@ export class RapierPhysics {
     createCharacterController(offset: number = 0.01): RAPIER.KinematicCharacterController {
         const controller = this.world.createCharacterController(offset);
 
-        // Configure character controller defaults
-        controller.enableAutostep(0.5, 0.2, true); // maxHeight, minWidth, includeDynamicBodies
-        controller.enableSnapToGround(0.5); // distance
-        controller.setMaxSlopeClimbAngle(45 * Math.PI / 180); // 45 degrees in radians
-        controller.setMinSlopeSlideAngle(30 * Math.PI / 180); // 30 degrees in radians
-
+        controller.enableSnapToGround(0.5);
+        controller.enableAutostep(0.2, 0.1, false);
+        controller.setMaxSlopeClimbAngle(45 * Math.PI / 180);
+        controller.setMinSlopeSlideAngle(30 * Math.PI / 180);
+        
         return controller;
     }
 

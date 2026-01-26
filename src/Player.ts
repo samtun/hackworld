@@ -614,7 +614,7 @@ export class Player extends CharacterEntity {
 
         if (preventMovement) {
             this.haltMovement();
-            this.syncPosition();
+            this.syncPositionAndRotation();
             return;
         }
 
@@ -635,7 +635,7 @@ export class Player extends CharacterEntity {
 
         // Movement and physics sync
         this.handleMovement(dt, isNearInteractive);
-        this.syncPosition();
+        this.syncPositionAndRotation();
 
         // Combat (attacks / charge start / weapon updates)
         this.handleCombat(dt);
@@ -694,7 +694,7 @@ export class Player extends CharacterEntity {
             this.isDashing = false;
             this.dashHitEnemies.clear();
         }
-        this.syncPosition();
+        this.syncPositionAndRotation();
         return true;
     }
 
@@ -719,7 +719,7 @@ export class Player extends CharacterEntity {
         }
 
         this.haltMovement();
-        this.syncPosition();
+        this.syncPositionAndRotation();
         return true;
     }
 
@@ -893,7 +893,7 @@ export class Player extends CharacterEntity {
 
         // Keep player stopped during animation
         this.haltMovement();
-        this.syncPosition();
+        this.syncPositionAndRotation();
         return true;
     }
 
@@ -917,11 +917,12 @@ export class Player extends CharacterEntity {
         this.isGrounded = this.characterController.computedGrounded();
     }
 
-    syncPosition() {
+    syncPositionAndRotation() {
         const translation = this.body.translation();
         const newPosition = new THREE.Vector3(translation.x, translation.y - this.RADIUS, translation.z);
         this.position.copy(newPosition);
         this.mesh.position.copy(newPosition);
+        this.syncBodyRotation();
     }
 
     /**
@@ -935,8 +936,9 @@ export class Player extends CharacterEntity {
     move(position: THREE.Vector3): void {
         console.log('Moving player to', position);
         const newPos = new THREE.Vector3(position.x, position.y - this.HALF_HEIGHT, position.z);
+        this.verticalVelocity = 0;
         setBodyPosition(this.body, newPos);
-        this.syncPosition();
+        this.syncPositionAndRotation();
     }
 
     /**

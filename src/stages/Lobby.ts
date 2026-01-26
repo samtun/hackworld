@@ -19,7 +19,7 @@ export class Lobby extends BaseStage {
     name = 'Lobby';
     description = 'Safe hub area';
     environmentMap: string = 'textures/environments/lobby_env.exr';
-    spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 3, 0);
+    spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 1, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {

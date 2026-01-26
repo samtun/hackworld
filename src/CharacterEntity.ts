@@ -62,10 +62,6 @@ export abstract class CharacterEntity extends BaseMesh {
 
         // Create character controller with proper settings
         this.characterController = RapierPhysics.Instance.createCharacterController(controllerOffset);
-        this.characterController.enableSnapToGround(0.7);
-        this.characterController.enableAutostep(0.2, 0.1, false);
-        this.characterController.setMaxSlopeClimbAngle(45 * Math.PI / 180);
-        this.characterController.setMinSlopeSlideAngle(30 * Math.PI / 180);
     }
 
     /**
@@ -119,6 +115,15 @@ export abstract class CharacterEntity extends BaseMesh {
     protected syncMeshWithBody(): void {
         const pos = this.body.translation();
         this.mesh.position.set(pos.x, pos.y - this.bodyHalfExtentY, pos.z);
+    }
+
+    
+    /**
+     * Sync the physics body rotation with the mesh quaternion
+     */
+    protected syncBodyRotation(): void {
+        const q = this.mesh.quaternion;
+        this.body.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, true);
     }
 
     /**
