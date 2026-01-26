@@ -1390,23 +1390,14 @@ export class Player extends CharacterEntity {
         const rapierWorld = RapierPhysics.Instance.world;
         const weaponPos = this.weapon.body.translation();
         const weaponRot = this.weapon.body.rotation();
-        const damage = this.getHitDamage();
-        const damagePos = new THREE.Vector3(weaponPos.x, weaponPos.y, weaponPos.z);
 
         // Check intersection with all colliders
         rapierWorld.intersectionsWithShape(weaponPos, weaponRot, this.weapon.collider.shape, (collider) => {
-            const parent = collider.parent();
-            if (parent) {
-                // Check if this collider belongs to an enemy
-                const entity = (parent as any).entity;
-                if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                    entity.takeDamage(damage, damagePos);
-
-                    // Grant tech points
-                    if (this.onTechGained) {
-                        this.onTechGained(damagePos);
-                    }
-                }
+            // Entity reference is stored on the collider, not the parent body
+            const entity = (collider as any).entity;
+            if (entity && entity instanceof Enemy) {
+                // Use handleAttackHit which tracks hit enemies to prevent multi-hit
+                this.handleAttackHit(entity);
             }
             return true; // Continue checking other colliders
         });
