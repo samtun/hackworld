@@ -809,7 +809,9 @@ export class Player extends BaseMesh {
             }
 
             // Apply gravity to vertical velocity
-            this.verticalVelocity -= 32 * dt;
+            if (!this.isGrounded) {
+                this.verticalVelocity -= 32 * dt;
+            }
 
             // Handle jump input
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
