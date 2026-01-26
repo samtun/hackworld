@@ -35,14 +35,6 @@ export class CrimsonDepths extends BaseStage {
         this.clear();
         await this.loadEnvironmentMap();
         this.createFloorCollider();
-        const geometry = new THREE.PlaneGeometry(100, 100);
-        const material = new THREE.MeshBasicMaterial({
-            color: 0x666666,
-            side: THREE.DoubleSide
-        });
-        geometry.rotateX(-Math.PI / 2);
-        const plane = new THREE.Mesh(geometry, material);
-        this.scene.add(plane);
 
         // Teleporter back to Lobby
         this.createTeleporter(new THREE.Vector3(-10, 0, -10), Lobby.getMetadata().id);

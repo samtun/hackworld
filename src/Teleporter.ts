@@ -36,6 +36,9 @@ export class Teleporter extends Npc {
     private readonly BASE_PARTICLE_SIZE = 0.3;
     private time: number = 0;
 
+    private playerIsClose: boolean = false;
+    private readonly INTERACTION_RANGE: number = 1.7;
+
     // Static callback for handling teleporter interactions
     private static teleporterCallback: TeleporterCallback | null = null;
 
@@ -113,7 +116,8 @@ export class Teleporter extends Npc {
         const dist = playerPosition.distanceTo(
             new THREE.Vector3(this.position.x, this.position.y, this.position.z + this.Z_OFFSET)
         );
-        return dist < 1.7; // Interaction range
+        this.playerIsClose =  dist < this.INTERACTION_RANGE;
+        return this.playerIsClose; // Interaction range
     }
 
     /**
@@ -178,11 +182,12 @@ export class Teleporter extends Npc {
                 continue;
             }
 
+            const playerCloseFactor = this.playerIsClose ? 2.0 : 1.0;
             // Calculate age factor (0 = just spawned, 1 = about to die)
             const ageFactor = 1 - (this.particleSystem.lifetimes[i] / this.PARTICLE_LIFETIME);
 
             // Calculate Z offset based on age (moves from -2 to +2)
-            const zOffset = this.Z_OFFSET - ageFactor * this.Z_TRAVEL_DISTANCE;
+            const zOffset = this.Z_OFFSET - ageFactor * this.Z_TRAVEL_DISTANCE * playerCloseFactor;
 
             // Update position - X and Y stay fixed at initial offset, only Z changes
             this.particleSystem.positions[i3] = teleporterPos.x + this.particleSystem.initialX[i];
@@ -190,7 +195,7 @@ export class Teleporter extends Npc {
             this.particleSystem.positions[i3 + 2] = teleporterPos.z + zOffset;
 
             // Update size - decrease as particle ages (reaches 0 at the end)
-            this.particleSystem.sizes[i] = this.particleSystem.initialSizes[i] * (1 - ageFactor);
+            this.particleSystem.sizes[i] = this.particleSystem.initialSizes[i] * (1 - ageFactor * playerCloseFactor);
         }
 
         // Update the geometry attributes
