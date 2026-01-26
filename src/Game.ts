@@ -98,7 +98,7 @@ export class Game {
         this.input = InputManager.Instance;
         this.ui = UIManager.Instance;
         // Note: World now uses RAPIER.World, physicsMaterial parameter removed
-        this.world = new World(this.scene, this.physicsWorld as any, () => {
+        this.world = new World(this.scene, this.physicsWorld, () => {
             this.ui.hideLoadingScreen();
             this.ui.showStartScreen();
             this.initializeEntities();
@@ -188,7 +188,7 @@ export class Game {
             )
             : new THREE.Vector3(0, 0.4, 0);
         // Player now uses Rapier physics with CharacterController
-        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld as any, initialSpawn, this.input));
+        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, initialSpawn, this.input));
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
 

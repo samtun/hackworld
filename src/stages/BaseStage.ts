@@ -184,7 +184,7 @@ export abstract class BaseStage {
      */
     protected spawnEnemy(position: THREE.Vector3): void {
         const pos = new THREE.Vector3(position.x, position.y, position.z);
-        const enemy = new Enemy(this.scene, this.physicsWorld as any, pos);
+        const enemy = new Enemy(this.scene, this.physicsWorld, pos);
         this.enemies.push(enemy);
     }
 
@@ -193,7 +193,7 @@ export abstract class BaseStage {
      */
     protected spawnLargeEnemy(position: THREE.Vector3): void {
         const pos = new THREE.Vector3(position.x, position.y, position.z);
-        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld as any, pos);
+        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld, pos);
         this.enemies.push(largeEnemy);
     }
 

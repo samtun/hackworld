@@ -18,9 +18,7 @@ export class LargeEnemy extends Enemy {
         this.damage = 15;
 
         // Scale up the mesh
-        scene.remove(this.mesh);
         this.mesh.scale.set(1.5, 1.5, 1.5);
-        scene.add(this.mesh);
 
         // Update physics body size for larger enemy
         // Remove the original collider and body created by parent

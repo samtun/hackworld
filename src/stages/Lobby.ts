@@ -140,7 +140,7 @@ export class Lobby extends BaseStage {
 
     private createMainframeNpc(): void {
         const position = new THREE.Vector3(0, 0, -14);
-        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld as any, this.physicsMaterial, position);
+        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld, this.physicsMaterial, position);
         this.npcs.add(this.mainframeNpc);
     }
 
@@ -154,7 +154,7 @@ export class Lobby extends BaseStage {
         const position = new THREE.Vector3(-5, 0, 0);
         this.nylethNpc = new Npc(
             this.scene,
-            this.physicsWorld as any,
+            this.physicsWorld,
             this.physicsMaterial,
             "models/npc_placeholder.glb",
             "Nyleth",
@@ -176,7 +176,7 @@ export class Lobby extends BaseStage {
         const position = new THREE.Vector3(5, 0, -5);
         this.xDataManagerNpc = new Npc(
             this.scene,
-            this.physicsWorld as any,
+            this.physicsWorld,
             this.physicsMaterial,
             "models/xdata_terminal.glb",
             "XData Terminal",
@@ -200,7 +200,7 @@ export class Lobby extends BaseStage {
         const position = new THREE.Vector3(0, 0, 5);
         this.saveManagerNpc = new Npc(
             this.scene,
-            this.physicsWorld as any,
+            this.physicsWorld,
             this.physicsMaterial,
             'models/npc_placeholder.glb',
             "Grant",
@@ -223,7 +223,7 @@ export class Lobby extends BaseStage {
         const position = new THREE.Vector3(-5, 0, -5);
         this.chipTraderNpc = new Npc(
             this.scene,
-            this.physicsWorld as any,
+            this.physicsWorld,
             this.physicsMaterial,
             "models/npc_placeholder.glb",
             "Kelly",
@@ -245,7 +245,7 @@ export class Lobby extends BaseStage {
         const position = new THREE.Vector3(5, 0, 0);
         this.coreTraderNpc = new Npc(
             this.scene,
-            this.physicsWorld as any,
+            this.physicsWorld,
             this.physicsMaterial,
             "models/npc_placeholder.glb",
             "Hank",
@@ -268,7 +268,7 @@ export class Lobby extends BaseStage {
         const position = new THREE.Vector3(0, 0, -5);
         this.weaponTraderNpc = new Npc(
             this.scene,
-            this.physicsWorld as any,
+            this.physicsWorld,
             this.physicsMaterial,
             "models/trader_weapons.glb",
             "Orim",
@@ -292,7 +292,7 @@ export class Lobby extends BaseStage {
         const position = new THREE.Vector3(7, 0, 0);
         this.irkelNpc = new Npc(
             this.scene,
-            this.physicsWorld as any,
+            this.physicsWorld,
             this.physicsMaterial,
             "models/npc_placeholder.glb",
             "Irkel",

@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { RapierPhysics, setBodyPosition } from './physics/RapierPhysics';
+import { RapierPhysics } from './physics/RapierPhysics';
 import { AssetManager } from './AssetManager';
 import { InputManager } from './InputManager';
 import { Weapon } from './items/weapons/Weapon';
@@ -613,7 +613,6 @@ export class Player extends CharacterEntity {
         this.updateAnimations(preventMovement);
 
         if (preventMovement) {
-            this.haltMovement();
             this.syncPositionAndRotation();
             return;
         }
@@ -718,7 +717,6 @@ export class Player extends CharacterEntity {
             }
         }
 
-        this.haltMovement();
         this.syncPositionAndRotation();
         return true;
     }
@@ -814,7 +812,7 @@ export class Player extends CharacterEntity {
         }
 
         // Charging
-        if (this.input.isAttackHeld() && !this.isChargingAttack) {
+        if (this.input.isAttackHeld() && !this.isChargingAttack && this.isGrounded) {
             this.chargeDelayTimer += dt;
             if (this.chargeDelayTimer >= this.CHARGE_DELAY && !this.weapon.isAttacking) {
                 this.startChargeAttack();
@@ -880,9 +878,6 @@ export class Player extends CharacterEntity {
             // Start skill animation
             this.isUsingSkill = true;
             this.skillAnimationTimer = 0;
-
-            // Stop movement during skill
-            this.haltMovement();
         }
     }
 
@@ -891,8 +886,6 @@ export class Player extends CharacterEntity {
 
         this.skillAnimationTimer += dt;
 
-        // Keep player stopped during animation
-        this.haltMovement();
         this.syncPositionAndRotation();
         return true;
     }
@@ -925,19 +918,15 @@ export class Player extends CharacterEntity {
         this.syncBodyRotation();
     }
 
-    /**
-     * Stop movement (used when attacking, during skills, etc.)
-     */
-    private haltMovement(): void {
-        // Reset vertical velocity when halting
-        this.verticalVelocity = 0;
-    }
-
     move(position: THREE.Vector3): void {
         console.log('Moving player to', position);
-        const newPos = new THREE.Vector3(position.x, position.y - this.HALF_HEIGHT, position.z);
+        // Use setNextKinematicTranslation for kinematic bodies (per Rapier docs)
+        this.body.setNextKinematicTranslation({
+            x: position.x,
+            y: position.y - this.HALF_HEIGHT,
+            z: position.z
+        });
         this.verticalVelocity = 0;
-        setBodyPosition(this.body, newPos);
         this.syncPositionAndRotation();
     }
 
@@ -1089,9 +1078,12 @@ export class Player extends CharacterEntity {
         this.tp = this.maxTp;
         this.invulnerableTimer = 2.0; // 2 seconds invulnerability after respawn
 
-        // Reset position and vertical velocity
-        const newPos = new THREE.Vector3(position.x, position.y, position.z);
-        setBodyPosition(this.body, newPos);
+        // Use setNextKinematicTranslation for kinematic bodies (per Rapier docs)
+        this.body.setNextKinematicTranslation({
+            x: position.x,
+            y: position.y,
+            z: position.z
+        });
         this.verticalVelocity = 0;
 
         console.log('Player respawned at', position);

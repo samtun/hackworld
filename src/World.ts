@@ -251,7 +251,7 @@ export class World {
                 this.currentStage.clear();
                 this.currentStage = undefined;
             }
-            this.itemDropManager.clear(this.scene, this.physicsWorld as any);
+            this.itemDropManager.clear(this.scene, this.physicsWorld);
 
             // Reset stage completion notification flag
             this.hasNotifiedStageCompletion = false;
@@ -333,9 +333,9 @@ export class World {
                     // The ItemDropManager will select one strategy based on probabilities
                     // and each strategy will check enemy.itemDropChance internally
                     // Note: Casting physicsWorld to any for compatibility with unmigrated ItemDropManager
-                    if (!(this.itemDropManager.tryDropItem(this.scene, this.physicsWorld as any, e, player))) {
+                    if (!(this.itemDropManager.tryDropItem(this.scene, this.physicsWorld, e, player))) {
                         // Try to drop X-Data separately (independent of item drops) if no item was dropped
-                        this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld as any, e, player);
+                        this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, e, player);
                     }
                 };
             }
@@ -429,7 +429,7 @@ export class World {
      * Pick up a weapon drop
      */
     pickupWeaponDrop(drop: WeaponDrop, player: Player): void {
-        this.itemDropManager.pickup('weapon', this.scene, this.physicsWorld as any, drop, player);
+        this.itemDropManager.pickup('weapon', this.scene, this.physicsWorld, drop, player);
     }
 
     /**
@@ -443,7 +443,7 @@ export class World {
      * Pick up a chip drop
      */
     pickupChipDrop(drop: ChipDrop, player: Player): void {
-        this.itemDropManager.pickup('chip', this.scene, this.physicsWorld as any, drop, player);
+        this.itemDropManager.pickup('chip', this.scene, this.physicsWorld, drop, player);
     }
 
     /**
@@ -457,7 +457,7 @@ export class World {
      * Pick up a core drop
      */
     pickupCoreDrop(drop: CoreDrop, player: Player): void {
-        this.itemDropManager.pickup('core', this.scene, this.physicsWorld as any, drop, player);
+        this.itemDropManager.pickup('core', this.scene, this.physicsWorld, drop, player);
     }
 
     /**
@@ -471,7 +471,7 @@ export class World {
      * Pick up a booster pack drop
      */
     pickupBoosterPackDrop(drop: BoosterPackDrop, player: Player): void {
-        this.itemDropManager.pickup('boosterPack', this.scene, this.physicsWorld as any, drop, player);
+        this.itemDropManager.pickup('boosterPack', this.scene, this.physicsWorld, drop, player);
     }
 
     /**
@@ -485,6 +485,6 @@ export class World {
      * Pick up an X-Data drop
      */
     pickupXDataDrop(drop: XDataDrop, player: Player): void {
-        this.itemDropManager.pickup('xData', this.scene, this.physicsWorld as any, drop, player);
+        this.itemDropManager.pickup('xData', this.scene, this.physicsWorld, drop, player);
     }
 }

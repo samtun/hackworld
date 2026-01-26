@@ -116,7 +116,6 @@ export abstract class CharacterEntity extends BaseMesh {
         const pos = this.body.translation();
         this.mesh.position.set(pos.x, pos.y - this.bodyHalfExtentY, pos.z);
     }
-
     
     /**
      * Sync the physics body rotation with the mesh quaternion

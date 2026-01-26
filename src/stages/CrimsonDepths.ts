@@ -11,7 +11,7 @@ export class CrimsonDepths extends BaseStage {
     name = CrimsonDepths.name;
     description = CrimsonDepths.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
-    spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 1, 0);
+    spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 10, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
@@ -35,6 +35,14 @@ export class CrimsonDepths extends BaseStage {
         this.clear();
         await this.loadEnvironmentMap();
         this.createFloorCollider();
+        const geometry = new THREE.PlaneGeometry(100, 100);
+        const material = new THREE.MeshBasicMaterial({
+            color: 0x666666,
+            side: THREE.DoubleSide
+        });
+        geometry.rotateX(-Math.PI / 2);
+        const plane = new THREE.Mesh(geometry, material);
+        this.scene.add(plane);
 
         // Teleporter back to Lobby
         this.createTeleporter(new THREE.Vector3(-10, 0, -10), Lobby.getMetadata().id);
@@ -44,12 +52,12 @@ export class CrimsonDepths extends BaseStage {
         this.createBox(1, 4, 1, new THREE.Vector3(-5, 2, 5));
 
         // Spawn Enemies
-        this.spawnEnemy(new THREE.Vector3(5, 1, -5));
-        this.spawnEnemy(new THREE.Vector3(-5, 1, -5));
-        this.spawnEnemy(new THREE.Vector3(8, 1, 8));
+        this.spawnEnemy(new THREE.Vector3(5, 2, -5));
+        this.spawnEnemy(new THREE.Vector3(-5, 2, -5));
+        this.spawnEnemy(new THREE.Vector3(8, 2, 8));
 
         // Spawn Large Enemies
-        this.spawnLargeEnemy(new THREE.Vector3(0, 1, 10));
-        this.spawnLargeEnemy(new THREE.Vector3(10, 1, 0));
+        this.spawnLargeEnemy(new THREE.Vector3(0, 3, 10));
+        this.spawnLargeEnemy(new THREE.Vector3(10, 3, 0));
     }
 }
