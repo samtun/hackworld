@@ -114,7 +114,8 @@ export abstract class BaseStage {
         this.meshes = [];
 
         // Clean up all NPCs (including teleporter)
-        for (const _npc of this.npcs) {
+        for (const npc of this.npcs) {
+            npc.cleanup(this.scene, this.physicsWorld);
         }
         this.npcs.clear();
 
