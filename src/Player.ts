@@ -11,7 +11,7 @@ import { WeaponItem } from './items/weapons/WeaponItem';
 import { CoreItem } from './items/cores/CoreItem';
 import { ChipItem } from './items/chips/ChipItem';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
-import { BaseMesh } from './BaseMesh';
+import { CharacterEntity } from './CharacterEntity';
 import { StatType } from './StatType';
 import { Skill } from './skills/Skill';
 import { LaserBeamSkill } from './skills/LaserBeamSkill';
@@ -32,21 +32,14 @@ enum ActionType {
     PowerUp = "PowerUp"
 };
 
-export class Player extends BaseMesh {
+export class Player extends CharacterEntity {
     id: string;
-    body: RAPIER.RigidBody;
-    characterController: RAPIER.KinematicCharacterController;
-    collider: RAPIER.Collider;
     input: InputManager;
     weapon: Weapon;
     currentWeaponType: WeaponType = WeaponType.SWORD;
     innerMesh?: THREE.Mesh;
     position: THREE.Vector3;
     private rightHandBone?: THREE.Bone;
-
-    // Scene and World references for items
-    public scene: THREE.Scene;
-    public world: RAPIER.World;
 
     private weaponRepository: WeaponRepository;
 
@@ -176,12 +169,8 @@ export class Player extends BaseMesh {
     private shockwavePending: boolean = false;
 
     // Ground contact tracking
-    private isGrounded: boolean = false;
     private stunTimer: number = 0;
     private jumpCooldownTimer: number = 0;
-    
-    // Vertical velocity for jumping (tracked separately from CharacterController)
-    private verticalVelocity: number = 0;
 
     // Knockback velocity (applied during stun)
     private knockbackVelocity: THREE.Vector3 = new THREE.Vector3();
@@ -215,9 +204,18 @@ export class Player extends BaseMesh {
     private skillAnimationTimer: number = 0;
 
     constructor(scene: THREE.Scene, world: RAPIER.World, position: THREE.Vector3, input: InputManager) {
-        super('models/main_character.glb');
-        this.scene = scene;
-        this.world = world;
+        // Call CharacterEntity constructor with capsule dimensions and collider offset
+        super(
+            'models/main_character.glb',
+            scene,
+            world,
+            position,
+            0.45, // HALF_HEIGHT
+            0.45, // RADIUS
+            0.1,  // controller offset
+            new THREE.Vector3(0, 0.45, 0) // collider offset (half height up)
+        );
+        
         this.id = crypto.randomUUID();
         this.input = input;
         this.weaponRepository = WeaponRepository.Instance;
@@ -268,35 +266,6 @@ export class Player extends BaseMesh {
         this.currentWeaponType = swordItem.weaponType;
 
         this.mesh.position.set(position.x, position.y, position.z);
-        scene.add(this.mesh);
-
-        // Physics Body - Rapier Kinematic Body with CharacterController
-        const spawnPos = new THREE.Vector3(position.x, position.y, position.z);
-
-        // Create kinematic body
-        this.body = RapierPhysics.Instance.createKinematicBody(spawnPos);
-
-        // Add capsule collider
-        this.collider = RapierPhysics.Instance.addCapsuleCollider(
-            this.body,
-            this.HALF_HEIGHT,
-            this.RADIUS,
-            new THREE.Vector3(0, this.HALF_HEIGHT, 0),
-            0.3, // friction
-            0.0  // restitution
-        );
-
-        // Store entity reference on collider for collision detection
-        (this.collider as any).entity = this;
-
-        // Create character controller
-        this.characterController = RapierPhysics.Instance.createCharacterController(0.1);
-        this.characterController.enableSnapToGround(0.7);
-        this.characterController.enableAutostep(0.2, 0.1, false);
-        // Don’t allow climbing slopes larger than 45 degrees.
-        this.characterController.setMaxSlopeClimbAngle(45 * Math.PI / 180);
-        // Automatically slide down on slopes smaller than 30 degrees.
-        this.characterController.setMinSlopeSlideAngle(30 * Math.PI / 180);
 
         // Initialize skills
         this.skills = [
@@ -932,7 +901,7 @@ export class Player extends BaseMesh {
      * Apply movement via CharacterController with collision detection
      * @param movement - The desired movement vector for this frame
      */
-    private applyMovement(movement: THREE.Vector3): void {
+    protected override applyMovement(movement: THREE.Vector3): void {
         this.characterController.computeColliderMovement(
             this.collider,
             movement

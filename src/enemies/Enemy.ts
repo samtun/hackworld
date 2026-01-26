@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { RapierPhysics, setBodyPosition, setLinearVelocity, getLinearVelocity } from '../physics/RapierPhysics';
+import { RapierPhysics } from '../physics/RapierPhysics';
 import { Player } from '../Player';
-import { BaseMesh } from '../BaseMesh';
+import { CharacterEntity } from '../CharacterEntity';
 import { PlayerRegistry } from '../PlayerRegistry';
 import { AssetManager } from '../AssetManager';
 
@@ -14,10 +14,7 @@ enum EnemyActionType {
     TakeHit = 'TakeHit'
 }
 
-export class Enemy extends BaseMesh {
-    body: RAPIER.RigidBody;
-    characterController: RAPIER.KinematicCharacterController;
-    collider: RAPIER.Collider;
+export class Enemy extends CharacterEntity {
     hp: number = 60;
     maxHp: number = 60;
     speed: number = 3;
@@ -34,6 +31,10 @@ export class Enemy extends BaseMesh {
     expAmount: number = 10; // EXP granted on defeat
     damage: number = 10;
 
+    // Knockback velocity (applied during stun)
+    private knockbackVelocity: THREE.Vector3 = new THREE.Vector3();
+    private readonly KNOCKBACK_FRICTION: number = 0.85;
+
     // Base position tracking for return behavior
     basePosition: THREE.Vector3;
     returnToBaseTimer: number = 0;
@@ -46,7 +47,6 @@ export class Enemy extends BaseMesh {
     isAttacking: boolean = false;
     attackAnimTimer: number = 0;
     techDropRateFactor: number = 1.0;
-    bodyHalfExtentY: number;
 
     // Animation system
     protected mixer!: THREE.AnimationMixer;
@@ -64,16 +64,12 @@ export class Enemy extends BaseMesh {
     protected attackHitboxOffset: number = 1.0;
     private hasDealtDamageThisAttack: boolean = false;
 
-    // Death fade
     protected deathFadeDuration: number = 0.5;
     protected deathFadeTimer: number = 0;
     protected isDeathFading: boolean = false;
-    private deathYPosition: number = 0;
 
     protected materials: THREE.Material[] = [];
     private player: Player;
-    protected scene: THREE.Scene;
-    protected world: RAPIER.World;
 
     // Callback for spawning damage numbers
     onDamageTaken?: (position: THREE.Vector3, amount: number) => void;
@@ -82,16 +78,15 @@ export class Enemy extends BaseMesh {
     onDeathFadeStart?: (enemy: Enemy) => void;
 
     constructor(scene: THREE.Scene, world: RAPIER.World, position: THREE.Vector3) {
-        super('models/monster.glb');
-
-        this.scene = scene;
-        this.world = world;
+        // Call CharacterEntity constructor with capsule dimensions
+        const capsuleHalfHeight = 0.475; // Total height = 0.95 + 2*radius = 2.15m
+        const capsuleRadius = 0.6;
+        super('models/monster.glb', scene, world, position, capsuleHalfHeight, capsuleRadius);
 
         // Store base position for return behavior
         this.basePosition = position.clone();
 
-        // Visual
-        scene.add(this.mesh);
+        // Clone materials for individual enemy instances
         this.mesh.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 child.material = child.material.clone();
@@ -101,31 +96,6 @@ export class Enemy extends BaseMesh {
 
         // Setup animations
         this.setupAnimations();
-
-        // Physics - Rapier Kinematic Body with CharacterController
-        const spawnPos = new THREE.Vector3(position.x, position.y, position.z);
-
-        // Create kinematic body
-        this.body = RapierPhysics.Instance.createKinematicBody(spawnPos);
-
-        // Add capsule collider (height ~1.75, radius 0.6)
-        const capsuleHalfHeight = 0.475; // Total height = 0.95 + 2*radius = 2.15m
-        const capsuleRadius = 0.6;
-        this.bodyHalfExtentY = capsuleHalfHeight + capsuleRadius;
-        this.collider = RapierPhysics.Instance.addCapsuleCollider(
-            this.body,
-            capsuleHalfHeight,
-            capsuleRadius,
-            undefined,
-            0.3, // friction
-            0.0  // restitution
-        );
-
-        // Store entity reference on collider for collision detection
-        (this.collider as any).entity = this;
-
-        // Create character controller
-        this.characterController = RapierPhysics.Instance.createCharacterController();
 
         this.player = PlayerRegistry.Instance.activePlayers[0];
     }
@@ -237,20 +207,20 @@ export class Enemy extends BaseMesh {
     }
 
     protected createAttackHitbox() {
-        // Create kinematic body for attack hitbox
+        // Create static body for attack hitbox (sensor only - won't block movement)
         const hitboxPos = this.body.translation();
-        this.attackHitboxBody = RapierPhysics.Instance.createKinematicBody(
+        this.attackHitboxBody = RapierPhysics.Instance.createStaticBody(
             new THREE.Vector3(hitboxPos.x, hitboxPos.y, hitboxPos.z)
         );
 
-        // Add box collider
-        this.attackHitboxCollider = RapierPhysics.Instance.addBoxCollider(
-            this.attackHitboxBody,
-            new THREE.Vector3(this.attackHitboxSize.x, this.attackHitboxSize.y, this.attackHitboxSize.z)
-        );
+        // Create sensor collider directly - use sensor from the start to avoid blocking
+        const colliderDesc = RAPIER.ColliderDesc.cuboid(
+            this.attackHitboxSize.x,
+            this.attackHitboxSize.y,
+            this.attackHitboxSize.z
+        ).setSensor(true);
 
-        // Set sensor to not affect physics (collision detection only)
-        this.attackHitboxCollider.setSensor(true);
+        this.attackHitboxCollider = this.world.createCollider(colliderDesc, this.attackHitboxBody);
 
         (this.attackHitboxBody as any).isEnemyAttackHitbox = true;
         (this.attackHitboxBody as any).enemy = this;
@@ -264,26 +234,30 @@ export class Enemy extends BaseMesh {
     }
 
     protected deactivateAttackHitbox() {
-        if (this.attackHitboxBody && this.attackHitboxActive) {
-            // Just mark as inactive, body stays in world
-            this.attackHitboxActive = false;
+        if (this.attackHitboxBody) {
+            // Remove the hitbox body from the physics world
+            RapierPhysics.Instance.removeBody(this.attackHitboxBody);
+            this.attackHitboxBody = null;
+            this.attackHitboxCollider = null;
         }
+        this.attackHitboxActive = false;
     }
-
-    protected updateAttackHitboxPosition() {
+ 
+    protected updateAttackHitbox() {
         if (!this.attackHitboxBody || !this.attackHitboxActive) return;
 
         // Position the hitbox in front of the enemy
-        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+        const forward = new THREE.Vector3(0, 0, 1.4).applyQuaternion(this.mesh.quaternion);
         const bodyPos = this.body.translation();
-        setBodyPosition(
-            this.attackHitboxBody,
-            new THREE.Vector3(
-                bodyPos.x + forward.x * this.attackHitboxOffset,
-                bodyPos.y,
-                bodyPos.z + forward.z * this.attackHitboxOffset
-            )
-        );
+        
+        // Use setTranslation for static bodies
+        this.attackHitboxBody.setTranslation({
+            x: bodyPos.x + forward.x * this.attackHitboxOffset,
+            y: bodyPos.y,
+            z: bodyPos.z + forward.z * this.attackHitboxOffset
+        }, true);
+
+        this.attackHitboxBody.setRotation(this.body.rotation(), true);
     }
 
     protected checkAttackHitboxCollision() {
@@ -313,32 +287,9 @@ export class Enemy extends BaseMesh {
 
         if (this.isDead) return;
 
-        if (this.isDying || this.isDead || this.isDeathFading) {
-            // Keep at death height to prevent falling through floor
-            const pos = this.body.translation();
-            setBodyPosition(this.body, new THREE.Vector3(pos.x, this.deathYPosition, pos.z));
-        }
-
         // Handle death fade after death animation completes
         if (this.isDeathFading) {
-            this.deathFadeTimer += dt;
-            const progress = this.deathFadeTimer / this.deathFadeDuration;
-
-            if (progress >= 1) {
-                this.isDead = true;
-            } else {
-                // Fade out materials
-                this.materials.forEach((mat) => {
-                    if (mat instanceof THREE.MeshStandardMaterial) {
-                        mat.transparent = true;
-                        mat.opacity = 1 - progress;
-                    }
-                });
-            }
-
-            // Sync position during fade
-            const fadePos = this.body.translation();
-            this.mesh.position.set(fadePos.x, fadePos.y - this.bodyHalfExtentY, fadePos.z);
+            this.updateDeathFade(dt);
             return;
         }
 
@@ -352,42 +303,36 @@ export class Enemy extends BaseMesh {
 
         if (this.isDying) {
             this.deathTimer += dt;
-
-            // Friction for dying body
-            const dyingVel = getLinearVelocity(this.body);
-            dyingVel.x *= 0.9;
-            dyingVel.z *= 0.9;
-            setLinearVelocity(this.body, dyingVel);
-
-            // Sync position while playing death animation
-            const dyingPos = this.body.translation();
-            this.mesh.position.set(dyingPos.x, dyingPos.y - this.bodyHalfExtentY, dyingPos.z);
+            // Apply knockback with friction during death
+            this.knockbackVelocity.multiplyScalar(this.KNOCKBACK_FRICTION);
+            this.applyMovementWithGravity(new THREE.Vector3(
+                this.knockbackVelocity.x * dt,
+                0,
+                this.knockbackVelocity.z * dt
+            ), dt);
+            this.syncMeshWithBody();
             return;
         }
 
-        // Sync mesh with body
-        const bodyPos = this.body.translation();
-        this.mesh.position.set(bodyPos.x, bodyPos.y - this.bodyHalfExtentY, bodyPos.z);
-
-        // Stun Logic
+        // Stun Logic - apply knockback with friction
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
-            // Apply friction while stunned so they don't slide forever
-            const stunVel = getLinearVelocity(this.body);
-            stunVel.x *= 0.9;
-            stunVel.z *= 0.9;
-            setLinearVelocity(this.body, stunVel);
+            this.knockbackVelocity.multiplyScalar(this.KNOCKBACK_FRICTION);
+            this.applyMovementWithGravity(new THREE.Vector3(
+                this.knockbackVelocity.x * dt,
+                0,
+                this.knockbackVelocity.z * dt
+            ), dt);
+            this.syncMeshWithBody();
             this.updateAnimations(false);
-            return; // Skip AI movement and attack
+            return;
         }
 
         // AI Logic
         if (this.player.isDead) {
-            // Idle friction
-            const idleVel = getLinearVelocity(this.body);
-            idleVel.x *= 0.9;
-            idleVel.z *= 0.9;
-            setLinearVelocity(this.body, idleVel);
+            // Just apply gravity, no horizontal movement
+            this.applyMovementWithGravity(new THREE.Vector3(0, 0, 0), dt);
+            this.syncMeshWithBody();
             this.updateAnimations(false);
             return;
         }
@@ -418,123 +363,24 @@ export class Enemy extends BaseMesh {
 
                 const dir = new THREE.Vector3(
                     playerPos.x - myPos.x,
-                    0, // Don't fly
+                    0,
                     playerPos.z - myPos.z
                 );
                 if (dir.length() > 0) {
                     dir.normalize();
-
-                    // Get current velocity
-                    const currentVel = getLinearVelocity(this.body);
-
-                    // Compute desired velocity
-                    const desiredVelocity = new THREE.Vector3(
-                        dir.x * this.speed,
-                        currentVel.y, // Keep vertical velocity
-                        dir.z * this.speed
-                    );
-
-                    // Use character controller to compute movement
-                    this.characterController.computeColliderMovement(
-                        this.collider,
-                        desiredVelocity
-                    );
-
-                    // Get computed movement and apply to body
-                    const correctedMovement = this.characterController.computedMovement();
-                    const newPos = new THREE.Vector3(
-                        myPos.x + correctedMovement.x * dt,
-                        myPos.y + correctedMovement.y * dt,
-                        myPos.z + correctedMovement.z * dt
-                    );
-                    setBodyPosition(this.body, newPos);
-
-                    isMoving = true;
-
-                    // Rotate to face player
-                    const angle = Math.atan2(dir.x, dir.z);
-                    const targetQuaternion = new THREE.Quaternion();
-                    targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
-                    this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
+                    isMoving = this.moveInDirection(dir, dt);
                 }
             } else {
                 // Player out of range - return to base after delay
-                if (!this.isReturningToBase) {
-                    // Start the wait timer
-                    this.returnToBaseTimer += dt;
-
-                    // After wait time, start returning
-                    if (this.returnToBaseTimer >= this.returnWaitTime) {
-                        this.isReturningToBase = true;
-                    } else {
-                        // Still waiting - apply idle friction
-                        const waitVel = getLinearVelocity(this.body);
-                        waitVel.x *= 0.9;
-                        waitVel.z *= 0.9;
-                        setLinearVelocity(this.body, waitVel);
-                    }
-                } else {
-                    // Return to base position
-                    if (distToBase > this.baseArrivalThreshold) {
-                        const dir = new THREE.Vector3(
-                            this.basePosition.x - myPos.x,
-                            0,
-                            this.basePosition.z - myPos.z
-                        );
-                        if (dir.length() > 0) {
-                            dir.normalize();
-
-                            // Get current velocity
-                            const currentVel = getLinearVelocity(this.body);
-
-                            // Compute desired velocity
-                            const desiredVelocity = new THREE.Vector3(
-                                dir.x * this.speed,
-                                currentVel.y, // Keep vertical velocity
-                                dir.z * this.speed
-                            );
-
-                            // Use character controller to compute movement
-                            this.characterController.computeColliderMovement(
-                                this.collider,
-                                desiredVelocity
-                            );
-
-                            // Get computed movement and apply to body
-                            const correctedMovement = this.characterController.computedMovement();
-                            const newPos = new THREE.Vector3(
-                                myPos.x + correctedMovement.x * dt,
-                                myPos.y + correctedMovement.y * dt,
-                                myPos.z + correctedMovement.z * dt
-                            );
-                            setBodyPosition(this.body, newPos);
-
-                            isMoving = true;
-
-                            // Rotate to face base position
-                            const angle = Math.atan2(dir.x, dir.z);
-                            const targetQuaternion = new THREE.Quaternion();
-                            targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
-                            this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
-                        }
-                    } else {
-                        // Reached base - stop and reset
-                        const baseVel = getLinearVelocity(this.body);
-                        baseVel.x *= 0.9;
-                        baseVel.z *= 0.9;
-                        setLinearVelocity(this.body, baseVel);
-                        this.isReturningToBase = false;
-                        this.returnToBaseTimer = 0;
-                    }
-                }
+                isMoving = this.handleReturnToBase(distToBase, dt);
             }
         } else {
-            // Stop movement while attacking
-            const attackVel = getLinearVelocity(this.body);
-            attackVel.x *= 0.9;
-            attackVel.z *= 0.9;
-            setLinearVelocity(this.body, attackVel);
+            // No movement while attacking, but still apply gravity
+            this.applyMovementWithGravity(new THREE.Vector3(0, 0, 0), dt);
         }
+
+        // Sync mesh position
+        this.syncMeshWithBody();
 
         // Attack Cooldown
         if (this.attackTimer > 0) {
@@ -549,33 +395,137 @@ export class Enemy extends BaseMesh {
 
         // Handle attack hitbox activation and collision
         if (this.isAttacking) {
-            this.attackAnimTimer += dt;
-
-            // Fallback: end attack after max duration in case animation event doesn't fire
-            if (this.attackAnimTimer >= this.attackMaxDuration) {
-                this.isAttacking = false;
-                this.deactivateAttackHitbox();
-            } else {
-                // Activate hitbox after delay
-                if (this.attackAnimTimer >= this.attackHitboxDelay && !this.attackHitboxActive) {
-                    this.activateAttackHitbox();
-                }
-
-                // Deactivate hitbox after its active duration
-                if (this.attackHitboxActive && this.attackAnimTimer >= this.attackHitboxDelay + this.attackHitboxDuration) {
-                    this.deactivateAttackHitbox();
-                }
-
-                // Update hitbox position and check collision while active
-                if (this.attackHitboxActive) {
-                    this.updateAttackHitboxPosition();
-                    this.checkAttackHitboxCollision();
-                }
-            }
+            this.updateAttackLogic(dt);
         }
 
         // Update animations
         this.updateAnimations(isMoving);
+    }
+
+    /**
+     * Move in a direction at the enemy's speed
+     */
+    private moveInDirection(dir: THREE.Vector3, dt: number): boolean {
+        // Calculate movement for this frame
+        const movement = new THREE.Vector3(
+            dir.x * this.speed * dt,
+            0,
+            dir.z * this.speed * dt
+        );
+
+        // Apply movement with gravity
+        this.applyMovementWithGravity(movement, dt);
+
+        // Rotate to face direction
+        const angle = Math.atan2(dir.x, dir.z);
+        const targetQuaternion = new THREE.Quaternion();
+        targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+        this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
+
+        // Sync body rotation with mesh rotation
+        this.syncBodyRotation();
+
+        return true;
+    }
+
+    /**
+     * Sync the physics body rotation with the mesh quaternion
+     */
+    private syncBodyRotation(): void {
+        const q = this.mesh.quaternion;
+        this.body.setRotation({ x: q.x, y: q.y, z: q.z, w: q.w }, true);
+    }
+
+    /**
+     * Handle return to base behavior when player is out of aggro range
+     */
+    private handleReturnToBase(distToBase: number, dt: number): boolean {
+        if (!this.isReturningToBase) {
+            // Start the wait timer
+            this.returnToBaseTimer += dt;
+
+            // After wait time, start returning
+            if (this.returnToBaseTimer >= this.returnWaitTime) {
+                this.isReturningToBase = true;
+            } else {
+                // Still waiting - apply gravity only
+                this.applyMovementWithGravity(new THREE.Vector3(0, 0, 0), dt);
+                return false;
+            }
+        }
+
+        // Return to base position
+        if (distToBase > this.baseArrivalThreshold) {
+            const myPos = this.body.translation();
+            const dir = new THREE.Vector3(
+                this.basePosition.x - myPos.x,
+                0,
+                this.basePosition.z - myPos.z
+            );
+            if (dir.length() > 0) {
+                dir.normalize();
+                return this.moveInDirection(dir, dt);
+            }
+        } else {
+            // Reached base - stop and reset
+            this.applyMovementWithGravity(new THREE.Vector3(0, 0, 0), dt);
+            this.isReturningToBase = false;
+            this.returnToBaseTimer = 0;
+        }
+
+        return false;
+    }
+
+    /**
+     * Update attack hitbox logic
+     */
+    private updateAttackLogic(dt: number): void {
+        this.attackAnimTimer += dt;
+
+        // Fallback: end attack after max duration in case animation event doesn't fire
+        if (this.attackAnimTimer >= this.attackMaxDuration) {
+            this.isAttacking = false;
+            this.deactivateAttackHitbox();
+        } else {
+            // Activate hitbox after delay
+            if (this.attackAnimTimer >= this.attackHitboxDelay && !this.attackHitboxActive) {
+                this.activateAttackHitbox();
+            }
+
+            // Deactivate hitbox after its active duration
+            if (this.attackHitboxActive && this.attackAnimTimer >= this.attackHitboxDelay + this.attackHitboxDuration) {
+                this.deactivateAttackHitbox();
+            }
+
+            // Update hitbox position and check collision while active
+            if (this.attackHitboxActive) {
+                this.updateAttackHitbox();
+                this.checkAttackHitboxCollision();
+            }
+        }
+    }
+
+    /**
+     * Update death fade effect
+     */
+    private updateDeathFade(dt: number): void {
+        this.deathFadeTimer += dt;
+        const progress = this.deathFadeTimer / this.deathFadeDuration;
+
+        if (progress >= 1) {
+            this.isDead = true;
+        } else {
+            // Fade out materials
+            this.materials.forEach((mat) => {
+                if (mat instanceof THREE.MeshStandardMaterial) {
+                    mat.transparent = true;
+                    mat.opacity = 1 - progress;
+                }
+            });
+        }
+
+        // Sync position during fade (no movement)
+        this.syncMeshWithBody();
     }
 
     // Set flash color for damage effect
@@ -630,16 +580,17 @@ export class Enemy extends BaseMesh {
             const myPos = this.body.translation();
             const knockbackDir = new THREE.Vector3(
                 myPos.x - sourcePos.x,
-                0, // Keep it horizontal
+                0,
                 myPos.z - sourcePos.z
             );
             if (knockbackDir.length() > 0) {
                 knockbackDir.normalize();
                 const force = 15;
-                const vel = getLinearVelocity(this.body);
-                vel.x = knockbackDir.x * force;
-                vel.z = knockbackDir.z * force;
-                setLinearVelocity(this.body, vel);
+                this.knockbackVelocity.set(
+                    knockbackDir.x * force,
+                    0,
+                    knockbackDir.z * force
+                );
             }
         }
 
@@ -667,8 +618,6 @@ export class Enemy extends BaseMesh {
     die() {
         this.isDying = true;
         this.deathTimer = 0;
-        const deathPos = this.body.translation();
-        this.deathYPosition = deathPos.y;
 
         // Cancel any ongoing attack
         if (this.isAttacking) {
@@ -695,19 +644,10 @@ export class Enemy extends BaseMesh {
      * Clean up enemy resources and remove from scene/world
      */
     cleanup(): void {
+        // Remove attack hitbox if still active
         this.deactivateAttackHitbox();
 
-        // Remove attack hitbox (removeBody now automatically removes all colliders)
-        if (this.attackHitboxBody) {
-            RapierPhysics.Instance.removeBody(this.attackHitboxBody);
-            this.attackHitboxBody = null;
-            this.attackHitboxCollider = null;
-        }
-
-        // Remove character controller and body
-        this.scene.remove(this.mesh);
-        RapierPhysics.Instance.removeBody(this.body);
-
-        this.disposeMesh();
+        // Call parent cleanup (removes body, mesh, disposes resources)
+        super.cleanup();
     }
 }
