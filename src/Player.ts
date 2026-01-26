@@ -183,6 +183,10 @@ export class Player extends BaseMesh {
     // Vertical velocity for jumping (tracked separately from CharacterController)
     private verticalVelocity: number = 0;
 
+    // Knockback velocity (applied during stun)
+    private knockbackVelocity: THREE.Vector3 = new THREE.Vector3();
+    private readonly KNOCKBACK_FORCE: number = 8;
+
     // Death state
     isDead: boolean = false;
     private deathCallback?: () => void;
@@ -686,26 +690,13 @@ export class Player extends BaseMesh {
         this.fadeToAction(ActionType.Dash, 0.0);
         this.dashTimer += dt;
 
-        // Compute dash movement for this frame
+        // Compute and apply dash movement for this frame
         const dashMovement = new THREE.Vector3(
             this.dashDirection.x * this.DASH_SPEED * dt,
             0,
             this.dashDirection.z * this.DASH_SPEED * dt
         );
-        
-        // Use CharacterController to handle collisions during dash
-        this.characterController.computeColliderMovement(
-            this.collider,
-            dashMovement
-        );
-        
-        // Apply corrected movement
-        const correctedMovement = this.characterController.computedMovement();
-        let newPos = this.body.translation();
-        newPos.x += correctedMovement.x;
-        newPos.y += correctedMovement.y;
-        newPos.z += correctedMovement.z;
-        this.body.setNextKinematicTranslation(newPos);
+        this.applyMovement(dashMovement);
 
         // Check for enemy collisions during dash
         const rapierWorld = RapierPhysics.Instance.world;
@@ -784,8 +775,21 @@ export class Player extends BaseMesh {
 
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
-            // Apply friction during stun - just reduce vertical velocity
-            this.verticalVelocity *= 0.9;
+            
+            // Apply gravity
+            this.verticalVelocity -= 32 * dt;
+            
+            // Build and apply knockback movement vector
+            const knockbackMovement = new THREE.Vector3(
+                this.knockbackVelocity.x * dt,
+                this.verticalVelocity * dt,
+                this.knockbackVelocity.z * dt
+            );
+            this.applyMovement(knockbackMovement);
+            
+            // Apply friction to knockback velocity
+            this.knockbackVelocity.multiplyScalar(0.85);
+            
             return;
         }
 
@@ -819,29 +823,13 @@ export class Player extends BaseMesh {
                 this.jumpCooldownTimer = 0.3;
             }
             
-            // Build desired movement vector (velocity * dt for this frame)
+            // Build and apply desired movement vector
             const desiredMovement = new THREE.Vector3(
                 moveX * effectiveSpeed * dt,
                 this.verticalVelocity * dt,
                 moveZ * effectiveSpeed * dt
             );
-            
-            // Let CharacterController compute collision-aware movement
-            this.characterController.computeColliderMovement(
-                this.collider,
-                desiredMovement
-            );
-            
-            // Apply the corrected movement
-            const correctedMovement = this.characterController.computedMovement();
-            let newPos = this.body.translation();
-            newPos.x += correctedMovement.x;
-            newPos.y += correctedMovement.y;
-            newPos.z += correctedMovement.z;
-            this.body.setNextKinematicTranslation(newPos);
-            
-            // Update grounded state AFTER movement computation
-            this.isGrounded = this.characterController.computedGrounded();
+            this.applyMovement(desiredMovement);
         }
     }
 
@@ -938,6 +926,26 @@ export class Player extends BaseMesh {
         this.haltMovement();
         this.syncPosition();
         return true;
+    }
+
+    /**
+     * Apply movement via CharacterController with collision detection
+     * @param movement - The desired movement vector for this frame
+     */
+    private applyMovement(movement: THREE.Vector3): void {
+        this.characterController.computeColliderMovement(
+            this.collider,
+            movement
+        );
+        
+        const correctedMovement = this.characterController.computedMovement();
+        let newPos = this.body.translation();
+        newPos.x += correctedMovement.x;
+        newPos.y += correctedMovement.y;
+        newPos.z += correctedMovement.z;
+        this.body.setNextKinematicTranslation(newPos);
+        
+        this.isGrounded = this.characterController.computedGrounded();
     }
 
     syncPosition() {
@@ -1062,7 +1070,13 @@ export class Player extends BaseMesh {
 
             if (knockDir.length() > 0) {
                 knockDir.normalize();
-                // Apply knockback via vertical velocity (will be applied in next movement frame)
+                // Apply knockback force in the direction away from damage source
+                this.knockbackVelocity.set(
+                    knockDir.x * this.KNOCKBACK_FORCE,
+                    0,
+                    knockDir.z * this.KNOCKBACK_FORCE
+                );
+                // Small upward impulse
                 this.verticalVelocity = 5;
             }
         }
