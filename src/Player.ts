@@ -150,6 +150,9 @@ export class Player extends CharacterEntity {
     private dashDirection: THREE.Vector3 = new THREE.Vector3();
     private chargeParticles: THREE.Mesh[] = [];
     private dashHitEnemies: Set<Enemy> = new Set();
+    // Sensor collider used during dash to reliably detect enemies
+    private dashSensorCollider?: RAPIER.Collider;
+    private readonly DASH_SENSOR_RADIUS: number = 1.4;
     private attackHitEnemies: Set<Enemy> = new Set();
     private attackLockedUntilRelease: boolean = false;
 
@@ -654,7 +657,7 @@ export class Player extends CharacterEntity {
     }
 
     private handleDash(dt: number): boolean {
-        if (!this.isDashing) return false;
+        if (!this.isDashing || !this.dashSensorCollider || !this.dashSensorCollider.shape) return false;
         this.fadeToAction(ActionType.Dash, 0.0);
         this.dashTimer += dt;
 
@@ -666,32 +669,34 @@ export class Player extends CharacterEntity {
         );
         this.applyMovement(dashMovement);
 
-        // Check for enemy collisions during dash
+        // Check for enemy collisions during dash using the dash sensor collider (preferred)
         const rapierWorld = RapierPhysics.Instance.world;
         const playerPos = this.body.translation();
 
-        rapierWorld.forEachCollider((collider: RAPIER.Collider) => {
+        // Use intersectionsWithShape to query overlapping colliders with the sensor's shape
+        rapierWorld.intersectionsWithShape(playerPos, this.body.rotation(), this.dashSensorCollider.shape, (collider) => {
+            // Skip our own sensor collider
+            if (collider === this.dashSensorCollider) return true;
             const entity = (collider as any).entity;
             if (entity && entity instanceof Enemy) {
-                const enemyPos = collider.parent()?.translation();
-                if (enemyPos) {
-                    const distance = Math.sqrt(
-                        Math.pow(playerPos.x - enemyPos.x, 2) +
-                        Math.pow(playerPos.y - enemyPos.y, 2) +
-                        Math.pow(playerPos.z - enemyPos.z, 2)
-                    );
-
-                    // If within collision range, trigger dash hit
-                    if (distance < 1.5) {
-                        this.handleDashHit(entity);
-                    }
-                }
+                this.handleDashHit(entity);
             }
+            return true;
         });
 
         if (this.dashTimer >= this.DASH_DURATION) {
             this.isDashing = false;
             this.dashHitEnemies.clear();
+
+            // Remove and clean up the dash sensor collider
+            if (this.dashSensorCollider) {
+                try {
+                    RapierPhysics.Instance.removeCollider(this.dashSensorCollider);
+                } catch (err) {
+                    console.warn('[Player] Failed to remove dash sensor collider', err);
+                }
+                this.dashSensorCollider = undefined;
+            }
         }
         this.syncPositionAndRotation();
         return true;
@@ -1128,6 +1133,19 @@ export class Player extends CharacterEntity {
 
         // Remove charge particles
         this.removeChargeParticles();
+
+        // Create a sensor collider (sphere) attached to the player's body to detect enemies reliably
+        try {
+            const rapier = RapierPhysics.Instance;
+            // Build a sensor collider description
+            const colliderDesc = RAPIER.ColliderDesc.ball(this.DASH_SENSOR_RADIUS).setSensor(true);
+            // Attach to the player's rigid body so it follows automatically
+            this.dashSensorCollider = rapier.world.createCollider(colliderDesc, this.body);
+            // Mark entity on the collider so other systems can identify it if needed
+            (this.dashSensorCollider as any).entity = this;
+        } catch (err) {
+            console.warn('[Player] Failed to create dash sensor collider', err);
+        }
     }
 
     private createChargeParticles() {
