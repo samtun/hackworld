@@ -56,4 +56,13 @@ export abstract class BaseMesh {
             mixer.update(deltaTime);
         }
     }
+
+    /**
+     * Update only animation mixers (lightweight visual update used while game is paused)
+     */
+    public updateMixers(deltaTime: number): void {
+        for (const mixer of this.mixers) {
+            mixer.update(deltaTime);
+        }
+    }
 }

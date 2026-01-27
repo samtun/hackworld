@@ -215,4 +215,24 @@ export abstract class BaseStage {
         }
     }
 
+    /**
+     * Visual-only update for when the game is paused (keep particles and animations running)
+     */
+    updateVisuals(dt: number): void {
+        if (this.teleporter) {
+            this.teleporter.update(dt);
+        }
+
+        // Update NPC visuals (mixers only)
+        for (const npc of this.npcs) {
+            // NPCs inherit BaseMesh and expose updateMixers
+            (npc as any).updateMixers ? (npc as any).updateMixers(dt) : npc.update(dt);
+        }
+
+        // Update stage-level mixers
+        for (const mixer of this.mixers) {
+            mixer.update(dt);
+        }
+    }
+
 }

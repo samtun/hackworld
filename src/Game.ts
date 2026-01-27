@@ -356,7 +356,8 @@ export class Game {
         const dt = this.clock.getDelta();
 
         // Update playtime (only when not on start screen and not paused by menus)
-        if (!this.isAnyMenuOpen()) {
+        const anyMenuOpen = this.isAnyMenuOpen();
+        if (!anyMenuOpen) {
             this.saveManager.updatePlaytime(dt);
         }
 
@@ -467,7 +468,6 @@ export class Game {
         }
 
         // Check if player is near any interactive entity (to prevent jumping while interacting)
-        const anyMenuOpen = this.isAnyMenuOpen();
 
         // Define interactive entity types
         interface InteractiveEntity {
@@ -579,18 +579,40 @@ export class Game {
         const isNearInteractive = nearbyInteractive !== null;
 
         // Update Game Logic
-        RapierPhysics.Instance.step(dt);
+        // Update Game Logic or Visuals depending on whether any menu is open
+        if (!anyMenuOpen) {
+            // Full game update: physics, game logic, AI
+            RapierPhysics.Instance.step(dt);
 
-        // Update debug renderer if in debug mode
-        if (this.debugMode && this.debugRenderer) {
-            updateDebugRenderer(this.physicsWorld, this.debugRenderer);
+            // Update debug renderer if in debug mode
+            if (this.debugMode && this.debugRenderer) {
+                updateDebugRenderer(this.physicsWorld, this.debugRenderer);
+            }
+
+            // Prevent jumping in the frame(s) immediately after interacting
+            const preventJump = isNearInteractive || this.wasJustInteracted;
+            // Normal player & world updates
+            this.player.update(dt, preventJump, anyMenuOpen);
+            this.world.update(dt, this.player, this.camera.position);
+        } else {
+            // Menu is open: pause gameplay (no physics or AI). Still advance visuals/animations/particles.
+            // Advance player/enemy mixers and stage visuals only.
+            try {
+                // Player visuals (animations)
+                (this.player as any).updateMixers ? (this.player as any).updateMixers(dt) : this.player.update(dt, false, true);
+
+                // Weapon visuals (if any)
+                if ((this.player as any).weapon) {
+                    const w = (this.player as any).weapon;
+                    w.updateMixers ? w.updateMixers(dt) : w.update(dt);
+                }
+
+                // World visuals (stage mixers, item drops, floating indicators, enemy mixers)
+                this.world.updateVisuals(dt, this.player, this.camera.position);
+            } catch (e) {
+                console.error('Error during visual-only update while menu open', e);
+            }
         }
-
-        // Prevent jumping in the frame(s) immediately after interacting
-        const preventJump = isNearInteractive || this.wasJustInteracted;
-        // Prevent movement when in a menu
-        this.player.update(dt, preventJump, anyMenuOpen);
-        this.world.update(dt, this.player, this.camera.position);
 
         this.ui.update(this.player, dt);
 

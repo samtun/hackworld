@@ -359,6 +359,31 @@ export class World {
     }
 
     /**
+     * Visual-only update for when the game is paused (advance animations, particles, indicators)
+     */
+    updateVisuals(dt: number, player: Player, cameraPosition: THREE.Vector3) {
+        if (!this.currentStage) return;
+
+        // Update grid shader time and camera
+        this.gridPlaneMaterial.uniforms.u_time.value += dt;
+        this.gridPlaneMaterial.uniforms.u_cameraPosition.value.copy(cameraPosition);
+
+        // Update stage visuals (teleporter particles, NPC mixers, stage mixers)
+        (this.currentStage as any).updateVisuals ? (this.currentStage as any).updateVisuals(dt, player) : this.currentStage.update(dt, player);
+
+        // Update item drop visuals (positions, bobbing, etc.)
+        this.itemDropManager.update(dt, cameraPosition, player.position);
+
+        // Update floating indicators
+        this.floatingIndicatorManager.update(dt, cameraPosition);
+
+        // Advance enemy animation mixers only (no AI or physics)
+        for (const enemy of this.enemies) {
+            (enemy as any).updateMixers ? (enemy as any).updateMixers(dt) : enemy.update(dt);
+        }
+    }
+
+    /**
      * Spawn EXP number visual at the given position
      */
     spawnEXPNumber(position: THREE.Vector3, amount: number): void {
