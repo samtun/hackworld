@@ -494,9 +494,9 @@ export class SaveManager {
         player.level = saveData.player.level;
         player.exp = saveData.player.exp;
         player.expRequired = saveData.player.expRequired;
-        player.hp = saveData.player.hp;
+        player.hp = saveData.player.maxHp;
         player.maxHp = saveData.player.maxHp;
-        player.tp = saveData.player.tp;
+        player.tp = saveData.player.maxTp;
         player.maxTp = saveData.player.maxTp;
         player.strength = saveData.player.strength;
         player.defense = saveData.player.defense;
@@ -576,10 +576,6 @@ export class SaveManager {
 
         // Recalculate stats based on equipped items
         player.recalculateStats();
-
-        // Restore HP/TP after recalculation (they may have been clamped)
-        player.hp = Math.min(saveData.player.hp, player.maxHp);
-        player.tp = Math.min(saveData.player.tp, player.maxTp);
 
         // Restore playtime
         this.playTimeSeconds = saveData.playtime;

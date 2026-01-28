@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { ItemDrop } from '../ItemDrop';
 
 /**
@@ -9,7 +8,6 @@ import { ItemDrop } from '../ItemDrop';
  */
 export class XDataDrop extends ItemDrop {
     mesh: THREE.Object3D;
-    body: RAPIER.RigidBody;
     amount: number;
     private bobTimer: number = 0;
     private baseHeight: number;
@@ -47,19 +45,6 @@ export class XDataDrop extends ItemDrop {
 
         // Store the group as Object3D (base class of both Mesh and Group)
         this.mesh = group;
-
-        // Physics Body (small trigger body)
-        const bodyPosition = new THREE.Vector3(position.x, position.y, position.z);
-        this.body = RapierPhysics.Instance.createKinematicBody(bodyPosition);
-        const collider = RapierPhysics.Instance.addBoxCollider(
-            this.body,
-            new THREE.Vector3(0.2, 0.2, 0.2)
-        );
-        collider.setSensor(true);
-
-        // Mark as X-Data drop for detection
-        (this.body as any).isXDataDrop = true;
-        (this.body as any).xDataDrop = this;
     }
 
     update(deltaTime: number, _cameraPosition: THREE.Vector3, _playerPosition: THREE.Vector3): void {
@@ -68,16 +53,12 @@ export class XDataDrop extends ItemDrop {
         const bobOffset = Math.sin(this.bobTimer * 2) * 0.15; // Bob up and down by 0.15 units
         this.mesh.position.y = this.baseHeight + bobOffset;
 
-        // Sync body position with mesh
-        setBodyPosition(this.body, this.mesh.position);
-
         // Rotate the X
         this.mesh.rotation.y += deltaTime * 2; // Rotate 2 radians per second
     }
 
     cleanup(scene: THREE.Scene, _world: RAPIER.World): void {
         scene.remove(this.mesh);
-        RapierPhysics.Instance.removeBody(this.body);
 
         // Dispose of geometries and materials
         this.mesh.traverse((child) => {

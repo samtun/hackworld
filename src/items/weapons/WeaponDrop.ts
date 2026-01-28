@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
-import { RapierPhysics, setBodyPosition } from '../../physics/RapierPhysics';
 import { WeaponType } from './WeaponType';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 import { ItemDrop } from '../ItemDrop';
@@ -12,7 +11,6 @@ import { ItemDrop } from '../ItemDrop';
 export class WeaponDrop extends ItemDrop {
     weaponId: string;
     mesh: THREE.Group;
-    body: RAPIER.RigidBody;
     weaponType: WeaponType;
     weaponName: string;
     textMesh: THREE.Mesh | null = null;
@@ -78,17 +76,6 @@ export class WeaponDrop extends ItemDrop {
         // Position the group
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
-
-        // Create physics body (sensor for detection). Do NOT add to physics world here;
-        // caller (ItemDropManager) will add the body to the world.
-        const bodyPosition = new THREE.Vector3(position.x, position.y, position.z);
-        this.body = RapierPhysics.Instance.createKinematicBody(bodyPosition);
-        const collider = RapierPhysics.Instance.addSphereCollider(this.body, 0.5);
-        collider.setSensor(true);
-
-        // Mark as weapon drop for detection
-        (this.body as any).isWeaponDrop = true;
-        (this.body as any).weaponDrop = this;
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
@@ -117,14 +104,10 @@ export class WeaponDrop extends ItemDrop {
                 this.textMesh.rotation.y = angle;
             }
         }
-
-        // Sync body position (mainly Y for floating)
-        setBodyPosition(this.body, this.mesh.position);
     }
 
     cleanup(scene: THREE.Scene, _world: RAPIER.World): void {
         scene.remove(this.mesh);
-        RapierPhysics.Instance.removeBody(this.body);
 
         // Dispose of geometries and materials
         this.mesh.traverse((child) => {

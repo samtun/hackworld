@@ -119,7 +119,7 @@ export class ItemDropManager {
         const arr = this.drops.get(key) || [];
         for (const d of arr) {
             const dist = playerPosition.distanceTo((d.mesh as any).position);
-            if (dist < 1.5) return d;
+            if (dist < d.PICKUP_DISTANCE) return d;
         }
         return null;
     }
