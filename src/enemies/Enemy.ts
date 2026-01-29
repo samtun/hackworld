@@ -302,6 +302,8 @@ export class Enemy extends CharacterEntity {
         }
 
         if (this.isDying) {
+            this.collider.setEnabled(false);
+            this.body.setEnabled(false);
             this.deathTimer += dt;
             // Apply knockback with friction during death
             this.knockbackVelocity.multiplyScalar(this.KNOCKBACK_FRICTION);
@@ -616,9 +618,6 @@ export class Enemy extends CharacterEntity {
             this.isAttacking = false;
             this.deactivateAttackHitbox();
         }
-
-        // Disable collision with other objects by making collider a sensor
-        this.collider.setSensor(true);
 
         // Play death animation
         this.fadeToAction(EnemyActionType.Death, 0.1);
