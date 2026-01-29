@@ -302,17 +302,11 @@ export class Enemy extends CharacterEntity {
         }
 
         if (this.isDying) {
+            // During death animation - disable collider and body
+            //Cannot doe this in the die() method because that breaks the code execution
             this.collider.setEnabled(false);
             this.body.setEnabled(false);
             this.deathTimer += dt;
-            // Apply knockback with friction during death
-            this.knockbackVelocity.multiplyScalar(this.KNOCKBACK_FRICTION);
-            this.applyMovementWithGravity(new THREE.Vector3(
-                this.knockbackVelocity.x * dt,
-                0,
-                this.knockbackVelocity.z * dt
-            ), dt);
-            this.syncMeshWithBody();
             return;
         }
 
