@@ -587,7 +587,7 @@ export class Player extends CharacterEntity {
             }
             return;
         }
-
+ 
         // Jump / Fall
         // Only trigger jump animation if strictly not grounded
         if (!this.isGrounded) {
@@ -745,11 +745,11 @@ export class Player extends CharacterEntity {
             return;
         }
 
+        // Apply gravity
+        this.verticalVelocity = this.isGrounded ? -0.1 : this.verticalVelocity -32 * dt;
+
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
-            
-            // Apply gravity
-            this.verticalVelocity -= 32 * dt;
             
             // Build and apply knockback movement vector
             const knockbackMovement = new THREE.Vector3(
@@ -782,11 +782,6 @@ export class Player extends CharacterEntity {
             const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
             if (equippedChip && equippedChip.stats.walkSpeedMultiplier !== undefined) {
                 effectiveSpeed *= equippedChip.stats.walkSpeedMultiplier;
-            }
-
-            // Apply gravity to vertical velocity
-            if (!this.isGrounded) {
-                this.verticalVelocity -= 32 * dt;
             }
 
             // Handle jump input
