@@ -2,22 +2,22 @@ import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 
-export class CrimsonDepths extends BaseStage {
-    private static id: string = "crimsonDepths";
-    private static name: string = "Security Core";
-    private static description: string = "The first layer of defense - cleanse the malware infection";
+export class NetwrokMatrix extends BaseStage {
+    private static id: string = "networkMatrix";
+    private static name: string = "Network Matrix";
+    private static description: string = "The first layer of defense";
 
-    id = CrimsonDepths.id;
-    name = CrimsonDepths.name;
-    description = CrimsonDepths.description;
+    id = NetwrokMatrix.id;
+    name = NetwrokMatrix.name;
+    description = NetwrokMatrix.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: THREE.Vector3 = new THREE.Vector3(0, 10, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
-            id: CrimsonDepths.id,
-            name: CrimsonDepths.name,
-            description: CrimsonDepths.description,
+            id: NetwrokMatrix.id,
+            name: NetwrokMatrix.name,
+            description: NetwrokMatrix.description,
             stageIndex: 1 // First dungeon stage
         };
     }

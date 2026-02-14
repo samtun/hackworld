@@ -114,7 +114,7 @@ this.disposeMesh();
 - Use the existing file structure:
   - `Game.ts` - Main game loop and coordination
   - `World.ts` - Main world management
-  - Stage files (`CrimsonDepths.ts`, `Lobby.ts`) - Individual stages of the game
+  - Stage files (`NetworkMatrix.ts`, `SecurityCore.ts`, `Lobby.ts`) - Individual stages of the game
   - Entity files (`Player.ts`, `Enemy.ts`, etc.) - Individual game entities
   - Manager files (`InputManager.ts`, `UIManager.ts`, etc.) - System management
 - When adding new features, consider if they belong in an existing file or need a new module

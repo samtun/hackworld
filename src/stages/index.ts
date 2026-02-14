@@ -2,18 +2,18 @@ import * as THREE from 'three';
 import RAPIER from '@dimforge/rapier3d-compat';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
-import { CrimsonDepths } from './CrimsonDepths';
-import { VioletAbyss } from './VioletAbyss';
+import { NetwrokMatrix } from './NetworkMatrix';
+import { SecurityCore } from './SecurityCore';
 import { MovementTest } from './MovementTest';
 
 // Re-export for convenience
-export { BaseStage, Lobby, CrimsonDepths, VioletAbyss };
+export { BaseStage, Lobby, NetwrokMatrix as CrimsonDepths, SecurityCore as VioletAbyss };
 
 // Registry of all available dungeons for selection UI
 // MovementTest is only included in dev builds
 export const AVAILABLE_DUNGEONS = import.meta.env.DEV 
-    ? [CrimsonDepths, VioletAbyss, MovementTest]
-    : [CrimsonDepths, VioletAbyss];
+    ? [NetwrokMatrix, SecurityCore, MovementTest]
+    : [NetwrokMatrix, SecurityCore];
 
 type StageConstructor = new (
     scene: THREE.Scene,
@@ -24,8 +24,8 @@ type StageConstructor = new (
 // Stage registry mapping stage IDs to their constructors
 const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstructor>([
     [Lobby.getMetadata().id, Lobby],
-    [CrimsonDepths.getMetadata().id, CrimsonDepths],
-    [VioletAbyss.getMetadata().id, VioletAbyss],
+    [NetwrokMatrix.getMetadata().id, NetwrokMatrix],
+    [SecurityCore.getMetadata().id, SecurityCore],
     ...(import.meta.env.DEV ? [[MovementTest.getMetadata().id, MovementTest] as [string, StageConstructor]] : [])
 ]);
 
