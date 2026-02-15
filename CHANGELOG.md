@@ -1,3 +1,10 @@
+# [1.41.0](https://github.com/samtun/hackworld/compare/v1.40.0...v1.41.0) (2026-02-15)
+
+
+### Features
+
+* add skill indicators ([e3d8eb0](https://github.com/samtun/hackworld/commit/e3d8eb0fa9d02577c7c2e75fcc7e11459cac6f18))
+
 # [1.40.0](https://github.com/samtun/hackworld/compare/v1.39.0...v1.40.0) (2026-02-15)
 
 
