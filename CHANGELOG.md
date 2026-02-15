@@ -1,3 +1,10 @@
+# [1.40.0](https://github.com/samtun/hackworld/compare/v1.39.0...v1.40.0) (2026-02-15)
+
+
+### Features
+
+* take improvements form work on rapier physics tryout ([29c5734](https://github.com/samtun/hackworld/commit/29c5734d1a81f565704d6751d6799ac38a233a38))
+
 # [1.39.0](https://github.com/samtun/hackworld/compare/v1.38.0...v1.39.0) (2026-01-20)
 
 
