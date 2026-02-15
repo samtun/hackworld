@@ -3,7 +3,8 @@ import { Player } from '../Player';
 import { Enemy } from '../enemies/Enemy';
 import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
-import RAPIER from '@dimforge/rapier3d-compat';
+import RAPIER, { Collider } from '@dimforge/rapier3d-compat';
+import { RapierPhysics } from '../physics/RapierPhysics';
 
 /**
  * Area Attack Skill
@@ -15,34 +16,17 @@ export class AreaAttackSkill extends Skill {
     private readonly DURATION = 0.8;
     private areaAttackEffect: AreaAttackEffect | undefined;
     private isBeingExecuted: boolean = false;
+    private sensorCollider: RAPIER.Collider | undefined;
+    private hitEnemies: Set<Enemy> = new Set();
 
     constructor(onCompletedCallback: () => void) {
         super('Area Attack', 10, 30, onCompletedCallback);
     }
 
-    protected execute(player: Player, scene: THREE.Scene, world: RAPIER.World): void {
+    protected execute(player: Player, scene: THREE.Scene): void {
         console.log('Executing Area Attack skill');
-
-        // Find all enemies within range
-        const hitEnemies = new Set<Enemy>();
-
-        // Use world.enemies instead of world.bodies (Rapier doesn't have bodies iterable)
-        world.bodies.forEach(entity => {
-            if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                const playerPos = player.body.translation();
-                const enemyPos = entity.body.translation();
-                const dx = enemyPos.x - playerPos.x;
-                const dz = enemyPos.z - playerPos.z;
-                const distance = Math.sqrt(dx * dx + dz * dz);
-
-                if (distance <= this.RANGE) {
-                    const position = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
-                    entity.takeDamage(this.DAMAGE, position);
-                    hitEnemies.add(entity);
-                    console.log(`Area attack hit enemy for ${this.DAMAGE} damage`);
-                }
-            }
-        });
+        // Reset per-use state and create visual effect. Hit detection is handled per-frame in update().
+        this.hitEnemies.clear();
 
         // Create visual effect
         if (!this.areaAttackEffect) {
@@ -67,6 +51,39 @@ export class AreaAttackSkill extends Skill {
             this.cleanup();
         } else {
             this.areaAttackEffect?.update(dt);
+
+            // Match sensor size to the visual scale used by AreaAttackEffect
+            const visualProgress = (this.areaAttackEffect) ? (this.areaAttackEffect as any).time / this.areaAttackEffect.duration : progress;
+            const scale = ((this.RANGE * visualProgress) * 2.0) % this.RANGE;
+
+            if (scale > 0.001) {
+                try {
+                    const rapierWorld = RapierPhysics.Instance.world;
+                    // Create a temporary sensor collider with radius equal to visual scale
+                    const colliderDesc = RAPIER.ColliderDesc.ball(scale).setSensor(true);
+                    const sensor = rapierWorld.createCollider(colliderDesc);
+
+                    const playerPos = (this as any).player ? (this as any).player.body.translation() : { x: 0, y: 0, z: 0 };
+                    const playerRot = (this as any).player ? (this as any).player.body.rotation() : { x: 0, y: 0, z: 0, w: 1 };
+
+                    rapierWorld.intersectionsWithShape(playerPos, playerRot, sensor.shape, (collider: Collider) => {
+                        if (collider === sensor) return true;
+                        const entity = (collider as any).entity;
+                        if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying && !this.hitEnemies.has(entity)) {
+                            const position = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
+                            entity.takeDamage(this.DAMAGE, position);
+                            this.hitEnemies.add(entity);
+                            console.log(`Area attack hit enemy for ${this.DAMAGE} damage`);
+                        }
+                        return true;
+                    });
+
+                    // Remove temporary sensor
+                    try { RapierPhysics.Instance.removeCollider(sensor); } catch (e) { try { rapierWorld.removeCollider(sensor, true); } catch (_) { } }
+                } catch (e) {
+                    console.error('Error during area attack collision detection:', e);
+                }
+            }
         }
     }
 
@@ -74,6 +91,12 @@ export class AreaAttackSkill extends Skill {
         this.effectTimer = 0;
         this.areaAttackEffect?.removeFromScene();
         this.isBeingExecuted = false;
+        // Ensure any lingering sensor is removed
+        if (this.sensorCollider) {
+            try { RapierPhysics.Instance.removeCollider(this.sensorCollider); } catch (e) { try { RapierPhysics.Instance.world.removeCollider(this.sensorCollider, true); } catch (_) { } }
+            this.sensorCollider = undefined;
+        }
+        this.hitEnemies.clear();
         this.onCompletedCallback();
     }
 }

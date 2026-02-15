@@ -60,7 +60,7 @@ export abstract class Skill {
         this.cooldownTimer = this.cooldown;
 
         // Execute skill-specific logic
-        this.execute(player, scene, world);
+        this.execute(player, scene);
 
         return true;
     }
@@ -91,5 +91,5 @@ export abstract class Skill {
     /**
      * Skill-specific execution logic
      */
-    protected abstract execute(player: Player, scene: THREE.Scene, world: RAPIER.World): void;
+    protected abstract execute(player: Player, scene: THREE.Scene): void;
 }

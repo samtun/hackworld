@@ -3,6 +3,7 @@ import { Player } from '../Player';
 import { Enemy } from '../enemies/Enemy';
 import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
+import { RapierPhysics } from '../physics/RapierPhysics';
 import RAPIER from '@dimforge/rapier3d-compat';
 
 /**
@@ -27,10 +28,9 @@ export class LaserBeamSkill extends Skill {
         super('Laser Beam', 5, 25, onCompletedCallback);
     }
 
-    protected execute(player: Player, scene: THREE.Scene, world: RAPIER.World): void {
+    protected execute(player: Player, scene: THREE.Scene): void {
         console.log('Executing Laser Beam skill');
 
-        this.world = world;
         this.player = player;
         this.hitEnemies.clear();
 
@@ -65,7 +65,7 @@ export class LaserBeamSkill extends Skill {
 
     update(dt: number): void {
         super.update(dt);
-        if (!this.isBeingExecuted || !this.world || !this.startPos || !this.forward || !this.player) {
+        if (!this.isBeingExecuted || !this.startPos || !this.forward || !this.player) {
             return;
         }
 
@@ -75,42 +75,48 @@ export class LaserBeamSkill extends Skill {
         // Calculate current beam length based on progress (matching visual effect)
         const currentLength = this.RANGE * Math.pow(progress, 2);
 
-        // Check for hits using world.enemies instead of world.bodies (Rapier doesn't have bodies iterable)
-        this.world?.bodies.forEach((entity) => {
-            if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                if (this.hitEnemies.has(entity)) {
-                    return;
-                }
+        // Use a temporary Rapier sensor collider shaped like a thin box/cuboid to represent the current beam
+        try {
+            const rapierWorld = RapierPhysics.Instance.world;
 
-                const enemyPos = entity.body.translation();
+            // length along forward, half-extent for cuboid
+            const halfZ = Math.max(currentLength / 2.0, 0.001);
+            const halfX = this.RADIUS;
+            const halfY = 2.0; // allow some vertical tolerance
 
-                // Check distance along the beam
-                for (let distance = 0; distance <= currentLength; distance += 1) {
-                    const checkPos = new THREE.Vector3(
-                        this.startPos.x + this.forward.x * distance,
-                        this.startPos.y,
-                        this.startPos.z + this.forward.z * distance
-                    );
+            // Create a cuboid sensor that covers the beam's current length and radius
+            const colliderDesc = RAPIER.ColliderDesc.cuboid(halfX, halfY, halfZ).setSensor(true);
+            const sensor = rapierWorld.createCollider(colliderDesc);
 
-                    const dx = enemyPos.x - checkPos.x;
-                    const dy = enemyPos.y - checkPos.y;
-                    const dz = enemyPos.z - checkPos.z;
-                    const distanceToBeam = Math.sqrt(dx * dx + dz * dz); // Horizontal distance
+            // Compute the center position of the cuboid: startPos + forward * (currentLength / 2)
+            const center = this.startPos.clone().add(this.forward.clone().multiplyScalar(halfZ * 2.0 / 2.0));
 
-                    if (distanceToBeam <= this.RADIUS && Math.abs(dy) <= 2) {
-                        // Hit!
-                        if (this.player) {
-                            const playerPos = this.player.position;
-                            const position = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
-                            entity.takeDamage(this.DAMAGE, position);
-                            this.hitEnemies.add(entity);
-                            console.log(`Laser beam hit enemy for ${this.DAMAGE} damage`);
-                            break;
-                        }
+            // Use the player's body rotation if available to align the shape
+            const rotation = this.player ? this.player.body.rotation() : { x: 0, y: 0, z: 0, w: 1 } as any;
+
+            rapierWorld.intersectionsWithShape(
+                { x: center.x, y: center.y, z: center.z },
+                rotation,
+                sensor.shape,
+                (collider) => {
+                    if (collider === sensor) return true;
+                    const entity = (collider as any).entity;
+                    if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying && !this.hitEnemies.has(entity)) {
+                        const playerPos = this.player ? this.player.position : new THREE.Vector3(center.x, center.y, center.z);
+                        const position = new THREE.Vector3(playerPos.x, playerPos.y, playerPos.z);
+                        entity.takeDamage(this.DAMAGE, position);
+                        this.hitEnemies.add(entity);
+                        console.log(`Laser beam hit enemy for ${this.DAMAGE} damage`);
                     }
+                    return true;
                 }
-            }
-        });
+            );
+
+            // Remove temporary sensor collider
+            try { RapierPhysics.Instance.removeCollider(sensor); } catch (e) { try { rapierWorld.removeCollider(sensor, true); } catch (_) { } }
+        } catch (err) {
+            console.error('Error during laser beam collision detection:', err);
+        }
 
         // Cleanup after duration
         if (progress >= 1) {
@@ -126,7 +132,6 @@ export class LaserBeamSkill extends Skill {
         this.laserAttackEffect = undefined;
         this.isBeingExecuted = false;
 
-        this.world = undefined;
         this.player = undefined;
         this.hitEnemies.clear();
 

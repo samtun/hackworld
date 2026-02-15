@@ -2,7 +2,6 @@ import * as THREE from 'three';
 import { Player } from '../Player';
 import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
-import RAPIER from '@dimforge/rapier3d-compat';
 
 /**
  * Healing Skill
@@ -25,7 +24,7 @@ export class HealingSkill extends Skill {
         super('Healing', 0, 20, onCompletedCallback);
     }
 
-    protected execute(player: Player, scene: THREE.Scene, _world: RAPIER.World): void {
+    protected execute(player: Player, scene: THREE.Scene): void {
         console.log('Executing Healing skill');
 
         // Heal the player
