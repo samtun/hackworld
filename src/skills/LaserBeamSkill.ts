@@ -24,7 +24,7 @@ export class LaserBeamSkill extends Skill {
     private hitEnemies: Set<Enemy> = new Set();
 
     constructor(onCompletedCallback: () => void) {
-        super('Laser Beam', 5, 25, onCompletedCallback);
+        super('Laser Beam', 5, 25, onCompletedCallback, 'images/ui_icons/laser.png');
     }
 
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {

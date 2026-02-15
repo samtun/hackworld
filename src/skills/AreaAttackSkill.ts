@@ -29,7 +29,7 @@ export class AreaAttackSkill extends Skill {
     }
 
     constructor(onCompletedCallback: () => void) {
-        super('Area Attack', 10, 30, onCompletedCallback);
+        super('Area Attack', 10, 30, onCompletedCallback, 'images/ui_icons/area.png');
     }
 
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {

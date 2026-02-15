@@ -22,7 +22,7 @@ export class HealingSkill extends Skill {
     private isBeingExecuted: boolean = false;
 
     constructor(onCompletedCallback: () => void) {
-        super('Healing', 0, 20, onCompletedCallback);
+        super('Healing', 3, 20, onCompletedCallback, 'images/ui_icons/heal.png');
     }
 
     protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {

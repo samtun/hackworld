@@ -193,6 +193,9 @@ export class Game {
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
 
+        // Register player with UI so skill indicators are created
+        this.ui.registerPlayer(this.player);
+
         // Set up damage number callback for player
         this.player.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
             this.world.spawnDamageNumber(position, amount, '#ff2424ff');

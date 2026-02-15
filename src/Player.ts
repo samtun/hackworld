@@ -302,8 +302,8 @@ export class Player extends BaseMesh {
 
         // Initialize skills
         this.skills = [
-            new LaserBeamSkill(this.resetSkillUsage),
             new HealingSkill(this.resetSkillUsage),
+            new LaserBeamSkill(this.resetSkillUsage),
             new AreaAttackSkill(this.resetSkillUsage)
         ];
     }
