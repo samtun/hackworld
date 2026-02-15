@@ -2,22 +2,22 @@ import * as CANNON from 'cannon-es';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 
-export class CrimsonDepths extends BaseStage {
-    private static id: string = "crimsonDepths";
-    private static name: string = "Security Core";
-    private static description: string = "The first layer of defense - cleanse the malware infection";
+export class NetworkMatrix extends BaseStage {
+    private static id: string = "networkMatrix";
+    private static name: string = "Network Matrix";
+    private static description: string = "The first layer of defense";
 
-    id = CrimsonDepths.id;
-    name = CrimsonDepths.name;
-    description = CrimsonDepths.description;
+    id = NetworkMatrix.id;
+    name = NetworkMatrix.name;
+    description = NetworkMatrix.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
-            id: CrimsonDepths.id,
-            name: CrimsonDepths.name,
-            description: CrimsonDepths.description,
+            id: NetworkMatrix.id,
+            name: NetworkMatrix.name,
+            description: NetworkMatrix.description,
             stageIndex: 1 // First dungeon stage
         };
     }

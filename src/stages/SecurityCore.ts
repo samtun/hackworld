@@ -2,22 +2,22 @@ import * as CANNON from 'cannon-es';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 
-export class VioletAbyss extends BaseStage {
-    private static id: string = "violetAbyss";
-    private static name: string = "Network Matrix";
-    private static description: string = "The communication hub - eliminate the spreading malware";
+export class SecurityCore extends BaseStage {
+    private static id: string = "securityCore";
+    private static name: string = "Security Core";
+    private static description: string = "The heart of the security system";
 
-    id = VioletAbyss.id;
-    name = VioletAbyss.name;
-    description = VioletAbyss.description;
+    id = SecurityCore.id;
+    name = SecurityCore.name;
+    description = SecurityCore.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
         return {
-            id: VioletAbyss.id,
-            name: VioletAbyss.name,
-            description: VioletAbyss.description,
+            id: SecurityCore.id,
+            name: SecurityCore.name,
+            description: SecurityCore.description,
             stageIndex: 2 // Second dungeon stage
         };
     }

@@ -24,9 +24,7 @@ export interface SaveData {
         level: number;
         exp: number;
         expRequired: number;
-        hp: number;
         maxHp: number;
-        tp: number;
         maxTp: number;
         strength: number;
         defense: number;
@@ -170,9 +168,7 @@ export class SaveManager {
                 level: player.level,
                 exp: player.exp,
                 expRequired: player.expRequired,
-                hp: player.hp,
                 maxHp: player.maxHp,
-                tp: player.tp,
                 maxTp: player.maxTp,
                 strength: player.strength,
                 defense: player.defense,
@@ -310,9 +306,7 @@ export class SaveManager {
                     level: player.level,
                     exp: player.exp,
                     expRequired: player.expRequired,
-                    hp: player.hp,
                     maxHp: player.maxHp,
-                    tp: player.tp,
                     maxTp: player.maxTp,
                     strength: player.strength,
                     defense: player.defense,
@@ -494,9 +488,9 @@ export class SaveManager {
         player.level = saveData.player.level;
         player.exp = saveData.player.exp;
         player.expRequired = saveData.player.expRequired;
-        player.hp = saveData.player.hp;
+        player.hp = saveData.player.maxHp;
         player.maxHp = saveData.player.maxHp;
-        player.tp = saveData.player.tp;
+        player.tp = saveData.player.maxTp;
         player.maxTp = saveData.player.maxTp;
         player.strength = saveData.player.strength;
         player.defense = saveData.player.defense;
@@ -576,10 +570,6 @@ export class SaveManager {
 
         // Recalculate stats based on equipped items
         player.recalculateStats();
-
-        // Restore HP/TP after recalculation (they may have been clamped)
-        player.hp = Math.min(saveData.player.hp, player.maxHp);
-        player.tp = Math.min(saveData.player.tp, player.maxTp);
 
         // Restore playtime
         this.playTimeSeconds = saveData.playtime;

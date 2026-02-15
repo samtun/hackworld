@@ -11,10 +11,22 @@ import { BaseMesh } from '../BaseMesh';
 export class AreaAttackSkill extends Skill {
     private readonly DAMAGE = 18;
     private readonly RANGE = 5;
-    private effectTimer: number = 0;
     private readonly DURATION = 0.8;
+    private effectTimer: number = 0;
+
+    // Level of the skill. Higher levels introduce more waves and faster expansion
+    private level: number = 1;
     private areaAttackEffect: AreaAttackEffect | undefined;
     private isBeingExecuted: boolean = false;
+
+    // Hit Enemies with a time since they were hit
+    private hitEnemies: Map<Enemy, number> = new Map<Enemy, number>();
+    private world?: CANNON.World | undefined;
+    private player?: Player | undefined;
+
+    private get waves(): number {
+        return this.level + 1;
+    }
 
     constructor(onCompletedCallback: () => void) {
         super('Area Attack', 10, 30, onCompletedCallback);
@@ -23,28 +35,12 @@ export class AreaAttackSkill extends Skill {
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
         console.log('Executing Area Attack skill');
 
-        // Find all enemies within range
-        const hitEnemies = new Set<Enemy>();
-
-        for (const body of world.bodies) {
-            const entity = (body as any).entity;
-            if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                const dx = body.position.x - player.body.position.x;
-                const dz = body.position.z - player.body.position.z;
-                const distance = Math.sqrt(dx * dx + dz * dz);
-
-                if (distance <= this.RANGE) {
-                    entity.takeDamage(this.DAMAGE, player.body.position);
-                    hitEnemies.add(entity);
-                    console.log(`Area attack hit enemy for ${this.DAMAGE} damage`);
-                }
-            }
-        }
+        this.world = world;
+        this.player = player;
+        this.hitEnemies = new Map<Enemy, number>();
 
         // Create visual effect
-        if (!this.areaAttackEffect) {
-            this.areaAttackEffect = new AreaAttackEffect(this.DURATION, this.RANGE);
-        }
+        this.areaAttackEffect = new AreaAttackEffect(this.DURATION, this.RANGE, this.level);
         this.areaAttackEffect.setPosition(player.position as any);
         this.areaAttackEffect.addToScene(scene);
         this.isBeingExecuted = true;
@@ -53,17 +49,42 @@ export class AreaAttackSkill extends Skill {
     update(dt: number): void {
         super.update(dt);
 
-        if (!this.isBeingExecuted) {
+        if (!this.isBeingExecuted || !this.world || !this.player) {
             return;
         }
 
         this.effectTimer += dt;
         const progress = this.effectTimer / this.DURATION;
+        const scale = ((this.RANGE * progress) * this.waves) % this.RANGE;
+
+        // If the enemy was hit longer than DAMAGE_INTERVAL ago make it hittable again
+        this.hitEnemies.forEach((timeSinceHit, enemy) => {
+            if (timeSinceHit >= this.DURATION / this.waves) {
+                this.hitEnemies.delete(enemy);
+            } else {
+                this.hitEnemies.set(enemy, timeSinceHit + dt);
+            }
+        });
 
         if (progress >= 1) {
             this.cleanup();
         } else {
             this.areaAttackEffect?.update(dt);
+
+            for (const body of this.world.bodies) {
+                const entity = (body as any).entity;
+                if (entity && entity instanceof Enemy && !this.hitEnemies.has(entity) && !entity.isDead && !entity.isDying) {
+                    const dx = body.position.x - this.player.body.position.x;
+                    const dz = body.position.z - this.player.body.position.z;
+                    const distance = Math.sqrt(dx * dx + dz * dz);
+
+                    if (distance <= scale) {
+                        entity.takeDamage(this.DAMAGE, this.player.body.position, 0.2);
+                        this.hitEnemies.set(entity, 0);
+                        console.log(`Area attack hit enemy for ${this.DAMAGE} damage`);
+                    }
+                }
+            }
         }
     }
 
@@ -78,13 +99,19 @@ export class AreaAttackSkill extends Skill {
 class AreaAttackEffect extends BaseMesh {
     private time: number = 0;
     private duration: number;
+    private level: number;
     private range: number;
     private material: THREE.MeshStandardMaterial | null = null;
 
-    constructor(duration: number, range: number) {
+    private get waves(): number {
+        return this.level + 1;
+    }
+
+    constructor(duration: number, range: number, level: number) {
         super('models/area_fx.glb');
         this.duration = duration;
         this.range = range;
+        this.level = level;
         this.mesh.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 this.material = child.material as THREE.MeshStandardMaterial;
@@ -96,10 +123,10 @@ class AreaAttackEffect extends BaseMesh {
         super.update(dt);
         this.time += dt;
         const progress = this.time / this.duration;
-        const scale = ((this.range * progress) * 2.0) % this.range;
+        const scale = ((this.range * progress) * this.waves) % this.range;
         this.mesh.scale.copy(new THREE.Vector3(scale, scale, scale));
         if (this.material) {
-            this.material.opacity = (1.0 - ((progress * 2.0 % 1.0) - 0.7) / 0.3);
+            this.material.opacity = (1.0 - ((progress * this.waves % 1.0) - 0.7) / 0.3);
         }
     }
 

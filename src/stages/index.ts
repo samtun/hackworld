@@ -2,18 +2,18 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
-import { CrimsonDepths } from './CrimsonDepths';
-import { VioletAbyss } from './VioletAbyss';
+import { NetworkMatrix } from './NetworkMatrix';
+import { SecurityCore } from './SecurityCore';
 import { MovementTest } from './MovementTest';
 
 // Re-export for convenience
-export { BaseStage, Lobby, CrimsonDepths, VioletAbyss };
+export { BaseStage, Lobby, NetworkMatrix as CrimsonDepths, SecurityCore as VioletAbyss };
 
 // Registry of all available dungeons for selection UI
 // MovementTest is only included in dev builds
 export const AVAILABLE_DUNGEONS = import.meta.env.DEV 
-    ? [CrimsonDepths, VioletAbyss, MovementTest]
-    : [CrimsonDepths, VioletAbyss];
+    ? [NetworkMatrix, SecurityCore, MovementTest]
+    : [NetworkMatrix, SecurityCore];
 
 // Stage factory type
 type StageConstructor = new (
@@ -25,8 +25,8 @@ type StageConstructor = new (
 // Stage registry mapping stage IDs to their constructors
 const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstructor>([
     [Lobby.getMetadata().id, Lobby],
-    [CrimsonDepths.getMetadata().id, CrimsonDepths],
-    [VioletAbyss.getMetadata().id, VioletAbyss],
+    [NetworkMatrix.getMetadata().id, NetworkMatrix],
+    [SecurityCore.getMetadata().id, SecurityCore],
     ...(import.meta.env.DEV ? [[MovementTest.getMetadata().id, MovementTest] as [string, StageConstructor]] : [])
 ]);
 

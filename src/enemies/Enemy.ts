@@ -512,7 +512,7 @@ export class Enemy extends BaseMesh {
         this.fadeToAction(EnemyActionType.Attack, 0.1);
     }
 
-    takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
+    takeDamage(amount: number, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0) {
         if (this.isDying || this.isDead) return;
 
         this.hp -= amount;
@@ -532,7 +532,7 @@ export class Enemy extends BaseMesh {
             knockbackDir.y = 0; // Keep it horizontal
             if (knockbackDir.length() > 0) {
                 knockbackDir.normalize();
-                const force = 15; // Increased force
+                const force = 15 * knockbackFactor; // Increased force
                 this.body.velocity.x = knockbackDir.x * force;
                 this.body.velocity.z = knockbackDir.z * force;
             }
