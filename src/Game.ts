@@ -482,14 +482,9 @@ export class Game {
 
         if (!anyMenuOpen) {
             // Auto-pickup XData and money drops
-            const xDataDropNearby = this.world.checkXDataDropInteraction(this.player.position);
-            if (xDataDropNearby) {
-                this.world.pickupXDataDrop(xDataDropNearby, this.player);
-            }
-
-            const moneyDropNearby = this.world.checkMoneyDropInteraction(this.player.position);
-            if (moneyDropNearby) {
-                this.world.pickupMoneyDrop(moneyDropNearby, this.player);
+            const autoPickupDrop = this.world.checkNearestAutoPickupDrop(this.player.position);
+            if (autoPickupDrop) {
+                this.world.pickupDrop(autoPickupDrop, this.player);
             }
 
             // Check NPCs
@@ -524,60 +519,18 @@ export class Game {
                 }
             }
 
-            // Check weapon / chip / core drops (higher priority than traders)
+            // Check weapon / chip / core / booster pack drops (higher priority than traders)
             if (!nearbyInteractive) {
-                const weaponDropNearby = this.world.checkWeaponDropInteraction(this.player.position);
-                if (weaponDropNearby) {
+                const interactiveDrop = this.world.checkNearestInteractiveDrop(this.player.position);
+                if (interactiveDrop) {
                     nearbyInteractive = {
-                        type: InteractiveEntityType.WEAPON_DROP,
-                        data: weaponDropNearby,
+                        type: this.world.getDropInteractiveType(interactiveDrop),
+                        data: interactiveDrop,
                         hint: getHint(HintConfigs.pickUp, this.input),
                         action: () => {
-                            this.world.pickupWeaponDrop(weaponDropNearby, this.player);
+                            this.world.pickupDrop(interactiveDrop, this.player);
                         }
                     };
-                }
-
-                if (!nearbyInteractive) {
-                    const chipDropNearby = this.world.checkChipDropInteraction(this.player.position);
-                    if (chipDropNearby) {
-                        nearbyInteractive = {
-                            type: InteractiveEntityType.CHIP_DROP,
-                            data: chipDropNearby,
-                            hint: getHint(HintConfigs.pickUp, this.input),
-                            action: () => {
-                                this.world.pickupChipDrop(chipDropNearby, this.player);
-                            }
-                        };
-                    }
-                }
-
-                if (!nearbyInteractive) {
-                    const coreDropNearby = this.world.checkCoreDropInteraction(this.player.position);
-                    if (coreDropNearby) {
-                        nearbyInteractive = {
-                            type: InteractiveEntityType.CORE_DROP,
-                            data: coreDropNearby,
-                            hint: getHint(HintConfigs.pickUp, this.input),
-                            action: () => {
-                                this.world.pickupCoreDrop(coreDropNearby, this.player);
-                            }
-                        };
-                    }
-                }
-
-                if (!nearbyInteractive) {
-                    const boosterPackDropNearby = this.world.checkBoosterPackDropInteraction(this.player.position);
-                    if (boosterPackDropNearby) {
-                        nearbyInteractive = {
-                            type: InteractiveEntityType.BOOSTER_PACK_DROP,
-                            data: boosterPackDropNearby,
-                            hint: getHint(HintConfigs.pickUp, this.input),
-                            action: () => {
-                                this.world.pickupBoosterPackDrop(boosterPackDropNearby, this.player);
-                            }
-                        };
-                    }
                 }
             }
         }

@@ -11,9 +11,14 @@ import { ChipDrop } from './items/chips/ChipDrop';
 import { CoreDrop } from './items/cores/CoreDrop';
 import { BoosterPackDrop } from './items/cards/BoosterPackDrop';
 import { XDataDrop } from './items/xdata/XDataDrop';
+import { MoneyDrop } from './items/MoneyDrop';
 import { HealingSystem } from './systems/HealingSystem';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 import { GameProgressManager } from './GameProgressManager';
+import { InteractiveEntityType } from './InteractiveEntityType';
+
+// Type union for all drop types
+type AnyDrop = WeaponDrop | ChipDrop | CoreDrop | BoosterPackDrop | XDataDrop | MoneyDrop;
 
 export class World {
     scene: THREE.Scene;
@@ -419,86 +424,122 @@ export class World {
     }
 
     /**
-     * Check if player is near a weapon drop
+     * Infer the drop type string from a drop object
+     */
+    private getDropTypeString(drop: AnyDrop): string {
+        if (drop instanceof WeaponDrop) return 'weapon';
+        if (drop instanceof ChipDrop) return 'chip';
+        if (drop instanceof CoreDrop) return 'core';
+        if (drop instanceof BoosterPackDrop) return 'boosterPack';
+        if (drop instanceof XDataDrop) return 'xData';
+        if (drop instanceof MoneyDrop) return 'money';
+        // Should never reach here if drop is properly typed as AnyDrop
+        throw new Error(`Unknown drop type: ${(drop as any).constructor.name}`);
+    }
+
+    /**
+     * Infer the InteractiveEntityType from a drop object
+     */
+    private getInteractiveEntityType(drop: AnyDrop): InteractiveEntityType {
+        if (drop instanceof WeaponDrop) return InteractiveEntityType.WEAPON_DROP;
+        if (drop instanceof ChipDrop) return InteractiveEntityType.CHIP_DROP;
+        if (drop instanceof CoreDrop) return InteractiveEntityType.CORE_DROP;
+        if (drop instanceof BoosterPackDrop) return InteractiveEntityType.BOOSTER_PACK_DROP;
+        if (drop instanceof XDataDrop) return InteractiveEntityType.XDATA_DROP;
+        // MoneyDrop doesn't have an interactive type (auto-pickup)
+        // Should never reach here for interactive types
+        throw new Error(`No interactive type for drop: ${(drop as any).constructor.name}`);
+    }
+
+    /**
+     * Check if player is near any interactive drop (weapon, chip, core, booster pack)
+     * Returns the first match in priority order
+     */
+    checkNearestInteractiveDrop(playerPosition: THREE.Vector3): AnyDrop | null {
+        const dropTypes = ['weapon', 'chip', 'core', 'boosterPack'] as const;
+        for (const dropType of dropTypes) {
+            const drop = this.itemDropManager.checkInteraction(dropType, playerPosition);
+            if (drop) return drop as AnyDrop;
+        }
+        return null;
+    }
+
+    /**
+     * Check if player is near any auto-pickup drop (X-Data, money)
+     * Returns the first match in priority order
+     */
+    checkNearestAutoPickupDrop(playerPosition: THREE.Vector3): AnyDrop | null {
+        const dropTypes = ['xData', 'money'] as const;
+        for (const dropType of dropTypes) {
+            const drop = this.itemDropManager.checkInteraction(dropType, playerPosition);
+            if (drop) return drop as AnyDrop;
+        }
+        return null;
+    }
+
+    /**
+     * Pick up any drop type by inferring the type from the drop object
+     */
+    pickupDrop(drop: AnyDrop, player: Player): void {
+        const dropType = this.getDropTypeString(drop);
+        this.itemDropManager.pickup(dropType, this.scene, this.physicsWorld, drop, player);
+    }
+
+    /**
+     * Get the InteractiveEntityType for a drop
+     */
+    getDropInteractiveType(drop: AnyDrop): InteractiveEntityType {
+        return this.getInteractiveEntityType(drop);
+    }
+
+    /**
+     * Legacy methods for backwards compatibility
      */
     checkWeaponDropInteraction(playerPosition: THREE.Vector3): WeaponDrop | null {
         return this.itemDropManager.checkInteraction('weapon', playerPosition) as WeaponDrop | null;
     }
 
-    /**
-     * Pick up a weapon drop
-     */
     pickupWeaponDrop(drop: WeaponDrop, player: Player): void {
-        this.itemDropManager.pickup('weapon', this.scene, this.physicsWorld, drop, player);
+        this.pickupDrop(drop, player);
     }
 
-    /**
-     * Check if player is near a chip drop
-     */
     checkChipDropInteraction(playerPosition: THREE.Vector3) {
         return this.itemDropManager.checkInteraction('chip', playerPosition) as ChipDrop | null;
     }
 
-    /**
-     * Pick up a chip drop
-     */
     pickupChipDrop(drop: ChipDrop, player: Player): void {
-        this.itemDropManager.pickup('chip', this.scene, this.physicsWorld, drop, player);
+        this.pickupDrop(drop, player);
     }
 
-    /**
-     * Check if player is near a core drop
-     */
     checkCoreDropInteraction(playerPosition: THREE.Vector3) {
         return this.itemDropManager.checkInteraction('core', playerPosition) as CoreDrop | null;
     }
 
-    /**
-     * Pick up a core drop
-     */
     pickupCoreDrop(drop: CoreDrop, player: Player): void {
-        this.itemDropManager.pickup('core', this.scene, this.physicsWorld, drop, player);
+        this.pickupDrop(drop, player);
     }
 
-    /**
-     * Check if player is near a booster pack drop
-     */
     checkBoosterPackDropInteraction(playerPosition: THREE.Vector3): BoosterPackDrop | null {
         return this.itemDropManager.checkInteraction('boosterPack', playerPosition) as BoosterPackDrop | null;
     }
 
-    /**
-     * Pick up a booster pack drop
-     */
     pickupBoosterPackDrop(drop: BoosterPackDrop, player: Player): void {
-        this.itemDropManager.pickup('boosterPack', this.scene, this.physicsWorld, drop, player);
+        this.pickupDrop(drop, player);
     }
 
-    /**
-     * Check if player is near an X-Data drop
-     */
     checkXDataDropInteraction(playerPosition: THREE.Vector3): XDataDrop | null {
         return this.itemDropManager.checkInteraction('xData', playerPosition) as XDataDrop | null;
     }
 
-    /**
-     * Pick up an X-Data drop
-     */
     pickupXDataDrop(drop: XDataDrop, player: Player): void {
-        this.itemDropManager.pickup('xData', this.scene, this.physicsWorld, drop, player);
+        this.pickupDrop(drop, player);
     }
 
-    /**
-     * Check if player is near a money drop
-     */
     checkMoneyDropInteraction(playerPosition: THREE.Vector3) {
         return this.itemDropManager.checkInteraction('money', playerPosition);
     }
 
-    /**
-     * Pick up a money drop
-     */
     pickupMoneyDrop(drop: any, player: Player): void {
-        this.itemDropManager.pickup('money', this.scene, this.physicsWorld, drop, player);
+        this.pickupDrop(drop as MoneyDrop, player);
     }
 }
