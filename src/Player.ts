@@ -199,7 +199,7 @@ export class Player extends BaseMesh {
     private skillAnimationTimer: number = 0;
 
     get luckMultiplier(): number {
-        return  1 + this.luck / this.LUCK_DIVISOR;
+        return 1 + this.luck / this.LUCK_DIVISOR;
     }
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {

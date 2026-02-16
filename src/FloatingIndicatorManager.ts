@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { FloatingIndicator, FloatingIndicatorConfig } from './FloatingIndicator';
+import { ItemDrop } from './items/ItemDrop';
+import { MoneyDrop } from './items/bits/MoneyDrop';
+import { XDataDrop } from './items/xdata/XDataDrop';
 
 /**
  * Manager for all floating indicators in the game (damage, EXP, tech points, etc.)
@@ -64,6 +67,31 @@ export class FloatingIndicatorManager {
             holdTime: 0,
             riseTime: 0.5
         });
+    }
+    /**
+     * Spawn a pickup indicator for auto pickup drops
+     */
+    spawnPickupIndicator(drop: ItemDrop): void {
+        console.log('Spawning pickup indicator for drop:', drop);
+        const position = new CANNON.Vec3(drop.mesh.position.x, drop.mesh.position.y, drop.mesh.position.z);
+        if (drop instanceof MoneyDrop) {
+            console.log('Spawning Bits pickup indicator');
+            let text = `${drop.amount} Bits`;
+            this.spawn(position, {
+                text: text,
+                color: '#FFD700',
+                fontSize: 50,
+                priority: false
+            });
+        } else if (drop instanceof XDataDrop) {
+            let text = `${drop.amount} X-Data`;
+            this.spawn(position, {
+                text: text,
+                color: '#8a2bbd',
+                fontSize: 50,
+                priority: false
+            });
+        }
     }
 
     /**

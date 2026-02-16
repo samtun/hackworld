@@ -27,8 +27,8 @@ export class Enemy extends BaseMesh {
     deathTimer: number = 0;
     flashTimer: number = 0;
     stunTimer: number = 0;
-    itemDropChance: number = 1;
-    xDataDropChance: number = 1;
+    itemDropChance: number = 0.04;
+    xDataDropChance: number = 0.02;
     expAmount: number = 10; // EXP granted on defeat
     damage: number = 10;
 

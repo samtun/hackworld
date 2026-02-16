@@ -366,7 +366,6 @@ export class World {
                 const progressManager = GameProgressManager.Instance;
                 progressManager.markBossDefeated(stageIndex);
                 console.log(`Stage ${stageIndex} completed! Progress now:`, progressManager.progress);
-                console.log('Return to the Mainframe in the Lobby for your next assignment.');
             }
         }
     }
@@ -408,6 +407,7 @@ export class World {
      * Pick up any drop type by using the drop's dropType property
      */
     pickupDrop(drop: ItemDrop, player: Player): void {
+        this.floatingIndicatorManager.spawnPickupIndicator(drop);
         this.itemDropManager.pickup(drop.dropType, this.scene, drop, player);
     }
 }

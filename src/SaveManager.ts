@@ -494,26 +494,26 @@ export class SaveManager {
         player.maxTp = saveData.player.maxTp;
         player.strength = saveData.player.strength;
         player.defense = saveData.player.defense;
-        player.agility = saveData.player.agility ?? 1;
-        player.luck = saveData.player.luck ?? 1;
+        player.agility = saveData.player.agility;
+        player.luck = saveData.player.luck;
         player.money = saveData.player.money;
         player.xData = saveData.player.xData;
         player.boosterPacks = saveData.player.boosterPacks;
-        player.statPointsAvailable = saveData.player.statPointsAvailable ?? 0;
+        player.statPointsAvailable = saveData.player.statPointsAvailable;
 
         // Restore upgrades (from X-Data)
         player.strengthUpgrades = saveData.player.strengthUpgrades;
         player.defenseUpgrades = saveData.player.defenseUpgrades;
         player.hpUpgrades = saveData.player.hpUpgrades;
         player.tpUpgrades = saveData.player.tpUpgrades;
-        player.agilityUpgrades = saveData.player.agilityUpgrades ?? 0;
-        player.luckUpgrades = saveData.player.luckUpgrades ?? 0;
+        player.agilityUpgrades = saveData.player.agilityUpgrades;
+        player.luckUpgrades = saveData.player.luckUpgrades;
 
         // Restore stat points (from leveling up)
-        player.strengthPoints = saveData.player.strengthPoints ?? 0;
-        player.defensePoints = saveData.player.defensePoints ?? 0;
-        player.agilityPoints = saveData.player.agilityPoints ?? 0;
-        player.luckPoints = saveData.player.luckPoints ?? 0;
+        player.strengthPoints = saveData.player.strengthPoints;
+        player.defensePoints = saveData.player.defensePoints;
+        player.agilityPoints = saveData.player.agilityPoints;
+        player.luckPoints = saveData.player.luckPoints;
 
         // Restore weapon tech
         if (saveData.player.tech) {
