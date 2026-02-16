@@ -8,7 +8,7 @@ import { ItemDropStrategy } from '../ItemDropManager';
 
 export class MoneyDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.MONEY;
-    public readonly distributionWeight = 6;
+    public readonly distributionWeight = 600;
 
     /**
      * Try to drop money from enemy.
@@ -16,9 +16,8 @@ export class MoneyDropStrategy implements ItemDropStrategy {
      */
     tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null {
         // Apply luck multiplier to drop chance
-        const effectiveDropChance = enemy.itemDropChance * player.luckMultiplier;
+        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus;
         
-        console.log(`Trying to drop money: Enemy drop chance ${enemy.itemDropChance}, Player luck multiplier ${player.luckMultiplier}, Effective drop chance ${effectiveDropChance}`);
         if (Math.random() > effectiveDropChance) return null;
         
         const amount = this.determineMoneyAmount(player);

@@ -72,7 +72,6 @@ export class FloatingIndicatorManager {
      * Spawn a pickup indicator for auto pickup drops
      */
     spawnPickupIndicator(drop: ItemDrop): void {
-        console.log('Spawning pickup indicator for drop:', drop);
         const position = new CANNON.Vec3(drop.mesh.position.x, drop.mesh.position.y, drop.mesh.position.z);
         if (drop instanceof MoneyDrop) {
             console.log('Spawning Bits pickup indicator');

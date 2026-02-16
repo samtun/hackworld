@@ -13,7 +13,7 @@ export class CoreDropStrategy implements ItemDropStrategy {
 
     tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
-        const effectiveDropChance = enemy.itemDropChance * player.luckMultiplier;
+        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus;
         
         if (Math.random() > effectiveDropChance) return null;
 

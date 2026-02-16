@@ -198,8 +198,9 @@ export class Player extends BaseMesh {
     private isUsingSkill: boolean = false;
     private skillAnimationTimer: number = 0;
 
-    get luckMultiplier(): number {
-        return 1 + this.luck / this.LUCK_DIVISOR;
+    // A bonus on drop chances in percentage points (e.g. 0.05 for +5% drop chances)
+    get luckDropChanceBonus(): number {
+        return this.luck / this.LUCK_DIVISOR;
     }
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
@@ -1310,7 +1311,7 @@ export class Player extends BaseMesh {
         }
 
         // Apply luck multiplier to EXP gain
-        const adjustedAmount = Math.floor(amount * this.luckMultiplier);
+        const adjustedAmount = Math.floor(amount * this.luckDropChanceBonus);
 
         this.exp += adjustedAmount;
         console.log(`Gained ${adjustedAmount} EXP (${amount} base + luck bonus). Current: ${this.exp}/${this.expRequired}`);

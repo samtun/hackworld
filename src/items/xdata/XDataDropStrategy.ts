@@ -24,7 +24,7 @@ export class XDataDropStrategy implements ItemDropStrategy {
             : player.level / (XDataDropStrategy.XDATA_LEVEL_DIVISOR - XDataDropStrategy.XDATA_LEVEL_MULTIPLIER * player.level);
         
         // Apply luck multiplier to drop chance
-        const xDataDropChance = levelDropChance * enemy.xDataDropChance * player.luckMultiplier;
+        const xDataDropChance = levelDropChance * enemy.xDataDropChance + player.luckDropChanceBonus;
 
         // Check if drop should occur
         if (Math.random() > xDataDropChance) return null;

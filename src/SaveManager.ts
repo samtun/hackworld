@@ -26,14 +26,11 @@ export interface SaveData {
         expRequired: number;
         maxHp: number;
         maxTp: number;
-        strength: number;
-        defense: number;
-        agility: number;
-        luck: number;
         money: number;
         xData: number;
         boosterPacks: number;
         statPointsAvailable: number;
+        // Do not track attributes (strength, defense, ...) since they are dynamically calculated based on the upgrades
 
         // Weapon tech (per-type)
         tech: Record<string, number>;
@@ -170,10 +167,6 @@ export class SaveManager {
                 expRequired: player.expRequired,
                 maxHp: player.maxHp,
                 maxTp: player.maxTp,
-                strength: player.strength,
-                defense: player.defense,
-                agility: player.agility,
-                luck: player.luck,
                 money: player.money,
                 xData: player.xData,
                 boosterPacks: player.boosterPacks,
@@ -308,10 +301,6 @@ export class SaveManager {
                     expRequired: player.expRequired,
                     maxHp: player.maxHp,
                     maxTp: player.maxTp,
-                    strength: player.strength,
-                    defense: player.defense,
-                    agility: player.agility,
-                    luck: player.luck,
                     money: player.money,
                     xData: player.xData,
                     boosterPacks: player.boosterPacks,
@@ -492,10 +481,6 @@ export class SaveManager {
         player.maxHp = saveData.player.maxHp;
         player.tp = saveData.player.maxTp;
         player.maxTp = saveData.player.maxTp;
-        player.strength = saveData.player.strength;
-        player.defense = saveData.player.defense;
-        player.agility = saveData.player.agility;
-        player.luck = saveData.player.luck;
         player.money = saveData.player.money;
         player.xData = saveData.player.xData;
         player.boosterPacks = saveData.player.boosterPacks;
