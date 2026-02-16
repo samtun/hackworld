@@ -17,7 +17,6 @@ export class World {
     physicsWorld: CANNON.World;
     physicsMaterial: CANNON.Material;
     assetManager: AssetManager;
-    onLoadProgressCallback: (loaded: number, total: number) => void;
     onStageLoadStartCallback: () => void;
     onStageLoadCompleteCallback: () => void;
 
@@ -47,20 +46,19 @@ export class World {
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
-        onLoadComplete: () => void,
-        onLoadProgress: (loaded: number, total: number) => void,
-        onStart: () => void,
-        onComplete: () => void,) {
+        onInitialLoadComplete: () => void,
+        onInitialLoadProgress: (loaded: number, total: number) => void,
+        onStageLoadStartCallback: () => void,
+        onStageLoadCompleteCallback: () => void,) {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
         this.physicsMaterial = physicsMaterial;
         this.assetManager = AssetManager.Instance;
-        this.onLoadProgressCallback = onLoadProgress;
 
         this.itemDropManager = ItemDropManager.Instance;
 
         // Initialize floating indicator manager
-        this.floatingIndicatorManager = new FloatingIndicatorManager(scene);
+        this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
 
         // Create grid plane at y=-5
         this.gridPlaneMaterial = new THREE.ShaderMaterial({
@@ -173,24 +171,20 @@ export class World {
         this.gridPlane.position.y = -18;
         scene.add(this.gridPlane);
 
-        // Drop strategies are now registered internally by ItemDropManager
-
         // Setup progress callback for asset manager
-        if (this.onLoadProgressCallback) {
-            this.assetManager.setProgressCallback(this.onLoadProgressCallback);
-        }
+        this.assetManager.setProgressCallback(onInitialLoadProgress);
 
-        this.onStageLoadStartCallback = onStart;
-        this.onStageLoadCompleteCallback = onComplete;
+        this.onStageLoadStartCallback = onStageLoadStartCallback;
+        this.onStageLoadCompleteCallback = onStageLoadCompleteCallback;
 
         // Preload common assets and start in Lobby
-        this.initializeWorld(onLoadComplete);
+        this.initializeWorld(onInitialLoadComplete);
     }
 
     /**
      * Initialize the world by preloading common assets and loading the lobby
      */
-    private async initializeWorld(onLoadComplete: () => void): Promise<void> {
+    private async initializeWorld(onInitialLoadComplete: () => void): Promise<void> {
         try {
             await this.preloadCommonAssets();
             await this.loadStageById(Lobby.getMetadata().id);
@@ -198,7 +192,7 @@ export class World {
             console.error('Failed to initialize world:', error);
         } finally {
             // Always call onLoadComplete to ensure UI updates
-            onLoadComplete();
+            onInitialLoadComplete();
         }
     }
 
@@ -249,7 +243,8 @@ export class World {
                 this.currentStage.clear();
                 this.currentStage = undefined;
             }
-            this.itemDropManager.clear(this.scene, this.physicsWorld);
+
+            this.itemDropManager.clear(this.scene);
 
             // Reset stage completion notification flag
             this.hasNotifiedStageCompletion = false;
@@ -311,13 +306,6 @@ export class World {
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
 
-            // Set up damage callback if not already set
-            if (!enemy.onDamageTaken) {
-                enemy.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
-                    this.spawnDamageNumber(position, amount, '#fdc650ff');
-                };
-            }
-
             // Set up death fade callback if not already set
             if (!enemy.onDeathFadeStart) {
                 enemy.onDeathFadeStart = (e: Enemy) => {
@@ -325,12 +313,12 @@ export class World {
                     player.gainExp(e.expAmount);
 
                     // Spawn EXP number visual
-                    this.spawnEXPNumber(e.getDeathPosition(), e.expAmount);
+                    this.floatingIndicatorManager.spawnEXP(e.getDeathPosition(), e.expAmount);
 
                     // Try to drop an item
                     // The ItemDropManager will select one strategy based on probabilities
                     // and each strategy will check enemy.itemDropChance internally
-                    this.itemDropManager.tryDropItem(this.scene, this.physicsWorld, e, player);
+                    this.itemDropManager.tryDropItem(this.scene, e, player);
                 };
             }
 
@@ -350,28 +338,6 @@ export class World {
 
         // Update floating indicators (damage, EXP, tech points, etc.)
         this.floatingIndicatorManager.update(dt, cameraPosition);
-    }
-
-    /**
-     * Spawn EXP number visual at the given position
-     */
-    spawnEXPNumber(position: CANNON.Vec3, amount: number): void {
-        // Use new floating indicator manager for consistent styling
-        this.floatingIndicatorManager.spawnEXP(position, amount);
-    }
-
-    /**
-     * Spawn damage number visual at the given position
-     */
-    spawnDamageNumber(position: CANNON.Vec3, amount: number, color: string): void {
-        this.floatingIndicatorManager.spawnDamage(position, amount, color);
-    }
-
-    /**
-     * Spawn tech point indicator visual at the given position
-     */
-    spawnTechIndicator(position: CANNON.Vec3): void {
-        this.floatingIndicatorManager.spawnTech(position);
     }
 
     /**
@@ -442,6 +408,6 @@ export class World {
      * Pick up any drop type by using the drop's dropType property
      */
     pickupDrop(drop: ItemDrop, player: Player): void {
-        this.itemDropManager.pickup(drop.dropType, this.scene, this.physicsWorld, drop, player);
+        this.itemDropManager.pickup(drop.dropType, this.scene, drop, player);
     }
 }

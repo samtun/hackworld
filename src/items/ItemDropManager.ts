@@ -1,24 +1,23 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { Enemy } from '../enemies/Enemy';
 import { Player } from '../Player';
 import { ItemDrop } from './ItemDrop';
 import { ItemDropType } from './ItemDropType';
-import { WeaponDropStrategy } from './strategies/WeaponDropStrategy';
-import { ChipDropStrategy } from './strategies/ChipDropStrategy';
-import { CoreDropStrategy } from './strategies/CoreDropStrategy';
-import { BoosterPackDropStrategy } from './strategies/BoosterPackDropStrategy';
-import { XDataDropStrategy } from './strategies/XDataDropStrategy';
-import { MoneyDropStrategy } from './strategies/MoneyDropStrategy';
+import { WeaponDropStrategy } from './weapons/WeaponDropStrategy';
+import { ChipDropStrategy } from './chips/ChipDropStrategy';
+import { CoreDropStrategy } from './cores/CoreDropStrategy';
+import { BoosterPackDropStrategy } from './cards/BoosterPackDropStrategy';
+import { XDataDropStrategy } from './xdata/XDataDropStrategy';
+import { MoneyDropStrategy } from './bits/MoneyDropStrategy';
 
 export interface ItemDropStrategy {
     // unique identifier for this strategy type
     readonly key: ItemDropType;
     readonly distributionWeight: number; // probability weight for this drop type
     // returns the created drop object or null when no drop occurred
-    tryDrop(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): ItemDrop | null;
+    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null;
     // perform pickup logic (add item to inventory); do NOT cleanup the drop visuals/bodies
-    pickup(scene: THREE.Scene, world: CANNON.World, drop: ItemDrop, player: Player): void;
+    pickup(drop: ItemDrop, player: Player): void;
 }
 
 export class ItemDropManager {
@@ -69,11 +68,11 @@ export class ItemDropManager {
      * Selects from weighted probabilities from all drop types.
      * @returns true if an item was dropped, false otherwise
      */
-    tryDropItem(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): boolean {
+    tryDropItem(scene: THREE.Scene, enemy: Enemy, player: Player): boolean {
         const strategy = this.selectRandomStrategy();
         if (!strategy) return false;
 
-        const drop = strategy.tryDrop(scene, world, enemy, player);
+        const drop = strategy.tryDrop(scene, enemy, player);
         if (drop) {
             const arr = this.drops.get(strategy.key)!;
             arr.push(drop);
@@ -83,11 +82,11 @@ export class ItemDropManager {
         return false;
     }
 
-    tryDrop(key: ItemDropType, scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): boolean {
+    tryDrop(key: ItemDropType, scene: THREE.Scene, enemy: Enemy, player: Player): boolean {
         const dropStrategy = this.itemDropStrategies.find(strategy => strategy.key === key);
         if (!dropStrategy) return false;
 
-        const drop = dropStrategy.tryDrop(scene, world, enemy, player);
+        const drop = dropStrategy.tryDrop(scene, enemy, player);
         if (drop) {
             const arr = this.drops.get(key)!;
             arr.push(drop);
@@ -116,13 +115,14 @@ export class ItemDropManager {
     }
 
     // Delegate pickup to strategy, then cleanup and remove the drop from internal storage
-    pickup(key: ItemDropType, scene: THREE.Scene, world: CANNON.World, drop: ItemDrop, player: Player) {
-        const s = this.itemDropStrategies.find(strategy => strategy.key === key);
-        if (!s) return;
-        s.pickup(scene, world, drop, player);
+    pickup(key: ItemDropType, scene: THREE.Scene, drop: ItemDrop, player: Player) {
+        const strategy = this.itemDropStrategies.find(strategy => strategy.key === key);
+        if (!strategy) return;
+
+        strategy.pickup(drop, player);
 
         // cleanup visuals and physics body
-        drop.cleanup(scene, world);
+        drop.cleanup(scene);
 
         const arr = this.drops.get(key) || [];
         const idx = arr.indexOf(drop);
@@ -130,10 +130,10 @@ export class ItemDropManager {
     }
 
     // Clear all drops for all strategies
-    clear(scene: THREE.Scene, world: CANNON.World) {
+    clear(scene: THREE.Scene) {
         for (const [, arr] of this.drops.entries()) {
-            for (const d of arr) {
-                if (typeof d.cleanup === 'function') d.cleanup(scene, world);
+            for (const drop of arr) {
+                drop.cleanup(scene);
             }
             arr.length = 0;
         }

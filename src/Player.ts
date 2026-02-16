@@ -16,6 +16,7 @@ import { Skill } from './skills/Skill';
 import { LaserBeamSkill } from './skills/LaserBeamSkill';
 import { HealingSkill } from './skills/HealingSkill';
 import { AreaAttackSkill } from './skills/AreaAttackSkill';
+import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 
 enum ActionType {
     Idle = 'Idle',
@@ -46,6 +47,7 @@ export class Player extends BaseMesh {
     public world: CANNON.World;
 
     private weaponRepository: WeaponRepository;
+    private floatingIndicatorManager: FloatingIndicatorManager;
 
     // Knockback strength
     private readonly KNOCKBACK_FORCE = 80;
@@ -182,12 +184,6 @@ export class Player extends BaseMesh {
     // Level up animation state
     private isLevelingUp: boolean = false;
 
-    // Callback for spawning damage numbers
-    onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
-
-    // Callback for spawning tech indicators
-    onTechGained?: (position: CANNON.Vec3) => void;
-
     // Inventory
     inventory: Item[] = [];
     money: number = 500; // Starting money
@@ -214,6 +210,7 @@ export class Player extends BaseMesh {
         this.input = input;
         this.weaponRepository = WeaponRepository.Instance;
         this.position = position.clone() as any;
+        this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
 
         // Setup Animations
         this.setupAnimations();
@@ -422,11 +419,7 @@ export class Player extends BaseMesh {
         if (random <= dropChance) {
             console.log(`Tech increased from ${x} to ${x + 1}`);
             this.tech[key] += 1;
-
-            // Spawn tech indicator at player position
-            if (this.onTechGained) {
-                this.onTechGained(this.body.position);
-            }
+            this.floatingIndicatorManager.spawnTech(this.body.position);
         }
     }
 
@@ -1012,11 +1005,7 @@ export class Player extends BaseMesh {
         const reducedDamage = Math.max(1, Math.floor(amount * defenseMultiplier));
 
         this.hp -= reducedDamage;
-
-        // Spawn damage number if callback is set
-        if (this.onDamageTaken) {
-            this.onDamageTaken(this.body.position, reducedDamage);
-        }
+        this.floatingIndicatorManager.spawnDamage(this.body.position, reducedDamage, '#ff2424ff');
 
         if (this.hp <= 0) {
             this.hp = 0;

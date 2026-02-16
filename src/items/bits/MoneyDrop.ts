@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { ItemDrop } from './ItemDrop';
-import { ItemDropType } from './ItemDropType';
-import { InteractiveEntityType } from '../InteractiveEntityType';
+import { ItemDrop } from '../ItemDrop';
+import { ItemDropType } from '../ItemDropType';
+import { InteractiveEntityType } from '../../InteractiveEntityType';
 
 export class MoneyDrop extends ItemDrop {
     mesh: THREE.Group;
@@ -50,7 +50,7 @@ export class MoneyDrop extends ItemDrop {
         this.mesh.rotation.y += this.ROTATION_SPEED * deltaTime;
     }
 
-    cleanup(scene: THREE.Scene, _world: CANNON.World): void {
+    cleanup(scene: THREE.Scene): void {
         scene.remove(this.mesh);
         this.mesh.traverse((child) => {
             if (child instanceof THREE.Mesh) {

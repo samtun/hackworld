@@ -4,6 +4,7 @@ import { Player } from '../Player';
 import { BaseMesh } from '../BaseMesh';
 import { PlayerRegistry } from '../PlayerRegistry';
 import { AssetManager } from '../AssetManager';
+import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 
 enum EnemyActionType {
     Idle = 'Idle',
@@ -72,6 +73,9 @@ export class Enemy extends BaseMesh {
     protected world: CANNON.World;
     protected physicsMaterial: CANNON.Material;
 
+    private floatingIndicatorManager: FloatingIndicatorManager;
+
+
     // Callback for spawning damage numbers
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
 
@@ -84,6 +88,7 @@ export class Enemy extends BaseMesh {
         this.scene = scene;
         this.world = world;
         this.physicsMaterial = physicsMaterial;
+        this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
 
         // Store base position for return behavior
         this.basePosition = position.clone();
@@ -520,11 +525,7 @@ export class Enemy extends BaseMesh {
         // Reset return-to-base behavior when taking damage
         this.isReturningToBase = false;
         this.returnToBaseTimer = 0;
-
-        // Spawn damage number if callback is set
-        if (this.onDamageTaken) {
-            this.onDamageTaken(this.body.position, amount);
-        }
+        this.floatingIndicatorManager.spawnDamage(this.body.position, amount, '#fdc650ff');
 
         // Knockback
         if (sourcePos) {

@@ -1,8 +1,7 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { ItemDropStrategy } from '../ItemDropManager';
-import { ChipDrop } from '../chips/ChipDrop';
-import { ChipRepository } from '../chips/ChipRepository';
+import { ChipDrop } from './ChipDrop';
+import { ChipRepository } from './ChipRepository';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { ItemLevelHelper } from '../ItemLevelHelper';
@@ -12,7 +11,7 @@ export class ChipDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.CHIP;
     public readonly distributionWeight = 4;
 
-    tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
         const effectiveDropChance = enemy.itemDropChance * player.luckMultiplier;
         
@@ -33,7 +32,7 @@ export class ChipDropStrategy implements ItemDropStrategy {
         return drop;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: ChipDrop, player: Player): void {
+    pickup(drop: ChipDrop, player: Player): void {
         // Get the chip from repository by ID to find its type
         const chipItem = ChipRepository.Instance.getChipById(drop.chipId);
         if (!chipItem) {

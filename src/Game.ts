@@ -110,16 +110,12 @@ export class Game {
         // Setup Game Objects
         this.input = InputManager.Instance;
         this.ui = UIManager.Instance;
-        this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial, () => {
-            this.ui.hideLoadingScreen();
-            this.ui.showStartScreen();
-            this.initializeEntities();
-
-            // Start Loop
-            this.animate();
-        },
-            (loaded, total) => this.ui.updateLoadingProgress(loaded, total),
+        this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial, 
+            () => this.onInitialLoadComplete(),
+            (loaded, total) => this.onInitialLoadProgress(loaded, total),
+            // onStageLoadStartCallback
             () => this.ui.showLoadingScreen(),
+            // onStageLoadCompleteCallback,
             () => this.ui.hideLoadingScreen());
 
         // Resize Handler
@@ -174,6 +170,19 @@ export class Game {
         }
     }
 
+    private onInitialLoadComplete(): void {
+        this.ui.hideLoadingScreen();
+        this.ui.showStartScreen();
+        this.initializeEntities();
+
+        // Start Loop
+        this.animate();
+    }
+
+    private onInitialLoadProgress(loaded: number, total: number): void {
+        this.ui.updateLoadingProgress(loaded, total)
+    }
+
     initializeEntities() {
         this.inventory = InventoryManager.Instance;
         this.npcDialogue = NpcDialogueManager.Instance;
@@ -195,16 +204,6 @@ export class Game {
 
         // Register player with UI so skill indicators are created
         this.ui.registerPlayer(this.player);
-
-        // Set up damage number callback for player
-        this.player.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
-            this.world.spawnDamageNumber(position, amount, '#ff2424ff');
-        };
-
-        // Set up tech indicator callback for player
-        this.player.onTechGained = (position: CANNON.Vec3) => {
-            this.world.spawnTechIndicator(position);
-        };
 
         // Set up teleporter callback for handling teleporter interactions
         Teleporter.setTeleporterCallback((destination: string) => {

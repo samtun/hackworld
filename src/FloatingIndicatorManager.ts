@@ -7,11 +7,16 @@ import { FloatingIndicator, FloatingIndicatorConfig } from './FloatingIndicator'
  * Handles creation, updates, and cleanup
  */
 export class FloatingIndicatorManager {
+    private static instance: FloatingIndicatorManager;
     private floatingIndicators: FloatingIndicator[] = [];
     private scene: THREE.Scene;
 
-    constructor(scene: THREE.Scene) {
+    private constructor(scene: THREE.Scene) {
         this.scene = scene;
+    }
+
+    public static getInstance(scene: THREE.Scene): FloatingIndicatorManager {
+        return this.instance || (this.instance = new this(scene));
     }
 
     /**

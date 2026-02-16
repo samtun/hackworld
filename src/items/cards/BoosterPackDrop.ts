@@ -76,7 +76,7 @@ export class BoosterPackDrop extends ItemDrop {
         }
     }
 
-    cleanup(scene: THREE.Scene, _world: CANNON.World): void {
+    cleanup(scene: THREE.Scene): void {
         scene.remove(this.mesh);
 
         // Dispose of geometries and materials

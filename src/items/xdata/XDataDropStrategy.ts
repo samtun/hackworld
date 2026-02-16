@@ -1,9 +1,8 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
-import { XDataDrop } from '../xdata/XDataDrop';
+import { XDataDrop } from './XDataDrop';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 
@@ -15,7 +14,7 @@ export class XDataDropStrategy implements ItemDropStrategy {
     private static readonly XDATA_LEVEL_MULTIPLIER = 3.285563999;
     public readonly distributionWeight = 1;
 
-    tryDrop(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): ItemDrop | null {
+    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null {
         // Low level players should not get any X-Data yet
         if (player.level < 10) return null;
 
@@ -36,12 +35,12 @@ export class XDataDropStrategy implements ItemDropStrategy {
         const dropPosition = enemy.body.position.clone();
         dropPosition.y = 0.5;
 
-        const drop = new XDataDrop(scene, world, dropPosition, xDataAmount);
+        const drop = new XDataDrop(scene, dropPosition, xDataAmount);
         console.log(`Enemy dropped ${xDataAmount} X-Data`);
         return drop;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: XDataDrop, player: Player): void {
+    pickup(drop: XDataDrop, player: Player): void {
         player.collectXData(drop.amount);
         console.log(`Picked up ${drop.amount} X-Data`);
     }

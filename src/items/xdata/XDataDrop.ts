@@ -16,7 +16,7 @@ export class XDataDrop extends ItemDrop {
     private bobTimer: number = 0;
     private baseHeight: number;
     
-    constructor(scene: THREE.Scene, _world: CANNON.World, position: CANNON.Vec3, amount: number) {
+    constructor(scene: THREE.Scene, position: CANNON.Vec3, amount: number) {
         super();
         this.amount = amount;
         this.baseHeight = position.y;
@@ -61,7 +61,7 @@ export class XDataDrop extends ItemDrop {
         this.mesh.rotation.y += deltaTime * 2; // Rotate 2 radians per second
     }
     
-    cleanup(scene: THREE.Scene, _world: CANNON.World): void {
+    cleanup(scene: THREE.Scene): void {
         scene.remove(this.mesh);
         
         // Dispose of geometries and materials
