@@ -8,6 +8,7 @@ import { ChipDropStrategy } from './strategies/ChipDropStrategy';
 import { CoreDropStrategy } from './strategies/CoreDropStrategy';
 import { BoosterPackDropStrategy } from './strategies/BoosterPackDropStrategy';
 import { XDataDropStrategy } from './strategies/XDataDropStrategy';
+import { MoneyDropStrategy } from './strategies/MoneyDropStrategy';
 
 export interface ItemDropStrategy {
     // unique identifier for this strategy type
@@ -27,21 +28,21 @@ export class ItemDropManager {
     private itemDropStrategies: ItemDropStrategy[] = [];
 
     private constructor() {
-        // Register all item drop strategies internally (weapon, chip, core, boosterPack)
+        // Register all item drop strategies
         this.registerStrategy(new WeaponDropStrategy());
         this.registerStrategy(new ChipDropStrategy());
         this.registerStrategy(new CoreDropStrategy());
         this.registerStrategy(new BoosterPackDropStrategy());
-
-        // XData is separate from item drops
         this.registerStrategy(new XDataDropStrategy());
+        this.registerStrategy(new MoneyDropStrategy());
 
-        // Build list of item drop strategies (excluding xData)
+        // Build list of item drop strategies (all except xData)
         this.itemDropStrategies = [
             this.strategies.get('weapon')!,
             this.strategies.get('chip')!,
             this.strategies.get('core')!,
-            this.strategies.get('boosterPack')!
+            this.strategies.get('boosterPack')!,
+            this.strategies.get('money')!
         ];
     }
 
@@ -73,20 +74,18 @@ export class ItemDropManager {
     }
 
     /**
-     * Try to drop an item from enemy using all registered item drop strategies.
-     * Each strategy independently checks enemy.itemDropChance and only one item can be dropped.
-     * Strategies are tried in order weighted by their drop probability.
+     * Try to drop an item from enemy.
+     * Selects from weighted probabilities: weapon, chip, core, boosterPack, money.
+     * XData is handled separately via checkXDataDropInteraction.
      * @returns true if an item was dropped, false otherwise
      */
     tryDropItem(scene: THREE.Scene, world: CANNON.World, enemy: Enemy, player: Player): boolean {
         const strategy = this.selectRandomStrategy();
         if (!strategy) return false;
 
-        // Try this strategy
         const drop = strategy.tryDrop(scene, world, enemy, player);
         if (drop) {
             const arr = this.drops.get(strategy.key)!;
-            // Add physics body to world if provided by the drop
             if (drop.body instanceof CANNON.Body) {
                 world.addBody(drop.body);
             }

@@ -481,10 +481,15 @@ export class Game {
         let nearbyInteractive: InteractiveEntity | null = null;
 
         if (!anyMenuOpen) {
-            // Auto-pickup XData drops
+            // Auto-pickup XData and money drops
             const xDataDropNearby = this.world.checkXDataDropInteraction(this.player.position);
             if (xDataDropNearby) {
                 this.world.pickupXDataDrop(xDataDropNearby, this.player);
+            }
+
+            const moneyDropNearby = this.world.checkMoneyDropInteraction(this.player.position);
+            if (moneyDropNearby) {
+                this.world.pickupMoneyDrop(moneyDropNearby, this.player);
             }
 
             // Check NPCs

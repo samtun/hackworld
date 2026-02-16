@@ -487,4 +487,18 @@ export class World {
     pickupXDataDrop(drop: XDataDrop, player: Player): void {
         this.itemDropManager.pickup('xData', this.scene, this.physicsWorld, drop, player);
     }
+
+    /**
+     * Check if player is near a money drop
+     */
+    checkMoneyDropInteraction(playerPosition: THREE.Vector3) {
+        return this.itemDropManager.checkInteraction('money', playerPosition);
+    }
+
+    /**
+     * Pick up a money drop
+     */
+    pickupMoneyDrop(drop: any, player: Player): void {
+        this.itemDropManager.pickup('money', this.scene, this.physicsWorld, drop, player);
+    }
 }
