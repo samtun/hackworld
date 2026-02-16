@@ -4,15 +4,15 @@ import { ItemDropStrategy } from '../ItemDropManager';
 import { BoosterPackDrop } from '../cards/BoosterPackDrop';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
+import { ItemDropType } from '../ItemDropType';
 
 export class BoosterPackDropStrategy implements ItemDropStrategy {
-    readonly key = 'boosterPack';
-    private readonly DROP_PROBABILITY = 0.03; // 3% of total drops
+    readonly key = ItemDropType.BOOSTER_PACK;
+    public readonly distributionWeight = 1;
 
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
-        const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
-        const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
+        const effectiveDropChance = enemy.itemDropChance * player.luckMultiplier;
         
         if (Math.random() > effectiveDropChance) return null;
 
@@ -27,9 +27,5 @@ export class BoosterPackDropStrategy implements ItemDropStrategy {
     pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, _drop: BoosterPackDrop, player: Player): void {
         player.collectBoosterPack();
         console.log('Picked up Booster Pack');
-    }
-
-    getDropProbability(): number {
-        return this.DROP_PROBABILITY;
     }
 }

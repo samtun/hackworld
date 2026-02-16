@@ -6,15 +6,15 @@ import { ChipRepository } from '../chips/ChipRepository';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import { ItemDropType } from '../ItemDropType';
 
 export class ChipDropStrategy implements ItemDropStrategy {
-    readonly key = 'chip';
-    private readonly DROP_PROBABILITY = 0.27; // 27% of total drops
+    readonly key = ItemDropType.CHIP;
+    public readonly distributionWeight = 4;
 
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
-        const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
-        const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
+        const effectiveDropChance = enemy.itemDropChance * player.luckMultiplier;
         
         if (Math.random() > effectiveDropChance) return null;
 
@@ -43,9 +43,5 @@ export class ChipDropStrategy implements ItemDropStrategy {
 
         player.inventory.push(chipItem);
         console.log(`Picked up chip ${chipItem}`);
-    }
-
-    getDropProbability(): number {
-        return this.DROP_PROBABILITY;
     }
 }

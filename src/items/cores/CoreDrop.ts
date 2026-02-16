@@ -1,17 +1,20 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { ItemDrop } from '../ItemDrop';
+import { ItemDropType } from '../ItemDropType';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import { InteractiveEntityType } from '../../InteractiveEntityType';
 
 export class CoreDrop extends ItemDrop {
     mesh: THREE.Group;
-    body: CANNON.Body;
+    dropType = ItemDropType.CORE;
     coreId: string;
     coreName: string;
     buyPrice: number;
     sellPrice: number;
     level: number = 1;
     textMesh: THREE.Mesh | null = null;
+    interactiveType = InteractiveEntityType.ITEM_DROP;
 
     private floatTimer: number = 0;
     private baseHeight: number;
@@ -43,12 +46,6 @@ export class CoreDrop extends ItemDrop {
 
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
-
-        const shape = new CANNON.Sphere(0.42);
-        this.body = new CANNON.Body({ mass: 0, isTrigger: true, collisionResponse: false, shape });
-        this.body.position.copy(position);
-        (this.body as any).isCoreDrop = true;
-        (this.body as any).coreDrop = this;
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
@@ -68,13 +65,10 @@ export class CoreDrop extends ItemDrop {
                 this.textMesh.rotation.y = angle;
             }
         }
-
-        this.body.position.y = this.mesh.position.y;
     }
 
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, _world: CANNON.World): void {
         scene.remove(this.mesh);
-        world.removeBody(this.body);
         this.mesh.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 if (child.geometry) child.geometry.dispose();

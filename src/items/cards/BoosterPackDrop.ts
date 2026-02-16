@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { ItemDrop } from '../ItemDrop';
+import { ItemDropType } from '../ItemDropType';
+import { InteractiveEntityType } from '../../InteractiveEntityType';
 
 /**
  * BoosterPackDrop entity - represents a booster pack that can be picked up from the ground
@@ -8,8 +10,9 @@ import { ItemDrop } from '../ItemDrop';
  */
 export class BoosterPackDrop extends ItemDrop {
     mesh: THREE.Group;
-    body: CANNON.Body;
+    dropType = ItemDropType.BOOSTER_PACK;
     textMesh: THREE.Mesh | null = null;
+    interactiveType = InteractiveEntityType.ITEM_DROP;
 
     private floatTimer: number = 0;
     private baseHeight: number;
@@ -43,20 +46,6 @@ export class BoosterPackDrop extends ItemDrop {
         // Position the group
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
-
-        // Create physics body (sensor for detection)
-        const shape = new CANNON.Sphere(0.5);
-        this.body = new CANNON.Body({
-            mass: 0,
-            isTrigger: true,
-            collisionResponse: false,
-            shape: shape
-        });
-        this.body.position.copy(position);
-
-        // Mark as booster pack drop for detection
-        (this.body as any).isBoosterPackDrop = true;
-        (this.body as any).boosterPackDrop = this;
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
@@ -85,14 +74,10 @@ export class BoosterPackDrop extends ItemDrop {
                 this.textMesh.rotation.y = angle;
             }
         }
-
-        // Sync body position (mainly Y for floating)
-        this.body.position.y = this.mesh.position.y;
     }
 
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, _world: CANNON.World): void {
         scene.remove(this.mesh);
-        world.removeBody(this.body);
 
         // Dispose of geometries and materials
         this.mesh.traverse((child) => {

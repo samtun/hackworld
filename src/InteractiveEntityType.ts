@@ -1,8 +1,5 @@
 export enum InteractiveEntityType {
     NPC = 'npc',
-    WEAPON_DROP = 'weaponDrop',
-    CHIP_DROP = 'chipDrop',
-    CORE_DROP = 'coreDrop',
-    BOOSTER_PACK_DROP = 'boosterPackDrop',
-    XDATA_DROP = 'xDataDrop'
+    ITEM_DROP = 'itemDrop',
+    AUTO_PICKUP_DROP = 'autoPickupDrop',
 }

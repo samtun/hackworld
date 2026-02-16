@@ -524,7 +524,7 @@ export class Game {
                 const interactiveDrop = this.world.checkNearestInteractiveDrop(this.player.position);
                 if (interactiveDrop) {
                     nearbyInteractive = {
-                        type: this.world.getDropInteractiveType(interactiveDrop),
+                        type: interactiveDrop.interactiveType,
                         data: interactiveDrop,
                         hint: getHint(HintConfigs.pickUp, this.input),
                         action: () => {

@@ -202,6 +202,10 @@ export class Player extends BaseMesh {
     private isUsingSkill: boolean = false;
     private skillAnimationTimer: number = 0;
 
+    get luckMultiplier(): number {
+        return  1 + this.luck / this.LUCK_DIVISOR;
+    }
+
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
         super('models/main_character.glb');
         this.scene = scene;
@@ -397,11 +401,6 @@ export class Player extends BaseMesh {
     // Calculate critical hit chance using formula: agility / 40000 + 0.02
     private getCriticalChance(): number {
         return this.agility / this.AGILITY_CRIT_DIVISOR + this.BASE_CRIT_CHANCE;
-    }
-
-    // Calculate luck multiplier using formula: luck / 40000
-    private getLuckMultiplier(): number {
-        return this.luck / this.LUCK_DIVISOR;
     }
 
     // Return current tech points for a given weapon type
@@ -1322,8 +1321,7 @@ export class Player extends BaseMesh {
         }
 
         // Apply luck multiplier to EXP gain
-        const luckMultiplier = 1 + this.getLuckMultiplier();
-        const adjustedAmount = Math.floor(amount * luckMultiplier);
+        const adjustedAmount = Math.floor(amount * this.luckMultiplier);
 
         this.exp += adjustedAmount;
         console.log(`Gained ${adjustedAmount} EXP (${amount} base + luck bonus). Current: ${this.exp}/${this.expRequired}`);

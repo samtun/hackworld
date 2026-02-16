@@ -7,17 +7,17 @@ import { WeaponType } from '../weapons/WeaponType';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { WeaponItem } from '../weapons/WeaponItem';
+import { ItemDropType } from '../ItemDropType';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
-    readonly key = 'weapon';
+    readonly key = ItemDropType.WEAPON;
     // Threshold for becoming eligible for higher level drops (80% of next level requirement)
     private static readonly HIGHER_LEVEL_THRESHOLD = 0.8;
-    private readonly DROP_PROBABILITY = 0.43; // 43% of total drops
+    public readonly distributionWeight = 5;
 
     tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
-        const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
-        const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
+        const effectiveDropChance = enemy.itemDropChance * player.luckMultiplier;
         
         if (Math.random() > effectiveDropChance) return null;
 
@@ -133,9 +133,4 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         player.inventory.push(weaponItem);
         console.log(`Picked up ${weaponItem}`);
     }
-
-    getDropProbability(): number {
-        return this.DROP_PROBABILITY;
-    }
-
 }

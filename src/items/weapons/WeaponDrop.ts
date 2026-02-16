@@ -3,6 +3,8 @@ import * as CANNON from 'cannon-es';
 import { WeaponType } from './WeaponType';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 import { ItemDrop } from '../ItemDrop';
+import { ItemDropType } from '../ItemDropType';
+import { InteractiveEntityType } from '../../InteractiveEntityType';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
@@ -11,11 +13,12 @@ import { ItemDrop } from '../ItemDrop';
 export class WeaponDrop extends ItemDrop {
     weaponId: string;
     mesh: THREE.Group;
-    body: CANNON.Body;
+    dropType = ItemDropType.WEAPON;
     weaponType: WeaponType;
     weaponName: string;
     textMesh: THREE.Mesh | null = null;
     level: number = 1;
+    interactiveType = InteractiveEntityType.ITEM_DROP;
 
     // Weapon stats with bonus applied
     damage: number;
@@ -77,21 +80,6 @@ export class WeaponDrop extends ItemDrop {
         // Position the group
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
-
-        // Create physics body (sensor for detection). Do NOT add to physics world here;
-        // caller (ItemDropManager) will add the body to the world.
-        const shape = new CANNON.Sphere(0.5);
-        this.body = new CANNON.Body({
-            mass: 0,
-            isTrigger: true,
-            collisionResponse: false,
-            shape: shape
-        });
-        this.body.position.copy(position);
-
-        // Mark as weapon drop for detection
-        (this.body as any).isWeaponDrop = true;
-        (this.body as any).weaponDrop = this;
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
@@ -120,14 +108,10 @@ export class WeaponDrop extends ItemDrop {
                 this.textMesh.rotation.y = angle;
             }
         }
-
-        // Sync body position (mainly Y for floating)
-        this.body.position.y = this.mesh.position.y;
     }
 
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, _world: CANNON.World): void {
         scene.remove(this.mesh);
-        world.removeBody(this.body);
 
         // Dispose of geometries and materials
         this.mesh.traverse((child) => {

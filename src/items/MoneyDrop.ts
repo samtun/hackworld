@@ -1,11 +1,14 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { ItemDrop } from './ItemDrop';
+import { ItemDropType } from './ItemDropType';
+import { InteractiveEntityType } from '../InteractiveEntityType';
 
 export class MoneyDrop extends ItemDrop {
     mesh: THREE.Group;
-    body: CANNON.Body;
     amount: number;
+    dropType = ItemDropType.MONEY;
+    interactiveType = InteractiveEntityType.AUTO_PICKUP_DROP;
 
     private floatTimer: number = 0;
     private baseHeight: number;
@@ -35,16 +38,9 @@ export class MoneyDrop extends ItemDrop {
         // Positioning
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
-
-        // Physics
-        const shape = new CANNON.Sphere(0.3);
-        this.body = new CANNON.Body({ mass: 0, isTrigger: true, collisionResponse: false, shape });
-        this.body.position.copy(position);
-        (this.body as any).isMoneyDrop = true;
-        (this.body as any).moneyDrop = this;
     }
 
-    update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
+    update(deltaTime: number, _cameraPosition: THREE.Vector3, _playerPosition: THREE.Vector3): void {
         // Floating animation
         this.floatTimer += deltaTime;
         const offset = Math.sin(this.floatTimer * this.FLOAT_SPEED) * this.FLOAT_AMPLITUDE;
@@ -52,14 +48,10 @@ export class MoneyDrop extends ItemDrop {
 
         // Spinning animation
         this.mesh.rotation.y += this.ROTATION_SPEED * deltaTime;
-
-        // Update physics body position
-        this.body.position.y = this.mesh.position.y;
     }
 
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
+    cleanup(scene: THREE.Scene, _world: CANNON.World): void {
         scene.remove(this.mesh);
-        world.removeBody(this.body);
         this.mesh.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 if (child.geometry) child.geometry.dispose();
