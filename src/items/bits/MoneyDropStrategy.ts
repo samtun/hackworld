@@ -38,7 +38,7 @@ export class MoneyDropStrategy implements ItemDropStrategy {
      * Determine the amount of money to drop based on player level.
      */
     private determineMoneyAmount(player: Player): number {
-        const levelBonus = Math.pow(Math.log(player.level), 2) / 400;
+        const levelBonus = Math.pow(Math.log10(player.level), 2) / 400;
 
         // Different amounts with base chances
         const chances = [

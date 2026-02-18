@@ -385,14 +385,14 @@ export class Player extends BaseMesh {
     // Calculate strength multiplier using formula: 0.27 / ln(9999) * ln(x)
     private getStrengthMultiplier(): number {
         if (this.strength <= 0) return 0;
-        const multiplier = (this.STAT_FORMULA_NUMERATOR / Math.log(this.STAT_FORMULA_LOG_BASE)) * Math.log(this.strength);
+        const multiplier = (this.STAT_FORMULA_NUMERATOR / Math.log10(this.STAT_FORMULA_LOG_BASE)) * Math.log10(this.strength);
         return Math.max(0, multiplier);
     }
 
     // Calculate defense multiplier using formula: 0.27 / ln(9999) * ln(x)
     private getDefenseMultiplier(): number {
         if (this.defense <= 0) return 0;
-        const multiplier = (this.STAT_FORMULA_NUMERATOR / Math.log(this.STAT_FORMULA_LOG_BASE)) * Math.log(this.defense);
+        const multiplier = (this.STAT_FORMULA_NUMERATOR / Math.log10(this.STAT_FORMULA_LOG_BASE)) * Math.log10(this.defense);
         return Math.max(0, multiplier);
     }
 
@@ -1311,11 +1311,11 @@ export class Player extends BaseMesh {
         }
 
         // Apply luck multiplier to EXP gain
-        const luckBonusExp = amount * 0.1 * Math.log(this.luck + 1); // +1 to avoid undefined log(0)
+        const luckBonusExp = amount * 0.1 * Math.log10(this.luck + 8); // +8 to smooth the curve for low luck values
         const adjustedAmount = Math.floor(amount + luckBonusExp); 
 
         this.exp += adjustedAmount;
-        console.log(`Gained ${adjustedAmount} EXP (${amount} base + luck bonus). Current: ${this.exp}/${this.expRequired}`);
+        console.log(`Gained ${adjustedAmount} EXP (${amount} base + ${luckBonusExp} luck bonus). Current: ${this.exp}/${this.expRequired}`);
 
         // Check for level up(s)
         while (this.exp >= this.expRequired && this.level < this.MAX_LEVEL) {
