@@ -60,8 +60,6 @@ export class Player extends BaseMesh {
     // Stat effect formula constants
     private readonly STAT_FORMULA_NUMERATOR = 0.27; // Numerator for strength/defense formulas
     private readonly STAT_FORMULA_LOG_BASE = this.MAX_STAT_VALUE; // Log base for strength/defense formulas
-    private readonly AGILITY_CRIT_DIVISOR = 40000; // Divisor for agility critical chance
-    private readonly BASE_CRIT_CHANCE = 0.02; // Base 2% critical chance
     private readonly LUCK_DIVISOR = 40000; // Divisor for luck multiplier
     private readonly CRITICAL_HIT_MULTIPLIER = 1.5;
 
@@ -382,23 +380,23 @@ export class Player extends BaseMesh {
         return 1.0; // Default: no multiplier
     }
 
-    // Calculate strength multiplier using formula: 0.27 / ln(9999) * ln(x)
+    // Calculate strength multiplier using formula: 0.27 / log10(9999) * log10(x)
     private getStrengthMultiplier(): number {
         if (this.strength <= 0) return 0;
         const multiplier = (this.STAT_FORMULA_NUMERATOR / Math.log10(this.STAT_FORMULA_LOG_BASE)) * Math.log10(this.strength);
         return Math.max(0, multiplier);
     }
 
-    // Calculate defense multiplier using formula: 0.27 / ln(9999) * ln(x)
+    // Calculate defense multiplier using formula: 0.27 / log10(9999) * log10(x)
     private getDefenseMultiplier(): number {
         if (this.defense <= 0) return 0;
         const multiplier = (this.STAT_FORMULA_NUMERATOR / Math.log10(this.STAT_FORMULA_LOG_BASE)) * Math.log10(this.defense);
         return Math.max(0, multiplier);
     }
 
-    // Calculate critical hit chance using formula: agility / 40000 + 0.02
+    // Calculate critical hit chance using formula: 0.02 + (log10(agility + 50) * 7 - 11.9) * 0.01
     private getCriticalChance(): number {
-        return this.agility / this.AGILITY_CRIT_DIVISOR + this.BASE_CRIT_CHANCE;
+        return 0.02 + (Math.log10(this.agility + 50) * 7 - 11.9) * 0.01;
     }
 
     // Return current tech points for a given weapon type
@@ -1311,7 +1309,7 @@ export class Player extends BaseMesh {
         }
 
         // Apply luck multiplier to EXP gain
-        const luckBonusExp = amount * 0.1 * Math.log10(this.luck + 8); // +8 to smooth the curve for low luck values
+        const luckBonusExp = amount * 0.05 * Math.log10(this.luck + 20); // +8 to smooth the curve for low luck values
         const adjustedAmount = Math.floor(amount + luckBonusExp); 
 
         this.exp += adjustedAmount;
