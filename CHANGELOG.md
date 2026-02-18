@@ -1,3 +1,23 @@
+# [1.42.0](https://github.com/samtun/hackworld/compare/v1.41.0...v1.42.0) (2026-02-18)
+
+
+### Bug Fixes
+
+* exp amount displayed on enemy defeat ([2c88351](https://github.com/samtun/hackworld/commit/2c88351df38f011e69c5aef668ea7229378f9a84))
+* exp gain calculation ([2d45d85](https://github.com/samtun/hackworld/commit/2d45d85c467a2d291b08f6d2309aea53029d8000))
+* log usages and exp luck bonus calculation ([3b04f3b](https://github.com/samtun/hackworld/commit/3b04f3b45f6756d552903b3cbc6dcca978a19895))
+* revert enemy item drop chance to 4 percent ([2b33ff1](https://github.com/samtun/hackworld/commit/2b33ff14901e4a20151d91afa599e1c5d306a6f1))
+
+
+### Features
+
+* add coin model to model drop ([cff8d0b](https://github.com/samtun/hackworld/commit/cff8d0b42638277a7a9b193321e4382b48a71cf7))
+* add floating indicators for bits and xdata drops ([aab0232](https://github.com/samtun/hackworld/commit/aab0232a8d27a1033c133db0baf022de79da5c87))
+* add models to all item drops ([a3b8f34](https://github.com/samtun/hackworld/commit/a3b8f34750e61478206f4f8cad1d4e98e82ee4e6))
+* add money drop ([b8c5a46](https://github.com/samtun/hackworld/commit/b8c5a46b91c397107bdbdc5fa521115911fd76dc))
+* add support for draco compressed glb files ([7c909b9](https://github.com/samtun/hackworld/commit/7c909b9e47a9e1608225049adfe8051e6927bc1d))
+* improve chrit and exp bonus calculations ([42c4400](https://github.com/samtun/hackworld/commit/42c4400a2466921fb900f0efb07a7f118f41086b))
+
 # [1.41.0](https://github.com/samtun/hackworld/compare/v1.40.0...v1.41.0) (2026-02-15)
 
 
