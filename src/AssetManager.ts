@@ -1,20 +1,27 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import * as SkeletonUtils from 'three/examples/jsm/utils/SkeletonUtils.js';
 
 /**
  * AssetManager - Singleton class for preloading and caching GLTF models
  * Prevents visual "popping" by loading all assets before they're needed
+ * Supports Draco-compressed models (used by Blender 4.3+)
  */
 export class AssetManager {
     private static instance: AssetManager;
     private loader: GLTFLoader;
+    private dracoLoader: DRACOLoader;
     private cache: Map<string, GLTF>;
     private loadingPromises: Map<string, Promise<GLTF>>;
     private onProgressCallback?: (loaded: number, total: number) => void;
 
     private constructor() {
         this.loader = new GLTFLoader();
+        this.dracoLoader = new DRACOLoader();
+        // Set the path to the Draco decoder files
+        this.dracoLoader.setDecoderPath('https://www.gstatic.com/draco/versioned/decoders/1.5.6/');
+        this.loader.setDRACOLoader(this.dracoLoader);
         this.cache = new Map();
         this.loadingPromises = new Map();
     }
