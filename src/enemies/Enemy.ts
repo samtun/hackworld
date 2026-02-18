@@ -29,7 +29,7 @@ export class Enemy extends BaseMesh {
     stunTimer: number = 0;
     itemDropChance: number = 0.04;
     xDataDropChance: number = 0.02;
-    expAmount: number = 10; // EXP granted on defeat
+    baseExp: number = 10; // EXP granted on defeat, is influenced by player luck
     damage: number = 10;
 
     // Base position tracking for return behavior

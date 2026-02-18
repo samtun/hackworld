@@ -315,10 +315,10 @@ export class World {
             if (!enemy.onDeathFadeStart) {
                 enemy.onDeathFadeStart = (e: Enemy) => {
                     // Grant EXP to player
-                    player.gainExp(e.expAmount);
+                    const expGained = player.gainExp(e.baseExp);
 
                     // Spawn EXP number visual
-                    this.floatingIndicatorManager.spawnEXP(e.getDeathPosition(), e.expAmount);
+                    this.floatingIndicatorManager.spawnEXP(e.getDeathPosition(), expGained);
 
                     // Try to drop an item
                     // The ItemDropManager will select one strategy based on probabilities

@@ -12,7 +12,7 @@ export class LargeEnemy extends Enemy {
         this.maxHp = 150;
         this.itemDropChance = 0.08;
         this.xDataDropChance = 0.04;
-        this.expAmount = 25;
+        this.baseExp = 25;
         this.techDropRateFactor = 1.3;
         this.damage = 15;
 

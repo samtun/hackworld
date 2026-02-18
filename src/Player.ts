@@ -1302,10 +1302,10 @@ export class Player extends BaseMesh {
      * Gain EXP and handle level ups
      * @param amount - Amount of EXP to gain
      */
-    gainExp(amount: number): void {
+    gainExp(amount: number): number {
         if (this.level >= this.MAX_LEVEL) {
             console.log('Player is at max level');
-            return;
+            return 0;
         }
 
         // Apply luck multiplier to EXP gain
@@ -1319,6 +1319,8 @@ export class Player extends BaseMesh {
         while (this.exp >= this.expRequired && this.level < this.MAX_LEVEL) {
             this.levelUp();
         }
+
+        return adjustedAmount;
     }
 
     /**
