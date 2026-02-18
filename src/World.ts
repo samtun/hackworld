@@ -223,6 +223,8 @@ export class World {
             'models/heal_fx.glb',
             'models/area_fx.glb',
             'models/laser_fx.glb',
+            // Items
+            'models/coin.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);

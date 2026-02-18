@@ -60,19 +60,4 @@ export class XDataDrop extends ItemDrop {
         // Rotate the X
         this.mesh.rotation.y += deltaTime * 2; // Rotate 2 radians per second
     }
-    
-    cleanup(scene: THREE.Scene): void {
-        scene.remove(this.mesh);
-        
-        // Dispose of geometries and materials
-        this.mesh.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                if (child.geometry) child.geometry.dispose();
-                const material = child.material;
-                if (material && typeof (material as any).dispose === 'function') {
-                    (material as any).dispose();
-                }
-            }
-        });
-    }
 }

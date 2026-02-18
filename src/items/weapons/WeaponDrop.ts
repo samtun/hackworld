@@ -109,22 +109,4 @@ export class WeaponDrop extends ItemDrop {
             }
         }
     }
-
-    cleanup(scene: THREE.Scene): void {
-        scene.remove(this.mesh);
-
-        // Dispose of geometries and materials
-        this.mesh.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) {
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(mat => mat.dispose());
-                    } else {
-                        child.material.dispose();
-                    }
-                }
-            }
-        });
-    }
 }

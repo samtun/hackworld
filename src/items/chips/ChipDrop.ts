@@ -70,17 +70,4 @@ export class ChipDrop extends ItemDrop {
             }
         }
     }
-
-    cleanup(scene: THREE.Scene): void {
-        scene.remove(this.mesh);
-        this.mesh.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) {
-                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-                    else child.material.dispose();
-                }
-            }
-        });
-    }
 }
