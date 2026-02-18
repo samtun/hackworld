@@ -3,6 +3,9 @@ import * as CANNON from 'cannon-es';
 import { WeaponType } from './WeaponType';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 import { ItemDrop } from '../ItemDrop';
+import { ItemDropType } from '../ItemDropType';
+import { InteractiveEntityType } from '../../InteractiveEntityType';
+import { AssetManager } from '../../AssetManager';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
@@ -11,11 +14,12 @@ import { ItemDrop } from '../ItemDrop';
 export class WeaponDrop extends ItemDrop {
     weaponId: string;
     mesh: THREE.Group;
-    body: CANNON.Body;
+    dropType = ItemDropType.WEAPON;
     weaponType: WeaponType;
     weaponName: string;
     textMesh: THREE.Mesh | null = null;
     level: number = 1;
+    interactiveType = InteractiveEntityType.ITEM_DROP;
 
     // Weapon stats with bonus applied
     damage: number;
@@ -48,26 +52,9 @@ export class WeaponDrop extends ItemDrop {
         this.baseHeight = position.y;
         this.level = level;
 
-        // Create visual group
-        this.mesh = new THREE.Group();
-
-        // Create weapon visual (simple colored box for now)
-        const weaponGeometry = new THREE.BoxGeometry(0.3, 0.1, 0.8);
-        const weaponColors: Record<WeaponType, number> = {
-            [WeaponType.SWORD]: 0xff0000,
-            [WeaponType.DUAL_BLADE]: 0x00ffff,
-            [WeaponType.LANCE]: 0x00ff00,
-            [WeaponType.HAMMER]: 0x9c27b0
-        };
-        const weaponMaterial = new THREE.MeshStandardMaterial({
-            color: weaponColors[weaponType],
-            emissive: weaponColors[weaponType],
-            emissiveIntensity: 0.3
-        });
-        const weaponMesh = new THREE.Mesh(weaponGeometry, weaponMaterial);
-        weaponMesh.rotation.x = Math.PI / 4;
-        weaponMesh.position.y = 0.3;
-        this.mesh.add(weaponMesh);
+        // Create weapon visual
+        const gltfModel = AssetManager.Instance.get('models/weapon_drop.glb');
+        this.mesh = gltfModel.scene;
 
         // Create text label using shared method
         const levelChar = ItemLevelHelper.getLevelChar(this.level);
@@ -77,21 +64,6 @@ export class WeaponDrop extends ItemDrop {
         // Position the group
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
-
-        // Create physics body (sensor for detection). Do NOT add to physics world here;
-        // caller (ItemDropManager) will add the body to the world.
-        const shape = new CANNON.Sphere(0.5);
-        this.body = new CANNON.Body({
-            mass: 0,
-            isTrigger: true,
-            collisionResponse: false,
-            shape: shape
-        });
-        this.body.position.copy(position);
-
-        // Mark as weapon drop for detection
-        (this.body as any).isWeaponDrop = true;
-        (this.body as any).weaponDrop = this;
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
@@ -120,27 +92,5 @@ export class WeaponDrop extends ItemDrop {
                 this.textMesh.rotation.y = angle;
             }
         }
-
-        // Sync body position (mainly Y for floating)
-        this.body.position.y = this.mesh.position.y;
-    }
-
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
-        scene.remove(this.mesh);
-        world.removeBody(this.body);
-
-        // Dispose of geometries and materials
-        this.mesh.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) {
-                    if (Array.isArray(child.material)) {
-                        child.material.forEach(mat => mat.dispose());
-                    } else {
-                        child.material.dispose();
-                    }
-                }
-            }
-        });
     }
 }

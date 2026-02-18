@@ -1,20 +1,19 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { ItemDropStrategy } from '../ItemDropManager';
-import { CoreDrop } from '../cores/CoreDrop';
-import { CoreRepository } from '../cores/CoreRepository';
+import { CoreDrop } from './CoreDrop';
+import { CoreRepository } from './CoreRepository';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import { ItemDropType } from '../ItemDropType';
 
 export class CoreDropStrategy implements ItemDropStrategy {
-    readonly key = 'core';
-    private readonly DROP_PROBABILITY = 0.27; // 27% of total drops
+    readonly key = ItemDropType.CORE;
+    public readonly distributionWeight = 4;
 
-    tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
-        const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
-        const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
+        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus;
         
         if (Math.random() > effectiveDropChance) return null;
 
@@ -33,7 +32,7 @@ export class CoreDropStrategy implements ItemDropStrategy {
         return drop;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: CoreDrop, player: Player): void {
+    pickup(drop: CoreDrop, player: Player): void {
         // Get the core from repository by ID to find its name
         const coreItem = CoreRepository.Instance.getCoreById(drop.coreId);
         if (!coreItem) {
@@ -43,9 +42,5 @@ export class CoreDropStrategy implements ItemDropStrategy {
 
         player.inventory.push(coreItem);
         console.log(`Picked up core ${coreItem})`);
-    }
-
-    getDropProbability(): number {
-        return this.DROP_PROBABILITY;
     }
 }

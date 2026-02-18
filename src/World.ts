@@ -6,21 +6,17 @@ import { AssetManager } from './AssetManager';
 import { BaseStage, Lobby, createStage } from './stages';
 import { Npc } from './npcs/Npc';
 import { ItemDropManager } from './items/ItemDropManager';
-import { WeaponDrop } from './items/weapons/WeaponDrop';
-import { ChipDrop } from './items/chips/ChipDrop';
-import { CoreDrop } from './items/cores/CoreDrop';
-import { BoosterPackDrop } from './items/cards/BoosterPackDrop';
-import { XDataDrop } from './items/xdata/XDataDrop';
+import { ItemDropType } from './items/ItemDropType';
 import { HealingSystem } from './systems/HealingSystem';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 import { GameProgressManager } from './GameProgressManager';
+import { ItemDrop } from './items/ItemDrop';
 
 export class World {
     scene: THREE.Scene;
     physicsWorld: CANNON.World;
     physicsMaterial: CANNON.Material;
     assetManager: AssetManager;
-    onLoadProgressCallback: (loaded: number, total: number) => void;
     onStageLoadStartCallback: () => void;
     onStageLoadCompleteCallback: () => void;
 
@@ -50,20 +46,19 @@ export class World {
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
-        onLoadComplete: () => void,
-        onLoadProgress: (loaded: number, total: number) => void,
-        onStart: () => void,
-        onComplete: () => void,) {
+        onInitialLoadComplete: () => void,
+        onInitialLoadProgress: (loaded: number, total: number) => void,
+        onStageLoadStartCallback: () => void,
+        onStageLoadCompleteCallback: () => void,) {
         this.scene = scene;
         this.physicsWorld = physicsWorld;
         this.physicsMaterial = physicsMaterial;
         this.assetManager = AssetManager.Instance;
-        this.onLoadProgressCallback = onLoadProgress;
 
         this.itemDropManager = ItemDropManager.Instance;
 
         // Initialize floating indicator manager
-        this.floatingIndicatorManager = new FloatingIndicatorManager(scene);
+        this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
 
         // Create grid plane at y=-5
         this.gridPlaneMaterial = new THREE.ShaderMaterial({
@@ -176,24 +171,20 @@ export class World {
         this.gridPlane.position.y = -18;
         scene.add(this.gridPlane);
 
-        // Drop strategies are now registered internally by ItemDropManager
-
         // Setup progress callback for asset manager
-        if (this.onLoadProgressCallback) {
-            this.assetManager.setProgressCallback(this.onLoadProgressCallback);
-        }
+        this.assetManager.setProgressCallback(onInitialLoadProgress);
 
-        this.onStageLoadStartCallback = onStart;
-        this.onStageLoadCompleteCallback = onComplete;
+        this.onStageLoadStartCallback = onStageLoadStartCallback;
+        this.onStageLoadCompleteCallback = onStageLoadCompleteCallback;
 
         // Preload common assets and start in Lobby
-        this.initializeWorld(onLoadComplete);
+        this.initializeWorld(onInitialLoadComplete);
     }
 
     /**
      * Initialize the world by preloading common assets and loading the lobby
      */
-    private async initializeWorld(onLoadComplete: () => void): Promise<void> {
+    private async initializeWorld(onInitialLoadComplete: () => void): Promise<void> {
         try {
             await this.preloadCommonAssets();
             await this.loadStageById(Lobby.getMetadata().id);
@@ -201,7 +192,7 @@ export class World {
             console.error('Failed to initialize world:', error);
         } finally {
             // Always call onLoadComplete to ensure UI updates
-            onLoadComplete();
+            onInitialLoadComplete();
         }
     }
 
@@ -232,6 +223,11 @@ export class World {
             'models/heal_fx.glb',
             'models/area_fx.glb',
             'models/laser_fx.glb',
+            // Items
+            'models/coin.glb',
+            'models/weapon_drop.glb',
+            'models/chip_drop.glb',
+            'models/core_drop.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);
@@ -252,7 +248,8 @@ export class World {
                 this.currentStage.clear();
                 this.currentStage = undefined;
             }
-            this.itemDropManager.clear(this.scene, this.physicsWorld);
+
+            this.itemDropManager.clear(this.scene);
 
             // Reset stage completion notification flag
             this.hasNotifiedStageCompletion = false;
@@ -314,29 +311,19 @@ export class World {
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
 
-            // Set up damage callback if not already set
-            if (!enemy.onDamageTaken) {
-                enemy.onDamageTaken = (position: CANNON.Vec3, amount: number) => {
-                    this.spawnDamageNumber(position, amount, '#fdc650ff');
-                };
-            }
-
             // Set up death fade callback if not already set
             if (!enemy.onDeathFadeStart) {
                 enemy.onDeathFadeStart = (e: Enemy) => {
                     // Grant EXP to player
-                    player.gainExp(e.expAmount);
+                    const expGained = player.gainExp(e.baseExp);
 
                     // Spawn EXP number visual
-                    this.spawnEXPNumber(e.getDeathPosition(), e.expAmount);
+                    this.floatingIndicatorManager.spawnEXP(e.getDeathPosition(), expGained);
 
-                    // Try to drop an item (weapon, chip, core, or booster pack)
+                    // Try to drop an item
                     // The ItemDropManager will select one strategy based on probabilities
                     // and each strategy will check enemy.itemDropChance internally
-                    if (!(this.itemDropManager.tryDropItem(this.scene, this.physicsWorld, e, player))) {
-                        // Try to drop X-Data separately (independent of item drops) if no item was dropped
-                        this.itemDropManager.tryDrop('xData', this.scene, this.physicsWorld, e, player);
-                    }
+                    this.itemDropManager.tryDropItem(this.scene, e, player);
                 };
             }
 
@@ -356,28 +343,6 @@ export class World {
 
         // Update floating indicators (damage, EXP, tech points, etc.)
         this.floatingIndicatorManager.update(dt, cameraPosition);
-    }
-
-    /**
-     * Spawn EXP number visual at the given position
-     */
-    spawnEXPNumber(position: CANNON.Vec3, amount: number): void {
-        // Use new floating indicator manager for consistent styling
-        this.floatingIndicatorManager.spawnEXP(position, amount);
-    }
-
-    /**
-     * Spawn damage number visual at the given position
-     */
-    spawnDamageNumber(position: CANNON.Vec3, amount: number, color: string): void {
-        this.floatingIndicatorManager.spawnDamage(position, amount, color);
-    }
-
-    /**
-     * Spawn tech point indicator visual at the given position
-     */
-    spawnTechIndicator(position: CANNON.Vec3): void {
-        this.floatingIndicatorManager.spawnTech(position);
     }
 
     /**
@@ -406,7 +371,6 @@ export class World {
                 const progressManager = GameProgressManager.Instance;
                 progressManager.markBossDefeated(stageIndex);
                 console.log(`Stage ${stageIndex} completed! Progress now:`, progressManager.progress);
-                console.log('Return to the Mainframe in the Lobby for your next assignment.');
             }
         }
     }
@@ -419,72 +383,36 @@ export class World {
     }
 
     /**
-     * Check if player is near a weapon drop
+     * Check if player is near any interactive drop (weapon, chip, core, booster pack)
+     * Returns the first match in priority order
      */
-    checkWeaponDropInteraction(playerPosition: THREE.Vector3): WeaponDrop | null {
-        return this.itemDropManager.checkInteraction('weapon', playerPosition) as WeaponDrop | null;
+    checkNearestInteractiveDrop(playerPosition: THREE.Vector3): ItemDrop | null {
+        const dropTypes = [ItemDropType.WEAPON, ItemDropType.CHIP, ItemDropType.CORE, ItemDropType.BOOSTER_PACK] as const;
+        for (const dropType of dropTypes) {
+            const drop = this.itemDropManager.checkInteraction(dropType, playerPosition);
+            if (drop) return drop;
+        }
+        return null;
     }
 
     /**
-     * Pick up a weapon drop
+     * Check if player is near any auto-pickup drop (X-Data, money)
+     * Returns the first match in priority order
      */
-    pickupWeaponDrop(drop: WeaponDrop, player: Player): void {
-        this.itemDropManager.pickup('weapon', this.scene, this.physicsWorld, drop, player);
+    checkNearestAutoPickupDrop(playerPosition: THREE.Vector3): ItemDrop | null {
+        const dropTypes = [ItemDropType.XDATA, ItemDropType.MONEY] as const;
+        for (const dropType of dropTypes) {
+            const drop = this.itemDropManager.checkInteraction(dropType, playerPosition);
+            if (drop) return drop;
+        }
+        return null;
     }
 
     /**
-     * Check if player is near a chip drop
+     * Pick up any drop type by using the drop's dropType property
      */
-    checkChipDropInteraction(playerPosition: THREE.Vector3) {
-        return this.itemDropManager.checkInteraction('chip', playerPosition) as ChipDrop | null;
-    }
-
-    /**
-     * Pick up a chip drop
-     */
-    pickupChipDrop(drop: ChipDrop, player: Player): void {
-        this.itemDropManager.pickup('chip', this.scene, this.physicsWorld, drop, player);
-    }
-
-    /**
-     * Check if player is near a core drop
-     */
-    checkCoreDropInteraction(playerPosition: THREE.Vector3) {
-        return this.itemDropManager.checkInteraction('core', playerPosition) as CoreDrop | null;
-    }
-
-    /**
-     * Pick up a core drop
-     */
-    pickupCoreDrop(drop: CoreDrop, player: Player): void {
-        this.itemDropManager.pickup('core', this.scene, this.physicsWorld, drop, player);
-    }
-
-    /**
-     * Check if player is near a booster pack drop
-     */
-    checkBoosterPackDropInteraction(playerPosition: THREE.Vector3): BoosterPackDrop | null {
-        return this.itemDropManager.checkInteraction('boosterPack', playerPosition) as BoosterPackDrop | null;
-    }
-
-    /**
-     * Pick up a booster pack drop
-     */
-    pickupBoosterPackDrop(drop: BoosterPackDrop, player: Player): void {
-        this.itemDropManager.pickup('boosterPack', this.scene, this.physicsWorld, drop, player);
-    }
-
-    /**
-     * Check if player is near an X-Data drop
-     */
-    checkXDataDropInteraction(playerPosition: THREE.Vector3): XDataDrop | null {
-        return this.itemDropManager.checkInteraction('xData', playerPosition) as XDataDrop | null;
-    }
-
-    /**
-     * Pick up an X-Data drop
-     */
-    pickupXDataDrop(drop: XDataDrop, player: Player): void {
-        this.itemDropManager.pickup('xData', this.scene, this.physicsWorld, drop, player);
+    pickupDrop(drop: ItemDrop, player: Player): void {
+        this.floatingIndicatorManager.spawnPickupIndicator(drop);
+        this.itemDropManager.pickup(drop.dropType, this.scene, drop, player);
     }
 }

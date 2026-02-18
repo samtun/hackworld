@@ -1,12 +1,31 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
+import { InteractiveEntityType } from '../InteractiveEntityType';
+import { ItemDropType } from './ItemDropType';
 
 export abstract class ItemDrop {
     abstract mesh: THREE.Object3D;
-    abstract body?: CANNON.Body;
+    abstract dropType: ItemDropType;
+    abstract interactiveType: InteractiveEntityType;
 
     abstract update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void;
-    abstract cleanup(scene: THREE.Scene, world: CANNON.World): void;
+
+    cleanup(scene: THREE.Scene): void {
+        scene.remove(this.mesh);
+
+        // Dispose of geometries and materials
+        this.mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(mat => mat.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+            }
+        });
+    }
 
     protected readonly PICKUP_DISTANCE: number = 1.5;
 

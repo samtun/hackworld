@@ -1,23 +1,22 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { ItemDropStrategy } from '../ItemDropManager';
-import { WeaponDrop } from '../weapons/WeaponDrop';
-import { WeaponRepository } from '../weapons/WeaponRepository';
-import { WeaponType } from '../weapons/WeaponType';
+import { WeaponDrop } from './WeaponDrop';
+import { WeaponRepository } from './WeaponRepository';
+import { WeaponType } from './WeaponType';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
-import { WeaponItem } from '../weapons/WeaponItem';
+import { WeaponItem } from './WeaponItem';
+import { ItemDropType } from '../ItemDropType';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
-    readonly key = 'weapon';
+    readonly key = ItemDropType.WEAPON;
     // Threshold for becoming eligible for higher level drops (80% of next level requirement)
     private static readonly HIGHER_LEVEL_THRESHOLD = 0.8;
-    private readonly DROP_PROBABILITY = 0.43; // 43% of total drops
+    public readonly distributionWeight = 5;
 
-    tryDrop(scene: THREE.Scene, _physicsWorld: CANNON.World, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Apply luck multiplier to drop chance
-        const luckMultiplier = 1 + (player.luck / 40000); // Formula: player.luck / 40000
-        const effectiveDropChance = enemy.itemDropChance * luckMultiplier;
+        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus;
         
         if (Math.random() > effectiveDropChance) return null;
 
@@ -123,7 +122,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         return baseLevel;
     }
 
-    pickup(_scene: THREE.Scene, _physicsWorld: CANNON.World, drop: WeaponDrop, player: Player): void {
+    pickup(drop: WeaponDrop, player: Player): void {
         const weaponItem = WeaponRepository.Instance.getWeaponById(drop.weaponId);
         if (!weaponItem) {
             console.warn(`Weapon not found for ${drop.weaponId}`);
@@ -133,9 +132,4 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         player.inventory.push(weaponItem);
         console.log(`Picked up ${weaponItem}`);
     }
-
-    getDropProbability(): number {
-        return this.DROP_PROBABILITY;
-    }
-
 }

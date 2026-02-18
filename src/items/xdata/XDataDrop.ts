@@ -1,6 +1,8 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { ItemDrop } from '../ItemDrop';
+import { ItemDropType } from '../ItemDropType';
+import { InteractiveEntityType } from '../../InteractiveEntityType';
 
 /**
  * XDataDrop entity - represents X-Data that can be picked up from the ground
@@ -8,12 +10,13 @@ import { ItemDrop } from '../ItemDrop';
  */
 export class XDataDrop extends ItemDrop {
     mesh: THREE.Object3D;
-    body: CANNON.Body;
+    dropType = ItemDropType.XDATA;
     amount: number;
+    interactiveType = InteractiveEntityType.AUTO_PICKUP_DROP;
     private bobTimer: number = 0;
     private baseHeight: number;
     
-    constructor(scene: THREE.Scene, _world: CANNON.World, position: CANNON.Vec3, amount: number) {
+    constructor(scene: THREE.Scene, position: CANNON.Vec3, amount: number) {
         super();
         this.amount = amount;
         this.baseHeight = position.y;
@@ -46,21 +49,6 @@ export class XDataDrop extends ItemDrop {
         
         // Store the group as Object3D (base class of both Mesh and Group)
         this.mesh = group;
-        
-        // Physics Body (small trigger body)
-        const shape = new CANNON.Box(new CANNON.Vec3(0.2, 0.2, 0.2));
-        this.body = new CANNON.Body({
-            mass: 0, // Static body
-            position: position,
-            shape: shape,
-            isTrigger: true, // Make it a trigger so it doesn't collide physically
-            collisionResponse: false // Don't respond to collisions
-        });
-        // Body will be added to world by ItemDropManager
-        
-        // Mark as X-Data drop for detection
-        (this.body as any).isXDataDrop = true;
-        (this.body as any).xDataDrop = this;
     }
     
     update(deltaTime: number, _cameraPosition: THREE.Vector3, _playerPosition: THREE.Vector3): void {
@@ -69,26 +57,7 @@ export class XDataDrop extends ItemDrop {
         const bobOffset = Math.sin(this.bobTimer * 2) * 0.15; // Bob up and down by 0.15 units
         this.mesh.position.y = this.baseHeight + bobOffset;
         
-        // Sync body position with mesh
-        this.body.position.y = this.mesh.position.y;
-        
         // Rotate the X
         this.mesh.rotation.y += deltaTime * 2; // Rotate 2 radians per second
-    }
-    
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
-        scene.remove(this.mesh);
-        world.removeBody(this.body);
-        
-        // Dispose of geometries and materials
-        this.mesh.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                if (child.geometry) child.geometry.dispose();
-                const material = child.material;
-                if (material && typeof (material as any).dispose === 'function') {
-                    (material as any).dispose();
-                }
-            }
-        });
     }
 }

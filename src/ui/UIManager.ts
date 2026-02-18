@@ -16,7 +16,6 @@ class PlayerUI {
     skillIcons: HTMLDivElement[] = [];
     private tpWarningTimer: number = 0.0;
     private readonly TP_WARNING_DURATION: number = 1.0;
-    
 
     constructor(parent: HTMLDivElement, player: Player) {
         this.id = player.id;

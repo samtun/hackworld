@@ -1,17 +1,21 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { ItemDrop } from '../ItemDrop';
+import { ItemDropType } from '../ItemDropType';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import { InteractiveEntityType } from '../../InteractiveEntityType';
+import { AssetManager } from '../../AssetManager';
 
 export class CoreDrop extends ItemDrop {
     mesh: THREE.Group;
-    body: CANNON.Body;
+    dropType = ItemDropType.CORE;
     coreId: string;
     coreName: string;
     buyPrice: number;
     sellPrice: number;
     level: number = 1;
     textMesh: THREE.Mesh | null = null;
+    interactiveType = InteractiveEntityType.ITEM_DROP;
 
     private floatTimer: number = 0;
     private baseHeight: number;
@@ -27,14 +31,8 @@ export class CoreDrop extends ItemDrop {
         this.level = level;
         this.baseHeight = position.y;
 
-        this.mesh = new THREE.Group();
-
-        const geom = new THREE.BoxGeometry(0.28, 0.28, 0.28);
-        const color = 0x66ccff;
-        const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.25 });
-        const box = new THREE.Mesh(geom, mat);
-        box.position.y = 0.24;
-        this.mesh.add(box);
+        const gltfModel = AssetManager.Instance.get('models/core_drop.glb');
+        this.mesh = gltfModel.scene;
 
         // Create text label using shared method
         const levelChar = ItemLevelHelper.getLevelChar(this.level);
@@ -43,18 +41,13 @@ export class CoreDrop extends ItemDrop {
 
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
-
-        const shape = new CANNON.Sphere(0.42);
-        this.body = new CANNON.Body({ mass: 0, isTrigger: true, collisionResponse: false, shape });
-        this.body.position.copy(position);
-        (this.body as any).isCoreDrop = true;
-        (this.body as any).coreDrop = this;
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
         this.floatTimer += deltaTime;
         const offset = Math.sin(this.floatTimer * this.FLOAT_SPEED) * this.FLOAT_AMPLITUDE;
         this.mesh.position.y = this.baseHeight + offset;
+        this.mesh.children[0].rotation.y += deltaTime * 0.5;
 
         const distanceToPlayer = this.mesh.position.distanceTo(playerPosition);
         const isNear = distanceToPlayer < this.PICKUP_DISTANCE;
@@ -68,21 +61,5 @@ export class CoreDrop extends ItemDrop {
                 this.textMesh.rotation.y = angle;
             }
         }
-
-        this.body.position.y = this.mesh.position.y;
-    }
-
-    cleanup(scene: THREE.Scene, world: CANNON.World): void {
-        scene.remove(this.mesh);
-        world.removeBody(this.body);
-        this.mesh.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                if (child.geometry) child.geometry.dispose();
-                if (child.material) {
-                    if (Array.isArray(child.material)) child.material.forEach(m => m.dispose());
-                    else child.material.dispose();
-                }
-            }
-        });
     }
 }
