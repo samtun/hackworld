@@ -1311,7 +1311,8 @@ export class Player extends BaseMesh {
         }
 
         // Apply luck multiplier to EXP gain
-        const adjustedAmount = Math.floor(amount * this.luckDropChanceBonus);
+        const luckBonusExp = amount * 0.1 * Math.log(this.luck + 1); // +1 to avoid undefined log(0)
+        const adjustedAmount = Math.floor(amount + luckBonusExp); 
 
         this.exp += adjustedAmount;
         console.log(`Gained ${adjustedAmount} EXP (${amount} base + luck bonus). Current: ${this.exp}/${this.expRequired}`);
