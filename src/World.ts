@@ -225,6 +225,9 @@ export class World {
             'models/laser_fx.glb',
             // Items
             'models/coin.glb',
+            'models/weapon_drop.glb',
+            'models/chip_drop.glb',
+            'models/core_drop.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);

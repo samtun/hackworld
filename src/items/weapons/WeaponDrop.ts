@@ -5,6 +5,7 @@ import { ItemLevelHelper } from '../ItemLevelHelper';
 import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
 import { InteractiveEntityType } from '../../InteractiveEntityType';
+import { AssetManager } from '../../AssetManager';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
@@ -51,26 +52,9 @@ export class WeaponDrop extends ItemDrop {
         this.baseHeight = position.y;
         this.level = level;
 
-        // Create visual group
-        this.mesh = new THREE.Group();
-
-        // Create weapon visual (simple colored box for now)
-        const weaponGeometry = new THREE.BoxGeometry(0.3, 0.1, 0.8);
-        const weaponColors: Record<WeaponType, number> = {
-            [WeaponType.SWORD]: 0xff0000,
-            [WeaponType.DUAL_BLADE]: 0x00ffff,
-            [WeaponType.LANCE]: 0x00ff00,
-            [WeaponType.HAMMER]: 0x9c27b0
-        };
-        const weaponMaterial = new THREE.MeshStandardMaterial({
-            color: weaponColors[weaponType],
-            emissive: weaponColors[weaponType],
-            emissiveIntensity: 0.3
-        });
-        const weaponMesh = new THREE.Mesh(weaponGeometry, weaponMaterial);
-        weaponMesh.rotation.x = Math.PI / 4;
-        weaponMesh.position.y = 0.3;
-        this.mesh.add(weaponMesh);
+        // Create weapon visual
+        const gltfModel = AssetManager.Instance.get('models/weapon_drop.glb');
+        this.mesh = gltfModel.scene;
 
         // Create text label using shared method
         const levelChar = ItemLevelHelper.getLevelChar(this.level);

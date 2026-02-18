@@ -8,7 +8,7 @@ import { ItemDropStrategy } from '../ItemDropManager';
 
 export class MoneyDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.MONEY;
-    public readonly distributionWeight = 600;
+    public readonly distributionWeight = 6;
 
     /**
      * Try to drop money from enemy.

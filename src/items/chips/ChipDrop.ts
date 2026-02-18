@@ -5,6 +5,7 @@ import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 import { InteractiveEntityType } from '../../InteractiveEntityType';
+import { AssetManager } from '../../AssetManager';
 
 export class ChipDrop extends ItemDrop {
     mesh: THREE.Group;
@@ -33,15 +34,8 @@ export class ChipDrop extends ItemDrop {
         this.level = level;
         this.baseHeight = position.y;
 
-        this.mesh = new THREE.Group();
-
-        // Simple visual: colored sphere
-        const geom = new THREE.SphereGeometry(0.2, 12, 12);
-        const color = 0xffcc00;
-        const mat = new THREE.MeshStandardMaterial({ color, emissive: color, emissiveIntensity: 0.3 });
-        const sphere = new THREE.Mesh(geom, mat);
-        sphere.position.y = 0.25;
-        this.mesh.add(sphere);
+        const gltfModel = AssetManager.Instance.get('models/chip_drop.glb');
+        this.mesh = gltfModel.scene;
 
         // Create text label using shared method
         const levelChar = ItemLevelHelper.getLevelChar(this.level);
@@ -56,6 +50,7 @@ export class ChipDrop extends ItemDrop {
         this.floatTimer += deltaTime;
         const offset = Math.sin(this.floatTimer * this.FLOAT_SPEED) * this.FLOAT_AMPLITUDE;
         this.mesh.position.y = this.baseHeight + offset;
+        this.mesh.children[0].rotation.y += deltaTime * 0.5;
 
         const distanceToPlayer = this.mesh.position.distanceTo(playerPosition);
         const isNear = distanceToPlayer < this.PICKUP_DISTANCE;
