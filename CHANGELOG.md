@@ -1,3 +1,16 @@
+# [1.43.0](https://github.com/samtun/hackworld/compare/v1.42.1...v1.43.0) (2026-02-20)
+
+
+### Bug Fixes
+
+* boss health bar visibility and weapon drop damage bonus ([6c90f80](https://github.com/samtun/hackworld/commit/6c90f80e9e0f5365c186d5281b92ac23a4a2a662))
+* build error fix ([cdcef6c](https://github.com/samtun/hackworld/commit/cdcef6cf2134bfb9f6f4925a2a7c22c7e4b5aa0b))
+
+
+### Features
+
+* add boss enemy and refine item drops ([5aa3f5d](https://github.com/samtun/hackworld/commit/5aa3f5d4e0b4e1bf618902aad9f9b38976ae5372))
+
 ## [1.42.1](https://github.com/samtun/hackworld/compare/v1.42.0...v1.42.1) (2026-02-20)
 
 
