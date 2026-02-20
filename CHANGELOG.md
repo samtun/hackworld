@@ -1,3 +1,11 @@
+## [1.43.1](https://github.com/samtun/hackworld/compare/v1.43.0...v1.43.1) (2026-02-20)
+
+
+### Bug Fixes
+
+* enemy start hp ([2f0c4f3](https://github.com/samtun/hackworld/commit/2f0c4f3700b56ad9449bee5b37b4887cc1cb7e08))
+* weapon bonus calculation ([6913dce](https://github.com/samtun/hackworld/commit/6913dce2f38487fb88ab09bea997d2064379ca32))
+
 # [1.43.0](https://github.com/samtun/hackworld/compare/v1.42.1...v1.43.0) (2026-02-20)
 
 
