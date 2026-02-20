@@ -10,6 +10,7 @@ import { ChipRepository } from './items/chips/ChipRepository';
 import { ChipItem } from './items/chips/ChipItem';
 import { NpcRegistry } from './npcs/NpcRegistry';
 import { GameProgressManager } from './GameProgressManager';
+import { Player } from './Player';
 
 /**
  * Interface representing the complete save data structure
@@ -156,79 +157,7 @@ export class SaveManager {
         const cardCollection = CardCollection.Instance;
         const progressManager = GameProgressManager.Instance;
 
-        const saveData: SaveData = {
-            version: SaveManager.SAVE_VERSION,
-            timestamp: new Date().toISOString(),
-            playtime: this.playTimeSeconds,
-            gameProgress: progressManager.progress,
-            player: {
-                level: player.level,
-                exp: player.exp,
-                expRequired: player.expRequired,
-                maxHp: player.maxHp,
-                maxTp: player.maxTp,
-                money: player.money,
-                xData: player.xData,
-                boosterPacks: player.boosterPacks,
-                statPointsAvailable: player.statPointsAvailable,
-                strengthUpgrades: player.strengthUpgrades,
-                defenseUpgrades: player.defenseUpgrades,
-                hpUpgrades: player.hpUpgrades,
-                tpUpgrades: player.tpUpgrades,
-                agilityUpgrades: player.agilityUpgrades,
-                luckUpgrades: player.luckUpgrades,
-                strengthPoints: player.strengthPoints,
-                defensePoints: player.defensePoints,
-                agilityPoints: player.agilityPoints,
-                luckPoints: player.luckPoints,
-                position: {
-                    x: player.body.position.x,
-                    y: player.body.position.y,
-                    z: player.body.position.z
-                },
-                // Serialize inventory and include weapon levels
-                inventory: player.inventory.map(i => {
-                    if (i instanceof WeaponItem) {
-                        const wi = i as any;
-                        return {
-                            kind: 'weapon',
-                            id: wi.id,
-                            name: wi.name,
-                            buyPrice: wi.buyPrice ?? wi.baseBuyPrice,
-                            sellPrice: wi.sellPrice ?? wi.baseSellPrice,
-                            weaponType: wi.weaponType,
-                            damage: wi.damage ?? wi.baseDamage,
-                            model: wi.model,
-                            level: wi.level,
-                            isEquipped: !!wi.isEquipped,
-                        };
-                    } else if (i instanceof CoreItem) {
-                        const ci = i as any;
-                        return {
-                            kind: 'core',
-                            id: ci.id,
-                            name: ci.name,
-                            level: ci.level,
-                            isEquipped: !!ci.isEquipped,
-                        };
-                    } else if (i instanceof ChipItem) {
-                        const chi = i as any;
-                        return {
-                            kind: 'chip',
-                            id: chi.id,
-                            name: chi.name,
-                            level: chi.level,
-                            isEquipped: !!chi.isEquipped,
-                        };
-                    }
-                    // Fallback: deep-clone other items
-                    return structuredClone(i);
-                }),
-                tech: structuredClone((player as any).tech || {})
-            },
-            cardCollection: cardCollection.getSaveData(),
-            npcDialogueShown: NpcRegistry.Instance.getShownDialogueList()
-        };
+        const saveData: SaveData = this.createSaveData(progressManager, player, cardCollection);
 
         // Convert to JSON and download
         this.downloadSaveFile(saveData);
@@ -290,84 +219,88 @@ export class SaveManager {
             const cardCollection = CardCollection.Instance;
             const progressManager = GameProgressManager.Instance;
 
-            const saveData: SaveData = {
-                version: SaveManager.SAVE_VERSION,
-                timestamp: new Date().toISOString(),
-                playtime: this.playTimeSeconds,
-                gameProgress: progressManager.progress,
-                player: {
-                    level: player.level,
-                    exp: player.exp,
-                    expRequired: player.expRequired,
-                    maxHp: player.maxHp,
-                    maxTp: player.maxTp,
-                    money: player.money,
-                    xData: player.xData,
-                    boosterPacks: player.boosterPacks,
-                    statPointsAvailable: player.statPointsAvailable,
-                    strengthUpgrades: player.strengthUpgrades,
-                    defenseUpgrades: player.defenseUpgrades,
-                    hpUpgrades: player.hpUpgrades,
-                    tpUpgrades: player.tpUpgrades,
-                    agilityUpgrades: player.agilityUpgrades,
-                    luckUpgrades: player.luckUpgrades,
-                    strengthPoints: player.strengthPoints,
-                    defensePoints: player.defensePoints,
-                    agilityPoints: player.agilityPoints,
-                    luckPoints: player.luckPoints,
-                    position: {
-                        x: player.body.position.x,
-                        y: player.body.position.y,
-                        z: player.body.position.z
-                    },
-                    inventory: player.inventory.map(i => {
-                        if (i instanceof WeaponItem) {
-                            const wi = i as any;
-                            return {
-                                kind: 'weapon',
-                                id: wi.id,
-                                name: wi.name,
-                                buyPrice: wi.buyPrice ?? wi.baseBuyPrice,
-                                sellPrice: wi.sellPrice ?? wi.baseSellPrice,
-                                weaponType: wi.weaponType,
-                                damage: wi.damage ?? wi.baseDamage,
-                                model: wi.model,
-                                level: wi.level,
-                                isEquipped: !!wi.isEquipped,
-                            };
-                        } else if (i instanceof CoreItem) {
-                            const ci = i as any;
-                            return {
-                                kind: 'core',
-                                id: ci.id,
-                                name: ci.name,
-                                level: ci.level,
-                                isEquipped: !!ci.isEquipped,
-                            };
-                        } else if (i instanceof ChipItem) {
-                            const chi = i as any;
-                            return {
-                                kind: 'chip',
-                                id: chi.id,
-                                name: chi.name,
-                                level: chi.level,
-                                isEquipped: !!chi.isEquipped,
-                            };
-                        }
-                        return structuredClone(i);
-                    }),
-                    tech: structuredClone((player as any).tech || {})
-                },
-                cardCollection: cardCollection.getSaveData(),
-                npcDialogueShown: NpcRegistry.Instance.getShownDialogueList()
-            };
-
+            const saveData: SaveData = this.createSaveData(progressManager, player, cardCollection);
+            
             // Save to localStorage
             localStorage.setItem(SaveManager.LOCAL_STORAGE_KEY, JSON.stringify(saveData));
             console.log('Game auto-saved to localStorage');
         } catch (error) {
             console.error('Failed to save to localStorage:', error);
         }
+    }
+
+    private createSaveData(progressManager: GameProgressManager, player: Player, cardCollection: CardCollection): SaveData {
+        return {
+            version: SaveManager.SAVE_VERSION,
+            timestamp: new Date().toISOString(),
+            playtime: this.playTimeSeconds,
+            gameProgress: progressManager.progress,
+            player: {
+                level: player.level,
+                exp: player.exp,
+                expRequired: player.expRequired,
+                maxHp: player.maxHp,
+                maxTp: player.maxTp,
+                money: player.money,
+                xData: player.xData,
+                boosterPacks: player.boosterPacks,
+                statPointsAvailable: player.statPointsAvailable,
+                strengthUpgrades: player.strengthUpgrades,
+                defenseUpgrades: player.defenseUpgrades,
+                hpUpgrades: player.hpUpgrades,
+                tpUpgrades: player.tpUpgrades,
+                agilityUpgrades: player.agilityUpgrades,
+                luckUpgrades: player.luckUpgrades,
+                strengthPoints: player.strengthPoints,
+                defensePoints: player.defensePoints,
+                agilityPoints: player.agilityPoints,
+                luckPoints: player.luckPoints,
+                position: {
+                    x: player.body.position.x,
+                    y: player.body.position.y,
+                    z: player.body.position.z
+                },
+                inventory: player.inventory.map(i => {
+                    if (i instanceof WeaponItem) {
+                        const wi = i as any;
+                        return {
+                            kind: WeaponItem.name,
+                            id: wi.id,
+                            name: wi.name,
+                            buyPrice: wi.buyPrice ?? wi.baseBuyPrice,
+                            sellPrice: wi.sellPrice ?? wi.baseSellPrice,
+                            weaponType: wi.weaponType,
+                            damage: wi.damage ?? wi.baseDamage,
+                            model: wi.model,
+                            level: wi.level,
+                            isEquipped: !!wi.isEquipped,
+                        };
+                    } else if (i instanceof CoreItem) {
+                        const ci = i as any;
+                        return {
+                            kind: CoreItem.name,
+                            id: ci.id,
+                            name: ci.name,
+                            level: ci.level,
+                            isEquipped: !!ci.isEquipped,
+                        };
+                    } else if (i instanceof ChipItem) {
+                        const chi = i as any;
+                        return {
+                            kind: ChipItem.name,
+                            id: chi.id,
+                            name: chi.name,
+                            level: chi.level,
+                            isEquipped: !!chi.isEquipped,
+                        };
+                    }
+                    return structuredClone(i);
+                }),
+                tech: structuredClone((player as any).tech || {})
+            },
+            cardCollection: cardCollection.getSaveData(),
+            npcDialogueShown: NpcRegistry.Instance.getShownDialogueList()
+        };
     }
 
     /**
@@ -512,23 +445,24 @@ export class SaveManager {
         const chipRepository = ChipRepository.Instance;
 
         for (const itemData of saveData.player.inventory) {
-            if (itemData.kind === 'weapon') {
+            if (itemData.kind === WeaponItem.name) {
                 // Restore weapon by finding a weapon with matching properties
                 // We use weaponType and level to find the right weapon from the repository
                 if (itemData.weaponType && itemData.level) {
                     const baseWeapon = weaponRepo.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
                     if (baseWeapon) {
+                        const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
                         // Set the saved properties if needed
                         if (itemData.isEquipped) {
-                            baseWeapon.isEquipped = true;
-                            player.setWeapon(baseWeapon);
+                            weaponItem.isEquipped = true;
+                            player.setWeapon(weaponItem);
                         }
-                        player.inventory.push(baseWeapon);
+                        player.inventory.push(weaponItem);
                     }
                 } else {
                     console.warn('Invalid weapon data in save file:', itemData);
                 }
-            } else if (itemData.kind === 'core') {
+            } else if (itemData.kind === CoreItem.name) {
                 // Restore core by name and level from repository
                 if (itemData.name && itemData.level) {
                     const coreItem = coreRepository.getCoreByNameAndLevel(itemData.name, itemData.level);
@@ -539,7 +473,7 @@ export class SaveManager {
                         player.inventory.push(coreItem);
                     }
                 }
-            } else if (itemData.kind === 'chip') {
+            } else if (itemData.kind === ChipItem.name) {
                 // Restore chip by name and level from repository
                 if (itemData.name && itemData.level) {
                     const chipItem = chipRepository.getChipByNameAndLevel(itemData.name, itemData.level);
