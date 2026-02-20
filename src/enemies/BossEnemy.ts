@@ -24,7 +24,7 @@ export class BossEnemy extends Enemy {
 
         // Boss-level stats
         this.maxHp = 500;
-        this.hp = 20;
+        this.hp = this.maxHp;
         this.itemDropChance = 1;
         this.xDataDropChanceWeight = 3;
         this.baseExp = 120;

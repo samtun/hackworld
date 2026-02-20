@@ -8,8 +8,8 @@ export class LargeEnemy extends Enemy {
         super(scene, world, position, physicsMaterial);
 
         // Adjust stats for LargeEnemy
-        this.hp = 150;
         this.maxHp = 150;
+        this.hp = this.maxHp;
         this.itemDropChance = 0.15;
         this.xDataDropChanceWeight = 1.5;
         this.baseExp = 25;

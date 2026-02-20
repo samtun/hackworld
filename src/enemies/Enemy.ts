@@ -16,8 +16,8 @@ enum EnemyActionType {
 
 export class Enemy extends BaseMesh {
     body: CANNON.Body;
-    hp: number = 60;
     maxHp: number = 60;
+    hp: number = this.maxHp;
     speed: number = 3;
     protected size: number = 1.75;
     protected radius: number = 0.6;
