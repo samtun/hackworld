@@ -276,6 +276,13 @@ export class Enemy extends BaseMesh {
         );
     }
 
+    /**
+     * Get the distance from this enemy to the player
+     */
+    protected getDistanceToPlayer(): number {
+        return this.body.position.distanceTo(this.player.body.position);
+    }
+
     protected checkAttackHitboxCollision() {
         if (!this.attackHitboxBody || !this.attackHitboxActive || this.hasDealtDamageThisAttack) return;
 

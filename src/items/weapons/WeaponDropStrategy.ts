@@ -29,12 +29,13 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         }
 
         const random = Math.random();
-        const bonusValue = Math.pow(1.16 * random - 0.5, 5) * 10;
-        const bonusMultiplier = 1 + bonusValue * 20 / 100;
-        const finalDamage = Math.round(weaponItem.damage * bonusMultiplier);
+        const bonusValue = Math.pow(1.16 * random - 0.55, 3.4);
+        const bonusMultiplier = 1 + bonusValue;
+        const finalDamage = Math.floor(weaponItem.damage * bonusMultiplier);
+        console.log(`Calculated final damage for drop: Base ${weaponItem.damage} * Bonus Multiplier ${bonusMultiplier.toFixed(6)} = ${finalDamage}`);
         const damageFactor = finalDamage / weaponItem.damage;
-        const finalBuyPrice = Math.round(weaponItem.buyPrice * damageFactor);
-        const finalSellPrice = Math.round(weaponItem.sellPrice * damageFactor);
+        const finalBuyPrice = Math.floor(weaponItem.buyPrice * damageFactor);
+        const finalSellPrice = Math.floor(weaponItem.sellPrice * damageFactor);
 
         const dropPosition = enemy.getDeathPosition();
         dropPosition.y += 0.5;

@@ -17,20 +17,20 @@ export class BossEnemy extends Enemy {
     private healthBarContainer: HTMLDivElement | null = null;
     private healthBarFill: HTMLDivElement | null = null;
     private healthBarText: HTMLDivElement | null = null;
+    private healthBarVisible: boolean = false;
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
         super(scene, world, position, physicsMaterial);
 
         // Boss-level stats
-        this.hp = 30;
         this.maxHp = 500;
+        this.hp = 20;
         this.itemDropChance = 1;
         this.xDataDropChanceWeight = 3;
         this.baseExp = 120;
         this.techDropRateFactor = 1.6;
         this.damage = 25;
         this.attackCooldown = 1.0; // Longer cooldown between attacks
-        this.aggroRange = 25; // Larger aggro range for boss
         this.size = 3.5;
         this.radius = 1.25;
         this.attackRange = 3.0;
@@ -79,6 +79,9 @@ export class BossEnemy extends Enemy {
         this.healthBarContainer.style.display = 'flex';
         this.healthBarContainer.style.flexDirection = 'column';
         this.healthBarContainer.style.gap = '5px';
+        this.healthBarContainer.style.opacity = '0';
+        this.healthBarContainer.style.transition = 'opacity 0.3s ease-in-out';
+        this.healthBarContainer.style.pointerEvents = 'none';
 
         // Boss title
         const titleDiv = document.createElement('div');
@@ -117,6 +120,17 @@ export class BossEnemy extends Enemy {
         this.healthBarContainer.appendChild(this.healthBarText);
 
         document.body.appendChild(this.healthBarContainer);
+    }
+
+    /**
+     * Show or hide the health bar
+     */
+    private setHealthBarVisible(visible: boolean): void {
+        if (!this.healthBarContainer || this.healthBarVisible === visible) return;
+        
+        this.healthBarVisible = visible;
+        this.healthBarContainer.style.opacity = visible ? '1' : '0';
+        this.healthBarContainer.style.pointerEvents = visible ? 'auto' : 'none';
     }
 
     /**
@@ -163,9 +177,13 @@ export class BossEnemy extends Enemy {
         // Call parent update
         super.update(dt);
 
-        // Update health bar
+        // Update health bar visibility and content
         if (!this.isDead) {
+            const shouldShowHealthBar = this.getDistanceToPlayer() < this.aggroRange;
+            this.setHealthBarVisible(shouldShowHealthBar);
             this.updateHealthBar();
+        } else {
+            this.setHealthBarVisible(false);
         }
     }
 

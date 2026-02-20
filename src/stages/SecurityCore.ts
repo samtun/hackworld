@@ -1,4 +1,5 @@
 import * as CANNON from 'cannon-es';
+import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 
@@ -35,6 +36,13 @@ export class SecurityCore extends BaseStage {
         this.clear();
         await this.loadEnvironmentMap();
         this.createFloorCollider();
+
+        const geo = new THREE.PlaneGeometry(50, 50);
+        geo.rotateX(-Math.PI / 2);
+        const mat = new THREE.MeshStandardMaterial({ color: 0x222222, side: THREE.FrontSide });
+        const floorPlane = new THREE.Mesh(geo, mat);
+        this.scene.add(floorPlane);
+        this.meshes.push(floorPlane);
 
         // Teleporter back to Lobby
         this.createTeleporter(new CANNON.Vec3(12, 0, 12), Lobby.getMetadata().id);
