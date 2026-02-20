@@ -7,6 +7,7 @@ import { AssetManager } from '../AssetManager';
 import { Teleporter } from '../Teleporter';
 import { Player } from '../Player';
 import { Npc } from '../npcs/Npc';
+import { BossEnemy } from '../enemies/BossEnemy';
 
 /**
  * Base class for all dungeon stages
@@ -192,6 +193,14 @@ export abstract class BaseStage {
     protected spawnLargeEnemy(position: CANNON.Vec3): void {
         const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
         this.enemies.push(largeEnemy);
+    }
+
+    /**
+     * Spawn boss enemy
+     */
+    protected spawnBoss(position: CANNON.Vec3): void {
+        const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+        this.enemies.push(boss);
     }
 
     /**

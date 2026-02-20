@@ -430,6 +430,7 @@ export class Player extends BaseMesh {
         }
 
         const strengthMultiplier = 1 + this.getStrengthMultiplier();
+        console.log(`Calculating damage: strengthMultiplier=${strengthMultiplier.toFixed(2)}`);
 
         // Check for critical hit
         const isCritical = Math.random() < this.getCriticalChance();

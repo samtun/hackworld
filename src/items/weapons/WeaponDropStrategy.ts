@@ -12,14 +12,11 @@ export class WeaponDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.WEAPON;
     // Threshold for becoming eligible for higher level drops (80% of next level requirement)
     private static readonly HIGHER_LEVEL_THRESHOLD = 0.8;
-    public readonly distributionWeight = 5;
+    public getDistributionWeight(_enemy: Enemy, _player: Player): number {
+        return 5;
+    }
 
-    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
-        // Apply luck multiplier to drop chance
-        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus;
-        
-        if (Math.random() > effectiveDropChance) return null;
-
+    drop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
         const weaponLevel = this.determineWeaponLevel(player.getTechForWeapon(weaponType));
         const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, weaponLevel);
@@ -39,8 +36,8 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const finalBuyPrice = Math.round(weaponItem.buyPrice * damageFactor);
         const finalSellPrice = Math.round(weaponItem.sellPrice * damageFactor);
 
-        const dropPosition = enemy.body.position.clone();
-        dropPosition.y = 0.5;
+        const dropPosition = enemy.getDeathPosition();
+        dropPosition.y += 0.5;
 
         const wd = new WeaponDrop(
             weaponItem.id,

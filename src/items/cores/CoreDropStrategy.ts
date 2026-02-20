@@ -9,14 +9,11 @@ import { ItemDropType } from '../ItemDropType';
 
 export class CoreDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.CORE;
-    public readonly distributionWeight = 4;
+    public getDistributionWeight(_enemy: Enemy, _player: Player): number {
+        return 4;
+    }
 
-    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
-        // Apply luck multiplier to drop chance
-        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus;
-        
-        if (Math.random() > effectiveDropChance) return null;
-
+    drop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Use smart level determination based on player level
         const level = ItemLevelHelper.determineDropLevel(player.level);
 
@@ -24,10 +21,10 @@ export class CoreDropStrategy implements ItemDropStrategy {
         const coreItem = CoreRepository.Instance.getRandomCoreOfLevel(level);
         if (!coreItem) return null;
 
-        const pos = enemy.body.position.clone();
-        pos.y = 0.5;
+        const dropPosition = enemy.getDeathPosition();
+        dropPosition.y += 0.5;
 
-        const drop = new CoreDrop(scene, pos, coreItem.id, coreItem.name, coreItem.buyPrice, coreItem.sellPrice, level);
+        const drop = new CoreDrop(scene, dropPosition, coreItem.id, coreItem.name, coreItem.buyPrice, coreItem.sellPrice, level);
         console.log(`Enemy dropped ${drop}`);
         return drop;
     }

@@ -7,16 +7,13 @@ import { ItemDropType } from '../ItemDropType';
 
 export class BoosterPackDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.BOOSTER_PACK;
-    public readonly distributionWeight = 1;
+    public getDistributionWeight(_enemy: Enemy, _player: Player): number {
+        return 1;
+    }
 
-    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
-        // Apply luck multiplier to drop chance
-        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus;
-        
-        if (Math.random() > effectiveDropChance) return null;
-
-        const dropPosition = enemy.body.position.clone();
-        dropPosition.y = 0.5;
+    drop(scene: THREE.Scene, enemy: Enemy, _player: Player): import("../ItemDrop").ItemDrop | null {
+        const dropPosition = enemy.getDeathPosition();
+        dropPosition.y += 0.5;
 
         const drop = new BoosterPackDrop(scene, dropPosition);
         console.log('Enemy dropped Booster Pack');

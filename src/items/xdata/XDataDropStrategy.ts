@@ -8,52 +8,42 @@ import { Player } from '../../Player';
 
 export class XDataDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.XDATA;
-    // X-Data drop chance calculation constants
-    // These values determine the player level scaling factor for X-Data drops
-    private static readonly XDATA_LEVEL_DIVISOR = 428.7453673;
-    private static readonly XDATA_LEVEL_MULTIPLIER = 3.285563999;
-    public readonly distributionWeight = 1;
-
-    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null {
+    public getDistributionWeight(enemy: Enemy, player: Player): number {
         // Low level players should not get any X-Data yet
-        if (player.level < 10) return null;
+        if (player.level < 10) return 0;
 
-        // Calculate drop chance with player level factor
-        const levelDropChance = player.level >= 100
-            ? 1
-            : player.level / (XDataDropStrategy.XDATA_LEVEL_DIVISOR - XDataDropStrategy.XDATA_LEVEL_MULTIPLIER * player.level);
-        
-        // Apply luck multiplier to drop chance
-        const xDataDropChance = levelDropChance * enemy.xDataDropChance + player.luckDropChanceBonus;
+        // Cap drop chance at level 100
+        if (player.level >= 100) return enemy.xDataDropChanceWeight;
 
-        // Check if drop should occur
-        if (Math.random() > xDataDropChance) return null;
+        return enemy.xDataDropChanceWeight * player.level / 100;
+    }
 
-        const xDataAmount = this.determineAmount(enemy.xDataDropChance);
+    drop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null {
+        const xDataAmount = this.determineAmount(player.level, enemy.xDataDropChanceWeight);
         if (xDataAmount <= 0) return null;
 
-        const dropPosition = enemy.body.position.clone();
-        dropPosition.y = 0.5;
+        const dropPosition = enemy.getDeathPosition();
+        dropPosition.y += 0.5;
 
         const drop = new XDataDrop(scene, dropPosition, xDataAmount);
-        console.log(`Enemy dropped ${xDataAmount} X-Data`);
+        console.log(`Enemy dropped ${xDataAmount} XData`);
         return drop;
     }
 
     pickup(drop: XDataDrop, player: Player): void {
         player.collectXData(drop.amount);
-        console.log(`Picked up ${drop.amount} X-Data`);
+        console.log(`Picked up ${drop.amount} XData`);
     }
 
-    private determineAmount(dropChance: number): number {
+    private determineAmount(playerLevel: number, dropChanceWeight: number): number {
         const amountRoll = Math.random();
 
         // Roll amount
         // Enemies with higher drop chance also have a higher probability for higher amounts
-        const isHighChance: boolean = dropChance >= 0.3;
-        const veryHighAmountLimit: number = isHighChance ? 0.1 : 0.02;
-        const highAmountLimit: number = isHighChance ? 0.3 : 0.05;
-        const mediumAmountLimit: number = isHighChance ? 0.6 : 0.1;
+        const isHighChance: boolean = playerLevel >= 100 && dropChanceWeight >= 2.0;
+        const veryHighAmountLimit: number = isHighChance ? 0.05 : 0;
+        const highAmountLimit: number = isHighChance ? 0.2 : 0.05;
+        const mediumAmountLimit: number = isHighChance ? 0.6 : 0.25;
         if (amountRoll < veryHighAmountLimit) {
             return 100;
         } else if (amountRoll < highAmountLimit) {

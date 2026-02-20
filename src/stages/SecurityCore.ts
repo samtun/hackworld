@@ -44,11 +44,14 @@ export class SecurityCore extends BaseStage {
         this.createBox(2, 2, 5, new CANNON.Vec3(8, 1, -8));
         this.createBox(5, 1, 2, new CANNON.Vec3(-8, 0.5, 8));
 
-        // Spawn more enemies - harder stage
+        // Spawn enemies
         this.spawnEnemy(new CANNON.Vec3(6, 0.5, 6));
         this.spawnEnemy(new CANNON.Vec3(-6, 0.5, 6));
         this.spawnEnemy(new CANNON.Vec3(6, 0.5, -6));
         this.spawnEnemy(new CANNON.Vec3(-6, 0.5, -6));
         this.spawnEnemy(new CANNON.Vec3(0, 0.5, -10));
+
+        // Spawn boss
+        this.spawnBoss(new CANNON.Vec3(30, 0.5, 0));
     }
 }

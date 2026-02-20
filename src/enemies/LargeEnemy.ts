@@ -10,11 +10,14 @@ export class LargeEnemy extends Enemy {
         // Adjust stats for LargeEnemy
         this.hp = 150;
         this.maxHp = 150;
-        this.itemDropChance = 0.08;
-        this.xDataDropChance = 0.04;
+        this.itemDropChance = 0.15;
+        this.xDataDropChanceWeight = 1.5;
         this.baseExp = 25;
         this.techDropRateFactor = 1.3;
         this.damage = 15;
+        this.size = 2.75;
+        this.radius = 0.85;
+        this.attackRange = 2.0;
 
         // Scale up the mesh
         scene.remove(this.mesh);
@@ -23,7 +26,8 @@ export class LargeEnemy extends Enemy {
 
         // Update physics body size
         world.removeBody(this.body);
-        const shape = new CANNON.Cylinder(0.85, 0.85, 2.75, 8);
+        const radius = this.size * 0.31;
+        const shape = new CANNON.Cylinder(radius, radius, this.size, 8);
         this.bodyHalfExtentY = shape.height / 2;
         this.body = new CANNON.Body({
             mass: 17, // Proportional to volume: 5 * (1.5^3) ≈ 17

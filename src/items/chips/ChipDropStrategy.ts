@@ -9,14 +9,11 @@ import { ItemDropType } from '../ItemDropType';
 
 export class ChipDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.CHIP;
-    public readonly distributionWeight = 4;
+    public getDistributionWeight(_enemy: Enemy, _: Player): number {
+        return 4;
+    }
 
-    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
-        // Apply luck multiplier to drop chance
-        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus;
-        
-        if (Math.random() > effectiveDropChance) return null;
-
+    drop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         // Use smart level determination based on player level
         const level = ItemLevelHelper.determineDropLevel(player.level);
 
@@ -24,10 +21,10 @@ export class ChipDropStrategy implements ItemDropStrategy {
         const chipItem = ChipRepository.Instance.getRandomChipOfLevel(level);
         if (!chipItem) return null;
 
-        const pos = enemy.body.position.clone();
-        pos.y = 0.5;
+        const dropPosition = enemy.getDeathPosition();
+        dropPosition.y += 0.5;
 
-        const drop = new ChipDrop(scene, pos, chipItem.id, chipItem.name, chipItem.chipType, chipItem.buyPrice, chipItem.sellPrice, level);
+        const drop = new ChipDrop(scene, dropPosition, chipItem.id, chipItem.name, chipItem.chipType, chipItem.buyPrice, chipItem.sellPrice, level);
         console.log(`Enemy dropped chip ${chipItem.name} (level ${level})`);
         return drop;
     }

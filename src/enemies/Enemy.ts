@@ -19,32 +19,34 @@ export class Enemy extends BaseMesh {
     hp: number = 60;
     maxHp: number = 60;
     speed: number = 3;
-    attackRange: number = 2.0;
-    attackCooldown: number = 1.0;
-    attackTimer: number = 0;
+    protected size: number = 1.75;
+    protected radius: number = 0.6;
+    protected attackRange: number = 1.5;
+    protected attackCooldown: number = 1.0;
+    protected attackTimer: number = 0;
     isDead: boolean = false;
     isDying: boolean = false;
     deathTimer: number = 0;
     flashTimer: number = 0;
     stunTimer: number = 0;
-    itemDropChance: number = 0.04;
-    xDataDropChance: number = 0.02;
+    itemDropChance: number = 0.05;
+    xDataDropChanceWeight: number = 1;
     baseExp: number = 10; // EXP granted on defeat, is influenced by player luck
     damage: number = 10;
 
     // Base position tracking for return behavior
-    basePosition: CANNON.Vec3;
-    returnToBaseTimer: number = 0;
-    isReturningToBase: boolean = false;
-    aggroRange: number = 15;
-    returnWaitTime: number = 2.0; // Wait 2 seconds before returning to base
-    baseArrivalThreshold: number = 0.5; // Distance to consider arrived at base
+    protected basePosition: CANNON.Vec3;
+    protected returnToBaseTimer: number = 0;
+    protected isReturningToBase: boolean = false;
+    protected aggroRange: number = 15;
+    protected returnWaitTime: number = 2.0; // Wait 2 seconds before returning to base
+    protected baseArrivalThreshold: number = 0.5; // Distance to consider arrived at base
 
     // Animation
     isAttacking: boolean = false;
-    attackAnimTimer: number = 0;
+    protected attackAnimTimer: number = 0;
     techDropRateFactor: number = 1.0;
-    bodyHalfExtentY: number;
+    protected bodyHalfExtentY: number;
 
     // Animation system
     protected mixer!: THREE.AnimationMixer;
@@ -59,7 +61,7 @@ export class Enemy extends BaseMesh {
     protected attackMaxDuration: number = 1.0;
     protected attackHitboxSize: CANNON.Vec3 = new CANNON.Vec3(0.5, 0.5, 0.8);
     protected attackHitboxOffset: number = 1.0;
-    private hasDealtDamageThisAttack: boolean = false;
+    protected hasDealtDamageThisAttack: boolean = false;
 
     // Death fade
     protected deathFadeDuration: number = 0.5;
@@ -106,7 +108,7 @@ export class Enemy extends BaseMesh {
         this.setupAnimations();
 
         // Physics
-        const shape = new CANNON.Cylinder(0.6, 0.6, 1.75, 8);
+        const shape = new CANNON.Cylinder(this.radius, this.radius, this.size, 8);
         this.bodyHalfExtentY = shape.height / 2;
         this.body = new CANNON.Body({
             mass: 5,
@@ -189,11 +191,16 @@ export class Enemy extends BaseMesh {
         this.fadeToAction(EnemyActionType.Idle, 0.0);
     }
 
-    protected fadeToAction(actionType: EnemyActionType, duration: number) {
+    /**
+     * @param actionType The action to fade to
+     * @param duration The duration of the fade
+     * @param reset Wether the current action should be reset
+     */
+    protected fadeToAction(actionType: EnemyActionType, duration: number, reset: boolean = false) {
         const activeAction = this.actions[actionType];
         const previousAction = this.currentAction;
 
-        if (previousAction !== activeAction && activeAction) {
+        if (previousAction !== activeAction || reset && activeAction) {
             if (previousAction) {
                 previousAction.fadeOut(duration);
             }
@@ -500,9 +507,8 @@ export class Enemy extends BaseMesh {
      * Check if the enemy can attack the player
      */
     private canAttackPlayer(distToPlayer: number): boolean {
-        const attackRangeVariance = (Math.random() * 0.8 - 0.4);
-        return distToPlayer < this.aggroRange && 
-               distToPlayer < this.attackRange + attackRangeVariance && 
+        const attackRangeVariance = Math.random() * this.attackRange * 0.3;
+        return distToPlayer < this.attackRange + attackRangeVariance && 
                this.attackTimer <= 0 && 
                !this.isAttacking;
     }
@@ -551,7 +557,7 @@ export class Enemy extends BaseMesh {
         }
 
         // Play TakeHit animation
-        this.fadeToAction(EnemyActionType.TakeHit, 0.05);
+        this.fadeToAction(EnemyActionType.TakeHit, 0.05, true);
 
         // Cancel attack if in progress
         if (this.isAttacking) {
@@ -582,7 +588,7 @@ export class Enemy extends BaseMesh {
      * Get the position where X-Data should spawn (at enemy's death location)
      */
     getDeathPosition(): CANNON.Vec3 {
-        return this.body.position.clone();
+        return new CANNON.Vec3(this.body.position.x, this.body.position.y - this.bodyHalfExtentY, this.body.position.z);
     }
 
     /**

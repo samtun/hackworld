@@ -13,9 +13,9 @@ import { MoneyDropStrategy } from './bits/MoneyDropStrategy';
 export interface ItemDropStrategy {
     // unique identifier for this strategy type
     readonly key: ItemDropType;
-    readonly distributionWeight: number; // probability weight for this drop type
+    getDistributionWeight(enemy: Enemy, player: Player): number; // probability weight for this drop type
     // returns the created drop object or null when no drop occurred
-    tryDrop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null;
+    drop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null;
     // perform pickup logic (add item to inventory); do NOT cleanup the drop visuals/bodies
     pickup(drop: ItemDrop, player: Player): void;
 }
@@ -44,23 +44,23 @@ export class ItemDropManager {
         this.drops.set(strategy.key, []);
     }
 
-    private selectRandomStrategy(): ItemDropStrategy | null {
+    private selectRandomStrategy(enemy: Enemy, player: Player): ItemDropStrategy | undefined {
         // Calculate cumulative probabilities for weighted selection
-        const totalProbability = this.itemDropStrategies.reduce((sum, s) => sum + s.distributionWeight, 0);
-        if (totalProbability <= 0) return null;
+        const totalProbability = this.itemDropStrategies.reduce((sum, s) => sum + s.getDistributionWeight(enemy, player), 0);
+        if (totalProbability <= 0) return undefined;
 
         const random = Math.random() * totalProbability;
 
         // Using cumulative distribution to select strategy is necessary to avoid bias
         let cumulative = 0;
         for (const strategy of this.itemDropStrategies) {
-            cumulative += strategy.distributionWeight;
+            cumulative += strategy.getDistributionWeight(enemy, player);
             if (random < cumulative) {
                 return strategy;
             }
         }
 
-        return null;
+        return undefined;
     }
 
     /**
@@ -68,25 +68,26 @@ export class ItemDropManager {
      * Selects from weighted probabilities from all drop types.
      * @returns true if an item was dropped, false otherwise
      */
-    tryDropItem(scene: THREE.Scene, enemy: Enemy, player: Player): boolean {
-        const strategy = this.selectRandomStrategy();
-        if (!strategy) return false;
+    tryDropItem(scene: THREE.Scene, enemy: Enemy, player: Player): void {
+        const strategy = this.selectRandomStrategy(enemy, player);
+        if (!strategy) return;
 
-        const drop = strategy.tryDrop(scene, enemy, player);
+        // Apply luck multiplier to drop chance
+        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus;
+        if (Math.random() > effectiveDropChance) return;
+
+        const drop = strategy.drop(scene, enemy, player);
         if (drop) {
             const arr = this.drops.get(strategy.key)!;
             arr.push(drop);
-            return true;
         }
-
-        return false;
     }
 
     tryDrop(key: ItemDropType, scene: THREE.Scene, enemy: Enemy, player: Player): boolean {
         const dropStrategy = this.itemDropStrategies.find(strategy => strategy.key === key);
         if (!dropStrategy) return false;
 
-        const drop = dropStrategy.tryDrop(scene, enemy, player);
+        const drop = dropStrategy.drop(scene, enemy, player);
         if (drop) {
             const arr = this.drops.get(key)!;
             arr.push(drop);

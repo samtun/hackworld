@@ -55,10 +55,10 @@ export class Weapon extends BaseMesh {
 
     // Delay before attack hitbox becomes active (in seconds)
     private static WEAPON_ATTACK_DELAYS: Record<WeaponType, number> = {
-        [WeaponType.SWORD]: 0.12,       // 120ms
-        [WeaponType.DUAL_BLADE]: 0.07, // 70ms
-        [WeaponType.LANCE]: 0.12,       // 120ms
-        [WeaponType.HAMMER]: 0.15      // 150ms
+        [WeaponType.SWORD]: 0.12,
+        [WeaponType.DUAL_BLADE]: 0.07,
+        [WeaponType.LANCE]: 0.12,
+        [WeaponType.HAMMER]: 0.3
     };
 
     // Hitbox configurations that roughly fit each weapon model

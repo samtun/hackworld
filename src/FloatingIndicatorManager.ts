@@ -83,7 +83,7 @@ export class FloatingIndicatorManager {
                 priority: false
             });
         } else if (drop instanceof XDataDrop) {
-            let text = `${drop.amount} X-Data`;
+            let text = `${drop.amount} XData`;
             this.spawn(position, {
                 text: text,
                 color: '#8a2bbd',
