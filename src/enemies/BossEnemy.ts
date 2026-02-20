@@ -85,7 +85,7 @@ export class BossEnemy extends Enemy {
 
         // Boss title
         const titleDiv = document.createElement('div');
-        titleDiv.textContent = 'BOSS';
+        titleDiv.textContent = 'Corrupted Cipher Claw';
         titleDiv.style.color = '#ff4444';
         titleDiv.style.fontSize = '16px';
         titleDiv.style.fontWeight = 'bold';

@@ -23,8 +23,11 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         if (!weaponItem) return null;
 
         const random = Math.random();
-        const bonusValue = Math.pow(1.16 * random - 0.55, 3.4);
+        // avoid NaN when base is negative and exponent is non-integer
+        const raw = 1.16 * random - 0.55;
+        const bonusValue = Math.sign(raw) * Math.pow(Math.abs(raw), 3.4);
         const bonusMultiplier = 1 + bonusValue;
+        console.log("Creating weapon drop with bonus multiplier:", bonusMultiplier);
         const finalDamage = Math.floor(weaponItem.damage * bonusMultiplier);
         const damageFactor = finalDamage / weaponItem.damage;
         const finalBuyPrice = Math.floor(weaponItem.buyPrice * damageFactor);
