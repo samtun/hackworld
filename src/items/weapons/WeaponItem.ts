@@ -84,4 +84,26 @@ export class WeaponItem extends EquippableItem {
             this.level
         );
     }
+
+    /**
+     * Clone this weapon with custom stats
+     * @param damage Custom damage value for this clone
+     * @param buyPrice Custom buy price for this clone
+     * @param sellPrice Custom sell price for this clone
+     * @param newId Optional custom id for the clone (uses current id if not provided)
+     * @returns A new WeaponItem with the specified custom stats
+     */
+    cloneWith(damage: number, buyPrice: number, sellPrice: number, newId?: string): WeaponItem {
+        const clone = new WeaponItem(
+            newId || this.id,
+            this.name,
+            buyPrice,
+            sellPrice,
+            this.weaponType,
+            damage,
+            this.model,
+            this.level
+        );
+        return clone;
+    }
 }

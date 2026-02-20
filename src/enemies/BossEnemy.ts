@@ -164,6 +164,7 @@ export class BossEnemy extends Enemy {
 
         // Select next attack type
         this.currentAttackType = this.selectNextAttack();
+        console.log(`Boss is performing attack: ${this.currentAttackType}`);
 
         // TODO handle different attack behaviors based on this.currentAttackType
 

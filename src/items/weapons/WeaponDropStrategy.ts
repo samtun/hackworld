@@ -22,12 +22,6 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, weaponLevel);
         if (!weaponItem) return null;
 
-        // Guard against zero damage
-        if (weaponItem.damage <= 0) {
-            console.warn(`Weapon ${weaponItem.name} has invalid damage: ${weaponItem.damage}`);
-            return null;
-        }
-
         const random = Math.random();
         const bonusValue = Math.pow(1.16 * random - 0.55, 3.4);
         const bonusMultiplier = 1 + bonusValue;
@@ -120,13 +114,16 @@ export class WeaponDropStrategy implements ItemDropStrategy {
     }
 
     pickup(drop: WeaponDrop, player: Player): void {
-        const weaponItem = WeaponRepository.Instance.getWeaponById(drop.weaponId);
-        if (!weaponItem) {
+        const baseWeapon = WeaponRepository.Instance.getWeaponById(drop.weaponId);
+        if (!baseWeapon) {
             console.warn(`Weapon not found for ${drop.weaponId}`);
             return;
         }
 
+        // Clone the weapon with bonus stats from the drop
+        const weaponItem = baseWeapon.cloneWith(drop.damage, drop.buyPrice, drop.sellPrice);
+
         player.inventory.push(weaponItem);
-        console.log(`Picked up ${weaponItem}`);
+        console.log(`Picked up ${weaponItem.name} with ${weaponItem.damage} damage`);
     }
 }
