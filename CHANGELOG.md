@@ -1,3 +1,11 @@
+## [1.43.2](https://github.com/samtun/hackworld/compare/v1.43.1...v1.43.2) (2026-02-20)
+
+
+### Bug Fixes
+
+* fix boss health bar and add new font ([8b14a20](https://github.com/samtun/hackworld/commit/8b14a208d08499c7446960b49d0b13f11be47670))
+* item handling in save games ([4f0a6fc](https://github.com/samtun/hackworld/commit/4f0a6fcb75767ea6ad5fc2aed9963169f0ad735c))
+
 ## [1.43.1](https://github.com/samtun/hackworld/compare/v1.43.0...v1.43.1) (2026-02-20)
 
 
