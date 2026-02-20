@@ -30,7 +30,7 @@ export abstract class ItemDrop {
     protected readonly PICKUP_DISTANCE: number = 1.5;
 
     /**
-     * Creates a text label using canvas with the correct Share Tech font
+     * Creates a text label using canvas
      * @param itemName The name of the item to display
      * @param levelChar The level character to display in italic (e.g., 'α', 'β'). Leave empty for no level display.
      * @param textColor The color of the text (default: '#ffffff')

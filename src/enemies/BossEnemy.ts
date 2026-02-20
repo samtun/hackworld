@@ -16,7 +16,6 @@ export class BossEnemy extends Enemy {
     // Health bar UI
     private healthBarContainer: HTMLDivElement | null = null;
     private healthBarFill: HTMLDivElement | null = null;
-    private healthBarText: HTMLDivElement | null = null;
     private healthBarVisible: boolean = false;
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
@@ -25,6 +24,7 @@ export class BossEnemy extends Enemy {
         // Boss-level stats
         this.maxHp = 500;
         this.hp = this.maxHp;
+        this.speed = 4.5;
         this.itemDropChance = 1;
         this.xDataDropChanceWeight = 3;
         this.baseExp = 120;
@@ -85,9 +85,10 @@ export class BossEnemy extends Enemy {
 
         // Boss title
         const titleDiv = document.createElement('div');
-        titleDiv.textContent = 'Corrupted Cipher Claw';
+        titleDiv.style.fontFamily = '"Space Grotesk", Arial, sans-serif';
+        titleDiv.textContent = 'CORRUPTED CIPHER CLAW';
         titleDiv.style.color = '#ff4444';
-        titleDiv.style.fontSize = '16px';
+        titleDiv.style.fontSize = '18px'; 
         titleDiv.style.fontWeight = 'bold';
         titleDiv.style.textAlign = 'center';
         this.healthBarContainer.appendChild(titleDiv);
@@ -111,14 +112,6 @@ export class BossEnemy extends Enemy {
         barBg.appendChild(this.healthBarFill);
         this.healthBarContainer.appendChild(barBg);
 
-        // Health text
-        this.healthBarText = document.createElement('div');
-        this.healthBarText.style.color = '#ffffff';
-        this.healthBarText.style.fontSize = '12px';
-        this.healthBarText.style.textAlign = 'center';
-        this.healthBarText.textContent = `${this.hp} / ${this.maxHp}`;
-        this.healthBarContainer.appendChild(this.healthBarText);
-
         document.body.appendChild(this.healthBarContainer);
     }
 
@@ -137,11 +130,10 @@ export class BossEnemy extends Enemy {
      * Update the health bar UI
      */
     private updateHealthBar(): void {
-        if (!this.healthBarFill || !this.healthBarText) return;
+        if (!this.healthBarFill) return;
 
         const healthPercent = Math.max(0, (this.hp / this.maxHp) * 100);
         this.healthBarFill.style.width = healthPercent + '%';
-        this.healthBarText.textContent = `${Math.max(0, this.hp)} / ${this.maxHp}`;
     }
 
     /**

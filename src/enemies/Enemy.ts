@@ -18,7 +18,7 @@ export class Enemy extends BaseMesh {
     body: CANNON.Body;
     maxHp: number = 60;
     hp: number = this.maxHp;
-    speed: number = 3;
+    protected speed: number = 3;
     protected size: number = 1.75;
     protected radius: number = 0.6;
     protected attackRange: number = 1.5;
