@@ -1,3 +1,10 @@
+## [1.42.1](https://github.com/samtun/hackworld/compare/v1.42.0...v1.42.1) (2026-02-20)
+
+
+### Bug Fixes
+
+* node vulnerabilities ([bbb1910](https://github.com/samtun/hackworld/commit/bbb1910ef8e134a5aa7dbf7fca2dadd032dbe254))
+
 # [1.42.0](https://github.com/samtun/hackworld/compare/v1.41.0...v1.42.0) (2026-02-18)
 
 
