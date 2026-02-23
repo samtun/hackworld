@@ -25,7 +25,18 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const random = Math.random();
         // avoid NaN when base is negative and exponent is non-integer
         const raw = 1.16 * random - 0.55;
-        const bonusValue = Math.sign(raw) * Math.pow(Math.abs(raw), 3.4);
+
+        let maxBonusValue;
+        if (player.level < 10) {
+            maxBonusValue = 0.119;
+        } else if (player.level < 40) {
+            maxBonusValue = 0.159;
+        } else {
+            maxBonusValue = 0.25;
+        }
+
+        let bonusValue = Math.min(Math.sign(raw) * Math.pow(Math.abs(raw), 3.4), maxBonusValue);
+
         const bonusMultiplier = 1 + bonusValue;
         console.log("Creating weapon drop with bonus multiplier:", bonusMultiplier);
         const finalDamage = Math.floor(weaponItem.damage * bonusMultiplier);
