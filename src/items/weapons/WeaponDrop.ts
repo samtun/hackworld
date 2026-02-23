@@ -6,7 +6,7 @@ import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
 import { InteractiveEntityType } from '../../InteractiveEntityType';
 import { AssetManager } from '../../AssetManager';
-import { getWeaponDropTier } from './WeaponDropTier';
+import * as WeaponDropTiers from './WeaponDropTier';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
@@ -76,10 +76,11 @@ export class WeaponDrop extends ItemDrop {
      * on the weapon drop mesh based on the damage bonus multiplier.
      */
     private applyTierColors(bonusMultiplier: number): void {
-        const tier = getWeaponDropTier(bonusMultiplier);
-        if (!tier.colors) return;
+        const tier = this.getWeaponDropTier(bonusMultiplier);
+        if (!tier.rimColor || !tier.innerColor) return;
 
-        const { rim: rimHex, inner: innerHex } = tier.colors;
+        const rimHex = tier.rimColor;
+        const innerHex = tier.innerColor;
 
         this.mesh.traverse((child: THREE.Object3D) => {
             if (!(child instanceof THREE.Mesh)) return;
@@ -108,6 +109,20 @@ export class WeaponDrop extends ItemDrop {
                 else if (mat.name === 'Inner') child.material = applyColor(mat, innerHex);
             }
         });
+    }
+ 
+    /**
+     * Returns the tier definition for a given bonus multiplier.
+     * @param bonusMultiplier - The ratio of final damage to base damage (e.g., 1.05 = +5%)
+     */
+    private getWeaponDropTier(bonusMultiplier: number): WeaponDropTiers.WeaponDropTierDefinition {
+        const bonusPercent = (bonusMultiplier - 1) * 100;
+        const tier = WeaponDropTiers.WEAPON_DROP_TIER.find(
+            t => bonusPercent >= t.minPercent && bonusPercent < t.maxPercent
+        );
+        console.log(`WeaponDrop Tier: ${tier?.name}`);
+        // Fallback to stable tier if no match (should not happen with -Infinity/Infinity bounds)
+        return tier ?? WeaponDropTiers.WEAPON_DROP_TIER.find(t => t.name === WeaponDropTiers.WeaponDropTierName.STABLE)!;
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
