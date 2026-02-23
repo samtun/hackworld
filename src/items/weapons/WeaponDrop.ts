@@ -6,6 +6,7 @@ import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
 import { InteractiveEntityType } from '../../InteractiveEntityType';
 import { AssetManager } from '../../AssetManager';
+import { getWeaponDropTier } from './WeaponDropTier';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
@@ -40,7 +41,8 @@ export class WeaponDrop extends ItemDrop {
         damage: number,
         buyPrice: number,
         sellPrice: number,
-        level: number
+        level: number,
+        bonusMultiplier: number
     ) {
         super();
         this.weaponId = weaponId;
@@ -56,6 +58,9 @@ export class WeaponDrop extends ItemDrop {
         const gltfModel = AssetManager.Instance.get('models/weapon_drop.glb');
         this.mesh = gltfModel.scene;
 
+        // Apply tier-based color coding to "Rim" and "Inner" materials
+        this.applyTierColors(bonusMultiplier);
+
         // Create text label using shared method
         const levelChar = ItemLevelHelper.getLevelChar(this.level);
         this.textMesh = this.createTextLabel(weaponName, levelChar);
@@ -64,6 +69,45 @@ export class WeaponDrop extends ItemDrop {
         // Position the group
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
+    }
+
+    /**
+     * Applies tier-based color coding to the "Rim" and "Inner" materials
+     * on the weapon drop mesh based on the damage bonus multiplier.
+     */
+    private applyTierColors(bonusMultiplier: number): void {
+        const tier = getWeaponDropTier(bonusMultiplier);
+        if (!tier.colors) return;
+
+        const { rim: rimHex, inner: innerHex } = tier.colors;
+
+        this.mesh.traverse((child: THREE.Object3D) => {
+            if (!(child instanceof THREE.Mesh)) return;
+
+            const applyColor = (mat: THREE.Material, hex: string) => {
+                if (mat instanceof THREE.MeshStandardMaterial || mat instanceof THREE.MeshPhongMaterial) {
+                    // Clone to avoid mutating the shared model material
+                    const cloned = mat.clone() as THREE.MeshStandardMaterial | THREE.MeshPhongMaterial;
+                    cloned.color.set(hex);
+                    return cloned;
+                }
+                return mat;
+            };
+
+            if (Array.isArray(child.material)) {
+                let modified = false;
+                const newMaterials = child.material.map((mat: THREE.Material) => {
+                    if (mat.name === 'Rim') { modified = true; return applyColor(mat, rimHex); }
+                    if (mat.name === 'Inner') { modified = true; return applyColor(mat, innerHex); }
+                    return mat;
+                });
+                if (modified) child.material = newMaterials;
+            } else {
+                const mat = child.material as THREE.Material;
+                if (mat.name === 'Rim') child.material = applyColor(mat, rimHex);
+                else if (mat.name === 'Inner') child.material = applyColor(mat, innerHex);
+            }
+        });
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
