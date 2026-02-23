@@ -137,7 +137,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
 
         // Clone the weapon with bonus stats from the drop
         const weaponItem = baseWeapon.cloneWith(drop.damage, drop.buyPrice, drop.sellPrice);
-        weaponItem.rimColor = drop.rimColor;
+        weaponItem.tier = drop.tier;
 
         player.inventory.push(weaponItem);
         console.log(`Picked up ${weaponItem.name} with ${weaponItem.damage} damage`);

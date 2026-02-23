@@ -9,12 +9,15 @@ export function formatItemLabel(item: Item, priceText: string = ''): string {
     if (item instanceof WeaponItem || item instanceof ChipItem || item instanceof CoreItem) {
         // Show the item's level as greek character
         const char = ItemLevelHelper.getLevelChar(item.level);
-        const rimColor = item instanceof WeaponItem ? item.rimColor : null;
-        const label = `${escapeHtml(item.name)} <i style="font-style:italic;">${escapeHtml(char)}</i>`;
-        const coloredLabel = rimColor ? `<span style="color:${escapeHtml(rimColor)}">${label}</span>` : label;
-        return `${coloredLabel}${escapeHtml(priceText)}`;
+        let tierColor = "#ffffff";
+        if (item instanceof WeaponItem) {
+            tierColor = item.tier.rimColor;
+        }
+        let label = `${escapeHtml(item.name)} <i style="font-style:italic;">${escapeHtml(char)}</i>`;
+        label = `<span style="color:${escapeHtml(tierColor)}">${label}</span>`;
+        return `${label}${priceText}`;
     }
-    return `${escapeHtml(item.name)}${escapeHtml(priceText)}`;
+    return `${escapeHtml(item.name)}${priceText}`;
 }
 
 function escapeHtml(s: string): string {

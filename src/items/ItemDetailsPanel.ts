@@ -61,6 +61,7 @@ export class ItemDetailsPanel {
 
         return [
             { label: 'Type', value: typeLabel },
+            { label: 'Tier', value: item.tier.name },
             { label: 'Damage', value: damage },
             { label: 'Required Tech', value: levelDef.requiredTech },
             { label: 'Price', value: `${item.sellPrice} bits` }

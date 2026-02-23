@@ -4,6 +4,7 @@ import { WeaponRepository } from './WeaponRepository';
 import { Player } from '../../Player';
 import { Item } from '../Item';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
+import { WEAPON_TIERS } from './WeaponTier';
 
 export class WeaponTrader extends BaseTrader {
     static instance: WeaponTrader; // Singleton
@@ -37,8 +38,24 @@ export class WeaponTrader extends BaseTrader {
     protected initializeTraderInventory() {
         this.traderInventory = [];
 
+        for (const tier of WEAPON_TIERS.values()) {
+            const weapon = this.weaponRepository.getWeaponById('battle_hawk_alpha');
+            if (weapon) {
+                let bonusFactor = 1.01 + tier.minPercent / 100;
+                if (tier.minPercent == -Infinity) {
+                    bonusFactor = 0.8; // Cap negative bonus at 50% for display purposes
+                }
+                this.traderInventory.push(weapon.cloneWith(
+                    Math.floor(weapon.damage * bonusFactor),
+                    Math.floor(weapon.buyPrice * bonusFactor),
+                    Math.floor(weapon.sellPrice * bonusFactor),
+                    WEAPON_TIERS.get(tier.name)
+                ));
+            }
+        }
+
         // Get all weapons from repository (already cloned with unique IDs)
-        this.traderInventory = this.weaponRepository.getAllWeapons();
+        this.traderInventory.push(...this.weaponRepository.getAllWeapons());
     }
 
     protected filterPlayerInventory(player: Player): Item[] {

@@ -11,6 +11,7 @@ import { ChipItem } from './items/chips/ChipItem';
 import { NpcRegistry } from './npcs/NpcRegistry';
 import { GameProgressManager } from './GameProgressManager';
 import { Player } from './Player';
+import { WEAPON_TIERS } from './items/weapons/WeaponTier';
 
 /**
  * Interface representing the complete save data structure
@@ -274,7 +275,8 @@ export class SaveManager {
                             model: wi.model,
                             level: wi.level,
                             isEquipped: !!wi.isEquipped,
-                            rimColor: wi.rimColor ?? null,
+                            tierName: wi.tier.name,
+                            rimColor: wi.rimColor,
                         };
                     } else if (i instanceof CoreItem) {
                         const ci = i as any;
@@ -453,8 +455,9 @@ export class SaveManager {
                     const baseWeapon = weaponRepo.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
                     if (baseWeapon) {
                         const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
-                        // Set the saved properties if needed
-                        weaponItem.rimColor = itemData.rimColor ?? null;
+                        if (itemData.tierName) {
+                            weaponItem.tier = WEAPON_TIERS.get(itemData.tierName)!;
+                        }
                         if (itemData.isEquipped) {
                             weaponItem.isEquipped = true;
                             player.setWeapon(weaponItem);
