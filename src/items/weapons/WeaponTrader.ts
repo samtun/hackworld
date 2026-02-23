@@ -1,15 +1,30 @@
 import { WeaponItem } from './WeaponItem';
 import { BaseTrader, TraderUIConfig } from '../BaseTrader';
 import { WeaponRepository } from './WeaponRepository';
+import { WeaponType } from './WeaponType';
 import { Player } from '../../Player';
 import { Item } from '../Item';
+import { InputManager } from '../../InputManager';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
-import { WEAPON_TIERS } from './WeaponTier';
+import { WEAPON_TIERS, WeaponTierDefinition } from './WeaponTier';
 
 export class WeaponTrader extends BaseTrader {
     static instance: WeaponTrader; // Singleton
 
     private weaponRepository: WeaponRepository;
+    private pendingInventoryInit: boolean = false;
+
+    /** Practical lower bound (%) used when BROKEN tier has -Infinity as minPercent */
+    private static readonly BROKEN_TIER_FLOOR_PERCENT = -15;
+    /** Practical upper bound (%) used when the top tier has Infinity as maxPercent */
+    private static readonly TOP_TIER_CEIL_PERCENT = 25;
+
+    private static readonly ALL_WEAPON_TYPES = [
+        WeaponType.SWORD,
+        WeaponType.DUAL_BLADE,
+        WeaponType.LANCE,
+        WeaponType.HAMMER,
+    ];
 
     private constructor() {
         const cfg: TraderUIConfig = {
@@ -35,27 +50,104 @@ export class WeaponTrader extends BaseTrader {
         return this.instance || (this.instance = new this());
     }
 
+    show() {
+        this.pendingInventoryInit = true;
+        super.show();
+    }
+
+    update(player: Player, input?: InputManager) {
+        if (this.pendingInventoryInit) {
+            this.refreshInventory(player);
+            this.pendingInventoryInit = false;
+            this.needsRender = true;
+        }
+        super.update(player, input);
+    }
+
     protected initializeTraderInventory() {
         this.traderInventory = [];
+    }
 
-        for (const tier of WEAPON_TIERS.values()) {
-            const weapon = this.weaponRepository.getWeaponById('battle_hawk_alpha');
-            if (weapon) {
-                let bonusFactor = 1.01 + tier.minPercent / 100;
-                if (tier.minPercent == -Infinity) {
-                    bonusFactor = 0.8; // Cap negative bonus at 50% for display purposes
+    /**
+     * Re-populates the trader inventory using the current player's tech levels.
+     * Called each time the trader is opened so the inventory reflects the player's progress.
+     */
+    private refreshInventory(player: Player): void {
+        this.traderInventory = [];
+
+        // Dev build only: add one hammer of every tier for easy visual testing
+        if (import.meta.env.DEV) {
+            const hammerLevel = this.getBaseWeaponLevel(player.getTechForWeapon(WeaponType.HAMMER));
+            for (const tier of WEAPON_TIERS.values()) {
+                const weapon = this.weaponRepository.getWeaponByTypeAndLevel(WeaponType.HAMMER, hammerLevel);
+                if (weapon) {
+                    this.traderInventory.push(this.applyTierBonus(weapon, tier));
                 }
-                this.traderInventory.push(weapon.cloneWith(
-                    Math.floor(weapon.damage * bonusFactor),
-                    Math.floor(weapon.buyPrice * bonusFactor),
-                    Math.floor(weapon.sellPrice * bonusFactor),
-                    WEAPON_TIERS.get(tier.name)
-                ));
             }
         }
 
-        // Get all weapons from repository (already cloned with unique IDs)
-        this.traderInventory.push(...this.weaponRepository.getAllWeapons());
+        // One weapon per type at the level that fits the player's current tech
+        for (const type of WeaponTrader.ALL_WEAPON_TYPES) {
+            const level = this.getBaseWeaponLevel(player.getTechForWeapon(type));
+            const weapon = this.weaponRepository.getWeaponByTypeAndLevel(type, level);
+            if (weapon) {
+                this.traderInventory.push(weapon);
+            }
+        }
+
+        // Random bonus entries: one per tier with decreasing probability
+        for (const tier of WEAPON_TIERS.values()) {
+            if (Math.random() < tier.traderChance) {
+                const type = WeaponTrader.ALL_WEAPON_TYPES[
+                    Math.floor(Math.random() * WeaponTrader.ALL_WEAPON_TYPES.length)
+                ];
+                const level = this.getBaseWeaponLevel(player.getTechForWeapon(type));
+                const weapon = this.weaponRepository.getWeaponByTypeAndLevel(type, level);
+                if (weapon) {
+                    this.traderInventory.push(this.applyTierBonus(weapon, tier));
+                }
+            }
+        }
+    }
+
+    /**
+     * Returns the highest weapon level the player can equip for the given tech value.
+     */
+    private getBaseWeaponLevel(playerTech: number): number {
+        let baseLevel = 1;
+        for (let i = 0; i < WeaponItem.WEAPON_LEVELS.length; i++) {
+            if (playerTech >= WeaponItem.WEAPON_LEVELS[i].requiredTech) {
+                baseLevel = i + 1;
+            } else {
+                break;
+            }
+        }
+        return baseLevel;
+    }
+
+    /**
+     * Returns a random bonus multiplier within the tier's percent range.
+     * Uses -15% as a practical lower bound for the BROKEN tier.
+     */
+    private randomBonusMultiplierForTier(tier: WeaponTierDefinition): number {
+        const min = isFinite(tier.minPercent) ? tier.minPercent : WeaponTrader.BROKEN_TIER_FLOOR_PERCENT;
+        const max = isFinite(tier.maxPercent) ? tier.maxPercent : WeaponTrader.TOP_TIER_CEIL_PERCENT;
+        return 1 + (min + Math.random() * (max - min)) / 100;
+    }
+
+    /**
+     * Clones a weapon with a random bonus from the given tier applied to its stats.
+     */
+    private applyTierBonus(weapon: WeaponItem, tier: WeaponTierDefinition): WeaponItem {
+        const multiplier = this.randomBonusMultiplierForTier(tier);
+        const finalDamage = Math.floor(weapon.damage * multiplier);
+        const damageFactor = finalDamage / weapon.damage;
+        return weapon.cloneWith(
+            finalDamage,
+            Math.floor(weapon.buyPrice * damageFactor),
+            Math.floor(weapon.sellPrice * damageFactor),
+            tier,
+        );
     }
 
     protected filterPlayerInventory(player: Player): Item[] {

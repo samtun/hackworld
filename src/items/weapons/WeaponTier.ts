@@ -20,6 +20,11 @@ export interface WeaponTierDefinition {
     rimColor: string;
     /** Color to apply to the inner material */
     innerColor: string;
+    /**
+     * Probability (0–1) that a weapon of this tier appears as a random bonus entry
+     * in the weapon trader inventory. Should decrease for higher tiers.
+     */
+    traderChance: number;
 }
 
 /**
@@ -33,6 +38,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: -3,
         rimColor: '#cccccc',
         innerColor: '#717171',
+        traderChance: 0.30,
     }],
     [WeaponTier.STABLE, {
         name: WeaponTier.STABLE,
@@ -40,6 +46,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 3,
         rimColor: '#ffffff',
         innerColor: '#aaaaaa',
+        traderChance: 0.25,
     }],
     [WeaponTier.MAINTAINED, {
         name: WeaponTier.MAINTAINED,
@@ -47,6 +54,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 8,
         rimColor: '#7676ff',
         innerColor: '#3a3aae',
+        traderChance: 0.20,
     }],
     [WeaponTier.OVERCLOCKED, {
         name: WeaponTier.OVERCLOCKED,
@@ -54,6 +62,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 12,
         rimColor: '#00f97d',
         innerColor: '#00b36a',
+        traderChance: 0.15,
     }],
     [WeaponTier.ZERODAY, {
         name: WeaponTier.ZERODAY,
@@ -61,6 +70,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 16,
         rimColor: '#fd00d7',
         innerColor: '#83006f',
+        traderChance: 0.10,
     }],
     [WeaponTier.LEET, {
         name: WeaponTier.LEET,
@@ -68,5 +78,6 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: Infinity,
         rimColor: '#ffae00',
         innerColor: '#b87e00',
+        traderChance: 0.05,
     }],
 ]);
