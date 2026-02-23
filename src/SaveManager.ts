@@ -274,6 +274,7 @@ export class SaveManager {
                             model: wi.model,
                             level: wi.level,
                             isEquipped: !!wi.isEquipped,
+                            rimColor: wi.rimColor ?? null,
                         };
                     } else if (i instanceof CoreItem) {
                         const ci = i as any;
@@ -453,6 +454,7 @@ export class SaveManager {
                     if (baseWeapon) {
                         const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
                         // Set the saved properties if needed
+                        weaponItem.rimColor = itemData.rimColor ?? null;
                         if (itemData.isEquipped) {
                             weaponItem.isEquipped = true;
                             player.setWeapon(weaponItem);

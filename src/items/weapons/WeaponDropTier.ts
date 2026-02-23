@@ -26,7 +26,7 @@ export interface WeaponDropTierDefinition {
  * Ordered list of weapon drop tier definitions.
  * Add new tiers here to extend the system.
  */
-export const WEAPON_DROP_TIER: WeaponDropTierDefinition[] = [
+export const WEAPON_DROP_TIER: readonly WeaponDropTierDefinition[] = [
     {
         name: WeaponDropTierName.BROKEN,
         minPercent: -Infinity,
@@ -70,3 +70,16 @@ export const WEAPON_DROP_TIER: WeaponDropTierDefinition[] = [
         innerColor: '#ae1010',
     },
 ];
+
+/**
+ * Returns the tier definition for a given bonus multiplier.
+ * @param bonusMultiplier - The ratio of final damage to base damage (e.g., 1.05 = +5%)
+ */
+export function getWeaponDropTier(bonusMultiplier: number): WeaponDropTierDefinition {
+    const bonusPercent = (bonusMultiplier - 1) * 100;
+    const tier = WEAPON_DROP_TIER.find(
+        t => bonusPercent >= t.minPercent && bonusPercent < t.maxPercent
+    );
+    // Fallback to stable tier if no match (should not happen with -Infinity/Infinity bounds)
+    return tier ?? WEAPON_DROP_TIER.find(t => t.name === WeaponDropTierName.STABLE)!;
+}

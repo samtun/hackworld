@@ -8,6 +8,8 @@ export class WeaponItem extends EquippableItem {
     model: string;
     // fixed numeric level for this weapon instance (1 = α, 2 = β, ...)
     level: number;
+    /** Rim color for this weapon's drop tier (null = no tier / bought from trader) */
+    rimColor: string | null = null;
 
     // Level metadata - single source of truth for weapon level requirements
     public static readonly WEAPON_LEVELS = [
@@ -73,7 +75,7 @@ export class WeaponItem extends EquippableItem {
     }
 
     clone(newId?: string): WeaponItem {
-        return new WeaponItem(
+        const c = new WeaponItem(
             newId || this.id,
             this.name,
             this.buyPrice,
@@ -83,6 +85,8 @@ export class WeaponItem extends EquippableItem {
             this.model,
             this.level
         );
+        c.rimColor = this.rimColor;
+        return c;
     }
 
     /**
@@ -104,6 +108,7 @@ export class WeaponItem extends EquippableItem {
             this.model,
             this.level
         );
+        clone.rimColor = this.rimColor;
         return clone;
     }
 }

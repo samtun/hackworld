@@ -6,7 +6,7 @@ import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
 import { InteractiveEntityType } from '../../InteractiveEntityType';
 import { AssetManager } from '../../AssetManager';
-import * as WeaponDropTiers from './WeaponDropTier';
+import { getWeaponDropTier } from './WeaponDropTier';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
@@ -26,6 +26,8 @@ export class WeaponDrop extends ItemDrop {
     damage: number;
     buyPrice: number;
     sellPrice: number;
+    /** Rim color for this drop's tier (null = stable, keep original colors) */
+    rimColor: string | null;
 
     private floatTimer: number = 0;
     private baseHeight: number;
@@ -54,16 +56,20 @@ export class WeaponDrop extends ItemDrop {
         this.baseHeight = position.y;
         this.level = level;
 
+        // Compute tier and store rim color for use in text label and inventory display
+        const tier = getWeaponDropTier(bonusMultiplier);
+        this.rimColor = tier.rimColor;
+
         // Create weapon visual
         const gltfModel = AssetManager.Instance.get('models/weapon_drop.glb');
         this.mesh = gltfModel.scene;
 
         // Apply tier-based color coding to "Rim" and "Inner" materials
-        this.applyTierColors(bonusMultiplier);
+        this.applyTierColors(tier);
 
-        // Create text label using shared method
+        // Create text label using shared method, colored with the tier's rim color
         const levelChar = ItemLevelHelper.getLevelChar(this.level);
-        this.textMesh = this.createTextLabel(weaponName, levelChar);
+        this.textMesh = this.createTextLabel(weaponName, levelChar, this.rimColor ?? '#ffffff');
         this.mesh.add(this.textMesh);
 
         // Position the group
@@ -73,10 +79,9 @@ export class WeaponDrop extends ItemDrop {
 
     /**
      * Applies tier-based color coding to the "Rim" and "Inner" materials
-     * on the weapon drop mesh based on the damage bonus multiplier.
+     * on the weapon drop mesh.
      */
-    private applyTierColors(bonusMultiplier: number): void {
-        const tier = this.getWeaponDropTier(bonusMultiplier);
+    private applyTierColors(tier: ReturnType<typeof getWeaponDropTier>): void {
         if (!tier.rimColor || !tier.innerColor) return;
 
         const rimHex = tier.rimColor;
@@ -109,20 +114,6 @@ export class WeaponDrop extends ItemDrop {
                 else if (mat.name === 'Inner') child.material = applyColor(mat, innerHex);
             }
         });
-    }
- 
-    /**
-     * Returns the tier definition for a given bonus multiplier.
-     * @param bonusMultiplier - The ratio of final damage to base damage (e.g., 1.05 = +5%)
-     */
-    private getWeaponDropTier(bonusMultiplier: number): WeaponDropTiers.WeaponDropTierDefinition {
-        const bonusPercent = (bonusMultiplier - 1) * 100;
-        const tier = WeaponDropTiers.WEAPON_DROP_TIER.find(
-            t => bonusPercent >= t.minPercent && bonusPercent < t.maxPercent
-        );
-        console.log(`WeaponDrop Tier: ${tier?.name}`);
-        // Fallback to stable tier if no match (should not happen with -Infinity/Infinity bounds)
-        return tier ?? WeaponDropTiers.WEAPON_DROP_TIER.find(t => t.name === WeaponDropTiers.WeaponDropTierName.STABLE)!;
     }
 
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
