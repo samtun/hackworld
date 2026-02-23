@@ -20,6 +20,7 @@ import { CardManager } from './items/cards/CardManager';
 import { InteractiveEntityType } from './InteractiveEntityType';
 import { getHint, HintConfigs } from './ui/InputHints';
 import { Teleporter } from './Teleporter';
+import { LoreIntroduction } from './LoreIntroduction';
 
 export class Game {
     scene: THREE.Scene;
@@ -336,20 +337,29 @@ export class Game {
                 this.isTransitioning = true;
                 this.ui.triggerStartTransition(() => {
                     this.ui.hideStartScreen();
-                    this.currentScene = Lobby.getMetadata().id;
-                    this.input.initializeMobileControls();
-                    this.clock.getDelta(); // Reset clock
-                    this.isTransitioning = false;
-                    
-                    // Try to load auto-save after transition
-                    if (this.saveManager.hasLocalStorageSave()) {
-                        const loaded = this.saveManager.loadFromLocalStorage();
-                        if (loaded) {
-                            console.log('Auto-save loaded successfully');
+                    this.currentScene = 'lore';
+                    const loreIntro = new LoreIntroduction(() => {
+                        this.currentScene = Lobby.getMetadata().id;
+                        this.input.initializeMobileControls();
+                        this.clock.getDelta(); // Reset clock
+                        this.isTransitioning = false;
+
+                        // Try to load auto-save after transition
+                        if (this.saveManager.hasLocalStorageSave()) {
+                            const loaded = this.saveManager.loadFromLocalStorage();
+                            if (loaded) {
+                                console.log('Auto-save loaded successfully');
+                            }
                         }
-                    }
+                    });
+                    loreIntro.show();
                 });
             }
+            return;
+        }
+
+        // Lore introduction is active — the LoreIntroduction class handles its own rendering
+        if (this.currentScene === 'lore') {
             return;
         }
 
