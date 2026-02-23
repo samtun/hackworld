@@ -1,16 +1,13 @@
 /**
  * Tiers for weapon drops based on their damage bonus/malus percentage.
- * Each tier defines a display name and the colors to apply to the
- * "Rim" and "Inner" materials on the weapon drop mesh.
- * A null value for colors means the original model colors are kept.
  */
 export enum WeaponDropTierName {
     BROKEN = 'broken',
     STABLE = 'stable',
     MAINTAINED = 'maintained',
     OVERCLOCKED = 'overclocked',
-    ELITE = 'elite',
-    ZERO_DAY = 'zero-day',
+    ZERODAY = 'zeroday',
+    LEET = 'leet',
 }
 
 export interface WeaponDropTierDefinition {
@@ -59,14 +56,14 @@ export const WEAPON_DROP_TIER: WeaponDropTierDefinition[] = [
         innerColor: '#9008a9',
     },
     {
-        name: WeaponDropTierName.ELITE,
+        name: WeaponDropTierName.ZERODAY,
         minPercent: 12,
         maxPercent: 16,
         rimColor: '#ffae00',
         innerColor: '#b87e00',
     },
     {
-        name: WeaponDropTierName.ZERO_DAY,
+        name: WeaponDropTierName.LEET,
         minPercent: 16,
         maxPercent: Infinity,
         rimColor: '#ff0000',
