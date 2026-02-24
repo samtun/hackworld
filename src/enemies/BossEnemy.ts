@@ -58,6 +58,9 @@ export class BossEnemy extends Enemy {
         this.attackHitboxSize = new CANNON.Vec3(1.2, 1.2, 1.5);
         this.attackHitboxOffset = 2.0;
 
+        this.criticalChance = 0.07;
+        this.criticalHitMultiplier = 1.5;
+
         // Create health bar UI
         this.setupHealthBar();
     }

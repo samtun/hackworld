@@ -33,6 +33,8 @@ export class Enemy extends BaseMesh {
     xDataDropChanceWeight: number = 1;
     baseExp: number = 10; // EXP granted on defeat, is influenced by player luck
     damage: number = 10;
+    protected criticalChance: number = 0.04;
+    protected criticalHitMultiplier: number = 1.2;
 
     // Base position tracking for return behavior
     protected basePosition: CANNON.Vec3;
@@ -296,9 +298,9 @@ export class Enemy extends BaseMesh {
         const dist = Math.sqrt(dx * dx + dz * dz);
 
         if (dist < this.attackHitboxSize.x + 0.5) {
-            console.log("Enemy attack hits player!");
-            // TODO Add critial hit chance for enemy
-            this.player.takeDamage(this.damage, this.body.position, false);
+            const isCriticalHit = Math.random() < this.criticalChance;
+            const damage = isCriticalHit ? Math.floor(this.damage * this.criticalHitMultiplier) : this.damage;
+            this.player.takeDamage(damage, this.body.position, isCriticalHit);
             this.hasDealtDamageThisAttack = true;
         }
     }

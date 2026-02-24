@@ -43,5 +43,8 @@ export class LargeEnemy extends Enemy {
         // Larger attack hitbox for larger enemy
         this.attackHitboxSize = new CANNON.Vec3(0.75, 0.75, 1.0);
         this.attackHitboxOffset = 1.5;
+
+        this.criticalChance = 0.05;
+        this.criticalHitMultiplier = 1.4;
     }
 }
