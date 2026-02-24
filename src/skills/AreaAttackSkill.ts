@@ -79,9 +79,11 @@ export class AreaAttackSkill extends Skill {
                     const distance = Math.sqrt(dx * dx + dz * dz);
 
                     if (distance <= scale) {
-                        entity.takeDamage(this.DAMAGE, this.player.body.position, 0.2);
+                        const isCriticalHit = Math.random() < this.player.getCriticalChance();
+                        const damage = isCriticalHit ? this.DAMAGE * this.player.CRITICAL_HIT_MULTIPLIER : this.DAMAGE;
+                        entity.takeDamage(damage, isCriticalHit, this.player.body.position, 0.2);
                         this.hitEnemies.set(entity, 0);
-                        console.log(`Area attack hit enemy for ${this.DAMAGE} damage`);
+                        console.log(`Area attack hit enemy for ${damage} damage`);
                     }
                 }
             }

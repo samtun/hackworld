@@ -33,6 +33,8 @@ export class Enemy extends BaseMesh {
     xDataDropChanceWeight: number = 1;
     baseExp: number = 10; // EXP granted on defeat, is influenced by player luck
     damage: number = 10;
+    protected criticalChance: number = 0.04;
+    protected criticalHitMultiplier: number = 1.2;
 
     // Base position tracking for return behavior
     protected basePosition: CANNON.Vec3;
@@ -296,8 +298,9 @@ export class Enemy extends BaseMesh {
         const dist = Math.sqrt(dx * dx + dz * dz);
 
         if (dist < this.attackHitboxSize.x + 0.5) {
-            console.log("Enemy attack hits player!");
-            this.player.takeDamage(this.damage, this.body.position);
+            const isCriticalHit = Math.random() < this.criticalChance;
+            const damage = isCriticalHit ? Math.floor(this.damage * this.criticalHitMultiplier) : this.damage;
+            this.player.takeDamage(damage, this.body.position, isCriticalHit);
             this.hasDealtDamageThisAttack = true;
         }
     }
@@ -530,7 +533,7 @@ export class Enemy extends BaseMesh {
         this.fadeToAction(EnemyActionType.Attack, 0.1);
     }
 
-    takeDamage(amount: number, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0) {
+    takeDamage(amount: number, isCriticalHit: boolean, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0): void {
         if (this.isDying || this.isDead) return;
 
         this.hp -= amount;
@@ -538,7 +541,7 @@ export class Enemy extends BaseMesh {
         // Reset return-to-base behavior when taking damage
         this.isReturningToBase = false;
         this.returnToBaseTimer = 0;
-        this.floatingIndicatorManager.spawnDamage(this.body.position, amount, '#fdc650ff');
+        this.floatingIndicatorManager.spawnDamage(this.body.position, amount, isCriticalHit ? '#bf860c' : '#fdc650ff');
 
         // Knockback
         if (sourcePos) {
