@@ -7,7 +7,7 @@ import { Item } from '../Item';
 import { InputManager } from '../../InputManager';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
 import { WEAPON_TIERS } from './WeaponTier';
-import { randomMultiplierForTier, applyWeaponBonus } from './WeaponBonusCalculator';
+import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 
 export class WeaponTrader extends BaseTrader {
     static instance: WeaponTrader; // Singleton
@@ -69,6 +69,7 @@ export class WeaponTrader extends BaseTrader {
      */
     private refreshInventory(player: Player): void {
         this.traderInventory = [];
+        const bonusCalc = WeaponBonusCalculator.Instance;
 
         // One weapon per type at the level that fits the player's current tech
         for (const type of WeaponTrader.ALL_WEAPON_TYPES) {
@@ -87,7 +88,7 @@ export class WeaponTrader extends BaseTrader {
 
             console.log(`Evaluating ${tier.name} tier for trader inventory: player level ${player.level}, tier min level ${tier.minLevel}, chance ${tier.traderChance}`);
             if (player.level >= tier.minLevel && Math.random() < tier.traderChance) {
-                this.traderInventory.push(applyWeaponBonus(weapon, randomMultiplierForTier(tier)));
+                this.traderInventory.push(bonusCalc.applyWeaponBonus(weapon, bonusCalc.randomMultiplierForTier(tier)));
             } else {
                 // Tier chance did not fire – add the base weapon at standard pricing.
                 // Base weapons from the repository already carry the STABLE tier.

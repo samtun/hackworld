@@ -8,7 +8,7 @@ import { Player } from '../../Player';
 import { WeaponItem } from './WeaponItem';
 import { ItemDropType } from '../ItemDropType';
 import { WEAPON_TIERS, WeaponTier } from './WeaponTier';
-import { applyWeaponBonus } from './WeaponBonusCalculator';
+import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.WEAPON;
@@ -139,7 +139,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         // Re-apply the bonus from the drop using the shared calculator so that
         // tier assignment follows the same "only when damage changes" rule.
         const bonusMultiplier = drop.damage / baseWeapon.damage;
-        const weaponItem = applyWeaponBonus(baseWeapon, bonusMultiplier);
+        const weaponItem = WeaponBonusCalculator.Instance.applyWeaponBonus(baseWeapon, bonusMultiplier);
 
         player.inventory.push(weaponItem);
         console.log(`Picked up ${weaponItem.name} with ${weaponItem.damage} damage`);
