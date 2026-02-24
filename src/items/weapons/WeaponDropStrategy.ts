@@ -27,19 +27,10 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         // avoid NaN when base is negative and exponent is non-integer
         const raw = 1.16 * random - 0.55;
 
-        let maxBonusValue;
-        if (player.level < WEAPON_TIERS.get(WeaponTier.ZERODAY)!.minLevel) {
-            maxBonusValue = 0.119;
-        } else if (player.level < WEAPON_TIERS.get(WeaponTier.LEET)!.minLevel) {
-            maxBonusValue = 0.159;
-        } else {
-            maxBonusValue = 0.25;
-        }
-
-        let bonusValue = Math.min(Math.sign(raw) * Math.pow(Math.abs(raw), 3.4), maxBonusValue);
+        // Scale the bonus spread by the player's level factor (1.0 at level 1, 0.5 at max level)
+        let bonusValue = Math.sign(raw) * Math.pow(Math.abs(raw), 3.4) * player.weaponDropBonusFactor;
 
         const bonusMultiplier = 1 + bonusValue;
-        console.log("Creating weapon drop with bonus multiplier:", bonusMultiplier);
         const finalDamage = Math.floor(weaponItem.damage * bonusMultiplier);
         const damageFactor = finalDamage / weaponItem.damage;
         const finalBuyPrice = Math.floor(weaponItem.buyPrice * damageFactor);
@@ -60,7 +51,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
             weaponLevel,
             bonusMultiplier
         );
-        console.log(`Enemy dropped ${weaponItem.name} (${weaponType}) Level ${weaponLevel} - Damage: ${finalDamage}`);
+        console.log(`Enemy dropped ${weaponItem.name} (${weaponType}) Level ${weaponLevel} - Damage: ${finalDamage}, bonus multiplier: ${bonusMultiplier.toFixed(6)}`);
         return wd;
     }
 

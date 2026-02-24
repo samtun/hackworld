@@ -1401,6 +1401,16 @@ export class Player extends BaseMesh {
     }
 
     /**
+     * Returns a factor in [1.0, 1.5] that scales weapon drop bonus spread with player level.
+     * At level 1 the factor is 1.0 (base spread); at level 420+ it is 1.5 (+50% spread).
+     * Uses a quadratic curve so the increase starts slowly and accelerates at higher levels.
+     */
+    get weaponDropBonusFactor(): number {
+        const t = (this.level - 1) / (420 - 1);
+        return Math.min(1 + 0.5 * t * t, 1.5);
+    }
+
+    /**
      * Calculate the cost for the next upgrade using Fibonacci numbers
      * Fibonacci sequence: 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144
      * Multiplied by upgrade level to get cost
