@@ -97,6 +97,8 @@ export class LoreIntroduction {
     private readonly onComplete: () => void;
     private displayTimeoutId?: ReturnType<typeof setTimeout>;
     private transitionTimeoutId?: ReturnType<typeof setTimeout>;
+    private currentSlideIndex: number = 0;
+    private readonly clickHandler: () => void;
 
     constructor(onComplete: () => void) {
         this.onComplete = onComplete;
@@ -112,6 +114,7 @@ export class LoreIntroduction {
             'background-color:#000',
             'z-index:1100',
             'overflow:hidden',
+            'cursor:pointer',
         ].join(';');
 
         // Image element covering the full overlay; object-fit:cover preserves aspect ratio
@@ -125,6 +128,7 @@ export class LoreIntroduction {
             'object-fit:cover',
             'opacity:0',
             'will-change:transform,opacity',
+            'pointer-events:none',
         ].join(';');
 
         // Caption bar — white text on 70% alpha black background, 42 px from the bottom
@@ -145,7 +149,13 @@ export class LoreIntroduction {
             'opacity:0',
             'will-change:opacity',
             'z-index:1',
+            'pointer-events:none',
         ].join(';');
+
+        // Clicking or tapping anywhere on the overlay advances to the next slide
+        this.clickHandler = () => this.advanceSlide();
+        this.overlay.addEventListener('click', this.clickHandler);
+        this.overlay.addEventListener('touchstart', this.clickHandler, { passive: true });
 
         this.overlay.appendChild(this.imageEl);
         this.overlay.appendChild(this.captionEl);
@@ -157,7 +167,27 @@ export class LoreIntroduction {
         this.showSlide(0);
     }
 
+    /** Skips the current slide and moves to the next one (or completes the intro). */
+    private advanceSlide(): void {
+        if (this.displayTimeoutId !== undefined) {
+            clearTimeout(this.displayTimeoutId);
+            this.displayTimeoutId = undefined;
+        }
+        if (this.transitionTimeoutId !== undefined) {
+            clearTimeout(this.transitionTimeoutId);
+            this.transitionTimeoutId = undefined;
+        }
+        const nextIndex = this.currentSlideIndex + 1;
+        if (nextIndex >= LORE_SLIDES.length) {
+            this.destroy();
+            this.onComplete();
+        } else {
+            this.showSlide(nextIndex);
+        }
+    }
+
     private showSlide(index: number): void {
+        this.currentSlideIndex = index;
         const slide = LORE_SLIDES[index];
         const isLast = index === LORE_SLIDES.length - 1;
 
@@ -214,6 +244,8 @@ export class LoreIntroduction {
             clearTimeout(this.transitionTimeoutId);
             this.transitionTimeoutId = undefined;
         }
+        this.overlay.removeEventListener('click', this.clickHandler);
+        this.overlay.removeEventListener('touchstart', this.clickHandler);
         if (this.overlay.parentElement) {
             this.overlay.parentElement.removeChild(this.overlay);
         }
