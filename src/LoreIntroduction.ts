@@ -179,22 +179,30 @@ export class LoreIntroduction {
             this.transitionTimeoutId = undefined;
         }
 
-        // Fade out the current slide before advancing
-        this.imageEl.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
-        this.imageEl.style.opacity = '0';
-        this.captionEl.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
-        this.captionEl.style.opacity = '0';
+        // Freeze the transform at its current computed value so it doesn't snap to the
+        // final target scale when we remove the transform transition below
+        const currentTransform = getComputedStyle(this.imageEl).transform;
+        this.imageEl.style.transition = 'none';
+        this.imageEl.style.transform = currentTransform;
 
-        this.transitionTimeoutId = setTimeout(() => {
-            this.transitionTimeoutId = undefined;
-            const nextIndex = this.currentSlideIndex + 1;
-            if (nextIndex >= LORE_SLIDES.length) {
-                this.destroy();
-                this.onComplete();
-            } else {
-                this.showSlide(nextIndex);
-            }
-        }, FADE_DURATION);
+        // Fade out the current slide before advancing (transform stays frozen)
+        requestAnimationFrame(() => {
+            this.imageEl.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
+            this.imageEl.style.opacity = '0';
+            this.captionEl.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
+            this.captionEl.style.opacity = '0';
+
+            this.transitionTimeoutId = setTimeout(() => {
+                this.transitionTimeoutId = undefined;
+                const nextIndex = this.currentSlideIndex + 1;
+                if (nextIndex >= LORE_SLIDES.length) {
+                    this.destroy();
+                    this.onComplete();
+                } else {
+                    this.showSlide(nextIndex);
+                }
+            }, FADE_DURATION);
+        });
     }
 
     private showSlide(index: number): void {
