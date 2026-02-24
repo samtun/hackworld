@@ -21,13 +21,17 @@ export class StartMenu {
     private readonly input: InputManager;
     private readonly items: MenuItem[];
     private selectedIndex: number = 0;
+    private backdrop?: HTMLDivElement;
 
     private readonly onSelect: (option: StartMenuOption) => void;
 
     private animFrameId?: number;
     private prevNavUp = false;
     private prevNavDown = false;
-    private prevConfirm = false;
+    // Start as true so the confirm key (Enter/A) must be released once before it is
+    // accepted — this prevents the same keypress that opened the menu from immediately
+    // confirming the default option.
+    private prevConfirm = true;
 
     // Hidden file input for "Load Game"
     private readonly fileInput: HTMLInputElement;
@@ -98,9 +102,33 @@ export class StartMenu {
 
         container.appendChild(this.container);
 
-        // Fade in
+        // Fade the logo out and show a dark backdrop behind the menu items
+        const logo = container.querySelector('#game-logo') as HTMLElement | null;
+        if (logo) {
+            logo.style.transition = `opacity ${MENU_FADE_MS}ms ease-in-out`;
+            logo.style.opacity = '0';
+        }
+
+        const backdrop = document.createElement('div');
+        backdrop.style.cssText = [
+            'position:absolute',
+            'top:0',
+            'left:0',
+            'width:100%',
+            'height:100%',
+            'background:rgba(0,0,0,0.7)',
+            'opacity:0',
+            `transition:opacity ${MENU_FADE_MS}ms ease-in-out`,
+            'z-index:4',
+            'pointer-events:none',
+        ].join(';');
+        this.backdrop = backdrop;
+        container.appendChild(backdrop);
+
+        // Fade in backdrop and menu together
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
+                backdrop.style.opacity = '1';
                 this.container.style.opacity = '1';
                 this.container.style.pointerEvents = 'auto';
             });
@@ -206,6 +234,9 @@ export class StartMenu {
         this.stopLoop();
         if (this.container.parentElement) {
             this.container.parentElement.removeChild(this.container);
+        }
+        if (this.backdrop?.parentElement) {
+            this.backdrop.parentElement.removeChild(this.backdrop);
         }
         if (this.fileInput.parentElement) {
             this.fileInput.parentElement.removeChild(this.fileInput);
