@@ -297,7 +297,8 @@ export class Enemy extends BaseMesh {
 
         if (dist < this.attackHitboxSize.x + 0.5) {
             console.log("Enemy attack hits player!");
-            this.player.takeDamage(this.damage, this.body.position);
+            // TODO Add critial hit chance for enemy
+            this.player.takeDamage(this.damage, this.body.position, false);
             this.hasDealtDamageThisAttack = true;
         }
     }
@@ -530,7 +531,7 @@ export class Enemy extends BaseMesh {
         this.fadeToAction(EnemyActionType.Attack, 0.1);
     }
 
-    takeDamage(amount: number, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0) {
+    takeDamage(amount: number, isCriticalHit: boolean, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0): void {
         if (this.isDying || this.isDead) return;
 
         this.hp -= amount;
@@ -538,7 +539,7 @@ export class Enemy extends BaseMesh {
         // Reset return-to-base behavior when taking damage
         this.isReturningToBase = false;
         this.returnToBaseTimer = 0;
-        this.floatingIndicatorManager.spawnDamage(this.body.position, amount, '#fdc650ff');
+        this.floatingIndicatorManager.spawnDamage(this.body.position, amount, isCriticalHit ? '#bf860c' : '#fdc650ff');
 
         // Knockback
         if (sourcePos) {

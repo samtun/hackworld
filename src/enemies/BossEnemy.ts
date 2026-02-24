@@ -183,8 +183,8 @@ export class BossEnemy extends Enemy {
     /**
      * Override takeDamage to update health bar on damage
      */
-    takeDamage(amount: number, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0): void {
-        super.takeDamage(amount, sourcePos, knockbackFactor);
+    takeDamage(amount: number, isCriticalHit: boolean, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0): void {
+        super.takeDamage(amount, isCriticalHit, sourcePos, knockbackFactor);
         this.updateHealthBar();
     }
 
