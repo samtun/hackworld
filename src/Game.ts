@@ -386,7 +386,7 @@ export class Game {
             // Show the main menu after START is pressed (but not while already transitioning
             // or while the menu is already visible)
             if (!this.isTransitioning && !this.startMenu &&
-                (this.input.isStartPressed() || this.ui.startScreenTapped || import.meta.env.DEV)) {
+                (this.input.isStartPressed() || this.ui.startScreenTapped)) {
                 // Prevent the start-screen tap from retriggering
                 this.ui.startScreenTapped = false;
                 this.isTransitioning = true;
