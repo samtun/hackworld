@@ -21,7 +21,7 @@ import { InteractiveEntityType } from './InteractiveEntityType';
 import { getHint, HintConfigs } from './ui/InputHints';
 import { Teleporter } from './Teleporter';
 import { LoreIntroduction } from './LoreIntroduction';
-import { StartMenu, StartMenuOption } from './StartMenu';
+import { StartMenuOption } from './StartMenu';
 
 export class Game {
     scene: THREE.Scene;
@@ -62,7 +62,6 @@ export class Game {
     wasR3Pressed: boolean = false; // Track R3 button for debug mode toggle
     wasJustInteracted: boolean = false; // Prevent immediate action (e.g. pickup or NPC interaction)
     isTransitioning: boolean = false;
-    private startMenu?: StartMenu;
 
     // Spawn position constants
     // private static readonly LOBBY_SPAWN_POSITION = new CANNON.Vec3(0, 0.5, 0);
@@ -331,51 +330,41 @@ export class Game {
     }
 
     /**
-     * Called when the player selects an option from the start menu.
-     * Tears down the menu, triggers the start-screen fade, then loads data
-     * (if applicable) and shows the lore intro or enters the lobby directly.
+     * Called by UIManager after the player confirms a start menu option and the
+     * fade transition / screen hide have completed. Handles all game-logic concerns:
+     * save loading, scene switching, and lore introduction.
      */
-    private onStartMenuSelect(option: StartMenuOption): void {
-        // Retrieve any selected file before destroying the menu
-        const selectedFile = this.startMenu?.getSelectedFile();
-        this.startMenu?.destroy();
-        this.startMenu = undefined;
-
-        this.ui.triggerStartTransition(async () => {
-            this.ui.hideStartScreen();
-
-            // Load the appropriate save data based on the selected option
-            if (option === 'continue') {
-                const loaded = this.saveManager.loadFromLocalStorage();
-                if (loaded) {
-                    console.log('Auto-save loaded successfully');
-                }
-            } else if (option === 'newgame') {
-                this.saveManager.clearLocalStorage();
-            } else if (option === 'loadgame' && selectedFile) {
-                try {
-                    await this.saveManager.load(selectedFile);
-                    console.log('Save file loaded successfully');
-                } catch (e) {
-                    console.error('Failed to load save file', e);
-                }
+    private async onStartMenuSelect(option: StartMenuOption, file?: File): Promise<void> {
+        if (option === 'continue') {
+            const loaded = this.saveManager.loadFromLocalStorage();
+            if (loaded) {
+                console.log('Auto-save loaded successfully');
             }
-
-            const afterIntro = () => {
-                this.currentScene = Lobby.getMetadata().id;
-                this.input.initializeMobileControls();
-                this.clock.getDelta(); // Reset clock
-                this.isTransitioning = false;
-            };
-
-            if (this.saveManager.isLoreIntroSeen()) {
-                afterIntro();
-            } else {
-                this.currentScene = 'lore';
-                const loreIntro = new LoreIntroduction(this.input, afterIntro);
-                loreIntro.show();
+        } else if (option === 'newgame') {
+            this.saveManager.clearLocalStorage();
+        } else if (option === 'loadgame' && file) {
+            try {
+                await this.saveManager.load(file);
+                console.log('Save file loaded successfully');
+            } catch (e) {
+                console.error('Failed to load save file', e);
             }
-        });
+        }
+
+        const afterIntro = () => {
+            this.currentScene = Lobby.getMetadata().id;
+            this.input.initializeMobileControls();
+            this.clock.getDelta(); // Reset clock
+            this.isTransitioning = false;
+        };
+
+        if (this.saveManager.isLoreIntroSeen()) {
+            afterIntro();
+        } else {
+            this.currentScene = 'lore';
+            const loreIntro = new LoreIntroduction(this.input, afterIntro);
+            loreIntro.show();
+        }
     }
 
     animate() {
@@ -385,21 +374,13 @@ export class Game {
             this.ui.showStartScreen();
             // Show the main menu after START is pressed (but not while already transitioning
             // or while the menu is already visible)
-            if (!this.isTransitioning && !this.startMenu &&
+            if (!this.isTransitioning && !this.ui.isStartMenuShowing() &&
                 (this.input.isStartPressed() || this.ui.startScreenTapped)) {
-                // Prevent the start-screen tap from retriggering
-                this.ui.startScreenTapped = false;
                 this.isTransitioning = true;
-
-                // Hide the "Press START" text; the menu fades in on top of the backdrop
-                const startText = this.ui.startScreen?.querySelector('.start-text') as HTMLElement | null;
-                if (startText) startText.style.opacity = '0';
-
-                this.startMenu = new StartMenu(
-                    this.ui.startScreen,
+                this.ui.showStartMenu(
                     this.input,
                     this.saveManager.hasLocalStorageSave(),
-                    (option) => this.onStartMenuSelect(option),
+                    (option, file) => this.onStartMenuSelect(option, file),
                 );
             }
             return;

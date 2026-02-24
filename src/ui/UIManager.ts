@@ -1,5 +1,7 @@
 import { Player } from '../Player';
 import { MENU_STYLES } from './MenuManager';
+import { StartMenu, StartMenuOption } from '../StartMenu';
+import { InputManager } from '../InputManager';
 
 class PlayerUI {
     id: string;
@@ -285,6 +287,7 @@ export class UIManager {
     private lobbyButton?: HTMLButtonElement;
     private deathOverlaySelectedIndex: number = 0; // 0 = Retry, 1 = Return to Lobby
     private startScreenTapHandler?: (e: TouchEvent) => void;
+    private startMenu?: StartMenu;
 
     public startScreenTapped: boolean = false;
 
@@ -503,6 +506,46 @@ export class UIManager {
     }
 
     
+
+    /**
+     * Shows the main menu on the start screen after START is pressed.
+     * Resets the tap flag, hides the "Press START" text, creates the StartMenu,
+     * and triggers the fade transition once the player confirms an option.
+     * The `onOptionSelected` callback is invoked after the screen fade with the
+     * chosen option and (for Load Game) the selected file — this is where the
+     * caller handles all game-logic concerns (save loading, scene switching, etc.).
+     */
+    showStartMenu(
+        input: InputManager,
+        hasSave: boolean,
+        onOptionSelected: (option: StartMenuOption, file?: File) => void,
+    ): void {
+        this.startScreenTapped = false;
+
+        const startText = this.startScreen?.querySelector('.start-text') as HTMLElement | null;
+        if (startText) startText.style.opacity = '0';
+
+        this.startMenu = new StartMenu(
+            this.startScreen,
+            input,
+            hasSave,
+            (option) => {
+                const file = this.startMenu?.getSelectedFile();
+                this.startMenu?.destroy();
+                this.startMenu = undefined;
+
+                this.triggerStartTransition(async () => {
+                    this.hideStartScreen();
+                    onOptionSelected(option, file);
+                });
+            },
+        );
+    }
+
+    /** Returns true while the start menu is visible (i.e. after START and before option confirm). */
+    isStartMenuShowing(): boolean {
+        return this.startMenu !== undefined;
+    }
 
     triggerStartTransition(callback: () => void) {
         if (this.fadeOverlay) {
