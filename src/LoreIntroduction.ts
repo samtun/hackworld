@@ -11,6 +11,7 @@ interface LoreSlide {
 // Each image is shown for DISPLAY_DURATION ms at full opacity, with FADE_DURATION ms fades.
 const DISPLAY_DURATION = 10000; // ms per slide at full opacity
 const FADE_DURATION = 2000;     // ms for each fade in / fade out
+const SKIP_FADE_DURATION = 600;     // ms for each fade in / fade out
 
 const LORE_SLIDES: LoreSlide[] = [
     {
@@ -153,7 +154,7 @@ export class LoreIntroduction {
         ].join(';');
 
         // Clicking or tapping anywhere on the overlay advances to the next slide
-        this.clickHandler = () => this.advanceSlide();
+        this.clickHandler = () => this.advanceSlide(true);
         this.overlay.addEventListener('click', this.clickHandler);
         this.overlay.addEventListener('touchstart', this.clickHandler, { passive: true });
 
@@ -187,9 +188,9 @@ export class LoreIntroduction {
 
         // Fade out the current slide before advancing (transform stays frozen)
         requestAnimationFrame(() => {
-            this.imageEl.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
+            this.imageEl.style.transition = `opacity ${SKIP_FADE_DURATION}ms ease-in-out`;
             this.imageEl.style.opacity = '0';
-            this.captionEl.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
+            this.captionEl.style.transition = `opacity ${SKIP_FADE_DURATION}ms ease-in-out`;
             this.captionEl.style.opacity = '0';
 
             this.transitionTimeoutId = setTimeout(() => {
