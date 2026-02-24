@@ -337,8 +337,8 @@ export class Game {
                 this.isTransitioning = true;
                 this.ui.triggerStartTransition(() => {
                     this.ui.hideStartScreen();
-                    this.currentScene = 'lore';
-                    const loreIntro = new LoreIntroduction(() => {
+
+                    const afterIntro = () => {
                         this.currentScene = Lobby.getMetadata().id;
                         this.input.initializeMobileControls();
                         this.clock.getDelta(); // Reset clock
@@ -351,8 +351,16 @@ export class Game {
                                 console.log('Auto-save loaded successfully');
                             }
                         }
-                    });
-                    loreIntro.show();
+                    };
+
+                    if (LoreIntroduction.isSeen()) {
+                        // Intro already watched or skipped — go straight to the lobby
+                        afterIntro();
+                    } else {
+                        this.currentScene = 'lore';
+                        const loreIntro = new LoreIntroduction(this.input, afterIntro);
+                        loreIntro.show();
+                    }
                 });
             }
             return;

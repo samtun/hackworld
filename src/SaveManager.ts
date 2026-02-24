@@ -64,6 +64,8 @@ export interface SaveData {
     cardCollection: string[];
     // NPC dialogue state
     npcDialogueShown: string[];
+    // Whether the player has already watched / skipped the lore introduction
+    loreIntroSeen?: boolean;
 }
 
 /**
@@ -77,6 +79,7 @@ export class SaveManager {
     private static readonly SAVE_VERSION = __APP_VERSION__;
     private static readonly LOCAL_STORAGE_KEY = 'hackworld_autosave';
     private static readonly RESET_FLAG_KEY = 'hackworld_resetting';
+    private static readonly LORE_INTRO_SEEN_KEY = 'hackworld_lore_seen';
     private playTimeSeconds: number = 0;
     private playerRegistry: PlayerRegistry;
 
@@ -299,7 +302,8 @@ export class SaveManager {
                 tech: structuredClone((player as any).tech || {})
             },
             cardCollection: cardCollection.getSaveData(),
-            npcDialogueShown: NpcRegistry.Instance.getShownDialogueList()
+            npcDialogueShown: NpcRegistry.Instance.getShownDialogueList(),
+            loreIntroSeen: localStorage.getItem(SaveManager.LORE_INTRO_SEEN_KEY) === 'true',
         };
     }
 
@@ -504,6 +508,11 @@ export class SaveManager {
         } else {
             // Old save file - reset to show all dialogues
             npcRegistry.reset();
+        }
+
+        // Restore lore intro seen flag so it persists when loading from a save file
+        if (saveData.loreIntroSeen) {
+            localStorage.setItem(SaveManager.LORE_INTRO_SEEN_KEY, 'true');
         }
     }
 }
