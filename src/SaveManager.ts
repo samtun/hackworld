@@ -79,8 +79,8 @@ export class SaveManager {
     private static readonly SAVE_VERSION = __APP_VERSION__;
     private static readonly LOCAL_STORAGE_KEY = 'hackworld_autosave';
     private static readonly RESET_FLAG_KEY = 'hackworld_resetting';
-    private static readonly LORE_INTRO_SEEN_KEY = 'hackworld_lore_seen';
     private playTimeSeconds: number = 0;
+    private loreIntroSeenFlag: boolean = false;
     private playerRegistry: PlayerRegistry;
 
     private constructor() {
@@ -93,6 +93,16 @@ export class SaveManager {
 
     public static get Instance(): SaveManager {
         return this.instance || (this.instance = new this());
+    }
+
+    /** Returns true if the player has already seen/skipped the lore introduction. */
+    isLoreIntroSeen(): boolean {
+        return this.loreIntroSeenFlag;
+    }
+
+    /** Marks the lore introduction as seen. Persisted with the next auto-save. */
+    markLoreIntroSeen(): void {
+        this.loreIntroSeenFlag = true;
     }
 
     get isVisible(): boolean {
@@ -303,7 +313,7 @@ export class SaveManager {
             },
             cardCollection: cardCollection.getSaveData(),
             npcDialogueShown: NpcRegistry.Instance.getShownDialogueList(),
-            loreIntroSeen: localStorage.getItem(SaveManager.LORE_INTRO_SEEN_KEY) === 'true',
+            loreIntroSeen: this.loreIntroSeenFlag,
         };
     }
 
@@ -510,9 +520,7 @@ export class SaveManager {
             npcRegistry.reset();
         }
 
-        // Restore lore intro seen flag so it persists when loading from a save file
-        if (saveData.loreIntroSeen) {
-            localStorage.setItem(SaveManager.LORE_INTRO_SEEN_KEY, 'true');
-        }
+        // Restore lore intro seen flag
+        this.loreIntroSeenFlag = saveData.loreIntroSeen ?? false;
     }
 }

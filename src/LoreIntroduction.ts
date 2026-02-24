@@ -3,6 +3,7 @@
 // provided as comments before each slide entry below. Recommended resolution: 1920×1080, 16:9.
 
 import { InputManager } from './InputManager';
+import { SaveManager } from './SaveManager';
 
 interface LoreSlide {
     /** Path to the slide image (relative to /public). Replace with AI-generated artwork. */
@@ -15,11 +16,8 @@ const DISPLAY_DURATION = 10000; // ms per slide at full opacity
 const FADE_DURATION = 2000;     // ms for each auto fade in / fade out
 const CLICK_FADE_DURATION = 600; // ms for the fade-out triggered by a click/tap advance
 const SKIP_HOLD_DURATION = 3000; // ms to hold ESC / B to skip all slides
-const RING_RADIUS = 32;          // px — ring radius as specified
+const RING_RADIUS = 16;          // px — ring radius
 const CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
-
-/** localStorage key used to record that the lore intro has already been seen. */
-const LORE_INTRO_SEEN_KEY = 'hackworld_lore_seen';
 
 const LORE_SLIDES: LoreSlide[] = [
     {
@@ -103,17 +101,6 @@ const LORE_SLIDES: LoreSlide[] = [
  * Once the intro has been completed or skipped it is not shown again on subsequent sessions.
  */
 export class LoreIntroduction {
-    // ── Static helpers ──────────────────────────────────────────────────────
-    /** Returns true if the player has already seen the lore introduction. */
-    static isSeen(): boolean {
-        return localStorage.getItem(LORE_INTRO_SEEN_KEY) === 'true';
-    }
-    /** Persist the "intro seen" flag so the intro is skipped on future sessions. */
-    static markSeen(): void {
-        localStorage.setItem(LORE_INTRO_SEEN_KEY, 'true');
-    }
-
-    // ── Instance fields ──────────────────────────────────────────────────────
     private readonly overlay: HTMLDivElement;
     private readonly imageEl: HTMLImageElement;
     private readonly captionEl: HTMLDivElement;
@@ -199,17 +186,17 @@ export class LoreIntroduction {
             'z-index:2',
         ].join(';');
 
-        // SVG progress ring (4 px wide, 32 px radius → 80×80 canvas with padding)
+        // SVG progress ring (4 px wide, 16 px radius → 40×40 canvas with padding)
         const svgNS = 'http://www.w3.org/2000/svg';
         const svg = document.createElementNS(svgNS, 'svg');
-        svg.setAttribute('width', '80');
-        svg.setAttribute('height', '80');
-        svg.setAttribute('viewBox', '0 0 80 80');
+        svg.setAttribute('width', '40');
+        svg.setAttribute('height', '40');
+        svg.setAttribute('viewBox', '0 0 40 40');
 
         // Dim background ring showing the full circumference
         const bgRing = document.createElementNS(svgNS, 'circle');
-        bgRing.setAttribute('cx', '40');
-        bgRing.setAttribute('cy', '40');
+        bgRing.setAttribute('cx', '20');
+        bgRing.setAttribute('cy', '20');
         bgRing.setAttribute('r', String(RING_RADIUS));
         bgRing.setAttribute('stroke', 'rgba(255,255,255,0.25)');
         bgRing.setAttribute('stroke-width', '4');
@@ -218,8 +205,8 @@ export class LoreIntroduction {
 
         // Progress ring — starts empty (dashoffset = circumference), fills clockwise
         this.skipRingCircle = document.createElementNS(svgNS, 'circle');
-        this.skipRingCircle.setAttribute('cx', '40');
-        this.skipRingCircle.setAttribute('cy', '40');
+        this.skipRingCircle.setAttribute('cx', '20');
+        this.skipRingCircle.setAttribute('cy', '20');
         this.skipRingCircle.setAttribute('r', String(RING_RADIUS));
         this.skipRingCircle.setAttribute('stroke', '#fff');
         this.skipRingCircle.setAttribute('stroke-width', '4');
@@ -227,7 +214,7 @@ export class LoreIntroduction {
         this.skipRingCircle.setAttribute('stroke-dasharray', String(CIRCUMFERENCE));
         this.skipRingCircle.setAttribute('stroke-dashoffset', String(CIRCUMFERENCE));
         // Rotate so the fill starts at 12 o'clock
-        this.skipRingCircle.setAttribute('transform', 'rotate(-90 40 40)');
+        this.skipRingCircle.setAttribute('transform', 'rotate(-90 20 20)');
         svg.appendChild(this.skipRingCircle);
 
         const hintText = document.createElement('span');
@@ -420,7 +407,7 @@ export class LoreIntroduction {
 
     /** Marks the intro as seen, removes the overlay and fires the completion callback. */
     private complete(): void {
-        LoreIntroduction.markSeen();
+        SaveManager.Instance.markLoreIntroSeen();
         this.destroy();
         this.onComplete();
     }

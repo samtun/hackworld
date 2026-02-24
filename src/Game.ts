@@ -21,6 +21,7 @@ import { InteractiveEntityType } from './InteractiveEntityType';
 import { getHint, HintConfigs } from './ui/InputHints';
 import { Teleporter } from './Teleporter';
 import { LoreIntroduction } from './LoreIntroduction';
+import { StartMenu, StartMenuOption } from './StartMenu';
 
 export class Game {
     scene: THREE.Scene;
@@ -61,6 +62,7 @@ export class Game {
     wasR3Pressed: boolean = false; // Track R3 button for debug mode toggle
     wasJustInteracted: boolean = false; // Prevent immediate action (e.g. pickup or NPC interaction)
     isTransitioning: boolean = false;
+    private startMenu?: StartMenu;
 
     // Spawn position constants
     // private static readonly LOBBY_SPAWN_POSITION = new CANNON.Vec3(0, 0.5, 0);
@@ -328,40 +330,77 @@ export class Game {
         }
     }
 
+    /**
+     * Called when the player selects an option from the start menu.
+     * Tears down the menu, triggers the start-screen fade, then loads data
+     * (if applicable) and shows the lore intro or enters the lobby directly.
+     */
+    private onStartMenuSelect(option: StartMenuOption): void {
+        // Retrieve any selected file before destroying the menu
+        const selectedFile = this.startMenu?.getSelectedFile();
+        this.startMenu?.destroy();
+        this.startMenu = undefined;
+
+        this.ui.triggerStartTransition(async () => {
+            this.ui.hideStartScreen();
+
+            // Load the appropriate save data based on the selected option
+            if (option === 'continue') {
+                const loaded = this.saveManager.loadFromLocalStorage();
+                if (loaded) {
+                    console.log('Auto-save loaded successfully');
+                }
+            } else if (option === 'newgame') {
+                this.saveManager.clearLocalStorage();
+            } else if (option === 'loadgame' && selectedFile) {
+                try {
+                    await this.saveManager.load(selectedFile);
+                    console.log('Save file loaded successfully');
+                } catch (e) {
+                    console.error('Failed to load save file', e);
+                }
+            }
+
+            const afterIntro = () => {
+                this.currentScene = Lobby.getMetadata().id;
+                this.input.initializeMobileControls();
+                this.clock.getDelta(); // Reset clock
+                this.isTransitioning = false;
+            };
+
+            if (this.saveManager.isLoreIntroSeen()) {
+                afterIntro();
+            } else {
+                this.currentScene = 'lore';
+                const loreIntro = new LoreIntroduction(this.input, afterIntro);
+                loreIntro.show();
+            }
+        });
+    }
+
     animate() {
         requestAnimationFrame(() => this.animate());
 
         if (this.currentScene === 'startScreen') {
             this.ui.showStartScreen();
-            if (!this.isTransitioning && (this.input.isStartPressed() || this.ui.startScreenTapped || import.meta.env.DEV)) {
+            // Show the main menu after START is pressed (but not while already transitioning
+            // or while the menu is already visible)
+            if (!this.isTransitioning && !this.startMenu &&
+                (this.input.isStartPressed() || this.ui.startScreenTapped || import.meta.env.DEV)) {
+                // Prevent the start-screen tap from retriggering
+                this.ui.startScreenTapped = false;
                 this.isTransitioning = true;
-                this.ui.triggerStartTransition(() => {
-                    this.ui.hideStartScreen();
 
-                    const afterIntro = () => {
-                        this.currentScene = Lobby.getMetadata().id;
-                        this.input.initializeMobileControls();
-                        this.clock.getDelta(); // Reset clock
-                        this.isTransitioning = false;
+                // Hide the "Press START" text; the menu fades in on top of the backdrop
+                const startText = this.ui.startScreen?.querySelector('.start-text') as HTMLElement | null;
+                if (startText) startText.style.opacity = '0';
 
-                        // Try to load auto-save after transition
-                        if (this.saveManager.hasLocalStorageSave()) {
-                            const loaded = this.saveManager.loadFromLocalStorage();
-                            if (loaded) {
-                                console.log('Auto-save loaded successfully');
-                            }
-                        }
-                    };
-
-                    if (LoreIntroduction.isSeen()) {
-                        // Intro already watched or skipped — go straight to the lobby
-                        afterIntro();
-                    } else {
-                        this.currentScene = 'lore';
-                        const loreIntro = new LoreIntroduction(this.input, afterIntro);
-                        loreIntro.show();
-                    }
-                });
+                this.startMenu = new StartMenu(
+                    this.ui.startScreen,
+                    this.input,
+                    this.saveManager.hasLocalStorageSave(),
+                    (option) => this.onStartMenuSelect(option),
+                );
             }
             return;
         }
