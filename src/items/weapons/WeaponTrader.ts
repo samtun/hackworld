@@ -71,28 +71,25 @@ export class WeaponTrader extends BaseTrader {
         this.traderInventory = [];
         const bonusCalc = WeaponBonusCalculator.Instance;
 
-        // One weapon per type at the level that fits the player's current tech
-        for (const type of WeaponTrader.ALL_WEAPON_TYPES) {
-            const level = this.getBaseWeaponLevel(player.getTechForWeapon(type));
-            const weapon = this.weaponRepository.getWeaponByTypeAndLevel(type, level);
-            this.traderInventory.push(weapon);
-        }
+        // Random bonus entries
+        // Loop 2 times over all tiers to get a good mix of potential weapon items
+        for (let i = 0; i < 2; i++) {
+            for (const tier of WEAPON_TIERS.values()) {
+                const type = WeaponTrader.ALL_WEAPON_TYPES[
+                    Math.floor(Math.random() * WeaponTrader.ALL_WEAPON_TYPES.length)
+                ];
+                const level = this.getBaseWeaponLevel(player.getTechForWeapon(type));
+                const weapon = this.weaponRepository.getWeaponByTypeAndLevel(type, level);
 
-        // Random bonus entries: one per tier with decreasing probability
-        for (const tier of WEAPON_TIERS.values()) {
-            const type = WeaponTrader.ALL_WEAPON_TYPES[
-                Math.floor(Math.random() * WeaponTrader.ALL_WEAPON_TYPES.length)
-            ];
-            const level = this.getBaseWeaponLevel(player.getTechForWeapon(type));
-            const weapon = this.weaponRepository.getWeaponByTypeAndLevel(type, level);
-
-            console.log(`Evaluating ${tier.name} tier for trader inventory: player level ${player.level}, tier min level ${tier.minLevel}, chance ${tier.traderChance}`);
-            if (player.level >= tier.minLevel && Math.random() < tier.traderChance) {
-                this.traderInventory.push(bonusCalc.applyWeaponBonus(weapon, bonusCalc.randomMultiplierForTier(tier)));
-            } else {
-                // Tier chance did not fire – add the base weapon at standard pricing.
-                // Base weapons from the repository already carry the STABLE tier.
-                this.traderInventory.push(weapon);
+                const roll = Math.random();
+                console.log(`Evaluating ${tier.name} tier for trader inventory: player level ${player.level}, tier min level ${tier.minLevel}, chance ${tier.traderChance}, roll ${roll}`);
+                if (player.level >= tier.minLevel && roll < tier.traderChance) {
+                    this.traderInventory.push(bonusCalc.applyWeaponBonus(weapon, bonusCalc.randomMultiplierForTier(tier)));
+                } else {
+                    // Tier chance did not fire – add the base weapon at standard pricing.
+                    // Base weapons from the repository already carry the STABLE tier.
+                    this.traderInventory.push(weapon);
+                }
             }
         }
 

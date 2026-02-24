@@ -58,7 +58,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 8,
         rimColor: '#7676ff',
         innerColor: '#3a3aae',
-        traderChance: 0.12,
+        traderChance: 0.15,
         minLevel: 0,
     }],
     [WeaponTier.OVERCLOCKED, {
@@ -67,7 +67,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 12,
         rimColor: '#00f97d',
         innerColor: '#00b36a',
-        traderChance: 0.08,
+        traderChance: 0.10,
         minLevel: 0,
     }],
     [WeaponTier.ZERODAY, {
@@ -76,7 +76,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 16,
         rimColor: '#fd00d7',
         innerColor: '#83006f',
-        traderChance: 0.05,
+        traderChance: 0.06,
         minLevel: 20,
     }],
     [WeaponTier.LEET, {
@@ -85,7 +85,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: Infinity,
         rimColor: '#ffae00',
         innerColor: '#b87e00',
-        traderChance: 0.01,
+        traderChance: 0.02,
         minLevel: 40,
     }],
 ]);
