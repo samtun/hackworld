@@ -167,8 +167,9 @@ export class LoreIntroduction {
         this.showSlide(0);
     }
 
-    /** Skips the current slide and moves to the next one (or completes the intro). */
+    /** Skips the current slide: fades it out, then advances to the next one (or completes the intro). */
     private advanceSlide(): void {
+        // Cancel any existing timers so the automatic sequence doesn't also fire
         if (this.displayTimeoutId !== undefined) {
             clearTimeout(this.displayTimeoutId);
             this.displayTimeoutId = undefined;
@@ -177,13 +178,23 @@ export class LoreIntroduction {
             clearTimeout(this.transitionTimeoutId);
             this.transitionTimeoutId = undefined;
         }
-        const nextIndex = this.currentSlideIndex + 1;
-        if (nextIndex >= LORE_SLIDES.length) {
-            this.destroy();
-            this.onComplete();
-        } else {
-            this.showSlide(nextIndex);
-        }
+
+        // Fade out the current slide before advancing
+        this.imageEl.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
+        this.imageEl.style.opacity = '0';
+        this.captionEl.style.transition = `opacity ${FADE_DURATION}ms ease-in-out`;
+        this.captionEl.style.opacity = '0';
+
+        this.transitionTimeoutId = setTimeout(() => {
+            this.transitionTimeoutId = undefined;
+            const nextIndex = this.currentSlideIndex + 1;
+            if (nextIndex >= LORE_SLIDES.length) {
+                this.destroy();
+                this.onComplete();
+            } else {
+                this.showSlide(nextIndex);
+            }
+        }, FADE_DURATION);
     }
 
     private showSlide(index: number): void {
