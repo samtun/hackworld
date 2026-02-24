@@ -276,7 +276,6 @@ export class SaveManager {
                             level: wi.level,
                             isEquipped: !!wi.isEquipped,
                             tierName: wi.tier.name,
-                            rimColor: wi.rimColor,
                         };
                     } else if (i instanceof CoreItem) {
                         const ci = i as any;
