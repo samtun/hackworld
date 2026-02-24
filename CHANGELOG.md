@@ -1,3 +1,11 @@
+# [1.44.0](https://github.com/samtun/hackworld/compare/v1.43.2...v1.44.0) (2026-02-24)
+
+
+### Features
+
+* add critical hits to enemy attacks ([ba55632](https://github.com/samtun/hackworld/commit/ba55632ae7e297fea3bf737c493fd0a58ea93998))
+* use different color for critical hits ([275641f](https://github.com/samtun/hackworld/commit/275641f4037baa609d44a370238474fa302b4031))
+
 ## [1.43.2](https://github.com/samtun/hackworld/compare/v1.43.1...v1.43.2) (2026-02-20)
 
 

@@ -61,7 +61,7 @@ export class Player extends BaseMesh {
     private readonly STAT_FORMULA_NUMERATOR = 0.27; // Numerator for strength/defense formulas
     private readonly STAT_FORMULA_LOG_BASE = this.MAX_STAT_VALUE; // Log base for strength/defense formulas
     private readonly LUCK_DIVISOR = 40000; // Divisor for luck multiplier
-    private readonly CRITICAL_HIT_MULTIPLIER = 1.5;
+    public readonly CRITICAL_HIT_MULTIPLIER = 1.5;
 
     // Level system constants
     private readonly MAX_LEVEL = 9999;
@@ -395,7 +395,7 @@ export class Player extends BaseMesh {
     }
 
     // Calculate critical hit chance using formula: 0.02 + (log10(agility + 50) * 7 - 11.9) * 0.01
-    private getCriticalChance(): number {
+    public getCriticalChance(): number {
         return 0.02 + (Math.log10(this.agility + 50) * 7 - 11.9) * 0.01;
     }
 
@@ -423,7 +423,7 @@ export class Player extends BaseMesh {
     }
 
     // Compute damage for a single hit, applying strength and critical hit multipliers
-    private getHitDamage(baseMultiplier: number = 1): number {
+    private getHitDamage(isCriticalHit: boolean, baseMultiplier: number = 1): number {
         const equipped = this.inventory.find(i => i instanceof WeaponItem && i.isEquipped) as WeaponItem | undefined;
         if (!equipped) {
             return 0;
@@ -432,16 +432,10 @@ export class Player extends BaseMesh {
         const strengthMultiplier = 1 + this.getStrengthMultiplier();
         console.log(`Calculating damage: strengthMultiplier=${strengthMultiplier.toFixed(2)}`);
 
-        // Check for critical hit
-        const isCritical = Math.random() < this.getCriticalChance();
-        const critMultiplier = isCritical ? this.CRITICAL_HIT_MULTIPLIER : 1.0;
+        const critMultiplier = isCriticalHit ? this.CRITICAL_HIT_MULTIPLIER : 1.0;
 
         // Damage is directly from weapon (which already has level scaling in weapons.json)
         const damage = Math.floor(this.weapon.damage * baseMultiplier * strengthMultiplier * critMultiplier);
-
-        if (isCritical) {
-            console.log('Critical Hit!');
-        }
 
         return damage;
     }
@@ -969,8 +963,9 @@ export class Player extends BaseMesh {
         if (this.dashHitEnemies.has(enemy)) return;
 
         // Deal 3x weapon damage with tech multiplier
-        const damage = this.getHitDamage(3);
-        enemy.takeDamage(damage, this.body.position);
+        const isCriticalHit = Math.random() < this.getCriticalChance();
+        const damage = this.getHitDamage(isCriticalHit, 3);
+        enemy.takeDamage(damage, isCriticalHit, this.body.position);
 
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
@@ -984,8 +979,9 @@ export class Player extends BaseMesh {
         // Skip if we already hit this enemy during this attack
         if (this.attackHitEnemies.has(enemy)) return;
 
-        const damage = this.getHitDamage();
-        enemy.takeDamage(damage, this.body.position);
+        const isCriticalHit = Math.random() < this.getCriticalChance();
+        const damage = this.getHitDamage(isCriticalHit);
+        enemy.takeDamage(damage, isCriticalHit, this.body.position);
         console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
@@ -994,7 +990,7 @@ export class Player extends BaseMesh {
         this.attackHitEnemies.add(enemy);
     }
 
-    takeDamage(amount: number, sourcePos?: CANNON.Vec3) {
+    takeDamage(amount: number, sourcePos?: CANNON.Vec3, isCriticalHit: boolean = false): void {
         if (this.invulnerableTimer > 0 || this.isLevelingUp || this.isDashing || this.isDead) return;
 
         // Stop any ongoing attack
@@ -1005,7 +1001,7 @@ export class Player extends BaseMesh {
         const reducedDamage = Math.max(1, Math.floor(amount * defenseMultiplier));
 
         this.hp -= reducedDamage;
-        this.floatingIndicatorManager.spawnDamage(this.body.position, reducedDamage, '#ff2424ff');
+        this.floatingIndicatorManager.spawnDamage(this.body.position, reducedDamage, isCriticalHit ? 'rgb(213, 0, 181)' : '#ff2424ff');
 
         if (this.hp <= 0) {
             this.hp = 0;
@@ -1374,13 +1370,13 @@ export class Player extends BaseMesh {
      * Execute shockwave attack hitting all nearby enemies
      */
     private executeLevelUpShockwave(): void {
-        const damage = this.getHitDamage();
-
         // Find all enemies in the world and damage them
         for (const body of this.world.bodies) {
             const entity = (body as any).entity;
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                entity.takeDamage(damage, this.body.position);
+                const isCriticalHit = Math.random() < this.getCriticalChance();
+                const damage = this.getHitDamage(isCriticalHit);
+                entity.takeDamage(damage, isCriticalHit, this.body.position);
                 console.log(`Level-up shockwave hit enemy for ${damage} damage`);
             }
         }

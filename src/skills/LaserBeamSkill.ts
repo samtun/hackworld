@@ -95,9 +95,11 @@ export class LaserBeamSkill extends Skill {
 
                     if (distanceToBeam <= this.RADIUS && Math.abs(dy) <= 2) {
                         // Hit!
-                        entity.takeDamage(this.DAMAGE, this.player.body.position);
+                        const isCriticalHit = Math.random() < this.player.getCriticalChance();
+                        const damage = isCriticalHit ? this.DAMAGE * this.player.CRITICAL_HIT_MULTIPLIER : this.DAMAGE;
+                        entity.takeDamage(damage, isCriticalHit,  this.player.body.position);
                         this.hitEnemies.add(entity);
-                        console.log(`Laser beam hit enemy for ${this.DAMAGE} damage`);
+                        console.log(`Laser beam hit enemy for ${damage} damage`);
                         break;
                     }
                 }
