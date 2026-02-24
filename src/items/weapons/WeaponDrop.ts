@@ -6,7 +6,7 @@ import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
 import { InteractiveEntityType } from '../../InteractiveEntityType';
 import { AssetManager } from '../../AssetManager';
-import { WEAPON_TIERS as WEAPON_TIERS, WeaponTier, WeaponTierDefinition } from './WeaponTier';
+import { WeaponTierDefinition, getWeaponTierForMultiplier } from './WeaponTier';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
@@ -57,7 +57,7 @@ export class WeaponDrop extends ItemDrop {
         this.level = level;
 
         // Compute tier and store rim color for use in text label and inventory display
-        const tier = this.getTier(bonusMultiplier);
+        const tier = getWeaponTierForMultiplier(bonusMultiplier);
         this.tier = tier;
 
         // Create weapon visual
@@ -75,23 +75,6 @@ export class WeaponDrop extends ItemDrop {
         // Position the group
         this.mesh.position.set(position.x, position.y, position.z);
         scene.add(this.mesh);
-    }
-
-    /**
-     * Returns the tier definition for a given bonus multiplier.
-     * @param bonusMultiplier - The ratio of final damage to base damage (e.g., 1.05 = +5%)
-     */
-    private getTier(bonusMultiplier: number): WeaponTierDefinition {
-        const bonusPercent = (bonusMultiplier - 1) * 100;
-
-        for (const tier of WEAPON_TIERS.values()) {
-            if (bonusPercent >= tier.minPercent && bonusPercent < tier.maxPercent) {
-                return tier;
-            }
-        }
-
-        // Fallback to stable tier if no match
-        return WEAPON_TIERS.get(WeaponTier.STABLE)!;
     }
 
     /**

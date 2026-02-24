@@ -6,18 +6,14 @@ import { Player } from '../../Player';
 import { Item } from '../Item';
 import { InputManager } from '../../InputManager';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
-import { WEAPON_TIERS, WeaponTier, WeaponTierDefinition } from './WeaponTier';
+import { WEAPON_TIERS } from './WeaponTier';
+import { randomMultiplierForTier, applyWeaponBonus } from './WeaponBonusCalculator';
 
 export class WeaponTrader extends BaseTrader {
     static instance: WeaponTrader; // Singleton
 
     private weaponRepository: WeaponRepository;
     private pendingInventoryInit: boolean = true;
-
-    /** Practical lower bound (%) used when BROKEN tier has -Infinity as minPercent */
-    private static readonly BROKEN_TIER_FLOOR_PERCENT = -15;
-    /** Practical upper bound (%) used when the top tier has Infinity as maxPercent */
-    private static readonly TOP_TIER_CEIL_PERCENT = 25;
 
     private static readonly ALL_WEAPON_TYPES = [
         WeaponType.SWORD,
@@ -91,9 +87,11 @@ export class WeaponTrader extends BaseTrader {
 
             console.log(`Evaluating ${tier.name} tier for trader inventory: player level ${player.level}, tier min level ${tier.minLevel}, chance ${tier.traderChance}`);
             if (player.level >= tier.minLevel && Math.random() < tier.traderChance) {
-                this.traderInventory.push(this.applyTierBonus(weapon, tier));
+                this.traderInventory.push(applyWeaponBonus(weapon, randomMultiplierForTier(tier)));
             } else {
-                this.traderInventory.push(this.applyTierBonus(weapon, WEAPON_TIERS.get(WeaponTier.STABLE)!));
+                // Tier chance did not fire – add the base weapon at standard pricing.
+                // Base weapons from the repository already carry the STABLE tier.
+                this.traderInventory.push(weapon);
             }
         }
 
@@ -132,31 +130,6 @@ export class WeaponTrader extends BaseTrader {
             }
         }
         return baseLevel;
-    }
-
-    /**
-     * Returns a random bonus multiplier within the tier's percent range.
-     * Uses -15% as a practical lower bound for the BROKEN tier.
-     */
-    private randomBonusMultiplierForTier(tier: WeaponTierDefinition): number {
-        const min = isFinite(tier.minPercent) ? tier.minPercent : WeaponTrader.BROKEN_TIER_FLOOR_PERCENT;
-        const max = isFinite(tier.maxPercent) ? tier.maxPercent : WeaponTrader.TOP_TIER_CEIL_PERCENT;
-        return 1 + (min + Math.random() * (max - min)) / 100;
-    }
-
-    /**
-     * Clones a weapon with a random bonus from the given tier applied to its stats.
-     */
-    private applyTierBonus(weapon: WeaponItem, tier: WeaponTierDefinition): WeaponItem {
-        const multiplier = this.randomBonusMultiplierForTier(tier);
-        const finalDamage = Math.floor(weapon.damage * multiplier);
-        const damageFactor = finalDamage / weapon.damage;
-        return weapon.cloneWith(
-            finalDamage,
-            Math.floor(weapon.buyPrice * damageFactor),
-            Math.floor(weapon.sellPrice * damageFactor),
-            tier,
-        );
     }
 
     protected filterPlayerInventory(player: Player): Item[] {

@@ -8,6 +8,7 @@ import { Player } from '../../Player';
 import { WeaponItem } from './WeaponItem';
 import { ItemDropType } from '../ItemDropType';
 import { WEAPON_TIERS, WeaponTier } from './WeaponTier';
+import { applyWeaponBonus } from './WeaponBonusCalculator';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.WEAPON;
@@ -135,9 +136,10 @@ export class WeaponDropStrategy implements ItemDropStrategy {
             return;
         }
 
-        // Clone the weapon with bonus stats from the drop
-        const weaponItem = baseWeapon.cloneWith(drop.damage, drop.buyPrice, drop.sellPrice);
-        weaponItem.tier = drop.tier;
+        // Re-apply the bonus from the drop using the shared calculator so that
+        // tier assignment follows the same "only when damage changes" rule.
+        const bonusMultiplier = drop.damage / baseWeapon.damage;
+        const weaponItem = applyWeaponBonus(baseWeapon, bonusMultiplier);
 
         player.inventory.push(weaponItem);
         console.log(`Picked up ${weaponItem.name} with ${weaponItem.damage} damage`);

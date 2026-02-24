@@ -89,3 +89,18 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         minLevel: 40,
     }],
 ]);
+
+/**
+ * Returns the tier definition that matches the given bonus multiplier.
+ * Falls back to the STABLE tier if no tier matches.
+ * @param bonusMultiplier - The ratio of final damage to base damage (e.g. 1.05 = +5%)
+ */
+export function getWeaponTierForMultiplier(bonusMultiplier: number): WeaponTierDefinition {
+    const bonusPercent = (bonusMultiplier - 1) * 100;
+    for (const tier of WEAPON_TIERS.values()) {
+        if (bonusPercent >= tier.minPercent && bonusPercent < tier.maxPercent) {
+            return tier;
+        }
+    }
+    return WEAPON_TIERS.get(WeaponTier.STABLE)!;
+}
