@@ -7,6 +7,7 @@ import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { WeaponItem } from './WeaponItem';
 import { ItemDropType } from '../ItemDropType';
+import { WEAPON_TIERS, WeaponTier } from './WeaponTier';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.WEAPON;
@@ -20,16 +21,15 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
         const weaponLevel = this.determineWeaponLevel(player.getTechForWeapon(weaponType));
         const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, weaponLevel);
-        if (!weaponItem) return null;
 
         const random = Math.random();
         // avoid NaN when base is negative and exponent is non-integer
         const raw = 1.16 * random - 0.55;
 
         let maxBonusValue;
-        if (player.level < 10) {
+        if (player.level < WEAPON_TIERS.get(WeaponTier.ZERODAY)!.minLevel) {
             maxBonusValue = 0.119;
-        } else if (player.level < 40) {
+        } else if (player.level < WEAPON_TIERS.get(WeaponTier.LEET)!.minLevel) {
             maxBonusValue = 0.159;
         } else {
             maxBonusValue = 0.25;

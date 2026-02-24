@@ -6,13 +6,13 @@ import { Player } from '../../Player';
 import { Item } from '../Item';
 import { InputManager } from '../../InputManager';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
-import { WEAPON_TIERS, WeaponTierDefinition } from './WeaponTier';
+import { WEAPON_TIERS, WeaponTier, WeaponTierDefinition } from './WeaponTier';
 
 export class WeaponTrader extends BaseTrader {
     static instance: WeaponTrader; // Singleton
 
     private weaponRepository: WeaponRepository;
-    private pendingInventoryInit: boolean = false;
+    private pendingInventoryInit: boolean = true;
 
     /** Practical lower bound (%) used when BROKEN tier has -Infinity as minPercent */
     private static readonly BROKEN_TIER_FLOOR_PERCENT = -15;
@@ -51,7 +51,6 @@ export class WeaponTrader extends BaseTrader {
     }
 
     show() {
-        this.pendingInventoryInit = true;
         super.show();
     }
 
@@ -75,39 +74,49 @@ export class WeaponTrader extends BaseTrader {
     private refreshInventory(player: Player): void {
         this.traderInventory = [];
 
-        // Dev build only: add one hammer of every tier for easy visual testing
-        if (import.meta.env.DEV) {
-            const hammerLevel = this.getBaseWeaponLevel(player.getTechForWeapon(WeaponType.HAMMER));
-            for (const tier of WEAPON_TIERS.values()) {
-                const weapon = this.weaponRepository.getWeaponByTypeAndLevel(WeaponType.HAMMER, hammerLevel);
-                if (weapon) {
-                    this.traderInventory.push(this.applyTierBonus(weapon, tier));
-                }
-            }
-        }
-
         // One weapon per type at the level that fits the player's current tech
         for (const type of WeaponTrader.ALL_WEAPON_TYPES) {
             const level = this.getBaseWeaponLevel(player.getTechForWeapon(type));
             const weapon = this.weaponRepository.getWeaponByTypeAndLevel(type, level);
-            if (weapon) {
-                this.traderInventory.push(weapon);
-            }
+            this.traderInventory.push(weapon);
         }
 
         // Random bonus entries: one per tier with decreasing probability
         for (const tier of WEAPON_TIERS.values()) {
-            if (Math.random() < tier.traderChance) {
-                const type = WeaponTrader.ALL_WEAPON_TYPES[
-                    Math.floor(Math.random() * WeaponTrader.ALL_WEAPON_TYPES.length)
-                ];
-                const level = this.getBaseWeaponLevel(player.getTechForWeapon(type));
-                const weapon = this.weaponRepository.getWeaponByTypeAndLevel(type, level);
-                if (weapon) {
-                    this.traderInventory.push(this.applyTierBonus(weapon, tier));
-                }
+            const type = WeaponTrader.ALL_WEAPON_TYPES[
+                Math.floor(Math.random() * WeaponTrader.ALL_WEAPON_TYPES.length)
+            ];
+            const level = this.getBaseWeaponLevel(player.getTechForWeapon(type));
+            const weapon = this.weaponRepository.getWeaponByTypeAndLevel(type, level);
+
+            console.log(`Evaluating ${tier.name} tier for trader inventory: player level ${player.level}, tier min level ${tier.minLevel}, chance ${tier.traderChance}`);
+            if (player.level >= tier.minLevel && Math.random() < tier.traderChance) {
+                this.traderInventory.push(this.applyTierBonus(weapon, tier));
+            } else {
+                this.traderInventory.push(this.applyTierBonus(weapon, WEAPON_TIERS.get(WeaponTier.STABLE)!));
             }
         }
+
+        // Sort inventory:
+        // 1. Weapon Type
+        // 2. Weapon Level
+        // 3. Weapon Tier
+        (this.traderInventory as WeaponItem[]).sort((a, b) => {
+            // 1. Weapon Type order
+            if (a.weaponType !== b.weaponType) {
+                return WeaponTrader.ALL_WEAPON_TYPES.indexOf(a.weaponType) - WeaponTrader.ALL_WEAPON_TYPES.indexOf(b.weaponType);
+            }
+            
+            // 2. Weapon Level (ascending)
+            if (a.level !== b.level) {
+                return a.level - b.level;
+            }
+
+            // 3. Weapon Tier (descending quality/minPercent)
+            const tierA = (a.tier && typeof a.tier.minPercent === 'number') ? a.tier.minPercent : -1000;
+            const tierB = (b.tier && typeof b.tier.minPercent === 'number') ? b.tier.minPercent : -1000;
+            return tierB - tierA;
+        });
     }
 
     /**

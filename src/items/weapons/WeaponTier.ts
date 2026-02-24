@@ -25,6 +25,8 @@ export interface WeaponTierDefinition {
      * in the weapon trader inventory. Should decrease for higher tiers.
      */
     traderChance: number;
+    /** Minimum player level for this tier to appear in the trader inventory */
+    minLevel: number;
 }
 
 /**
@@ -39,6 +41,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         rimColor: '#cccccc',
         innerColor: '#717171',
         traderChance: 0.30,
+        minLevel: 0,
     }],
     [WeaponTier.STABLE, {
         name: WeaponTier.STABLE,
@@ -46,7 +49,8 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 3,
         rimColor: '#ffffff',
         innerColor: '#aaaaaa',
-        traderChance: 0.25,
+        traderChance: 0.44,
+        minLevel: 0,
     }],
     [WeaponTier.MAINTAINED, {
         name: WeaponTier.MAINTAINED,
@@ -54,7 +58,8 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 8,
         rimColor: '#7676ff',
         innerColor: '#3a3aae',
-        traderChance: 0.20,
+        traderChance: 0.12,
+        minLevel: 0,
     }],
     [WeaponTier.OVERCLOCKED, {
         name: WeaponTier.OVERCLOCKED,
@@ -62,7 +67,8 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 12,
         rimColor: '#00f97d',
         innerColor: '#00b36a',
-        traderChance: 0.15,
+        traderChance: 0.08,
+        minLevel: 0,
     }],
     [WeaponTier.ZERODAY, {
         name: WeaponTier.ZERODAY,
@@ -70,7 +76,8 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: 16,
         rimColor: '#fd00d7',
         innerColor: '#83006f',
-        traderChance: 0.10,
+        traderChance: 0.05,
+        minLevel: 20,
     }],
     [WeaponTier.LEET, {
         name: WeaponTier.LEET,
@@ -78,6 +85,7 @@ export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
         maxPercent: Infinity,
         rimColor: '#ffae00',
         innerColor: '#b87e00',
-        traderChance: 0.05,
+        traderChance: 0.01,
+        minLevel: 40,
     }],
 ]);

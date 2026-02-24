@@ -453,17 +453,15 @@ export class SaveManager {
                 // We use weaponType and level to find the right weapon from the repository
                 if (itemData.weaponType && itemData.level) {
                     const baseWeapon = weaponRepo.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
-                    if (baseWeapon) {
-                        const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
-                        if (itemData.tierName) {
-                            weaponItem.tier = WEAPON_TIERS.get(itemData.tierName)!;
-                        }
-                        if (itemData.isEquipped) {
-                            weaponItem.isEquipped = true;
-                            player.setWeapon(weaponItem);
-                        }
-                        player.inventory.push(weaponItem);
+                    const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
+                    if (itemData.tierName) {
+                        weaponItem.tier = WEAPON_TIERS.get(itemData.tierName)!;
                     }
+                    if (itemData.isEquipped) {
+                        weaponItem.isEquipped = true;
+                        player.setWeapon(weaponItem);
+                    }
+                    player.inventory.push(weaponItem);
                 } else {
                     console.warn('Invalid weapon data in save file:', itemData);
                 }
