@@ -288,6 +288,7 @@ export class UIManager {
     private deathOverlaySelectedIndex: number = 0; // 0 = Retry, 1 = Return to Lobby
     private startScreenTapHandler?: (e: TouchEvent) => void;
     private startMenu?: StartMenu;
+    private startScreenShown: boolean = false;
 
     public startScreenTapped: boolean = false;
 
@@ -558,11 +559,12 @@ export class UIManager {
     }
 
     showStartScreen() {
-        if (this.startScreen) {
+        if (this.startScreen && !this.startScreenShown) {
             this.startScreen.style.display = ''; // Remove display: none
             this.startScreen.classList.remove('hidden');
             const video = this.startScreen.querySelector('video');
             if (video) video.play().catch(e => console.log("Video play failed", e));
+            this.startScreenShown = true;
         }
     }
 
