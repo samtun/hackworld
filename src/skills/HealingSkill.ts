@@ -49,7 +49,7 @@ export class HealingSkill extends Skill {
 
         // Heal the player
         const actualHeal = Math.min(healAmount, player.maxHp - player.hp);
-        player.hp += actualHeal;
+        player.heal(actualHeal, 0, true);
         console.log(`Healed ${actualHeal} HP (${player.hp}/${player.maxHp})`);
 
         // Grant Recovery tech point if actual healing occurred
