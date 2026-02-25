@@ -39,7 +39,15 @@ export abstract class Skill {
      * Check if the player has enough TP to use the skill
      */
     canUse(player: Player): boolean {
-        return player.tp >= this.tpCost;
+        return player.tp >= this.getEffectiveTpCost(player);
+    }
+
+    /**
+     * Returns the effective TP cost for this skill at the player's current tier.
+     * Subclasses can override to add tier-based scaling.
+     */
+    getEffectiveTpCost(_player: Player): number {
+        return this.tpCost;
     }
 
     /**
@@ -57,7 +65,7 @@ export abstract class Skill {
         }
 
         // Consume TP
-        player.tp -= this.tpCost;
+        player.tp -= this.getEffectiveTpCost(player);
 
         // Start cooldown
         this.cooldownTimer = this.cooldown;

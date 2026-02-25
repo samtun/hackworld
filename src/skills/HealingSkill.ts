@@ -37,6 +37,20 @@ export class HealingSkill extends Skill {
         super('Healing', 5, 20, onCompletedCallback, 'images/ui_icons/heal.png');
     }
 
+    getEffectiveTpCost(player: Player): number {
+        return Math.round(this.tpCost * this.getTpMultiplier(player.getSkillTier(SkillTechType.RECOVERY)));
+    }
+
+    private getTpMultiplier(tier: Tier): number {
+        switch (tier) {
+            case Tier.MAINTAINED:  return 2;
+            case Tier.OVERCLOCKED: return 3;
+            case Tier.ZERODAY:     return 5;
+            case Tier.LEET:        return 8;
+            default:               return 1;
+        }
+    }
+
     protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {
         console.log('Executing Healing skill');
 

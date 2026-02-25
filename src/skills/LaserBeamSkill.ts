@@ -38,6 +38,20 @@ export class LaserBeamSkill extends Skill {
         super('Laser Beam', 5, 25, onCompletedCallback, 'images/ui_icons/laser.png');
     }
 
+    getEffectiveTpCost(player: Player): number {
+        return Math.round(this.tpCost * this.getTpMultiplier(player.getSkillTier(SkillTechType.RANGED)));
+    }
+
+    private getTpMultiplier(tier: Tier): number {
+        switch (tier) {
+            case Tier.MAINTAINED:  return 2;
+            case Tier.OVERCLOCKED: return 3;
+            case Tier.ZERODAY:     return 5;
+            case Tier.LEET:        return 8;
+            default:               return 1;
+        }
+    }
+
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
         console.log('Executing Laser Beam skill');
 
