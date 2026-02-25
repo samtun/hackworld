@@ -79,16 +79,16 @@ body {
 }
 
 #game-logo {
-    max-width: 80%;
+    width: 100vh;
     height: auto;
-    margin-bottom: 30px;
-    /* Adjust vertical position to visually center the group */
-    transform: translateY(-20px);
+    position: absolute;
+    top: 30vh;
+    transition: top 0.6s ease-in-out;
 }
 
-.start-text {
+#start-text {
     font-family: 'Share Tech', sans-serif;
-    font-size: 48px;
+    font-size: 6vh;
     color: white;
     text-transform: uppercase;
     text-shadow:
@@ -101,11 +101,13 @@ body {
     padding: 10px 0;
     width: 100%;
     text-align: center;
-    position: relative;
+    position: absolute;
+    top: 53vh;
+    transition: opacity 0.6s ease-in-out;
 }
 
-.start-text::before,
-.start-text::after {
+#start-text::before,
+#start-text::after {
     content: '';
     position: absolute;
     left: 0;
@@ -114,20 +116,20 @@ body {
     background-color: rgba(0, 0, 0, 0.7);
 }
 
-.start-text::before {
+#start-text::before {
     top: -6px;
 }
 
-.start-text::after {
+#start-text::after {
     bottom: -6px;
 }
 
-.arrow-left {
+#arrow-left {
     display: inline-block;
     animation: pulseLeft 0.2s ease-in-out infinite alternate;
 }
 
-.arrow-right {
+#arrow-right {
     display: inline-block;
     animation: pulseRight 0.2s ease-in-out infinite alternate;
 }
