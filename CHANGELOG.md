@@ -1,3 +1,23 @@
+# [1.46.0](https://github.com/samtun/hackworld/compare/v1.45.0...v1.46.0) (2026-02-25)
+
+
+### Bug Fixes
+
+* fix broken tier item color in menus ([927d1ed](https://github.com/samtun/hackworld/commit/927d1ed866ad9aa38496333a1c475bea863a4e27))
+
+
+### Features
+
+* add color coding for weapon drops based on damage bonus tier ([d9bbef6](https://github.com/samtun/hackworld/commit/d9bbef6ed4e8754b857decbdfe8b14a7313e1de3))
+* enhance weapon drop strategy and trader inventory with tier-based logic and sorting ([51583bc](https://github.com/samtun/hackworld/commit/51583bc0c7a141929e811ab6ad055b7710690628))
+* implement weapon drop bonus scaling based on player level and update weapon tier colors ([2a5d671](https://github.com/samtun/hackworld/commit/2a5d671709863cb0fc7af81f2a1ab5d4aed71374))
+* introduce colors to item displays and show tier in weapon details ([9eac95e](https://github.com/samtun/hackworld/commit/9eac95e959a79a28eba91a473a9d0298ae48dfe2))
+* limit highest weapon tiers to higher levels ([702be5d](https://github.com/samtun/hackworld/commit/702be5d0fda1fc2d74924afe71d14e3b4dad6e16))
+* overhaul WeaponTrader inventory with player-tech level and tier randomization ([11ae8ec](https://github.com/samtun/hackworld/commit/11ae8ec8eaa156714da78cc73ef1f59ec5885494))
+* propagate weapon drop tier color to WeaponItem and inventory/trader UI ([4dec197](https://github.com/samtun/hackworld/commit/4dec197fbe0c6f8eb20465e102d7169800854bb3))
+* rename best weapon tiers ([5f50332](https://github.com/samtun/hackworld/commit/5f50332752d9f5526421d6124443c489c03a497f))
+* slightly tweak trader weapon spawn rates ([79c4543](https://github.com/samtun/hackworld/commit/79c4543449e2358c33961aca8f0e82d412c38e08))
+
 # [1.45.0](https://github.com/samtun/hackworld/compare/v1.44.0...v1.45.0) (2026-02-25)
 
 
