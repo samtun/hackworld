@@ -1,7 +1,7 @@
 import { WeaponType } from './WeaponType';
 import { WeaponItem } from './WeaponItem';
 import weaponsData from './weapons.json';
-import { WEAPON_TIERS, WeaponTier } from './WeaponTier';
+import { Tier, TierManager } from './WeaponTier';
 
 /**
  * Centralized weapon repository - single source of truth for all weapons in the game
@@ -49,7 +49,7 @@ export class WeaponRepository {
                 type,
                 data.damage,
                 data.model,
-                WEAPON_TIERS.get(WeaponTier.STABLE)!,
+                TierManager.Instance.tiers.get(Tier.STABLE)!,
                 data.level,
             );
 

@@ -18,7 +18,7 @@ import { HealingSkill } from './skills/HealingSkill';
 import { AreaAttackSkill } from './skills/AreaAttackSkill';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 import { SkillTechType } from './skills/SkillTechType';
-import { Tier, getSkillTierForTech } from './items/weapons/WeaponTier';
+import { Tier, TierManager } from './items/weapons/WeaponTier';
 
 enum ActionType {
     Idle = 'Idle',
@@ -448,7 +448,7 @@ export class Player extends BaseMesh {
 
     // Return the current tier for a given skill type based on its tech points
     getSkillTier(type: SkillTechType): Tier {
-        return getSkillTierForTech(this.skillTech[type]);
+        return TierManager.Instance.getSkillTierForTech(this.skillTech[type]);
     }
 
     // Compute damage for a single hit, applying strength and critical hit multipliers

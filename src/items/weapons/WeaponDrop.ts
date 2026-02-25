@@ -6,7 +6,7 @@ import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
 import { InteractiveEntityType } from '../../InteractiveEntityType';
 import { AssetManager } from '../../AssetManager';
-import { WeaponTierDefinition, getWeaponTierForMultiplier } from './WeaponTier';
+import { WeaponTierDefinition, TierManager } from './WeaponTier';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground
@@ -57,7 +57,7 @@ export class WeaponDrop extends ItemDrop {
         this.level = level;
 
         // Compute tier and store rim color for use in text label and inventory display
-        const tier = getWeaponTierForMultiplier(bonusMultiplier);
+        const tier = TierManager.Instance.getWeaponTierForMultiplier(bonusMultiplier);
         this.tier = tier;
 
         // Create weapon visual

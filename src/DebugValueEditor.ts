@@ -5,6 +5,7 @@ import { ChipRepository } from './items/chips/ChipRepository';
 import { WeaponType } from './items/weapons/WeaponType';
 import { ItemLevelHelper } from './items/ItemLevelHelper';
 import { GameProgressManager } from './GameProgressManager';
+import { SkillTechType } from './skills/SkillTechType';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -235,6 +236,20 @@ export class DebugValueEditor {
 
         weaponTechSection.appendChild(weaponTechGrid);
         panel.appendChild(weaponTechSection);
+
+        // Skill Tech Section with two-column layout
+        const skillTechSection = this.createSection('Skill Tech');
+        const skillTechGrid = this.createTwoColumnGrid(2);
+
+        // Left column
+        this.createStatInputInGrid(skillTechGrid, 'left', 'recoveryTech', 'Recovery:', 'number');
+        this.createStatInputInGrid(skillTechGrid, 'left', 'blastTech', 'Blast:', 'number');
+
+        // Right column
+        this.createStatInputInGrid(skillTechGrid, 'right', 'rangedTech', 'Ranged:', 'number');
+
+        skillTechSection.appendChild(skillTechGrid);
+        panel.appendChild(skillTechSection);
 
         // Weapons Section
         const weaponsSection = this.createSection('Add Weapon');
@@ -672,6 +687,10 @@ export class DebugValueEditor {
         this.updateInputValue('lanceTech', playerTech[WeaponType.LANCE] || 0);
         this.updateInputValue('hammerTech', playerTech[WeaponType.HAMMER] || 0);
 
+        this.updateInputValue('recoveryTech', player.skillTech[SkillTechType.RECOVERY] || 0);
+        this.updateInputValue('blastTech', player.skillTech[SkillTechType.BLAST] || 0);
+        this.updateInputValue('rangedTech', player.skillTech[SkillTechType.RANGED] || 0);
+
         // Apply changes from inputs to player (if user has modified them)
         this.applyInputValue('hp', (val) => { player.hp = Math.max(0, Math.min(val, player.maxHp)); });
         this.applyInputValue('maxHp', (val) => { player.maxHp = Math.max(1, val); });
@@ -695,6 +714,10 @@ export class DebugValueEditor {
         this.applyInputValue('doubleSwordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.DUAL_BLADE] = Math.max(0, val); });
         this.applyInputValue('lanceTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.LANCE] = Math.max(0, val); });
         this.applyInputValue('hammerTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.HAMMER] = Math.max(0, val); });
+
+        this.applyInputValue('recoveryTech', (val) => { player.skillTech[SkillTechType.RECOVERY] = Math.max(0, Math.min(1200, val)); });
+        this.applyInputValue('blastTech', (val) => { player.skillTech[SkillTechType.BLAST] = Math.max(0, Math.min(1200, val)); });
+        this.applyInputValue('rangedTech', (val) => { player.skillTech[SkillTechType.RANGED] = Math.max(0, Math.min(1200, val)); });
     }
 
     private updateInputValue(key: string, value: number): void {

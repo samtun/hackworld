@@ -11,7 +11,7 @@ import { ChipItem } from './items/chips/ChipItem';
 import { NpcRegistry } from './npcs/NpcRegistry';
 import { GameProgressManager } from './GameProgressManager';
 import { Player } from './Player';
-import { WEAPON_TIERS } from './items/weapons/WeaponTier';
+import { TierManager } from './items/weapons/WeaponTier';
 
 /**
  * Interface representing the complete save data structure
@@ -477,7 +477,7 @@ export class SaveManager {
                     const baseWeapon = weaponRepo.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
                     const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
                     if (itemData.tierName) {
-                        weaponItem.tier = WEAPON_TIERS.get(itemData.tierName)!;
+                        weaponItem.tier = TierManager.Instance.tiers.get(itemData.tierName)!;
                     }
                     if (itemData.isEquipped) {
                         weaponItem.isEquipped = true;

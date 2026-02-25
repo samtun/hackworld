@@ -1,7 +1,7 @@
 /**
- * Tiers for weapons based on their damage bonus/malus percentage.
+ * Tiers for weapons and skills.
  */
-export enum WeaponTier {
+export enum Tier {
     BROKEN = 'Broken',
     STABLE = 'Stable',
     MAINTAINED = 'Maintained',
@@ -11,7 +11,7 @@ export enum WeaponTier {
 }
 
 export interface WeaponTierDefinition {
-    name: WeaponTier;
+    name: Tier;
     /** Minimum bonus percentage (inclusive) for this tier */
     minPercent: number;
     /** Maximum bonus percentage (exclusive) for this tier. Use Infinity for the top tier. */
@@ -30,92 +30,101 @@ export interface WeaponTierDefinition {
 }
 
 /**
- * ordered Map of weapon tier definitions.
- * Add new tiers here to extend the system.
+ * Singleton manager for weapon and skill tier logic.
+ * Owns the ordered tier definitions, weapon-tier lookups, and skill-tier lookups.
  */
-export const WEAPON_TIERS = new Map<WeaponTier, WeaponTierDefinition>([
-    [WeaponTier.BROKEN, {
-        name: WeaponTier.BROKEN,
-        minPercent: -Infinity,
-        maxPercent: -3,
-        rimColor: '#aaaaaa',
-        innerColor: '#555555',
-        traderChance: 0.30,
-        minLevel: 0,
-    }],
-    [WeaponTier.STABLE, {
-        name: WeaponTier.STABLE,
-        minPercent: -3,
-        maxPercent: 3,
-        rimColor: '#ffffff',
-        innerColor: '#aaaaaa',
-        traderChance: 0.44,
-        minLevel: 0,
-    }],
-    [WeaponTier.MAINTAINED, {
-        name: WeaponTier.MAINTAINED,
-        minPercent: 3,
-        maxPercent: 8,
-        rimColor: '#7676ff',
-        innerColor: '#3a3aae',
-        traderChance: 0.15,
-        minLevel: 0,
-    }],
-    [WeaponTier.OVERCLOCKED, {
-        name: WeaponTier.OVERCLOCKED,
-        minPercent: 8,
-        maxPercent: 12,
-        rimColor: '#00f97d',
-        innerColor: '#00b36a',
-        traderChance: 0.10,
-        minLevel: 0,
-    }],
-    [WeaponTier.ZERODAY, {
-        name: WeaponTier.ZERODAY,
-        minPercent: 12,
-        maxPercent: 16,
-        rimColor: '#fd00d7',
-        innerColor: '#83006f',
-        traderChance: 0.06,
-        minLevel: 20,
-    }],
-    [WeaponTier.LEET, {
-        name: WeaponTier.LEET,
-        minPercent: 16,
-        maxPercent: Infinity,
-        rimColor: '#ffae00',
-        innerColor: '#b87e00',
-        traderChance: 0.02,
-        minLevel: 40,
-    }],
-]);
+export class TierManager {
+    private static instance: TierManager;
 
-/**
- * Returns the tier definition that matches the given bonus multiplier.
- * Falls back to the STABLE tier if no tier matches.
- * @param bonusMultiplier - The ratio of final damage to base damage (e.g. 1.05 = +5%)
- */
-export function getWeaponTierForMultiplier(bonusMultiplier: number): WeaponTierDefinition {
-    const bonusPercent = (bonusMultiplier - 1) * 100;
-    for (const tier of WEAPON_TIERS.values()) {
-        if (bonusPercent >= tier.minPercent && bonusPercent < tier.maxPercent) {
-            return tier;
-        }
+    /** Ordered Map of weapon tier definitions. */
+    readonly tiers = new Map<Tier, WeaponTierDefinition>([
+        [Tier.BROKEN, {
+            name: Tier.BROKEN,
+            minPercent: -Infinity,
+            maxPercent: -3,
+            rimColor: '#aaaaaa',
+            innerColor: '#555555',
+            traderChance: 0.30,
+            minLevel: 0,
+        }],
+        [Tier.STABLE, {
+            name: Tier.STABLE,
+            minPercent: -3,
+            maxPercent: 3,
+            rimColor: '#ffffff',
+            innerColor: '#aaaaaa',
+            traderChance: 0.44,
+            minLevel: 0,
+        }],
+        [Tier.MAINTAINED, {
+            name: Tier.MAINTAINED,
+            minPercent: 3,
+            maxPercent: 8,
+            rimColor: '#7676ff',
+            innerColor: '#3a3aae',
+            traderChance: 0.15,
+            minLevel: 0,
+        }],
+        [Tier.OVERCLOCKED, {
+            name: Tier.OVERCLOCKED,
+            minPercent: 8,
+            maxPercent: 12,
+            rimColor: '#00f97d',
+            innerColor: '#00b36a',
+            traderChance: 0.10,
+            minLevel: 0,
+        }],
+        [Tier.ZERODAY, {
+            name: Tier.ZERODAY,
+            minPercent: 12,
+            maxPercent: 16,
+            rimColor: '#fd00d7',
+            innerColor: '#83006f',
+            traderChance: 0.06,
+            minLevel: 20,
+        }],
+        [Tier.LEET, {
+            name: Tier.LEET,
+            minPercent: 16,
+            maxPercent: Infinity,
+            rimColor: '#ffae00',
+            innerColor: '#b87e00',
+            traderChance: 0.02,
+            minLevel: 40,
+        }],
+    ]);
+
+    private constructor() {}
+
+    public static get Instance(): TierManager {
+        return this.instance || (this.instance = new this());
     }
-    return WEAPON_TIERS.get(WeaponTier.STABLE)!;
+
+    /**
+     * Returns the tier definition that matches the given bonus multiplier.
+     * Falls back to the STABLE tier if no tier matches.
+     * @param bonusMultiplier - The ratio of final damage to base damage (e.g. 1.05 = +5%)
+     */
+    getWeaponTierForMultiplier(bonusMultiplier: number): WeaponTierDefinition {
+        const bonusPercent = (bonusMultiplier - 1) * 100;
+        for (const tier of this.tiers.values()) {
+            if (bonusPercent >= tier.minPercent && bonusPercent < tier.maxPercent) {
+                return tier;
+            }
+        }
+        return this.tiers.get(Tier.STABLE)!;
+    }
+
+    /**
+     * Returns the skill tier for the given skill tech point count.
+     * Skills start at STABLE (no BROKEN tier).
+     */
+    getSkillTierForTech(techPoints: number): Tier {
+        if (techPoints >= 1200) return Tier.LEET;
+        if (techPoints >= 520) return Tier.ZERODAY;
+        if (techPoints >= 240) return Tier.OVERCLOCKED;
+        if (techPoints >= 120) return Tier.MAINTAINED;
+        return Tier.STABLE;
+    }
 }
 
-/**
- * Returns the skill tier for the given skill tech point count.
- * Skills start at STABLE (no BROKEN tier).
- */
-export function getSkillTierForTech(techPoints: number): WeaponTier {
-    if (techPoints >= 1200) return WeaponTier.LEET;
-    if (techPoints >= 520) return WeaponTier.ZERODAY;
-    if (techPoints >= 240) return WeaponTier.OVERCLOCKED;
-    if (techPoints >= 120) return WeaponTier.MAINTAINED;
-    return WeaponTier.STABLE;
-}
-
-// Alias so skills can import Tier instead of WeaponTier
-export { WeaponTier as Tier };
