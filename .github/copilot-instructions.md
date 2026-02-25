@@ -124,7 +124,8 @@ this.disposeMesh();
 - Use explicit types for all function parameters and return values
 - Leverage TypeScript's type system for compile-time safety
 - Define interfaces for complex data structures
-- Use enums for fixed sets of values (e.g., WeaponType)
+- Use object oriented classes instead of exporting plain objects or functions
+- Use enums instead of string literal unions for fixed sets of values (e.g., WeaponType)
 - Avoid using `any` type unless absolutely necessary
 
 ### 5. Documentation

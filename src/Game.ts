@@ -20,6 +20,8 @@ import { CardManager } from './items/cards/CardManager';
 import { InteractiveEntityType } from './InteractiveEntityType';
 import { getHint, HintConfigs } from './ui/InputHints';
 import { Teleporter } from './Teleporter';
+import { LoreIntroduction } from './LoreIntroduction';
+import { StartMenuOption } from './StartMenu';
 
 export class Game {
     scene: THREE.Scene;
@@ -327,29 +329,61 @@ export class Game {
         }
     }
 
+    /**
+     * Called by UIManager after the player confirms a start menu option and the
+     * fade transition / screen hide have completed. Handles all game-logic concerns:
+     * save loading, scene switching, and lore introduction.
+     */
+    private async onStartMenuSelect(option: StartMenuOption, file?: File): Promise<void> {
+        if (option === 'continue') {
+            const loaded = this.saveManager.loadFromLocalStorage();
+            if (loaded) {
+                console.log('Auto-save loaded successfully');
+            }
+        } else if (option === 'newgame') {
+            this.saveManager.clearLocalStorage();
+        } else if (option === 'loadgame' && file) {
+            console.log(`Loading save file: ${file.name}`);
+            await this.saveManager.load(file);
+        }
+
+        if (this.saveManager.isLoreIntroSeen()) {
+            this.continueAfterIntro();
+        } else {
+            this.currentScene = 'lore';
+            const loreIntro = new LoreIntroduction(this.input, () => this.continueAfterIntro());
+            loreIntro.show();
+        }
+    }
+
+    private continueAfterIntro() {
+        this.currentScene = Lobby.getMetadata().id;
+        this.input.initializeMobileControls();
+        this.clock.getDelta(); // Reset clock
+        this.isTransitioning = false;
+    }
+
     animate() {
         requestAnimationFrame(() => this.animate());
 
         if (this.currentScene === 'startScreen') {
             this.ui.showStartScreen();
-            if (!this.isTransitioning && (this.input.isStartPressed() || this.ui.startScreenTapped || import.meta.env.DEV)) {
+            // Show the main menu after START is pressed (but not while already transitioning
+            // or while the menu is already visible)
+            if (!this.isTransitioning && !this.ui.isStartMenuShowing() &&
+                (this.input.isStartPressed() || this.ui.startScreenTapped)) {
                 this.isTransitioning = true;
-                this.ui.triggerStartTransition(() => {
-                    this.ui.hideStartScreen();
-                    this.currentScene = Lobby.getMetadata().id;
-                    this.input.initializeMobileControls();
-                    this.clock.getDelta(); // Reset clock
-                    this.isTransitioning = false;
-                    
-                    // Try to load auto-save after transition
-                    if (this.saveManager.hasLocalStorageSave()) {
-                        const loaded = this.saveManager.loadFromLocalStorage();
-                        if (loaded) {
-                            console.log('Auto-save loaded successfully');
-                        }
-                    }
-                });
+                this.ui.showStartMenu(
+                    this.input,
+                    this.saveManager.hasLocalStorageSave(),
+                    (option, file) => this.onStartMenuSelect(option, file),
+                );
             }
+            return;
+        }
+
+        // Lore introduction is active — the LoreIntroduction class handles its own rendering
+        if (this.currentScene === 'lore') {
             return;
         }
 
