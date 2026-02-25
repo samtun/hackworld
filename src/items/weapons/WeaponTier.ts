@@ -104,3 +104,18 @@ export function getWeaponTierForMultiplier(bonusMultiplier: number): WeaponTierD
     }
     return WEAPON_TIERS.get(WeaponTier.STABLE)!;
 }
+
+/**
+ * Returns the skill tier for the given skill tech point count.
+ * Skills start at STABLE (no BROKEN tier).
+ */
+export function getSkillTierForTech(techPoints: number): WeaponTier {
+    if (techPoints >= 1200) return WeaponTier.LEET;
+    if (techPoints >= 520) return WeaponTier.ZERODAY;
+    if (techPoints >= 240) return WeaponTier.OVERCLOCKED;
+    if (techPoints >= 120) return WeaponTier.MAINTAINED;
+    return WeaponTier.STABLE;
+}
+
+// Alias so skills can import Tier instead of WeaponTier
+export { WeaponTier as Tier };

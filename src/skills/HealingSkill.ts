@@ -3,23 +3,33 @@ import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
 import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
+import { SkillTechType } from './SkillTechType';
+import { Tier } from '../items/weapons/WeaponTier';
 
 /**
  * Healing Skill
  */
 export class HealingSkill extends Skill {
-    private readonly HEAL_AMOUNT = 40;
+    private readonly BASE_HEAL_AMOUNT = 40;
+    private readonly BASE_DURATION = 1.5;
+    private readonly PARTICLE_COUNT = 60;
+    private readonly RECOVERY_DURATION = 10; // Seconds of post-heal recovery at Overclocked+
+
     private particles: THREE.Mesh[] = [];
     private effectTimer: number = 0;
     private healEffect: HealEffect | undefined;
-    private readonly DURATION = 1.5;
-    private readonly PARTICLE_COUNT = 60;
-    private readonly SPAWN_DURATION = this.DURATION * 0.5; // Spawn particles over first half of duration
+    private effectiveDuration: number = this.BASE_DURATION;
+    private spawnDuration: number = this.BASE_DURATION * 0.5;
 
     private activePlayer: Player | null = null;
     private activeScene: THREE.Scene | null = null;
     private spawnedCount: number = 0;
     private isBeingExecuted: boolean = false;
+
+    // Post-heal recovery state (Overclocked+)
+    private recoveryPlayer: Player | null = null;
+    private recoveryRemaining: number = 0;
+    private recoveryHealPerSecond: number = 0;
 
     constructor(onCompletedCallback: () => void) {
         super('Healing', 3, 20, onCompletedCallback, 'images/ui_icons/heal.png');
@@ -28,10 +38,29 @@ export class HealingSkill extends Skill {
     protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {
         console.log('Executing Healing skill');
 
+        const tier = player.getSkillTier(SkillTechType.RECOVERY);
+        const healAmount = this.getEffectiveHealAmount(tier);
+
+        // Halve execution duration at Maintained and above
+        this.effectiveDuration = tier === Tier.STABLE ? this.BASE_DURATION : this.BASE_DURATION / 2;
+        this.spawnDuration = this.effectiveDuration * 0.5;
+
         // Heal the player
-        const actualHeal = Math.min(this.HEAL_AMOUNT, player.maxHp - player.hp);
+        const actualHeal = Math.min(healAmount, player.maxHp - player.hp);
         player.hp += actualHeal;
         console.log(`Healed ${actualHeal} HP (${player.hp}/${player.maxHp})`);
+
+        // Grant Recovery tech point if actual healing occurred
+        if (actualHeal > 0) {
+            player.tryIncrementSkillTech(SkillTechType.RECOVERY);
+        }
+
+        // Setup Overclocked+ recovery HoT
+        if (tier === Tier.OVERCLOCKED || tier === Tier.ZERODAY || tier === Tier.LEET) {
+            this.recoveryPlayer = player;
+            this.recoveryHealPerSecond = healAmount * 0.05;
+            this.recoveryRemaining = this.RECOVERY_DURATION;
+        }
 
         // Clean up any existing effects to prevent leaks
         this.cleanup();
@@ -44,6 +73,16 @@ export class HealingSkill extends Skill {
 
         // Create visual particle effect
         this.createHealingParticles(player, scene);
+    }
+
+    private getEffectiveHealAmount(tier: Tier): number {
+        switch (tier) {
+            case Tier.MAINTAINED:  return this.BASE_HEAL_AMOUNT * 2;
+            case Tier.OVERCLOCKED: return this.BASE_HEAL_AMOUNT * 4;
+            case Tier.ZERODAY:     return this.BASE_HEAL_AMOUNT * 6;
+            case Tier.LEET:        return this.BASE_HEAL_AMOUNT * 10;
+            default:               return this.BASE_HEAL_AMOUNT;
+        }
     }
 
     cleanup(): void {
@@ -70,9 +109,7 @@ export class HealingSkill extends Skill {
     }
 
     private createHealingParticles(player: Player, scene: THREE.Scene): void {
-        if (!this.healEffect) {
-            this.healEffect = new HealEffect(this.DURATION);
-        }
+        this.healEffect = new HealEffect(this.effectiveDuration);
         this.healEffect.setPosition(player.position as any);
         this.healEffect.addToScene(scene);
 
@@ -116,6 +153,18 @@ export class HealingSkill extends Skill {
     update(dt: number): void {
         super.update(dt);
 
+        // Apply ongoing recovery healing (Overclocked+)
+        if (this.recoveryRemaining > 0 && this.recoveryPlayer) {
+            this.recoveryRemaining -= dt;
+            this.recoveryPlayer.hp = Math.min(
+                this.recoveryPlayer.hp + this.recoveryHealPerSecond * dt,
+                this.recoveryPlayer.maxHp
+            );
+            if (this.recoveryRemaining <= 0) {
+                this.recoveryPlayer = null;
+            }
+        }
+
         if (!this.isBeingExecuted) {
             return;
         }
@@ -124,8 +173,8 @@ export class HealingSkill extends Skill {
             this.effectTimer += dt;
 
             // Spawn particles
-            if (this.effectTimer <= this.SPAWN_DURATION) {
-                const targetCount = Math.floor((this.effectTimer / this.SPAWN_DURATION) * this.PARTICLE_COUNT);
+            if (this.effectTimer <= this.spawnDuration) {
+                const targetCount = Math.floor((this.effectTimer / this.spawnDuration) * this.PARTICLE_COUNT);
                 const toSpawn = Math.min(targetCount - this.spawnedCount, this.PARTICLE_COUNT - this.spawnedCount);
 
                 for (let i = 0; i < toSpawn; i++) {
@@ -141,7 +190,7 @@ export class HealingSkill extends Skill {
                 }
             }
 
-            const progress = this.effectTimer / this.DURATION;
+            const progress = this.effectTimer / this.effectiveDuration;
 
             if (progress >= 1) {
                 this.cleanup();
@@ -205,3 +254,4 @@ class HealEffect extends BaseMesh {
         this.mesh.parent?.remove(this.mesh);
     }
 }
+

@@ -37,6 +37,9 @@ export interface SaveData {
         // Weapon tech (per-type)
         tech: Record<string, number>;
 
+        // Skill tech (per-skill type)
+        skillTech: Record<string, number>;
+
         // Upgrades (from X-Data)
         strengthUpgrades: number;
         defenseUpgrades: number;
@@ -311,7 +314,8 @@ export class SaveManager {
                     }
                     return structuredClone(i);
                 }),
-                tech: structuredClone((player as any).tech || {})
+                tech: structuredClone((player as any).tech || {}),
+                skillTech: structuredClone(player.skillTech || {})
             },
             cardCollection: cardCollection.getSaveData(),
             npcDialogueShown: NpcRegistry.Instance.getShownDialogueList(),
@@ -452,6 +456,11 @@ export class SaveManager {
         // Restore weapon tech
         if (saveData.player.tech) {
             (player as any).tech = structuredClone(saveData.player.tech);
+        }
+
+        // Restore skill tech
+        if (saveData.player.skillTech) {
+            player.skillTech = structuredClone(saveData.player.skillTech) as any;
         }
 
         // Restore inventory

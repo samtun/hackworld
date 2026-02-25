@@ -17,6 +17,8 @@ import { LaserBeamSkill } from './skills/LaserBeamSkill';
 import { HealingSkill } from './skills/HealingSkill';
 import { AreaAttackSkill } from './skills/AreaAttackSkill';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
+import { SkillTechType } from './skills/SkillTechType';
+import { Tier, getSkillTierForTech } from './items/weapons/WeaponTier';
 
 enum ActionType {
     Idle = 'Idle',
@@ -73,6 +75,7 @@ export class Player extends BaseMesh {
 
     // Tech point cap
     private readonly TECH_POINT_CAP = 2500;
+    private readonly SKILL_TECH_POINT_CAP = 1200;
 
     // Movement speed constant
     private readonly WALK_SPEED = 6;
@@ -123,6 +126,13 @@ export class Player extends BaseMesh {
         [WeaponType.DUAL_BLADE]: 1,
         [WeaponType.LANCE]: 1,
         [WeaponType.HAMMER]: 1,
+    };
+
+    // Skill tech points (gained on skill use/hit)
+    public skillTech: Record<SkillTechType, number> = {
+        [SkillTechType.RECOVERY]: 0,
+        [SkillTechType.BLAST]: 0,
+        [SkillTechType.RANGED]: 0,
     };
 
     // Upgrade levels for X-Data upgrades
@@ -420,6 +430,25 @@ export class Player extends BaseMesh {
             this.tech[key] += 1;
             this.floatingIndicatorManager.spawnTech(this.body.position);
         }
+    }
+
+    // Potentially increment skill tech for the given skill type
+    tryIncrementSkillTech(type: SkillTechType): void {
+        const x = this.skillTech[type];
+        if (x >= this.SKILL_TECH_POINT_CAP) {
+            return; // Cap reached
+        }
+
+        const dropChance = 0.015 + Math.log10(x + 3) * 0.02 + 0.00004 * x;
+        if (Math.random() <= dropChance) {
+            this.skillTech[type] = Math.min(x + 1, this.SKILL_TECH_POINT_CAP);
+            this.floatingIndicatorManager.spawnTech(this.body.position);
+        }
+    }
+
+    // Return the current tier for a given skill type based on its tech points
+    getSkillTier(type: SkillTechType): Tier {
+        return getSkillTierForTech(this.skillTech[type]);
     }
 
     // Compute damage for a single hit, applying strength and critical hit multipliers

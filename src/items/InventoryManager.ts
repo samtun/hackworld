@@ -10,6 +10,7 @@ import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';
 import { WeaponType } from './weapons/WeaponType';
+import { SkillTechType } from '../skills/SkillTechType';
 
 export { Item }; // Re-export Item for other files that might import it from here
 
@@ -400,7 +401,23 @@ export class InventoryManager {
             </div>
         `;
 
-        return statsHTML + xDataHTML + techHTML + boosterPacksHTML + expHTML;
+        // Add Skill Tech display
+        const skillTechHTML = `
+            <div style="height: 2px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
+            <div style="font-weight: bold; padding: 5px 0;">Skill Tech</div>
+            <div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%;"></div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>${SkillTechType.RECOVERY}</span> <span>${player.skillTech[SkillTechType.RECOVERY]}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>${SkillTechType.BLAST}</span> <span>${player.skillTech[SkillTechType.BLAST]}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
+                <span>${SkillTechType.RANGED}</span> <span>${player.skillTech[SkillTechType.RANGED]}</span>
+            </div>
+        `;
+
+        return statsHTML + xDataHTML + techHTML + skillTechHTML + boosterPacksHTML + expHTML;
     }
 
     private shakeItem(index: number) {

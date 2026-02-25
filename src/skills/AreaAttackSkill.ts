@@ -4,18 +4,18 @@ import { Player } from '../Player';
 import { Enemy } from '../enemies/Enemy';
 import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
+import { SkillTechType } from './SkillTechType';
+import { Tier } from '../items/weapons/WeaponTier';
 
 /**
  * Area Attack Skill
  */
 export class AreaAttackSkill extends Skill {
-    private readonly DAMAGE = 18;
+    private readonly BASE_DAMAGE = 18;
     private readonly RANGE = 5;
     private readonly DURATION = 0.8;
     private effectTimer: number = 0;
 
-    // Level of the skill. Higher levels introduce more waves and faster expansion
-    private level: number = 1;
     private areaAttackEffect: AreaAttackEffect | undefined;
     private isBeingExecuted: boolean = false;
 
@@ -24,8 +24,27 @@ export class AreaAttackSkill extends Skill {
     private world?: CANNON.World | undefined;
     private player?: Player | undefined;
 
-    private get waves(): number {
-        return this.level + 1;
+    private effectiveDamage: number = this.BASE_DAMAGE;
+    private effectiveWaves: number = 1;
+
+    private getWavesForTier(tier: Tier): number {
+        switch (tier) {
+            case Tier.MAINTAINED:  return 2;
+            case Tier.OVERCLOCKED: return 3;
+            case Tier.ZERODAY:     return 3;
+            case Tier.LEET:        return 4;
+            default:               return 1;
+        }
+    }
+
+    private getDamageMultiplier(tier: Tier): number {
+        switch (tier) {
+            case Tier.MAINTAINED:  return 2;
+            case Tier.OVERCLOCKED: return 4;
+            case Tier.ZERODAY:     return 8;
+            case Tier.LEET:        return 16;
+            default:               return 1;
+        }
     }
 
     constructor(onCompletedCallback: () => void) {
@@ -35,12 +54,16 @@ export class AreaAttackSkill extends Skill {
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
         console.log('Executing Area Attack skill');
 
+        const tier = player.getSkillTier(SkillTechType.BLAST);
+        this.effectiveDamage = this.BASE_DAMAGE * this.getDamageMultiplier(tier);
+        this.effectiveWaves = this.getWavesForTier(tier);
+
         this.world = world;
         this.player = player;
         this.hitEnemies = new Map<Enemy, number>();
 
         // Create visual effect
-        this.areaAttackEffect = new AreaAttackEffect(this.DURATION, this.RANGE, this.level);
+        this.areaAttackEffect = new AreaAttackEffect(this.DURATION, this.RANGE, this.effectiveWaves);
         this.areaAttackEffect.setPosition(player.position as any);
         this.areaAttackEffect.addToScene(scene);
         this.isBeingExecuted = true;
@@ -55,11 +78,11 @@ export class AreaAttackSkill extends Skill {
 
         this.effectTimer += dt;
         const progress = this.effectTimer / this.DURATION;
-        const scale = ((this.RANGE * progress) * this.waves) % this.RANGE;
+        const scale = ((this.RANGE * progress) * this.effectiveWaves) % this.RANGE;
 
         // If the enemy was hit longer than DAMAGE_INTERVAL ago make it hittable again
         this.hitEnemies.forEach((timeSinceHit, enemy) => {
-            if (timeSinceHit >= this.DURATION / this.waves) {
+            if (timeSinceHit >= this.DURATION / this.effectiveWaves) {
                 this.hitEnemies.delete(enemy);
             } else {
                 this.hitEnemies.set(enemy, timeSinceHit + dt);
@@ -80,9 +103,10 @@ export class AreaAttackSkill extends Skill {
 
                     if (distance <= scale) {
                         const isCriticalHit = Math.random() < this.player.getCriticalChance();
-                        const damage = isCriticalHit ? this.DAMAGE * this.player.CRITICAL_HIT_MULTIPLIER : this.DAMAGE;
+                        const damage = isCriticalHit ? this.effectiveDamage * this.player.CRITICAL_HIT_MULTIPLIER : this.effectiveDamage;
                         entity.takeDamage(damage, isCriticalHit, this.player.body.position, 0.2);
                         this.hitEnemies.set(entity, 0);
+                        this.player.tryIncrementSkillTech(SkillTechType.BLAST);
                         console.log(`Area attack hit enemy for ${damage} damage`);
                     }
                 }
@@ -101,19 +125,15 @@ export class AreaAttackSkill extends Skill {
 class AreaAttackEffect extends BaseMesh {
     private time: number = 0;
     private duration: number;
-    private level: number;
+    private waves: number;
     private range: number;
     private material: THREE.MeshStandardMaterial | null = null;
 
-    private get waves(): number {
-        return this.level + 1;
-    }
-
-    constructor(duration: number, range: number, level: number) {
+    constructor(duration: number, range: number, waves: number) {
         super('models/area_fx.glb');
         this.duration = duration;
         this.range = range;
-        this.level = level;
+        this.waves = waves;
         this.mesh.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 this.material = child.material as THREE.MeshStandardMaterial;
