@@ -30,7 +30,7 @@ export class HealingSkill extends Skill {
 
         // Heal the player
         const actualHeal = Math.min(this.HEAL_AMOUNT, player.maxHp - player.hp);
-        player.hp += actualHeal;
+        player.heal(this.HEAL_AMOUNT, 0, true);
         console.log(`Healed ${actualHeal} HP (${player.hp}/${player.maxHp})`);
 
         // Clean up any existing effects to prevent leaks

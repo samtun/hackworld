@@ -68,6 +68,31 @@ export class FloatingIndicatorManager {
             riseTime: 0.5
         });
     }
+
+    /**
+     * Spawn a healing number
+     */
+    spawnHeal(position: CANNON.Vec3, hpAmount: number): void {
+        this.spawn(position, {
+            text: `+${Math.floor(hpAmount)}`,
+            color: '#00CC22',
+            fontSize: 50,
+            priority: false,
+        });
+    }
+
+    /**
+     * Spawn a TP restoration number
+     */
+    spawnTp(position: CANNON.Vec3, tpAmount: number): void {
+        this.spawn(position, {
+            text: `+${Math.floor(tpAmount)}`,
+            color: '#00CCFF',
+            fontSize: 50,
+            priority: false,
+        });
+    }
+
     /**
      * Spawn a pickup indicator for auto pickup drops
      */

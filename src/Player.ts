@@ -1076,13 +1076,21 @@ export class Player extends BaseMesh {
      * Heal the player by the specified amounts
      * @param hpAmount - Amount of HP to restore
      * @param tpAmount - Amount of TP to restore
+     * @param showNumber - Whether to show the healing numbers
      */
-    heal(hpAmount: number, tpAmount: number = 0): void {
+    heal(hpAmount: number, tpAmount: number = 0, showNumber: boolean = false): void {
         if (hpAmount > 0) {
             this.hp = Math.min(this.hp + hpAmount, this.maxHp);
+            if (showNumber) {
+                console.log(`Player healed for ${hpAmount} HP. Current HP: ${this.hp}/${this.maxHp}`);
+                this.floatingIndicatorManager.spawnHeal(this.body.position, hpAmount);
+            }
         }
         if (tpAmount > 0) {
             this.tp = Math.min(this.tp + tpAmount, this.maxTp);
+            if (showNumber) {
+                this.floatingIndicatorManager.spawnTp(this.body.position, tpAmount);
+            }
         }
     }
 
