@@ -92,15 +92,15 @@ export class LaserBeamSkill extends Skill {
             const sinA = Math.sin(angle);
 
             this.forward2 = new THREE.Vector3(
-                forward.x * cosA - forward.z * sinA,
-                0,
-                forward.x * sinA + forward.z * cosA
-            ).normalize();
-
-            this.forward3 = new THREE.Vector3(
                 forward.x * cosA + forward.z * sinA,
                 0,
                 -forward.x * sinA + forward.z * cosA
+            ).normalize();
+
+            this.forward3 = new THREE.Vector3(
+                forward.x * cosA - forward.z * sinA,
+                0,
+                forward.x * sinA + forward.z * cosA
             ).normalize();
 
             this.laserAttackEffect2 = new LaserAttackEffect(
