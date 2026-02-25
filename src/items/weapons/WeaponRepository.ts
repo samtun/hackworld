@@ -1,6 +1,7 @@
 import { WeaponType } from './WeaponType';
 import { WeaponItem } from './WeaponItem';
 import weaponsData from './weapons.json';
+import { WEAPON_TIERS, WeaponTier } from './WeaponTier';
 
 /**
  * Centralized weapon repository - single source of truth for all weapons in the game
@@ -48,7 +49,8 @@ export class WeaponRepository {
                 type,
                 data.damage,
                 data.model,
-                data.level
+                WEAPON_TIERS.get(WeaponTier.STABLE)!,
+                data.level,
             );
 
             levelMap.get(type)!.push(weapon);
@@ -83,15 +85,15 @@ export class WeaponRepository {
      * Get a random weapon by type and level
      * Returns a cloned instance with the original ID
      */
-    getWeaponByTypeAndLevel(type: WeaponType, level: number): WeaponItem | undefined {
+    getWeaponByTypeAndLevel(type: WeaponType, level: number): WeaponItem {
         const levelIndex = level - 1;
-        if (levelIndex < 0 || levelIndex >= this.weaponsByLevel.length) return undefined;
+        if (levelIndex < 0 || levelIndex >= this.weaponsByLevel.length) throw new Error(`Invalid weapon level ${level} for type ${type}`);
 
         const levelMap = this.weaponsByLevel[levelIndex];
-        if (!levelMap) return undefined;
+        if (!levelMap) throw new Error(`No weapons found for level ${level}`);
 
         const weapons = levelMap.get(type);
-        if (!weapons || weapons.length === 0) return undefined;
+        if (!weapons || weapons.length === 0) throw new Error(`No weapons found for type ${type} at level ${level}`);
 
         const randomWeapon = weapons[Math.floor(Math.random() * weapons.length)];
         return randomWeapon.clone();

@@ -1,14 +1,26 @@
 import { WeaponItem } from './WeaponItem';
 import { BaseTrader, TraderUIConfig } from '../BaseTrader';
 import { WeaponRepository } from './WeaponRepository';
+import { WeaponType } from './WeaponType';
 import { Player } from '../../Player';
 import { Item } from '../Item';
+import { InputManager } from '../../InputManager';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
+import { WEAPON_TIERS } from './WeaponTier';
+import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 
 export class WeaponTrader extends BaseTrader {
     static instance: WeaponTrader; // Singleton
 
     private weaponRepository: WeaponRepository;
+    private pendingInventoryInit: boolean = true;
+
+    private static readonly ALL_WEAPON_TYPES = [
+        WeaponType.SWORD,
+        WeaponType.DUAL_BLADE,
+        WeaponType.LANCE,
+        WeaponType.HAMMER,
+    ];
 
     private constructor() {
         const cfg: TraderUIConfig = {
@@ -34,11 +46,88 @@ export class WeaponTrader extends BaseTrader {
         return this.instance || (this.instance = new this());
     }
 
+    show() {
+        super.show();
+    }
+
+    update(player: Player, input?: InputManager) {
+        if (this.pendingInventoryInit) {
+            this.refreshInventory(player);
+            this.pendingInventoryInit = false;
+            this.needsRender = true;
+        }
+        super.update(player, input);
+    }
+
     protected initializeTraderInventory() {
         this.traderInventory = [];
+    }
 
-        // Get all weapons from repository (already cloned with unique IDs)
-        this.traderInventory = this.weaponRepository.getAllWeapons();
+    /**
+     * Re-populates the trader inventory using the current player's tech levels.
+     * Called each time the trader is opened so the inventory reflects the player's progress.
+     */
+    private refreshInventory(player: Player): void {
+        this.traderInventory = [];
+        const bonusCalc = WeaponBonusCalculator.Instance;
+
+        // Random bonus entries
+        // Loop 2 times over all tiers to get a good mix of potential weapon items
+        for (let i = 0; i < 2; i++) {
+            for (const tier of WEAPON_TIERS.values()) {
+                const type = WeaponTrader.ALL_WEAPON_TYPES[
+                    Math.floor(Math.random() * WeaponTrader.ALL_WEAPON_TYPES.length)
+                ];
+                const level = this.getBaseWeaponLevel(player.getTechForWeapon(type));
+                const weapon = this.weaponRepository.getWeaponByTypeAndLevel(type, level);
+
+                const roll = Math.random();
+                console.log(`Evaluating ${tier.name} tier for trader inventory: player level ${player.level}, tier min level ${tier.minLevel}, chance ${tier.traderChance}, roll ${roll}`);
+                if (player.level >= tier.minLevel && roll < tier.traderChance) {
+                    this.traderInventory.push(bonusCalc.applyWeaponBonus(weapon, bonusCalc.randomMultiplierForTier(tier)));
+                } else {
+                    // Tier chance did not fire – add the base weapon at standard pricing.
+                    // Base weapons from the repository already carry the STABLE tier.
+                    this.traderInventory.push(weapon);
+                }
+            }
+        }
+
+        // Sort inventory:
+        // 1. Weapon Type
+        // 2. Weapon Level
+        // 3. Weapon Tier
+        (this.traderInventory as WeaponItem[]).sort((a, b) => {
+            // 1. Weapon Type order
+            if (a.weaponType !== b.weaponType) {
+                return WeaponTrader.ALL_WEAPON_TYPES.indexOf(a.weaponType) - WeaponTrader.ALL_WEAPON_TYPES.indexOf(b.weaponType);
+            }
+            
+            // 2. Weapon Level (ascending)
+            if (a.level !== b.level) {
+                return a.level - b.level;
+            }
+
+            // 3. Weapon Tier (descending quality/minPercent)
+            const tierA = (a.tier && typeof a.tier.minPercent === 'number') ? a.tier.minPercent : -1000;
+            const tierB = (b.tier && typeof b.tier.minPercent === 'number') ? b.tier.minPercent : -1000;
+            return tierB - tierA;
+        });
+    }
+
+    /**
+     * Returns the highest weapon level the player can equip for the given tech value.
+     */
+    private getBaseWeaponLevel(playerTech: number): number {
+        let baseLevel = 1;
+        for (let i = 0; i < WeaponItem.WEAPON_LEVELS.length; i++) {
+            if (playerTech >= WeaponItem.WEAPON_LEVELS[i].requiredTech) {
+                baseLevel = i + 1;
+            } else {
+                break;
+            }
+        }
+        return baseLevel;
     }
 
     protected filterPlayerInventory(player: Player): Item[] {

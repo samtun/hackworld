@@ -1,6 +1,7 @@
 import { EquippableItem } from '../EquippableItem';
 import { Player } from '../../Player';
 import { WeaponType } from './WeaponType';
+import { WeaponTierDefinition } from './WeaponTier';
 
 export class WeaponItem extends EquippableItem {
     weaponType: WeaponType;
@@ -8,6 +9,9 @@ export class WeaponItem extends EquippableItem {
     model: string;
     // fixed numeric level for this weapon instance (1 = α, 2 = β, ...)
     level: number;
+    
+    /** The drop tier definition for this weapon null = no tier */
+    tier: WeaponTierDefinition;
 
     // Level metadata - single source of truth for weapon level requirements
     public static readonly WEAPON_LEVELS = [
@@ -19,12 +23,13 @@ export class WeaponItem extends EquippableItem {
         { requiredTech: 2500, damagePercent: 14.00 } // ω
     ];
 
-    constructor(id: string, name: string, buyPrice: number, sellPrice: number, weaponType: WeaponType, damage: number, model: string, level: number = 1) {
+    constructor(id: string, name: string, buyPrice: number, sellPrice: number, weaponType: WeaponType, damage: number, model: string, tier: WeaponTierDefinition,level: number = 1) {
         super(id, name, buyPrice, sellPrice);
         this.weaponType = weaponType;
         this.damage = damage;
         this.model = model;
         this.level = level;
+        this.tier = tier;
     }
 
     // Return level definition by numeric level (1-based). Throws if level <= 0.
@@ -73,7 +78,7 @@ export class WeaponItem extends EquippableItem {
     }
 
     clone(newId?: string): WeaponItem {
-        return new WeaponItem(
+        const c = new WeaponItem(
             newId || this.id,
             this.name,
             this.buyPrice,
@@ -81,8 +86,10 @@ export class WeaponItem extends EquippableItem {
             this.weaponType,
             this.damage,
             this.model,
-            this.level
+            this.tier,
+            this.level,
         );
+        return c;
     }
 
     /**
@@ -93,7 +100,7 @@ export class WeaponItem extends EquippableItem {
      * @param newId Optional custom id for the clone (uses current id if not provided)
      * @returns A new WeaponItem with the specified custom stats
      */
-    cloneWith(damage: number, buyPrice: number, sellPrice: number, newId?: string): WeaponItem {
+    cloneWith(damage: number, buyPrice: number, sellPrice: number, tier?: WeaponTierDefinition, newId?: string): WeaponItem {
         const clone = new WeaponItem(
             newId || this.id,
             this.name,
@@ -102,7 +109,8 @@ export class WeaponItem extends EquippableItem {
             this.weaponType,
             damage,
             this.model,
-            this.level
+            tier ?? this.tier,
+            this.level,
         );
         return clone;
     }

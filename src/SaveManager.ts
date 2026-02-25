@@ -11,6 +11,7 @@ import { ChipItem } from './items/chips/ChipItem';
 import { NpcRegistry } from './npcs/NpcRegistry';
 import { GameProgressManager } from './GameProgressManager';
 import { Player } from './Player';
+import { WEAPON_TIERS } from './items/weapons/WeaponTier';
 
 /**
  * Interface representing the complete save data structure
@@ -287,6 +288,7 @@ export class SaveManager {
                             model: wi.model,
                             level: wi.level,
                             isEquipped: !!wi.isEquipped,
+                            tierName: wi.tier.name,
                         };
                     } else if (i instanceof CoreItem) {
                         const ci = i as any;
@@ -464,15 +466,15 @@ export class SaveManager {
                 // We use weaponType and level to find the right weapon from the repository
                 if (itemData.weaponType && itemData.level) {
                     const baseWeapon = weaponRepo.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
-                    if (baseWeapon) {
-                        const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
-                        // Set the saved properties if needed
-                        if (itemData.isEquipped) {
-                            weaponItem.isEquipped = true;
-                            player.setWeapon(weaponItem);
-                        }
-                        player.inventory.push(weaponItem);
+                    const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
+                    if (itemData.tierName) {
+                        weaponItem.tier = WEAPON_TIERS.get(itemData.tierName)!;
                     }
+                    if (itemData.isEquipped) {
+                        weaponItem.isEquipped = true;
+                        player.setWeapon(weaponItem);
+                    }
+                    player.inventory.push(weaponItem);
                 } else {
                     console.warn('Invalid weapon data in save file:', itemData);
                 }

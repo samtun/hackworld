@@ -7,6 +7,7 @@ import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { WeaponItem } from './WeaponItem';
 import { ItemDropType } from '../ItemDropType';
+import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.WEAPON;
@@ -20,14 +21,15 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
         const weaponLevel = this.determineWeaponLevel(player.getTechForWeapon(weaponType));
         const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, weaponLevel);
-        if (!weaponItem) return null;
 
         const random = Math.random();
         // avoid NaN when base is negative and exponent is non-integer
         const raw = 1.16 * random - 0.55;
-        const bonusValue = Math.sign(raw) * Math.pow(Math.abs(raw), 3.4);
+
+        // Scale the bonus spread by the player's level factor (1.0 at level 1, 0.5 at max level)
+        let bonusValue = Math.sign(raw) * Math.pow(Math.abs(raw), 3.4) * player.weaponDropBonusFactor;
+
         const bonusMultiplier = 1 + bonusValue;
-        console.log("Creating weapon drop with bonus multiplier:", bonusMultiplier);
         const finalDamage = Math.floor(weaponItem.damage * bonusMultiplier);
         const damageFactor = finalDamage / weaponItem.damage;
         const finalBuyPrice = Math.floor(weaponItem.buyPrice * damageFactor);
@@ -45,9 +47,10 @@ export class WeaponDropStrategy implements ItemDropStrategy {
             finalDamage,
             finalBuyPrice,
             finalSellPrice,
-            weaponLevel
+            weaponLevel,
+            bonusMultiplier
         );
-        console.log(`Enemy dropped ${weaponItem.name} (${weaponType}) Level ${weaponLevel} - Damage: ${finalDamage}`);
+        console.log(`Enemy dropped ${weaponItem.name} (${weaponType}) Level ${weaponLevel} - Damage: ${finalDamage}, bonus multiplier: ${bonusMultiplier.toFixed(6)}`);
         return wd;
     }
 
@@ -123,8 +126,10 @@ export class WeaponDropStrategy implements ItemDropStrategy {
             return;
         }
 
-        // Clone the weapon with bonus stats from the drop
-        const weaponItem = baseWeapon.cloneWith(drop.damage, drop.buyPrice, drop.sellPrice);
+        // Re-apply the bonus from the drop using the shared calculator so that
+        // tier assignment follows the same "only when damage changes" rule.
+        const bonusMultiplier = drop.damage / baseWeapon.damage;
+        const weaponItem = WeaponBonusCalculator.Instance.applyWeaponBonus(baseWeapon, bonusMultiplier);
 
         player.inventory.push(weaponItem);
         console.log(`Picked up ${weaponItem.name} with ${weaponItem.damage} damage`);
