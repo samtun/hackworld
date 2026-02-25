@@ -7,7 +7,6 @@ import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
 import { WeaponItem } from './WeaponItem';
 import { ItemDropType } from '../ItemDropType';
-import { WEAPON_TIERS, WeaponTier } from './WeaponTier';
 import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 
 export class WeaponDropStrategy implements ItemDropStrategy {
