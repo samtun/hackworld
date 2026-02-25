@@ -13,7 +13,7 @@ export class HealingSkill extends Skill {
     private readonly BASE_HEAL_AMOUNT = 40;
     private readonly BASE_DURATION = 1.5;
     private readonly PARTICLE_COUNT = 60;
-    private readonly RECOVERY_DURATION = 10; // Seconds of post-heal recovery at Overclocked+
+    private readonly RECOVERY_DURATION = 5; // Seconds of post-heal recovery at Overclocked+
 
     private particles: THREE.Mesh[] = [];
     private effectTimer: number = 0;
@@ -30,9 +30,11 @@ export class HealingSkill extends Skill {
     private recoveryPlayer: Player | null = null;
     private recoveryRemaining: number = 0;
     private recoveryHealPerSecond: number = 0;
+    private recoveryInterval = 1.0; // Heal every second during recovery
+    private recoveryTimer: number = 0;
 
     constructor(onCompletedCallback: () => void) {
-        super('Healing', 3, 20, onCompletedCallback, 'images/ui_icons/heal.png');
+        super('Healing', 5, 20, onCompletedCallback, 'images/ui_icons/heal.png');
     }
 
     protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {
@@ -58,7 +60,7 @@ export class HealingSkill extends Skill {
         // Setup Overclocked+ recovery HoT
         if (tier === Tier.OVERCLOCKED || tier === Tier.ZERODAY || tier === Tier.LEET) {
             this.recoveryPlayer = player;
-            this.recoveryHealPerSecond = healAmount * 0.05;
+            this.recoveryHealPerSecond = healAmount * 0.2;
             this.recoveryRemaining = this.RECOVERY_DURATION;
         }
 
@@ -156,10 +158,11 @@ export class HealingSkill extends Skill {
         // Apply ongoing recovery healing (Overclocked+)
         if (this.recoveryRemaining > 0 && this.recoveryPlayer) {
             this.recoveryRemaining -= dt;
-            this.recoveryPlayer.hp = Math.min(
-                this.recoveryPlayer.hp + this.recoveryHealPerSecond * dt,
-                this.recoveryPlayer.maxHp
-            );
+            this.recoveryTimer += dt;
+            if (this.recoveryTimer >= this.recoveryInterval) {
+                this.recoveryTimer -= this.recoveryInterval;
+                this.recoveryPlayer.heal(this.recoveryHealPerSecond, 0);
+            }
             if (this.recoveryRemaining <= 0) {
                 this.recoveryPlayer = null;
             }
