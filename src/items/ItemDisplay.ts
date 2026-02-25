@@ -3,7 +3,7 @@ import { ItemLevelHelper } from './ItemLevelHelper';
 import { WeaponItem } from './weapons/WeaponItem';
 import { ChipItem } from './chips/ChipItem';
 import { CoreItem } from './cores/CoreItem';
-import { Tier } from './weapons/WeaponTier';
+import { Tier } from './TierManager';
 
 // Return an HTML-safe label for an item, including price text if provided.
 export function formatItemLabel(item: Item, priceText: string = ''): string {

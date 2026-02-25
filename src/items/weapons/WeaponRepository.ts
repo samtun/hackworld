@@ -1,7 +1,7 @@
 import { WeaponType } from './WeaponType';
 import { WeaponItem } from './WeaponItem';
 import weaponsData from './weapons.json';
-import { Tier, TierManager } from './WeaponTier';
+import { Tier, TierManager } from '../TierManager';
 
 /**
  * Centralized weapon repository - single source of truth for all weapons in the game

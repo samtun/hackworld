@@ -6,7 +6,7 @@ import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
 import { InteractiveEntityType } from '../../InteractiveEntityType';
 import { AssetManager } from '../../AssetManager';
-import { WeaponTierDefinition, TierManager } from './WeaponTier';
+import { WeaponTierDefinition, TierManager } from '../TierManager';
 
 /**
  * WeaponDrop entity - represents a weapon that can be picked up from the ground

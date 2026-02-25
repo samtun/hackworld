@@ -6,7 +6,7 @@ import { Player } from '../../Player';
 import { Item } from '../Item';
 import { InputManager } from '../../InputManager';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
-import { TierManager } from './WeaponTier';
+import { TierManager } from '../TierManager';
 import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 
 export class WeaponTrader extends BaseTrader {

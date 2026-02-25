@@ -5,7 +5,7 @@ import { Enemy } from '../enemies/Enemy';
 import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
 import { SkillTechType } from './SkillTechType';
-import { Tier } from '../items/weapons/WeaponTier';
+import { Tier } from '../items/TierManager';
 
 /**
  * Area Attack Skill

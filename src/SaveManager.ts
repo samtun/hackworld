@@ -11,7 +11,7 @@ import { ChipItem } from './items/chips/ChipItem';
 import { NpcRegistry } from './npcs/NpcRegistry';
 import { GameProgressManager } from './GameProgressManager';
 import { Player } from './Player';
-import { TierManager } from './items/weapons/WeaponTier';
+import { TierManager } from './items/TierManager';
 
 /**
  * Interface representing the complete save data structure

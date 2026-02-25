@@ -18,7 +18,7 @@ import { HealingSkill } from './skills/HealingSkill';
 import { AreaAttackSkill } from './skills/AreaAttackSkill';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 import { SkillTechType } from './skills/SkillTechType';
-import { Tier, TierManager } from './items/weapons/WeaponTier';
+import { Tier, TierManager } from './items/TierManager';
 
 enum ActionType {
     Idle = 'Idle',

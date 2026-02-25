@@ -1,5 +1,5 @@
 import { WeaponItem } from './WeaponItem';
-import { WeaponTierDefinition, Tier, TierManager } from './WeaponTier';
+import { WeaponTierDefinition, Tier, TierManager } from '../TierManager';
 
 /**
  * Centralises all weapon bonus/tier calculations.

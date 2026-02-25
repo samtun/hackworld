@@ -1,7 +1,7 @@
 import { EquippableItem } from '../EquippableItem';
 import { Player } from '../../Player';
 import { WeaponType } from './WeaponType';
-import { WeaponTierDefinition } from './WeaponTier';
+import { WeaponTierDefinition } from '../TierManager';
 
 export class WeaponItem extends EquippableItem {
     weaponType: WeaponType;
