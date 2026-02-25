@@ -1,3 +1,10 @@
+# [1.47.0](https://github.com/samtun/hackworld/compare/v1.46.0...v1.47.0) (2026-02-25)
+
+
+### Features
+
+* add heal floating number ([3706e40](https://github.com/samtun/hackworld/commit/3706e40e3f8217a8894a9ab6b0bae26249de4fc7))
+
 # [1.46.0](https://github.com/samtun/hackworld/compare/v1.45.0...v1.46.0) (2026-02-25)
 
 
