@@ -3,6 +3,7 @@ import { ItemLevelHelper } from './ItemLevelHelper';
 import { WeaponItem } from './weapons/WeaponItem';
 import { ChipItem } from './chips/ChipItem';
 import { CoreItem } from './cores/CoreItem';
+import { WeaponTier } from './weapons/WeaponTier';
 
 // Return an HTML-safe label for an item, including price text if provided.
 export function formatItemLabel(item: Item, priceText: string = ''): string {
@@ -11,7 +12,8 @@ export function formatItemLabel(item: Item, priceText: string = ''): string {
         const char = ItemLevelHelper.getLevelChar(item.level);
         let tierColor = "#ffffff";
         if (item instanceof WeaponItem) {
-            tierColor = item.tier.rimColor;
+            // Use slighly different color for broken tier, since the rim color is quite dark
+            tierColor = item.tier.name == WeaponTier.BROKEN ? "#CCCCCC" : item.tier.rimColor;
         }
         let label = `${escapeHtml(item.name)} <i style="font-style:italic;">${escapeHtml(char)}</i>`;
         label = `<span style="color:${escapeHtml(tierColor)}">${label}</span>`;
