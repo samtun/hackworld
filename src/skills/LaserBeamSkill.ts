@@ -28,6 +28,8 @@ export class LaserBeamSkill extends Skill {
     private forward2: THREE.Vector3 | undefined; // Leet extra beam direction
     private forward3: THREE.Vector3 | undefined; // Leet extra beam direction
     private hitEnemies: Set<Enemy> = new Set();
+    private hitEnemies2: Set<Enemy> = new Set(); // Leet: +25° beam
+    private hitEnemies3: Set<Enemy> = new Set(); // Leet: -25° beam
     private effectiveDamage: number = this.BASE_DAMAGE;
     private effectiveRadius: number = this.BASE_RADIUS;
     private isLeet: boolean = false;
@@ -49,6 +51,8 @@ export class LaserBeamSkill extends Skill {
         this.world = world;
         this.player = player;
         this.hitEnemies.clear();
+        this.hitEnemies2.clear();
+        this.hitEnemies3.clear();
 
         // Get player's forward direction
         this.forward = player.getForwardDirection();
@@ -134,10 +138,10 @@ export class LaserBeamSkill extends Skill {
         const currentLength = this.RANGE * Math.pow(progress, 2);
 
         // Check for hits on all active beams
-        this.checkBeamHits(currentLength, this.startPos, this.forward);
+        this.checkBeamHits(currentLength, this.startPos, this.forward, this.hitEnemies);
         if (this.isLeet && this.forward2 && this.forward3) {
-            this.checkBeamHits(currentLength, this.startPos, this.forward2);
-            this.checkBeamHits(currentLength, this.startPos, this.forward3);
+            this.checkBeamHits(currentLength, this.startPos, this.forward2, this.hitEnemies2);
+            this.checkBeamHits(currentLength, this.startPos, this.forward3, this.hitEnemies3);
         }
 
         if (progress >= 1) {
@@ -149,13 +153,13 @@ export class LaserBeamSkill extends Skill {
         }
     }
 
-    private checkBeamHits(currentLength: number, startPos: CANNON.Vec3, forward: THREE.Vector3): void {
+    private checkBeamHits(currentLength: number, startPos: CANNON.Vec3, forward: THREE.Vector3, hitEnemies: Set<Enemy>): void {
         if (!this.world || !this.player) return;
 
         for (const body of this.world.bodies) {
             const entity = (body as any).entity;
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                if (this.hitEnemies.has(entity)) continue;
+                if (hitEnemies.has(entity)) continue;
 
                 for (let distance = 0; distance <= currentLength; distance += 1) {
                     const checkPos = new CANNON.Vec3(
@@ -173,7 +177,7 @@ export class LaserBeamSkill extends Skill {
                         const isCriticalHit = Math.random() < this.player.getCriticalChance();
                         const damage = isCriticalHit ? this.effectiveDamage * this.player.CRITICAL_HIT_MULTIPLIER : this.effectiveDamage;
                         entity.takeDamage(damage, isCriticalHit, this.player.body.position);
-                        this.hitEnemies.add(entity);
+                        hitEnemies.add(entity);
                         this.player.tryIncrementSkillTech(SkillTechType.RANGED);
                         console.log(`Laser beam hit enemy for ${damage} damage`);
                         break;
@@ -201,6 +205,8 @@ export class LaserBeamSkill extends Skill {
         this.forward2 = undefined;
         this.forward3 = undefined;
         this.hitEnemies.clear();
+        this.hitEnemies2.clear();
+        this.hitEnemies3.clear();
 
         this.onCompletedCallback();
     }
