@@ -1,3 +1,24 @@
+# [1.45.0](https://github.com/samtun/hackworld/compare/v1.44.0...v1.45.0) (2026-02-25)
+
+
+### Bug Fixes
+
+* debounce confirm key on start menu and add logo fade + backdrop ([7cb4b55](https://github.com/samtun/hackworld/commit/7cb4b552b9463838163a3f70caace90833d9d7ab))
+* fade out current slide before advancing on click ([174bf7a](https://github.com/samtun/hackworld/commit/174bf7afc33ee353355edb6c836df616bcea464e))
+* freeze image scale before fade-out on click advance ([7d46845](https://github.com/samtun/hackworld/commit/7d468459590f95284d9b82371bd5eca519c2b5a8))
+* lore image paths ([d14ce6d](https://github.com/samtun/hackworld/commit/d14ce6dfadea1f4047f1298365fd268cf6983c24))
+* remove development environment check for start menu transition ([206312b](https://github.com/samtun/hackworld/commit/206312b2802307a5a3a7b2a8d46f8f466e82882b))
+* start screen visibility changes after loading ([3d0b812](https://github.com/samtun/hackworld/commit/3d0b812667a718b2857326a4f27b5964b8cb52e5))
+
+
+### Features
+
+* add hold-to-skip-all with progress ring and seen flag ([eaddf14](https://github.com/samtun/hackworld/commit/eaddf14becf35e64462229dfea9e53dfd15d67b6))
+* add lore introduction slideshow after start screen ([074464a](https://github.com/samtun/hackworld/commit/074464a531d5a1a83d5689e52fe5ee69f47196c9))
+* add start menu with Continue/New Game/Load Game options ([273662e](https://github.com/samtun/hackworld/commit/273662e2b092a5ed86e8bc06e188e855a92e9d77))
+* advance lore slide on click or tap ([56bbd50](https://github.com/samtun/hackworld/commit/56bbd50f2fdc6ebfbee894c00542efa98ef64c31))
+* reduce fade out speed when skipping slide ([6037a52](https://github.com/samtun/hackworld/commit/6037a52397f76e1b9b8349bce8a72137c056e216))
+
 # [1.44.0](https://github.com/samtun/hackworld/compare/v1.43.2...v1.44.0) (2026-02-24)
 
 
