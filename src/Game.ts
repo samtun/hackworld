@@ -343,28 +343,24 @@ export class Game {
         } else if (option === 'newgame') {
             this.saveManager.clearLocalStorage();
         } else if (option === 'loadgame' && file) {
-            try {
-                await this.saveManager.load(file);
-                console.log('Save file loaded successfully');
-            } catch (e) {
-                console.error('Failed to load save file', e);
-            }
+            console.log(`Loading save file: ${file.name}`);
+            await this.saveManager.load(file);
         }
-
-        const afterIntro = () => {
-            this.currentScene = Lobby.getMetadata().id;
-            this.input.initializeMobileControls();
-            this.clock.getDelta(); // Reset clock
-            this.isTransitioning = false;
-        };
 
         if (this.saveManager.isLoreIntroSeen()) {
-            afterIntro();
+            this.continueAfterIntro();
         } else {
             this.currentScene = 'lore';
-            const loreIntro = new LoreIntroduction(this.input, afterIntro);
+            const loreIntro = new LoreIntroduction(this.input, () => this.continueAfterIntro());
             loreIntro.show();
         }
+    }
+
+    private continueAfterIntro() {
+        this.currentScene = Lobby.getMetadata().id;
+        this.input.initializeMobileControls();
+        this.clock.getDelta(); // Reset clock
+        this.isTransitioning = false;
     }
 
     animate() {

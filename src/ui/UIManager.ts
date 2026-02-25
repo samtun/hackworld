@@ -522,7 +522,7 @@ export class UIManager {
     ): void {
         this.startScreenTapped = false;
 
-        const startText = this.startScreen?.querySelector('.start-text') as HTMLElement | null;
+        const startText = this.startScreen?.querySelector('#start-text') as HTMLElement | null;
         if (startText) startText.style.opacity = '0';
 
         this.startMenu = new StartMenu(
@@ -531,10 +531,9 @@ export class UIManager {
             hasSave,
             (option) => {
                 const file = this.startMenu?.getSelectedFile();
-                this.startMenu?.destroy();
-                this.startMenu = undefined;
-
                 this.triggerStartTransition(async () => {
+                    this.startMenu?.destroy();
+                    this.startMenu = undefined;
                     this.hideStartScreen();
                     onOptionSelected(option, file);
                 });

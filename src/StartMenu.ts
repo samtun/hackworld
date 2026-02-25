@@ -65,7 +65,7 @@ export class StartMenu {
         this.container = document.createElement('div');
         this.container.style.cssText = [
             'position:absolute',
-            'top:0',
+            'top:4vh',
             'left:0',
             'width:100%',
             'height:100%',
@@ -105,30 +105,12 @@ export class StartMenu {
         // Fade the logo out and show a dark backdrop behind the menu items
         const logo = container.querySelector('#game-logo') as HTMLElement | null;
         if (logo) {
-            logo.style.transition = `opacity ${MENU_FADE_MS}ms ease-in-out`;
-            logo.style.opacity = '0';
+            logo.style.top = '20vh';
         }
-
-        const backdrop = document.createElement('div');
-        backdrop.style.cssText = [
-            'position:absolute',
-            'top:0',
-            'left:0',
-            'width:100%',
-            'height:100%',
-            'background:rgba(0,0,0,0.7)',
-            'opacity:0',
-            `transition:opacity ${MENU_FADE_MS}ms ease-in-out`,
-            'z-index:4',
-            'pointer-events:none',
-        ].join(';');
-        this.backdrop = backdrop;
-        container.appendChild(backdrop);
 
         // Fade in backdrop and menu together
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
-                backdrop.style.opacity = '1';
                 this.container.style.opacity = '1';
                 this.container.style.pointerEvents = 'auto';
             });
@@ -143,12 +125,13 @@ export class StartMenu {
         const fontWeight = selected ? 'bold' : 'normal';
         return [
             'font-family:"Share Tech",sans-serif',
-            'font-size:24px',
+            'font-size:6vh',
             `color:${color}`,
             `font-weight:${fontWeight}`,
             'user-select:none',
             '-webkit-user-select:none',
             'text-align:center',
+            'text-shadow:-2px -2px 2px #000, 2px 2px 2px #000, -2px 2px 2px #000, 2px -2px 2px #000',
             'transition:color 0.15s,font-weight 0.15s',
         ].join(';');
     }
@@ -185,12 +168,9 @@ export class StartMenu {
         if (item.id === 'loadgame') {
             // Open file picker; fire callback when file is chosen
             this.fileInput.onchange = () => {
-                const file = this.fileInput.files?.[0];
-                if (file) {
+                if (this.fileInput.files?.[0]) {
                     this.stopLoop();
                     this.onSelect('loadgame');
-                    // Attach file to the event so caller can retrieve it
-                    (this.container as any)._selectedFile = file;
                 }
                 this.fileInput.value = '';
             };
@@ -204,7 +184,7 @@ export class StartMenu {
 
     /** Returns the file selected via the Load Game dialog (if any). */
     getSelectedFile(): File | undefined {
-        return (this.container as any)._selectedFile;
+        return this.fileInput.files?.[0];
     }
 
     private inputLoop(): void {
