@@ -258,7 +258,7 @@ export class SaveManager {
                 expRequired: player.expRequired,
                 maxHp: player.maxHp,
                 maxTp: player.maxTp,
-                money: player.money,
+                money: player.bits,
                 xData: player.xData,
                 boosterPacks: player.boosterPacks,
                 statPointsAvailable: player.statPointsAvailable,
@@ -434,7 +434,7 @@ export class SaveManager {
         player.maxHp = saveData.player.maxHp;
         player.tp = saveData.player.maxTp;
         player.maxTp = saveData.player.maxTp;
-        player.money = saveData.player.money;
+        player.bits = saveData.player.money;
         player.xData = saveData.player.xData;
         player.boosterPacks = saveData.player.boosterPacks;
         player.statPointsAvailable = saveData.player.statPointsAvailable;

@@ -45,8 +45,8 @@ export class HealingSkill extends Skill {
         switch (tier) {
             case Tier.MAINTAINED:  return 2;
             case Tier.OVERCLOCKED: return 3;
-            case Tier.ZERODAY:     return 5;
-            case Tier.LEET:        return 8;
+            case Tier.ZERODAY:     return 6;
+            case Tier.LEET:        return 10;
             default:               return 1;
         }
     }
@@ -175,7 +175,7 @@ export class HealingSkill extends Skill {
             this.recoveryTimer += dt;
             if (this.recoveryTimer >= this.recoveryInterval) {
                 this.recoveryTimer -= this.recoveryInterval;
-                this.recoveryPlayer.heal(this.recoveryHealPerSecond, 0);
+                this.recoveryPlayer.heal(this.recoveryHealPerSecond, 0, true);
             }
             if (this.recoveryRemaining <= 0) {
                 this.recoveryPlayer = null;

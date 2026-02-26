@@ -150,14 +150,6 @@ export class DebugValueEditor {
         statsContainer.style.flexDirection = 'column';
         statsContainer.style.gap = '8px';
 
-        // Row 1: Level (full width)
-        const levelRow = document.createElement('div');
-        levelRow.style.display = 'grid';
-        levelRow.style.gridTemplateColumns = '1fr 1fr';
-        levelRow.style.gap = '10px';
-        this.createStatInputInRow(levelRow, 'level', 'Level:', 'number');
-        statsContainer.appendChild(levelRow);
-
         // Row 2: HP split (full width)
         const hpRow = document.createElement('div');
         hpRow.style.display = 'flex';
@@ -171,24 +163,6 @@ export class DebugValueEditor {
         tpRow.style.gap = '8px';
         this.createSplitStatInputInRow(tpRow, 'tp', 'maxTp', 'TP:', 'number');
         statsContainer.appendChild(tpRow);
-
-        // Row 4: Strength + Agility (two columns)
-        const strengthAgilityRow = document.createElement('div');
-        strengthAgilityRow.style.display = 'grid';
-        strengthAgilityRow.style.gridTemplateColumns = '1fr 1fr';
-        strengthAgilityRow.style.gap = '10px';
-        this.createStatInputInRow(strengthAgilityRow, 'strength', 'Strength:', 'number');
-        this.createStatInputInRow(strengthAgilityRow, 'agility', 'Agility:', 'number');
-        statsContainer.appendChild(strengthAgilityRow);
-
-        // Row 5: Defense + Luck (two columns)
-        const defenseLuckRow = document.createElement('div');
-        defenseLuckRow.style.display = 'grid';
-        defenseLuckRow.style.gridTemplateColumns = '1fr 1fr';
-        defenseLuckRow.style.gap = '10px';
-        this.createStatInputInRow(defenseLuckRow, 'defense', 'Defense:', 'number');
-        this.createStatInputInRow(defenseLuckRow, 'luck', 'Luck:', 'number');
-        statsContainer.appendChild(defenseLuckRow);
 
         // Row 6: X-Data + Money (two columns)
         const xDataMoneyRow = document.createElement('div');
@@ -675,7 +649,7 @@ export class DebugValueEditor {
         this.updateInputValue('luck', player.luckPoints);
         this.updateInputValue('level', player.level);
         this.updateInputValue('xData', player.xData);
-        this.updateInputValue('money', player.money);
+        this.updateInputValue('money', player.bits);
         
         // Update game progress
         const progressManager = GameProgressManager.Instance;
@@ -693,16 +667,9 @@ export class DebugValueEditor {
 
         // Apply changes from inputs to player (if user has modified them)
         this.applyInputValue('hp', (val) => { player.hp = Math.max(0, Math.min(val, player.maxHp)); });
-        this.applyInputValue('maxHp', (val) => { player.maxHp = Math.max(1, val); });
         this.applyInputValue('tp', (val) => { player.tp = Math.max(0, Math.min(val, player.maxTp)); });
-        this.applyInputValue('maxTp', (val) => { player.maxTp = Math.max(1, val); });
-        this.applyInputValue('strength', (val) => { player.strengthPoints = Math.max(0, val); });
-        this.applyInputValue('defense', (val) => { player.defensePoints = Math.max(0, val); });
-        this.applyInputValue('agility', (val) => { player.agilityPoints = Math.max(0, val); });
-        this.applyInputValue('luck', (val) => { player.luckPoints = Math.max(0, val); });
-        this.applyInputValue('level', (val) => { player.level = Math.max(1, val); });
         this.applyInputValue('xData', (val) => { player.xData = Math.max(0, val); });
-        this.applyInputValue('money', (val) => { player.money = Math.max(0, val); });
+        this.applyInputValue('money', (val) => { player.bits = Math.max(0, val); });
         
         // Apply game progress changes
         this.applyInputValue('gameProgress', (val) => { 

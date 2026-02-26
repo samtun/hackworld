@@ -28,8 +28,8 @@ export class MoneyDropStrategy implements ItemDropStrategy {
      */
     pickup(drop: ItemDrop, player: Player): void {
         const moneyDrop = drop as MoneyDrop;
-        player.money += moneyDrop.amount;
-        console.log(`Picked up ${moneyDrop.amount} bits! Total: ${player.money}`);
+        player.bits += moneyDrop.amount;
+        console.log(`Picked up ${moneyDrop.amount} bits! Total: ${player.bits}`);
     }
 
     /**
