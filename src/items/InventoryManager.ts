@@ -11,6 +11,11 @@ import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';
 import { WeaponType } from './weapons/WeaponType';
 import { SkillTechType } from '../skills/SkillTechType';
+import {
+    ICON_HP, ICON_TP, ICON_STRENGTH, ICON_DEFENSE, ICON_AGILITY, ICON_LUCK,
+    ICON_BITS, ICON_NEXTLVL, ICON_XDATA, ICON_BOOSTER,
+    getWeaponIcon, getSkillTechIcon
+} from '../ui/StatIcons';
 
 export { Item }; // Re-export Item for other files that might import it from here
 
@@ -341,35 +346,35 @@ export class InventoryManager {
         // Bits and exp to next level
         const miscHTML = `
             <div style="display:grid; grid-template-columns:1fr 1fr;">
-                <div><span style="font-size:13px; color:#aaa;">Bits</span><br/><span>${player.bits}</span></div>
-                <div><span style="font-size:13px; color:#aaa;">Next lvl</span><br/><span>${player.expRequired - player.exp}</span></div>
-                <div><span style="font-size:13px; color:#aaa;">X-Data</span><br><span>${player.xData}</span></div>
-                <div><span style="font-size:13px; color:#aaa;">Booster Packs</span><br><span>${player.boosterPacks}</span></div>
+                <div><span style="font-size:13px; color:#aaa;">${ICON_BITS}Bits</span><br/><span>${player.bits}</span></div>
+                <div><span style="font-size:13px; color:#aaa;">${ICON_NEXTLVL}Next lvl</span><br/><span>${player.expRequired - player.exp}</span></div>
+                <div><span style="font-size:13px; color:#aaa;">${ICON_XDATA}X-Data</span><br><span>${player.xData}</span></div>
+                <div><span style="font-size:13px; color:#aaa;">${ICON_BOOSTER}Booster Packs</span><br><span>${player.boosterPacks}</span></div>
             </div>${sep}`;
 
         // 2-column grid for stats
         const statsHTML = `
             <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-weight: bold;">Stats</span>${hasStatPoints ? `<span style="color:#ffd700; font-size:14px;">+${player.statPointsAvailable}</span>` : ''}</div>${sep}
             <div style="display:grid; grid-template-columns:1fr 1fr;margin:4px 0;">
-                ${statCell('Max HP', player.maxHp, StatType.HP)}
-                ${statCell('Max TP', player.maxTp, StatType.TP)}
-                ${statCell('Strength', player.strength, StatType.STRENGTH)}
-                ${statCell('Defense', player.defense, StatType.DEFENSE)}
-                ${statCell('Agility', player.agility, StatType.AGILITY)}
-                ${statCell('Luck', player.luck, StatType.LUCK)}
+                ${statCell(`${ICON_HP}Max HP`, player.maxHp, StatType.HP)}
+                ${statCell(`${ICON_TP}Max TP`, player.maxTp, StatType.TP)}
+                ${statCell(`${ICON_STRENGTH}Strength`, player.strength, StatType.STRENGTH)}
+                ${statCell(`${ICON_DEFENSE}Defense`, player.defense, StatType.DEFENSE)}
+                ${statCell(`${ICON_AGILITY}Agility`, player.agility, StatType.AGILITY)}
+                ${statCell(`${ICON_LUCK}Luck`, player.luck, StatType.LUCK)}
             </div>`;
 
         // Tech in 2-column grid
         const techHTML = `${sep}
             <div style="font-weight: bold;">Tech</div>${sep}
             <div style="display:grid; grid-template-columns:1fr 1fr;">
-                <div><span style="font-size:13px; color:#aaa;">Sword</span><br>${player.tech[WeaponType.SWORD]}</div>
-                <div><span style="font-size:13px; color:#aaa;">Double Sword</span><br>${player.tech[WeaponType.DUAL_BLADE]}</div>
-                <div><span style="font-size:13px; color:#aaa;">Lance</span><br>${player.tech[WeaponType.LANCE]}</div>
-                <div><span style="font-size:13px; color:#aaa;">Hammer</span><br>${player.tech[WeaponType.HAMMER]}</div>
-                <div><span style="font-size:13px; color:#aaa;">${SkillTechType.RECOVERY}</span><br>${player.skillTech[SkillTechType.RECOVERY]}</div>
-                <div><span style="font-size:13px; color:#aaa;">${SkillTechType.BLAST}</span><br>${player.skillTech[SkillTechType.BLAST]}</div>
-                <div style="grid-column:1/-1;"><span style="font-size:13px; color:#aaa;">${SkillTechType.RANGED}</span><br>${player.skillTech[SkillTechType.RANGED]}</div>
+                <div><span style="font-size:13px; color:#aaa;">${getWeaponIcon(WeaponType.SWORD)}Sword</span><br>${player.tech[WeaponType.SWORD]}</div>
+                <div><span style="font-size:13px; color:#aaa;">${getWeaponIcon(WeaponType.DUAL_BLADE)}Double Sword</span><br>${player.tech[WeaponType.DUAL_BLADE]}</div>
+                <div><span style="font-size:13px; color:#aaa;">${getWeaponIcon(WeaponType.LANCE)}Lance</span><br>${player.tech[WeaponType.LANCE]}</div>
+                <div><span style="font-size:13px; color:#aaa;">${getWeaponIcon(WeaponType.HAMMER)}Hammer</span><br>${player.tech[WeaponType.HAMMER]}</div>
+                <div><span style="font-size:13px; color:#aaa;">${getSkillTechIcon(SkillTechType.RECOVERY)}${SkillTechType.RECOVERY}</span><br>${player.skillTech[SkillTechType.RECOVERY]}</div>
+                <div><span style="font-size:13px; color:#aaa;">${getSkillTechIcon(SkillTechType.BLAST)}${SkillTechType.BLAST}</span><br>${player.skillTech[SkillTechType.BLAST]}</div>
+                <div style="grid-column:1/-1;"><span style="font-size:13px; color:#aaa;">${getSkillTechIcon(SkillTechType.RANGED)}${SkillTechType.RANGED}</span><br>${player.skillTech[SkillTechType.RANGED]}</div>
             </div>`;
 
         return miscHTML + statsHTML + techHTML;
