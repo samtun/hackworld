@@ -1,3 +1,18 @@
+# [1.48.0](https://github.com/samtun/hackworld/compare/v1.47.0...v1.48.0) (2026-02-26)
+
+
+### Bug Fixes
+
+* leet tier laser beam directions ([bf3d63a](https://github.com/samtun/hackworld/commit/bf3d63a5bb4737423622a73a05ac3a00fbbed220))
+* make each laser beam hit independently ([59692ff](https://github.com/samtun/hackworld/commit/59692ff6f53592d61f34b372b02bdefdaeff230e))
+
+
+### Features
+
+* add skill tech points and tier-based skill scaling ([5ee754d](https://github.com/samtun/hackworld/commit/5ee754da9978e941767dd51df032123dad527534))
+* make heal skill recovery execute each second ([7b37566](https://github.com/samtun/hackworld/commit/7b375661405b98c0fccc05ebedc40751d923365a))
+* scale skill TP cost per tier (×1/2/3/5/8 for Stable/Maintained/Overclocked/ZeroDay/Leet) ([d37d43f](https://github.com/samtun/hackworld/commit/d37d43fae8bcfcd7ff5e4d5a4d69a5e084749818))
+
 # [1.47.0](https://github.com/samtun/hackworld/compare/v1.46.0...v1.47.0) (2026-02-25)
 
 
