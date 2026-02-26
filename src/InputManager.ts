@@ -440,4 +440,16 @@ export class InputManager {
         const currentState = this.isSkill3Pressed();
         return !this.previousSkill3State && currentState;
     }
+
+    // Returns the right thumbstick Y-axis value (-1 to 1). Positive = down, negative = up.
+    getRightThumbstickY(): number {
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                const axisY = gp.axes[3]; // Right stick Y is axis 3 on Xbox/standard gamepad
+                if (Math.abs(axisY) > 0.15) return axisY;
+            }
+        }
+        return 0;
+    }
 }

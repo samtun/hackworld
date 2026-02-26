@@ -11,7 +11,7 @@ import { ChipItem } from './items/chips/ChipItem';
 import { NpcRegistry } from './npcs/NpcRegistry';
 import { GameProgressManager } from './GameProgressManager';
 import { Player } from './Player';
-import { WEAPON_TIERS } from './items/weapons/WeaponTier';
+import { TierManager } from './items/TierManager';
 
 /**
  * Interface representing the complete save data structure
@@ -36,6 +36,9 @@ export interface SaveData {
 
         // Weapon tech (per-type)
         tech: Record<string, number>;
+
+        // Skill tech (per-skill type)
+        skillTech: Record<string, number>;
 
         // Upgrades (from X-Data)
         strengthUpgrades: number;
@@ -255,7 +258,7 @@ export class SaveManager {
                 expRequired: player.expRequired,
                 maxHp: player.maxHp,
                 maxTp: player.maxTp,
-                money: player.money,
+                money: player.bits,
                 xData: player.xData,
                 boosterPacks: player.boosterPacks,
                 statPointsAvailable: player.statPointsAvailable,
@@ -311,7 +314,8 @@ export class SaveManager {
                     }
                     return structuredClone(i);
                 }),
-                tech: structuredClone((player as any).tech || {})
+                tech: structuredClone((player as any).tech || {}),
+                skillTech: structuredClone(player.skillTech || {})
             },
             cardCollection: cardCollection.getSaveData(),
             npcDialogueShown: NpcRegistry.Instance.getShownDialogueList(),
@@ -430,7 +434,7 @@ export class SaveManager {
         player.maxHp = saveData.player.maxHp;
         player.tp = saveData.player.maxTp;
         player.maxTp = saveData.player.maxTp;
-        player.money = saveData.player.money;
+        player.bits = saveData.player.money;
         player.xData = saveData.player.xData;
         player.boosterPacks = saveData.player.boosterPacks;
         player.statPointsAvailable = saveData.player.statPointsAvailable;
@@ -454,6 +458,11 @@ export class SaveManager {
             (player as any).tech = structuredClone(saveData.player.tech);
         }
 
+        // Restore skill tech
+        if (saveData.player.skillTech) {
+            player.skillTech = structuredClone(saveData.player.skillTech) as any;
+        }
+
         // Restore inventory
         player.inventory = [];
         const weaponRepo = WeaponRepository.Instance;
@@ -468,7 +477,7 @@ export class SaveManager {
                     const baseWeapon = weaponRepo.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
                     const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
                     if (itemData.tierName) {
-                        weaponItem.tier = WEAPON_TIERS.get(itemData.tierName)!;
+                        weaponItem.tier = TierManager.Instance.tiers.get(itemData.tierName)!;
                     }
                     if (itemData.isEquipped) {
                         weaponItem.isEquipped = true;

@@ -6,7 +6,7 @@ import { Player } from '../../Player';
 import { Item } from '../Item';
 import { InputManager } from '../../InputManager';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
-import { WEAPON_TIERS } from './WeaponTier';
+import { TierManager } from '../TierManager';
 import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 
 export class WeaponTrader extends BaseTrader {
@@ -74,7 +74,7 @@ export class WeaponTrader extends BaseTrader {
         // Random bonus entries
         // Loop 2 times over all tiers to get a good mix of potential weapon items
         for (let i = 0; i < 2; i++) {
-            for (const tier of WEAPON_TIERS.values()) {
+            for (const tier of TierManager.Instance.tiers.values()) {
                 const type = WeaponTrader.ALL_WEAPON_TYPES[
                     Math.floor(Math.random() * WeaponTrader.ALL_WEAPON_TYPES.length)
                 ];

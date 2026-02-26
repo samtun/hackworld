@@ -10,6 +10,7 @@ import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';
 import { WeaponType } from './weapons/WeaponType';
+import { SkillTechType } from '../skills/SkillTechType';
 
 export { Item }; // Re-export Item for other files that might import it from here
 
@@ -35,6 +36,9 @@ export class InventoryManager {
     private lastNavigateDownState: boolean = false;
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
+
+    // Scrollable stats panel reference for R-Thumbstick scrolling
+    private statsScrollPanel: HTMLDivElement | null = null;
 
     private menuManager: MenuManager;
     private uiManager: UIManager;
@@ -67,6 +71,7 @@ export class InventoryManager {
         statsPanel.style.fontSize = '18px';
         statsPanel.style.display = 'flex';
         statsPanel.style.flexDirection = 'column';
+        statsPanel.style.overflow = 'hidden';
         windowDiv.appendChild(statsPanel);
 
         // Level display container with stat points
@@ -75,6 +80,7 @@ export class InventoryManager {
         levelContainer.style.justifyContent = 'space-between';
         levelContainer.style.alignItems = 'center';
         levelContainer.style.marginBottom = '20px';
+        levelContainer.style.flexShrink = '0';
         statsPanel.appendChild(levelContainer);
 
         // Level display (left side)
@@ -86,18 +92,15 @@ export class InventoryManager {
         levelDisplay.style.textShadow = '2px 2px 0px #000';
         levelContainer.appendChild(levelDisplay);
 
-        // Stat points display (right side)
-        const statPointsDisplay = document.createElement('div');
-        statPointsDisplay.id = 'stat-points-display';
-        statPointsDisplay.style.fontSize = '24px';
-        statPointsDisplay.style.fontWeight = 'bold';
-        statPointsDisplay.style.color = '#ffd700'; // Gold color
-        statPointsDisplay.style.textShadow = '2px 2px 0px #000';
-        statPointsDisplay.style.display = 'none'; // Hidden by default
-        levelContainer.appendChild(statPointsDisplay);
+        // Scrollable container for the stats content
+        const statsScrollPanel = document.createElement('div');
+        statsScrollPanel.style.overflowY = 'auto';
+        statsScrollPanel.style.flex = '1';
+        statsPanel.appendChild(statsScrollPanel);
+        this.statsScrollPanel = statsScrollPanel;
 
         this.statsText = document.createElement('div');
-        statsPanel.appendChild(this.statsText);
+        statsScrollPanel.appendChild(this.statsText);
 
         // 3. Loot Panel (Top Right)
         this.lootPanel = this.menuManager.createPanel({
@@ -182,17 +185,6 @@ export class InventoryManager {
             levelDisplay.innerText = `Level ${player.level}`;
         }
         
-        // Update stat points display if available
-        const statPointsDisplay = document.getElementById('stat-points-display');
-        if (statPointsDisplay) {
-            if (player.statPointsAvailable > 0) {
-                statPointsDisplay.innerText = `${player.statPointsAvailable}`;
-                statPointsDisplay.style.display = 'block';
-            } else {
-                statPointsDisplay.style.display = 'none';
-            }
-        }
-
         // Update Stats
         this.statsText.innerHTML = this.generateStatsHTML(player);
         
@@ -267,8 +259,7 @@ export class InventoryManager {
                     if (success) {
                         this.needsRender = true;
                     } else {
-                        // Shake the stats panel if can't add point
-                        shakeElement(this.statsText);
+                        console.warn(`Cannot add stat point to ${statType}`);
                     }
                 }
             });
@@ -280,6 +271,12 @@ export class InventoryManager {
         const navigateDown = input.isNavigateDownPressed();
         const select = input.isSelectPressed();
         const cancel = input.isCancelPressed();
+
+        // Scroll stats panel with R-Thumbstick
+        const thumbstickY = input.getRightThumbstickY();
+        if (thumbstickY !== 0 && this.statsScrollPanel) {
+            this.statsScrollPanel.scrollTop += thumbstickY * 8;
+        }
 
         // Cancel/Close inventory (with debouncing)
         if (cancel && !this.lastCancelState) {
@@ -328,79 +325,54 @@ export class InventoryManager {
 
     private generateStatsHTML(player: Player): string {
         const hasStatPoints = player.statPointsAvailable > 0;
-        
-        // Helper function to create a stat row with optional + button
-        const createStatRow = (label: string, value: string | number, statType?: StatType) => {
-            const buttonHTML = hasStatPoints && statType && statType !== StatType.HP && statType !== StatType.TP
-                ? `<button class="stat-add-btn" data-stat="${statType}" style="margin-left: 10px; padding: 2px 8px; cursor: pointer; background: #666; color: #fff; border: 1px solid #fff; border-radius: 3px; font-family: inherit; font-size: 14px;">+</button>`
+        const sep = `<div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%; margin: 4px 0;"></div>`;
+
+        // Helper to create a stat cell with optional + button
+        const statCell = (label: string, value: number, statType?: StatType) => {
+            const buttonHTML = hasStatPoints && statType && statType !== StatType.HP && statType !== StatType.TP && value < player.MAX_STAT_VALUE
+                ? `<button class="stat-add-btn" data-stat="${statType}" style="margin-right: 4px; padding: 1px 6px; cursor: pointer; background: #666; color: #fff; border: 1px solid #fff; border-radius: 3px; font-family: inherit; font-size: 13px;">+</button>`
                 : '';
-            
-            return `
-                <div style="display:flex; justify-content:space-between; align-items:center; padding: 5px 0;">
-                    <span>${label}</span> 
-                    <span style="display: flex; align-items: center;">
-                        ${value}${buttonHTML}
-                    </span>
-                </div>
-            `;
+            return `<div>
+                <span style="font-size:13px; color:#aaa;">${label}</span><br>
+                <span style="display:flex; align-items:center; justify-content:space-between; padding-right:4px;">${value}${buttonHTML}</span>
+            </div>`;
         };
+        
+        // Bits and exp to next level
+        const miscHTML = `
+            <div style="display:grid; grid-template-columns:1fr 1fr;">
+                <div><span style="font-size:13px; color:#aaa;">Bits</span><br/><span>${player.bits}</span></div>
+                <div><span style="font-size:13px; color:#aaa;">Next lvl</span><br/><span>${player.expRequired - player.exp}</span></div>
+                <div><span style="font-size:13px; color:#aaa;">X-Data</span><br><span>${player.xData}</span></div>
+                <div><span style="font-size:13px; color:#aaa;">Booster Packs</span><br><span>${player.boosterPacks}</span></div>
+            </div>${sep}`;
 
-        const stats = [
-            createStatRow('HP', `${Math.ceil(player.hp)} / ${player.maxHp}`, StatType.HP),
-            createStatRow('TP', `${Math.ceil(player.tp)} / ${player.maxTp}`, StatType.TP),
-            createStatRow('Strength', player.strength, StatType.STRENGTH),
-            createStatRow('Defense', player.defense, StatType.DEFENSE),
-            createStatRow('Agility', player.agility, StatType.AGILITY),
-            createStatRow('Luck', player.luck, StatType.LUCK),
-            createStatRow('Bits', player.money)
-        ];
+        // 2-column grid for stats
+        const statsHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;"><span style="font-weight: bold;">Stats</span>${hasStatPoints ? `<span style="color:#ffd700; font-size:14px;">+${player.statPointsAvailable}</span>` : ''}</div>${sep}
+            <div style="display:grid; grid-template-columns:1fr 1fr;margin:4px 0;">
+                ${statCell('Max HP', player.maxHp, StatType.HP)}
+                ${statCell('Max TP', player.maxTp, StatType.TP)}
+                ${statCell('Strength', player.strength, StatType.STRENGTH)}
+                ${statCell('Defense', player.defense, StatType.DEFENSE)}
+                ${statCell('Agility', player.agility, StatType.AGILITY)}
+                ${statCell('Luck', player.luck, StatType.LUCK)}
+            </div>`;
 
-        const statsHTML = stats.join(`<div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%;"></div>`);
+        // Tech in 2-column grid
+        const techHTML = `${sep}
+            <div style="font-weight: bold;">Tech</div>${sep}
+            <div style="display:grid; grid-template-columns:1fr 1fr;">
+                <div><span style="font-size:13px; color:#aaa;">Sword</span><br>${player.tech[WeaponType.SWORD]}</div>
+                <div><span style="font-size:13px; color:#aaa;">Double Sword</span><br>${player.tech[WeaponType.DUAL_BLADE]}</div>
+                <div><span style="font-size:13px; color:#aaa;">Lance</span><br>${player.tech[WeaponType.LANCE]}</div>
+                <div><span style="font-size:13px; color:#aaa;">Hammer</span><br>${player.tech[WeaponType.HAMMER]}</div>
+                <div><span style="font-size:13px; color:#aaa;">${SkillTechType.RECOVERY}</span><br>${player.skillTech[SkillTechType.RECOVERY]}</div>
+                <div><span style="font-size:13px; color:#aaa;">${SkillTechType.BLAST}</span><br>${player.skillTech[SkillTechType.BLAST]}</div>
+                <div style="grid-column:1/-1;"><span style="font-size:13px; color:#aaa;">${SkillTechType.RANGED}</span><br>${player.skillTech[SkillTechType.RANGED]}</div>
+            </div>`;
 
-        // Add X-Data display
-        const xDataHTML = `
-            <div style="height: 2px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
-            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span style="color: #00ffff;">X-Data</span> <span style="color: #00ffff;">${player.xData}</span>
-            </div>
-        `;
-
-        // Add Booster Packs display
-        const boosterPacksHTML = `
-            <div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%;"></div>
-            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span style="color: #ffaa00;">Booster Packs</span> <span style="color: #ffaa00;">${player.boosterPacks}</span>
-            </div>
-        `;
-
-        // Add EXP display
-        const expHTML = `
-            <div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
-            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span style="color: #ffaa00;">EXP to Next</span> <span style="color: #ffaa00;">${player.expRequired - player.exp}</span>
-            </div>
-        `;
-
-        // Add Tech display
-        const techHTML = `
-            <div style="height: 2px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%; margin: 10px 0;"></div>
-            <div style="font-weight: bold; padding: 5px 0;">Tech</div>
-            <div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%;"></div>
-            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span>Sword</span> <span>${player.tech[WeaponType.SWORD]}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span>Double Sword</span> <span>${player.tech[WeaponType.DUAL_BLADE]}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span>Lance</span> <span>${player.tech[WeaponType.LANCE]}</span>
-            </div>
-            <div style="display:flex; justify-content:space-between; padding: 5px 0;">
-                <span>Hammer</span> <span>${player.tech[WeaponType.HAMMER]}</span>
-            </div>
-        `;
-
-        return statsHTML + xDataHTML + techHTML + boosterPacksHTML + expHTML;
+        return miscHTML + statsHTML + techHTML;
     }
 
     private shakeItem(index: number) {

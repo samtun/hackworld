@@ -1,5 +1,5 @@
 import { WeaponItem } from './WeaponItem';
-import { WeaponTierDefinition, getWeaponTierForMultiplier, WEAPON_TIERS, WeaponTier } from './WeaponTier';
+import { WeaponTierDefinition, Tier, TierManager } from '../TierManager';
 
 /**
  * Centralises all weapon bonus/tier calculations.
@@ -45,14 +45,14 @@ export class WeaponBonusCalculator {
                 weapon.damage,
                 weapon.buyPrice,
                 weapon.sellPrice,
-                WEAPON_TIERS.get(WeaponTier.STABLE)!,
+                TierManager.Instance.tiers.get(Tier.STABLE)!,
             );
         }
 
         // Use the actual applied ratio (after floor-rounding) for tier lookup so
         // that the displayed tier matches the real damage change, not the raw roll.
         const damageFactor = finalDamage / weapon.damage;
-        const tier = getWeaponTierForMultiplier(damageFactor);
+        const tier = TierManager.Instance.getWeaponTierForMultiplier(damageFactor);
         return weapon.cloneWith(
             finalDamage,
             Math.floor(weapon.buyPrice * damageFactor),

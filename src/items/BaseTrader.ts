@@ -230,7 +230,7 @@ export abstract class BaseTrader {
 
     protected render(player: Player) {
         if (!this.traderList || !this.playerList) return;
-        if (this.playerMoneyText) this.playerMoneyText.innerText = `${player.money} BITS`;
+        if (this.playerMoneyText) this.playerMoneyText.innerText = `${player.bits} BITS`;
         this.renderItemList(this.traderList, this.traderInventory, this.activePanel === TraderPanel.TRADER, TradeMode.BUY, player);
         const playerItems = this.filterPlayerInventory(player);
         this.renderItemList(this.playerList, playerItems as Item[], this.activePanel === TraderPanel.PLAYER, TradeMode.SELL, player);
@@ -248,7 +248,7 @@ export abstract class BaseTrader {
             const itemDiv = document.createElement('div');
             const price = mode === TradeMode.BUY ? item.buyPrice : item.sellPrice;
             const priceText = price !== undefined ? ` (${price} bits)` : '';
-            const canAfford = mode === TradeMode.SELL || (price !== undefined && player.money >= price);
+            const canAfford = mode === TradeMode.SELL || (price !== undefined && player.bits >= price);
             itemDiv.innerHTML = formatItemLabel(item, priceText);
             const isSelected = isActive && index === this.selectedIndex;
             Object.assign(itemDiv.style, { padding: '8px', backgroundColor: isSelected ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.TRANSPARENT, border: isSelected ? '2px solid #fff' : '2px solid transparent', opacity: canAfford ? '1' : '0.5', transition: 'transform 0.1s', position: 'relative' });
@@ -299,8 +299,8 @@ export abstract class BaseTrader {
         if (this.activePanel === TraderPanel.TRADER) {
             const item = this.traderInventory[this.selectedIndex];
             if (item && item.buyPrice !== undefined) {
-                if (player.money >= item.buyPrice) {
-                    player.money -= item.buyPrice;
+                if (player.bits >= item.buyPrice) {
+                    player.bits -= item.buyPrice;
                     // Use crypto.randomUUID() for better uniqueness than Date.now()
                     const clone: Item = item.clone();
                     if (clone instanceof EquippableItem) {
@@ -323,7 +323,7 @@ export abstract class BaseTrader {
                     this.shakeItem(this.selectedIndex);
                     return;
                 }
-                player.money += item.sellPrice;
+                player.bits += item.sellPrice;
                 // Use crypto.randomUUID() for better uniqueness than Date.now()
                 const sold = item.clone();
                 this.traderInventory.push(sold as Item);

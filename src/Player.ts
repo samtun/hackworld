@@ -17,6 +17,8 @@ import { LaserBeamSkill } from './skills/LaserBeamSkill';
 import { HealingSkill } from './skills/HealingSkill';
 import { AreaAttackSkill } from './skills/AreaAttackSkill';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
+import { SkillTechType } from './skills/SkillTechType';
+import { Tier, TierManager } from './items/TierManager';
 
 enum ActionType {
     Idle = 'Idle',
@@ -53,7 +55,7 @@ export class Player extends BaseMesh {
     private readonly KNOCKBACK_FORCE = 80;
 
     // Stat caps and upgrade amounts
-    private readonly MAX_STAT_VALUE = 9999;
+    public readonly MAX_STAT_VALUE = 9999;
     private readonly HP_TP_UPGRADE_AMOUNT = 5;
     private readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
 
@@ -73,6 +75,7 @@ export class Player extends BaseMesh {
 
     // Tech point cap
     private readonly TECH_POINT_CAP = 2500;
+    private readonly SKILL_TECH_POINT_CAP = 1200;
 
     // Movement speed constant
     private readonly WALK_SPEED = 6;
@@ -119,10 +122,17 @@ export class Player extends BaseMesh {
 
     // Weapon tech/proficiency stats (gained on hit)
     public tech: Record<WeaponType, number> = {
-        [WeaponType.SWORD]: 1,
-        [WeaponType.DUAL_BLADE]: 1,
-        [WeaponType.LANCE]: 1,
-        [WeaponType.HAMMER]: 1,
+        [WeaponType.SWORD]: 0,
+        [WeaponType.DUAL_BLADE]: 0,
+        [WeaponType.LANCE]: 0,
+        [WeaponType.HAMMER]: 0,
+    };
+
+    // Skill tech points (gained on skill use/hit)
+    public skillTech: Record<SkillTechType, number> = {
+        [SkillTechType.RECOVERY]: 0,
+        [SkillTechType.BLAST]: 0,
+        [SkillTechType.RANGED]: 0,
     };
 
     // Upgrade levels for X-Data upgrades
@@ -184,7 +194,7 @@ export class Player extends BaseMesh {
 
     // Inventory
     inventory: Item[] = [];
-    money: number = 500; // Starting money
+    bits: number = 0; // Starting money
 
     // Animations
     private mixer!: THREE.AnimationMixer;
@@ -420,6 +430,25 @@ export class Player extends BaseMesh {
             this.tech[key] += 1;
             this.floatingIndicatorManager.spawnTech(this.body.position);
         }
+    }
+
+    // Potentially increment skill tech for the given skill type
+    tryIncrementSkillTech(type: SkillTechType): void {
+        const x = this.skillTech[type];
+        if (x >= this.SKILL_TECH_POINT_CAP) {
+            return; // Cap reached
+        }
+
+        const dropChance = 0.015 + Math.log10(x + 3) * 0.02 + 0.00004 * x;
+        if (Math.random() <= dropChance) {
+            this.skillTech[type] = Math.min(x + 1, this.SKILL_TECH_POINT_CAP);
+            this.floatingIndicatorManager.spawnTech(this.body.position);
+        }
+    }
+
+    // Return the current tier for a given skill type based on its tech points
+    getSkillTier(type: SkillTechType): Tier {
+        return TierManager.Instance.getSkillTierForTech(this.skillTech[type]);
     }
 
     // Compute damage for a single hit, applying strength and critical hit multipliers
@@ -1079,17 +1108,19 @@ export class Player extends BaseMesh {
      * @param showNumber - Whether to show the healing numbers
      */
     heal(hpAmount: number, tpAmount: number = 0, showNumber: boolean = false): void {
-        if (hpAmount > 0) {
-            this.hp = Math.min(this.hp + hpAmount, this.maxHp);
+        if (hpAmount > 0 && this.hp < this.maxHp) {
+            const actualHpHeal = Math.min(hpAmount, this.maxHp - this.hp);
+            this.hp += actualHpHeal;
             if (showNumber) {
-                console.log(`Player healed for ${hpAmount} HP. Current HP: ${this.hp}/${this.maxHp}`);
-                this.floatingIndicatorManager.spawnHeal(this.body.position, hpAmount);
+                console.log(`Player healed for ${actualHpHeal} HP. Current HP: ${this.hp}/${this.maxHp}`);
+                this.floatingIndicatorManager.spawnHeal(this.body.position, actualHpHeal);
             }
         }
-        if (tpAmount > 0) {
-            this.tp = Math.min(this.tp + tpAmount, this.maxTp);
+        if (tpAmount > 0 && this.tp < this.maxTp) {
+            const actualTpHeal = Math.min(tpAmount, this.maxTp - this.tp);
+            this.tp += actualTpHeal;
             if (showNumber) {
-                this.floatingIndicatorManager.spawnTp(this.body.position, tpAmount);
+                this.floatingIndicatorManager.spawnTp(this.body.position, actualTpHeal);
             }
         }
     }
@@ -1436,30 +1467,32 @@ export class Player extends BaseMesh {
         let currentLevel = 0;
         let currentValue = 0;
 
+        const levelHpBonus = this.getLevelHpBonus();
+        const levelTpBonus = this.getLevelTpBonus();
         switch (statType) {
             case StatType.STRENGTH:
                 currentLevel = this.strengthUpgrades;
-                currentValue = this.baseStrength + this.strengthUpgrades;
+                currentValue = this.baseStrength + this.strengthUpgrades + this.strengthPoints;
                 break;
             case StatType.DEFENSE:
                 currentLevel = this.defenseUpgrades;
-                currentValue = this.baseDefense + this.defenseUpgrades;
+                currentValue = this.baseDefense + this.defenseUpgrades + this.defensePoints;
                 break;
             case StatType.AGILITY:
                 currentLevel = this.agilityUpgrades;
-                currentValue = this.baseAgility + this.agilityUpgrades;
+                currentValue = this.baseAgility + this.agilityUpgrades + this.agilityPoints;
                 break;
             case StatType.LUCK:
                 currentLevel = this.luckUpgrades;
-                currentValue = this.baseLuck + this.luckUpgrades;
+                currentValue = this.baseLuck + this.luckUpgrades + this.luckPoints;
                 break;
             case StatType.HP:
                 currentLevel = this.hpUpgrades;
-                currentValue = 100 + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT);
+                currentValue = this.baseHp + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelHpBonus;
                 break;
             case StatType.TP:
                 currentLevel = this.tpUpgrades;
-                currentValue = 100 + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT);
+                currentValue = this.baseTp + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelTpBonus;
                 break;
         }
 
