@@ -104,8 +104,8 @@ export class MenuManager {
         Object.assign(window.style, {
             width: config?.width || '92vw',
             height: config?.height || '90vh',
-            maxWidth: config?.maxWidth,
-            maxHeight: config?.maxHeight,
+            maxWidth: config?.maxWidth || '1200px',
+            maxHeight: config?.maxHeight || '800px',
             backgroundColor: config?.backgroundColor || MENU_COLORS.WINDOW_BG,
             borderRadius: '15px',
             border: `${MENU_STYLES.BORDER_WIDTH} solid ${MENU_COLORS.BORDER}`,
