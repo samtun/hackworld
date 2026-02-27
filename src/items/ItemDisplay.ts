@@ -14,7 +14,7 @@ export function formatItemLabel(item: Item, priceText: string = ''): string {
         let tierColor = "#ffffff";
         if (item instanceof WeaponItem) {
             // Use slightly different color for broken tier, since the rim color is quite dark
-            tierColor = item.tier.name == Tier.BROKEN ? "#CCCCCC" : item.tier.rimColor;
+            tierColor = item.tier.name == Tier.BROKEN ? "#C5C5C5" : lightenColor(item.tier.rimColor, 0.5);
         }
         let itemIcon = '';
         if (item instanceof WeaponItem) {
@@ -29,6 +29,17 @@ export function formatItemLabel(item: Item, priceText: string = ''): string {
         return `${label}${priceText}`;
     }
     return `${escapeHtml(item.name)}${priceText}`;
+}
+
+/** Blends a hex color towards white by the given amount (0 = unchanged, 1 = white). */
+function lightenColor(hex: string, amount: number): string {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const nr = Math.min(255, Math.round(r + (255 - r) * amount));
+    const ng = Math.min(255, Math.round(g + (255 - g) * amount));
+    const nb = Math.min(255, Math.round(b + (255 - b) * amount));
+    return `#${nr.toString(16).padStart(2, '0')}${ng.toString(16).padStart(2, '0')}${nb.toString(16).padStart(2, '0')}`;
 }
 
 function escapeHtml(s: string): string {
