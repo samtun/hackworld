@@ -1,7 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <circle cx="256" cy="256" r="208" fill="none" stroke="currentColor" stroke-width="48"/>
-  <circle cx="256" cy="256" r="120" fill="none" stroke="currentColor" stroke-width="48"/>
-  <circle cx="256" cy="256" r="40"/>
-  <rect x="232" y="16" width="48" height="480" rx="8"/>
-  <rect x="16" y="232" width="480" height="48" rx="8"/>
+  <!-- Laser impact: central filled circle with 8 radiating beams -->
+  <circle cx="256" cy="256" r="52"/>
+  <rect x="232" y="32"  width="48" height="172" rx="10"/>
+  <rect x="232" y="32"  width="48" height="172" rx="10" transform="rotate(45,256,256)"/>
+  <rect x="232" y="32"  width="48" height="172" rx="10" transform="rotate(90,256,256)"/>
+  <rect x="232" y="32"  width="48" height="172" rx="10" transform="rotate(135,256,256)"/>
+  <rect x="232" y="32"  width="48" height="172" rx="10" transform="rotate(180,256,256)"/>
+  <rect x="232" y="32"  width="48" height="172" rx="10" transform="rotate(225,256,256)"/>
+  <rect x="232" y="32"  width="48" height="172" rx="10" transform="rotate(270,256,256)"/>
+  <rect x="232" y="32"  width="48" height="172" rx="10" transform="rotate(315,256,256)"/>
 </svg>
