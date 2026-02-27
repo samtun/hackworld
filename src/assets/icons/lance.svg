@@ -1,3 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <polygon points="91,471 69,449 369,149 452,88 391,171"/>
+  <!-- Spear tip pointing upper-right with short shaft stub -->
+  <polygon points="444,68 480,144 296,328 248,280"/>
 </svg>
