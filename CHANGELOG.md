@@ -1,3 +1,20 @@
+# [1.49.0](https://github.com/samtun/hackworld/compare/v1.48.0...v1.49.0) (2026-02-27)
+
+
+### Bug Fixes
+
+* further revise SVG icons per second round of review feedback ([e6d1422](https://github.com/samtun/hackworld/commit/e6d1422c6bb94a7e3c307105a40ca4a422dec4d4))
+* revise SVG icons per review feedback ([b2e2642](https://github.com/samtun/hackworld/commit/b2e2642a15646e0730140a3d4aec79d12f42062c))
+* set default maxWidth and maxHeight for menu overlay ([1b7bd39](https://github.com/samtun/hackworld/commit/1b7bd392b1820e0e6fbb5240671aeab3d982287b))
+* use single icon for all cores and single icon for all chips ([72762ba](https://github.com/samtun/hackworld/commit/72762bab7b038c7a8bd4abd5a5f9462695d93085))
+
+
+### Features
+
+* add core/chip icons and load all icons from SVG files ([f4875bd](https://github.com/samtun/hackworld/commit/f4875bd879067032ac563477ee899a6e84bf2139))
+* add icons for stats, tech, and weapon items ([4bb0f81](https://github.com/samtun/hackworld/commit/4bb0f814be92a0f8be8f1607979802981a5085bd))
+* add icons to stats and tech display in InventoryManager ([608007a](https://github.com/samtun/hackworld/commit/608007a800e8b9ce972bfaef9f4d6a54683a8456))
+
 # [1.48.0](https://github.com/samtun/hackworld/compare/v1.47.0...v1.48.0) (2026-02-26)
 
 
