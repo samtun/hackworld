@@ -165,6 +165,12 @@ export class Player extends BaseMesh {
     private attackHitEnemies: Set<Enemy> = new Set();
     private attackLockedUntilRelease: boolean = false;
 
+    // Block state
+    isBlocking: boolean = false;
+    private blockTimer: number = 0;
+    private readonly BLOCK_DURATION: number = 0.5;
+    private blockShield: THREE.Mesh | null = null;
+
     // Particle wall constants
     private readonly PARTICLE_BASE_HEIGHT: number = 0.2;
     private readonly PARTICLE_CHARGED_HEIGHT: number = 0.8;
@@ -676,6 +682,14 @@ export class Player extends BaseMesh {
         if (this.handleDash(dt)) return;
         if (this.handleCharging(dt)) return;
 
+        // Check for block input
+        if (this.input.isBlockJustPressed()) {
+            this.startBlock();
+        }
+
+        // Handle blocking (short-circuits movement and combat)
+        if (this.handleBlock(dt)) return;
+
         // Skills handling
         this.handleSkills();
 
@@ -879,6 +893,52 @@ export class Player extends BaseMesh {
         this.weapon.update(dt);
     }
 
+    private createBlockShield(): THREE.Mesh {
+        const geometry = new THREE.CircleGeometry(0.7, 8);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.5,
+            side: THREE.DoubleSide,
+            emissive: 0xffffff,
+            emissiveIntensity: 0.3,
+        });
+        const shield = new THREE.Mesh(geometry, material);
+        // Position in front of the player at torso height
+        shield.position.set(0, 1.1, 0.9);
+        return shield;
+    }
+
+    private startBlock(): void {
+        if (this.isBlocking || this.isDead || this.isDashing || this.isChargingAttack || this.isUsingSkill) return;
+
+        this.isBlocking = true;
+        this.blockTimer = 0;
+        this.haltMovement();
+
+        if (!this.blockShield) {
+            this.blockShield = this.createBlockShield();
+        }
+        this.mesh.add(this.blockShield);
+    }
+
+    private handleBlock(dt: number): boolean {
+        if (!this.isBlocking) return false;
+
+        this.blockTimer += dt;
+        this.haltMovement();
+        this.syncPosition();
+
+        if (this.blockTimer >= this.BLOCK_DURATION) {
+            this.isBlocking = false;
+            if (this.blockShield && this.blockShield.parent) {
+                this.mesh.remove(this.blockShield);
+            }
+        }
+
+        return true;
+    }
+
     private handleInvulnerability(dt: number) {
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= dt;
@@ -1021,6 +1081,9 @@ export class Player extends BaseMesh {
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3, isCriticalHit: boolean = false): void {
         if (this.invulnerableTimer > 0 || this.isLevelingUp || this.isDashing || this.isDead) return;
+
+        // Block absorbs damage completely
+        if (this.isBlocking) return;
 
         // Stop any ongoing attack
         this.weapon.stopAttack();

@@ -12,6 +12,7 @@ export class MobileControlsManager {
     private buttonsContainer!: HTMLDivElement;
     private inventoryButton!: HTMLButtonElement;
     private closeButton!: HTMLButtonElement;
+    private blockButton!: HTMLButtonElement;
 
     // Button elements
     private jumpButton!: HTMLButtonElement;
@@ -24,6 +25,7 @@ export class MobileControlsManager {
     public isAttackPressed: boolean = false;
     public isInventoryPressed: boolean = false;
     public isCancelPressed: boolean = false;
+    public isBlockPressed: boolean = false;
 
     // Skill mode state
     private isSkillMode: boolean = false;
@@ -113,6 +115,11 @@ export class MobileControlsManager {
         this.inventoryButton = this.createButton('', 'mobile-inventory-btn');
         document.body.appendChild(this.inventoryButton);
         this.setupButtonListeners(this.inventoryButton, 'isInventoryPressed');
+
+        // Create block button (left side, above joystick)
+        this.blockButton = this.createButton('L', 'mobile-block-btn');
+        document.body.appendChild(this.blockButton);
+        this.setupButtonListeners(this.blockButton, 'isBlockPressed');
     }
 
     public static get Instance(): MobileControlsManager {
@@ -140,7 +147,7 @@ export class MobileControlsManager {
         return button;
     }
 
-    private setupButtonListeners(button: HTMLButtonElement, normalStateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInventoryPressed' | 'isCancelPressed', skillStateKey?: 'isSkill1Pressed' | 'isSkill2Pressed' | 'isSkill3Pressed') {
+    private setupButtonListeners(button: HTMLButtonElement, normalStateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInventoryPressed' | 'isCancelPressed' | 'isBlockPressed', skillStateKey?: 'isSkill1Pressed' | 'isSkill2Pressed' | 'isSkill3Pressed') {
         button.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (this.isSkillMode && skillStateKey) {
@@ -273,6 +280,7 @@ export class MobileControlsManager {
         if (this.inventoryButton) this.inventoryButton.style.display = display;
         if (this.closeButton) this.closeButton.style.display = display;
         if (this.skillToggleButton) this.skillToggleButton.style.display = display;
+        if (this.blockButton) this.blockButton.style.display = display;
     }
 
     /**
@@ -318,6 +326,10 @@ export class MobileControlsManager {
 
         if (this.skillToggleButton && this.skillToggleButton.parentNode) {
             this.skillToggleButton.parentNode.removeChild(this.skillToggleButton);
+        }
+
+        if (this.blockButton && this.blockButton.parentNode) {
+            this.blockButton.parentNode.removeChild(this.blockButton);
         }
     }
 }

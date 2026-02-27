@@ -65,6 +65,13 @@ export class Enemy extends BaseMesh {
     protected attackHitboxOffset: number = 1.0;
     protected hasDealtDamageThisAttack: boolean = false;
 
+    // Block state
+    protected blockChance: number = 0.3;
+    protected isBlocking: boolean = false;
+    private blockTimer: number = 0;
+    private readonly BLOCK_DURATION: number = 0.5;
+    private blockShield: THREE.Mesh | null = null;
+
     // Death fade
     protected deathFadeDuration: number = 0.5;
     protected deathFadeTimer: number = 0;
@@ -365,6 +372,17 @@ export class Enemy extends BaseMesh {
         this.mesh.position.copy(this.body.position as any);
         this.mesh.position.y -= this.bodyHalfExtentY;
 
+        // Block timer - remove shield when block expires
+        if (this.isBlocking) {
+            this.blockTimer += dt;
+            if (this.blockTimer >= this.BLOCK_DURATION) {
+                this.isBlocking = false;
+                if (this.blockShield && this.blockShield.parent) {
+                    this.mesh.remove(this.blockShield);
+                }
+            }
+        }
+
         // Stun Logic
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
@@ -533,8 +551,55 @@ export class Enemy extends BaseMesh {
         this.fadeToAction(EnemyActionType.Attack, 0.1);
     }
 
+    private createBlockShield(): THREE.Mesh {
+        const geometry = new THREE.CircleGeometry(0.7, 8);
+        const material = new THREE.MeshStandardMaterial({
+            color: 0xffffff,
+            transparent: true,
+            opacity: 0.5,
+            side: THREE.DoubleSide,
+            emissive: 0xffffff,
+            emissiveIntensity: 0.3,
+        });
+        const shield = new THREE.Mesh(geometry, material);
+        // Position in front of the enemy at torso height
+        shield.position.set(0, 1.1, 0.9);
+        return shield;
+    }
+
+    /**
+     * Determine if the enemy should block this incoming hit.
+     * Probability: blockChance * min(1 - player.agility * 0.005, blockChance * 0.5)
+     */
+    private tryBlock(): boolean {
+        const agilityFactor = 1 - this.player.agility * 0.005;
+        const effectiveBlockChance = this.blockChance * Math.min(agilityFactor, this.blockChance * 0.5);
+        return Math.random() < effectiveBlockChance;
+    }
+
+    private activateBlock(): void {
+        this.isBlocking = true;
+        this.blockTimer = 0;
+        // Immobilize enemy for block duration
+        this.stunTimer = this.BLOCK_DURATION;
+
+        if (!this.blockShield) {
+            this.blockShield = this.createBlockShield();
+        }
+        this.mesh.add(this.blockShield);
+    }
+
     takeDamage(amount: number, isCriticalHit: boolean, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0): void {
         if (this.isDying || this.isDead) return;
+
+        // Check if enemy blocks this attack
+        if (!this.isBlocking && this.tryBlock()) {
+            this.activateBlock();
+            return;
+        }
+
+        // If already blocking, absorb the hit (no damage, no knockback)
+        if (this.isBlocking) return;
 
         this.hp -= amount;
 
@@ -606,6 +671,12 @@ export class Enemy extends BaseMesh {
      */
     cleanup(): void {
         this.deactivateAttackHitbox();
+        if (this.blockShield) {
+            if (this.blockShield.parent) this.mesh.remove(this.blockShield);
+            this.blockShield.geometry.dispose();
+            (this.blockShield.material as THREE.Material).dispose();
+            this.blockShield = null;
+        }
         this.scene.remove(this.mesh);
         this.world.removeBody(this.body);
         this.disposeMesh();
