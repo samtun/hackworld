@@ -4,7 +4,7 @@ import { WeaponItem } from './weapons/WeaponItem';
 import { ChipItem } from './chips/ChipItem';
 import { CoreItem } from './cores/CoreItem';
 import { Tier } from './TierManager';
-import { getWeaponIcon, getChipIcon, ICON_CORE } from '../ui/StatIcons';
+import { getWeaponIcon, ICON_CORE, ICON_CHIP } from '../ui/StatIcons';
 
 // Return an HTML-safe label for an item, including price text if provided.
 export function formatItemLabel(item: Item, priceText: string = ''): string {
@@ -20,7 +20,7 @@ export function formatItemLabel(item: Item, priceText: string = ''): string {
         if (item instanceof WeaponItem) {
             itemIcon = getWeaponIcon(item.weaponType);
         } else if (item instanceof ChipItem) {
-            itemIcon = getChipIcon(item.chipType);
+            itemIcon = ICON_CHIP;
         } else if (item instanceof CoreItem) {
             itemIcon = ICON_CORE;
         }

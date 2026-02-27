@@ -1,6 +1,5 @@
 import { WeaponType } from '../items/weapons/WeaponType';
 import { SkillTechType } from '../skills/SkillTechType';
-import { ChipType } from '../items/chips/Chip';
 
 // SVG files imported as raw strings via Vite's ?raw loader
 import hpRaw from '../assets/icons/hp.svg?raw';
@@ -21,8 +20,7 @@ import recoveryRaw from '../assets/icons/recovery.svg?raw';
 import blastRaw from '../assets/icons/blast.svg?raw';
 import rangedRaw from '../assets/icons/ranged.svg?raw';
 import coreRaw from '../assets/icons/core.svg?raw';
-import firewireRaw from '../assets/icons/firewire.svg?raw';
-import overclockRaw from '../assets/icons/overclock.svg?raw';
+import chipRaw from '../assets/icons/chip.svg?raw';
 
 /**
  * Injects inline display styles into a raw SVG string so the icon renders
@@ -66,11 +64,9 @@ export const ICON_RANGED   = makeIcon(rangedRaw);
 // ─── Item Type Icons ──────────────────────────────────────────────────────────
 
 /** Core – CPU chip with connector pins */
-export const ICON_CORE      = makeIcon(coreRaw);
-/** Firewire chip – flame (weapon range booster) */
-export const ICON_FIREWIRE  = makeIcon(firewireRaw);
-/** Overclock chip – speedometer gauge (walk speed booster) */
-export const ICON_OVERCLOCK = makeIcon(overclockRaw);
+export const ICON_CORE = makeIcon(coreRaw);
+/** Chip – IC chip with pins on all sides */
+export const ICON_CHIP = makeIcon(chipRaw);
 
 // ─── Lookup helpers ───────────────────────────────────────────────────────────
 
@@ -96,17 +92,6 @@ export function getSkillTechIcon(skillTechType: SkillTechType): string {
         case SkillTechType.RECOVERY: return ICON_RECOVERY;
         case SkillTechType.BLAST:    return ICON_BLAST;
         case SkillTechType.RANGED:   return ICON_RANGED;
-        default: return '';
-    }
-}
-
-/**
- * Returns the icon for a given chip type.
- */
-export function getChipIcon(chipType: ChipType): string {
-    switch (chipType) {
-        case ChipType.FIREWIRE:  return ICON_FIREWIRE;
-        case ChipType.OVERCLOCK: return ICON_OVERCLOCK;
         default: return '';
     }
 }
