@@ -1,3 +1,15 @@
+# [1.50.0](https://github.com/samtun/hackworld/compare/v1.49.0...v1.50.0) (2026-02-27)
+
+
+### Bug Fixes
+
+* update tier colors for better visibility and consistency in ItemDisplay and TierManager ([ff4061a](https://github.com/samtun/hackworld/commit/ff4061a212229a40c5eb1bfd33a76b73ed6e90c5))
+
+
+### Features
+
+* add test weapon drops for visual testing in MovementTest stage ([664676b](https://github.com/samtun/hackworld/commit/664676b52cbf37a04ec68b3ebe19c6eb9c68eccd))
+
 # [1.49.0](https://github.com/samtun/hackworld/compare/v1.48.0...v1.49.0) (2026-02-27)
 
 
