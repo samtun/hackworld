@@ -44,7 +44,7 @@ export class WeaponDrop extends ItemDrop {
         buyPrice: number,
         sellPrice: number,
         level: number,
-        bonusMultiplier: number
+        damageFactor: number
     ) {
         super();
         this.weaponId = weaponId;
@@ -57,7 +57,7 @@ export class WeaponDrop extends ItemDrop {
         this.level = level;
 
         // Compute tier and store rim color for use in text label and inventory display
-        const tier = TierManager.Instance.getWeaponTierForMultiplier(bonusMultiplier);
+        const tier = TierManager.Instance.getWeaponTierForMultiplier(damageFactor);
         this.tier = tier;
 
         // Create weapon visual

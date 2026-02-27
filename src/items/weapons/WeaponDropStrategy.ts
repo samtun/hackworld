@@ -48,9 +48,9 @@ export class WeaponDropStrategy implements ItemDropStrategy {
             finalBuyPrice,
             finalSellPrice,
             weaponLevel,
-            bonusMultiplier
+            damageFactor
         );
-        console.log(`Enemy dropped ${weaponItem.name} (${weaponType}) Level ${weaponLevel} - Damage: ${finalDamage}, bonus multiplier: ${bonusMultiplier.toFixed(6)}`);
+        console.log(`Enemy dropped ${weaponItem.name} (${weaponType}) Level ${weaponLevel} - Damage: ${finalDamage}, damage factor: ${damageFactor.toFixed(6)}`);
         return wd;
     }
 
