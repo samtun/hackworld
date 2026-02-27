@@ -1,3 +1,10 @@
+## [1.50.1](https://github.com/samtun/hackworld/compare/v1.50.0...v1.50.1) (2026-02-27)
+
+
+### Bug Fixes
+
+* update weapon drop instantiation for visual testing in MovementTest ([d5d327e](https://github.com/samtun/hackworld/commit/d5d327e861722fefb36f96c683402d0f23e6b0f2))
+
 # [1.50.0](https://github.com/samtun/hackworld/compare/v1.49.0...v1.50.0) (2026-02-27)
 
 
