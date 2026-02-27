@@ -14,7 +14,7 @@ export function formatItemLabel(item: Item, priceText: string = ''): string {
         let tierColor = "#ffffff";
         if (item instanceof WeaponItem) {
             // Use slightly different color for broken tier, since the rim color is quite dark
-            tierColor = item.tier.name == Tier.BROKEN ? "#C5C5C5" : lightenColor(item.tier.rimColor, 0.5);
+            tierColor = item.tier.name == Tier.BROKEN ? "#C5C5C5" : lightenColor(item.tier.rimColor, 0.35);
         }
         let itemIcon = '';
         if (item instanceof WeaponItem) {
