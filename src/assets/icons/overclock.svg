@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Speedometer gauge: represents Overclock (speed / walk speed booster) -->
+  <path d="M88 380 A186 186 0 0 1 424 380" fill="none" stroke="currentColor" stroke-width="44" stroke-linecap="round"/>
+  <path d="M256 380 L390 196" stroke="currentColor" stroke-width="36" stroke-linecap="round"/>
+  <circle cx="256" cy="380" r="36"/>
+</svg>
