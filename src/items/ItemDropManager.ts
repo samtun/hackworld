@@ -83,19 +83,6 @@ export class ItemDropManager {
         }
     }
 
-    tryDrop(key: ItemDropType, scene: THREE.Scene, enemy: Enemy, player: Player): boolean {
-        const dropStrategy = this.itemDropStrategies.find(strategy => strategy.key === key);
-        if (!dropStrategy) return false;
-
-        const drop = dropStrategy.drop(scene, enemy, player);
-        if (drop) {
-            const arr = this.drops.get(key)!;
-            arr.push(drop);
-            return true;
-        }
-        return false;
-    }
-
     // Common update logic for all drops: call each drop.update
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3) {
         for (const [, arr] of this.drops.entries()) {
