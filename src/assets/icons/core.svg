@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Pentagon outline with stroke ~1/4 of its diameter -->
+  <polygon points="256,81 422,202 362,402 150,402 90,202"
+           fill="none" stroke="currentColor" stroke-width="88" stroke-linejoin="round"/>
+</svg>

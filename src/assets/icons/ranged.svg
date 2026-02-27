@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Incoming laser beam from left to center -->
+  <rect x="24" y="237" width="178" height="38" rx="8"/>
+  <!-- Radiating beams offset 22.5° so none align with the horizontal beam -->
+  <rect x="237" y="24" width="38" height="178" rx="8" transform="rotate(22.5,256,256)"/>
+  <rect x="237" y="24" width="38" height="178" rx="8" transform="rotate(67.5,256,256)"/>
+  <rect x="237" y="24" width="38" height="178" rx="8" transform="rotate(112.5,256,256)"/>
+  <rect x="237" y="24" width="38" height="178" rx="8" transform="rotate(157.5,256,256)"/>
+  <rect x="237" y="24" width="38" height="178" rx="8" transform="rotate(202.5,256,256)"/>
+  <rect x="237" y="24" width="38" height="178" rx="8" transform="rotate(247.5,256,256)"/>
+  <rect x="237" y="24" width="38" height="178" rx="8" transform="rotate(292.5,256,256)"/>
+  <rect x="237" y="24" width="38" height="178" rx="8" transform="rotate(337.5,256,256)"/>
+  <!-- Central impact circle drawn last to cleanly cover all beam ends -->
+  <circle cx="256" cy="256" r="62"/>
+</svg>
