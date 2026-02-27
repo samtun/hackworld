@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Two pointed diamond blades crossing at steep angle (~72° from horizontal) -->
-  <polygon points="320,48 302,271 192,464 210,241"/>
-  <polygon points="192,48 210,271 320,464 302,241"/>
+  <!-- Two elongated diamond blades at ~60° crossing angle, resembling a stretched X -->
+  <polygon points="366,66 282,271 146,446 230,241"/>
+  <polygon points="146,66 230,271 366,446 282,241"/>
 </svg>

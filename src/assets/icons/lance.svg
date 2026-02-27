@@ -1,4 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <!-- Spear tip pointing upper-right with short shaft stub -->
-  <polygon points="444,68 480,144 296,328 248,280"/>
+  <!-- Kite-shaped spear blade + short shaft stub, rotated 45° CW to point upper-right -->
+  <g transform="rotate(45, 256, 256)">
+    <polygon points="256,24 294,216 256,308 218,216"/>
+    <rect x="242" y="308" width="28" height="168" rx="8"/>
+  </g>
 </svg>
