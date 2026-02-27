@@ -67,81 +67,88 @@ export class MovementTest extends BaseStage {
         }
 
         // Test weapon drops (unusabe, just for visual testing)
-        const broken = new WeaponDrop(
-                    "aegis_sword_alpha",
-                    this.scene,
-                    new CANNON.Vec3(10, 0.5, 10),
-                    WeaponType.SWORD,
-                    "Aegis Sword Alpha",
-                    8,
-                    100,
-                    50,
-                    3,
-                    0.8
+        // Broken
+        new WeaponDrop(
+            "aegis_sword_alpha",
+            this.scene,
+            new CANNON.Vec3(10, 0.5, 10),
+            WeaponType.SWORD,
+            "Aegis Sword Alpha",
+            8,
+            100,
+            50,
+            3,
+            0.8
         );
 
-        const stable = new WeaponDrop(
-                    "aegis_sword_alpha",
-                    this.scene,
-                    new CANNON.Vec3(11, 0.5, 10),
-                    WeaponType.SWORD,
-                    "Aegis Sword Alpha",
-                    10,
-                    100,
-                    50,
-                    3,
-                    1
+        // Stable
+        new WeaponDrop(
+            "aegis_sword_alpha",
+            this.scene,
+            new CANNON.Vec3(11, 0.5, 10),
+            WeaponType.SWORD,
+            "Aegis Sword Alpha",
+            10,
+            100,
+            50,
+            3,
+            1
         );
 
-        const maintained = new WeaponDrop(
-                    "aegis_sword_alpha",
-                    this.scene,
-                    new CANNON.Vec3(12, 0.5, 10),
-                    WeaponType.SWORD,
-                    "Aegis Sword Alpha",
-                    10.5,
-                    100,
-                    50,
-                    3,
-                    1.05
+        // Maintained
+        new WeaponDrop(
+            "aegis_sword_alpha",
+            this.scene,
+            new CANNON.Vec3(12, 0.5, 10),
+            WeaponType.SWORD,
+            "Aegis Sword Alpha",
+            10.5,
+            100,
+            50,
+            3,
+            1.05
         );
 
-        const overclocked = new WeaponDrop(
-                    "aegis_sword_alpha",
-                    this.scene,
-                    new CANNON.Vec3(13, 0.5, 10),
-                    WeaponType.SWORD,
-                    "Aegis Sword Alpha",
-                    12,
-                    100,
-                    50,
-                    1,
-                    1.1
+        // Overclocked
+        new WeaponDrop(
+            "aegis_sword_alpha",
+            this.scene,
+            new CANNON.Vec3(13, 0.5, 10),
+            WeaponType.SWORD,
+            "Aegis Sword Alpha",
+            12,
+            100,
+            50,
+            1,
+            1.1
         );
 
-        const zeroday = new WeaponDrop(
-                    "aegis_sword_alpha",
-                    this.scene,
-                    new CANNON.Vec3(14, 0.5, 10),
-                    WeaponType.SWORD,
-                    "Aegis Sword Alpha",
-                    12,
-                    100,
-                    50,
-                    1,
-                    1.15
+        // ZeroDay
+        new WeaponDrop(
+            "aegis_sword_alpha",
+            this.scene,
+            new CANNON.Vec3(14, 0.5, 10),
+            WeaponType.SWORD,
+            "Aegis Sword Alpha",
+            12,
+            100,
+            50,
+            1,
+            1.15
         );
-        const leet = new WeaponDrop(
-                    "aegis_sword_alpha",
-                    this.scene,
-                    new CANNON.Vec3(15, 0.5, 10),
-                    WeaponType.SWORD,
-                    "Aegis Sword Alpha",
-                    12,
-                    100,
-                    50,
-                    1,
-                    1.2
+
+        // Leet
+        new WeaponDrop(
+            "aegis_sword_alpha",
+            this.scene,
+            new CANNON.Vec3(15, 0.5, 10),
+            WeaponType.SWORD,
+            "Aegis Sword Alpha",
+            12,
+            100,
+            50,
+            1,
+            1.2
         );
     }
 }
