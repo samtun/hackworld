@@ -2,6 +2,8 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
+import { WeaponDrop } from '../items/weapons/WeaponDrop';
+import { WeaponType } from '../items/weapons/WeaponType';
 
 export class MovementTest extends BaseStage {
     private static id: string = "movementTest";
@@ -63,5 +65,83 @@ export class MovementTest extends BaseStage {
         for (let i = 0; i <= 24; i++) {
             this.createBox(6, 0.5, 2, new CANNON.Vec3(0, 0.5, 4 + i * 2), new CANNON.Quaternion().setFromEuler(0, 0, -Math.PI / 2 + i * 0.2));
         }
+
+        // Test weapon drops (unusabe, just for visual testing)
+        const broken = new WeaponDrop(
+                    "aegis_sword_alpha",
+                    this.scene,
+                    new CANNON.Vec3(10, 0.5, 10),
+                    WeaponType.SWORD,
+                    "Aegis Sword Alpha",
+                    8,
+                    100,
+                    50,
+                    3,
+                    0.8
+        );
+
+        const stable = new WeaponDrop(
+                    "aegis_sword_alpha",
+                    this.scene,
+                    new CANNON.Vec3(11, 0.5, 10),
+                    WeaponType.SWORD,
+                    "Aegis Sword Alpha",
+                    10,
+                    100,
+                    50,
+                    3,
+                    1
+        );
+
+        const maintained = new WeaponDrop(
+                    "aegis_sword_alpha",
+                    this.scene,
+                    new CANNON.Vec3(12, 0.5, 10),
+                    WeaponType.SWORD,
+                    "Aegis Sword Alpha",
+                    10.5,
+                    100,
+                    50,
+                    3,
+                    1.05
+        );
+
+        const overclocked = new WeaponDrop(
+                    "aegis_sword_alpha",
+                    this.scene,
+                    new CANNON.Vec3(13, 0.5, 10),
+                    WeaponType.SWORD,
+                    "Aegis Sword Alpha",
+                    12,
+                    100,
+                    50,
+                    1,
+                    1.1
+        );
+
+        const zeroday = new WeaponDrop(
+                    "aegis_sword_alpha",
+                    this.scene,
+                    new CANNON.Vec3(14, 0.5, 10),
+                    WeaponType.SWORD,
+                    "Aegis Sword Alpha",
+                    12,
+                    100,
+                    50,
+                    1,
+                    1.15
+        );
+        const leet = new WeaponDrop(
+                    "aegis_sword_alpha",
+                    this.scene,
+                    new CANNON.Vec3(15, 0.5, 10),
+                    WeaponType.SWORD,
+                    "Aegis Sword Alpha",
+                    12,
+                    100,
+                    50,
+                    1,
+                    1.2
+        );
     }
 }
