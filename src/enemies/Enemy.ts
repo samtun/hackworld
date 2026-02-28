@@ -5,6 +5,7 @@ import { BaseMesh } from '../BaseMesh';
 import { PlayerRegistry } from '../PlayerRegistry';
 import { AssetManager } from '../AssetManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
+import { BlockShield } from '../BlockShield';
 
 enum EnemyActionType {
     Idle = 'Idle',
@@ -70,7 +71,7 @@ export class Enemy extends BaseMesh {
     protected isBlocking: boolean = false;
     private blockTimer: number = 0;
     private readonly BLOCK_DURATION: number = 0.5;
-    private blockShield: THREE.Mesh | null = null;
+    private blockShield: BlockShield | null = null;
 
     // Death fade
     protected deathFadeDuration: number = 0.5;
@@ -377,9 +378,7 @@ export class Enemy extends BaseMesh {
             this.blockTimer += dt;
             if (this.blockTimer >= this.BLOCK_DURATION) {
                 this.isBlocking = false;
-                if (this.blockShield && this.blockShield.parent) {
-                    this.mesh.remove(this.blockShield);
-                }
+                this.blockShield?.detach();
             }
         }
 
@@ -551,22 +550,6 @@ export class Enemy extends BaseMesh {
         this.fadeToAction(EnemyActionType.Attack, 0.1);
     }
 
-    private createBlockShield(): THREE.Mesh {
-        const geometry = new THREE.CircleGeometry(0.7, 8);
-        const material = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.5,
-            side: THREE.DoubleSide,
-            emissive: 0xffffff,
-            emissiveIntensity: 0.3,
-        });
-        const shield = new THREE.Mesh(geometry, material);
-        // Position in front of the enemy at torso height
-        shield.position.set(0, 1.1, 0.9);
-        return shield;
-    }
-
     /**
      * Determine if the enemy should block this incoming hit.
      * Probability: blockChance * min(1 - player.agility * 0.005, blockChance * 0.5)
@@ -582,11 +565,13 @@ export class Enemy extends BaseMesh {
         this.blockTimer = 0;
         // Immobilize enemy for block duration
         this.stunTimer = this.BLOCK_DURATION;
+        // TODO: fade to a dedicated "Blocking" animation when available
+        this.fadeToAction(EnemyActionType.Idle, 0.1);
 
         if (!this.blockShield) {
-            this.blockShield = this.createBlockShield();
+            this.blockShield = new BlockShield();
         }
-        this.mesh.add(this.blockShield);
+        this.blockShield.attachTo(this.mesh);
     }
 
     takeDamage(amount: number, isCriticalHit: boolean, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0): void {
@@ -672,9 +657,7 @@ export class Enemy extends BaseMesh {
     cleanup(): void {
         this.deactivateAttackHitbox();
         if (this.blockShield) {
-            if (this.blockShield.parent) this.mesh.remove(this.blockShield);
-            this.blockShield.geometry.dispose();
-            (this.blockShield.material as THREE.Material).dispose();
+            this.blockShield.dispose();
             this.blockShield = null;
         }
         this.scene.remove(this.mesh);

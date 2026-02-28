@@ -113,6 +113,16 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
 
         // Mocked floating indicator
         floatingIndicatorManager: { spawnDamage: vi.fn() },
+
+        // Mocked player reference (needed for tryBlock)
+        player: { agility: 1, isDead: false, body: { position: { x: 0, y: 0, z: 0 } } },
+
+        // Block state
+        blockChance: 0,
+        isBlocking: false,
+        blockTimer: 0,
+        BLOCK_DURATION: 0.5,
+        blockShield: null,
     });
 
     Object.assign(enemy, overrides);

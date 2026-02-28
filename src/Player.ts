@@ -19,6 +19,7 @@ import { AreaAttackSkill } from './skills/AreaAttackSkill';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 import { SkillTechType } from './skills/SkillTechType';
 import { Tier, TierManager } from './items/TierManager';
+import { BlockShield } from './BlockShield';
 
 enum ActionType {
     Idle = 'Idle',
@@ -169,7 +170,7 @@ export class Player extends BaseMesh {
     isBlocking: boolean = false;
     private blockTimer: number = 0;
     private readonly BLOCK_DURATION: number = 0.5;
-    private blockShield: THREE.Mesh | null = null;
+    private blockShield: BlockShield | null = null;
 
     // Particle wall constants
     private readonly PARTICLE_BASE_HEIGHT: number = 0.2;
@@ -893,33 +894,19 @@ export class Player extends BaseMesh {
         this.weapon.update(dt);
     }
 
-    private createBlockShield(): THREE.Mesh {
-        const geometry = new THREE.CircleGeometry(0.7, 8);
-        const material = new THREE.MeshStandardMaterial({
-            color: 0xffffff,
-            transparent: true,
-            opacity: 0.5,
-            side: THREE.DoubleSide,
-            emissive: 0xffffff,
-            emissiveIntensity: 0.3,
-        });
-        const shield = new THREE.Mesh(geometry, material);
-        // Position in front of the player at torso height
-        shield.position.set(0, 1.1, 0.9);
-        return shield;
-    }
-
     private startBlock(): void {
         if (this.isBlocking || this.isDead || this.isDashing || this.isChargingAttack || this.isUsingSkill) return;
 
         this.isBlocking = true;
         this.blockTimer = 0;
         this.haltMovement();
+        // TODO: fade to a dedicated "Blocking" animation when available
+        this.fadeToAction(ActionType.Idle, 0.1);
 
         if (!this.blockShield) {
-            this.blockShield = this.createBlockShield();
+            this.blockShield = new BlockShield();
         }
-        this.mesh.add(this.blockShield);
+        this.blockShield.attachTo(this.mesh);
     }
 
     private handleBlock(dt: number): boolean {
@@ -931,9 +918,7 @@ export class Player extends BaseMesh {
 
         if (this.blockTimer >= this.BLOCK_DURATION) {
             this.isBlocking = false;
-            if (this.blockShield && this.blockShield.parent) {
-                this.mesh.remove(this.blockShield);
-            }
+            this.blockShield?.detach();
         }
 
         return true;
