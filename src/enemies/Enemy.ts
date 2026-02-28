@@ -230,6 +230,11 @@ export class Enemy extends BaseMesh {
             return;
         }
 
+        // High priority: Blocking - holds idle pose, overrides move/attack
+        if (this.isBlocking) {
+            return;
+        }
+
         // High priority: Attack
         if (this.isAttacking) {
             this.fadeToAction(EnemyActionType.Attack, 0.1);

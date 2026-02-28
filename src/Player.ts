@@ -617,6 +617,11 @@ export class Player extends BaseMesh {
             return;
         }
 
+        // High priority: Blocking - holds idle pose, overrides move/attack/jump
+        if (this.isBlocking) {
+            return;
+        }
+
         // High priority: Charging attack - block other animations
         if (this.isChargingAttack) {
             return;
