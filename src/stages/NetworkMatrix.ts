@@ -14,12 +14,12 @@ export class NetworkMatrix extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
-    static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
+    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
             id: NetworkMatrix.id,
             name: NetworkMatrix.name,
             description: NetworkMatrix.description,
-            stageIndex: 1 // First dungeon stage
+            requiredProgress: 1 // Unlocked after talking to Mainframe for the first time
         };
     }
 

@@ -21,7 +21,7 @@ export abstract class BaseStage {
     abstract spawnPosition: CANNON.Vec3;
 
     // Static method to get metadata without instantiation
-    static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
+    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         throw new Error('getMetadata() must be implemented in derived class');
     }
 

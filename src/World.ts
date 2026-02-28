@@ -362,15 +362,15 @@ export class World {
         if (this.enemies.length === 0) {
             this.hasNotifiedStageCompletion = true;
 
-            // Get stage index from metadata
+            // Get required progress from metadata
             const stageClass = this.currentStage.constructor as typeof BaseStage;
             const metadata = stageClass.getMetadata();
-            const stageIndex = metadata.stageIndex;
+            const requiredProgress = metadata.requiredProgress;
 
-            if (stageIndex && stageIndex > 0) {
+            if (requiredProgress > 0) {
                 const progressManager = GameProgressManager.Instance;
-                progressManager.markBossDefeated(stageIndex);
-                console.log(`Stage ${stageIndex} completed! Progress now:`, progressManager.progress);
+                progressManager.markBossDefeated(requiredProgress);
+                console.log(`Stage (requiredProgress=${requiredProgress}) completed! Progress now:`, progressManager.progress);
             }
         }
     }
