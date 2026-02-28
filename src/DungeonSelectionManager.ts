@@ -191,8 +191,8 @@ export class DungeonSelectionManager {
         const progressManager = GameProgressManager.Instance;
         const unlockedDungeons = this.dungeonClasses.filter((DungeonClass) => {
             const metadata = DungeonClass.getMetadata();
-            // Skip Lobby (requiredProgress=0) and dev-only stages (requiredProgress<0)
-            if (metadata.requiredProgress <= 0) return false;
+            // Skip Lobby (requiredProgress=0) and dev-only stages (requiredProgress<0) in non-DEV mode
+            if ((!import.meta.env.DEV && metadata.requiredProgress < 0) || metadata.requiredProgress === 0) return false;
             return progressManager.progress >= metadata.requiredProgress;
         });
 
