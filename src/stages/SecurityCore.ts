@@ -14,12 +14,12 @@ export class SecurityCore extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
-    static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
+    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
             id: SecurityCore.id,
             name: SecurityCore.name,
             description: SecurityCore.description,
-            stageIndex: 2 // Second dungeon stage
+            requiredProgress: 3 // Unlocked after finishing NetworkMatrix and talking to Mainframe again
         };
     }
 
