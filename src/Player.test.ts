@@ -238,15 +238,29 @@ describe('Player.recalculateStats', () => {
 // ─── getCriticalChance ──────────────────────────────────────────────────────────
 
 describe('Player.getCriticalChance', () => {
+    it('returns the correct value at agility 1 (base)', () => {
+        // Formula: 0.02 + (log10(agility + 50) * 7 - 11.9) * 0.01
+        // 0.02 + (log10(51) * 7 - 11.9) * 0.01 ≈ 0.02053
+        const player = makePlayer();
+        expect(player.getCriticalChance()).toBeCloseTo(0.02053, 4);
+    });
+
+    it('returns the correct value at agility 100', () => {
+        // 0.02 + (log10(150) * 7 - 11.9) * 0.01 ≈ 0.05333
+        const player = makePlayer({ agility: 100 } as any);
+        expect(player.getCriticalChance()).toBeCloseTo(0.05333, 4);
+    });
+
+    it('returns the correct value at agility 9999 (max)', () => {
+        // 0.02 + (log10(10049) * 7 - 11.9) * 0.01 ≈ 0.18115
+        const player = makePlayer({ agility: 9999 } as any);
+        expect(player.getCriticalChance()).toBeCloseTo(0.18115, 4);
+    });
+
     it('increases with agility', () => {
         const low = makePlayer();
         const high = makePlayer({ agility: 500 } as any);
         expect(high.getCriticalChance()).toBeGreaterThan(low.getCriticalChance());
-    });
-
-    it('is positive at base agility', () => {
-        const player = makePlayer();
-        expect(player.getCriticalChance()).toBeGreaterThan(0);
     });
 });
 
@@ -265,6 +279,19 @@ describe('Player.weaponDropBonusFactor', () => {
     it('is 1.0 at level 1', () => {
         const player = makePlayer();
         expect(player.weaponDropBonusFactor).toBe(1.0);
+    });
+
+    it('caps at 1.5 at level 420 (the formula reaches 1.5 exactly at t=1.0)', () => {
+        // t = (420 - 1) / (420 - 1) = 1.0 → factor = min(1 + 0.5 * 1, 1.5) = 1.5
+        const player = makePlayer({ level: 420 } as any);
+        expect(player.weaponDropBonusFactor).toBe(1.5);
+    });
+
+    it('is still below 1.5 at level 419 (one below the cap threshold)', () => {
+        // t = 418/419 < 1 → factor < 1.5; confirms the cap is exactly at level 420
+        const player = makePlayer({ level: 419 } as any);
+        expect(player.weaponDropBonusFactor).toBeCloseTo(1.4976, 3);
+        expect(player.weaponDropBonusFactor).toBeLessThan(1.5);
     });
 
     it('caps at 1.5 at very high levels', () => {
@@ -444,10 +471,10 @@ describe('Player.gainExp', () => {
     beforeEach(() => { player = makePlayer(); });
 
     it('increases exp correctly (with luck bonus)', () => {
-        // luck=1: adjustedAmount ≈ floor(amount * (1 + 0.05 * log10(21)))
+        // luck=1: adjustedAmount = floor(100 + 100 * 0.05 * log10(21)) = floor(106.611) = 106
         const result = player.gainExp(100);
-        expect(result).toBeGreaterThan(100); // luck bonus applies
-        expect(player.exp).toBe(result);
+        expect(result).toBe(106);
+        expect(player.exp).toBe(106);
     });
 
     it('does not gain exp at max level', () => {
@@ -487,9 +514,12 @@ describe('Player.gainExp', () => {
     });
 
     it('carries over excess exp after level up', () => {
-        // gainExp(1000) gives ~1066 adjusted. level up at 350, remainder = ~716
+        // gainExp(1000) → adjusted = floor(1000 + 66.11) = 1066
+        // Level up at level 1 (expRequired=350): excess = 1066 - 350 = 716
+        // Level up at level 2 (expRequired=410): excess = 716 - 410 = 306
+        // Level 3 requires 440 exp, so no further level up; exp = 306
         player.gainExp(1000);
-        expect(player.exp).toBeGreaterThan(0);
+        expect(player.exp).toBe(306);
     });
 
     it('can gain multiple levels in one call', () => {

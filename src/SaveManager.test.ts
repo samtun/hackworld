@@ -212,53 +212,18 @@ describe('SaveManager – saveToLocalStorage / createSaveData', () => {
         expect(data).toMatchObject({ version: 'test' });
     });
 
-    it('persists player level in the save data', () => {
-        SaveManager.Instance.saveToLocalStorage();
-        const data: SaveData = JSON.parse(localStorage.getItem('hackworld_autosave')!);
-        expect(data.player.level).toBe(5);
-    });
-
-    it('persists player bits (money) in the save data', () => {
-        SaveManager.Instance.saveToLocalStorage();
-        const data: SaveData = JSON.parse(localStorage.getItem('hackworld_autosave')!);
-        expect(data.player.money).toBe(1000);
-    });
-
-    it('persists X-Data in the save data', () => {
-        SaveManager.Instance.saveToLocalStorage();
-        const data: SaveData = JSON.parse(localStorage.getItem('hackworld_autosave')!);
-        expect(data.player.xData).toBe(50);
-    });
-
-    it('persists weapon tech in the save data', () => {
-        SaveManager.Instance.saveToLocalStorage();
-        const data: SaveData = JSON.parse(localStorage.getItem('hackworld_autosave')!);
-        expect(data.player.tech[WeaponType.SWORD]).toBe(50);
-    });
-
-    it('persists skill tech in the save data', () => {
-        SaveManager.Instance.saveToLocalStorage();
-        const data: SaveData = JSON.parse(localStorage.getItem('hackworld_autosave')!);
-        expect(data.player.skillTech[SkillTechType.RECOVERY]).toBe(10);
-    });
-
-    it('persists player position', () => {
-        SaveManager.Instance.saveToLocalStorage();
-        const data: SaveData = JSON.parse(localStorage.getItem('hackworld_autosave')!);
-        expect(data.player.position).toMatchObject({ x: 1, y: 2, z: 3 });
-    });
-
-    it('persists upgrade counts', () => {
-        SaveManager.Instance.saveToLocalStorage();
-        const data: SaveData = JSON.parse(localStorage.getItem('hackworld_autosave')!);
-        expect(data.player.strengthUpgrades).toBe(2);
-        expect(data.player.hpUpgrades).toBe(3);
-    });
-
-    it('persists lore intro seen flag', () => {
+    it('persists all player stats and properties in the save data', () => {
         SaveManager.Instance.markLoreIntroSeen();
         SaveManager.Instance.saveToLocalStorage();
         const data: SaveData = JSON.parse(localStorage.getItem('hackworld_autosave')!);
+        expect(data.player.level).toBe(5);
+        expect(data.player.money).toBe(1000);
+        expect(data.player.xData).toBe(50);
+        expect(data.player.tech[WeaponType.SWORD]).toBe(50);
+        expect(data.player.skillTech[SkillTechType.RECOVERY]).toBe(10);
+        expect(data.player.position).toMatchObject({ x: 1, y: 2, z: 3 });
+        expect(data.player.strengthUpgrades).toBe(2);
+        expect(data.player.hpUpgrades).toBe(3);
         expect(data.loreIntroSeen).toBe(true);
     });
 });
@@ -332,60 +297,18 @@ describe('SaveManager – loadSaveData', () => {
         };
     }
 
-    it('restores player level from save data', () => {
+    it('restores all player stats and properties from save data', () => {
         const mgr = SaveManager.Instance;
         const data = makeSaveData();
         (mgr as any).loadSaveData(data);
         expect(player.level).toBe(10);
-    });
-
-    it('restores player bits from save data', () => {
-        const mgr = SaveManager.Instance;
-        const data = makeSaveData();
-        (mgr as any).loadSaveData(data);
         expect(player.bits).toBe(5000);
-    });
-
-    it('restores player xData from save data', () => {
-        const mgr = SaveManager.Instance;
-        const data = makeSaveData();
-        (mgr as any).loadSaveData(data);
         expect(player.xData).toBe(200);
-    });
-
-    it('restores playtime', () => {
-        const mgr = SaveManager.Instance;
-        const data = makeSaveData();
-        (mgr as any).loadSaveData(data);
-        expect(mgr.getPlaytime()).toBe(1234);
-    });
-
-    it('restores upgrade counts', () => {
-        const mgr = SaveManager.Instance;
-        const data = makeSaveData();
-        (mgr as any).loadSaveData(data);
         expect(player.strengthUpgrades).toBe(4);
         expect(player.hpUpgrades).toBe(6);
-    });
-
-    it('restores weapon tech', () => {
-        const mgr = SaveManager.Instance;
-        const data = makeSaveData();
-        (mgr as any).loadSaveData(data);
         expect((player as any).tech[WeaponType.SWORD]).toBe(300);
-    });
-
-    it('restores skill tech', () => {
-        const mgr = SaveManager.Instance;
-        const data = makeSaveData();
-        (mgr as any).loadSaveData(data);
         expect(player.skillTech[SkillTechType.RECOVERY]).toBe(50);
-    });
-
-    it('restores lore intro seen flag', () => {
-        const mgr = SaveManager.Instance;
-        const data = makeSaveData();
-        (mgr as any).loadSaveData(data);
+        expect(mgr.getPlaytime()).toBe(1234);
         expect(mgr.isLoreIntroSeen()).toBe(true);
     });
 

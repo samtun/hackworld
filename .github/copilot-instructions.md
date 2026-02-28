@@ -259,6 +259,48 @@ The game includes a comprehensive save/load system managed by `SaveManager.ts` a
 - Always create new instances with fresh UUIDs when loading
 - Call `player.recalculateStats()` after loading to ensure equipped items apply their effects correctly
 
+## Unit Testing
+
+### When to Write / Update Tests
+- **ALWAYS** add or update unit tests when changing game logic (player stats, combat, save/load, item drops, trader transactions, etc.).
+- When a feature changes, update the corresponding tests so they reflect the new expected behaviour — do not just delete tests that now fail.
+
+### Test File Conventions
+- Test files live next to the source file: `src/Foo.ts` → `src/Foo.test.ts`.
+- Use `vitest` (`describe`, `it`, `expect`, `vi`) — the existing setup is in `vitest.config.ts`.
+- Run tests with `npm test`; run with coverage with `npm run test:coverage`.
+
+### Bypassing Constructors for 3D Classes
+Entities like `Player`, `Enemy`, and `BaseTrader` require Three.js scenes, Cannon-es worlds, DOM elements, and `AssetManager` in their constructors — none of which exist in the Node test environment.  
+Use `Object.create(ClassName.prototype)` and manually assign only the properties each test needs:
+
+```ts
+function makePlayer(overrides = {}): Player {
+    const player = Object.create(Player.prototype) as Player;
+    Object.assign(player, { /* minimal required fields */ });
+    (player as any).syncPosition = vi.fn();
+    return Object.assign(player, overrides);
+}
+```
+
+### Test Quality Rules
+- **NEVER make a property or method `public` just to be able to test it.** Refactor the design to make the behaviour observable through existing public APIs, or test through higher-level methods.
+- **Test concrete, hard-coded values** wherever the expected output is deterministic:
+  - ✅ `expect(player.getCriticalChance()).toBeCloseTo(0.02053, 4)`
+  - ❌ `expect(player.getCriticalChance()).toBeGreaterThan(0)`
+- **Use equivalence classes** to find the smallest representative set of inputs:
+  - Test one value from each logical partition (e.g., minimum, typical, maximum, boundary).
+  - Avoid repeating tests that differ only in unimportant ways.
+- **Combine assertions about the same operation** into one test rather than one `it()` per property:
+  ```ts
+  it('restores all player stats from save data', () => {
+      mgr.loadSaveData(data);
+      expect(player.level).toBe(10);
+      expect(player.bits).toBe(5000);
+      expect(player.tech[WeaponType.SWORD]).toBe(300);
+  });
+  ```
+
 ## What to Avoid
 - ❌ Don't create monolithic classes with too many responsibilities
 - ❌ Don't bypass the entity-based architecture

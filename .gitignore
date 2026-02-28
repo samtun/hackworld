@@ -5,6 +5,9 @@ node_modules/
 dist/
 build/
 
+# Test coverage
+coverage/
+
 # Misc
 .DS_Store
 Thumbs.db

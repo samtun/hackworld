@@ -126,18 +126,18 @@ describe('WeaponDropStrategy', () => {
 // ─── ChipDropStrategy ─────────────────────────────────────────────────────────
 
 describe('ChipDropStrategy', () => {
-    it('has a positive distribution weight', () => {
+    it('has distribution weight 4', () => {
         const strategy = new ChipDropStrategy();
-        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBeGreaterThan(0);
+        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(4);
     });
 });
 
 // ─── CoreDropStrategy ─────────────────────────────────────────────────────────
 
 describe('CoreDropStrategy', () => {
-    it('has a positive distribution weight', () => {
+    it('has distribution weight 4', () => {
         const strategy = new CoreDropStrategy();
-        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBeGreaterThan(0);
+        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(4);
     });
 });
 
