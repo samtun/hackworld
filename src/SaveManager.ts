@@ -324,6 +324,47 @@ export class SaveManager {
     }
 
     /**
+     * Returns the major version number from a semver string (e.g. "1.2.3" → 1).
+     * Returns NaN if the version string is not valid semver.
+     */
+    private static getMajorVersion(version: string): number {
+        return parseInt(version.split('.')[0], 10);
+    }
+
+    /**
+     * Checks whether the save data version is compatible with the current game version.
+     * If the major versions differ, shows a browser confirm prompt.
+     * @param saveData - The save data to check
+     * @param onIncompatibleCancel - Called when the user chooses "Cancel" on the incompatibility prompt
+     * @returns true if loading should proceed, false if it should be aborted
+     */
+    private checkVersionCompatibility(saveData: SaveData, onIncompatibleCancel: () => void): boolean {
+        const saveVersion = saveData.version ?? '0.0.0';
+        const gameVersion = SaveManager.SAVE_VERSION;
+        const saveMajor = SaveManager.getMajorVersion(saveVersion);
+        const gameMajor = SaveManager.getMajorVersion(gameVersion);
+
+        // Only enforce compatibility when both versions are valid semver
+        if (!isNaN(saveMajor) && !isNaN(gameMajor) && saveMajor !== gameMajor) {
+            const proceed = confirm(
+                `Your save game (v${saveVersion}) is incompatible with this game version (${gameVersion}). ` +
+                `Click OK to reset and start a new game, or Cancel to keep your save and play on the older version v${saveVersion}.`
+            );
+            if (proceed) {
+                // "OK" / Reset
+                sessionStorage.setItem(SaveManager.RESET_FLAG_KEY, 'true');
+                this.clearLocalStorage();
+                window.location.reload();
+            } else {
+                // "Cancel"
+                onIncompatibleCancel();
+            }
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Load game state from localStorage if available
      * @returns true if save was loaded, false if no save found
      */
@@ -340,6 +381,12 @@ export class SaveManager {
             }
 
             const saveData: SaveData = JSON.parse(savedData);
+
+            // Reload the page when the user cancels on the main-menu auto-load path
+            if (!this.checkVersionCompatibility(saveData, () => window.location.reload())) {
+                return false;
+            }
+
             this.loadSaveData(saveData);
             console.log('Game loaded from localStorage');
             return true;
@@ -398,6 +445,11 @@ export class SaveManager {
             // Validate save data version
             if (!saveData.version) {
                 throw new Error('Invalid save file: missing version');
+            }
+
+            // Do nothing on cancel when loading from the SaveManager NPC
+            if (!this.checkVersionCompatibility(saveData, () => {})) {
+                return;
             }
 
             this.loadSaveData(saveData);

@@ -1,3 +1,18 @@
+# [1.51.0](https://github.com/samtun/hackworld/compare/v1.50.2...v1.51.0) (2026-02-28)
+
+
+### Features
+
+* add warning when loading incompatible save game version ([bfed1e6](https://github.com/samtun/hackworld/commit/bfed1e67bcfa050cf01a0cdc227d7f5db8d3ffd3))
+
+## [1.50.2](https://github.com/samtun/hackworld/compare/v1.50.1...v1.50.2) (2026-02-27)
+
+
+### Bug Fixes
+
+* make item names appear a bit darker ([e6618bf](https://github.com/samtun/hackworld/commit/e6618bf3a91239479e093769312e03dd753a7a64))
+* pass damageFactor instead of bonusMultiplier to WeaponDrop to fix tier mismatch ([be8bb82](https://github.com/samtun/hackworld/commit/be8bb82e94ed8af401892e260deaf2ffc6013d88))
+
 ## [1.50.1](https://github.com/samtun/hackworld/compare/v1.50.0...v1.50.1) (2026-02-27)
 
 
