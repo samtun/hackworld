@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
 import { resetInputDebounce, shakeElement } from './UiUtils';
 
@@ -24,7 +23,6 @@ describe('resetInputDebounce', () => {
     it('only sets properties that are already defined (not undefined)', () => {
         const target: { lastSelectState?: boolean; lastCancelState?: boolean } = {
             lastSelectState: false,
-            // lastCancelState intentionally omitted
         };
         resetInputDebounce(target);
         expect(target.lastSelectState).toBe(true);
@@ -37,14 +35,14 @@ describe('resetInputDebounce', () => {
 });
 
 describe('shakeElement', () => {
-    it('does not throw when element.animate is available', () => {
-        const el = document.createElement('div');
-        expect(() => shakeElement(el)).not.toThrow();
+    it('calls element.animate with keyframes', () => {
+        const el = { animate: vi.fn() } as unknown as HTMLElement;
+        shakeElement(el);
+        expect((el as any).animate).toHaveBeenCalled();
     });
 
     it('does not throw when element.animate throws', () => {
-        const el = document.createElement('div');
-        (el as any).animate = () => { throw new Error('not supported'); };
+        const el = { animate: () => { throw new Error('not supported'); } } as unknown as HTMLElement;
         expect(() => shakeElement(el)).not.toThrow();
     });
 });

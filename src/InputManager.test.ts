@@ -1,4 +1,3 @@
-// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { InputManager } from './InputManager';
 
@@ -19,9 +18,21 @@ vi.mock('./MobileControlsManager', () => ({
     }
 }));
 
-function makeInputManager(): InputManager {
-    (InputManager as any).instance = undefined;
-    return InputManager.Instance;
+/** Create an InputManager bypassing the window-dependent constructor */
+function makeInputManager(overrides: Record<string, unknown> = {}): InputManager {
+    const im = Object.create(InputManager.prototype) as InputManager;
+    Object.assign(im, {
+        keys: {} as { [key: string]: boolean },
+        gamepadIndex: null,
+        mobileControls: undefined,
+        previousAttackState: false,
+        previousSelectState: false,
+        previousSkill1State: false,
+        previousSkill2State: false,
+        previousSkill3State: false,
+        ...overrides,
+    });
+    return im;
 }
 
 describe('InputManager', () => {
@@ -45,6 +56,40 @@ describe('InputManager', () => {
         it('returns true when KeyK is pressed', () => {
             manager.keys['KeyK'] = true;
             expect(manager.isAttackPressed()).toBe(true);
+        });
+    });
+
+    describe('isAttackHeld()', () => {
+        it('returns same result as isAttackPressed', () => {
+            expect(manager.isAttackHeld()).toBe(false);
+            manager.keys['KeyK'] = true;
+            expect(manager.isAttackHeld()).toBe(true);
+        });
+    });
+
+    describe('isAttackJustPressed()', () => {
+        it('returns true when newly pressed (no previous state)', () => {
+            manager.keys['KeyK'] = true;
+            expect(manager.isAttackJustPressed()).toBe(true);
+        });
+
+        it('returns false when already pressed in previous frame', () => {
+            manager.keys['KeyK'] = true;
+            manager.updateState();
+            expect(manager.isAttackJustPressed()).toBe(false);
+        });
+    });
+
+    describe('isAttackReleased()', () => {
+        it('returns false when never pressed', () => {
+            expect(manager.isAttackReleased()).toBe(false);
+        });
+
+        it('returns true when was pressed and now released', () => {
+            manager.keys['KeyK'] = true;
+            manager.updateState();
+            manager.keys['KeyK'] = false;
+            expect(manager.isAttackReleased()).toBe(true);
         });
     });
 
@@ -145,6 +190,19 @@ describe('InputManager', () => {
         });
     });
 
+    describe('isSelectJustPressed()', () => {
+        it('returns true when newly pressed', () => {
+            manager.keys['Enter'] = true;
+            expect(manager.isSelectJustPressed()).toBe(true);
+        });
+
+        it('returns false when was already pressed', () => {
+            manager.keys['Enter'] = true;
+            manager.updateState();
+            expect(manager.isSelectJustPressed()).toBe(false);
+        });
+    });
+
     describe('isCancelPressed()', () => {
         it('returns false initially', () => {
             expect(manager.isCancelPressed()).toBe(false);
@@ -167,6 +225,12 @@ describe('InputManager', () => {
         });
     });
 
+    describe('isSelectAndStartPressed()', () => {
+        it('returns false when no gamepad connected', () => {
+            expect(manager.isSelectAndStartPressed()).toBe(false);
+        });
+    });
+
     describe('isL1Pressed()', () => {
         it('returns false initially', () => {
             expect(manager.isL1Pressed()).toBe(false);
@@ -175,6 +239,18 @@ describe('InputManager', () => {
         it('returns true with KeyQ', () => {
             manager.keys['KeyQ'] = true;
             expect(manager.isL1Pressed()).toBe(true);
+        });
+    });
+
+    describe('isL3Pressed()', () => {
+        it('returns false when no gamepad', () => {
+            expect(manager.isL3Pressed()).toBe(false);
+        });
+    });
+
+    describe('isR3Pressed()', () => {
+        it('returns false when no gamepad', () => {
+            expect(manager.isR3Pressed()).toBe(false);
         });
     });
 
@@ -195,6 +271,21 @@ describe('InputManager', () => {
         });
     });
 
+    describe('isSkill1JustPressed()', () => {
+        it('returns true when newly pressed', () => {
+            manager.keys['KeyQ'] = true;
+            manager.keys['Space'] = true;
+            expect(manager.isSkill1JustPressed()).toBe(true);
+        });
+
+        it('returns false when was already pressed', () => {
+            manager.keys['KeyQ'] = true;
+            manager.keys['Space'] = true;
+            manager.updateState();
+            expect(manager.isSkill1JustPressed()).toBe(false);
+        });
+    });
+
     describe('isSkill2Pressed()', () => {
         it('returns false initially', () => {
             expect(manager.isSkill2Pressed()).toBe(false);
@@ -207,6 +298,21 @@ describe('InputManager', () => {
         });
     });
 
+    describe('isSkill2JustPressed()', () => {
+        it('returns true when newly pressed', () => {
+            manager.keys['KeyQ'] = true;
+            manager.keys['Escape'] = true;
+            expect(manager.isSkill2JustPressed()).toBe(true);
+        });
+
+        it('returns false when already pressed', () => {
+            manager.keys['KeyQ'] = true;
+            manager.keys['Escape'] = true;
+            manager.updateState();
+            expect(manager.isSkill2JustPressed()).toBe(false);
+        });
+    });
+
     describe('isSkill3Pressed()', () => {
         it('returns false initially', () => {
             expect(manager.isSkill3Pressed()).toBe(false);
@@ -216,6 +322,21 @@ describe('InputManager', () => {
             manager.keys['KeyQ'] = true;
             manager.keys['KeyK'] = true;
             expect(manager.isSkill3Pressed()).toBe(true);
+        });
+    });
+
+    describe('isSkill3JustPressed()', () => {
+        it('returns true when newly pressed', () => {
+            manager.keys['KeyQ'] = true;
+            manager.keys['KeyK'] = true;
+            expect(manager.isSkill3JustPressed()).toBe(true);
+        });
+
+        it('returns false when already pressed', () => {
+            manager.keys['KeyQ'] = true;
+            manager.keys['KeyK'] = true;
+            manager.updateState();
+            expect(manager.isSkill3JustPressed()).toBe(false);
         });
     });
 
@@ -265,85 +386,14 @@ describe('InputManager', () => {
         });
     });
 
-    describe('isAttackJustPressed()', () => {
-        it('returns false when attack was already pressed in previous frame', () => {
-            manager.keys['KeyK'] = true;
-            manager.updateState();
-            expect(manager.isAttackJustPressed()).toBe(false);
-        });
-
-        it('returns true when newly pressed (was not pressed before)', () => {
-            // No previous press, now pressed
-            manager.keys['KeyK'] = true;
-            expect(manager.isAttackJustPressed()).toBe(true);
-        });
-    });
-
-    describe('isAttackReleased()', () => {
-        it('returns true when was pressed and now released', () => {
-            manager.keys['KeyK'] = true;
-            manager.updateState();
-            manager.keys['KeyK'] = false;
-            expect(manager.isAttackReleased()).toBe(true);
-        });
-
-        it('returns false when never pressed', () => {
-            expect(manager.isAttackReleased()).toBe(false);
-        });
-    });
-
-    describe('isSelectJustPressed()', () => {
-        it('returns true when newly pressed', () => {
-            manager.keys['Enter'] = true;
-            expect(manager.isSelectJustPressed()).toBe(true);
-        });
-
-        it('returns false when was already pressed', () => {
-            manager.keys['Enter'] = true;
-            manager.updateState();
-            expect(manager.isSelectJustPressed()).toBe(false);
-        });
-    });
-
-    describe('isSkill1JustPressed()', () => {
-        it('returns true when newly pressed', () => {
-            manager.keys['KeyQ'] = true;
-            manager.keys['Space'] = true;
-            expect(manager.isSkill1JustPressed()).toBe(true);
-        });
-
-        it('returns false when was already pressed', () => {
-            manager.keys['KeyQ'] = true;
-            manager.keys['Space'] = true;
-            manager.updateState();
-            expect(manager.isSkill1JustPressed()).toBe(false);
-        });
-    });
-
-    describe('isSkill2JustPressed()', () => {
-        it('returns true when newly pressed', () => {
-            manager.keys['KeyQ'] = true;
-            manager.keys['Escape'] = true;
-            expect(manager.isSkill2JustPressed()).toBe(true);
-        });
-    });
-
-    describe('isSkill3JustPressed()', () => {
-        it('returns true when newly pressed', () => {
-            manager.keys['KeyQ'] = true;
-            manager.keys['KeyK'] = true;
-            expect(manager.isSkill3JustPressed()).toBe(true);
-        });
-    });
-
     describe('updateState()', () => {
-        it('updates previous attack state so isAttackJustPressed returns false next call', () => {
+        it('updates previousAttackState so isAttackJustPressed returns false', () => {
             manager.keys['KeyK'] = true;
             manager.updateState();
             expect(manager.isAttackJustPressed()).toBe(false);
         });
 
-        it('updates previous select state', () => {
+        it('updates previousSelectState so isSelectJustPressed returns false', () => {
             manager.keys['Enter'] = true;
             manager.updateState();
             expect(manager.isSelectJustPressed()).toBe(false);
