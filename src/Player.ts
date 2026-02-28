@@ -900,7 +900,7 @@ export class Player extends BaseMesh {
     }
 
     private startBlock(): void {
-        if (this.isBlocking || this.isDead || this.isDashing || this.isChargingAttack || this.isUsingSkill) return;
+        if (this.isBlocking || this.isDead || this.isDashing || this.isChargingAttack || this.isUsingSkill || this.weapon.isAttacking || !this.isGrounded) return;
 
         this.isBlocking = true;
         this.blockTimer = 0;
