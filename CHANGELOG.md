@@ -1,3 +1,10 @@
+# [1.51.0](https://github.com/samtun/hackworld/compare/v1.50.2...v1.51.0) (2026-02-28)
+
+
+### Features
+
+* add warning when loading incompatible save game version ([bfed1e6](https://github.com/samtun/hackworld/commit/bfed1e67bcfa050cf01a0cdc227d7f5db8d3ffd3))
+
 ## [1.50.2](https://github.com/samtun/hackworld/compare/v1.50.1...v1.50.2) (2026-02-27)
 
 
