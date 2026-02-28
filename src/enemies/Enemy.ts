@@ -557,11 +557,12 @@ export class Enemy extends BaseMesh {
 
     /**
      * Determine if the enemy should block this incoming hit.
-     * Probability: blockChance * min(1 - player.agility * 0.005, blockChance * 0.5)
+     * Probability: blockChance * reductionFactor, where reductionFactor is 1.0 at
+     * agility=1 (no reduction) and 0.5 at agility=10000 (50% reduction).
      */
     private tryBlock(): boolean {
-        const agilityFactor = 1 - this.player.agility * 0.005;
-        const effectiveBlockChance = this.blockChance * Math.min(agilityFactor, this.blockChance * 0.5);
+        const reductionFactor = 1 - 0.5 * Math.min((this.player.agility - 1) / (10000 - 1), 1);
+        const effectiveBlockChance = this.blockChance * reductionFactor;
         return Math.random() < effectiveBlockChance;
     }
 
