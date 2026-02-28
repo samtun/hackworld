@@ -56,7 +56,7 @@ export class DungeonSelectionManager {
 
         // Title
         const title = document.createElement('div');
-        title.innerText = "Select Dungeon";
+        title.innerText = "Network Access";
         title.style.fontSize = '28px';
         title.style.fontWeight = 'bold';
         title.style.marginBottom = '20px';
@@ -132,10 +132,8 @@ export class DungeonSelectionManager {
         // If no dungeons unlocked, show a message
         if (unlockedDungeons.length === 0) {
             const messageDiv = document.createElement('div');
-            messageDiv.innerText = 'No dungeons available yet. Talk to the Mainframe to begin your mission.';
-            messageDiv.style.textAlign = 'center';
-            messageDiv.style.color = '#aaa';
-            messageDiv.style.padding = '20px';
+            messageDiv.classList.add('no-connection-message');
+            messageDiv.innerText = '>>> NO CONNECTION <<<';
             this.dungeonList.appendChild(messageDiv);
             return;
         }

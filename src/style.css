@@ -348,3 +348,16 @@ body {
 .mobile.mobile-inventory-btn:active {
     background-size: 65% 65%;
 }
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+.no-connection-message {
+    text-align: center;
+    color: #aaa;
+    padding: 20px;
+    font-size: 20px;
+    animation: blink 0.5s normal infinite;
+}
