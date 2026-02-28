@@ -56,20 +56,6 @@ export class GameProgressManager {
     }
     
     /**
-     * Check if a specific stage is unlocked based on current progress
-     * @param stageIndex - The 1-based index of the stage (1 for first dungeon, 2 for second, etc.)
-     * @returns true if the stage is unlocked
-     */
-    isStageUnlocked(stageIndex: number): boolean {
-        // Stage N is unlocked at progress (2*N - 1)
-        // Stage 1 unlocked at progress 1 (talked to mainframe first time)
-        // Stage 2 unlocked at progress 3 (defeated boss 1 + talked to mainframe)
-        // Stage 3 unlocked at progress 5 (defeated boss 2 + talked to mainframe)
-        const requiredProgress = (2 * stageIndex) - 1;
-        return this._progress >= requiredProgress;
-    }
-    
-    /**
      * Check if the player has talked to mainframe for the first time
      */
     hasMetMainframe(): boolean {
@@ -78,22 +64,19 @@ export class GameProgressManager {
     
     /**
      * Check if a stage boss has been defeated
-     * @param stageIndex - The 1-based index of the stage
+     * @param requiredProgress - The required progress value of the stage
      */
-    hasStageBossBeenDefeated(stageIndex: number): boolean {
-        // Boss N is defeated at progress (2*N)
-        const requiredProgress = 2 * stageIndex;
-        return this._progress >= requiredProgress;
+    hasStageBossBeenDefeated(requiredProgress: number): boolean {
+        return this._progress >= requiredProgress + 1;
     }
     
     /**
      * Mark that the player defeated a stage boss
-     * @param stageIndex - The 1-based index of the stage
+     * @param requiredProgress - The required progress value of the stage
      */
-    markBossDefeated(stageIndex: number): void {
-        const expectedProgress = (2 * stageIndex) - 1; // Should be at "stage unlocked" state
-        if (this._progress === expectedProgress) {
-            this._progress = 2 * stageIndex; // Advance to "boss defeated" state
+    markBossDefeated(requiredProgress: number): void {
+        if (this._progress === requiredProgress) {
+            this._progress = requiredProgress + 1;
         }
     }
     

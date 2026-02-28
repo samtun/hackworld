@@ -120,14 +120,13 @@ export class DungeonSelectionManager {
         const progressManager = GameProgressManager.Instance;
 
         // Filter dungeons based on progress - only show unlocked ones
-        // Use stageIndex from metadata, not array position
         const unlockedDungeons = this.dungeonClasses.filter((DungeonClass) => {
             const metadata = DungeonClass.getMetadata();
-            if (!import.meta.env.DEV && metadata.stageIndex < 0 || metadata.stageIndex === 0) {
-                // Skip stages with negative stageIndex (like MovementTest) and skip Lobby (0)
+            if ((!import.meta.env.DEV && metadata.requiredProgress < 0) || metadata.requiredProgress === 0) {
+                // Skip stages with negative requiredProgress (like MovementTest) and skip Lobby (0)
                 return false;
             }
-            return progressManager.isStageUnlocked(metadata.stageIndex);
+            return progressManager.progress >= metadata.requiredProgress;
         });
 
         // If no dungeons unlocked, show a message
@@ -188,13 +187,13 @@ export class DungeonSelectionManager {
         const isSelectPressed = input.isSelectPressed();
         const isCancelPressed = input.isCancelPressed();
 
-        // Get unlocked dungeons count using stageIndex from metadata
+        // Get unlocked dungeons count using requiredProgress from metadata
         const progressManager = GameProgressManager.Instance;
         const unlockedDungeons = this.dungeonClasses.filter((DungeonClass) => {
             const metadata = DungeonClass.getMetadata();
-            // Skip stages without stageIndex (like MovementTest)
-            if (!metadata.stageIndex) return false;
-            return progressManager.isStageUnlocked(metadata.stageIndex);
+            // Skip Lobby (requiredProgress=0) and dev-only stages (requiredProgress<0)
+            if (metadata.requiredProgress <= 0) return false;
+            return progressManager.progress >= metadata.requiredProgress;
         });
 
         // If no dungeons available, only allow cancel

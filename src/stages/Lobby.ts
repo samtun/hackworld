@@ -21,12 +21,12 @@ export class Lobby extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
-    static getMetadata(): { id: string; name: string; description: string; stageIndex: number } {
+    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
             id: 'lobby',
             name: 'Lobby',
             description: 'Safe hub area',
-            stageIndex: 0,
+            requiredProgress: 0,
         };
     }
     /**
