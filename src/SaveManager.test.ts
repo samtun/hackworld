@@ -357,3 +357,163 @@ describe('SaveManager – loadSaveData', () => {
         expect(player.xData).toBe(50);
     });
 });
+
+// ─── SaveManager – inventory restoration ─────────────────────────────────────
+
+describe('SaveManager – inventory restoration', () => {
+    let player: ReturnType<typeof makePlayerStub>;
+
+    beforeEach(() => {
+        resetSaveManager();
+        stubStorage();
+
+        player = makePlayerStub();
+        (PlayerRegistry as any).instance = undefined;
+        PlayerRegistry.Instance.addPlayer(player);
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        (PlayerRegistry as any).instance = undefined;
+        (CardCollection as any).instance = undefined;
+        (GameProgressManager as any).instance = undefined;
+        (NpcRegistry as any).instance = undefined;
+    });
+
+    function makeSaveDataWithInventory(inventoryItems: any[]): SaveData {
+        return {
+            version: 'test',
+            timestamp: new Date().toISOString(),
+            playtime: 0,
+            gameProgress: 0,
+            player: {
+                level: 5,
+                exp: 0,
+                expRequired: 500,
+                maxHp: 200,
+                maxTp: 80,
+                money: 0,
+                xData: 0,
+                boosterPacks: 0,
+                statPointsAvailable: 0,
+                strengthUpgrades: 0,
+                defenseUpgrades: 0,
+                hpUpgrades: 0,
+                tpUpgrades: 0,
+                agilityUpgrades: 0,
+                luckUpgrades: 0,
+                strengthPoints: 0,
+                defensePoints: 0,
+                agilityPoints: 0,
+                luckPoints: 0,
+                position: { x: 0, y: 0, z: 0 },
+                inventory: inventoryItems,
+                tech: {
+                    [WeaponType.SWORD]: 0,
+                    [WeaponType.DUAL_BLADE]: 0,
+                    [WeaponType.LANCE]: 0,
+                    [WeaponType.HAMMER]: 0,
+                },
+                skillTech: {
+                    [SkillTechType.RECOVERY]: 0,
+                    [SkillTechType.BLAST]: 0,
+                    [SkillTechType.RANGED]: 0,
+                },
+            },
+            cardCollection: [],
+            npcDialogueShown: [],
+            loreIntroSeen: false,
+        };
+    }
+
+    it('restores a weapon from save data', () => {
+        const mgr = SaveManager.Instance;
+        const data = makeSaveDataWithInventory([{
+            kind: 'WeaponItem',
+            id: 'aegis_sword_alpha',
+            name: 'Aegis Sword',
+            buyPrice: 100,
+            sellPrice: 50,
+            weaponType: WeaponType.SWORD,
+            damage: 10,
+            model: 'models/aegis_sword.glb',
+            level: 1,
+            isEquipped: false,
+            tierName: 'Stable',
+        }]);
+        (mgr as any).loadSaveData(data);
+        expect(player.inventory).toHaveLength(1);
+        expect(player.inventory[0].name).toBe('Aegis Sword');
+    });
+
+    it('marks a restored weapon as equipped when isEquipped is true', () => {
+        const mgr = SaveManager.Instance;
+        const data = makeSaveDataWithInventory([{
+            kind: 'WeaponItem',
+            id: 'aegis_sword_alpha',
+            name: 'Aegis Sword',
+            buyPrice: 100,
+            sellPrice: 50,
+            weaponType: WeaponType.SWORD,
+            damage: 10,
+            model: 'models/aegis_sword.glb',
+            level: 1,
+            isEquipped: true,
+            tierName: 'Stable',
+        }]);
+        (mgr as any).loadSaveData(data);
+        expect(player.inventory[0].isEquipped).toBe(true);
+        expect(player.setWeapon).toHaveBeenCalled();
+    });
+
+    it('restores a core from save data', () => {
+        const mgr = SaveManager.Instance;
+        const data = makeSaveDataWithInventory([{
+            kind: 'CoreItem',
+            id: 'herald_core_alpha',
+            name: 'Herald Core',
+            level: 1,
+            isEquipped: false,
+        }]);
+        (mgr as any).loadSaveData(data);
+        expect(player.inventory).toHaveLength(1);
+        expect(player.inventory[0].name).toBe('Herald Core');
+    });
+
+    it('marks a restored core as equipped when isEquipped is true', () => {
+        const mgr = SaveManager.Instance;
+        const data = makeSaveDataWithInventory([{
+            kind: 'CoreItem',
+            id: 'herald_core_alpha',
+            name: 'Herald Core',
+            level: 1,
+            isEquipped: true,
+        }]);
+        (mgr as any).loadSaveData(data);
+        expect(player.inventory[0].isEquipped).toBe(true);
+    });
+
+    it('restores a chip from save data', () => {
+        const mgr = SaveManager.Instance;
+        const data = makeSaveDataWithInventory([{
+            kind: 'ChipItem',
+            id: 'firewire_alpha',
+            name: 'Firewire',
+            level: 1,
+            isEquipped: false,
+        }]);
+        (mgr as any).loadSaveData(data);
+        expect(player.inventory).toHaveLength(1);
+        expect(player.inventory[0].name).toBe('Firewire');
+    });
+
+    it('skips inventory items with invalid weapon data', () => {
+        const mgr = SaveManager.Instance;
+        const data = makeSaveDataWithInventory([{
+            kind: 'WeaponItem',
+            // missing weaponType and level
+        }]);
+        (mgr as any).loadSaveData(data);
+        expect(player.inventory).toHaveLength(0);
+    });
+});

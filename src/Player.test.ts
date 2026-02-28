@@ -714,3 +714,142 @@ describe('ChipItem canEquip', () => {
         expect(chip.canEquip(player)).toBe(false);
     });
 });
+
+// ─── Player.equipWeapon ───────────────────────────────────────────────────────
+
+describe('Player.equipWeapon', () => {
+    const stableTier = TierManager.Instance.tiers.get(Tier.STABLE)!;
+
+    it('equips the weapon matching the given id from inventory', () => {
+        const weapon = new WeaponItem('w1', 'Sword', 100, 50, WeaponType.SWORD, 10, 'model.glb', stableTier, 1);
+        const player = makePlayer({
+            inventory: [weapon],
+            setWeapon: vi.fn(),
+        });
+        player.equipWeapon('w1');
+        expect(weapon.isEquipped).toBe(true);
+    });
+
+    it('does nothing when no item with the given id is found', () => {
+        const player = makePlayer({ inventory: [] });
+        expect(() => player.equipWeapon('non-existent')).not.toThrow();
+    });
+});
+
+// ─── Player.equipCore ────────────────────────────────────────────────────────
+
+describe('Player.equipCore', () => {
+    it('equips the core matching the given id from inventory', () => {
+        const core = new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3 }, 1);
+        const recalc = vi.fn();
+        const player = makePlayer({ inventory: [core], level: 1, recalculateStats: recalc });
+        player.equipCore('core1');
+        expect(core.isEquipped).toBe(true);
+    });
+
+    it('does nothing when no item with the given id is found', () => {
+        const player = makePlayer({ inventory: [] });
+        expect(() => player.equipCore('non-existent')).not.toThrow();
+    });
+});
+
+// ─── Player.equipChip ────────────────────────────────────────────────────────
+
+describe('Player.equipChip', () => {
+    it('equips the chip matching the given id from inventory', () => {
+        const chip = new ChipItem('chip1', 'Firewire', 150, 75, 'firewire' as any, { weaponRangeMultiplier: 1.1 }, 1);
+        const recalc = vi.fn();
+        const player = makePlayer({ inventory: [chip], level: 1, recalculateStats: recalc });
+        player.equipChip('chip1');
+        expect(chip.isEquipped).toBe(true);
+    });
+
+    it('does nothing when no item with the given id is found', () => {
+        const player = makePlayer({ inventory: [] });
+        expect(() => player.equipChip('non-existent')).not.toThrow();
+    });
+});
+
+// ─── Player.getWeaponRangeMultiplier ─────────────────────────────────────────
+
+describe('Player.getWeaponRangeMultiplier', () => {
+    it('returns 1.0 when no chip is equipped', () => {
+        const player = makePlayer({ inventory: [] });
+        expect(player.getWeaponRangeMultiplier()).toBe(1.0);
+    });
+
+    it('returns the multiplier from an equipped chip', () => {
+        const chip = new ChipItem('chip1', 'Firewire', 150, 75, 'firewire' as any, { weaponRangeMultiplier: 1.15 }, 1);
+        chip.isEquipped = true;
+        const player = makePlayer({ inventory: [chip] });
+        expect(player.getWeaponRangeMultiplier()).toBe(1.15);
+    });
+
+    it('returns 1.0 when chip has no weaponRangeMultiplier stat', () => {
+        const chip = new ChipItem('chip1', 'Overclock', 150, 75, 'overclock' as any, {}, 1);
+        chip.isEquipped = true;
+        const player = makePlayer({ inventory: [chip] });
+        expect(player.getWeaponRangeMultiplier()).toBe(1.0);
+    });
+});
+
+// ─── Player.getTechForWeapon ──────────────────────────────────────────────────
+
+describe('Player.getTechForWeapon', () => {
+    it('returns 0 for a weapon type with no tech', () => {
+        const player = makePlayer();
+        expect(player.getTechForWeapon(WeaponType.SWORD)).toBe(0);
+    });
+
+    it('returns the stored tech value for a weapon type', () => {
+        const player = makePlayer();
+        (player as any).tech[WeaponType.HAMMER] = 250;
+        expect(player.getTechForWeapon(WeaponType.HAMMER)).toBe(250);
+    });
+});
+
+// ─── Player.getSkillTier ──────────────────────────────────────────────────────
+
+describe('Player.getSkillTier', () => {
+    it('returns STABLE when skill tech is 0', () => {
+        const player = makePlayer();
+        expect(player.getSkillTier('RECOVERY' as any)).toBe(Tier.STABLE);
+    });
+
+    it('returns LEET when skill tech is at cap (1200)', () => {
+        const player = makePlayer();
+        (player as any).skillTech['BLAST'] = 1200;
+        expect(player.getSkillTier('BLAST' as any)).toBe(Tier.LEET);
+    });
+});
+
+// ─── Player.getBaseStatValue ──────────────────────────────────────────────────
+
+describe('Player.getBaseStatValue', () => {
+    it('returns base strength (1) with no upgrades', () => {
+        const player = makePlayer();
+        expect(player.getBaseStatValue(StatType.STRENGTH)).toBe(1);
+    });
+
+    it('includes X-Data upgrades in the base stat value', () => {
+        const player = makePlayer();
+        (player as any).strengthUpgrades = 3;
+        expect(player.getBaseStatValue(StatType.STRENGTH)).toBe(4);
+    });
+
+    it('returns base HP (100) with no upgrades', () => {
+        const player = makePlayer();
+        expect(player.getBaseStatValue(StatType.HP)).toBe(100);
+    });
+
+    it('returns base TP (100) with no upgrades', () => {
+        const player = makePlayer();
+        expect(player.getBaseStatValue(StatType.TP)).toBe(100);
+    });
+
+    it('caps base stat at MAX_STAT_VALUE', () => {
+        const player = makePlayer();
+        (player as any).strengthPoints = 9998; // 1+9998=9999
+        expect(player.getBaseStatValue(StatType.STRENGTH)).toBe(9999);
+    });
+});
