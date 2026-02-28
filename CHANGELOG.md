@@ -1,3 +1,23 @@
+# [1.52.0](https://github.com/samtun/hackworld/compare/v1.51.0...v1.52.0) (2026-02-28)
+
+
+### Bug Fixes
+
+* allow dev-only stages to appear in dungeon selection in DEV mode ([7d5281a](https://github.com/samtun/hackworld/commit/7d5281a0591b47f1bc3e339aa2f04f5dc1f9028f))
+
+
+### Features
+
+* replace stageIndex with requiredProgress in stage metadata ([9f3ed3b](https://github.com/samtun/hackworld/commit/9f3ed3b66668a2418d35d74a8818411103e56a83))
+* update dungeon selection UI with connection status message and animation ([77f454d](https://github.com/samtun/hackworld/commit/77f454d3b35461170bacd6f01acd5a9de552d284))
+
+# [1.51.0](https://github.com/samtun/hackworld/compare/v1.50.2...v1.51.0) (2026-02-28)
+
+
+### Features
+
+* add warning when loading incompatible save game version ([bfed1e6](https://github.com/samtun/hackworld/commit/bfed1e67bcfa050cf01a0cdc227d7f5db8d3ffd3))
+
 ## [1.50.2](https://github.com/samtun/hackworld/compare/v1.50.1...v1.50.2) (2026-02-27)
 
 

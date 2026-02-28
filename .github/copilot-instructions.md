@@ -259,6 +259,17 @@ The game includes a comprehensive save/load system managed by `SaveManager.ts` a
 - Always create new instances with fresh UUIDs when loading
 - Call `player.recalculateStats()` after loading to ensure equipped items apply their effects correctly
 
+#### Save Game Version Compatibility
+**CRITICAL**: Save files are only compatible with the same **major** game version. Whenever you make any change to the `SaveData` structure — adding fields, removing fields, or changing the meaning of existing fields — you **MUST** trigger a **major version bump** by using a breaking-change conventional commit:
+
+```
+feat!: <description of save-breaking change>
+
+BREAKING CHANGE: Save game structure changed – old saves are incompatible.
+```
+
+This ensures `semantic-release` increments the major version (e.g. `1.x.x` → `2.0.0`), and the in-game version check will warn players before they load an incompatible save file.
+
 ## Unit Testing
 
 ### When to Write / Update Tests

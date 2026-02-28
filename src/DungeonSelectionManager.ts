@@ -56,7 +56,7 @@ export class DungeonSelectionManager {
 
         // Title
         const title = document.createElement('div');
-        title.innerText = "Select Dungeon";
+        title.innerText = "Network Access";
         title.style.fontSize = '28px';
         title.style.fontWeight = 'bold';
         title.style.marginBottom = '20px';
@@ -120,23 +120,20 @@ export class DungeonSelectionManager {
         const progressManager = GameProgressManager.Instance;
 
         // Filter dungeons based on progress - only show unlocked ones
-        // Use stageIndex from metadata, not array position
         const unlockedDungeons = this.dungeonClasses.filter((DungeonClass) => {
             const metadata = DungeonClass.getMetadata();
-            if (!import.meta.env.DEV && metadata.stageIndex < 0 || metadata.stageIndex === 0) {
-                // Skip stages with negative stageIndex (like MovementTest) and skip Lobby (0)
+            if ((!import.meta.env.DEV && metadata.requiredProgress < 0) || metadata.requiredProgress === 0) {
+                // Skip stages with negative requiredProgress (like MovementTest) and skip Lobby (0)
                 return false;
             }
-            return progressManager.isStageUnlocked(metadata.stageIndex);
+            return progressManager.progress >= metadata.requiredProgress;
         });
 
         // If no dungeons unlocked, show a message
         if (unlockedDungeons.length === 0) {
             const messageDiv = document.createElement('div');
-            messageDiv.innerText = 'No dungeons available yet. Talk to the Mainframe to begin your mission.';
-            messageDiv.style.textAlign = 'center';
-            messageDiv.style.color = '#aaa';
-            messageDiv.style.padding = '20px';
+            messageDiv.classList.add('no-connection-message');
+            messageDiv.innerText = '>>> NO CONNECTION <<<';
             this.dungeonList.appendChild(messageDiv);
             return;
         }
@@ -188,13 +185,13 @@ export class DungeonSelectionManager {
         const isSelectPressed = input.isSelectPressed();
         const isCancelPressed = input.isCancelPressed();
 
-        // Get unlocked dungeons count using stageIndex from metadata
+        // Get unlocked dungeons count using requiredProgress from metadata
         const progressManager = GameProgressManager.Instance;
         const unlockedDungeons = this.dungeonClasses.filter((DungeonClass) => {
             const metadata = DungeonClass.getMetadata();
-            // Skip stages without stageIndex (like MovementTest)
-            if (!metadata.stageIndex) return false;
-            return progressManager.isStageUnlocked(metadata.stageIndex);
+            // Skip Lobby (requiredProgress=0) and dev-only stages (requiredProgress<0) in non-DEV mode
+            if ((!import.meta.env.DEV && metadata.requiredProgress < 0) || metadata.requiredProgress === 0) return false;
+            return progressManager.progress >= metadata.requiredProgress;
         });
 
         // If no dungeons available, only allow cancel
