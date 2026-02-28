@@ -517,3 +517,86 @@ describe('SaveManager – inventory restoration', () => {
         expect(player.inventory).toHaveLength(0);
     });
 });
+
+// ─── SaveManager – additional edge cases ──────────────────────────────────────
+
+describe('SaveManager – edge cases', () => {
+    let player: ReturnType<typeof makePlayerStub>;
+
+    beforeEach(() => {
+        resetSaveManager();
+        stubStorage();
+
+        player = makePlayerStub();
+        (PlayerRegistry as any).instance = undefined;
+        PlayerRegistry.Instance.addPlayer(player);
+    });
+
+    afterEach(() => {
+        vi.unstubAllGlobals();
+        (PlayerRegistry as any).instance = undefined;
+        (CardCollection as any).instance = undefined;
+        (GameProgressManager as any).instance = undefined;
+        (NpcRegistry as any).instance = undefined;
+    });
+
+    it('resets NPC dialogue state for old saves without npcDialogueShown', () => {
+        const mgr = SaveManager.Instance;
+        const data: any = {
+            version: 'test',
+            timestamp: new Date().toISOString(),
+            playtime: 0,
+            gameProgress: 0,
+            player: {
+                level: 1, exp: 0, expRequired: 350, maxHp: 170, maxTp: 60,
+                money: 0, xData: 0, boosterPacks: 0, statPointsAvailable: 0,
+                strengthUpgrades: 0, defenseUpgrades: 0, hpUpgrades: 0, tpUpgrades: 0,
+                agilityUpgrades: 0, luckUpgrades: 0,
+                strengthPoints: 0, defensePoints: 0, agilityPoints: 0, luckPoints: 0,
+                position: { x: 0, y: 0, z: 0 },
+                inventory: [],
+                tech: { SWORD: 0, DUAL_BLADE: 0, LANCE: 0, HAMMER: 0 },
+                skillTech: { RECOVERY: 0, BLAST: 0, RANGED: 0 },
+            },
+            cardCollection: [],
+            // npcDialogueShown intentionally omitted (old save format)
+        };
+        const npcRegistry = NpcRegistry.Instance;
+        npcRegistry.markDialogueShown('SomeNpc');
+        (mgr as any).loadSaveData(data);
+        // Should have reset all dialogue
+        expect(npcRegistry.hasShownDialogue('SomeNpc')).toBe(false);
+    });
+
+    it('marks chip as equipped when isEquipped is true in save data', () => {
+        const mgr = SaveManager.Instance;
+        const data: any = {
+            version: 'test',
+            timestamp: new Date().toISOString(),
+            playtime: 0,
+            gameProgress: 0,
+            player: {
+                level: 1, exp: 0, expRequired: 350, maxHp: 170, maxTp: 60,
+                money: 0, xData: 0, boosterPacks: 0, statPointsAvailable: 0,
+                strengthUpgrades: 0, defenseUpgrades: 0, hpUpgrades: 0, tpUpgrades: 0,
+                agilityUpgrades: 0, luckUpgrades: 0,
+                strengthPoints: 0, defensePoints: 0, agilityPoints: 0, luckPoints: 0,
+                position: { x: 0, y: 0, z: 0 },
+                inventory: [{
+                    kind: 'ChipItem',
+                    id: 'firewire_alpha',
+                    name: 'Firewire',
+                    level: 1,
+                    isEquipped: true,
+                }],
+                tech: { SWORD: 0, DUAL_BLADE: 0, LANCE: 0, HAMMER: 0 },
+                skillTech: { RECOVERY: 0, BLAST: 0, RANGED: 0 },
+            },
+            cardCollection: [],
+            npcDialogueShown: [],
+            loreIntroSeen: false,
+        };
+        (mgr as any).loadSaveData(data);
+        expect(player.inventory[0].isEquipped).toBe(true);
+    });
+});
