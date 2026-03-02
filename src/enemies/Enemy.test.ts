@@ -330,3 +330,183 @@ describe('Enemy.getDeathPosition', () => {
         expect(pos.z).toBe(5);
     });
 });
+
+// ─── takeDamage – knockback ────────────────────────────────────────────────────
+
+describe('Enemy.takeDamage – knockback', () => {
+    it('applies velocity knockback away from sourcePos', () => {
+        const enemy = makeEnemy() as any;
+        enemy.body.velocity = { x: 0, y: 0, z: 0 };
+        // Enemy at (5,0,0), source at (0,0,0) → knockback in +x direction
+        enemy.body.position = {
+            x: 5, y: 0, z: 0,
+            copy: vi.fn(),
+            vsub: (v: any) => {
+                const dir = { x: 5 - v.x, y: 0 - v.y, z: 0 - v.z };
+                return Object.assign(dir, {
+                    length: () => Math.sqrt(dir.x ** 2 + dir.y ** 2 + dir.z ** 2),
+                    normalize: function () {
+                        const l = Math.sqrt(this.x ** 2 + this.y ** 2 + this.z ** 2) || 1;
+                        this.x /= l; this.y /= l; this.z /= l;
+                        return this;
+                    },
+                });
+            },
+        };
+        const sourcePos = { x: 0, y: 0, z: 0 } as any;
+        enemy.takeDamage(10, false, sourcePos);
+        expect(enemy.body.velocity.x).toBeGreaterThan(0);
+    });
+
+    it('does not apply knockback when sourcePos is omitted', () => {
+        const enemy = makeEnemy() as any;
+        enemy.body.velocity = { x: 0, y: 0, z: 0 };
+        enemy.takeDamage(10, false);
+        expect(enemy.body.velocity.x).toBe(0);
+        expect(enemy.body.velocity.z).toBe(0);
+    });
+
+    it('scales knockback by knockbackFactor', () => {
+        const enemy = makeEnemy() as any;
+        enemy.body.velocity = { x: 0, y: 0, z: 0 };
+        enemy.body.position = {
+            x: 5, y: 0, z: 0,
+            copy: vi.fn(),
+            vsub: (v: any) => {
+                const dir = { x: 5 - v.x, y: 0, z: 0 - v.z };
+                return Object.assign(dir, {
+                    length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
+                    normalize: function () {
+                        const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
+                        this.x /= l; this.z /= l;
+                        return this;
+                    },
+                });
+            },
+        };
+        const sourcePos = { x: 0, y: 0, z: 0 } as any;
+        const enemyHigh = makeEnemy() as any;
+        enemyHigh.body.velocity = { x: 0, y: 0, z: 0 };
+        enemyHigh.body.position = {
+            x: 5, y: 0, z: 0,
+            copy: vi.fn(),
+            vsub: (v: any) => {
+                const dir = { x: 5 - v.x, y: 0, z: 0 - v.z };
+                return Object.assign(dir, {
+                    length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
+                    normalize: function () {
+                        const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
+                        this.x /= l; this.z /= l;
+                        return this;
+                    },
+                });
+            },
+        };
+        enemy.takeDamage(1, false, sourcePos, 1.0);
+        enemyHigh.takeDamage(1, false, sourcePos, 2.0);
+        expect(enemyHigh.body.velocity.x).toBeCloseTo(enemy.body.velocity.x * 2, 5);
+    });
+});
+
+// ─── cleanup ───────────────────────────────────────────────────────────────────
+
+describe('Enemy.cleanup', () => {
+    it('removes the mesh from the scene', () => {
+        const enemy = makeEnemy() as any;
+        enemy.disposeMesh = vi.fn();
+        enemy.cleanup();
+        expect(enemy.scene.remove).toHaveBeenCalledWith(enemy.mesh);
+    });
+
+    it('removes the physics body from the world', () => {
+        const enemy = makeEnemy() as any;
+        enemy.disposeMesh = vi.fn();
+        enemy.cleanup();
+        expect(enemy.world.removeBody).toHaveBeenCalledWith(enemy.body);
+    });
+
+    it('calls disposeMesh to free geometry/material resources', () => {
+        const enemy = makeEnemy() as any;
+        const dispose = vi.fn();
+        enemy.disposeMesh = dispose;
+        enemy.cleanup();
+        expect(dispose).toHaveBeenCalledOnce();
+    });
+});
+
+// ─── update – AI chase ────────────────────────────────────────────────────────
+
+describe('Enemy.update – AI chase behavior', () => {
+    /** Build a body.position mock that supports distanceTo and vsub from (px, py, pz) */
+    function makeBodyPos(px: number, py: number, pz: number) {
+        return {
+            x: px, y: py, z: pz,
+            copy: vi.fn(),
+            distanceTo: (v: any) => Math.sqrt((v.x - px) ** 2 + (v.y - py) ** 2 + (v.z - pz) ** 2),
+            vsub: (v: any) => {
+                const dir = { x: px - v.x, y: py - v.y, z: pz - v.z };
+                return Object.assign(dir, {
+                    length: () => Math.sqrt(dir.x ** 2 + dir.y ** 2 + dir.z ** 2),
+                    normalize: function () {
+                        const l = Math.sqrt(this.x ** 2 + this.y ** 2 + this.z ** 2) || 1;
+                        this.x /= l; this.y /= l; this.z /= l;
+                        return this;
+                    },
+                });
+            },
+        };
+    }
+
+    it('sets velocity towards the player when player is alive and within aggro range', () => {
+        const enemy = makeEnemy() as any;
+        // Player at (8,0,0); enemy at (0,0,0) → distToPlayer = 8 < aggroRange(15)
+        enemy.body.position = makeBodyPos(0, 0, 0);
+        enemy.body.velocity = { x: 0, y: 0, z: 0 };
+        enemy.basePosition = makeBodyPos(0, 0, 0);
+        enemy.attackTimer = 999; // prevent attack trigger
+        enemy.player = {
+            isDead: false,
+            body: {
+                position: {
+                    x: 8, y: 0, z: 0,
+                    vsub: (v: any) => {
+                        const dir = { x: 8 - v.x, y: 0 - v.y, z: 0 - v.z };
+                        return Object.assign(dir, {
+                            length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
+                            normalize: function () {
+                                const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
+                                this.x /= l; this.z /= l;
+                                return this;
+                            },
+                        });
+                    },
+                },
+            },
+        };
+
+        enemy.update(0.016);
+
+        // Enemy should move in the +x direction towards the player
+        expect(enemy.body.velocity.x).toBeGreaterThan(0);
+    });
+
+    it('does not move when player is outside aggro range', () => {
+        const enemy = makeEnemy() as any;
+        // Player at (100,0,0); enemy at (0,0,0) → distToPlayer = 100 > aggroRange(15)
+        enemy.body.position = makeBodyPos(0, 0, 0);
+        enemy.body.velocity = { x: 5, y: 0, z: 0 }; // pre-set to confirm friction
+        enemy.basePosition = makeBodyPos(0, 0, 0);
+        enemy.attackTimer = 999;
+        enemy.isReturningToBase = false;
+        enemy.returnToBaseTimer = 0;
+        enemy.player = {
+            isDead: false,
+            body: { position: { x: 100, y: 0, z: 0, vsub: vi.fn() } },
+        };
+
+        enemy.update(0.016);
+
+        // Friction is applied (velocity.x *= 0.9 repeatedly) → should be less than initial 5
+        expect(enemy.body.velocity.x).toBeLessThan(5);
+    });
+});

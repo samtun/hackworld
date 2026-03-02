@@ -239,3 +239,106 @@ describe('BaseTrader – trader inventory', () => {
         expect(trader.traderInventory.map(i => i.name)).toContain('Item_t3');
     });
 });
+
+// ─── show / hide / toggle ──────────────────────────────────────────────────────
+
+/**
+ * Build a TestTrader with a container that has a proper style object
+ * so show() and hide() don't throw.
+ */
+function makeTraderWithDOM(): TestTrader {
+    const trader = makeTrader();
+    (trader as any).container = { style: { display: 'none' } };
+    return trader;
+}
+
+describe('BaseTrader.show', () => {
+    it('sets isVisible to true', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = false;
+        (trader as any).show();
+        expect(trader.isVisible).toBe(true);
+    });
+
+    it('sets container.style.display to "flex"', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = false;
+        (trader as any).show();
+        expect((trader as any).container.style.display).toBe('flex');
+    });
+
+    it('resets selectedIndex to 0', () => {
+        const trader = makeTraderWithDOM();
+        trader.selectedIndex = 3;
+        (trader as any).show();
+        expect(trader.selectedIndex).toBe(0);
+    });
+
+    it('resets activePanel to TRADER', () => {
+        const trader = makeTraderWithDOM();
+        trader.activePanel = TraderPanel.PLAYER;
+        (trader as any).show();
+        expect(trader.activePanel).toBe(TraderPanel.TRADER);
+    });
+
+    it('marks needsRender as true', () => {
+        const trader = makeTraderWithDOM();
+        trader.needsRender = false;
+        (trader as any).show();
+        expect(trader.needsRender).toBe(true);
+    });
+});
+
+describe('BaseTrader.hide', () => {
+    it('sets isVisible to false', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = true;
+        (trader as any).hide();
+        expect(trader.isVisible).toBe(false);
+    });
+
+    it('sets container.style.display to "none"', () => {
+        const trader = makeTraderWithDOM();
+        (trader as any).container.style.display = 'flex';
+        (trader as any).hide();
+        expect((trader as any).container.style.display).toBe('none');
+    });
+
+    it('calls uiManager.hideControlHints', () => {
+        const trader = makeTraderWithDOM();
+        (trader as any).hide();
+        expect(trader.uiManager.hideControlHints).toHaveBeenCalledOnce();
+    });
+});
+
+describe('BaseTrader.toggle', () => {
+    it('calls show() when currently hidden', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = false;
+        const spy = vi.spyOn(trader as any, 'show');
+        (trader as any).toggle();
+        expect(spy).toHaveBeenCalledOnce();
+    });
+
+    it('calls hide() when currently visible', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = true;
+        const spy = vi.spyOn(trader as any, 'hide');
+        (trader as any).toggle();
+        expect(spy).toHaveBeenCalledOnce();
+    });
+
+    it('transitions from hidden to visible', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = false;
+        (trader as any).toggle();
+        expect(trader.isVisible).toBe(true);
+    });
+
+    it('transitions from visible to hidden', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = true;
+        (trader as any).toggle();
+        expect(trader.isVisible).toBe(false);
+    });
+});
