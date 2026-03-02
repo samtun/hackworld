@@ -1,4 +1,38 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+vi.mock('../ui/InputHints', () => ({
+    getHint: vi.fn().mockReturnValue(''),
+    HintConfigs: { buySellClose: {} },
+}));
+vi.mock('../ui/UiUtils', () => ({
+    resetInputDebounce: vi.fn(),
+    shakeElement: vi.fn(),
+}));
+vi.mock('../ui/MenuManager', () => ({
+    MenuManager: {
+        Instance: {
+            createOverlay: vi.fn(() => document.createElement('div')),
+            createGridWindow: vi.fn(() => document.createElement('div')),
+            createPanel: vi.fn(() => document.createElement('div')),
+        },
+    },
+    MENU_COLORS: {
+        PANEL_TRADER: '#000', PANEL_PLAYER: '#000', COST_COLOR: '#ffd700',
+        TEXT: '#fff', SEPARATOR: '#333', WINDOW_BG: '#111',
+        ITEM_SELECTED: '#444', TRANSPARENT: 'transparent',
+    },
+    MENU_STYLES: { FONT_FAMILY: 'Arial', Z_INDEX: 1000 },
+}));
+vi.mock('../ui/UIManager', () => ({
+    UIManager: { Instance: { showControlHints: vi.fn(), hideControlHints: vi.fn() } },
+}));
+vi.mock('./ItemDetailsPanel', () => ({
+    ItemDetailsPanel: { generateHTML: vi.fn().mockReturnValue('<div>details</div>') },
+}));
+vi.mock('./ItemDisplay', () => ({
+    formatItemLabel: vi.fn((item: any) => item?.name || 'item'),
+}));
+
 import { BaseTrader } from './BaseTrader';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
@@ -340,5 +374,145 @@ describe('BaseTrader.toggle', () => {
         trader.isVisible = true;
         (trader as any).toggle();
         expect(trader.isVisible).toBe(false);
+    });
+});
+
+// ─── handleNavigation ─────────────────────────────────────────────────────────
+
+function makeInput(overrides: Partial<{
+    isNavigateUpPressed: () => boolean;
+    isNavigateDownPressed: () => boolean;
+    isNavigateLeftPressed: () => boolean;
+    isNavigateRightPressed: () => boolean;
+    isSelectPressed: () => boolean;
+    isCancelPressed: () => boolean;
+}> = {}) {
+    return {
+        isNavigateUpPressed: vi.fn().mockReturnValue(false),
+        isNavigateDownPressed: vi.fn().mockReturnValue(false),
+        isNavigateLeftPressed: vi.fn().mockReturnValue(false),
+        isNavigateRightPressed: vi.fn().mockReturnValue(false),
+        isSelectPressed: vi.fn().mockReturnValue(false),
+        isCancelPressed: vi.fn().mockReturnValue(false),
+        ...overrides,
+    } as any;
+}
+
+function makeNavPlayer() {
+    return { bits: 1000, inventory: [] as Item[] } as any;
+}
+
+describe('BaseTrader.handleNavigation – up/down', () => {
+    let trader: any;
+
+    beforeEach(() => {
+        trader = makeTraderWithDOM() as any;
+        trader.traderInventory = [
+            makeSellableItem('a', 50, 25),
+            makeSellableItem('b', 50, 25),
+            makeSellableItem('c', 50, 25),
+        ];
+        trader.selectedIndex = 1;
+    });
+
+    it('decrements selectedIndex on navigate up', () => {
+        const input = makeInput({ isNavigateUpPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.selectedIndex).toBe(0);
+    });
+
+    it('does not go below 0 on navigate up', () => {
+        trader.selectedIndex = 0;
+        const input = makeInput({ isNavigateUpPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.selectedIndex).toBe(0);
+    });
+
+    it('increments selectedIndex on navigate down', () => {
+        trader.selectedIndex = 0;
+        const input = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.selectedIndex).toBe(1);
+    });
+
+    it('does not exceed last item index on navigate down', () => {
+        trader.selectedIndex = 2; // last index
+        const input = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.selectedIndex).toBe(2);
+    });
+
+    it('debounces up navigation when key is held', () => {
+        trader.lastNavigateUpState = true;
+        const input = makeInput({ isNavigateUpPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.selectedIndex).toBe(1); // unchanged
+    });
+
+    it('debounces down navigation when key is held', () => {
+        trader.selectedIndex = 0;
+        trader.lastNavigateDownState = true;
+        const input = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.selectedIndex).toBe(0); // unchanged
+    });
+});
+
+describe('BaseTrader.handleNavigation – panel switching', () => {
+    let trader: any;
+
+    beforeEach(() => {
+        trader = makeTraderWithDOM() as any;
+        trader.traderInventory = [makeSellableItem('x', 50, 25)];
+        trader.selectedIndex = 0;
+    });
+
+    it('switches activePanel to PLAYER on navigate right', () => {
+        trader.activePanel = TraderPanel.TRADER;
+        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.activePanel).toBe(TraderPanel.PLAYER);
+    });
+
+    it('resets selectedIndex to 0 when switching to PLAYER panel', () => {
+        trader.activePanel = TraderPanel.TRADER;
+        trader.selectedIndex = 0;
+        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.selectedIndex).toBe(0);
+    });
+
+    it('switches activePanel to TRADER on navigate left', () => {
+        trader.activePanel = TraderPanel.PLAYER;
+        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.activePanel).toBe(TraderPanel.TRADER);
+    });
+
+    it('resets selectedIndex to 0 when switching to TRADER panel', () => {
+        trader.activePanel = TraderPanel.PLAYER;
+        trader.selectedIndex = 2;
+        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.selectedIndex).toBe(0);
+    });
+});
+
+describe('BaseTrader.handleNavigation – cancel', () => {
+    it('calls hide() when cancel is pressed', () => {
+        const trader = makeTraderWithDOM() as any;
+        const hideSpy = vi.spyOn(trader, 'hide');
+        const input = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(hideSpy).toHaveBeenCalledOnce();
+    });
+
+    it('does not change selectedIndex when cancel is pressed', () => {
+        const trader = makeTraderWithDOM() as any;
+        trader.selectedIndex = 1;
+        vi.spyOn(trader, 'hide').mockImplementation(() => {});
+        const input = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.selectedIndex).toBe(1);
     });
 });
