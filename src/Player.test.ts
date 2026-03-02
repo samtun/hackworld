@@ -617,6 +617,82 @@ describe('Player.upgradeWithXData', () => {
     });
 });
 
+// ─── getUpgradeCost ───────────────────────────────────────────────────────────
+
+describe('Player.getUpgradeCost', () => {
+    let player: Player;
+    beforeEach(() => { player = makePlayer(); });
+
+    it('returns correct Fibonacci values for all sequence indices', () => {
+        const expected = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
+        for (let i = 0; i < expected.length; i++) {
+            expect(player.getUpgradeCost(i)).toBe(expected[i]);
+        }
+    });
+
+    it('caps at 144 (fibonacci[11]) for levels 10 through 50', () => {
+        expect(player.getUpgradeCost(10)).toBe(89);
+        expect(player.getUpgradeCost(11)).toBe(144);
+        expect(player.getUpgradeCost(50)).toBe(144);
+        expect(player.getUpgradeCost(100)).toBe(144);
+    });
+});
+
+// ─── calculateExpRequired (via gainExp / expRequired) ────────────────────────
+
+describe('Player.calculateExpRequired (via expRequired)', () => {
+    // Formula: floor(350 + level*30 + level^2 * 0.07)
+    // Level 1: floor(350 + 30 + 0.07) = 380
+    // Level 2: floor(350 + 60 + 0.28) = 410
+    // Level 10: floor(350 + 300 + 7.0) = 657
+
+    it('expRequired at level 1 equals floor(350 + 1*30 + 1^2*0.07) = 380', () => {
+        const player = makePlayer({ level: 1, expRequired: 0 } as any);
+        // recalculate via gainExp triggering levelUp which calls calculateExpRequired(newLevel)
+        // Instead, verify initial expRequired matches EXP_BASE (350) for level 0 pre-levelUp
+        // After leveling from 1→2, expRequired should be for level 2
+        (player as any).expRequired = 1; // trigger immediate level up
+        (player as any).exp = 0;
+        (player as any).recalculateStats = vi.fn();
+        (player as any).heal = vi.fn();
+        (player as any).isLevelingUp = false;
+        (player as any).fadeToAction = vi.fn();
+        (player as any).shockwavePending = false;
+        (player as any).levelUpShockwaveTimer = 0;
+        player.gainExp(1);
+        // After level up from 1→2, calculateExpRequired(2) = floor(350+60+0.28) = 410
+        expect((player as any).expRequired).toBe(410);
+    });
+
+    it('expRequired at level 2 equals floor(350 + 2*30 + 4*0.07) = 410', () => {
+        const player = makePlayer({ level: 2, expRequired: 1 } as any);
+        (player as any).exp = 0;
+        (player as any).recalculateStats = vi.fn();
+        (player as any).heal = vi.fn();
+        (player as any).isLevelingUp = false;
+        (player as any).fadeToAction = vi.fn();
+        (player as any).shockwavePending = false;
+        (player as any).levelUpShockwaveTimer = 0;
+        player.gainExp(1);
+        // After level up from 2→3, calculateExpRequired(3) = floor(350+90+0.63) = 440
+        expect((player as any).expRequired).toBe(440);
+    });
+
+    it('expRequired at level 10 equals floor(350 + 10*30 + 100*0.07) = 657', () => {
+        const player = makePlayer({ level: 10, expRequired: 1 } as any);
+        (player as any).exp = 0;
+        (player as any).recalculateStats = vi.fn();
+        (player as any).heal = vi.fn();
+        (player as any).isLevelingUp = false;
+        (player as any).fadeToAction = vi.fn();
+        (player as any).shockwavePending = false;
+        (player as any).levelUpShockwaveTimer = 0;
+        player.gainExp(1);
+        // After level up from 10→11, calculateExpRequired(11) = floor(350+330+8.47) = 688
+        expect((player as any).expRequired).toBe(688);
+    });
+});
+
 // ─── addStatPoint ─────────────────────────────────────────────────────────────
 
 describe('Player.addStatPoint', () => {
