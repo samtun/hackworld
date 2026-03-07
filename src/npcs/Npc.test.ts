@@ -245,7 +245,7 @@ describe('Npc.cleanup', () => {
         const scene = { remove: vi.fn() } as any;
         const world = { removeBody: vi.fn() } as any;
         npc.cleanup(scene, world);
-        expect(scene.remove).toHaveBeenCalledWith(npc.mesh);
+        expect(scene.remove).toHaveBeenCalledWith((npc as any).mesh);
         expect(world.removeBody).toHaveBeenCalledWith(npc.body);
     });
 
@@ -254,7 +254,7 @@ describe('Npc.cleanup', () => {
         const scene = { remove: vi.fn() } as any;
         const world = { removeBody: vi.fn() } as any;
         npc.cleanup(scene, world);
-        expect(npc.disposeMesh).toHaveBeenCalledOnce();
+        expect((npc as any).disposeMesh).toHaveBeenCalledOnce();
     });
 
     it('does not throw if body is undefined', () => {

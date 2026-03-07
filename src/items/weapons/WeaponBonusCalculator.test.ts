@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 import { WeaponItem } from './WeaponItem';
 import { WeaponType } from './WeaponType';

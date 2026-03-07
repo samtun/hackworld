@@ -18,7 +18,7 @@ describe('WeaponRepository', () => {
         });
 
         it('returns clones (not the internal instances)', () => {
-            const [a, b] = repo.getAllWeapons();
+            repo.getAllWeapons();
             // two calls produce different object references
             const weapons2 = repo.getAllWeapons();
             expect(weapons2[0]).not.toBe(repo.getAllWeapons()[0]);

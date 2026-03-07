@@ -161,7 +161,6 @@ describe('DungeonSelectionManager', () => {
 
         it('does not re-render when needsRender is false and selection unchanged', () => {
             const mgr = makeDungeonManager({ isVisible: true, needsRender: false });
-            const spy = vi.spyOn(mgr, 'render' in mgr ? 'render' : 'render');
             mgr.update(makeInput());
             // needsRender stays false
             expect(mgr.needsRender).toBe(false);

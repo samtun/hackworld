@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('three', () => {
     class V3 {
@@ -28,14 +28,14 @@ vi.mock('three', () => {
     }
     return {
         Mesh:FakeMesh, Group:FakeMesh, Object3D:FakeMesh,
-        Vector3:V3, Euler:class{x=0;y=0;z=0;constructor(...a:any[]){}},
+        Vector3:V3, Euler:class{x=0;y=0;z=0;constructor(..._a:any[]){}},
         Quaternion:class{x=0;y=0;z=0;w=1;setFromEuler(){return this;}multiply(){return this;}},
         BoxGeometry:class{dispose=vi.fn();},
         CylinderGeometry:class{dispose=vi.fn();},
         MeshBasicMaterial:class{dispose=vi.fn();color={setHSL:vi.fn()};transparent=false;opacity=1;},
         AnimationMixer:class{update=vi.fn();clipAction=vi.fn(()=>({play:vi.fn(),setLoop:vi.fn(),fadeIn:vi.fn(),fadeOut:vi.fn(),reset:vi.fn(),stop:vi.fn()}));},
         LoopOnce:1, LoopRepeat:2,
-        MathUtils:{randFloat:(a:number,b:number)=>(a+b)/2,randInt:(a:number,b:number)=>a},
+        MathUtils:{randFloat:(_a:number,_b:number)=>(_a+_b)/2,randInt:(_a:number,_b:number)=>_a},
     };
 });
 

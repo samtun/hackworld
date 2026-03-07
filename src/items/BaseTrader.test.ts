@@ -341,7 +341,7 @@ describe('BaseTrader.hide', () => {
     it('calls uiManager.hideControlHints', () => {
         const trader = makeTraderWithDOM();
         (trader as any).hide();
-        expect(trader.uiManager.hideControlHints).toHaveBeenCalledOnce();
+        expect((trader as any).uiManager.hideControlHints).toHaveBeenCalledOnce();
     });
 });
 

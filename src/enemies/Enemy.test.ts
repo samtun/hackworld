@@ -345,7 +345,7 @@ describe('Enemy.takeDamage – knockback', () => {
                 const dir = { x: 5 - v.x, y: 0 - v.y, z: 0 - v.z };
                 return Object.assign(dir, {
                     length: () => Math.sqrt(dir.x ** 2 + dir.y ** 2 + dir.z ** 2),
-                    normalize: function () {
+                    normalize: function (this: any) {
                         const l = Math.sqrt(this.x ** 2 + this.y ** 2 + this.z ** 2) || 1;
                         this.x /= l; this.y /= l; this.z /= l;
                         return this;
@@ -376,7 +376,7 @@ describe('Enemy.takeDamage – knockback', () => {
                 const dir = { x: 5 - v.x, y: 0, z: 0 - v.z };
                 return Object.assign(dir, {
                     length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
-                    normalize: function () {
+                    normalize: function (this: any) {
                         const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
                         this.x /= l; this.z /= l;
                         return this;
@@ -394,7 +394,7 @@ describe('Enemy.takeDamage – knockback', () => {
                 const dir = { x: 5 - v.x, y: 0, z: 0 - v.z };
                 return Object.assign(dir, {
                     length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
-                    normalize: function () {
+                    normalize: function (this: any) {
                         const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
                         this.x /= l; this.z /= l;
                         return this;
@@ -447,7 +447,7 @@ describe('Enemy.update – AI chase behavior', () => {
                 const dir = { x: px - v.x, y: py - v.y, z: pz - v.z };
                 return Object.assign(dir, {
                     length: () => Math.sqrt(dir.x ** 2 + dir.y ** 2 + dir.z ** 2),
-                    normalize: function () {
+                    normalize: function (this: any) {
                         const l = Math.sqrt(this.x ** 2 + this.y ** 2 + this.z ** 2) || 1;
                         this.x /= l; this.y /= l; this.z /= l;
                         return this;
@@ -473,7 +473,7 @@ describe('Enemy.update – AI chase behavior', () => {
                         const dir = { x: 8 - v.x, y: 0 - v.y, z: 0 - v.z };
                         return Object.assign(dir, {
                             length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
-                            normalize: function () {
+                            normalize: function (this: any) {
                                 const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
                                 this.x /= l; this.z /= l;
                                 return this;
@@ -570,7 +570,7 @@ describe('Enemy.update – AI chase behavior', () => {
                         const dir = { x: 1.0 - v.x, y: 0 - v.y, z: 0 - v.z };
                         return Object.assign(dir, {
                             length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
-                            normalize: function () {
+                            normalize: function (this: any) {
                                 const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
                                 this.x /= l; this.z /= l;
                                 return this;

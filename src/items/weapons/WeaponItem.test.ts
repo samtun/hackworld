@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { WeaponItem } from './WeaponItem';
 import { WeaponType } from './WeaponType';
 import { Tier, TierManager } from '../TierManager';

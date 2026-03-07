@@ -47,7 +47,6 @@ vi.mock('../../Player', () => ({ Player: class {} }));
 
 import { XDataUpgradeManager } from './XDataUpgradeManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
-import { UIManager } from '../../ui/UIManager';
 
 // jsdom does not implement scrollIntoView
 HTMLElement.prototype.scrollIntoView = vi.fn();
