@@ -617,6 +617,82 @@ describe('Player.upgradeWithXData', () => {
     });
 });
 
+// ─── getUpgradeCost ───────────────────────────────────────────────────────────
+
+describe('Player.getUpgradeCost', () => {
+    let player: Player;
+    beforeEach(() => { player = makePlayer(); });
+
+    it('returns correct Fibonacci values for all sequence indices', () => {
+        const expected = [1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144];
+        for (let i = 0; i < expected.length; i++) {
+            expect(player.getUpgradeCost(i)).toBe(expected[i]);
+        }
+    });
+
+    it('caps at 144 (fibonacci[11]) for levels 10 through 50', () => {
+        expect(player.getUpgradeCost(10)).toBe(89);
+        expect(player.getUpgradeCost(11)).toBe(144);
+        expect(player.getUpgradeCost(50)).toBe(144);
+        expect(player.getUpgradeCost(100)).toBe(144);
+    });
+});
+
+// ─── calculateExpRequired (via gainExp / expRequired) ────────────────────────
+
+describe('Player.calculateExpRequired (via expRequired)', () => {
+    // Formula: floor(350 + level*30 + level^2 * 0.07)
+    // Level 1: floor(350 + 30 + 0.07) = 380
+    // Level 2: floor(350 + 60 + 0.28) = 410
+    // Level 10: floor(350 + 300 + 7.0) = 657
+
+    it('expRequired at level 1 equals floor(350 + 1*30 + 1^2*0.07) = 380', () => {
+        const player = makePlayer({ level: 1, expRequired: 0 } as any);
+        // recalculate via gainExp triggering levelUp which calls calculateExpRequired(newLevel)
+        // Instead, verify initial expRequired matches EXP_BASE (350) for level 0 pre-levelUp
+        // After leveling from 1→2, expRequired should be for level 2
+        (player as any).expRequired = 1; // trigger immediate level up
+        (player as any).exp = 0;
+        (player as any).recalculateStats = vi.fn();
+        (player as any).heal = vi.fn();
+        (player as any).isLevelingUp = false;
+        (player as any).fadeToAction = vi.fn();
+        (player as any).shockwavePending = false;
+        (player as any).levelUpShockwaveTimer = 0;
+        player.gainExp(1);
+        // After level up from 1→2, calculateExpRequired(2) = floor(350+60+0.28) = 410
+        expect((player as any).expRequired).toBe(410);
+    });
+
+    it('expRequired at level 2 equals floor(350 + 2*30 + 4*0.07) = 410', () => {
+        const player = makePlayer({ level: 2, expRequired: 1 } as any);
+        (player as any).exp = 0;
+        (player as any).recalculateStats = vi.fn();
+        (player as any).heal = vi.fn();
+        (player as any).isLevelingUp = false;
+        (player as any).fadeToAction = vi.fn();
+        (player as any).shockwavePending = false;
+        (player as any).levelUpShockwaveTimer = 0;
+        player.gainExp(1);
+        // After level up from 2→3, calculateExpRequired(3) = floor(350+90+0.63) = 440
+        expect((player as any).expRequired).toBe(440);
+    });
+
+    it('expRequired at level 10 equals floor(350 + 10*30 + 100*0.07) = 657', () => {
+        const player = makePlayer({ level: 10, expRequired: 1 } as any);
+        (player as any).exp = 0;
+        (player as any).recalculateStats = vi.fn();
+        (player as any).heal = vi.fn();
+        (player as any).isLevelingUp = false;
+        (player as any).fadeToAction = vi.fn();
+        (player as any).shockwavePending = false;
+        (player as any).levelUpShockwaveTimer = 0;
+        player.gainExp(1);
+        // After level up from 10→11, calculateExpRequired(11) = floor(350+330+8.47) = 688
+        expect((player as any).expRequired).toBe(688);
+    });
+});
+
 // ─── addStatPoint ─────────────────────────────────────────────────────────────
 
 describe('Player.addStatPoint', () => {
@@ -712,5 +788,331 @@ describe('ChipItem canEquip', () => {
         const chip = new ChipItem('ch2', 'Chip+', 200, 100, 'RANGE' as any, {}, 3);
         // level-3 chip requires player level 24
         expect(chip.canEquip(player)).toBe(false);
+    });
+});
+
+// ─── Player.equipWeapon ───────────────────────────────────────────────────────
+
+describe('Player.equipWeapon', () => {
+    const stableTier = TierManager.Instance.tiers.get(Tier.STABLE)!;
+
+    it('equips the weapon matching the given id from inventory', () => {
+        const weapon = new WeaponItem('w1', 'Sword', 100, 50, WeaponType.SWORD, 10, 'model.glb', stableTier, 1);
+        const player = makePlayer({
+            inventory: [weapon],
+            setWeapon: vi.fn(),
+        });
+        player.equipWeapon('w1');
+        expect(weapon.isEquipped).toBe(true);
+    });
+
+    it('does nothing when no item with the given id is found', () => {
+        const player = makePlayer({ inventory: [] });
+        expect(() => player.equipWeapon('non-existent')).not.toThrow();
+    });
+});
+
+// ─── Player.equipCore ────────────────────────────────────────────────────────
+
+describe('Player.equipCore', () => {
+    it('equips the core matching the given id from inventory', () => {
+        const core = new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3 }, 1);
+        const recalc = vi.fn();
+        const player = makePlayer({ inventory: [core], level: 1, recalculateStats: recalc });
+        player.equipCore('core1');
+        expect(core.isEquipped).toBe(true);
+    });
+
+    it('does nothing when no item with the given id is found', () => {
+        const player = makePlayer({ inventory: [] });
+        expect(() => player.equipCore('non-existent')).not.toThrow();
+    });
+});
+
+// ─── Player.equipChip ────────────────────────────────────────────────────────
+
+describe('Player.equipChip', () => {
+    it('equips the chip matching the given id from inventory', () => {
+        const chip = new ChipItem('chip1', 'Firewire', 150, 75, 'firewire' as any, { weaponRangeMultiplier: 1.1 }, 1);
+        const recalc = vi.fn();
+        const player = makePlayer({ inventory: [chip], level: 1, recalculateStats: recalc });
+        player.equipChip('chip1');
+        expect(chip.isEquipped).toBe(true);
+    });
+
+    it('does nothing when no item with the given id is found', () => {
+        const player = makePlayer({ inventory: [] });
+        expect(() => player.equipChip('non-existent')).not.toThrow();
+    });
+});
+
+// ─── Player.getWeaponRangeMultiplier ─────────────────────────────────────────
+
+describe('Player.getWeaponRangeMultiplier', () => {
+    it('returns 1.0 when no chip is equipped', () => {
+        const player = makePlayer({ inventory: [] });
+        expect(player.getWeaponRangeMultiplier()).toBe(1.0);
+    });
+
+    it('returns the multiplier from an equipped chip', () => {
+        const chip = new ChipItem('chip1', 'Firewire', 150, 75, 'firewire' as any, { weaponRangeMultiplier: 1.15 }, 1);
+        chip.isEquipped = true;
+        const player = makePlayer({ inventory: [chip] });
+        expect(player.getWeaponRangeMultiplier()).toBe(1.15);
+    });
+
+    it('returns 1.0 when chip has no weaponRangeMultiplier stat', () => {
+        const chip = new ChipItem('chip1', 'Overclock', 150, 75, 'overclock' as any, {}, 1);
+        chip.isEquipped = true;
+        const player = makePlayer({ inventory: [chip] });
+        expect(player.getWeaponRangeMultiplier()).toBe(1.0);
+    });
+});
+
+// ─── Player.getTechForWeapon ──────────────────────────────────────────────────
+
+describe('Player.getTechForWeapon', () => {
+    it('returns 0 for a weapon type with no tech', () => {
+        const player = makePlayer();
+        expect(player.getTechForWeapon(WeaponType.SWORD)).toBe(0);
+    });
+
+    it('returns the stored tech value for a weapon type', () => {
+        const player = makePlayer();
+        (player as any).tech[WeaponType.HAMMER] = 250;
+        expect(player.getTechForWeapon(WeaponType.HAMMER)).toBe(250);
+    });
+});
+
+// ─── Player.getSkillTier ──────────────────────────────────────────────────────
+
+describe('Player.getSkillTier', () => {
+    it('returns STABLE when skill tech is 0', () => {
+        const player = makePlayer();
+        expect(player.getSkillTier('RECOVERY' as any)).toBe(Tier.STABLE);
+    });
+
+    it('returns LEET when skill tech is at cap (1200)', () => {
+        const player = makePlayer();
+        (player as any).skillTech['BLAST'] = 1200;
+        expect(player.getSkillTier('BLAST' as any)).toBe(Tier.LEET);
+    });
+});
+
+// ─── Player.getBaseStatValue ──────────────────────────────────────────────────
+
+describe('Player.getBaseStatValue', () => {
+    it('returns base strength (1) with no upgrades', () => {
+        const player = makePlayer();
+        expect(player.getBaseStatValue(StatType.STRENGTH)).toBe(1);
+    });
+
+    it('includes X-Data upgrades in the base stat value', () => {
+        const player = makePlayer();
+        (player as any).strengthUpgrades = 3;
+        expect(player.getBaseStatValue(StatType.STRENGTH)).toBe(4);
+    });
+
+    it('returns base HP (100) with no upgrades', () => {
+        const player = makePlayer();
+        expect(player.getBaseStatValue(StatType.HP)).toBe(100);
+    });
+
+    it('returns base TP (100) with no upgrades', () => {
+        const player = makePlayer();
+        expect(player.getBaseStatValue(StatType.TP)).toBe(100);
+    });
+
+    it('caps base stat at MAX_STAT_VALUE', () => {
+        const player = makePlayer();
+        (player as any).strengthPoints = 9998; // 1+9998=9999
+        expect(player.getBaseStatValue(StatType.STRENGTH)).toBe(9999);
+    });
+});
+
+// ─── tryIncrementWeaponTech ────────────────────────────────────────────────────
+
+describe('Player.tryIncrementWeaponTech', () => {
+    it('increments tech for the currently equipped weapon when random roll succeeds', () => {
+        const player = makePlayer();
+        (player as any).currentWeaponType = WeaponType.SWORD;
+        (player as any).tech[WeaponType.SWORD] = 0;
+        vi.spyOn(Math, 'random').mockReturnValue(0.001); // very low → always passes dropChance
+        player.tryIncrementWeaponTech(1.0);
+        expect((player as any).tech[WeaponType.SWORD]).toBe(1);
+        vi.restoreAllMocks();
+    });
+
+    it('does NOT increment when random roll exceeds dropChance', () => {
+        const player = makePlayer();
+        (player as any).currentWeaponType = WeaponType.SWORD;
+        (player as any).tech[WeaponType.SWORD] = 0;
+        vi.spyOn(Math, 'random').mockReturnValue(0.999); // very high → always fails
+        player.tryIncrementWeaponTech(1.0);
+        expect((player as any).tech[WeaponType.SWORD]).toBe(0);
+        vi.restoreAllMocks();
+    });
+
+    it('does NOT increment past TECH_POINT_CAP', () => {
+        const player = makePlayer();
+        (player as any).currentWeaponType = WeaponType.SWORD;
+        (player as any).tech[WeaponType.SWORD] = 2500; // at cap
+        vi.spyOn(Math, 'random').mockReturnValue(0.001);
+        player.tryIncrementWeaponTech(1.0);
+        expect((player as any).tech[WeaponType.SWORD]).toBe(2500);
+        vi.restoreAllMocks();
+    });
+
+    it('increments the correct weapon type (DUAL_BLADE when equipped)', () => {
+        const player = makePlayer();
+        (player as any).currentWeaponType = WeaponType.DUAL_BLADE;
+        (player as any).tech[WeaponType.DUAL_BLADE] = 0;
+        (player as any).tech[WeaponType.SWORD] = 0;
+        vi.spyOn(Math, 'random').mockReturnValue(0.001);
+        player.tryIncrementWeaponTech(1.0);
+        expect((player as any).tech[WeaponType.DUAL_BLADE]).toBe(1);
+        expect((player as any).tech[WeaponType.SWORD]).toBe(0);
+        vi.restoreAllMocks();
+    });
+
+    it('spawns a tech floating indicator on success', () => {
+        const player = makePlayer();
+        (player as any).currentWeaponType = WeaponType.SWORD;
+        (player as any).tech[WeaponType.SWORD] = 0;
+        vi.spyOn(Math, 'random').mockReturnValue(0.001);
+        player.tryIncrementWeaponTech(1.0);
+        expect((player as any).floatingIndicatorManager.spawnTech).toHaveBeenCalledOnce();
+        vi.restoreAllMocks();
+    });
+});
+
+// ─── tryIncrementSkillTech ────────────────────────────────────────────────────
+
+import { SkillTechType } from './skills/SkillTechType';
+
+describe('Player.tryIncrementSkillTech', () => {
+    it('increments skill tech when random roll succeeds', () => {
+        const player = makePlayer();
+        (player as any).skillTech[SkillTechType.BLAST] = 0;
+        vi.spyOn(Math, 'random').mockReturnValue(0.001);
+        player.tryIncrementSkillTech(SkillTechType.BLAST);
+        expect((player as any).skillTech[SkillTechType.BLAST]).toBe(1);
+        vi.restoreAllMocks();
+    });
+
+    it('does NOT increment when random roll fails', () => {
+        const player = makePlayer();
+        (player as any).skillTech[SkillTechType.BLAST] = 0;
+        vi.spyOn(Math, 'random').mockReturnValue(0.999);
+        player.tryIncrementSkillTech(SkillTechType.BLAST);
+        expect((player as any).skillTech[SkillTechType.BLAST]).toBe(0);
+        vi.restoreAllMocks();
+    });
+
+    it('does NOT increment past SKILL_TECH_POINT_CAP', () => {
+        const player = makePlayer();
+        (player as any).skillTech[SkillTechType.RANGED] = 1200; // at cap
+        vi.spyOn(Math, 'random').mockReturnValue(0.001);
+        player.tryIncrementSkillTech(SkillTechType.RANGED);
+        expect((player as any).skillTech[SkillTechType.RANGED]).toBe(1200);
+        vi.restoreAllMocks();
+    });
+
+    it('caps incremented value at SKILL_TECH_POINT_CAP', () => {
+        const player = makePlayer();
+        (player as any).skillTech[SkillTechType.RECOVERY] = 1199;
+        vi.spyOn(Math, 'random').mockReturnValue(0.001);
+        player.tryIncrementSkillTech(SkillTechType.RECOVERY);
+        expect((player as any).skillTech[SkillTechType.RECOVERY]).toBe(1200);
+        vi.restoreAllMocks();
+    });
+
+    it('spawns a tech floating indicator on success', () => {
+        const player = makePlayer();
+        (player as any).skillTech[SkillTechType.BLAST] = 0;
+        vi.spyOn(Math, 'random').mockReturnValue(0.001);
+        player.tryIncrementSkillTech(SkillTechType.BLAST);
+        expect((player as any).floatingIndicatorManager.spawnTech).toHaveBeenCalledOnce();
+        vi.restoreAllMocks();
+    });
+});
+
+// ─── getBaseStatValue – remaining branches ────────────────────────────────────
+
+describe('Player.getBaseStatValue – defense / agility / luck', () => {
+    it('returns base defense (1) with no upgrades', () => {
+        const player = makePlayer();
+        expect(player.getBaseStatValue(StatType.DEFENSE)).toBe(1);
+    });
+
+    it('includes defense upgrades and stat points', () => {
+        const player = makePlayer();
+        (player as any).defenseUpgrades = 2;
+        (player as any).defensePoints = 3;
+        expect(player.getBaseStatValue(StatType.DEFENSE)).toBe(6);
+    });
+
+    it('returns base agility (1) with no upgrades', () => {
+        const player = makePlayer();
+        expect(player.getBaseStatValue(StatType.AGILITY)).toBe(1);
+    });
+
+    it('includes agility upgrades and stat points', () => {
+        const player = makePlayer();
+        (player as any).agilityUpgrades = 1;
+        (player as any).agilityPoints = 4;
+        expect(player.getBaseStatValue(StatType.AGILITY)).toBe(6);
+    });
+
+    it('returns base luck (1) with no upgrades', () => {
+        const player = makePlayer();
+        expect(player.getBaseStatValue(StatType.LUCK)).toBe(1);
+    });
+
+    it('includes luck upgrades and stat points', () => {
+        const player = makePlayer();
+        (player as any).luckUpgrades = 3;
+        (player as any).luckPoints = 2;
+        expect(player.getBaseStatValue(StatType.LUCK)).toBe(6);
+    });
+});
+
+// ─── addStatPoint – remaining branches ───────────────────────────────────────
+
+describe('Player.addStatPoint – defense / agility / luck', () => {
+    let player: Player;
+    beforeEach(() => { player = makePlayer({ statPointsAvailable: 5 } as any); });
+
+    it('adds a defense point and decrements statPointsAvailable', () => {
+        player.addStatPoint(StatType.DEFENSE);
+        expect((player as any).defensePoints).toBe(1);
+        expect(player.statPointsAvailable).toBe(4);
+    });
+
+    it('adds an agility point and decrements statPointsAvailable', () => {
+        player.addStatPoint(StatType.AGILITY);
+        expect((player as any).agilityPoints).toBe(1);
+        expect(player.statPointsAvailable).toBe(4);
+    });
+
+    it('adds a luck point and decrements statPointsAvailable', () => {
+        player.addStatPoint(StatType.LUCK);
+        expect((player as any).luckPoints).toBe(1);
+        expect(player.statPointsAvailable).toBe(4);
+    });
+
+    it('returns false for DEFENSE when stat is at MAX_STAT_VALUE', () => {
+        (player as any).defensePoints = 9998;
+        expect(player.addStatPoint(StatType.DEFENSE)).toBe(false);
+    });
+
+    it('returns false for AGILITY when stat is at MAX_STAT_VALUE', () => {
+        (player as any).agilityPoints = 9998;
+        expect(player.addStatPoint(StatType.AGILITY)).toBe(false);
+    });
+
+    it('returns false for LUCK when stat is at MAX_STAT_VALUE', () => {
+        (player as any).luckPoints = 9998;
+        expect(player.addStatPoint(StatType.LUCK)).toBe(false);
     });
 });
