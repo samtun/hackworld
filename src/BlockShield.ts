@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 
 export interface BlockShieldOptions {
-    position?: THREE.Vector3Like;
+    position?: { x: number; y: number; z: number };
     color?: number;
     emissiveColor?: number;
 }
