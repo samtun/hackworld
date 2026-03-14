@@ -67,7 +67,7 @@ export class Enemy extends BaseMesh {
     protected hasDealtDamageThisAttack: boolean = false;
 
     // Block state
-    protected blockChance: number = 0.3;
+    protected blockChance: number = 0.2;
     protected isBlocking: boolean = false;
     private blockTimer: number = 0;
     private readonly BLOCK_DURATION: number = 0.5;
@@ -562,6 +562,7 @@ export class Enemy extends BaseMesh {
      */
     private tryBlock(): boolean {
         const reductionFactor = 1 - 0.5 * Math.min((this.player.agility - 1) / (10000 - 1), 1);
+        console.log(`Block check: baseChance=${this.blockChance}, reductionFactor=${reductionFactor.toFixed(2)}, effectiveChance=${(this.blockChance * reductionFactor).toFixed(2)}`);
         const effectiveBlockChance = this.blockChance * reductionFactor;
         return Math.random() < effectiveBlockChance;
     }
