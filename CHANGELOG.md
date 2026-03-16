@@ -1,3 +1,10 @@
+## [1.52.1](https://github.com/samtun/hackworld/compare/v1.52.0...v1.52.1) (2026-03-07)
+
+
+### Bug Fixes
+
+* resolve TypeScript compilation errors in test files ([e2cff6d](https://github.com/samtun/hackworld/commit/e2cff6daa35b07f7da4b0ddaf75240ee98bc6590))
+
 # [1.52.0](https://github.com/samtun/hackworld/compare/v1.51.0...v1.52.0) (2026-02-28)
 
 

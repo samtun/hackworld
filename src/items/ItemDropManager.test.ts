@@ -217,3 +217,141 @@ describe('ItemDropManager.checkInteraction', () => {
         expect(mgr.checkInteraction(ItemDropType.MONEY, playerPos as any)).toBe(nearDrop);
     });
 });
+
+// ─── ChipDropStrategy.pickup ──────────────────────────────────────────────────
+
+describe('ChipDropStrategy.pickup', () => {
+    it('adds the chip to player inventory', () => {
+        const strategy = new ChipDropStrategy();
+        const player = makePlayerStub();
+        // firewire_alpha is the known chip id at level 1
+        strategy.pickup({ chipId: 'firewire_alpha' } as any, player);
+        expect(player.inventory).toHaveLength(1);
+        expect(player.inventory[0].name).toBe('Firewire');
+    });
+
+    it('does nothing when chip id is not found', () => {
+        const strategy = new ChipDropStrategy();
+        const player = makePlayerStub();
+        strategy.pickup({ chipId: 'non-existent-chip-id' } as any, player);
+        expect(player.inventory).toHaveLength(0);
+    });
+});
+
+// ─── CoreDropStrategy.pickup ──────────────────────────────────────────────────
+
+describe('CoreDropStrategy.pickup', () => {
+    it('adds the core to player inventory', () => {
+        const strategy = new CoreDropStrategy();
+        const player = makePlayerStub();
+        // herald_core_alpha is the known core id at level 1
+        strategy.pickup({ coreId: 'herald_core_alpha' } as any, player);
+        expect(player.inventory).toHaveLength(1);
+        expect(player.inventory[0].name).toBe('Herald Core');
+    });
+
+    it('does nothing when core id is not found', () => {
+        const strategy = new CoreDropStrategy();
+        const player = makePlayerStub();
+        strategy.pickup({ coreId: 'non-existent-core-id' } as any, player);
+        expect(player.inventory).toHaveLength(0);
+    });
+});
+
+// ─── WeaponDropStrategy.pickup ────────────────────────────────────────────────
+
+describe('WeaponDropStrategy.pickup', () => {
+    it('adds the weapon to player inventory', () => {
+        const strategy = new WeaponDropStrategy();
+        const player = makePlayerStub();
+        // aegis_sword_alpha is a known weapon at level 1 with damage 10
+        strategy.pickup({ weaponId: 'aegis_sword_alpha', damage: 10 } as any, player);
+        expect(player.inventory).toHaveLength(1);
+        expect(player.inventory[0].name).toBe('Aegis Sword');
+    });
+
+    it('does nothing when weapon id is not found', () => {
+        const strategy = new WeaponDropStrategy();
+        const player = makePlayerStub();
+        strategy.pickup({ weaponId: 'non-existent-weapon-id', damage: 10 } as any, player);
+        expect(player.inventory).toHaveLength(0);
+    });
+});
+
+// ─── ItemDropManager.pickup ───────────────────────────────────────────────────
+
+describe('ItemDropManager.pickup', () => {
+    beforeEach(() => {
+        (ItemDropManager as any).instance = undefined;
+    });
+
+    it('delegates to strategy.pickup and removes the drop from storage', () => {
+        const mgr = ItemDropManager.Instance;
+        const mockDrop = {
+            mesh: { position: { x: 0, y: 0, z: 0 } },
+            cleanup: vi.fn(),
+        };
+        const player = makePlayerStub();
+
+        // Inject the drop directly into storage
+        (mgr as any).drops.get(ItemDropType.MONEY).push(mockDrop);
+
+        // Execute pickup
+        mgr.pickup(ItemDropType.MONEY, {} as any, mockDrop as any, player);
+
+        // Cleanup should have been called
+        expect(mockDrop.cleanup).toHaveBeenCalled();
+        // Drop should be removed
+        expect((mgr as any).drops.get(ItemDropType.MONEY)).toHaveLength(0);
+    });
+
+    it('does nothing for an unregistered key', () => {
+        const mgr = ItemDropManager.Instance;
+        const mockDrop = { cleanup: vi.fn() };
+        const player = makePlayerStub();
+        expect(() => mgr.pickup('UNKNOWN_TYPE' as any, {} as any, mockDrop as any, player)).not.toThrow();
+    });
+});
+
+// ─── ItemDropManager.update ───────────────────────────────────────────────────
+
+describe('ItemDropManager.update', () => {
+    beforeEach(() => {
+        (ItemDropManager as any).instance = undefined;
+    });
+
+    it('calls update on each stored drop', () => {
+        const mgr = ItemDropManager.Instance;
+        const mockUpdate = vi.fn();
+        const mockDrop = { update: mockUpdate };
+
+        (mgr as any).drops.get(ItemDropType.MONEY).push(mockDrop);
+
+        const cameraPos = { x: 0, y: 0, z: 0 } as any;
+        const playerPos = { x: 0, y: 0, z: 0 } as any;
+        mgr.update(0.016, cameraPos, playerPos);
+
+        expect(mockUpdate).toHaveBeenCalledWith(0.016, cameraPos, playerPos);
+    });
+});
+
+// ─── ItemDropManager.clear ────────────────────────────────────────────────────
+
+describe('ItemDropManager.clear', () => {
+    beforeEach(() => {
+        (ItemDropManager as any).instance = undefined;
+    });
+
+    it('calls cleanup on all drops and empties storage', () => {
+        const mgr = ItemDropManager.Instance;
+        const mockCleanup = vi.fn();
+        const mockDrop1 = { cleanup: mockCleanup };
+        const mockDrop2 = { cleanup: mockCleanup };
+
+        (mgr as any).drops.get(ItemDropType.MONEY).push(mockDrop1, mockDrop2);
+        mgr.clear({} as any);
+
+        expect(mockCleanup).toHaveBeenCalledTimes(2);
+        expect((mgr as any).drops.get(ItemDropType.MONEY)).toHaveLength(0);
+    });
+});

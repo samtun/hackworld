@@ -6,7 +6,7 @@ export default defineConfig({
         __FRESH_START__: JSON.stringify(false),
     },
     test: {
-        environment: 'node',
+        environment: 'jsdom',
         include: ['src/**/*.test.ts'],
         coverage: {
             provider: 'v8',
