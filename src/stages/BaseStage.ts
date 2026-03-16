@@ -206,7 +206,7 @@ export abstract class BaseStage {
     /**
      * Update teleporter particles
      */
-    update(dt: number, _: Player): void {
+    update(dt: number, _player: Player, _anyMenuOpen: boolean): void {
         if (this.teleporter) {
             this.teleporter.update(dt);
         }
@@ -220,5 +220,4 @@ export abstract class BaseStage {
             mixer.update(dt);
         }
     }
-
 }

@@ -571,7 +571,10 @@ export class Game {
         const isNearInteractive = nearbyInteractive !== null;
 
         // Update Game Logic
-        this.physicsWorld.step(1 / 60, dt, 3);
+        // Skip physics simulation while any menu is open so enemies don't drift
+        if (!anyMenuOpen) {
+            this.physicsWorld.step(1 / 60, dt, 3);
+        }
 
         if (this.debugMode && this.physicsDebugger) {
             this.physicsDebugger.update();
@@ -581,7 +584,7 @@ export class Game {
         const preventJump = isNearInteractive || this.wasJustInteracted;
         // Prevent movement when in a menu
         this.player.update(dt, preventJump, anyMenuOpen);
-        this.world.update(dt, this.player, this.camera.position);
+        this.world.update(dt, this.player, this.camera.position, anyMenuOpen);
 
         this.ui.update(this.player, dt);
 
