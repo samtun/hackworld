@@ -867,6 +867,9 @@ describe('Player.handleBlock', () => {
         (player as any).blockTimer = 0.4;
         (player as any).handleBlock(0.15); // 0.4 + 0.15 = 0.55 ≥ 0.5
         expect(player.isBlocking).toBe(false);
+    });
+});
+
 // ─── Player.equipWeapon ───────────────────────────────────────────────────────
 
 describe('Player.equipWeapon', () => {
