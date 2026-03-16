@@ -1,7 +1,7 @@
 {
   "name": "hackworld-prototype",
   "private": true,
-  "version": "1.52.0",
+  "version": "1.52.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -22,6 +22,7 @@
     "@vitest/coverage-v8": "^4.0.18",
     "cannon-es-debugger": "^1.0.0",
     "husky": "^9.1.7",
+    "jsdom": "^28.1.0",
     "semantic-release": "^25.0.2",
     "typescript": "^5.2.2",
     "vite": "^7.3.0",
