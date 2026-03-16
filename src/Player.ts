@@ -919,21 +919,18 @@ export class Player extends BaseMesh {
 
         this.blockTimer += dt;
 
-        if (this.stunTimer > 0) {
+        if (this.stunTimer > 0 || this.blockTimer < this.BLOCK_DURATION) {
             // Allow knockback to play out - decelerate instead of halting
             this.stunTimer -= dt;
             this.body.velocity.x *= 0.9;
             this.body.velocity.z *= 0.9;
         } else {
             this.haltMovement();
-        }
-
-        this.syncPosition();
-
-        if (this.blockTimer >= this.BLOCK_DURATION) {
             this.isBlocking = false;
             this.blockShield?.detach();
         }
+
+        this.syncPosition();
 
         return true;
     }
