@@ -918,7 +918,16 @@ export class Player extends BaseMesh {
         if (!this.isBlocking) return false;
 
         this.blockTimer += dt;
-        this.haltMovement();
+
+        if (this.stunTimer > 0) {
+            // Allow knockback to play out - decelerate instead of halting
+            this.stunTimer -= dt;
+            this.body.velocity.x *= 0.9;
+            this.body.velocity.z *= 0.9;
+        } else {
+            this.haltMovement();
+        }
+
         this.syncPosition();
 
         if (this.blockTimer >= this.BLOCK_DURATION) {
@@ -1072,7 +1081,20 @@ export class Player extends BaseMesh {
     takeDamage(amount: number, sourcePos?: CANNON.Vec3, isCriticalHit: boolean = false): void {
         if (this.invulnerableTimer > 0 || this.isLevelingUp || this.isDashing || this.isDead) return;
 
-        // Block absorbs damage completely
+        // Knockback is always applied, even when blocking, to push the player away from enemies
+        if (sourcePos) {
+            this.stunTimer = this.STUN_TIME;
+            // Ensure body is dynamic for knockback to work
+            this.body.type = CANNON.Body.DYNAMIC;
+            const knockDir = this.body.position.vsub(sourcePos);
+            knockDir.y = 0;
+            if (knockDir.length() > 0) {
+                knockDir.normalize();
+                this.body.applyImpulse(new CANNON.Vec3(knockDir.x * this.KNOCKBACK_FORCE, 5, knockDir.z * this.KNOCKBACK_FORCE), knockDir);
+            }
+        }
+
+        // Block absorbs damage completely but does not prevent knockback
         if (this.isBlocking) return;
 
         // Stop any ongoing attack
@@ -1096,19 +1118,6 @@ export class Player extends BaseMesh {
 
         // Trigger hit animation
         this.fadeToAction(ActionType.TakeHit, 0.05);
-
-        // Knockback: push player away from source horizontally and give small upward impulse
-        if (sourcePos) {
-            this.stunTimer = this.STUN_TIME;
-            // Ensure body is dynamic for knockback to work
-            this.body.type = CANNON.Body.DYNAMIC;
-            const knockDir = this.body.position.vsub(sourcePos);
-            knockDir.y = 0;
-            if (knockDir.length() > 0) {
-                knockDir.normalize();
-                this.body.applyImpulse(new CANNON.Vec3(knockDir.x * this.KNOCKBACK_FORCE, 5, knockDir.z * this.KNOCKBACK_FORCE), knockDir);
-            }
-        }
 
         // Cancel charging attack if taking damage and suppress immediate follow-up attack
         if (this.isChargingAttack) this.cancelChargeAttack()

@@ -584,6 +584,18 @@ export class Enemy extends BaseMesh {
     takeDamage(amount: number, isCriticalHit: boolean, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0): void {
         if (this.isDying || this.isDead) return;
 
+        // Knockback
+        if (sourcePos) {
+            const knockbackDir = this.body.position.vsub(sourcePos);
+            knockbackDir.y = 0; // Keep it horizontal
+            if (knockbackDir.length() > 0) {
+                knockbackDir.normalize();
+                const force = 15 * knockbackFactor; // Increased force
+                this.body.velocity.x = knockbackDir.x * force;
+                this.body.velocity.z = knockbackDir.z * force;
+            }
+        }
+
         // Check if enemy blocks this attack
         if (!this.isBlocking && this.tryBlock()) {
             this.activateBlock();
@@ -599,18 +611,6 @@ export class Enemy extends BaseMesh {
         this.isReturningToBase = false;
         this.returnToBaseTimer = 0;
         this.floatingIndicatorManager.spawnDamage(this.body.position, amount, isCriticalHit ? '#bf860c' : '#fdc650ff');
-
-        // Knockback
-        if (sourcePos) {
-            const knockbackDir = this.body.position.vsub(sourcePos);
-            knockbackDir.y = 0; // Keep it horizontal
-            if (knockbackDir.length() > 0) {
-                knockbackDir.normalize();
-                const force = 15 * knockbackFactor; // Increased force
-                this.body.velocity.x = knockbackDir.x * force;
-                this.body.velocity.z = knockbackDir.z * force;
-            }
-        }
 
         // Flash white
         this.setFlashColor(0xffffff);
