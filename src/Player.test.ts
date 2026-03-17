@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Player } from './Player';
 import { StatType } from './StatType';
 import { CoreItem } from './items/cores/CoreItem';
@@ -6,6 +6,7 @@ import { ChipItem } from './items/chips/ChipItem';
 import { WeaponItem } from './items/weapons/WeaponItem';
 import { WeaponType } from './items/weapons/WeaponType';
 import { Tier, TierManager } from './items/TierManager';
+import { CardCollection } from './items/cards/CardCollection';
 
 /**
  * Create a minimal Player instance for unit testing without instantiating
@@ -1195,3 +1196,70 @@ describe('Player.addStatPoint – defense / agility / luck', () => {
         expect(player.addStatPoint(StatType.LUCK)).toBe(false);
     });
 });
+
+// ─── collection bonus getters ──────────────────────────────────────────────────
+
+describe('Player collection bonus getters', () => {
+    let player: Player;
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    function mockComplete(...albums: string[]) {
+        vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockImplementation(
+            (album) => albums.includes(album)
+        );
+    }
+
+    beforeEach(() => {
+        player = makePlayer({ level: 1, luck: 1, LUCK_DIVISOR: 40000 });
+    });
+
+    describe('collectionBonusItemDropChance', () => {
+        it('returns 0 when no B-collections are complete', () => {
+            mockComplete();
+            expect(player.collectionBonusItemDropChance).toBe(0);
+        });
+
+        it('returns 0.02 when only B.001 is complete', () => {
+            mockComplete('B.001');
+            expect(player.collectionBonusItemDropChance).toBeCloseTo(0.02);
+        });
+
+        it('returns 0.10 when B.001, B.002, and B.003 are all complete', () => {
+            mockComplete('B.001', 'B.002', 'B.003');
+            expect(player.collectionBonusItemDropChance).toBeCloseTo(0.10);
+        });
+    });
+
+    describe('collectionBonusWeaponDropFactor', () => {
+        it('returns 0 when no B-collections are complete', () => {
+            mockComplete();
+            expect(player.collectionBonusWeaponDropFactor).toBe(0);
+        });
+
+        it('returns 0.02 when only B.002 is complete', () => {
+            mockComplete('B.002');
+            expect(player.collectionBonusWeaponDropFactor).toBeCloseTo(0.02);
+        });
+
+        it('returns 0.07 when B.002 and B.003 are both complete', () => {
+            mockComplete('B.002', 'B.003');
+            expect(player.collectionBonusWeaponDropFactor).toBeCloseTo(0.07);
+        });
+    });
+
+    describe('collectionBonusSkillCooldownReduction', () => {
+        it('returns 0 when C.002 is not complete', () => {
+            mockComplete();
+            expect(player.collectionBonusSkillCooldownReduction).toBe(0);
+        });
+
+        it('returns 0.10 when C.002 is complete', () => {
+            mockComplete('C.002');
+            expect(player.collectionBonusSkillCooldownReduction).toBeCloseTo(0.10);
+        });
+    });
+});
+

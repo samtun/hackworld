@@ -10,6 +10,14 @@ export class CardCollection {
     // Set of collected card IDs in format "album-slot" (e.g., "A.001-1")
     private collectedCards: Set<string> = new Set();
 
+    /**
+     * Check if all cards in an album have been collected
+     */
+    isAlbumComplete(album: string): boolean {
+        const progress = this.getAlbumProgress(album);
+        return progress.total > 0 && progress.collected === progress.total;
+    }
+
     private constructor() {}
 
     public static get Instance(): CardCollection {

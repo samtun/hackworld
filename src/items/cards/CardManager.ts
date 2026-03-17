@@ -420,6 +420,90 @@ export class CardManager {
         });
 
         this.mainContent.appendChild(gridDiv);
+
+        // Reward description section
+        const rewardDiv = this.createRewardDescriptionDiv(this.currentAlbum);
+        this.mainContent.appendChild(rewardDiv);
+    }
+
+    /**
+     * Collection reward descriptions keyed by album.
+     * These are the plain-text strings that are revealed as cards are collected.
+     */
+    private static readonly ALBUM_REWARDS: Record<string, string> = {
+        'A.001': 'REWARD: Chip prices -5% / Chip sell value +5%',
+        'A.002': 'REWARD: Core prices -5% / Core sell value +5%',
+        'A.003': 'REWARD: Weapon prices -8% / Weapon sell value +8% / +5% tier bonus in trader stock',
+        'B.001': 'REWARD: Item drop chance +2%',
+        'B.002': 'REWARD: Item drop chance +3% / Weapon drop quality +2%',
+        'B.003': 'REWARD: Item drop chance +5% / Weapon drop quality +5%',
+        'C.001': 'REWARD: +5% chance for multi-XData drops',
+        'C.002': 'REWARD: All skill cooldowns permanently reduced by 10%',
+        'C.003': 'REWARD: Maximum weapon damage bonus ceiling increased by +10% (up to +35%)',
+    };
+
+    /** Characters used for obfuscation */
+    private static readonly GLITCH_CHARS = '!@#$%^&*<>?/|\\{}[]~`';
+
+    /**
+     * Builds a partially-revealed reward description div.
+     * The fraction of characters revealed equals (collected / total).
+     * When the album is complete the description is shown in full.
+     */
+    private createRewardDescriptionDiv(album: string): HTMLDivElement {
+        const rewardDiv = document.createElement('div');
+        Object.assign(rewardDiv.style, {
+            marginTop: '20px',
+            padding: '12px',
+            backgroundColor: MENU_COLORS.PANEL_BG,
+            borderRadius: '5px',
+            border: `1px solid ${MENU_COLORS.SEPARATOR}`,
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            letterSpacing: '0.5px'
+        });
+
+        const label = document.createElement('div');
+        label.innerText = 'COLLECTION BONUS';
+        Object.assign(label.style, {
+            fontSize: '12px',
+            color: MENU_COLORS.SEPARATOR,
+            marginBottom: '6px',
+            textTransform: 'uppercase',
+            letterSpacing: '2px'
+        });
+        rewardDiv.appendChild(label);
+
+        const progress = this.cardCollection.getAlbumProgress(album);
+        const plainText = CardManager.ALBUM_REWARDS[album] ?? '';
+        const isComplete = progress.total > 0 && progress.collected === progress.total;
+
+        const revealFraction = progress.total > 0 ? progress.collected / progress.total : 0;
+        const revealedCount = Math.floor(revealFraction * plainText.length);
+
+        const textSpan = document.createElement('span');
+        if (isComplete) {
+            textSpan.innerText = plainText;
+            Object.assign(textSpan.style, { color: MENU_COLORS.COLLECTED });
+        } else {
+            let obfuscated = '';
+            for (let i = 0; i < plainText.length; i++) {
+                if (i < revealedCount) {
+                    obfuscated += plainText[i];
+                } else if (plainText[i] === ' ') {
+                    obfuscated += ' ';
+                } else {
+                    obfuscated += CardManager.GLITCH_CHARS[
+                        Math.floor(Math.random() * CardManager.GLITCH_CHARS.length)
+                    ];
+                }
+            }
+            textSpan.innerText = obfuscated;
+            Object.assign(textSpan.style, { color: MENU_COLORS.TEXT });
+        }
+
+        rewardDiv.appendChild(textSpan);
+        return rewardDiv;
     }
 
     public show() {

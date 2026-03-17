@@ -1,5 +1,6 @@
 import { WeaponItem } from './WeaponItem';
 import { WeaponTierDefinition, Tier, TierManager } from '../TierManager';
+import { CardCollection } from '../cards/CardCollection';
 
 /**
  * Centralises all weapon bonus/tier calculations.
@@ -10,8 +11,10 @@ export class WeaponBonusCalculator {
 
     /** Practical lower bound (%) for the open-ended BROKEN tier */
     private static readonly BROKEN_FLOOR_PERCENT = -15;
-    /** Practical upper bound (%) for the open-ended top tier */
+    /** Practical upper bound (%) for the open-ended top tier (base value) */
     private static readonly TOP_CEIL_PERCENT = 25;
+    /** C.003 collection bonus added to TOP_CEIL_PERCENT */
+    private static readonly C003_TOP_CEIL_BONUS = 10;
 
     private constructor() {}
 
@@ -20,12 +23,22 @@ export class WeaponBonusCalculator {
     }
 
     /**
+     * Returns the effective top ceiling percent, boosted by +10 when C.003 is complete.
+     */
+    private getTopCeilPercent(): number {
+        if (CardCollection.Instance.isAlbumComplete('C.003')) {
+            return WeaponBonusCalculator.TOP_CEIL_PERCENT + WeaponBonusCalculator.C003_TOP_CEIL_BONUS;
+        }
+        return WeaponBonusCalculator.TOP_CEIL_PERCENT;
+    }
+
+    /**
      * Returns a random bonus multiplier within the tier's percent range.
      * Uses finite practical bounds for open-ended tiers (BROKEN / top tier).
      */
     randomMultiplierForTier(tier: WeaponTierDefinition): number {
         const min = isFinite(tier.minPercent) ? tier.minPercent : WeaponBonusCalculator.BROKEN_FLOOR_PERCENT;
-        const max = isFinite(tier.maxPercent) ? tier.maxPercent : WeaponBonusCalculator.TOP_CEIL_PERCENT;
+        const max = isFinite(tier.maxPercent) ? tier.maxPercent : this.getTopCeilPercent();
         return 1 + (min + Math.random() * (max - min)) / 100;
     }
 

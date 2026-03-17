@@ -26,8 +26,10 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         // avoid NaN when base is negative and exponent is non-integer
         const raw = 1.16 * random - 0.55;
 
-        // Scale the bonus spread by the player's level factor (1.0 at level 1, 0.5 at max level)
-        let bonusValue = Math.sign(raw) * Math.pow(Math.abs(raw), 3.4) * player.weaponDropBonusFactor;
+        // Scale the bonus spread by the player's level factor (1.0 at level 1, 1.5 at max level)
+        // plus any collection bonus from completed B.002/B.003 albums
+        const effectiveDropFactor = player.weaponDropBonusFactor + player.collectionBonusWeaponDropFactor;
+        let bonusValue = Math.sign(raw) * Math.pow(Math.abs(raw), 3.4) * effectiveDropFactor;
 
         const bonusMultiplier = 1 + bonusValue;
         const finalDamage = Math.floor(weaponItem.damage * bonusMultiplier);

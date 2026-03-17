@@ -110,4 +110,26 @@ describe('CardCollection', () => {
             expect(collection.getTotalCollected()).toBe(0);
         });
     });
+
+    describe('isAlbumComplete', () => {
+        it('returns false when album has no collected cards', () => {
+            expect(collection.isAlbumComplete('A.001')).toBe(false);
+        });
+
+        it('returns false when album is partially collected', () => {
+            collection.addCard(makeCard('A.001', 1));
+            collection.addCard(makeCard('A.001', 2));
+            expect(collection.isAlbumComplete('A.001')).toBe(false);
+        });
+
+        it('returns true when all 8 cards in the album are collected', () => {
+            const cards = CardDefinitions.getAlbumCards('A.001');
+            cards.forEach(c => collection.addCard(c));
+            expect(collection.isAlbumComplete('A.001')).toBe(true);
+        });
+
+        it('returns false for an unknown album', () => {
+            expect(collection.isAlbumComplete('UNKNOWN')).toBe(false);
+        });
+    });
 });

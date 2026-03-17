@@ -5,6 +5,7 @@ import { ItemDropType } from '../ItemDropType';
 import { XDataDrop } from './XDataDrop';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../Player';
+import { CardCollection } from '../cards/CardCollection';
 
 export class XDataDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.XDATA;
@@ -19,7 +20,8 @@ export class XDataDropStrategy implements ItemDropStrategy {
     }
 
     drop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null {
-        const xDataAmount = this.determineAmount(player.level, enemy.xDataDropChanceWeight);
+        const c001Active = CardCollection.Instance.isAlbumComplete('C.001');
+        const xDataAmount = this.determineAmount(player.level, enemy.xDataDropChanceWeight, c001Active);
         if (xDataAmount <= 0) return null;
 
         const dropPosition = enemy.getDeathPosition();
@@ -35,15 +37,17 @@ export class XDataDropStrategy implements ItemDropStrategy {
         console.log(`Picked up ${drop.amount} XData`);
     }
 
-    private determineAmount(playerLevel: number, dropChanceWeight: number): number {
+    private determineAmount(playerLevel: number, dropChanceWeight: number, c001Active: boolean): number {
         const amountRoll = Math.random();
 
         // Roll amount
         // Enemies with higher drop chance also have a higher probability for higher amounts
         const isHighChance: boolean = playerLevel >= 100 && dropChanceWeight >= 2.0;
+        // C.001 bonus: +5% to chance for >1 XData drops; 200 XData (veryHigh) stays 0% until level 100
+        const c001Bonus = c001Active ? 0.05 : 0;
         const veryHighAmountLimit: number = isHighChance ? 0.05 : 0;
-        const highAmountLimit: number = isHighChance ? 0.2 : 0.05;
-        const mediumAmountLimit: number = isHighChance ? 0.6 : 0.25;
+        const highAmountLimit: number = (isHighChance ? 0.2 : 0.05) + c001Bonus;
+        const mediumAmountLimit: number = (isHighChance ? 0.6 : 0.25) + c001Bonus;
         if (amountRoll < veryHighAmountLimit) {
             return 100;
         } else if (amountRoll < highAmountLimit) {
