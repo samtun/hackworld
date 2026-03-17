@@ -410,7 +410,9 @@ export class Enemy extends BaseMesh {
         const myPos = this.body.position;
 
         const distToPlayer = myPos.distanceTo(playerPos);
-        const distToBase = myPos.distanceTo(this.basePosition);
+        const dxBase = myPos.x - this.basePosition.x;
+        const dzBase = myPos.z - this.basePosition.z;
+        const distToBase = Math.sqrt(dxBase * dxBase + dzBase * dzBase);
 
         let isMoving = false;
 
