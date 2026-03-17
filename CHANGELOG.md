@@ -1,3 +1,24 @@
+# [1.53.0](https://github.com/samtun/hackworld/compare/v1.52.1...v1.53.0) (2026-03-17)
+
+
+### Bug Fixes
+
+* enemy return to base logic ([26f7358](https://github.com/samtun/hackworld/commit/26f7358c946b0cdfb14c33c3ff4c057e6cff9455))
+* fix block chance formula and add blocking tests ([4ee3264](https://github.com/samtun/hackworld/commit/4ee3264832b219472330678ec93699ba9738c743))
+* make block last for stun and block time ([32898d6](https://github.com/samtun/hackworld/commit/32898d6448f9144a1993826012f4bba4cb222795))
+* player tests code ([248a8d7](https://github.com/samtun/hackworld/commit/248a8d7cab696202cb90deb3add8bec680ce7925))
+* prevent movement/attack/jump animations from overriding block idle pose ([2d33ef5](https://github.com/samtun/hackworld/commit/2d33ef508b862ba234ce44c082da348fa2bf286c))
+* prevent player from blocking while attacking or airborne ([da3a498](https://github.com/samtun/hackworld/commit/da3a498fc803511b4e75e9d8257fa070a85cb58c))
+* replace THREE.Vector3Like with inline type in BlockShield ([9ead61e](https://github.com/samtun/hackworld/commit/9ead61e41a92a9e2d45cc6b570641edc63afbcfa))
+
+
+### Features
+
+* add blocking mechanic for player and enemies ([fe964ed](https://github.com/samtun/hackworld/commit/fe964ed4b004eafa8686fd0b5905d05e5a7d43d3))
+* lower enemy block chance from 0.3 to 0.2 ([c8d925d](https://github.com/samtun/hackworld/commit/c8d925da550b13a65ead6d930e0fdff665b4890f))
+* retain knockback of attack even when blocking ([d6992ba](https://github.com/samtun/hackworld/commit/d6992babd6dcc82b6dc4d203f0882e8d54a4dbec))
+* stop enemies from updating while a menu is open ([08bf63b](https://github.com/samtun/hackworld/commit/08bf63b4911adc9fee282ccd5281b392355b3294))
+
 ## [1.52.1](https://github.com/samtun/hackworld/compare/v1.52.0...v1.52.1) (2026-03-07)
 
 
