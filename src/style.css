@@ -349,6 +349,17 @@ body {
     background-size: 65% 65%;
 }
 
+.mobile-block-btn {
+    position: fixed;
+    bottom: 180px;
+    left: 20px;
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.7);
+    width: 65px;
+    height: 65px;
+    font-size: 22px;
+}
+
 @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }

@@ -306,13 +306,11 @@ export class Lobby extends BaseStage {
         }
     }
 
-
-
     /*
-     * Override BaseStage update method to include healing station
+     * Override BaseStage update method
      */
-    update(dt: number, player: Player) {
-        super.update(dt, player);
+    update(dt: number, player: Player, anyMenuOpen: boolean): void {
+        super.update(dt, player, anyMenuOpen);
 
         // Animate banner texture
         if (this.bannerTexture) {

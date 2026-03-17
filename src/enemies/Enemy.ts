@@ -5,6 +5,7 @@ import { BaseMesh } from '../BaseMesh';
 import { PlayerRegistry } from '../PlayerRegistry';
 import { AssetManager } from '../AssetManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
+import { BlockShield } from '../BlockShield';
 
 enum EnemyActionType {
     Idle = 'Idle',
@@ -29,7 +30,7 @@ export class Enemy extends BaseMesh {
     deathTimer: number = 0;
     flashTimer: number = 0;
     stunTimer: number = 0;
-    itemDropChance: number = 0.05;
+    itemDropChance: number = 0.15;
     xDataDropChanceWeight: number = 1;
     baseExp: number = 10; // EXP granted on defeat, is influenced by player luck
     damage: number = 10;
@@ -64,6 +65,13 @@ export class Enemy extends BaseMesh {
     protected attackHitboxSize: CANNON.Vec3 = new CANNON.Vec3(0.5, 0.5, 0.8);
     protected attackHitboxOffset: number = 1.0;
     protected hasDealtDamageThisAttack: boolean = false;
+
+    // Block state
+    protected blockChance: number = 0.2;
+    protected isBlocking: boolean = false;
+    private blockTimer: number = 0;
+    private readonly BLOCK_DURATION: number = 0.5;
+    private blockShield: BlockShield | null = null;
 
     // Death fade
     protected deathFadeDuration: number = 0.5;
@@ -222,6 +230,11 @@ export class Enemy extends BaseMesh {
             return;
         }
 
+        // High priority: Blocking - holds idle pose, overrides move/attack
+        if (this.isBlocking) {
+            return;
+        }
+
         // High priority: Attack
         if (this.isAttacking) {
             this.fadeToAction(EnemyActionType.Attack, 0.1);
@@ -365,6 +378,15 @@ export class Enemy extends BaseMesh {
         this.mesh.position.copy(this.body.position as any);
         this.mesh.position.y -= this.bodyHalfExtentY;
 
+        // Block timer - remove shield when block expires
+        if (this.isBlocking) {
+            this.blockTimer += dt;
+            if (this.blockTimer >= this.BLOCK_DURATION) {
+                this.isBlocking = false;
+                this.blockShield?.detach();
+            }
+        }
+
         // Stun Logic
         if (this.stunTimer > 0) {
             this.stunTimer -= dt;
@@ -388,7 +410,9 @@ export class Enemy extends BaseMesh {
         const myPos = this.body.position;
 
         const distToPlayer = myPos.distanceTo(playerPos);
-        const distToBase = myPos.distanceTo(this.basePosition);
+        const dxBase = myPos.x - this.basePosition.x;
+        const dzBase = myPos.z - this.basePosition.z;
+        const distToBase = Math.sqrt(dxBase * dxBase + dzBase * dzBase);
 
         let isMoving = false;
 
@@ -533,15 +557,34 @@ export class Enemy extends BaseMesh {
         this.fadeToAction(EnemyActionType.Attack, 0.1);
     }
 
+    /**
+     * Determine if the enemy should block this incoming hit.
+     * Probability: blockChance * reductionFactor, where reductionFactor is 1.0 at
+     * agility=1 (no reduction) and 0.5 at agility=10000 (50% reduction).
+     */
+    private tryBlock(): boolean {
+        const reductionFactor = 1 - 0.5 * Math.min((this.player.agility - 1) / (10000 - 1), 1);
+        console.log(`Block check: baseChance=${this.blockChance}, reductionFactor=${reductionFactor.toFixed(2)}, effectiveChance=${(this.blockChance * reductionFactor).toFixed(2)}`);
+        const effectiveBlockChance = this.blockChance * reductionFactor;
+        return Math.random() < effectiveBlockChance;
+    }
+
+    private activateBlock(): void {
+        this.isBlocking = true;
+        this.blockTimer = 0;
+        // Immobilize enemy for block duration
+        this.stunTimer = this.BLOCK_DURATION;
+        // TODO: fade to a dedicated "Blocking" animation when available
+        this.fadeToAction(EnemyActionType.Idle, 0.1);
+
+        if (!this.blockShield) {
+            this.blockShield = new BlockShield();
+        }
+        this.blockShield.attachTo(this.mesh);
+    }
+
     takeDamage(amount: number, isCriticalHit: boolean, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0): void {
         if (this.isDying || this.isDead) return;
-
-        this.hp -= amount;
-
-        // Reset return-to-base behavior when taking damage
-        this.isReturningToBase = false;
-        this.returnToBaseTimer = 0;
-        this.floatingIndicatorManager.spawnDamage(this.body.position, amount, isCriticalHit ? '#bf860c' : '#fdc650ff');
 
         // Knockback
         if (sourcePos) {
@@ -554,6 +597,22 @@ export class Enemy extends BaseMesh {
                 this.body.velocity.z = knockbackDir.z * force;
             }
         }
+
+        // Check if enemy blocks this attack
+        if (!this.isBlocking && this.tryBlock()) {
+            this.activateBlock();
+            return;
+        }
+
+        // If already blocking, absorb the hit (no damage, no knockback)
+        if (this.isBlocking) return;
+
+        this.hp -= amount;
+
+        // Reset return-to-base behavior when taking damage
+        this.isReturningToBase = false;
+        this.returnToBaseTimer = 0;
+        this.floatingIndicatorManager.spawnDamage(this.body.position, amount, isCriticalHit ? '#bf860c' : '#fdc650ff');
 
         // Flash white
         this.setFlashColor(0xffffff);
@@ -606,6 +665,10 @@ export class Enemy extends BaseMesh {
      */
     cleanup(): void {
         this.deactivateAttackHitbox();
+        if (this.blockShield) {
+            this.blockShield.dispose();
+            this.blockShield = null;
+        }
         this.scene.remove(this.mesh);
         this.world.removeBody(this.body);
         this.disposeMesh();

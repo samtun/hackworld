@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Enemy } from './Enemy';
 
 function mockAction() {
@@ -113,6 +113,16 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
 
         // Mocked floating indicator
         floatingIndicatorManager: { spawnDamage: vi.fn() },
+
+        // Mocked player reference (needed for tryBlock)
+        player: { agility: 1, isDead: false, body: { position: { x: 0, y: 0, z: 0 } } },
+
+        // Block state
+        blockChance: 0,
+        isBlocking: false,
+        blockTimer: 0,
+        BLOCK_DURATION: 0.5,
+        blockShield: null,
     });
 
     Object.assign(enemy, overrides);
@@ -314,6 +324,77 @@ describe('Enemy.attack', () => {
         enemy.hasDealtDamageThisAttack = true;
         enemy.attack();
         expect(enemy.hasDealtDamageThisAttack).toBe(false);
+    });
+});
+
+// ─── tryBlock / block chance ───────────────────────────────────────────────────
+
+describe('Enemy.tryBlock – block chance formula', () => {
+    afterEach(() => { vi.restoreAllMocks(); });
+
+    it('never blocks when blockChance is 0', () => {
+        const enemy = makeEnemy({ blockChance: 0 });
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+        expect((enemy as any).tryBlock()).toBe(false);
+    });
+
+    it('uses full blockChance at agility=1 (no reduction)', () => {
+        // agility=1 → reductionFactor=1.0 → effectiveBlockChance=blockChance
+        const enemy = makeEnemy({ blockChance: 0.3 });
+        vi.spyOn(Math, 'random').mockReturnValue(0.29);
+        expect((enemy as any).tryBlock()).toBe(true);
+        vi.spyOn(Math, 'random').mockReturnValue(0.31);
+        expect((enemy as any).tryBlock()).toBe(false);
+    });
+
+    it('halves blockChance at agility=10000 (50% reduction)', () => {
+        // agility=10000 → reductionFactor=0.5 → effectiveBlockChance=blockChance*0.5=0.15
+        const enemy = makeEnemy({
+            blockChance: 0.3,
+            player: { agility: 10000, isDead: false, body: { position: { x: 0, y: 0, z: 0 } } },
+        });
+        vi.spyOn(Math, 'random').mockReturnValue(0.14);
+        expect((enemy as any).tryBlock()).toBe(true);
+        vi.spyOn(Math, 'random').mockReturnValue(0.16);
+        expect((enemy as any).tryBlock()).toBe(false);
+    });
+
+    it('caps reduction at 50% for agility above 10000', () => {
+        const enemy = makeEnemy({
+            blockChance: 0.3,
+            player: { agility: 99999, isDead: false, body: { position: { x: 0, y: 0, z: 0 } } },
+        });
+        // effectiveBlockChance should still be 0.15 (capped at 50% reduction)
+        vi.spyOn(Math, 'random').mockReturnValue(0.14);
+        expect((enemy as any).tryBlock()).toBe(true);
+        vi.spyOn(Math, 'random').mockReturnValue(0.16);
+        expect((enemy as any).tryBlock()).toBe(false);
+    });
+});
+
+// ─── blocking mechanic ─────────────────────────────────────────────────────────
+
+describe('Enemy blocking mechanic', () => {
+    it('activates block and absorbs damage when tryBlock succeeds', () => {
+        const shield = { attachTo: vi.fn(), detach: vi.fn(), dispose: vi.fn() };
+        // blockChance=1 at agility=1 → effectiveBlockChance=1 → always blocks
+        const enemy = makeEnemy({ blockChance: 1.0, blockShield: shield });
+        enemy.takeDamage(20, false);
+        expect((enemy as any).isBlocking).toBe(true);
+        expect(enemy.hp).toBe(60); // no damage taken
+    });
+
+    it('absorbs damage completely when already blocking', () => {
+        const enemy = makeEnemy({ isBlocking: true });
+        enemy.takeDamage(20, false);
+        expect(enemy.hp).toBe(60); // unchanged
+    });
+
+    it('sets stunTimer to BLOCK_DURATION when block activates', () => {
+        const shield = { attachTo: vi.fn(), detach: vi.fn(), dispose: vi.fn() };
+        const enemy = makeEnemy({ blockChance: 1.0, blockShield: shield });
+        enemy.takeDamage(10, false);
+        expect((enemy as any).stunTimer).toBe((enemy as any).BLOCK_DURATION);
     });
 });
 

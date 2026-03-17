@@ -140,6 +140,13 @@ function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
         currentAction: null,
         skills: [],
         deathCallback: undefined,
+
+        // Block state
+        isBlocking: false,
+        blockTimer: 0,
+        BLOCK_DURATION: 0.5,
+        blockShield: { attachTo: vi.fn(), detach: vi.fn(), dispose: vi.fn() },
+        isGrounded: true,
     });
 
     // Override syncPosition to avoid THREE.Vector3 creation
@@ -788,6 +795,78 @@ describe('ChipItem canEquip', () => {
         const chip = new ChipItem('ch2', 'Chip+', 200, 100, 'RANGE' as any, {}, 3);
         // level-3 chip requires player level 24
         expect(chip.canEquip(player)).toBe(false);
+    });
+});
+
+// ─── startBlock ───────────────────────────────────────────────────────────────
+
+describe('Player.startBlock', () => {
+    it('sets isBlocking to true when grounded and not attacking', () => {
+        const player = makePlayer();
+        (player as any).startBlock();
+        expect(player.isBlocking).toBe(true);
+        expect((player as any).blockTimer).toBe(0);
+    });
+
+    it('cannot block while attacking', () => {
+        const player = makePlayer();
+        (player as any).weapon.isAttacking = true;
+        (player as any).startBlock();
+        expect(player.isBlocking).toBe(false);
+    });
+
+    it('cannot block while airborne', () => {
+        const player = makePlayer();
+        (player as any).isGrounded = false;
+        (player as any).startBlock();
+        expect(player.isBlocking).toBe(false);
+    });
+
+    it('cannot block while already blocking', () => {
+        const player = makePlayer();
+        player.isBlocking = true;
+        (player as any).blockTimer = 0.2;
+        (player as any).startBlock();
+        // blockTimer must remain unchanged (early return)
+        expect((player as any).blockTimer).toBe(0.2);
+    });
+
+    it('cannot block when dead', () => {
+        const player = makePlayer();
+        player.isDead = true;
+        (player as any).startBlock();
+        expect(player.isBlocking).toBe(false);
+    });
+});
+
+// ─── takeDamage – blocking ─────────────────────────────────────────────────────
+
+describe('Player.takeDamage – blocking', () => {
+    it('absorbs damage completely when blocking', () => {
+        const player = makePlayer();
+        player.isBlocking = true;
+        player.takeDamage(50);
+        expect(player.hp).toBe(player.maxHp);
+    });
+});
+
+// ─── handleBlock timer lifecycle ──────────────────────────────────────────────
+
+describe('Player.handleBlock', () => {
+    it('keeps isBlocking while the timer has not yet expired', () => {
+        const player = makePlayer();
+        player.isBlocking = true;
+        (player as any).blockTimer = 0.1;
+        (player as any).handleBlock(0.2); // 0.1 + 0.2 = 0.3 < 0.5
+        expect(player.isBlocking).toBe(true);
+    });
+
+    it('clears isBlocking when the block timer reaches BLOCK_DURATION', () => {
+        const player = makePlayer();
+        player.isBlocking = true;
+        (player as any).blockTimer = 0.4;
+        (player as any).handleBlock(0.15); // 0.4 + 0.15 = 0.55 ≥ 0.5
+        expect(player.isBlocking).toBe(false);
     });
 });
 

@@ -19,6 +19,7 @@ import { AreaAttackSkill } from './skills/AreaAttackSkill';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 import { SkillTechType } from './skills/SkillTechType';
 import { Tier, TierManager } from './items/TierManager';
+import { BlockShield } from './BlockShield';
 
 enum ActionType {
     Idle = 'Idle',
@@ -164,6 +165,12 @@ export class Player extends BaseMesh {
     private dashHitEnemies: Set<Enemy> = new Set();
     private attackHitEnemies: Set<Enemy> = new Set();
     private attackLockedUntilRelease: boolean = false;
+
+    // Block state
+    isBlocking: boolean = false;
+    private blockTimer: number = 0;
+    private readonly BLOCK_DURATION: number = 0.5;
+    private blockShield: BlockShield | null = null;
 
     // Particle wall constants
     private readonly PARTICLE_BASE_HEIGHT: number = 0.2;
@@ -610,6 +617,11 @@ export class Player extends BaseMesh {
             return;
         }
 
+        // High priority: Blocking - holds idle pose, overrides move/attack/jump
+        if (this.isBlocking) {
+            return;
+        }
+
         // High priority: Charging attack - block other animations
         if (this.isChargingAttack) {
             return;
@@ -675,6 +687,14 @@ export class Player extends BaseMesh {
         // Handle dash and charging (these short-circuit the rest of the update)
         if (this.handleDash(dt)) return;
         if (this.handleCharging(dt)) return;
+
+        // Check for block input
+        if (this.input.isBlockJustPressed()) {
+            this.startBlock();
+        }
+
+        // Handle blocking (short-circuits movement and combat)
+        if (this.handleBlock(dt)) return;
 
         // Skills handling
         this.handleSkills();
@@ -879,6 +899,42 @@ export class Player extends BaseMesh {
         this.weapon.update(dt);
     }
 
+    private startBlock(): void {
+        if (this.isBlocking || this.isDead || this.isDashing || this.isChargingAttack || this.isUsingSkill || this.weapon.isAttacking || !this.isGrounded) return;
+
+        this.isBlocking = true;
+        this.blockTimer = 0;
+        this.haltMovement();
+        // TODO: fade to a dedicated "Blocking" animation when available
+        this.fadeToAction(ActionType.Idle, 0.1);
+
+        if (!this.blockShield) {
+            this.blockShield = new BlockShield();
+        }
+        this.blockShield.attachTo(this.mesh);
+    }
+
+    private handleBlock(dt: number): boolean {
+        if (!this.isBlocking) return false;
+
+        this.blockTimer += dt;
+
+        if (this.stunTimer > 0 || this.blockTimer < this.BLOCK_DURATION) {
+            // Allow knockback to play out - decelerate instead of halting
+            this.stunTimer -= dt;
+            this.body.velocity.x *= 0.9;
+            this.body.velocity.z *= 0.9;
+        } else {
+            this.haltMovement();
+            this.isBlocking = false;
+            this.blockShield?.detach();
+        }
+
+        this.syncPosition();
+
+        return true;
+    }
+
     private handleInvulnerability(dt: number) {
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= dt;
@@ -1022,6 +1078,22 @@ export class Player extends BaseMesh {
     takeDamage(amount: number, sourcePos?: CANNON.Vec3, isCriticalHit: boolean = false): void {
         if (this.invulnerableTimer > 0 || this.isLevelingUp || this.isDashing || this.isDead) return;
 
+        // Knockback is always applied, even when blocking, to push the player away from enemies
+        if (sourcePos) {
+            this.stunTimer = this.STUN_TIME;
+            // Ensure body is dynamic for knockback to work
+            this.body.type = CANNON.Body.DYNAMIC;
+            const knockDir = this.body.position.vsub(sourcePos);
+            knockDir.y = 0;
+            if (knockDir.length() > 0) {
+                knockDir.normalize();
+                this.body.applyImpulse(new CANNON.Vec3(knockDir.x * this.KNOCKBACK_FORCE, 5, knockDir.z * this.KNOCKBACK_FORCE), knockDir);
+            }
+        }
+
+        // Block absorbs damage completely but does not prevent knockback
+        if (this.isBlocking) return;
+
         // Stop any ongoing attack
         this.weapon.stopAttack();
 
@@ -1043,19 +1115,6 @@ export class Player extends BaseMesh {
 
         // Trigger hit animation
         this.fadeToAction(ActionType.TakeHit, 0.05);
-
-        // Knockback: push player away from source horizontally and give small upward impulse
-        if (sourcePos) {
-            this.stunTimer = this.STUN_TIME;
-            // Ensure body is dynamic for knockback to work
-            this.body.type = CANNON.Body.DYNAMIC;
-            const knockDir = this.body.position.vsub(sourcePos);
-            knockDir.y = 0;
-            if (knockDir.length() > 0) {
-                knockDir.normalize();
-                this.body.applyImpulse(new CANNON.Vec3(knockDir.x * this.KNOCKBACK_FORCE, 5, knockDir.z * this.KNOCKBACK_FORCE), knockDir);
-            }
-        }
 
         // Cancel charging attack if taking damage and suppress immediate follow-up attack
         if (this.isChargingAttack) this.cancelChargeAttack()
