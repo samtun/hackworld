@@ -4,6 +4,7 @@ import { WeaponItem } from './WeaponItem';
 import { WeaponType } from './WeaponType';
 import { Tier, TierManager } from '../TierManager';
 import { CardCollection } from '../cards/CardCollection';
+import { Album } from '../cards/Card';
 
 function makeWeapon(damage = 100, buyPrice = 200, sellPrice = 100): WeaponItem {
     const stableTier = TierManager.Instance.tiers.get(Tier.STABLE)!;
@@ -11,7 +12,7 @@ function makeWeapon(damage = 100, buyPrice = 200, sellPrice = 100): WeaponItem {
 }
 
 /** Helper to mock CardCollection.Instance.isAlbumComplete */
-function setAlbumComplete(album: string, complete: boolean) {
+function setAlbumComplete(album: Album, complete: boolean) {
     vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockImplementation((a) => a === album && complete);
 }
 
@@ -54,7 +55,7 @@ describe('WeaponBonusCalculator', () => {
         });
 
         it('uses +35% ceiling for LEET tier when C.003 is complete', () => {
-            setAlbumComplete('C.003', true);
+            setAlbumComplete(Album.C003, true);
             const leet = TierManager.Instance.tiers.get(Tier.LEET)!;
             // With C.003 bonus: TOP_CEIL_PERCENT = 35
             const result = calc.randomMultiplierForTier(leet);

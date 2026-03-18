@@ -21,6 +21,7 @@ import { SkillTechType } from './skills/SkillTechType';
 import { Tier, TierManager } from './items/TierManager';
 import { BlockShield } from './BlockShield';
 import { CardCollection } from './items/cards/CardCollection';
+import { Album } from './items/cards/Card';
 
 enum ActionType {
     Idle = 'Idle',
@@ -226,9 +227,9 @@ export class Player extends BaseMesh {
     get collectionBonusItemDropChance(): number {
         const cc = CardCollection.Instance;
         let bonus = 0;
-        if (cc.isAlbumComplete('B.001')) bonus += 0.02;
-        if (cc.isAlbumComplete('B.002')) bonus += 0.03;
-        if (cc.isAlbumComplete('B.003')) bonus += 0.05;
+        if (cc.isAlbumComplete(Album.B001)) bonus += 0.02;
+        if (cc.isAlbumComplete(Album.B002)) bonus += 0.03;
+        if (cc.isAlbumComplete(Album.B003)) bonus += 0.05;
         return bonus;
     }
 
@@ -239,8 +240,8 @@ export class Player extends BaseMesh {
     get collectionBonusWeaponDropFactor(): number {
         const cc = CardCollection.Instance;
         let bonus = 0;
-        if (cc.isAlbumComplete('B.002')) bonus += 0.02;
-        if (cc.isAlbumComplete('B.003')) bonus += 0.05;
+        if (cc.isAlbumComplete(Album.B002)) bonus += 0.02;
+        if (cc.isAlbumComplete(Album.B003)) bonus += 0.05;
         return bonus;
     }
 
@@ -249,7 +250,7 @@ export class Player extends BaseMesh {
      * C.002 completed: 10% reduction → 0.10
      */
     get collectionBonusSkillCooldownReduction(): number {
-        return CardCollection.Instance.isAlbumComplete('C.002') ? 0.10 : 0;
+        return CardCollection.Instance.isAlbumComplete(Album.C002) ? 0.10 : 0;
     }
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {

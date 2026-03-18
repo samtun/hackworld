@@ -1,6 +1,7 @@
 import { WeaponItem } from './WeaponItem';
 import { WeaponTierDefinition, Tier, TierManager } from '../TierManager';
 import { CardCollection } from '../cards/CardCollection';
+import { Album } from '../cards/Card';
 
 /**
  * Centralises all weapon bonus/tier calculations.
@@ -26,7 +27,7 @@ export class WeaponBonusCalculator {
      * Returns the effective top ceiling percent, boosted by +10 when C.003 is complete.
      */
     private getTopCeilPercent(): number {
-        if (CardCollection.Instance.isAlbumComplete('C.003')) {
+        if (CardCollection.Instance.isAlbumComplete(Album.C003)) {
             return WeaponBonusCalculator.TOP_CEIL_PERCENT + WeaponBonusCalculator.C003_TOP_CEIL_BONUS;
         }
         return WeaponBonusCalculator.TOP_CEIL_PERCENT;

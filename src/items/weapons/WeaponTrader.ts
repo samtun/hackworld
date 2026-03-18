@@ -9,6 +9,7 @@ import { TRADER_UI_COLORS } from '../TraderUIConstants';
 import { TierManager } from '../TierManager';
 import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 import { CardCollection } from '../cards/CardCollection';
+import { Album } from '../cards/Card';
 
 /** A.003 bonus: 8% buy discount and 8% sell bonus on weapons when collection A.003 is complete */
 const A003_DISCOUNT = 0.08;
@@ -71,14 +72,14 @@ export class WeaponTrader extends BaseTrader {
 
     protected getEffectiveBuyPrice(item: Item, _player: Player): number {
         const base = item.buyPrice ?? 0;
-        return CardCollection.Instance.isAlbumComplete('A.003')
+        return CardCollection.Instance.isAlbumComplete(Album.A003)
             ? Math.floor(base * (1 - A003_DISCOUNT))
             : base;
     }
 
     protected getEffectiveSellPrice(item: Item, _player: Player): number {
         const base = item.sellPrice ?? 0;
-        return CardCollection.Instance.isAlbumComplete('A.003')
+        return CardCollection.Instance.isAlbumComplete(Album.A003)
             ? Math.ceil(base * (1 + A003_DISCOUNT))
             : base;
     }
@@ -90,7 +91,7 @@ export class WeaponTrader extends BaseTrader {
     private refreshInventory(player: Player): void {
         this.traderInventory = [];
         const bonusCalc = WeaponBonusCalculator.Instance;
-        const a003Active = CardCollection.Instance.isAlbumComplete('A.003');
+        const a003Active = CardCollection.Instance.isAlbumComplete(Album.A003);
 
         // Random bonus entries
         // Loop 2 times over all tiers to get a good mix of potential weapon items

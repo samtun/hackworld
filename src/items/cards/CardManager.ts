@@ -1,7 +1,7 @@
 import { Player } from '../../Player';
 import { InputManager } from '../../InputManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
-import { Card, CardDefinitions, CardRarity } from './Card';
+import { Card, CardDefinitions, CardRarity, Album } from './Card';
 import { CardCollection } from './CardCollection';
 import { ViewMode } from './ViewMode';
 import { getHint, HintConfigs } from '../../ui/InputHints';
@@ -22,7 +22,7 @@ export class CardManager {
     private viewMode: ViewMode = ViewMode.MENU;
     private selectedMenuIndex: number = 0;
     private selectedAlbumIndex: number = 0;
-    private currentAlbum: string = '';
+    private currentAlbum: Album = Album.A001;
     private revealedCards: Card[] = [];
     private flippedCardIndices: Set<number> = new Set(); // Track which cards have been flipped
     private flippingInProgress: boolean = false; // Track if flip animation is in progress
@@ -430,16 +430,16 @@ export class CardManager {
      * Collection reward descriptions keyed by album.
      * These are the plain-text strings that are revealed as cards are collected.
      */
-    private static readonly ALBUM_REWARDS: Record<string, string> = {
-        'A.001': 'REWARD: Chip prices -5% / Chip sell value +5%',
-        'A.002': 'REWARD: Core prices -5% / Core sell value +5%',
-        'A.003': 'REWARD: Weapon prices -8% / Weapon sell value +8% / +5% tier bonus in trader stock',
-        'B.001': 'REWARD: Item drop chance +2%',
-        'B.002': 'REWARD: Item drop chance +3% / Weapon drop quality +2%',
-        'B.003': 'REWARD: Item drop chance +5% / Weapon drop quality +5%',
-        'C.001': 'REWARD: +5% chance for multi-XData drops',
-        'C.002': 'REWARD: All skill cooldowns permanently reduced by 10%',
-        'C.003': 'REWARD: Maximum weapon damage bonus ceiling increased by +10% (up to +35%)',
+    private static readonly ALBUM_REWARDS: Record<Album, string> = {
+        [Album.A001]: 'REWARD: Chip prices -5% / Chip sell value +5%',
+        [Album.A002]: 'REWARD: Core prices -5% / Core sell value +5%',
+        [Album.A003]: 'REWARD: Weapon prices -8% / Weapon sell value +8% / +5% tier bonus in trader stock',
+        [Album.B001]: 'REWARD: Item drop chance +2%',
+        [Album.B002]: 'REWARD: Item drop chance +3% / Weapon drop quality +2%',
+        [Album.B003]: 'REWARD: Item drop chance +5% / Weapon drop quality +5%',
+        [Album.C001]: 'REWARD: +5% chance for multi-XData drops',
+        [Album.C002]: 'REWARD: All skill cooldowns permanently reduced by 10%',
+        [Album.C003]: 'REWARD: Maximum weapon damage bonus ceiling increased by +10% (up to +35%)',
     };
 
     /** Characters used for obfuscation */
@@ -450,7 +450,7 @@ export class CardManager {
      * The fraction of characters revealed equals (collected / total).
      * When the album is complete the description is shown in full.
      */
-    private createRewardDescriptionDiv(album: string): HTMLDivElement {
+    private createRewardDescriptionDiv(album: Album): HTMLDivElement {
         const rewardDiv = document.createElement('div');
         Object.assign(rewardDiv.style, {
             marginTop: '20px',

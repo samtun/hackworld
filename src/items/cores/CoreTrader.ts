@@ -5,6 +5,7 @@ import { Player } from '../../Player';
 import { Item } from '../Item';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
 import { CardCollection } from '../cards/CardCollection';
+import { Album } from '../cards/Card';
 
 /** A.002 bonus: 5% buy discount and 5% sell bonus on cores when collection A.002 is complete */
 const A002_DISCOUNT = 0.05;
@@ -47,14 +48,14 @@ export class CoreTrader extends BaseTrader {
 
     protected getEffectiveBuyPrice(item: Item, _player: Player): number {
         const base = item.buyPrice ?? 0;
-        return CardCollection.Instance.isAlbumComplete('A.002')
+        return CardCollection.Instance.isAlbumComplete(Album.A002)
             ? Math.floor(base * (1 - A002_DISCOUNT))
             : base;
     }
 
     protected getEffectiveSellPrice(item: Item, _player: Player): number {
         const base = item.sellPrice ?? 0;
-        return CardCollection.Instance.isAlbumComplete('A.002')
+        return CardCollection.Instance.isAlbumComplete(Album.A002)
             ? Math.ceil(base * (1 + A002_DISCOUNT))
             : base;
     }

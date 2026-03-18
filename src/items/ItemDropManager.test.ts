@@ -8,6 +8,7 @@ import { WeaponDropStrategy } from './weapons/WeaponDropStrategy';
 import { ChipDropStrategy } from './chips/ChipDropStrategy';
 import { CoreDropStrategy } from './cores/CoreDropStrategy';
 import { CardCollection } from './cards/CardCollection';
+import { Album } from './cards/Card';
 
 /** Minimal Enemy stub for strategy tests */
 function makeEnemyStub(overrides: Record<string, unknown> = {}) {
@@ -389,12 +390,33 @@ describe('XDataDropStrategy – C.001 bonus', () => {
 
     it('with C.001, roll 0.27 yields 5 XData (mediumAmountLimit boosted to 0.30)', () => {
         vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockImplementation(
-            (a) => a === 'C.001'
+            (a) => a === Album.C001
         );
         vi.spyOn(Math, 'random').mockReturnValue(0.27);
         const enemy = { xDataDropChanceWeight: 1, getDeathPosition: () => ({ x: 0, y: 0.5, z: 0 }) } as any;
         const player = { level: 50, collectXData: vi.fn() } as any;
         const drop = strategy.drop(mockScene, enemy, player);
         expect((drop as any)?.amount).toBe(5);
+    });
+
+    it('with C.001 at level 100, roll 0.04 yields 100 XData (veryHighAmountLimit boosted from 0 to 0.05)', () => {
+        vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockImplementation(
+            (a) => a === Album.C001
+        );
+        vi.spyOn(Math, 'random').mockReturnValue(0.04);
+        // low-weight enemy so isHighChance is false, but level >= 100 + C.001 should still fire
+        const enemy = { xDataDropChanceWeight: 1, getDeathPosition: () => ({ x: 0, y: 0.5, z: 0 }) } as any;
+        const player = { level: 100, collectXData: vi.fn() } as any;
+        const drop = strategy.drop(mockScene, enemy, player);
+        expect((drop as any)?.amount).toBe(100);
+    });
+
+    it('without C.001 at level 100 with low-weight enemy, roll 0.04 yields 20 XData (veryHighAmountLimit stays 0)', () => {
+        vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockReturnValue(false);
+        vi.spyOn(Math, 'random').mockReturnValue(0.04);
+        const enemy = { xDataDropChanceWeight: 1, getDeathPosition: () => ({ x: 0, y: 0.5, z: 0 }) } as any;
+        const player = { level: 100, collectXData: vi.fn() } as any;
+        const drop = strategy.drop(mockScene, enemy, player);
+        expect((drop as any)?.amount).toBe(20);
     });
 });

@@ -7,6 +7,7 @@ import { WeaponItem } from './items/weapons/WeaponItem';
 import { WeaponType } from './items/weapons/WeaponType';
 import { Tier, TierManager } from './items/TierManager';
 import { CardCollection } from './items/cards/CardCollection';
+import { Album } from './items/cards/Card';
 
 /**
  * Create a minimal Player instance for unit testing without instantiating
@@ -1206,7 +1207,7 @@ describe('Player collection bonus getters', () => {
         vi.restoreAllMocks();
     });
 
-    function mockComplete(...albums: string[]) {
+    function mockComplete(...albums: Album[]) {
         vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockImplementation(
             (album) => albums.includes(album)
         );
@@ -1223,12 +1224,12 @@ describe('Player collection bonus getters', () => {
         });
 
         it('returns 0.02 when only B.001 is complete', () => {
-            mockComplete('B.001');
+            mockComplete(Album.B001);
             expect(player.collectionBonusItemDropChance).toBeCloseTo(0.02);
         });
 
         it('returns 0.10 when B.001, B.002, and B.003 are all complete', () => {
-            mockComplete('B.001', 'B.002', 'B.003');
+            mockComplete(Album.B001, Album.B002, Album.B003);
             expect(player.collectionBonusItemDropChance).toBeCloseTo(0.10);
         });
     });
@@ -1240,12 +1241,12 @@ describe('Player collection bonus getters', () => {
         });
 
         it('returns 0.02 when only B.002 is complete', () => {
-            mockComplete('B.002');
+            mockComplete(Album.B002);
             expect(player.collectionBonusWeaponDropFactor).toBeCloseTo(0.02);
         });
 
         it('returns 0.07 when B.002 and B.003 are both complete', () => {
-            mockComplete('B.002', 'B.003');
+            mockComplete(Album.B002, Album.B003);
             expect(player.collectionBonusWeaponDropFactor).toBeCloseTo(0.07);
         });
     });
@@ -1257,7 +1258,7 @@ describe('Player collection bonus getters', () => {
         });
 
         it('returns 0.10 when C.002 is complete', () => {
-            mockComplete('C.002');
+            mockComplete(Album.C002);
             expect(player.collectionBonusSkillCooldownReduction).toBeCloseTo(0.10);
         });
     });
