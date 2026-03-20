@@ -1,3 +1,10 @@
+# [1.55.0](https://github.com/samtun/hackworld/compare/v1.54.0...v1.55.0) (2026-03-20)
+
+
+### Features
+
+* let enemies rotate towards the player while attacking ([815ff14](https://github.com/samtun/hackworld/commit/815ff149285b9345a0ab7bd67c04850bdbf647ed))
+
 # [1.54.0](https://github.com/samtun/hackworld/compare/v1.53.0...v1.54.0) (2026-03-20)
 
 
