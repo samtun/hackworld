@@ -102,24 +102,55 @@ export abstract class BaseTrader {
             text: MENU_COLORS.TEXT
         }, this.uiConfig.colors || {});
 
+        // Inject responsive CSS once
+        if (!document.getElementById('trader-responsive-styles')) {
+            const style = document.createElement('style');
+            style.id = 'trader-responsive-styles';
+            style.textContent = `
+                @media (max-width: 768px) {
+                    .trader-ui-window {
+                        grid-template-columns: 1fr 1fr !important;
+                        grid-template-rows: auto auto 1fr auto auto auto !important;
+                    }
+                    .trader-ui-title { grid-column: 1 / 3 !important; }
+                    .trader-ui-subtitle-details {
+                        grid-row: 4 / 5 !important;
+                        grid-column: 1 / 3 !important;
+                        border-top: 2px solid ${MENU_COLORS.SEPARATOR} !important;
+                    }
+                    .trader-ui-panel-details {
+                        grid-row: 5 / 6 !important;
+                        grid-column: 1 / 3 !important;
+                    }
+                    .trader-ui-money {
+                        grid-row: 6 / 7 !important;
+                        grid-column: 1 / 3 !important;
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         // Build container overlay
         this.container = this.menuManager.createOverlay();
         document.body.appendChild(this.container);
 
-        // Main Window
+        // Main Window – 3-column layout: trader list | player list | item details
         const windowDiv = this.menuManager.createGridWindow(
-            '1fr 1fr',
-            'auto auto 1fr auto auto auto',
+            '1fr 1fr 1fr',
+            'auto auto 1fr auto',
             { width: '92vw' }
         );
         windowDiv.style.gap = '2px';
+        windowDiv.classList.add('trader-ui-window');
         this.container.appendChild(windowDiv);
 
         // Title
         const titleDiv = document.createElement('div');
         titleDiv.innerText = this.uiConfig.title || 'TRADER';
+        titleDiv.classList.add('trader-ui-title');
         Object.assign(titleDiv.style, {
-            gridColumn: '1 / 3',
+            gridColumn: '1 / 4',
             textAlign: 'center',
             fontSize: '28px',
             fontWeight: 'bold',
@@ -151,6 +182,18 @@ export abstract class BaseTrader {
         });
         windowDiv.appendChild(playerTitle);
 
+        const detailsTitle = document.createElement('div');
+        detailsTitle.innerText = 'Item Details';
+        detailsTitle.classList.add('trader-ui-subtitle-details');
+        Object.assign(detailsTitle.style, {
+            gridRow: '2 / 3',
+            gridColumn: '3 / 4',
+            padding: '10px 10px 5px 10px',
+            fontWeight: 'bold',
+            fontSize: '20px'
+        });
+        windowDiv.appendChild(detailsTitle);
+
         // Trader Panel (Left)
         this.traderPanel = this.menuManager.createPanel({
             backgroundColor: this.uiConfig.colors?.panelTrader || colors.panelTrader,
@@ -163,7 +206,7 @@ export abstract class BaseTrader {
         this.traderList = document.createElement('div');
         this.traderPanel.appendChild(this.traderList);
 
-        // Player Panel (Right)
+        // Player Panel (Middle)
         this.playerPanel = this.menuManager.createPanel({
             backgroundColor: this.uiConfig.colors?.panelPlayer || colors.panelPlayer,
             gridRow: '3 / 4',
@@ -175,40 +218,26 @@ export abstract class BaseTrader {
         this.playerList = document.createElement('div');
         this.playerPanel.appendChild(this.playerList);
 
-        // Separator row for visual spacing
-        const separatorDiv = document.createElement('div');
-        Object.assign(separatorDiv.style, {
-            gridColumn: '1 / 3',
-            gridRow: '4 / 5',
-            height: '2px',
-            backgroundColor: MENU_COLORS.SEPARATOR
-        });
-        windowDiv.appendChild(separatorDiv);
-
-        // Single Item Details Panel (Bottom - spans both columns)
-        const statsPanel = this.menuManager.createPanel({
+        // Item Details Panel (Right)
+        const detailsPanel = this.menuManager.createPanel({
             backgroundColor: MENU_COLORS.WINDOW_BG,
-            gridRow: '5 / 6',
-            gridColumn: '1 / 3'
+            gridRow: '3 / 4',
+            gridColumn: '3 / 4'
         });
-        windowDiv.appendChild(statsPanel);
-
-        const statsTitle = document.createElement('div');
-        statsTitle.innerText = 'Item Details';
-        statsTitle.style.marginBottom = '10px';
-        statsTitle.style.fontWeight = 'bold';
-        statsTitle.style.fontSize = '16px';
-        statsPanel.appendChild(statsTitle);
+        detailsPanel.classList.add('trader-ui-panel-details');
+        detailsPanel.style.overflowY = 'auto';
+        windowDiv.appendChild(detailsPanel);
 
         this.itemDetailsPanel = document.createElement('div');
         this.itemDetailsPanel.style.fontSize = '14px';
-        statsPanel.appendChild(this.itemDetailsPanel);
+        detailsPanel.appendChild(this.itemDetailsPanel);
 
         // Money Display (Bottom)
         const moneyDiv = document.createElement('div');
+        moneyDiv.classList.add('trader-ui-money');
         Object.assign(moneyDiv.style, {
-            gridColumn: '1 / 3',
-            gridRow: '6 / 7',
+            gridColumn: '1 / 4',
+            gridRow: '4 / 5',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
