@@ -1,3 +1,12 @@
+# [1.54.0](https://github.com/samtun/hackworld/compare/v1.53.0...v1.54.0) (2026-03-20)
+
+
+### Features
+
+* add complete album control to DebugValueEditor ([7d22310](https://github.com/samtun/hackworld/commit/7d22310700d3d16d5eb3fc0aad3b2d3472108a84))
+* add unlockable bonuses for booster pack card collections ([31a830c](https://github.com/samtun/hackworld/commit/31a830c6822dc69ca68b17f7b913115a23f9e860))
+* rework reward descriptions ([cf414ce](https://github.com/samtun/hackworld/commit/cf414ceb0cd8d595bd92accf1164a7454f177d61))
+
 # [1.53.0](https://github.com/samtun/hackworld/compare/v1.52.1...v1.53.0) (2026-03-17)
 
 
