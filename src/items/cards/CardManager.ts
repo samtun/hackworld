@@ -431,15 +431,15 @@ export class CardManager {
      * These are the plain-text strings that are revealed as cards are collected.
      */
     private static readonly ALBUM_REWARDS: Record<Album, string> = {
-        [Album.A001]: 'REWARD: Chip prices -5% / Chip sell value +5%',
-        [Album.A002]: 'REWARD: Core prices -5% / Core sell value +5%',
-        [Album.A003]: 'REWARD: Weapon prices -8% / Weapon sell value +8% / +5% tier bonus in trader stock',
-        [Album.B001]: 'REWARD: Item drop chance +2%',
-        [Album.B002]: 'REWARD: Item drop chance +3% / Weapon drop quality +2%',
-        [Album.B003]: 'REWARD: Item drop chance +5% / Weapon drop quality +5%',
-        [Album.C001]: 'REWARD: +5% chance for multi-XData drops',
-        [Album.C002]: 'REWARD: All skill cooldowns permanently reduced by 10%',
-        [Album.C003]: 'REWARD: Maximum weapon damage bonus ceiling increased by +10% (up to +35%)',
+        [Album.A001]: 'Improve buy/sell prices of chips  by 5%',
+        [Album.A002]: 'Improve buy/sell prices of cores  by 5%',
+        [Album.A003]: 'Improve weapon buy/sell prices by 8% and raise higher tier weapon spawn rate for traders stock by 5%',
+        [Album.B001]: 'Raise item drop chance by 2%',
+        [Album.B002]: 'Raise item drop chance by 3% and improve weapon drop quality by 2%',
+        [Album.B003]: 'Raise item drop chance by 5% and improve weapon drop quality by 5%',
+        [Album.C001]: 'Raise chance for high value XData drops by 5%',
+        [Album.C002]: 'Reduce all skill cooldowns by 10%',
+        [Album.C003]: 'Raise maximum dropped weapon damage bonus ceiling by 10%',
     };
 
     /** Characters used for obfuscation */
