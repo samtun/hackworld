@@ -67,8 +67,8 @@ export abstract class Skill {
         // Consume TP
         player.tp -= this.getEffectiveTpCost(player);
 
-        // Start cooldown
-        this.cooldownTimer = this.cooldown;
+        // Start cooldown, reduced by any collection bonus (C.002: 10% reduction)
+        this.cooldownTimer = this.cooldown * (1 - player.collectionBonusSkillCooldownReduction);
 
         // Execute skill-specific logic
         this.execute(player, scene, world);

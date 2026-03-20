@@ -1,16 +1,27 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 import { WeaponItem } from './WeaponItem';
 import { WeaponType } from './WeaponType';
 import { Tier, TierManager } from '../TierManager';
+import { CardCollection } from '../cards/CardCollection';
+import { Album } from '../cards/Card';
 
 function makeWeapon(damage = 100, buyPrice = 200, sellPrice = 100): WeaponItem {
     const stableTier = TierManager.Instance.tiers.get(Tier.STABLE)!;
     return new WeaponItem('w1', 'Test Weapon', buyPrice, sellPrice, WeaponType.SWORD, damage, 'model.glb', stableTier, 1);
 }
 
+/** Helper to mock CardCollection.Instance.isAlbumComplete */
+function setAlbumComplete(album: Album, complete: boolean) {
+    vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockImplementation((a) => a === album && complete);
+}
+
 describe('WeaponBonusCalculator', () => {
     const calc = WeaponBonusCalculator.Instance;
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
 
     describe('Instance (singleton)', () => {
         it('returns the same instance on repeated calls', () => {
@@ -41,6 +52,15 @@ describe('WeaponBonusCalculator', () => {
             const result = calc.randomMultiplierForTier(leet);
             expect(result).toBeGreaterThanOrEqual(1.16);
             expect(result).toBeLessThanOrEqual(1.25);
+        });
+
+        it('uses +35% ceiling for LEET tier when C.003 is complete', () => {
+            setAlbumComplete(Album.C003, true);
+            const leet = TierManager.Instance.tiers.get(Tier.LEET)!;
+            // With C.003 bonus: TOP_CEIL_PERCENT = 35
+            const result = calc.randomMultiplierForTier(leet);
+            expect(result).toBeGreaterThanOrEqual(1.16);
+            expect(result).toBeLessThanOrEqual(1.35);
         });
     });
 

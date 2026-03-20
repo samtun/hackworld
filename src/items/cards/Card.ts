@@ -4,8 +4,20 @@ export enum CardRarity {
     SPECIAL = 'special'
 }
 
+export enum Album {
+    A001 = 'A.001',
+    A002 = 'A.002',
+    A003 = 'A.003',
+    B001 = 'B.001',
+    B002 = 'B.002',
+    B003 = 'B.003',
+    C001 = 'C.001',
+    C002 = 'C.002',
+    C003 = 'C.003',
+}
+
 export interface Card {
-    album: string;  // e.g., 'A.001', 'B.002', 'C.003'
+    album: Album;
     slot: number;   // 1-8
     rarity: CardRarity;
 }
@@ -14,8 +26,8 @@ export interface Card {
  * Define all cards in the game
  */
 export class CardDefinitions {
-    private static readonly ALBUMS: Record<string, CardRarity[]> = {
-        'A.001': [
+    private static readonly ALBUMS: Record<Album, CardRarity[]> = {
+        [Album.A001]: [
             CardRarity.NORMAL,
             CardRarity.NORMAL,
             CardRarity.NORMAL,
@@ -25,7 +37,7 @@ export class CardDefinitions {
             CardRarity.UNCOMMON,
             CardRarity.UNCOMMON
         ],
-        'A.002': [
+        [Album.A002]: [
             CardRarity.NORMAL,
             CardRarity.NORMAL,
             CardRarity.NORMAL,
@@ -35,7 +47,7 @@ export class CardDefinitions {
             CardRarity.UNCOMMON,
             CardRarity.UNCOMMON
         ],
-        'A.003': [
+        [Album.A003]: [
             CardRarity.NORMAL,
             CardRarity.NORMAL,
             CardRarity.NORMAL,
@@ -45,7 +57,7 @@ export class CardDefinitions {
             CardRarity.UNCOMMON,
             CardRarity.UNCOMMON
         ],
-        'B.001': [
+        [Album.B001]: [
             CardRarity.NORMAL,
             CardRarity.NORMAL,
             CardRarity.NORMAL,
@@ -55,7 +67,7 @@ export class CardDefinitions {
             CardRarity.SPECIAL,
             CardRarity.SPECIAL
         ],
-        'B.002': [
+        [Album.B002]: [
             CardRarity.NORMAL,
             CardRarity.NORMAL,
             CardRarity.NORMAL,
@@ -65,7 +77,7 @@ export class CardDefinitions {
             CardRarity.UNCOMMON,
             CardRarity.SPECIAL
         ],
-        'B.003': [
+        [Album.B003]: [
             CardRarity.NORMAL,
             CardRarity.NORMAL,
             CardRarity.UNCOMMON,
@@ -75,7 +87,7 @@ export class CardDefinitions {
             CardRarity.SPECIAL,
             CardRarity.SPECIAL
         ],
-        'C.001': [
+        [Album.C001]: [
             CardRarity.NORMAL,
             CardRarity.NORMAL,
             CardRarity.NORMAL,
@@ -85,7 +97,7 @@ export class CardDefinitions {
             CardRarity.SPECIAL,
             CardRarity.SPECIAL
         ],
-        'C.002': [
+        [Album.C002]: [
             CardRarity.NORMAL,
             CardRarity.UNCOMMON,
             CardRarity.UNCOMMON,
@@ -95,7 +107,7 @@ export class CardDefinitions {
             CardRarity.SPECIAL,
             CardRarity.SPECIAL
         ],
-        'C.003': [
+        [Album.C003]: [
             CardRarity.UNCOMMON,
             CardRarity.UNCOMMON,
             CardRarity.SPECIAL,
@@ -110,14 +122,14 @@ export class CardDefinitions {
     /**
      * Get all defined albums
      */
-    static getAlbums(): string[] {
-        return Object.keys(this.ALBUMS);
+    static getAlbums(): Album[] {
+        return Object.values(Album);
     }
 
     /**
      * Get cards for a specific album
      */
-    static getAlbumCards(album: string): Card[] {
+    static getAlbumCards(album: Album): Card[] {
         const rarities = this.ALBUMS[album];
         if (!rarities) return [];
 

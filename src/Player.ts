@@ -20,6 +20,8 @@ import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 import { SkillTechType } from './skills/SkillTechType';
 import { Tier, TierManager } from './items/TierManager';
 import { BlockShield } from './BlockShield';
+import { CardCollection } from './items/cards/CardCollection';
+import { Album } from './items/cards/Card';
 
 enum ActionType {
     Idle = 'Idle',
@@ -216,6 +218,39 @@ export class Player extends BaseMesh {
     // A bonus on drop chances in percentage points (e.g. 0.05 for +5% drop chances)
     get luckDropChanceBonus(): number {
         return this.luck / this.LUCK_DIVISOR;
+    }
+
+    /**
+     * Additional item drop chance bonus from completed card collections (B.001/B.002/B.003).
+     * Stacks: B.001 +2%, B.002 +3%, B.003 +5% → max +10%
+     */
+    get collectionBonusItemDropChance(): number {
+        const cc = CardCollection.Instance;
+        let bonus = 0;
+        if (cc.isAlbumComplete(Album.B001)) bonus += 0.02;
+        if (cc.isAlbumComplete(Album.B002)) bonus += 0.03;
+        if (cc.isAlbumComplete(Album.B003)) bonus += 0.05;
+        return bonus;
+    }
+
+    /**
+     * Additional weapon drop bonus factor from completed card collections (B.002/B.003).
+     * Added on top of weaponDropBonusFactor. Stacks: B.002 +0.02, B.003 +0.05 → max +0.07
+     */
+    get collectionBonusWeaponDropFactor(): number {
+        const cc = CardCollection.Instance;
+        let bonus = 0;
+        if (cc.isAlbumComplete(Album.B002)) bonus += 0.02;
+        if (cc.isAlbumComplete(Album.B003)) bonus += 0.05;
+        return bonus;
+    }
+
+    /**
+     * Skill cooldown reduction fraction from completed card collections (C.002).
+     * C.002 completed: 10% reduction → 0.10
+     */
+    get collectionBonusSkillCooldownReduction(): number {
+        return CardCollection.Instance.isAlbumComplete(Album.C002) ? 0.10 : 0;
     }
 
     constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {

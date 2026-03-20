@@ -73,6 +73,22 @@ export abstract class BaseTrader {
         return player.inventory;
     }
 
+    /**
+     * Returns the effective buy price for an item after applying collection bonuses.
+     * Subclasses override this to apply trader-specific discounts.
+     */
+    protected getEffectiveBuyPrice(item: Item, _player: Player): number {
+        return item.buyPrice ?? 0;
+    }
+
+    /**
+     * Returns the effective sell price for an item after applying collection bonuses.
+     * Subclasses override this to apply trader-specific sell bonuses.
+     */
+    protected getEffectiveSellPrice(item: Item, _player: Player): number {
+        return item.sellPrice ?? 0;
+    }
+
     protected createUI() {
         // Default colors
         const colors = Object.assign({
@@ -246,7 +262,9 @@ export abstract class BaseTrader {
         }
         items.forEach((item, index) => {
             const itemDiv = document.createElement('div');
-            const price = mode === TradeMode.BUY ? item.buyPrice : item.sellPrice;
+            const price = mode === TradeMode.BUY
+                ? this.getEffectiveBuyPrice(item, player)
+                : this.getEffectiveSellPrice(item, player);
             const priceText = price !== undefined ? ` (${price} bits)` : '';
             const canAfford = mode === TradeMode.SELL || (price !== undefined && player.bits >= price);
             itemDiv.innerHTML = formatItemLabel(item, priceText);
@@ -299,8 +317,9 @@ export abstract class BaseTrader {
         if (this.activePanel === TraderPanel.TRADER) {
             const item = this.traderInventory[this.selectedIndex];
             if (item && item.buyPrice !== undefined) {
-                if (player.bits >= item.buyPrice) {
-                    player.bits -= item.buyPrice;
+                const effectivePrice = this.getEffectiveBuyPrice(item, player);
+                if (player.bits >= effectivePrice) {
+                    player.bits -= effectivePrice;
                     // Use crypto.randomUUID() for better uniqueness than Date.now()
                     const clone: Item = item.clone();
                     if (clone instanceof EquippableItem) {
@@ -323,7 +342,7 @@ export abstract class BaseTrader {
                     this.shakeItem(this.selectedIndex);
                     return;
                 }
-                player.bits += item.sellPrice;
+                player.bits += this.getEffectiveSellPrice(item, player);
                 // Use crypto.randomUUID() for better uniqueness than Date.now()
                 const sold = item.clone();
                 this.traderInventory.push(sold as Item);

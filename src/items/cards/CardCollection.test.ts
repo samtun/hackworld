@@ -1,8 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { CardCollection } from './CardCollection';
-import { Card, CardDefinitions, CardRarity } from './Card';
+import { Card, CardDefinitions, CardRarity, Album } from './Card';
 
-function makeCard(album: string, slot: number, rarity = CardRarity.NORMAL): Card {
+function makeCard(album: Album, slot: number, rarity = CardRarity.NORMAL): Card {
     return { album, slot, rarity };
 }
 
@@ -23,12 +23,12 @@ describe('CardCollection', () => {
 
     describe('addCard', () => {
         it('returns true when adding a new card', () => {
-            const card = makeCard('A.001', 1);
+            const card = makeCard(Album.A001, 1);
             expect(collection.addCard(card)).toBe(true);
         });
 
         it('returns false when adding a duplicate card', () => {
-            const card = makeCard('A.001', 1);
+            const card = makeCard(Album.A001, 1);
             collection.addCard(card);
             expect(collection.addCard(card)).toBe(false);
         });
@@ -36,11 +36,11 @@ describe('CardCollection', () => {
 
     describe('hasCard', () => {
         it('returns false for a card not in the collection', () => {
-            expect(collection.hasCard(makeCard('A.001', 1))).toBe(false);
+            expect(collection.hasCard(makeCard(Album.A001, 1))).toBe(false);
         });
 
         it('returns true after the card is added', () => {
-            const card = makeCard('A.001', 2);
+            const card = makeCard(Album.A001, 2);
             collection.addCard(card);
             expect(collection.hasCard(card)).toBe(true);
         });
@@ -52,13 +52,13 @@ describe('CardCollection', () => {
         });
 
         it('increments as unique cards are added', () => {
-            collection.addCard(makeCard('A.001', 1));
-            collection.addCard(makeCard('A.001', 2));
+            collection.addCard(makeCard(Album.A001, 1));
+            collection.addCard(makeCard(Album.A001, 2));
             expect(collection.getTotalCollected()).toBe(2);
         });
 
         it('does not increment for duplicates', () => {
-            const card = makeCard('A.001', 1);
+            const card = makeCard(Album.A001, 1);
             collection.addCard(card);
             collection.addCard(card);
             expect(collection.getTotalCollected()).toBe(1);
@@ -73,15 +73,15 @@ describe('CardCollection', () => {
 
     describe('getAlbumProgress', () => {
         it('returns 0 collected and correct total for an empty album', () => {
-            const progress = collection.getAlbumProgress('A.001');
+            const progress = collection.getAlbumProgress(Album.A001);
             expect(progress.collected).toBe(0);
             expect(progress.total).toBe(8);
         });
 
         it('counts collected cards within the album', () => {
-            collection.addCard(makeCard('A.001', 1));
-            collection.addCard(makeCard('A.001', 3));
-            const progress = collection.getAlbumProgress('A.001');
+            collection.addCard(makeCard(Album.A001, 1));
+            collection.addCard(makeCard(Album.A001, 3));
+            const progress = collection.getAlbumProgress(Album.A001);
             expect(progress.collected).toBe(2);
             expect(progress.total).toBe(8);
         });
@@ -89,8 +89,8 @@ describe('CardCollection', () => {
 
     describe('getSaveData / loadSaveData', () => {
         it('round-trips card data through save and load', () => {
-            collection.addCard(makeCard('A.001', 1));
-            collection.addCard(makeCard('B.001', 4, CardRarity.SPECIAL));
+            collection.addCard(makeCard(Album.A001, 1));
+            collection.addCard(makeCard(Album.B001, 4, CardRarity.SPECIAL));
             const saved = collection.getSaveData();
 
             collection.clear();
@@ -98,16 +98,38 @@ describe('CardCollection', () => {
 
             collection.loadSaveData(saved);
             expect(collection.getTotalCollected()).toBe(2);
-            expect(collection.hasCard(makeCard('A.001', 1))).toBe(true);
-            expect(collection.hasCard(makeCard('B.001', 4))).toBe(true);
+            expect(collection.hasCard(makeCard(Album.A001, 1))).toBe(true);
+            expect(collection.hasCard(makeCard(Album.B001, 4))).toBe(true);
         });
     });
 
     describe('clear', () => {
         it('removes all cards from the collection', () => {
-            collection.addCard(makeCard('A.001', 1));
+            collection.addCard(makeCard(Album.A001, 1));
             collection.clear();
             expect(collection.getTotalCollected()).toBe(0);
+        });
+    });
+
+    describe('isAlbumComplete', () => {
+        it('returns false when album has no collected cards', () => {
+            expect(collection.isAlbumComplete(Album.A001)).toBe(false);
+        });
+
+        it('returns false when album is partially collected', () => {
+            collection.addCard(makeCard(Album.A001, 1));
+            collection.addCard(makeCard(Album.A001, 2));
+            expect(collection.isAlbumComplete(Album.A001)).toBe(false);
+        });
+
+        it('returns true when all 8 cards in the album are collected', () => {
+            const cards = CardDefinitions.getAlbumCards(Album.A001);
+            cards.forEach(c => collection.addCard(c));
+            expect(collection.isAlbumComplete(Album.A001)).toBe(true);
+        });
+
+        it('returns false for an unknown album', () => {
+            expect(collection.isAlbumComplete('UNKNOWN' as Album)).toBe(false);
         });
     });
 });

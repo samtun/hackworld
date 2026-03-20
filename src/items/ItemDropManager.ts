@@ -72,8 +72,8 @@ export class ItemDropManager {
         const strategy = this.selectRandomStrategy(enemy, player);
         if (!strategy) return;
 
-        // Apply luck multiplier to drop chance
-        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus;
+        // Apply luck multiplier and collection bonus to drop chance
+        const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus + player.collectionBonusItemDropChance;
         if (Math.random() > effectiveDropChance) return;
 
         const drop = strategy.drop(scene, enemy, player);
