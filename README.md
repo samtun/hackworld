@@ -13,6 +13,7 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 - Hack and slash gameplay with quest progression
 - **Quest System** - Talk to the Mainframe NPC to unlock new stages as you cleanse infected sectors
 - **Hub-based game world** - Multiple stages progressively unlocked through gameplay
+- **Procedurally generated dungeons** - Obstacle layouts and enemy placements are randomised every time a dungeon stage is entered, keeping exploration fresh
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
 - **Tech Points** - Gain tech points by using a specific weapon type and use those points to equip higher level weapons
 - **Active Skills** - Use unique skills

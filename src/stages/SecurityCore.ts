@@ -2,6 +2,7 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
+import { ProceduralEnvironmentGenerator } from './ProceduralEnvironmentGenerator';
 
 export class SecurityCore extends BaseStage {
     private static id: string = "securityCore";
@@ -45,21 +46,40 @@ export class SecurityCore extends BaseStage {
         this.meshes.push(floorPlane);
 
         // Teleporter back to Lobby
-        this.createTeleporter(new CANNON.Vec3(12, 0, 12), Lobby.getMetadata().id);
+        const teleporterPos = new CANNON.Vec3(12, 0, 12);
+        this.createTeleporter(teleporterPos, Lobby.getMetadata().id);
 
-        // Different dungeon layout with more obstacles
-        this.createBox(3, 2, 3, new CANNON.Vec3(-8, 1, -8));
-        this.createBox(2, 2, 5, new CANNON.Vec3(8, 1, -8));
-        this.createBox(5, 1, 2, new CANNON.Vec3(-8, 0.5, 8));
+        // Procedurally generate obstacles and enemy placements
+        const generator = new ProceduralEnvironmentGenerator();
+        const exclusionZones = [
+            { x: 0, z: 0, radius: 4 },              // Player spawn
+            { x: teleporterPos.x, z: teleporterPos.z, radius: 4 }, // Teleporter
+        ];
+        const layout = generator.generateLayout({
+            bounds: { min: -20, max: 20 },
+            exclusionZones,
+            obstacleCount: { min: 8, max: 12 },
+            enemyCounts: {
+                regular: { min: 4, max: 6 },
+                large: { min: 1, max: 2 },
+                boss: 1,
+            },
+        });
 
-        // Spawn enemies
-        this.spawnEnemy(new CANNON.Vec3(6, 0.5, 6));
-        this.spawnEnemy(new CANNON.Vec3(-6, 0.5, 6));
-        this.spawnEnemy(new CANNON.Vec3(6, 0.5, -6));
-        this.spawnEnemy(new CANNON.Vec3(-6, 0.5, -6));
-        this.spawnEnemy(new CANNON.Vec3(0, 0.5, -10));
+        for (const obs of layout.obstacles) {
+            this.createBox(obs.width, obs.height, obs.depth, new CANNON.Vec3(obs.x, obs.y, obs.z));
+        }
 
-        // Spawn boss
-        this.spawnBoss(new CANNON.Vec3(30, 0.5, 0));
+        for (const pos of layout.enemyPositions) {
+            this.spawnEnemy(new CANNON.Vec3(pos.x, pos.y, pos.z));
+        }
+
+        for (const pos of layout.largeEnemyPositions) {
+            this.spawnLargeEnemy(new CANNON.Vec3(pos.x, pos.y, pos.z));
+        }
+
+        for (const pos of layout.bossPositions) {
+            this.spawnBoss(new CANNON.Vec3(pos.x, pos.y, pos.z));
+        }
     }
 }
