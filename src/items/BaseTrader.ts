@@ -44,6 +44,10 @@ export abstract class BaseTrader {
     itemElements: HTMLDivElement[] = [];
     needsRender: boolean = false;
 
+    // Per-panel remembered selection indices
+    protected traderSelectedIndex: number = 0;
+    protected playerSelectedIndex: number = 0;
+
     // debounce
     protected lastNavigateUpState: boolean = false;
     protected lastNavigateDownState: boolean = false;
@@ -105,7 +109,7 @@ export abstract class BaseTrader {
         // Main Window
         const windowDiv = this.menuManager.createGridWindow(
             '1fr 1fr',
-            'auto 1fr auto 1fr auto',
+            'auto auto 1fr auto auto auto',
             { width: '92vw' }
         );
         windowDiv.style.gap = '2px';
@@ -124,21 +128,37 @@ export abstract class BaseTrader {
         });
         windowDiv.appendChild(titleDiv);
 
+        // Panel sub-titles (fixed above scrollable lists)
+        const traderTitle = document.createElement('div');
+        traderTitle.innerText = this.uiConfig.traderTitle || "Trader's Goods";
+        Object.assign(traderTitle.style, {
+            gridRow: '2 / 3',
+            gridColumn: '1 / 2',
+            padding: '10px 10px 5px 10px',
+            fontWeight: 'bold',
+            fontSize: '20px'
+        });
+        windowDiv.appendChild(traderTitle);
+
+        const playerTitle = document.createElement('div');
+        playerTitle.innerText = this.uiConfig.playerTitle || 'Your Inventory';
+        Object.assign(playerTitle.style, {
+            gridRow: '2 / 3',
+            gridColumn: '2 / 3',
+            padding: '10px 10px 5px 10px',
+            fontWeight: 'bold',
+            fontSize: '20px'
+        });
+        windowDiv.appendChild(playerTitle);
+
         // Trader Panel (Left)
         this.traderPanel = this.menuManager.createPanel({
             backgroundColor: this.uiConfig.colors?.panelTrader || colors.panelTrader,
-            gridRow: '2 / 3',
+            gridRow: '3 / 4',
             gridColumn: '1 / 2'
         });
         this.traderPanel.style.overflowY = 'auto';
         windowDiv.appendChild(this.traderPanel);
-
-        const traderTitle = document.createElement('div');
-        traderTitle.innerText = this.uiConfig.traderTitle || "Trader's Goods";
-        traderTitle.style.marginBottom = '10px';
-        traderTitle.style.fontWeight = 'bold';
-        traderTitle.style.fontSize = '20px';
-        this.traderPanel.appendChild(traderTitle);
 
         this.traderList = document.createElement('div');
         this.traderPanel.appendChild(this.traderList);
@@ -146,18 +166,11 @@ export abstract class BaseTrader {
         // Player Panel (Right)
         this.playerPanel = this.menuManager.createPanel({
             backgroundColor: this.uiConfig.colors?.panelPlayer || colors.panelPlayer,
-            gridRow: '2 / 3',
+            gridRow: '3 / 4',
             gridColumn: '2 / 3'
         });
         this.playerPanel.style.overflowY = 'auto';
         windowDiv.appendChild(this.playerPanel);
-
-        const playerTitle = document.createElement('div');
-        playerTitle.innerText = this.uiConfig.playerTitle || 'Your Inventory';
-        playerTitle.style.marginBottom = '10px';
-        playerTitle.style.fontWeight = 'bold';
-        playerTitle.style.fontSize = '20px';
-        this.playerPanel.appendChild(playerTitle);
 
         this.playerList = document.createElement('div');
         this.playerPanel.appendChild(this.playerList);
@@ -166,7 +179,7 @@ export abstract class BaseTrader {
         const separatorDiv = document.createElement('div');
         Object.assign(separatorDiv.style, {
             gridColumn: '1 / 3',
-            gridRow: '3 / 4',
+            gridRow: '4 / 5',
             height: '2px',
             backgroundColor: MENU_COLORS.SEPARATOR
         });
@@ -175,7 +188,7 @@ export abstract class BaseTrader {
         // Single Item Details Panel (Bottom - spans both columns)
         const statsPanel = this.menuManager.createPanel({
             backgroundColor: MENU_COLORS.WINDOW_BG,
-            gridRow: '4 / 5',
+            gridRow: '5 / 6',
             gridColumn: '1 / 3'
         });
         windowDiv.appendChild(statsPanel);
@@ -195,7 +208,7 @@ export abstract class BaseTrader {
         const moneyDiv = document.createElement('div');
         Object.assign(moneyDiv.style, {
             gridColumn: '1 / 3',
-            gridRow: '5 / 6',
+            gridRow: '6 / 7',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -217,6 +230,8 @@ export abstract class BaseTrader {
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.selectedIndex = 0;
+        this.traderSelectedIndex = 0;
+        this.playerSelectedIndex = 0;
         this.activePanel = TraderPanel.TRADER;
         this.needsRender = true;
         resetInputDebounce(this as any);
@@ -301,8 +316,16 @@ export abstract class BaseTrader {
             if (this.selectedIndex < maxIndex) this.selectedIndex++;
         }
 
-        if (navigateLeft && !this.lastNavigateLeftState) { this.activePanel = TraderPanel.TRADER; this.selectedIndex = 0; }
-        if (navigateRight && !this.lastNavigateRightState) { this.activePanel = TraderPanel.PLAYER; this.selectedIndex = 0; }
+        if (navigateLeft && !this.lastNavigateLeftState && this.activePanel !== TraderPanel.TRADER) {
+            this.playerSelectedIndex = this.selectedIndex;
+            this.activePanel = TraderPanel.TRADER;
+            this.selectedIndex = this.traderSelectedIndex;
+        }
+        if (navigateRight && !this.lastNavigateRightState && this.activePanel !== TraderPanel.PLAYER) {
+            this.traderSelectedIndex = this.selectedIndex;
+            this.activePanel = TraderPanel.PLAYER;
+            this.selectedIndex = this.playerSelectedIndex;
+        }
 
         if (select && !this.lastSelectState) this.handleTransaction(player);
 
