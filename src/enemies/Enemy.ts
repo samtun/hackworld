@@ -37,6 +37,13 @@ export class Enemy extends BaseMesh {
     protected criticalChance: number = 0.04;
     protected criticalHitMultiplier: number = 1.2;
 
+    /**
+     * When false the enemy idles in place regardless of player proximity.
+     * Set to false by room-based stages and switched on once the player
+     * enters the enemy's room, so enemies don't chase through walls.
+     */
+    aggroEnabled: boolean = true;
+
     // Base position tracking for return behavior
     protected basePosition: CANNON.Vec3;
     protected returnToBaseTimer: number = 0;
@@ -400,6 +407,17 @@ export class Enemy extends BaseMesh {
         // AI Logic
         if (this.player.isDead) {
             // Idle friction
+            this.body.velocity.x *= 0.9;
+            this.body.velocity.z *= 0.9;
+            this.updateAnimations(false);
+            return;
+        }
+
+        // Room-based aggro: idle until the player enters this enemy's room.
+        // Strict equality is intentional – test helpers that bypass the
+        // constructor via Object.create() leave the property undefined, and
+        // `!undefined` would incorrectly block the existing AI logic.
+        if (this.aggroEnabled === false) {
             this.body.velocity.x *= 0.9;
             this.body.velocity.z *= 0.9;
             this.updateAnimations(false);

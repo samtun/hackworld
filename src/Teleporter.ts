@@ -36,6 +36,9 @@ export class Teleporter extends Npc {
     private readonly BASE_PARTICLE_SIZE = 0.3;
     private time: number = 0;
 
+    /** Whether this teleporter can be interacted with. */
+    isActive: boolean;
+
     // Static callback for handling teleporter interactions
     private static teleporterCallback: TeleporterCallback | null = null;
 
@@ -51,7 +54,8 @@ export class Teleporter extends Npc {
         world: CANNON.World,
         physicsMaterial: CANNON.Material,
         position: CANNON.Vec3,
-        destination: string
+        destination: string,
+        startActive: boolean = true
     ) {
         // Call Npc constructor with teleporter-specific settings
         super(
@@ -70,6 +74,8 @@ export class Teleporter extends Npc {
                 }
             }
         );
+
+        this.isActive = startActive;
 
         // Store destination in mesh userData for backwards compatibility
         this.mesh.userData = { destination };
@@ -103,13 +109,25 @@ export class Teleporter extends Npc {
         const particleMaterial = createParticleShaderMaterial(this.color);
 
         this.particles = new THREE.Points(particleGeometry, particleMaterial);
+        this.particles.visible = startActive;
         scene.add(this.particles);
     }
 
     /**
-     * Check if player is within interaction range
+     * Activate this teleporter: show particles and allow player interaction.
+     * Called by the stage once all enemies have been defeated.
+     */
+    activate(): void {
+        this.isActive = true;
+        this.particles.visible = true;
+    }
+
+    /**
+     * Check if player is within interaction range.
+     * Returns false when the teleporter is not yet active.
      */
     override isPlayerNearby(playerPosition: THREE.Vector3): boolean {
+        if (!this.isActive) return false;
         const dist = playerPosition.distanceTo(
             new THREE.Vector3(this.position.x, this.position.y, this.position.z + this.Z_OFFSET)
         );

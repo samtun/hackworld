@@ -8,6 +8,7 @@ import { Teleporter } from '../Teleporter';
 import { Player } from '../Player';
 import { Npc } from '../npcs/Npc';
 import { BossEnemy } from '../enemies/BossEnemy';
+import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
 
 /**
  * Base class for all dungeon stages
@@ -36,6 +37,19 @@ export abstract class BaseStage {
     enemies: Enemy[] = [];
     mixers: THREE.AnimationMixer[] = [];
     npcs: Set<Npc> = new Set<Npc>();
+
+    /**
+     * Room definitions set by procedural stages.
+     * When non-empty, BaseStage automatically manages per-room enemy aggro
+     * and activates the teleporter once all enemies are defeated.
+     */
+    protected dungeonRooms: DungeonRoom[] = [];
+
+    /**
+     * Maps room id → enemies that belong to that room.
+     * Populated by {@link spawnEnemiesFromLayout}.
+     */
+    protected roomEnemyMap: Map<number, Enemy[]> = new Map();
 
     constructor(
         scene: THREE.Scene,
@@ -78,6 +92,10 @@ export abstract class BaseStage {
      */
     clear(): void {
         this.scene.environment = null;
+
+        // Reset room-tracking state
+        this.dungeonRooms = [];
+        this.roomEnemyMap.clear();
 
         // Stop and remove mixers
         for (const mixer of this.mixers) {
@@ -166,17 +184,54 @@ export abstract class BaseStage {
 
     /**
      * Create teleporter
+     * @param startActive When false the teleporter starts invisible and
+     *                    non-interactive until {@link Teleporter.activate} is called.
      */
-    protected createTeleporter(position: CANNON.Vec3, destination: string): void {
+    protected createTeleporter(position: CANNON.Vec3, destination: string, startActive: boolean = true): void {
         this.teleporter = new Teleporter(
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,
             position,
-            destination
+            destination,
+            startActive
         );
         // Add teleporter to npcs set so it's handled like any other NPC
         this.npcs.add(this.teleporter);
+    }
+
+    /**
+     * Spawn all enemies defined by a procedural dungeon layout and register
+     * them with their corresponding room so that room-based aggro can be applied.
+     * Enemies start with {@link Enemy.aggroEnabled} = false and are enabled
+     * individually when the player enters their room.
+     */
+    protected spawnEnemiesFromLayout(layout: DungeonLayout): void {
+        for (const roomSpawns of layout.roomSpawns) {
+            const roomEnemies: Enemy[] = [];
+
+            for (const spawn of roomSpawns.spawns) {
+                const pos = new CANNON.Vec3(spawn.x, spawn.y, spawn.z);
+                const countBefore = this.enemies.length;
+
+                if (spawn.type === 'regular') {
+                    this.spawnEnemy(pos);
+                } else if (spawn.type === 'large') {
+                    this.spawnLargeEnemy(pos);
+                } else if (spawn.type === 'boss') {
+                    this.spawnBoss(pos);
+                }
+
+                // Verify the spawn added an enemy before accessing it
+                if (this.enemies.length > countBefore) {
+                    const enemy = this.enemies[this.enemies.length - 1];
+                    enemy.aggroEnabled = false;
+                    roomEnemies.push(enemy);
+                }
+            }
+
+            this.roomEnemyMap.set(roomSpawns.roomId, roomEnemies);
+        }
     }
 
     /**
@@ -204,9 +259,11 @@ export abstract class BaseStage {
     }
 
     /**
-     * Update teleporter particles
+     * Update teleporter particles, NPC animations, mixers, and – when a
+     * procedural room layout is active – room-based enemy aggro and automatic
+     * teleporter activation.
      */
-    update(dt: number, _player: Player, _anyMenuOpen: boolean): void {
+    update(dt: number, player: Player, _anyMenuOpen: boolean): void {
         if (this.teleporter) {
             this.teleporter.update(dt);
         }
@@ -218,6 +275,49 @@ export abstract class BaseStage {
 
         for (const mixer of this.mixers) {
             mixer.update(dt);
+        }
+
+        if (this.dungeonRooms.length > 0) {
+            this.updateRoomAggro(player);
+            this.checkTeleporterActivation();
+        }
+    }
+
+    /**
+     * Enable aggro for every enemy in the room that the player is currently
+     * standing in.  Once enabled, aggro is never revoked so enemies continue
+     * chasing even if the player retreats.
+     */
+    private updateRoomAggro(player: Player): void {
+        const px = player.body.position.x;
+        const pz = player.body.position.z;
+
+        for (const room of this.dungeonRooms) {
+            const inRoom =
+                Math.abs(px - room.centerX) <= room.width / 2 &&
+                Math.abs(pz - room.centerZ) <= room.depth / 2;
+
+            if (!inRoom) continue;
+
+            const roomEnemies = this.roomEnemyMap.get(room.id) ?? [];
+            for (const enemy of roomEnemies) {
+                if (!enemy.aggroEnabled) {
+                    enemy.aggroEnabled = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * Activate the teleporter once every enemy in the stage has been defeated.
+     */
+    private checkTeleporterActivation(): void {
+        if (!this.teleporter || this.teleporter.isActive) return;
+        // Skip the full-array scan when there are no enemies to avoid
+        // activating the teleporter on stages that have no combat rooms.
+        if (this.enemies.length === 0) return;
+        if (this.enemies.every(e => e.isDead)) {
+            this.teleporter.activate();
         }
     }
 }
