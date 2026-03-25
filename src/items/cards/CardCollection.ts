@@ -1,3 +1,4 @@
+import { Album } from './Card';
 import { Card, CardDefinitions } from './Card';
 
 /**
@@ -9,6 +10,14 @@ export class CardCollection {
     
     // Set of collected card IDs in format "album-slot" (e.g., "A.001-1")
     private collectedCards: Set<string> = new Set();
+
+    /**
+     * Check if all cards in an album have been collected
+     */
+    isAlbumComplete(album: Album): boolean {
+        const progress = this.getAlbumProgress(album);
+        return progress.total > 0 && progress.collected === progress.total;
+    }
 
     private constructor() {}
 
@@ -60,7 +69,7 @@ export class CardCollection {
     /**
      * Get collection progress for a specific album
      */
-    getAlbumProgress(album: string): { collected: number; total: number } {
+    getAlbumProgress(album: Album): { collected: number; total: number } {
         const albumCards = CardDefinitions.getAlbumCards(album);
         const collected = albumCards.filter(card => this.hasCard(card)).length;
         return { collected, total: albumCards.length };

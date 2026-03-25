@@ -59,6 +59,8 @@ function makeTrader(): TestTrader {
         needsRender: false,
         traderInventory: [] as Item[],
         itemElements: [],
+        traderSelectedIndex: 0,
+        playerSelectedIndex: 0,
         lastNavigateUpState: false,
         lastNavigateDownState: false,
         lastNavigateLeftState: false,
@@ -321,6 +323,15 @@ describe('BaseTrader.show', () => {
         (trader as any).show();
         expect(trader.needsRender).toBe(true);
     });
+
+    it('resets traderSelectedIndex and playerSelectedIndex to 0', () => {
+        const trader = makeTraderWithDOM();
+        (trader as any).traderSelectedIndex = 5;
+        (trader as any).playerSelectedIndex = 3;
+        (trader as any).show();
+        expect((trader as any).traderSelectedIndex).toBe(0);
+        expect((trader as any).playerSelectedIndex).toBe(0);
+    });
 });
 
 describe('BaseTrader.hide', () => {
@@ -465,6 +476,8 @@ describe('BaseTrader.handleNavigation – panel switching', () => {
         trader = makeTraderWithDOM() as any;
         trader.traderInventory = [makeSellableItem('x', 50, 25)];
         trader.selectedIndex = 0;
+        trader.traderSelectedIndex = 0;
+        trader.playerSelectedIndex = 0;
     });
 
     it('switches activePanel to PLAYER on navigate right', () => {
@@ -474,12 +487,21 @@ describe('BaseTrader.handleNavigation – panel switching', () => {
         expect(trader.activePanel).toBe(TraderPanel.PLAYER);
     });
 
-    it('resets selectedIndex to 0 when switching to PLAYER panel', () => {
+    it('restores saved playerSelectedIndex when switching to PLAYER panel', () => {
         trader.activePanel = TraderPanel.TRADER;
-        trader.selectedIndex = 0;
+        trader.selectedIndex = 2;
+        trader.playerSelectedIndex = 3;
         const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
         (trader as any).handleNavigation(makeNavPlayer(), input);
-        expect(trader.selectedIndex).toBe(0);
+        expect(trader.selectedIndex).toBe(3);
+    });
+
+    it('saves traderSelectedIndex when switching to PLAYER panel', () => {
+        trader.activePanel = TraderPanel.TRADER;
+        trader.selectedIndex = 2;
+        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.traderSelectedIndex).toBe(2);
     });
 
     it('switches activePanel to TRADER on navigate left', () => {
@@ -489,12 +511,39 @@ describe('BaseTrader.handleNavigation – panel switching', () => {
         expect(trader.activePanel).toBe(TraderPanel.TRADER);
     });
 
-    it('resets selectedIndex to 0 when switching to TRADER panel', () => {
+    it('restores saved traderSelectedIndex when switching to TRADER panel', () => {
         trader.activePanel = TraderPanel.PLAYER;
+        trader.selectedIndex = 5;
+        trader.traderSelectedIndex = 2;
+        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.selectedIndex).toBe(2);
+    });
+
+    it('saves playerSelectedIndex when switching to TRADER panel', () => {
+        trader.activePanel = TraderPanel.PLAYER;
+        trader.selectedIndex = 5;
+        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.playerSelectedIndex).toBe(5);
+    });
+
+    it('does not switch panel when already on TRADER and navigate left is pressed', () => {
+        trader.activePanel = TraderPanel.TRADER;
         trader.selectedIndex = 2;
         const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
         (trader as any).handleNavigation(makeNavPlayer(), input);
-        expect(trader.selectedIndex).toBe(0);
+        expect(trader.activePanel).toBe(TraderPanel.TRADER);
+        expect(trader.selectedIndex).toBe(2);
+    });
+
+    it('does not switch panel when already on PLAYER and navigate right is pressed', () => {
+        trader.activePanel = TraderPanel.PLAYER;
+        trader.selectedIndex = 3;
+        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
+        (trader as any).handleNavigation(makeNavPlayer(), input);
+        expect(trader.activePanel).toBe(TraderPanel.PLAYER);
+        expect(trader.selectedIndex).toBe(3);
     });
 });
 

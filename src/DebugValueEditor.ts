@@ -6,6 +6,8 @@ import { WeaponType } from './items/weapons/WeaponType';
 import { ItemLevelHelper } from './items/ItemLevelHelper';
 import { GameProgressManager } from './GameProgressManager';
 import { SkillTechType } from './skills/SkillTechType';
+import { Album, CardDefinitions } from './items/cards/Card';
+import { CardCollection } from './items/cards/CardCollection';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -554,6 +556,45 @@ export class DebugValueEditor {
     }
 
     private createBoosterPackButton(parent: HTMLDivElement): void {
+        // Album complete row: select on the left, button on the right
+        const albumRow = document.createElement('div');
+        albumRow.style.display = 'flex';
+        albumRow.style.gap = '10px';
+        albumRow.style.marginBottom = '10px';
+
+        const albumOptions = CardDefinitions.getAlbums().map(album => ({
+            value: album,
+            text: album
+        }));
+        const albumSelect = this.createSelect(albumOptions, '-- Select Album --');
+        albumSelect.style.flex = '1';
+        albumSelect.style.marginBottom = '0';
+        albumRow.appendChild(albumSelect);
+
+        const completeButton = document.createElement('button');
+        completeButton.textContent = 'Complete Album';
+        completeButton.style.padding = '8px 12px';
+        completeButton.style.backgroundColor = '#666';
+        completeButton.style.border = 'none';
+        completeButton.style.borderRadius = '5px';
+        completeButton.style.color = '#fff';
+        completeButton.style.fontSize = '14px';
+        completeButton.style.fontWeight = 'bold';
+        completeButton.style.cursor = 'pointer';
+        completeButton.style.fontFamily = 'inherit';
+        completeButton.style.whiteSpace = 'nowrap';
+        completeButton.addEventListener('click', () => {
+            const selected = albumSelect.value as Album;
+            if (!selected) return;
+            const cards = CardDefinitions.getAlbumCards(selected);
+            cards.forEach(card => CardCollection.Instance.addCard(card));
+            console.log(`Completed album ${selected}`);
+            albumSelect.value = '';
+        });
+        albumRow.appendChild(completeButton);
+
+        parent.appendChild(albumRow);
+
         const addButton = this.createButton('Add Booster Pack', () => {
             if (this.player) {
                 this.player.collectBoosterPack();

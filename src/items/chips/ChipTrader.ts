@@ -4,6 +4,11 @@ import { ChipItem } from './ChipItem';
 import { ChipRepository } from './ChipRepository';
 import { BaseTrader } from '../BaseTrader';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
+import { CardCollection } from '../cards/CardCollection';
+import { Album } from '../cards/Card';
+
+/** A.001 bonus: 5% buy discount and 5% sell bonus on chips when collection A.001 is complete */
+const A001_DISCOUNT = 0.05;
 
 export class ChipTrader extends BaseTrader {
     private static instance: ChipTrader; // Singleton
@@ -38,6 +43,20 @@ export class ChipTrader extends BaseTrader {
 
         // Get all chips from repository (already cloned with unique IDs)
         this.traderInventory = this.chipRepository.getAllChips();
+    }
+
+    protected getEffectiveBuyPrice(item: Item, _player: Player): number {
+        const base = item.buyPrice ?? 0;
+        return CardCollection.Instance.isAlbumComplete(Album.A001)
+            ? Math.floor(base * (1 - A001_DISCOUNT))
+            : base;
+    }
+
+    protected getEffectiveSellPrice(item: Item, _player: Player): number {
+        const base = item.sellPrice ?? 0;
+        return CardCollection.Instance.isAlbumComplete(Album.A001)
+            ? Math.ceil(base * (1 + A001_DISCOUNT))
+            : base;
     }
 
     protected filterPlayerInventory(player: Player): Item[] {

@@ -670,6 +670,45 @@ describe('Enemy.update – AI chase behavior', () => {
         expect(enemy.isAttacking).toBe(true);
         expect(enemy.attackTimer).toBe(enemy.attackCooldown);
     });
+
+    it('rotates towards the player at a reduced pace while attacking but does not move', () => {
+        const enemy = makeEnemy() as any;
+        enemy.body.position = makeBodyPos(0, 0, 0);
+        enemy.body.velocity = { x: 2, y: 0, z: 3 };
+        enemy.basePosition = makeBodyPos(0, 0, 0);
+        enemy.attackTimer = 999; // prevent new attack trigger
+        enemy.isAttacking = true;
+        enemy.attackAnimTimer = 0;
+        enemy.player = {
+            isDead: false,
+            body: {
+                position: {
+                    x: 5, y: 0, z: 0,
+                    vsub: (v: any) => {
+                        const dir = { x: 5 - v.x, y: 0 - v.y, z: 0 - v.z };
+                        return Object.assign(dir, {
+                            length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
+                            normalize: function (this: any) {
+                                const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
+                                this.x /= l; this.z /= l;
+                                return this;
+                            },
+                        });
+                    },
+                },
+            },
+        };
+
+        enemy.update(0.016);
+
+        // Velocity should be reduced by friction, not set to chase speed
+        expect(enemy.body.velocity.x).toBeLessThan(2);
+        expect(enemy.body.velocity.z).toBeLessThan(3);
+        // Mesh quaternion slerp should have been called to rotate towards player
+        expect(enemy.mesh.quaternion.slerp).toHaveBeenCalled();
+        const [, slerpFactor] = enemy.mesh.quaternion.slerp.mock.calls.at(-1);
+        expect(slerpFactor).toBeCloseTo(3 * 0.016, 5);
+    });
 });
 
 // ─── getDistanceToPlayer ──────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { Player } from '../../Player';
 import { InputManager } from '../../InputManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
-import { Card, CardDefinitions, CardRarity } from './Card';
+import { Card, CardDefinitions, CardRarity, Album } from './Card';
 import { CardCollection } from './CardCollection';
 import { ViewMode } from './ViewMode';
 import { getHint, HintConfigs } from '../../ui/InputHints';
@@ -22,7 +22,7 @@ export class CardManager {
     private viewMode: ViewMode = ViewMode.MENU;
     private selectedMenuIndex: number = 0;
     private selectedAlbumIndex: number = 0;
-    private currentAlbum: string = '';
+    private currentAlbum: Album = Album.A001;
     private revealedCards: Card[] = [];
     private flippedCardIndices: Set<number> = new Set(); // Track which cards have been flipped
     private flippingInProgress: boolean = false; // Track if flip animation is in progress
@@ -420,6 +420,90 @@ export class CardManager {
         });
 
         this.mainContent.appendChild(gridDiv);
+
+        // Reward description section
+        const rewardDiv = this.createRewardDescriptionDiv(this.currentAlbum);
+        this.mainContent.appendChild(rewardDiv);
+    }
+
+    /**
+     * Collection reward descriptions keyed by album.
+     * These are the plain-text strings that are revealed as cards are collected.
+     */
+    private static readonly ALBUM_REWARDS: Record<Album, string> = {
+        [Album.A001]: 'Improve buy/sell prices of chips  by 5%',
+        [Album.A002]: 'Improve buy/sell prices of cores  by 5%',
+        [Album.A003]: 'Improve weapon buy/sell prices by 8% and raise higher tier weapon spawn rate for traders stock by 5%',
+        [Album.B001]: 'Raise item drop chance by 2%',
+        [Album.B002]: 'Raise item drop chance by 3% and improve weapon drop quality by 2%',
+        [Album.B003]: 'Raise item drop chance by 5% and improve weapon drop quality by 5%',
+        [Album.C001]: 'Raise chance for high value XData drops by 5%',
+        [Album.C002]: 'Reduce all skill cooldowns by 10%',
+        [Album.C003]: 'Raise maximum dropped weapon damage bonus ceiling by 10%',
+    };
+
+    /** Characters used for obfuscation */
+    private static readonly GLITCH_CHARS = '!@#$%^&*<>?/|\\{}[]~`';
+
+    /**
+     * Builds a partially-revealed reward description div.
+     * The fraction of characters revealed equals (collected / total).
+     * When the album is complete the description is shown in full.
+     */
+    private createRewardDescriptionDiv(album: Album): HTMLDivElement {
+        const rewardDiv = document.createElement('div');
+        Object.assign(rewardDiv.style, {
+            marginTop: '20px',
+            padding: '12px',
+            backgroundColor: MENU_COLORS.PANEL_BG,
+            borderRadius: '5px',
+            border: `1px solid ${MENU_COLORS.SEPARATOR}`,
+            fontFamily: 'monospace',
+            fontSize: '14px',
+            letterSpacing: '0.5px'
+        });
+
+        const label = document.createElement('div');
+        label.innerText = 'COLLECTION BONUS';
+        Object.assign(label.style, {
+            fontSize: '12px',
+            color: MENU_COLORS.SEPARATOR,
+            marginBottom: '6px',
+            textTransform: 'uppercase',
+            letterSpacing: '2px'
+        });
+        rewardDiv.appendChild(label);
+
+        const progress = this.cardCollection.getAlbumProgress(album);
+        const plainText = CardManager.ALBUM_REWARDS[album] ?? '';
+        const isComplete = progress.total > 0 && progress.collected === progress.total;
+
+        const revealFraction = progress.total > 0 ? progress.collected / progress.total : 0;
+        const revealedCount = Math.floor(revealFraction * plainText.length);
+
+        const textSpan = document.createElement('span');
+        if (isComplete) {
+            textSpan.innerText = plainText;
+            Object.assign(textSpan.style, { color: MENU_COLORS.COLLECTED });
+        } else {
+            let obfuscated = '';
+            for (let i = 0; i < plainText.length; i++) {
+                if (i < revealedCount) {
+                    obfuscated += plainText[i];
+                } else if (plainText[i] === ' ') {
+                    obfuscated += ' ';
+                } else {
+                    obfuscated += CardManager.GLITCH_CHARS[
+                        Math.floor(Math.random() * CardManager.GLITCH_CHARS.length)
+                    ];
+                }
+            }
+            textSpan.innerText = obfuscated;
+            Object.assign(textSpan.style, { color: MENU_COLORS.TEXT });
+        }
+
+        rewardDiv.appendChild(textSpan);
+        return rewardDiv;
     }
 
     public show() {

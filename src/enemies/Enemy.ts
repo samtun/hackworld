@@ -483,6 +483,17 @@ export class Enemy extends BaseMesh {
             // Stop movement while attacking
             this.body.velocity.x *= 0.9;
             this.body.velocity.z *= 0.9;
+
+            // Rotate towards player at a reduced pace while attacking
+            const dir = playerPos.vsub(myPos);
+            dir.y = 0;
+            if (dir.length() > 0) {
+                dir.normalize();
+                const angle = Math.atan2(dir.x, dir.z);
+                const targetQuaternion = new THREE.Quaternion();
+                targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+                this.mesh.quaternion.slerp(targetQuaternion, 3 * dt);
+            }
         }
 
         // Attack Cooldown

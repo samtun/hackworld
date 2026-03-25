@@ -52,7 +52,7 @@ class TestSkill extends Skill {
 }
 
 function makePlayer(tp: number, maxTp = 100): Partial<Player> {
-    return { tp, maxTp, hp: 100, maxHp: 100 } as Partial<Player>;
+    return { tp, maxTp, hp: 100, maxHp: 100, collectionBonusSkillCooldownReduction: 0 } as Partial<Player>;
 }
 
 describe('Skill', () => {
@@ -115,6 +115,14 @@ describe('Skill', () => {
             expect(player.tp).toBe(30);
             expect(skill.getCooldownTimer()).toBe(5);
             expect(skill.executeCalled).toBe(true);
+        });
+
+        it('applies 10% cooldown reduction when collectionBonusSkillCooldownReduction is 0.10', () => {
+            const player = makePlayer(50) as Player;
+            (player as any).collectionBonusSkillCooldownReduction = 0.10;
+            skill.use(player, scene, world);
+            // 5 * (1 - 0.10) = 4.5
+            expect(skill.getCooldownTimer()).toBeCloseTo(4.5);
         });
     });
 
