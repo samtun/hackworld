@@ -18,9 +18,10 @@ export class SecurityCore extends BaseStage {
 
     private static readonly generationConfig: RoomGenerationConfig = {
         combatRoomCount: { min: 3, max: 5 },
-        combatRoomSize: { minWidth: 20, maxWidth: 50, minDepth: 20, maxDepth: 50 },
-        finalRoomSize: { minWidth: 30, maxWidth: 60, minDepth: 30, maxDepth: 60 },
-        enemyDensity: { regularPerArea: 80, largePerArea: 250 },
+        combatRoomSize: { minWidth: 10, maxWidth: 25, minDepth: 10, maxDepth: 25 },
+        finalRoomSize: { minWidth: 15, maxWidth: 30, minDepth: 15, maxDepth: 30 },
+        enemyCount: { min: 2, max: 8, areaPerEnemy: 25, largeFraction: 0.35 },
+        obstacleCount: { min: 1, max: 3 },
         hasBoss: true,
     };
 
@@ -70,7 +71,7 @@ export class SecurityCore extends BaseStage {
         this.scene.add(floorPlane);
         this.meshes.push(floorPlane);
 
-        // Build walls
+        // Build walls and obstacles
         for (const wall of layout.walls) {
             this.createBox(
                 wall.width,
@@ -79,6 +80,7 @@ export class SecurityCore extends BaseStage {
                 new CANNON.Vec3(wall.centerX, wall.centerY, wall.centerZ),
             );
         }
+        this.buildObstaclesFromLayout(layout);
 
         // Teleporter in the final room – starts inactive until all enemies are defeated
         const tp = layout.teleporterPosition;

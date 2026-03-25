@@ -15,8 +15,11 @@ export const CORRIDOR_LENGTH = 5;
 /** Fixed size (width = depth) for the safe starting room (in metres). */
 export const SAFE_ROOM_SIZE = 10;
 
-/** Minimum distance in metres between an enemy spawn point and the nearest wall. */
-const ENEMY_SPAWN_PADDING = 2;
+/** Minimum distance in metres between an enemy/obstacle spawn point and the nearest wall. */
+const SPAWN_PADDING = 2;
+
+/** Metres from the east wall where the teleporter is placed in the final room. */
+const TELEPORTER_EAST_OFFSET = 2;
 
 // ---------------------------------------------------------------------------
 // Data types – all are plain serialisable data; no Three.js / CANNON deps.
@@ -74,14 +77,26 @@ export interface RoomSpawns {
     spawns: EnemySpawnPoint[];
 }
 
+/** A box obstacle placed on the floor inside a room. */
+export interface RoomObstacle {
+    x: number;
+    /** Always set to height / 2 so the bottom of the box sits on the floor. */
+    y: number;
+    z: number;
+    width: number;
+    height: number;
+    depth: number;
+}
+
 /** Complete dungeon layout returned by {@link RoomBasedDungeonGenerator.generate}. */
 export interface DungeonLayout {
     rooms: DungeonRoom[];
     walls: WallSegment[];
+    obstacles: RoomObstacle[];
     roomSpawns: RoomSpawns[];
     /** Centre of the safe (starting) room. */
     spawnPosition: Vec2;
-    /** Centre of the final room – place the teleporter here. */
+    /** Position of the teleporter in the final room (near the east wall). */
     teleporterPosition: Vec2;
     /** Bounding rectangle covering all rooms + corridors (for floor geometry). */
     floorBounds: { minX: number; maxX: number; minZ: number; maxZ: number };
@@ -109,13 +124,22 @@ export interface RoomGenerationConfig {
         maxDepth: number;
     };
     /**
-     * Enemy density expressed as floor area (m²) per enemy.
-     * Lower values → more enemies per room.
+     * Enemy count configuration.
+     * Total enemies per room are computed as `floor(area / areaPerEnemy)`, then
+     * clamped to [min, max].  A fixed fraction of enemies are large type.
      */
-    enemyDensity: {
-        regularPerArea: number;
-        largePerArea: number;
+    enemyCount: {
+        /** Minimum enemies per combat room (applied even in small rooms). */
+        min: number;
+        /** Maximum enemies per combat room (applied even in large rooms). */
+        max: number;
+        /** Floor area (m²) per enemy — lower values mean higher density. */
+        areaPerEnemy: number;
+        /** Fraction of total enemies that are spawned as large type (0–1). */
+        largeFraction: number;
     };
+    /** Obstacle count range per room (safe room always gets zero). */
+    obstacleCount: { min: number; max: number };
     /** Whether a boss should be placed in the final room. */
     hasBoss: boolean;
 }
@@ -176,19 +200,24 @@ export class RoomBasedDungeonGenerator {
     generate(config: RoomGenerationConfig): DungeonLayout {
         const rooms = this.buildRooms(config);
         const walls = this.buildWalls(rooms);
-        const roomSpawns = this.buildEnemySpawns(rooms, config);
 
         const safeRoom = rooms[0];
         const finalRoom = rooms[rooms.length - 1];
 
         const spawnPosition: Vec2 = { x: safeRoom.centerX, z: 0 };
 
-        // Place teleporter slightly in front of the final room's centre
-        const teleporterPosition: Vec2 = { x: finalRoom.centerX, z: 0 };
+        // Teleporter placed near the east wall of the final room
+        const teleporterPosition: Vec2 = {
+            x: finalRoom.centerX + finalRoom.width / 2 - TELEPORTER_EAST_OFFSET,
+            z: finalRoom.centerZ,
+        };
+
+        const obstacles = this.buildObstacles(rooms, config, teleporterPosition);
+        const roomSpawns = this.buildEnemySpawns(rooms, config, obstacles, teleporterPosition);
 
         const floorBounds = this.computeFloorBounds(rooms);
 
-        return { rooms, walls, roomSpawns, spawnPosition, teleporterPosition, floorBounds };
+        return { rooms, walls, obstacles, roomSpawns, spawnPosition, teleporterPosition, floorBounds };
     }
 
     // -----------------------------------------------------------------------
@@ -375,44 +404,149 @@ export class RoomBasedDungeonGenerator {
     }
 
     // -----------------------------------------------------------------------
+    // Obstacle generation
+    // -----------------------------------------------------------------------
+
+    /**
+     * Place random box obstacles in every non-safe room.
+     * The teleporter position is treated as an exclusion zone so obstacles
+     * never block the exit.  Generated obstacles also exclude each other so
+     * they don't overlap.
+     */
+    private buildObstacles(
+        rooms: DungeonRoom[],
+        config: RoomGenerationConfig,
+        teleporterPos: Vec2,
+    ): RoomObstacle[] {
+        const obstacles: RoomObstacle[] = [];
+
+        for (const room of rooms) {
+            if (room.isSafe) continue;
+
+            const count = this.rangeInt(config.obstacleCount.min, config.obstacleCount.max);
+            const minX = room.centerX - room.width / 2 + SPAWN_PADDING;
+            const maxX = room.centerX + room.width / 2 - SPAWN_PADDING;
+            const minZ = room.centerZ - room.depth / 2 + SPAWN_PADDING;
+            const maxZ = room.centerZ + room.depth / 2 - SPAWN_PADDING;
+
+            // Exclusion zones: teleporter in the final room
+            const exclusions: Array<{ x: number; z: number; radius: number }> = [];
+            if (room.isFinal) {
+                exclusions.push({ x: teleporterPos.x, z: teleporterPos.z, radius: 3 });
+            }
+
+            const maxAttempts = count * 15;
+            let attempts = 0;
+            let placed = 0;
+
+            while (placed < count && attempts < maxAttempts) {
+                attempts++;
+                const w = this.range(1, 3);
+                const h = this.range(1, 2.5);
+                const d = this.range(1, 3);
+                const x = this.range(minX, maxX);
+                const z = this.range(minZ, maxZ);
+
+                const excluded = exclusions.some(ez => {
+                    const dx = x - ez.x;
+                    const dz = z - ez.z;
+                    return dx * dx + dz * dz < ez.radius * ez.radius;
+                });
+
+                if (!excluded) {
+                    obstacles.push({ x, y: h / 2, z, width: w, height: h, depth: d });
+                    // Each placed obstacle becomes an exclusion zone to avoid overlap
+                    exclusions.push({ x, z, radius: Math.max(w, d) });
+                    placed++;
+                }
+            }
+        }
+
+        return obstacles;
+    }
+
+    // -----------------------------------------------------------------------
     // Enemy spawn generation
     // -----------------------------------------------------------------------
 
-    private buildEnemySpawns(rooms: DungeonRoom[], config: RoomGenerationConfig): RoomSpawns[] {
+    private buildEnemySpawns(
+        rooms: DungeonRoom[],
+        config: RoomGenerationConfig,
+        obstacles: RoomObstacle[],
+        teleporterPos: Vec2,
+    ): RoomSpawns[] {
         return rooms.map(room => ({
             roomId: room.id,
-            spawns: this.spawnsForRoom(room, config),
+            spawns: this.spawnsForRoom(room, config, obstacles, teleporterPos),
         }));
     }
 
-    private spawnsForRoom(room: DungeonRoom, config: RoomGenerationConfig): EnemySpawnPoint[] {
+    private spawnsForRoom(
+        room: DungeonRoom,
+        config: RoomGenerationConfig,
+        obstacles: RoomObstacle[],
+        teleporterPos: Vec2,
+    ): EnemySpawnPoint[] {
         if (room.isSafe) return [];
 
+        // Boss room: only the boss spawns here — no regular or large enemies
+        if (room.isFinal && config.hasBoss) {
+            return [{ x: room.centerX, y: 0.5, z: room.centerZ, type: 'boss' }];
+        }
+
         const area = room.width * room.depth;
+        const totalEnemies = Math.max(
+            config.enemyCount.min,
+            Math.min(config.enemyCount.max, Math.floor(area / config.enemyCount.areaPerEnemy)),
+        );
+        const numLarge = Math.round(totalEnemies * config.enemyCount.largeFraction);
+        const numRegular = totalEnemies - numLarge;
+
+        // Exclusion zones: obstacles in this room + teleporter in the final room
+        const exclusions: Array<{ x: number; z: number; radius: number }> = [];
+        if (room.isFinal) {
+            exclusions.push({ x: teleporterPos.x, z: teleporterPos.z, radius: 3 });
+        }
+        for (const obs of obstacles) {
+            // Only consider obstacles that belong to this room
+            if (
+                obs.x >= room.centerX - room.width / 2 &&
+                obs.x <= room.centerX + room.width / 2 &&
+                obs.z >= room.centerZ - room.depth / 2 &&
+                obs.z <= room.centerZ + room.depth / 2
+            ) {
+                exclusions.push({ x: obs.x, z: obs.z, radius: Math.max(obs.width, obs.depth) });
+            }
+        }
+
+        const minX = room.centerX - room.width / 2 + SPAWN_PADDING;
+        const maxX = room.centerX + room.width / 2 - SPAWN_PADDING;
+        const minZ = room.centerZ - room.depth / 2 + SPAWN_PADDING;
+        const maxZ = room.centerZ + room.depth / 2 - SPAWN_PADDING;
+
+        const isExcluded = (x: number, z: number): boolean =>
+            exclusions.some(ez => {
+                const dx = x - ez.x;
+                const dz = z - ez.z;
+                return dx * dx + dz * dz < ez.radius * ez.radius;
+            });
+
         const spawns: EnemySpawnPoint[] = [];
 
-        // Boss spawns at room centre in the final room
-        if (room.isFinal && config.hasBoss) {
-            spawns.push({ x: room.centerX, y: 0.5, z: 0, type: 'boss' });
-        }
+        const trySpawn = (type: 'regular' | 'large', y: number): void => {
+            const maxAttempts = 20;
+            for (let i = 0; i < maxAttempts; i++) {
+                const x = this.range(minX, maxX);
+                const z = this.range(minZ, maxZ);
+                if (!isExcluded(x, z)) {
+                    spawns.push({ x, y, z, type });
+                    return;
+                }
+            }
+        };
 
-        // Regular and large enemies scale linearly with room area
-        const numRegular = Math.max(1, Math.floor(area / config.enemyDensity.regularPerArea));
-        const numLarge = Math.floor(area / config.enemyDensity.largePerArea);
-
-        // Keep enemies away from walls
-        const minX = room.centerX - room.width / 2 + ENEMY_SPAWN_PADDING;
-        const maxX = room.centerX + room.width / 2 - ENEMY_SPAWN_PADDING;
-        const minZ = room.centerZ - room.depth / 2 + ENEMY_SPAWN_PADDING;
-        const maxZ = room.centerZ + room.depth / 2 - ENEMY_SPAWN_PADDING;
-
-        for (let i = 0; i < numRegular; i++) {
-            spawns.push({ x: this.range(minX, maxX), y: 0.5, z: this.range(minZ, maxZ), type: 'regular' });
-        }
-
-        for (let i = 0; i < numLarge; i++) {
-            spawns.push({ x: this.range(minX, maxX), y: 1.0, z: this.range(minZ, maxZ), type: 'large' });
-        }
+        for (let i = 0; i < numRegular; i++) trySpawn('regular', 0.5);
+        for (let i = 0; i < numLarge; i++) trySpawn('large', 1.0);
 
         return spawns;
     }

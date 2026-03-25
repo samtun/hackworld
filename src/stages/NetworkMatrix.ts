@@ -18,9 +18,10 @@ export class NetworkMatrix extends BaseStage {
 
     private static readonly generationConfig: RoomGenerationConfig = {
         combatRoomCount: { min: 2, max: 4 },
-        combatRoomSize: { minWidth: 15, maxWidth: 30, minDepth: 15, maxDepth: 30 },
-        finalRoomSize: { minWidth: 20, maxWidth: 35, minDepth: 20, maxDepth: 35 },
-        enemyDensity: { regularPerArea: 100, largePerArea: 300 },
+        combatRoomSize: { minWidth: 10, maxWidth: 15, minDepth: 10, maxDepth: 15 },
+        finalRoomSize: { minWidth: 12, maxWidth: 18, minDepth: 12, maxDepth: 18 },
+        enemyCount: { min: 2, max: 6, areaPerEnemy: 30, largeFraction: 0.25 },
+        obstacleCount: { min: 1, max: 2 },
         hasBoss: false,
     };
 
@@ -70,7 +71,7 @@ export class NetworkMatrix extends BaseStage {
         this.scene.add(floorPlane);
         this.meshes.push(floorPlane);
 
-        // Build walls
+        // Build walls and obstacles
         for (const wall of layout.walls) {
             this.createBox(
                 wall.width,
@@ -79,6 +80,7 @@ export class NetworkMatrix extends BaseStage {
                 new CANNON.Vec3(wall.centerX, wall.centerY, wall.centerZ),
             );
         }
+        this.buildObstaclesFromLayout(layout);
 
         // Teleporter in the final room – starts inactive until all enemies are defeated
         const tp = layout.teleporterPosition;

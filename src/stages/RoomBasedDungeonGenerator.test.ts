@@ -11,9 +11,10 @@ import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 
 const baseConfig: RoomGenerationConfig = {
     combatRoomCount: { min: 2, max: 4 },
-    combatRoomSize: { minWidth: 15, maxWidth: 30, minDepth: 15, maxDepth: 30 },
-    finalRoomSize: { minWidth: 20, maxWidth: 40, minDepth: 20, maxDepth: 40 },
-    enemyDensity: { regularPerArea: 100, largePerArea: 300 },
+    combatRoomSize: { minWidth: 10, maxWidth: 20, minDepth: 10, maxDepth: 20 },
+    finalRoomSize: { minWidth: 12, maxWidth: 25, minDepth: 12, maxDepth: 25 },
+    enemyCount: { min: 2, max: 8, areaPerEnemy: 30, largeFraction: 0.3 },
+    obstacleCount: { min: 1, max: 2 },
     hasBoss: true,
 };
 
@@ -134,12 +135,14 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(safe.spawns).toHaveLength(0);
         });
 
-        it('final room has a boss when hasBoss is true', () => {
+        it('final room has only the boss when hasBoss is true', () => {
             const layout = new RoomBasedDungeonGenerator(11).generate(baseConfig);
             const finalId = layout.rooms[layout.rooms.length - 1].id;
             const finalSpawns = layout.roomSpawns.find(rs => rs.roomId === finalId)!;
             const bosses = finalSpawns.spawns.filter(s => s.type === 'boss');
+            const others = finalSpawns.spawns.filter(s => s.type !== 'boss');
             expect(bosses).toHaveLength(1);
+            expect(others).toHaveLength(0);
         });
 
         it('final room has no boss when hasBoss is false', () => {
@@ -151,11 +154,31 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(bosses).toHaveLength(0);
         });
 
-        it('larger rooms produce more regular enemies', () => {
+        it('combat room enemy count is within [min, max] bounds', () => {
+            // Run across several seeds to cover different room sizes
+            const config: RoomGenerationConfig = {
+                ...baseConfig,
+                combatRoomCount: { min: 2, max: 2 },
+                hasBoss: false,
+            };
+            for (let seed = 0; seed < 20; seed++) {
+                const layout = new RoomBasedDungeonGenerator(seed).generate(config);
+                const combatRooms = layout.rooms.filter(r => !r.isSafe && !r.isFinal);
+                for (const room of combatRooms) {
+                    const spawns = layout.roomSpawns.find(rs => rs.roomId === room.id)!;
+                    expect(spawns.spawns.length).toBeGreaterThanOrEqual(config.enemyCount.min);
+                    expect(spawns.spawns.length).toBeLessThanOrEqual(config.enemyCount.max);
+                }
+            }
+        });
+
+        it('larger rooms produce more enemies than smaller rooms', () => {
+            // Use fixed single-size configs so enemy count depends only on areaPerEnemy
             const smallCfg: RoomGenerationConfig = {
                 ...baseConfig,
                 combatRoomCount: { min: 1, max: 1 },
                 combatRoomSize: { minWidth: 10, maxWidth: 10, minDepth: 10, maxDepth: 10 },
+                enemyCount: { min: 1, max: 20, areaPerEnemy: 30, largeFraction: 0 },
                 hasBoss: false,
             };
             const largeCfg: RoomGenerationConfig = {
@@ -166,9 +189,9 @@ describe('RoomBasedDungeonGenerator', () => {
             const largeLayout = new RoomBasedDungeonGenerator(13).generate(largeCfg);
 
             // Combat room is always index 1 (safe=0, combat=1, final=2)
-            const smallSpawns = smallLayout.roomSpawns[1].spawns.filter(s => s.type === 'regular');
-            const largeSpawns = largeLayout.roomSpawns[1].spawns.filter(s => s.type === 'regular');
-            expect(largeSpawns.length).toBeGreaterThan(smallSpawns.length);
+            const smallCount = smallLayout.roomSpawns[1].spawns.length;
+            const largeCount = largeLayout.roomSpawns[1].spawns.length;
+            expect(largeCount).toBeGreaterThan(smallCount);
         });
 
         it('all rooms have a corresponding roomSpawns entry', () => {
@@ -176,6 +199,44 @@ describe('RoomBasedDungeonGenerator', () => {
             const roomIds = new Set(layout.rooms.map(r => r.id));
             const spawnIds = new Set(layout.roomSpawns.map(rs => rs.roomId));
             expect(spawnIds).toEqual(roomIds);
+        });
+    });
+
+    describe('obstacles', () => {
+        it('layout includes an obstacles array', () => {
+            const layout = new RoomBasedDungeonGenerator(30).generate(baseConfig);
+            expect(Array.isArray(layout.obstacles)).toBe(true);
+        });
+
+        it('safe room produces no obstacles', () => {
+            const layout = new RoomBasedDungeonGenerator(31).generate(baseConfig);
+            const safeRoom = layout.rooms[0];
+            const safeObstacles = layout.obstacles.filter(
+                o =>
+                    o.x >= safeRoom.centerX - safeRoom.width / 2 &&
+                    o.x <= safeRoom.centerX + safeRoom.width / 2,
+            );
+            expect(safeObstacles).toHaveLength(0);
+        });
+
+        it('obstacles have floor-anchored y (y = height / 2)', () => {
+            const layout = new RoomBasedDungeonGenerator(32).generate(baseConfig);
+            for (const obs of layout.obstacles) {
+                expect(obs.y).toBeCloseTo(obs.height / 2, 10);
+            }
+        });
+
+        it('obstacle count across all non-safe rooms is within configured range', () => {
+            const config: RoomGenerationConfig = {
+                ...baseConfig,
+                combatRoomCount: { min: 2, max: 2 },
+                obstacleCount: { min: 2, max: 2 },
+                hasBoss: false,
+            };
+            const layout = new RoomBasedDungeonGenerator(33).generate(config);
+            const nonSafeRooms = layout.rooms.filter(r => !r.isSafe);
+            // Each non-safe room should have exactly 2 obstacles when min=max=2
+            expect(layout.obstacles.length).toBe(nonSafeRooms.length * 2);
         });
     });
 
@@ -222,6 +283,14 @@ describe('RoomBasedDungeonGenerator', () => {
             const final = layout.rooms[layout.rooms.length - 1];
             expect(Math.abs(layout.teleporterPosition.x - final.centerX)).toBeLessThanOrEqual(final.width / 2);
             expect(Math.abs(layout.teleporterPosition.z - final.centerZ)).toBeLessThanOrEqual(final.depth / 2);
+        });
+
+        it('teleporter is placed near the east wall of the final room', () => {
+            const layout = new RoomBasedDungeonGenerator(20).generate(baseConfig);
+            const final = layout.rooms[layout.rooms.length - 1];
+            const eastEdge = final.centerX + final.width / 2;
+            // Teleporter should be closer to the east edge than to the centre
+            expect(eastEdge - layout.teleporterPosition.x).toBeLessThan(final.width / 2);
         });
     });
 

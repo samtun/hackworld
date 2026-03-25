@@ -51,6 +51,13 @@ export abstract class BaseStage {
      */
     protected roomEnemyMap: Map<number, Enemy[]> = new Map();
 
+    /**
+     * Total number of enemies spawned for this stage load.
+     * Used by {@link checkTeleporterActivation} to detect the moment all
+     * enemies have been killed and cleaned up (enemies array becomes empty).
+     */
+    private totalEnemiesSpawned = 0;
+
     constructor(
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
@@ -96,6 +103,7 @@ export abstract class BaseStage {
         // Reset room-tracking state
         this.dungeonRooms = [];
         this.roomEnemyMap.clear();
+        this.totalEnemiesSpawned = 0;
 
         // Stop and remove mixers
         for (const mixer of this.mixers) {
@@ -201,6 +209,15 @@ export abstract class BaseStage {
     }
 
     /**
+     * Build scene meshes and physics bodies for all obstacles in the layout.
+     */
+    protected buildObstaclesFromLayout(layout: DungeonLayout): void {
+        for (const obs of layout.obstacles) {
+            this.createBox(obs.width, obs.height, obs.depth, new CANNON.Vec3(obs.x, obs.y, obs.z));
+        }
+    }
+
+    /**
      * Spawn all enemies defined by a procedural dungeon layout and register
      * them with their corresponding room so that room-based aggro can be applied.
      * Enemies start with {@link Enemy.aggroEnabled} = false and are enabled
@@ -227,6 +244,7 @@ export abstract class BaseStage {
                     const enemy = this.enemies[this.enemies.length - 1];
                     enemy.aggroEnabled = false;
                     roomEnemies.push(enemy);
+                    this.totalEnemiesSpawned++;
                 }
             }
 
@@ -310,13 +328,15 @@ export abstract class BaseStage {
 
     /**
      * Activate the teleporter once every enemy in the stage has been defeated.
+     *
+     * World.ts removes dead enemies from `stage.enemies` after cleanup, so the
+     * correct signal is `enemies.length === 0` combined with a guard that
+     * confirms at least one enemy was spawned (to avoid activating on empty stages).
      */
     private checkTeleporterActivation(): void {
         if (!this.teleporter || this.teleporter.isActive) return;
-        // Skip the full-array scan when there are no enemies to avoid
-        // activating the teleporter on stages that have no combat rooms.
-        if (this.enemies.length === 0) return;
-        if (this.enemies.every(e => e.isDead)) {
+        if (this.totalEnemiesSpawned === 0) return;
+        if (this.enemies.length === 0) {
             this.teleporter.activate();
         }
     }
