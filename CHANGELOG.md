@@ -1,3 +1,11 @@
+## [1.55.1](https://github.com/samtun/hackworld/compare/v1.55.0...v1.55.1) (2026-03-25)
+
+
+### Bug Fixes
+
+* improve trader UI UX with remembered selection, fixed titles, and auto-height details panel ([fb56586](https://github.com/samtun/hackworld/commit/fb5658640e69b4391e12f298c2a37ff29ed0414e))
+* move item details panel to 3-column layout with mobile responsive fallback ([9011808](https://github.com/samtun/hackworld/commit/901180841a847691a61c68e6c13ac120d662856f))
+
 # [1.55.0](https://github.com/samtun/hackworld/compare/v1.54.0...v1.55.0) (2026-03-20)
 
 
