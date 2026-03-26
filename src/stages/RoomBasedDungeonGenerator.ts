@@ -442,7 +442,7 @@ export class RoomBasedDungeonGenerator {
             while (placed < count && attempts < maxAttempts) {
                 attempts++;
                 const w = this.range(1, 3);
-                const h = this.range(1, 2.5);
+                const h = WALL_HEIGHT;
                 const d = this.range(1, 3);
                 const x = this.range(minX, maxX);
                 const z = this.range(minZ, maxZ);

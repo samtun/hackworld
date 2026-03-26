@@ -6,6 +6,7 @@ import { PlayerRegistry } from '../PlayerRegistry';
 import { AssetManager } from '../AssetManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { BlockShield } from '../BlockShield';
+import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
 
 enum EnemyActionType {
     Idle = 'Idle',
@@ -43,6 +44,22 @@ export class Enemy extends BaseMesh {
      * enters the enemy's room, so enemies don't chase through walls.
      */
     aggroEnabled: boolean = true;
+
+    /**
+     * Optional navigation grid for pathfinding around walls and obstacles.
+     * When set, the enemy follows an A*-computed path instead of moving
+     * directly toward the player.
+     */
+    navGrid: DungeonNavGrid | null = null;
+
+    /** Current A* path waypoints the enemy is following. */
+    private navPath: NavWaypoint[] = [];
+    /** Index of the next waypoint in {@link navPath} the enemy is heading toward. */
+    private navPathIndex = 0;
+    /** Seconds since the path was last recomputed. */
+    private navPathAge = 0;
+    /** How often (in seconds) to recompute the path. */
+    private readonly NAV_RECOMPUTE_INTERVAL = 0.5;
 
     // Base position tracking for return behavior
     protected basePosition: CANNON.Vec3;
@@ -442,17 +459,13 @@ export class Enemy extends BaseMesh {
                 this.isReturningToBase = false;
                 this.returnToBaseTimer = 0;
 
-                const dir = playerPos.vsub(myPos);
-                dir.y = 0; // Don't fly
-                if (dir.length() > 0) {
-                    dir.normalize();
-                    // Move towards player
-                    this.body.velocity.x = dir.x * this.speed;
-                    this.body.velocity.z = dir.z * this.speed;
+                const moveResult = this.computeMovement(playerPos, myPos, dt);
+                if (moveResult) {
+                    this.body.velocity.x = moveResult.dirX * this.speed;
+                    this.body.velocity.z = moveResult.dirZ * this.speed;
                     isMoving = true;
 
-                    // Rotate to face player
-                    const angle = Math.atan2(dir.x, dir.z);
+                    const angle = Math.atan2(moveResult.dirX, moveResult.dirZ);
                     const targetQuaternion = new THREE.Quaternion();
                     targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
                     this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
@@ -474,16 +487,13 @@ export class Enemy extends BaseMesh {
                 } else {
                     // Return to base position
                     if (distToBase > this.baseArrivalThreshold) {
-                        const dir = this.basePosition.vsub(myPos);
-                        dir.y = 0;
-                        if (dir.length() > 0) {
-                            dir.normalize();
-                            this.body.velocity.x = dir.x * this.speed;
-                            this.body.velocity.z = dir.z * this.speed;
+                        const moveResult = this.computeMovement(this.basePosition, myPos, dt);
+                        if (moveResult) {
+                            this.body.velocity.x = moveResult.dirX * this.speed;
+                            this.body.velocity.z = moveResult.dirZ * this.speed;
                             isMoving = true;
 
-                            // Rotate to face base position
-                            const angle = Math.atan2(dir.x, dir.z);
+                            const angle = Math.atan2(moveResult.dirX, moveResult.dirZ);
                             const targetQuaternion = new THREE.Quaternion();
                             targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
                             this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
@@ -564,6 +574,64 @@ export class Enemy extends BaseMesh {
                 mat.emissive.setHex(color);
             }
         });
+    }
+
+    /**
+     * Compute a normalised movement direction toward `target`.
+     *
+     * When a {@link navGrid} is assigned, the enemy follows an A*-computed
+     * path that avoids walls and obstacles.  Otherwise it falls back to a
+     * straight-line direction.
+     *
+     * Returns `null` if the enemy is already at the target.
+     */
+    private computeMovement(
+        target: CANNON.Vec3,
+        myPos: CANNON.Vec3,
+        dt: number,
+    ): { dirX: number; dirZ: number } | null {
+        // Age the cached path
+        this.navPathAge += dt;
+
+        if (this.navGrid) {
+            // Recompute path periodically (player is moving)
+            if (this.navPath.length === 0 || this.navPathAge >= this.NAV_RECOMPUTE_INTERVAL) {
+                this.navPath = this.navGrid.findPath(myPos.x, myPos.z, target.x, target.z);
+                this.navPathIndex = 0;
+                this.navPathAge = 0;
+            }
+
+            // Advance along the path
+            if (this.navPath.length > 0 && this.navPathIndex < this.navPath.length) {
+                const wp = this.navPath[this.navPathIndex];
+                const dx = wp.x - myPos.x;
+                const dz = wp.z - myPos.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+
+                // Reached waypoint – advance to next
+                if (dist < 0.8) {
+                    this.navPathIndex++;
+                    if (this.navPathIndex >= this.navPath.length) {
+                        // Path finished, fall through to direct movement
+                    } else {
+                        const next = this.navPath[this.navPathIndex];
+                        const nx = next.x - myPos.x;
+                        const nz = next.z - myPos.z;
+                        const nd = Math.sqrt(nx * nx + nz * nz);
+                        if (nd > 0) return { dirX: nx / nd, dirZ: nz / nd };
+                    }
+                } else {
+                    return { dirX: dx / dist, dirZ: dz / dist };
+                }
+            }
+        }
+
+        // Fallback: direct movement
+        const dx = target.x - myPos.x;
+        const dz = target.z - myPos.z;
+        const len = Math.sqrt(dx * dx + dz * dz);
+        if (len <= 0) return null;
+        return { dirX: dx / len, dirZ: dz / len };
     }
 
     /**

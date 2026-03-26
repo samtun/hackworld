@@ -18,9 +18,9 @@ export class SecurityCore extends BaseStage {
 
     private static readonly generationConfig: RoomGenerationConfig = {
         combatRoomCount: { min: 3, max: 5 },
-        combatRoomSize: { minWidth: 10, maxWidth: 25, minDepth: 10, maxDepth: 25 },
-        finalRoomSize: { minWidth: 15, maxWidth: 30, minDepth: 15, maxDepth: 30 },
-        enemyCount: { min: 2, max: 8, areaPerEnemy: 25, largeFraction: 0.35 },
+        combatRoomSize: { minWidth: 13, maxWidth: 33, minDepth: 13, maxDepth: 33 },
+        finalRoomSize: { minWidth: 20, maxWidth: 39, minDepth: 20, maxDepth: 39 },
+        enemyCount: { min: 2, max: 8, areaPerEnemy: 50, largeFraction: 0.35 },
         obstacleCount: { min: 1, max: 3 },
         hasBoss: true,
     };

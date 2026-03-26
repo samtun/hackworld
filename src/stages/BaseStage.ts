@@ -8,6 +8,7 @@ import { Teleporter } from '../Teleporter';
 import { Player } from '../Player';
 import { Npc } from '../npcs/Npc';
 import { BossEnemy } from '../enemies/BossEnemy';
+import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
 import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
 
 /**
@@ -58,6 +59,12 @@ export abstract class BaseStage {
      */
     private totalEnemiesSpawned = 0;
 
+    /**
+     * Navigation grid built from the dungeon layout.
+     * Passed to each enemy so they can pathfind around walls and obstacles.
+     */
+    protected navGrid: DungeonNavGrid | null = null;
+
     constructor(
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
@@ -104,6 +111,7 @@ export abstract class BaseStage {
         this.dungeonRooms = [];
         this.roomEnemyMap.clear();
         this.totalEnemiesSpawned = 0;
+        this.navGrid = null;
 
         // Stop and remove mixers
         for (const mixer of this.mixers) {
@@ -222,8 +230,14 @@ export abstract class BaseStage {
      * them with their corresponding room so that room-based aggro can be applied.
      * Enemies start with {@link Enemy.aggroEnabled} = false and are enabled
      * individually when the player enters their room.
+     *
+     * A {@link DungeonNavGrid} is built from the layout so enemies can pathfind
+     * around walls and obstacles instead of walking in a straight line.
      */
     protected spawnEnemiesFromLayout(layout: DungeonLayout): void {
+        // Build the navigation grid once for the entire stage
+        this.navGrid = new DungeonNavGrid(layout);
+
         for (const roomSpawns of layout.roomSpawns) {
             const roomEnemies: Enemy[] = [];
 
@@ -243,6 +257,7 @@ export abstract class BaseStage {
                 if (this.enemies.length > countBefore) {
                     const enemy = this.enemies[this.enemies.length - 1];
                     enemy.aggroEnabled = false;
+                    enemy.navGrid = this.navGrid;
                     roomEnemies.push(enemy);
                     this.totalEnemiesSpawned++;
                 }

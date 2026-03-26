@@ -18,9 +18,9 @@ export class NetworkMatrix extends BaseStage {
 
     private static readonly generationConfig: RoomGenerationConfig = {
         combatRoomCount: { min: 2, max: 4 },
-        combatRoomSize: { minWidth: 10, maxWidth: 15, minDepth: 10, maxDepth: 15 },
-        finalRoomSize: { minWidth: 12, maxWidth: 18, minDepth: 12, maxDepth: 18 },
-        enemyCount: { min: 2, max: 6, areaPerEnemy: 30, largeFraction: 0.25 },
+        combatRoomSize: { minWidth: 13, maxWidth: 20, minDepth: 13, maxDepth: 20 },
+        finalRoomSize: { minWidth: 16, maxWidth: 24, minDepth: 16, maxDepth: 24 },
+        enemyCount: { min: 2, max: 6, areaPerEnemy: 60, largeFraction: 0.25 },
         obstacleCount: { min: 1, max: 2 },
         hasBoss: false,
     };

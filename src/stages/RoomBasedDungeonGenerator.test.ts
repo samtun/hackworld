@@ -11,9 +11,9 @@ import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 
 const baseConfig: RoomGenerationConfig = {
     combatRoomCount: { min: 2, max: 4 },
-    combatRoomSize: { minWidth: 10, maxWidth: 20, minDepth: 10, maxDepth: 20 },
-    finalRoomSize: { minWidth: 12, maxWidth: 25, minDepth: 12, maxDepth: 25 },
-    enemyCount: { min: 2, max: 8, areaPerEnemy: 30, largeFraction: 0.3 },
+    combatRoomSize: { minWidth: 13, maxWidth: 26, minDepth: 13, maxDepth: 26 },
+    finalRoomSize: { minWidth: 16, maxWidth: 33, minDepth: 16, maxDepth: 33 },
+    enemyCount: { min: 2, max: 8, areaPerEnemy: 60, largeFraction: 0.3 },
     obstacleCount: { min: 1, max: 2 },
     hasBoss: true,
 };
