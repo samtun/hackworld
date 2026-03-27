@@ -1,6 +1,12 @@
 import * as THREE from 'three';
 
 /**
+ * Maps wall materials to their compiled shader objects so we can update
+ * the player/camera position uniforms each frame without casting to `any`.
+ */
+const wallShaderMap = new WeakMap<THREE.MeshStandardMaterial, THREE.WebGLProgramParametersWithUniforms>();
+
+/**
  * Creates a wall material that becomes transparent when the player is between
  * the wall and the camera, with a tech-styled circuit-pattern alpha mask on
  * the transparency edge.
@@ -101,8 +107,8 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
             `
         );
 
-        // Expose shader reference so we can update uniforms each frame
-        (material as any)._wallShader = shader;
+        // Store the shader reference in the WeakMap for uniform updates
+        wallShaderMap.set(material, shader);
     };
 
     material.needsUpdate = true;
@@ -118,7 +124,7 @@ export function updateWallUniforms(
     cameraPos: THREE.Vector3,
 ): void {
     for (const mat of materials) {
-        const shader = (mat as any)._wallShader;
+        const shader = wallShaderMap.get(mat);
         if (shader) {
             shader.uniforms.u_playerPos.value.copy(playerPos);
             shader.uniforms.u_cameraPos.value.copy(cameraPos);

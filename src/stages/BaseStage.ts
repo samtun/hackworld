@@ -119,6 +119,11 @@ export abstract class BaseStage {
         this.roomEnemyMap.clear();
         this.totalEnemiesSpawned = 0;
         this.navGrid = null;
+
+        // Dispose wall shader materials before clearing the array
+        for (const mat of this.wallMaterials) {
+            mat.dispose();
+        }
         this.wallMaterials = [];
 
         // Stop and remove mixers
