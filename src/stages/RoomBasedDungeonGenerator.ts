@@ -298,7 +298,7 @@ export class RoomBasedDungeonGenerator {
 
         const spawnPosition: Vec2 = { x: safeRoom.centerX, z: safeRoom.centerZ };
 
-        // Teleporter centred in the teleporter room, against the far wall
+        // Teleporter centred in the teleporter room, accessible from all sides
         const teleporterPosition = this.computeTeleporterPosition(teleporterRoom);
 
         const obstacles = this.buildObstacles(rooms, config);
@@ -668,29 +668,9 @@ export class RoomBasedDungeonGenerator {
     // Teleporter position
     // -----------------------------------------------------------------------
 
-    /** Compute the teleporter position centred against the far wall of the teleporter room. */
+    /** Compute the teleporter position at the centre of the teleporter room so it is accessible from every side. */
     private computeTeleporterPosition(teleporterRoom: DungeonRoom): Vec2 {
-        // The "far wall" is the wall opposite the entrance door
-        const door = teleporterRoom.doors[0]; // teleporter room always has exactly one door
-        if (!door) {
-            return { x: teleporterRoom.centerX, z: teleporterRoom.centerZ };
-        }
-
-        const offset = 2; // metres from the wall
-        switch (door.direction) {
-            case 'south':
-                // Entrance is south → far wall is north
-                return { x: teleporterRoom.centerX, z: teleporterRoom.centerZ + teleporterRoom.depth / 2 - offset };
-            case 'north':
-                // Entrance is north → far wall is south
-                return { x: teleporterRoom.centerX, z: teleporterRoom.centerZ - teleporterRoom.depth / 2 + offset };
-            case 'west':
-                // Entrance is west → far wall is east
-                return { x: teleporterRoom.centerX + teleporterRoom.width / 2 - offset, z: teleporterRoom.centerZ };
-            case 'east':
-                // Entrance is east → far wall is west
-                return { x: teleporterRoom.centerX - teleporterRoom.width / 2 + offset, z: teleporterRoom.centerZ };
-        }
+        return { x: teleporterRoom.centerX, z: teleporterRoom.centerZ };
     }
 
     // -----------------------------------------------------------------------

@@ -396,12 +396,12 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(Math.abs(layout.spawnPosition.z - safe.centerZ)).toBeLessThanOrEqual(safe.depth / 2);
         });
 
-        it('teleporter position is inside the teleporter room', () => {
+        it('teleporter position is at the centre of the teleporter room', () => {
             for (let seed = 0; seed < 10; seed++) {
                 const layout = gen(seed);
                 const tpRoom = layout.rooms.find(r => r.isTeleporterRoom)!;
-                expect(Math.abs(layout.teleporterPosition.x - tpRoom.centerX)).toBeLessThanOrEqual(tpRoom.width / 2);
-                expect(Math.abs(layout.teleporterPosition.z - tpRoom.centerZ)).toBeLessThanOrEqual(tpRoom.depth / 2);
+                expect(layout.teleporterPosition.x).toBe(tpRoom.centerX);
+                expect(layout.teleporterPosition.z).toBe(tpRoom.centerZ);
             }
         });
     });
