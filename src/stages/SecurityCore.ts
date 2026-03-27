@@ -1,5 +1,4 @@
 import * as CANNON from 'cannon-es';
-import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
@@ -58,28 +57,11 @@ export class SecurityCore extends BaseStage {
         // Register rooms for per-room enemy aggro and teleporter activation
         this.dungeonRooms = layout.rooms;
 
-        // Floor plane sized to cover all rooms and corridors
-        const floorW = layout.floorBounds.maxX - layout.floorBounds.minX;
-        const floorD = layout.floorBounds.maxZ - layout.floorBounds.minZ;
-        const floorCX = (layout.floorBounds.minX + layout.floorBounds.maxX) / 2;
-        const floorCZ = (layout.floorBounds.minZ + layout.floorBounds.maxZ) / 2;
-        const floorGeo = new THREE.PlaneGeometry(floorW, floorD);
-        floorGeo.rotateX(-Math.PI / 2);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x222222, side: THREE.FrontSide });
-        const floorPlane = new THREE.Mesh(floorGeo, floorMat);
-        floorPlane.position.set(floorCX, 0, floorCZ);
-        this.scene.add(floorPlane);
-        this.meshes.push(floorPlane);
+        // Floor segments for each room and corridor
+        this.buildFloorFromLayout(layout);
 
-        // Build walls and obstacles
-        for (const wall of layout.walls) {
-            this.createBox(
-                wall.width,
-                wall.height,
-                wall.depth,
-                new CANNON.Vec3(wall.centerX, wall.centerY, wall.centerZ),
-            );
-        }
+        // Build walls (with transparency shader) and obstacles
+        this.buildWallsFromLayout(layout);
         this.buildObstaclesFromLayout(layout);
 
         // Teleporter in the final room – starts inactive until all enemies are defeated

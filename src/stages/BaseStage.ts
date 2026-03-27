@@ -9,6 +9,7 @@ import { Player } from '../Player';
 import { Npc } from '../npcs/Npc';
 import { BossEnemy } from '../enemies/BossEnemy';
 import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
+import { createWallMaterial, updateWallUniforms } from '../WallShaderUtils';
 import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
 
 /**
@@ -65,6 +66,12 @@ export abstract class BaseStage {
      */
     protected navGrid: DungeonNavGrid | null = null;
 
+    /**
+     * Wall materials using the transparency shader.
+     * Uniforms are updated each frame so walls fade when the player is behind them.
+     */
+    protected wallMaterials: THREE.MeshStandardMaterial[] = [];
+
     constructor(
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
@@ -112,6 +119,7 @@ export abstract class BaseStage {
         this.roomEnemyMap.clear();
         this.totalEnemiesSpawned = 0;
         this.navGrid = null;
+        this.wallMaterials = [];
 
         // Stop and remove mixers
         for (const mixer of this.mixers) {
@@ -226,6 +234,62 @@ export abstract class BaseStage {
     }
 
     /**
+     * Build wall meshes and physics bodies from the layout, using the
+     * transparency shader that fades walls when the player is behind them.
+     */
+    protected buildWallsFromLayout(layout: DungeonLayout): void {
+        for (const wall of layout.walls) {
+            const geo = new THREE.BoxGeometry(wall.width, wall.height, wall.depth);
+            const mat = createWallMaterial(0x555555);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(wall.centerX, wall.centerY, wall.centerZ);
+            mesh.castShadow = true;
+            mesh.receiveShadow = true;
+            mesh.renderOrder = 1;
+            this.scene.add(mesh);
+            this.meshes.push(mesh);
+            this.wallMaterials.push(mat);
+
+            const shape = new CANNON.Box(
+                new CANNON.Vec3(wall.width / 2, wall.height / 2, wall.depth / 2),
+            );
+            const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+            body.addShape(shape);
+            body.position.set(wall.centerX, wall.centerY, wall.centerZ);
+            this.physicsWorld.addBody(body);
+            this.bodies.push(body);
+        }
+    }
+
+    /**
+     * Build individual floor segments for each room and corridor so the floor
+     * only appears underneath walkable areas.
+     */
+    protected buildFloorFromLayout(layout: DungeonLayout, color: number = 0x222222): void {
+        const floorMat = new THREE.MeshStandardMaterial({ color, side: THREE.FrontSide });
+
+        for (const room of layout.rooms) {
+            const geo = new THREE.PlaneGeometry(room.width, room.depth);
+            geo.rotateX(-Math.PI / 2);
+            const mesh = new THREE.Mesh(geo, floorMat);
+            mesh.position.set(room.centerX, 0, room.centerZ);
+            mesh.receiveShadow = true;
+            this.scene.add(mesh);
+            this.meshes.push(mesh);
+        }
+
+        for (const cor of layout.corridors) {
+            const geo = new THREE.PlaneGeometry(cor.width, cor.depth);
+            geo.rotateX(-Math.PI / 2);
+            const mesh = new THREE.Mesh(geo, floorMat);
+            mesh.position.set(cor.centerX, 0, cor.centerZ);
+            mesh.receiveShadow = true;
+            this.scene.add(mesh);
+            this.meshes.push(mesh);
+        }
+    }
+
+    /**
      * Spawn all enemies defined by a procedural dungeon layout and register
      * them with their corresponding room so that room-based aggro can be applied.
      * Enemies start with {@link Enemy.aggroEnabled} = false and are enabled
@@ -293,10 +357,10 @@ export abstract class BaseStage {
 
     /**
      * Update teleporter particles, NPC animations, mixers, and – when a
-     * procedural room layout is active – room-based enemy aggro and automatic
-     * teleporter activation.
+     * procedural room layout is active – room-based enemy aggro, automatic
+     * teleporter activation, and wall transparency shader uniforms.
      */
-    update(dt: number, player: Player, _anyMenuOpen: boolean): void {
+    update(dt: number, player: Player, _anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
         if (this.teleporter) {
             this.teleporter.update(dt);
         }
@@ -313,6 +377,11 @@ export abstract class BaseStage {
         if (this.dungeonRooms.length > 0) {
             this.updateRoomAggro(player);
             this.checkTeleporterActivation();
+
+            // Update wall transparency shader with player and camera positions
+            if (cameraPosition && this.wallMaterials.length > 0) {
+                updateWallUniforms(this.wallMaterials, player.position, cameraPosition);
+            }
         }
     }
 

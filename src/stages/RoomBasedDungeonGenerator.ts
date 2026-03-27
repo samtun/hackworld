@@ -16,7 +16,7 @@ export const CORRIDOR_LENGTH = 5;
 export const SAFE_ROOM_SIZE = 10;
 
 /** Size of the dedicated teleporter room (in metres). */
-export const TELEPORTER_ROOM_SIZE = 8;
+export const TELEPORTER_ROOM_SIZE = 12;
 
 /** Minimum distance in metres between an enemy/obstacle spawn point and the nearest wall. */
 const SPAWN_PADDING = 2;

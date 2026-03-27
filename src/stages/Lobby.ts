@@ -309,8 +309,8 @@ export class Lobby extends BaseStage {
     /*
      * Override BaseStage update method
      */
-    update(dt: number, player: Player, anyMenuOpen: boolean): void {
-        super.update(dt, player, anyMenuOpen);
+    update(dt: number, player: Player, anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
+        super.update(dt, player, anyMenuOpen, cameraPosition);
 
         // Animate banner texture
         if (this.bannerTexture) {
