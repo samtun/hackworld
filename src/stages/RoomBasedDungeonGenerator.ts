@@ -301,7 +301,7 @@ export class RoomBasedDungeonGenerator {
         // Teleporter centred in the teleporter room, against the far wall
         const teleporterPosition = this.computeTeleporterPosition(teleporterRoom);
 
-        const obstacles = this.buildObstacles(rooms, config, teleporterPosition);
+        const obstacles = this.buildObstacles(rooms, config);
         const roomSpawns = this.buildEnemySpawns(rooms, config, obstacles, teleporterPosition);
 
         const floorBounds = this.computeFloorBounds(rooms, corridors);
@@ -402,7 +402,7 @@ export class RoomBasedDungeonGenerator {
                     // Place the room
                     const room = this.createRoom(id, cx, cz, width, depth, isSafe, isFinal, isTeleporterRoom);
                     const returnDir = oppositeDir(dir);
-                    const returnOffset = this.computeReturnDoorOffset(parent, dir, doorOffset, room, returnDir);
+                    const returnOffset = this.computeReturnDoorOffset(parent, dir, doorOffset, room);
 
                     parent.doors.push({ direction: dir, offset: doorOffset });
                     room.doors.push({ direction: returnDir, offset: returnOffset });
@@ -452,7 +452,7 @@ export class RoomBasedDungeonGenerator {
                         id, cx, cz, fallbackWidth, fallbackDepth, isSafe, isFinal, isTeleporterRoom,
                     );
                     const returnDir = oppositeDir(dir);
-                    const returnOffset = this.computeReturnDoorOffset(parent, dir, doorOffset, room, returnDir);
+                    const returnOffset = this.computeReturnDoorOffset(parent, dir, doorOffset, room);
 
                     parent.doors.push({ direction: dir, offset: doorOffset });
                     room.doors.push({ direction: returnDir, offset: returnOffset });
@@ -505,7 +505,7 @@ export class RoomBasedDungeonGenerator {
             if (!overlaps) {
                 const room = this.createRoom(id, cx, cz, w, d, false, false, true);
                 const returnDir = oppositeDir(dir);
-                const returnOffset = this.computeReturnDoorOffset(finalRoom, dir, doorOffset, room, returnDir);
+                const returnOffset = this.computeReturnDoorOffset(finalRoom, dir, doorOffset, room);
 
                 finalRoom.doors.push({ direction: dir, offset: doorOffset });
                 room.doors.push({ direction: returnDir, offset: returnOffset });
@@ -575,7 +575,7 @@ export class RoomBasedDungeonGenerator {
      */
     private computeReturnDoorOffset(
         parent: DungeonRoom, parentDir: Direction, parentOffset: number,
-        child: DungeonRoom, _childDir: Direction,
+        child: DungeonRoom,
     ): number {
         // The door position in world coords (along the wall axis) must match
         if (parentDir === 'north' || parentDir === 'south') {
@@ -860,7 +860,6 @@ export class RoomBasedDungeonGenerator {
     private buildObstacles(
         rooms: DungeonRoom[],
         config: RoomGenerationConfig,
-        _teleporterPos: Vec2,
     ): RoomObstacle[] {
         const obstacles: RoomObstacle[] = [];
 
