@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { DungeonNavGrid, NAV_CELL_SIZE } from './DungeonNavGrid';
-import { RoomBasedDungeonGenerator, WALL_HEIGHT } from '../stages/RoomBasedDungeonGenerator';
+import { DungeonNavGrid } from './DungeonNavGrid';
+import { RoomBasedDungeonGenerator } from '../stages/RoomBasedDungeonGenerator';
 import type { DungeonLayout, RoomGenerationConfig } from '../stages/RoomBasedDungeonGenerator';
 
 /** Minimal config with no obstacles to keep nav-grid tests predictable. */

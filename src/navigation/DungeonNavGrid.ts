@@ -1,5 +1,4 @@
-import type { DungeonLayout, DungeonRoom, WallSegment, RoomObstacle } from '../stages/RoomBasedDungeonGenerator';
-import { CORRIDOR_WIDTH } from '../stages/RoomBasedDungeonGenerator';
+import type { DungeonLayout, DungeonRoom, WallSegment, RoomObstacle, Corridor } from '../stages/RoomBasedDungeonGenerator';
 
 /** Size of each navigation grid cell in metres. */
 export const NAV_CELL_SIZE = 1;
@@ -55,7 +54,7 @@ export class DungeonNavGrid {
 
         // Mark room interiors and corridors as walkable
         this.carveRooms(layout.rooms);
-        this.carveCorridors(layout.rooms);
+        this.carveCorridors(layout.corridors ?? []);
 
         // Block cells occupied by walls and obstacles
         this.blockWalls(layout.walls);
@@ -104,15 +103,16 @@ export class DungeonNavGrid {
         }
     }
 
-    /** Mark corridor areas between adjacent rooms as walkable. */
-    private carveCorridors(rooms: DungeonRoom[]): void {
-        for (let i = 0; i < rooms.length - 1; i++) {
-            const a = rooms[i];
-            const b = rooms[i + 1];
-            const corStartX = a.centerX + a.width / 2;
-            const corEndX = b.centerX - b.width / 2;
-            const halfCor = CORRIDOR_WIDTH / 2;
-            this.setRect(corStartX, corEndX, -halfCor, halfCor, true);
+    /** Mark corridor areas as walkable using explicit corridor data. */
+    private carveCorridors(corridors: Corridor[]): void {
+        for (const cor of corridors) {
+            this.setRect(
+                cor.centerX - cor.width / 2,
+                cor.centerX + cor.width / 2,
+                cor.centerZ - cor.depth / 2,
+                cor.centerZ + cor.depth / 2,
+                true,
+            );
         }
     }
 
