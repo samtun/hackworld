@@ -231,10 +231,30 @@ export abstract class BaseStage {
 
     /**
      * Build scene meshes and physics bodies for all obstacles in the layout.
+     * Obstacles use the same transparency shader as walls so they fade when
+     * the player is behind them relative to the camera.
      */
     protected buildObstaclesFromLayout(layout: DungeonLayout): void {
         for (const obs of layout.obstacles) {
-            this.createBox(obs.width, obs.height, obs.depth, new CANNON.Vec3(obs.x, obs.y, obs.z));
+            const geo = new THREE.BoxGeometry(obs.width, obs.height, obs.depth);
+            const mat = createWallMaterial(0x555555);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(obs.x, obs.y, obs.z);
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            mesh.renderOrder = 1;
+            this.scene.add(mesh);
+            this.meshes.push(mesh);
+            this.wallMaterials.push(mat);
+
+            const shape = new CANNON.Box(
+                new CANNON.Vec3(obs.width / 2, obs.height / 2, obs.depth / 2),
+            );
+            const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+            body.addShape(shape);
+            body.position.set(obs.x, obs.y, obs.z);
+            this.physicsWorld.addBody(body);
+            this.bodies.push(body);
         }
     }
 
