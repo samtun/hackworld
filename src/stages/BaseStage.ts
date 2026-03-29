@@ -248,8 +248,8 @@ export abstract class BaseStage {
             const mat = createWallMaterial(0x555555);
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(wall.centerX, wall.centerY, wall.centerZ);
-            mesh.castShadow = true;
-            mesh.receiveShadow = true;
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
             mesh.renderOrder = 1;
             this.scene.add(mesh);
             this.meshes.push(mesh);

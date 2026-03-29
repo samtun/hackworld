@@ -49,26 +49,29 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
             `
             #include <dithering_fragment>
 
+            // Distance from this wall fragment to the player on the XZ plane
+            float distToPlayer = length(vWorldPosition.xz - u_playerPos.xz);
+
+            // Only fade walls that are close to the player (within a radius)
+            float proximityRadius = 5.0;
+            float proximityFactor = 1.0 - smoothstep(0.0, proximityRadius, distToPlayer);
+
             // Direction from camera to player (on XZ plane only)
             vec2 camToPlayer = normalize(u_playerPos.xz - u_cameraPos.xz);
-            // Direction from camera to this wall fragment
-            vec2 camToWall   = normalize(vWorldPosition.xz - u_cameraPos.xz);
 
             // How far along the camera→player line is this fragment?
-            // Project (camera→wall) onto (camera→player) direction
             float wallDist   = dot(vWorldPosition.xz - u_cameraPos.xz, camToPlayer);
             float playerDist = dot(u_playerPos.xz    - u_cameraPos.xz, camToPlayer);
 
             // Lateral offset of the fragment from the camera→player line
-            vec2 lineDir = camToPlayer;
-            vec2 wallOffset = (vWorldPosition.xz - u_cameraPos.xz) - wallDist * lineDir;
+            vec2 wallOffset = (vWorldPosition.xz - u_cameraPos.xz) - wallDist * camToPlayer;
             float lateralDist = length(wallOffset);
 
-            // The wall fragment is "in front of" the player (closer to camera than player)
-            // and close to the camera-player line → should fade
-            float behindFactor = smoothstep(playerDist + 1.0, playerDist - 4.0, wallDist);
+            // The wall fragment must be between the camera and the player
+            // (closer to camera than the player) and close to the camera-player line
+            float behindFactor = smoothstep(playerDist + 1.0, playerDist - 2.0, wallDist);
             float lateralFactor = 1.0 - smoothstep(0.0, 3.0, lateralDist);
-            float fadeMask = behindFactor * lateralFactor;
+            float fadeMask = behindFactor * lateralFactor * proximityFactor;
 
             // --- Tech-styled circuit alpha mask on the transparency edge ---
             // Use world XZ coordinates to create a grid pattern

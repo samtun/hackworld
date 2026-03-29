@@ -601,11 +601,11 @@ export class RoomBasedDungeonGenerator {
         let cx: number, cz: number;
         let corAABB: AABB | null = null;
 
+        // Round room centres first so corridor endpoints align exactly with room edges
         switch (dir) {
             case 'east': {
-                cx = parent.centerX + parent.width / 2 + CORRIDOR_LENGTH + newWidth / 2;
-                cz = parent.centerZ + doorOffset;
-                // Corridor runs east-west
+                cx = Math.round(parent.centerX + parent.width / 2 + CORRIDOR_LENGTH + newWidth / 2);
+                cz = Math.round(parent.centerZ + doorOffset);
                 const corStartX = parent.centerX + parent.width / 2;
                 const corEndX = cx - newWidth / 2;
                 const corCenterZ = parent.centerZ + doorOffset;
@@ -618,8 +618,8 @@ export class RoomBasedDungeonGenerator {
                 break;
             }
             case 'west': {
-                cx = parent.centerX - parent.width / 2 - CORRIDOR_LENGTH - newWidth / 2;
-                cz = parent.centerZ + doorOffset;
+                cx = Math.round(parent.centerX - parent.width / 2 - CORRIDOR_LENGTH - newWidth / 2);
+                cz = Math.round(parent.centerZ + doorOffset);
                 const corStartXW = cx + newWidth / 2;
                 const corEndXW = parent.centerX - parent.width / 2;
                 const corCenterZW = parent.centerZ + doorOffset;
@@ -632,8 +632,8 @@ export class RoomBasedDungeonGenerator {
                 break;
             }
             case 'north': {
-                cz = parent.centerZ + parent.depth / 2 + CORRIDOR_LENGTH + newDepth / 2;
-                cx = parent.centerX + doorOffset;
+                cz = Math.round(parent.centerZ + parent.depth / 2 + CORRIDOR_LENGTH + newDepth / 2);
+                cx = Math.round(parent.centerX + doorOffset);
                 const corStartZN = parent.centerZ + parent.depth / 2;
                 const corEndZN = cz - newDepth / 2;
                 const corCenterXN = parent.centerX + doorOffset;
@@ -646,8 +646,8 @@ export class RoomBasedDungeonGenerator {
                 break;
             }
             case 'south': {
-                cz = parent.centerZ - parent.depth / 2 - CORRIDOR_LENGTH - newDepth / 2;
-                cx = parent.centerX + doorOffset;
+                cz = Math.round(parent.centerZ - parent.depth / 2 - CORRIDOR_LENGTH - newDepth / 2);
+                cx = Math.round(parent.centerX + doorOffset);
                 const corStartZS = cz + newDepth / 2;
                 const corEndZS = parent.centerZ - parent.depth / 2;
                 const corCenterXS = parent.centerX + doorOffset;
@@ -661,7 +661,7 @@ export class RoomBasedDungeonGenerator {
             }
         }
 
-        return { cx: Math.round(cx), cz: Math.round(cz), corAABB };
+        return { cx, cz, corAABB };
     }
 
     // -----------------------------------------------------------------------
