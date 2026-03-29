@@ -16,6 +16,8 @@ export class MovementTest extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
+    private testDrops: WeaponDrop[] = [];
+
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
             id: MovementTest.id,
@@ -30,6 +32,14 @@ export class MovementTest extends BaseStage {
      */
     getRequiredAssets(): string[] {
         return [];
+    }
+
+    clear(): void {
+        for (const drop of this.testDrops) {
+            drop.cleanup(this.scene);
+        }
+        this.testDrops = [];
+        super.clear();
     }
 
     async load(): Promise<void> {
@@ -68,7 +78,7 @@ export class MovementTest extends BaseStage {
 
         // Test weapon drops (unusabe, just for visual testing)
         // Broken
-        new WeaponDrop(
+        this.testDrops.push(new WeaponDrop(
             "aegis_sword_alpha",
             this.scene,
             new CANNON.Vec3(10, 0.5, 10),
@@ -79,10 +89,10 @@ export class MovementTest extends BaseStage {
             50,
             3,
             0.8
-        );
+        ));
 
         // Stable
-        new WeaponDrop(
+        this.testDrops.push(new WeaponDrop(
             "aegis_sword_alpha",
             this.scene,
             new CANNON.Vec3(11, 0.5, 10),
@@ -93,10 +103,10 @@ export class MovementTest extends BaseStage {
             50,
             3,
             1
-        );
+        ));
 
         // Maintained
-        new WeaponDrop(
+        this.testDrops.push(new WeaponDrop(
             "aegis_sword_alpha",
             this.scene,
             new CANNON.Vec3(12, 0.5, 10),
@@ -107,10 +117,10 @@ export class MovementTest extends BaseStage {
             50,
             3,
             1.05
-        );
+        ));
 
         // Overclocked
-        new WeaponDrop(
+        this.testDrops.push(new WeaponDrop(
             "aegis_sword_alpha",
             this.scene,
             new CANNON.Vec3(13, 0.5, 10),
@@ -121,10 +131,10 @@ export class MovementTest extends BaseStage {
             50,
             1,
             1.1
-        );
+        ));
 
         // ZeroDay
-        new WeaponDrop(
+        this.testDrops.push(new WeaponDrop(
             "aegis_sword_alpha",
             this.scene,
             new CANNON.Vec3(14, 0.5, 10),
@@ -135,10 +145,10 @@ export class MovementTest extends BaseStage {
             50,
             1,
             1.15
-        );
+        ));
 
         // Leet
-        new WeaponDrop(
+        this.testDrops.push(new WeaponDrop(
             "aegis_sword_alpha",
             this.scene,
             new CANNON.Vec3(15, 0.5, 10),
@@ -149,6 +159,6 @@ export class MovementTest extends BaseStage {
             50,
             1,
             1.2
-        );
+        ));
     }
 }
