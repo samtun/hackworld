@@ -67,16 +67,16 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
             // The wall fragment is "in front of" the player (closer to camera than player)
             // and close to the camera-player line → should fade
             float behindFactor = smoothstep(playerDist + 1.0, playerDist - 4.0, wallDist);
-            float lateralFactor = 1.0 - smoothstep(0.0, 5.0, lateralDist);
+            float lateralFactor = 1.0 - smoothstep(0.0, 3.0, lateralDist);
             float fadeMask = behindFactor * lateralFactor;
 
             // --- Tech-styled circuit alpha mask on the transparency edge ---
             // Use world XZ coordinates to create a grid pattern
             vec2 gridPos = vWorldPosition.xz * 2.0;
-            float gridX = abs(fract(gridPos.x) - 0.5);
-            float gridZ = abs(fract(gridPos.y) - 0.5);
+            float gridX = abs(fract(gridPos.x) - 0.4);
+            float gridZ = abs(fract(gridPos.y) - 0.4);
             // Circuit-like line pattern: horizontal and vertical lines
-            float lineW = 0.42;
+            float lineW = 0.1;
             float circuitH = step(lineW, gridX);
             float circuitV = step(lineW, gridZ);
             // Combine into a grid where lines are visible
