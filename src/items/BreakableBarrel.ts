@@ -90,11 +90,11 @@ export class BreakableBarrel implements Breakable {
         this.mesh.receiveShadow = true;
         scene.add(this.mesh);
 
-        // Physics body for collision detection (weapon/skill hits) and blocking movement.
-        // Body is DYNAMIC with a small mass so it participates in trigger collisions
-        // with the weapon hitbox (cannon-es skips static-static broadphase pairs,
-        // and some configurations skip static-kinematic pairs too).
-        // High damping and fixedRotation keep it from moving.
+        // Physics body for collision detection and blocking movement.
+        // Body is STATIC (mass 0) so it never moves or falls through the ground.
+        // Weapon hits are detected via manual distance checks in Player.update()
+        // because cannon-es broadphase skips static-static pairs (weapon trigger
+        // is also static).
         const physShape = new CANNON.Cylinder(
             BreakableBarrel.MID_RADIUS,
             BreakableBarrel.MID_RADIUS,
@@ -102,11 +102,8 @@ export class BreakableBarrel implements Breakable {
             BreakableBarrel.RADIAL_SEGMENTS,
         );
         this.body = new CANNON.Body({
-            mass: 0.001,
+            mass: 0,
             material: physicsMaterial,
-            fixedRotation: true,
-            linearDamping: 1,
-            angularDamping: 1,
         });
         this.body.addShape(physShape);
         this.body.position.set(position.x, position.y + BreakableBarrel.COLLIDER_HEIGHT / 2, position.z);

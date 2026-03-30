@@ -938,6 +938,30 @@ export class Player extends BaseMesh {
 
         // Weapon update & hit checks
         this.weapon.update(dt);
+
+        // Manual breakable detection during weapon attacks.
+        // Cannon-es broadphase skips static-static pairs, so the weapon
+        // trigger body (static) cannot detect static barrel bodies via
+        // physics events. Instead, check distance from the weapon hitbox
+        // to all breakable entities each frame while attacking.
+        if (this.weapon.isAttacking && this.weapon.body) {
+            const weaponPos = this.weapon.body.position;
+            const weaponShape = this.weapon.body.shapes[0] as CANNON.Cylinder;
+            const weaponRadius = weaponShape ? weaponShape.radiusTop : 0.5;
+
+            for (const body of this.body.world!.bodies) {
+                const entity = (body as any).entity;
+                if (isBreakable(entity) && !entity.isDestroyed) {
+                    const dx = body.position.x - weaponPos.x;
+                    const dy = body.position.y - weaponPos.y;
+                    const dz = body.position.z - weaponPos.z;
+                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    if (dist <= weaponRadius + 0.5) {
+                        this.handleBreakableHit(entity);
+                    }
+                }
+            }
+        }
     }
 
     private startBlock(): void {

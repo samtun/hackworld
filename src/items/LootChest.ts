@@ -171,8 +171,9 @@ export class LootChest {
 
     /** Visually open the lid by rotating it back ~100 degrees around the back hinge. */
     private showOpenedLid(): void {
-        // Positive X rotation swings the lid upward and backward from the back-edge pivot
-        this.lidMesh.rotation.x = 100 * (Math.PI / 180);
+        // Negative X rotation swings the lid upward and backward from the back-edge pivot,
+        // keeping it above the base geometry.
+        this.lidMesh.rotation.x = -100 * (Math.PI / 180);
         // Darken the base slightly to indicate opened state
         (this.baseMesh.material as THREE.MeshStandardMaterial).color.setHex(0x8B6914);
     }
