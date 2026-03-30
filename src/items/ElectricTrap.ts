@@ -18,7 +18,7 @@ export interface ElectricTrapConfig {
     damage: number;
     /**
      * Activation pattern as an array of millisecond durations.
-     * Odd indices (0, 2, 4…) are *active* durations, even indices (1, 3, 5…)
+     * Even indices (0, 2, 4…) are *active* durations, odd indices (1, 3, 5…)
      * are *pause* durations.  The pattern repeats when the end is reached.
      * An empty array means the trap is **always active**.
      */

@@ -1240,8 +1240,8 @@ export class RoomBasedDungeonGenerator {
                 traps.push({
                     x: pos.x,
                     z: pos.z,
-                    width: Math.round(w),
-                    length: Math.round(l),
+                    width: w,
+                    length: l,
                     damage: tc.damage,
                     activationInterval: pattern,
                 });
