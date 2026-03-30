@@ -13,6 +13,12 @@ import { createWallMaterial, createObstacleMaterial, createFloorMaterial, update
 import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
 
 /**
+ * Tiny Y offset applied to north/south walls (those running along X) to
+ * prevent z-fighting where they overlap east/west walls at room corners.
+ */
+const NS_WALL_Y_OFFSET = 0.01;
+
+/**
  * Base class for all dungeon stages
  * Each dungeon stage should extend this and implement the load() method
  */
@@ -71,6 +77,9 @@ export abstract class BaseStage {
      * Uniforms are updated each frame so walls fade when the player is behind them.
      */
     protected wallMaterials: THREE.MeshStandardMaterial[] = [];
+
+    /** Accumulated wall/obstacle shader time (seconds). */
+    private shaderTime = 0;
 
     constructor(
         scene: THREE.Scene,
@@ -267,7 +276,11 @@ export abstract class BaseStage {
             const geo = new THREE.BoxGeometry(wall.width, wall.height, wall.depth);
             const mat = createWallMaterial(0x555555, wall.width, wall.height, wall.depth);
             const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(wall.centerX, wall.centerY, wall.centerZ);
+            // N/S walls (running along X) get a tiny Y offset to avoid
+            // z-fighting where they overlap with E/W walls at corners.
+            const isNorthSouth = wall.width > wall.depth;
+            const yOffset = isNorthSouth ? NS_WALL_Y_OFFSET : 0;
+            mesh.position.set(wall.centerX, wall.centerY + yOffset, wall.centerZ);
             mesh.castShadow = false;
             mesh.receiveShadow = false;
             mesh.renderOrder = 1;
@@ -280,7 +293,7 @@ export abstract class BaseStage {
             );
             const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
             body.addShape(shape);
-            body.position.set(wall.centerX, wall.centerY, wall.centerZ);
+            body.position.set(wall.centerX, wall.centerY + yOffset, wall.centerZ);
             this.physicsWorld.addBody(body);
             this.bodies.push(body);
         }
@@ -405,7 +418,8 @@ export abstract class BaseStage {
 
             // Update wall transparency shader with player and camera positions
             if (cameraPosition && this.wallMaterials.length > 0) {
-                updateWallUniforms(this.wallMaterials, player.position, cameraPosition);
+                this.shaderTime += dt;
+                updateWallUniforms(this.wallMaterials, player.position, cameraPosition, this.shaderTime);
             }
         }
     }

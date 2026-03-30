@@ -289,6 +289,7 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
         shader.uniforms.u_playerPos = { value: new THREE.Vector3() };
         shader.uniforms.u_cameraPos = { value: new THREE.Vector3() };
         shader.uniforms.u_obstacleHeight = { value: height };
+        shader.uniforms.u_time = { value: 0.0 };
 
         // ---- vertex ----
         shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + VERTEX_WORLD_NORMAL_PREAMBLE + VERTEX_LOCAL_POS_PREAMBLE + shader.vertexShader;
@@ -302,6 +303,7 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
             uniform vec3 u_playerPos;
             uniform vec3 u_cameraPos;
             uniform float u_obstacleHeight;
+            uniform float u_time;
             varying vec3 vWorldPosition;
             varying vec3 vWorldNormal;
             varying vec3 vLocalPosition;
@@ -352,8 +354,8 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
                 float obsSB = smoothstep(0.0, obsW, blkFrac.y) * smoothstep(0.0, obsW, 1.0 - blkFrac.y);
                 float obsSeam = obsSA * obsSB;
 
-                // Irregular rectangular components with varying sizes
-                vec2 cmpScaled = sideUV * vec2(3.5, 4.5);
+                // Irregular rectangular components with varying sizes (scroll upward slowly)
+                vec2 cmpScaled = sideUV * vec2(3.5, 4.5) + vec2(0.0, u_time * 0.05);
                 vec2 cmpFrac = fract(cmpScaled);
                 vec2 cmpId = floor(cmpScaled);
                 float cmpHash = shaderHash(cmpId + sideSeed * 41.0);
@@ -482,12 +484,16 @@ export function updateWallUniforms(
     materials: THREE.MeshStandardMaterial[],
     playerPos: THREE.Vector3,
     cameraPos: THREE.Vector3,
+    time: number = 0,
 ): void {
     for (const mat of materials) {
         const shader = wallShaderMap.get(mat);
         if (shader) {
             shader.uniforms.u_playerPos.value.copy(playerPos);
             shader.uniforms.u_cameraPos.value.copy(cameraPos);
+            if (shader.uniforms.u_time) {
+                shader.uniforms.u_time.value = time;
+            }
         }
     }
 }
