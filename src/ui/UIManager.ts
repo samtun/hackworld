@@ -523,6 +523,15 @@ export class UIManager {
     ): void {
         this.startScreenTapped = false;
 
+        // The touch handler that advances past the "Press START" screen is no longer
+        // needed once the menu is visible.  Keeping it would call preventDefault() on
+        // every touchstart inside the start screen, which blocks the browser from
+        // synthesising click events and breaks menu-item taps on mobile.
+        if (this.startScreen && this.startScreenTapHandler) {
+            this.startScreen.removeEventListener('touchstart', this.startScreenTapHandler);
+            this.startScreenTapHandler = undefined;
+        }
+
         const startText = this.startScreen?.querySelector('#start-text') as HTMLElement | null;
         if (startText) startText.style.opacity = '0';
 
