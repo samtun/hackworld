@@ -135,16 +135,18 @@ export class BreakableBarrel implements Breakable {
             this.body.position.z,
         );
 
-        // Equal chance for each eligible drop type: weapon, chip, core, money
-        const roll = Math.random();
-        if (roll < 0.30) {
+        // Determine item to drop, or drop nothing
+        const roll = Math.random() - player.luckDropChanceBonus;
+        if (roll < 0.08) {
             return this.generateWeaponDrop(scene, player, dropPosition);
-        } else if (roll < 0.55) {
+        } else if (roll < 0.16) {
             return this.generateChipDrop(scene, player, dropPosition);
-        } else if (roll < 0.80) {
+        } else if (roll < 0.24) {
             return this.generateCoreDrop(scene, player, dropPosition);
-        } else {
+        } else if (roll < 0.40){
             return this.generateMoneyDrop(scene, player, dropPosition);
+        } else {
+            return null;
         }
     }
 
