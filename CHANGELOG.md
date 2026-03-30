@@ -1,3 +1,23 @@
+# [1.57.0](https://github.com/samtun/hackworld/compare/v1.56.2...v1.57.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* align wall panel seams with geometry edges, add obstacle brightness gradient ([64526a1](https://github.com/samtun/hackworld/commit/64526a19e1f95598d3a4d38328c7cf93cb103c1d))
+* align wall seams with geometry edges, limit obstacle fade to 1m, add procedural normal maps ([673298a](https://github.com/samtun/hackworld/commit/673298afd4b8162ad8ace49cac30c34fa2761b07))
+* ensure obstacle components always scroll upward in world space ([37d1b8c](https://github.com/samtun/hackworld/commit/37d1b8c5c22ab7a5fee513282fbff8a881a0c20d))
+* offset N/S walls to prevent z-fighting, add obstacle component scroll animation ([5c23478](https://github.com/samtun/hackworld/commit/5c234786849c77b1386b67c27c0cd138403e44a3))
+* reduce procedural bump normal intensity to prevent oversharpening ([adb1f88](https://github.com/samtun/hackworld/commit/adb1f882e6faaec104cab97296cdb5915d034b28))
+* remove procedural bump normals from all shaders and fix wall z-fighting ([2577293](https://github.com/samtun/hackworld/commit/257729341ad993cb860d952376ca72a1863b2e7e))
+* use tri-planar projection for walls/obstacles, per-stage floor colors, dark obstacle tops ([968182e](https://github.com/samtun/hackworld/commit/968182ebc90757ab676081eb5112c43e32e73486))
+
+
+### Features
+
+* add procedural shaders for stage walls, floor, and obstacles ([838aea9](https://github.com/samtun/hackworld/commit/838aea9d37b1d6f2d8f1eec081e99ce79eda0a26))
+* enhance wall shader with FBM grain, scratches, brush marks, and smudges ([b9f223c](https://github.com/samtun/hackworld/commit/b9f223c4cfdb28cef1e5f52b86c49a9de79b0739))
+* speed up obstacle shader movement ([5192710](https://github.com/samtun/hackworld/commit/5192710f8423ec7a69d5e032aab687b46d07359b))
+
 ## [1.56.2](https://github.com/samtun/hackworld/compare/v1.56.1...v1.56.2) (2026-03-30)
 
 
