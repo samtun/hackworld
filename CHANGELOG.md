@@ -1,3 +1,10 @@
+## [1.56.1](https://github.com/samtun/hackworld/compare/v1.56.0...v1.56.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* reset effectTimer in AreaAttackSkill execute and clamp LaserBeamSkill range ([63715e5](https://github.com/samtun/hackworld/commit/63715e5d4c6ad004eadeaabfd21675c59f20eee5))
+
 # [1.56.0](https://github.com/samtun/hackworld/compare/v1.55.1...v1.56.0) (2026-03-30)
 
 
