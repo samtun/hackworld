@@ -1,3 +1,10 @@
+## [1.56.2](https://github.com/samtun/hackworld/compare/v1.56.1...v1.56.2) (2026-03-30)
+
+
+### Bug Fixes
+
+* main menu does not work on mobile ([c45c7a0](https://github.com/samtun/hackworld/commit/c45c7a024ef4fcf56cb2f6e7b7342c1a29577a3b))
+
 ## [1.56.1](https://github.com/samtun/hackworld/compare/v1.56.0...v1.56.1) (2026-03-30)
 
 
