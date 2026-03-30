@@ -8,6 +8,9 @@ import { Teleporter } from '../Teleporter';
 import { Player } from '../Player';
 import { Npc } from '../npcs/Npc';
 import { BossEnemy } from '../enemies/BossEnemy';
+import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
+import { createWallMaterial, updateWallUniforms } from '../WallShaderUtils';
+import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
 
 /**
  * Base class for all dungeon stages
@@ -36,6 +39,38 @@ export abstract class BaseStage {
     enemies: Enemy[] = [];
     mixers: THREE.AnimationMixer[] = [];
     npcs: Set<Npc> = new Set<Npc>();
+
+    /**
+     * Room definitions set by procedural stages.
+     * When non-empty, BaseStage automatically manages per-room enemy aggro
+     * and activates the teleporter once all enemies are defeated.
+     */
+    protected dungeonRooms: DungeonRoom[] = [];
+
+    /**
+     * Maps room id → enemies that belong to that room.
+     * Populated by {@link spawnEnemiesFromLayout}.
+     */
+    protected roomEnemyMap: Map<number, Enemy[]> = new Map();
+
+    /**
+     * Total number of enemies spawned for this stage load.
+     * Used by {@link checkTeleporterActivation} to detect the moment all
+     * enemies have been killed and cleaned up (enemies array becomes empty).
+     */
+    private totalEnemiesSpawned = 0;
+
+    /**
+     * Navigation grid built from the dungeon layout.
+     * Passed to each enemy so they can pathfind around walls and obstacles.
+     */
+    protected navGrid: DungeonNavGrid | null = null;
+
+    /**
+     * Wall materials using the transparency shader.
+     * Uniforms are updated each frame so walls fade when the player is behind them.
+     */
+    protected wallMaterials: THREE.MeshStandardMaterial[] = [];
 
     constructor(
         scene: THREE.Scene,
@@ -78,6 +113,18 @@ export abstract class BaseStage {
      */
     clear(): void {
         this.scene.environment = null;
+
+        // Reset room-tracking state
+        this.dungeonRooms = [];
+        this.roomEnemyMap.clear();
+        this.totalEnemiesSpawned = 0;
+        this.navGrid = null;
+
+        // Dispose wall shader materials before clearing the array
+        for (const mat of this.wallMaterials) {
+            mat.dispose();
+        }
+        this.wallMaterials = [];
 
         // Stop and remove mixers
         for (const mixer of this.mixers) {
@@ -166,17 +213,147 @@ export abstract class BaseStage {
 
     /**
      * Create teleporter
+     * @param startActive When false the teleporter starts invisible and
+     *                    non-interactive until {@link Teleporter.activate} is called.
      */
-    protected createTeleporter(position: CANNON.Vec3, destination: string): void {
+    protected createTeleporter(position: CANNON.Vec3, destination: string, startActive: boolean = true): void {
         this.teleporter = new Teleporter(
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,
             position,
-            destination
+            destination,
+            startActive
         );
         // Add teleporter to npcs set so it's handled like any other NPC
         this.npcs.add(this.teleporter);
+    }
+
+    /**
+     * Build scene meshes and physics bodies for all obstacles in the layout.
+     * Obstacles use the same transparency shader as walls so they fade when
+     * the player is behind them relative to the camera.
+     */
+    protected buildObstaclesFromLayout(layout: DungeonLayout): void {
+        for (const obs of layout.obstacles) {
+            const geo = new THREE.BoxGeometry(obs.width, obs.height, obs.depth);
+            const mat = createWallMaterial(0x555555);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(obs.x, obs.y, obs.z);
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            mesh.renderOrder = 1;
+            this.scene.add(mesh);
+            this.meshes.push(mesh);
+            this.wallMaterials.push(mat);
+
+            const shape = new CANNON.Box(
+                new CANNON.Vec3(obs.width / 2, obs.height / 2, obs.depth / 2),
+            );
+            const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+            body.addShape(shape);
+            body.position.set(obs.x, obs.y, obs.z);
+            this.physicsWorld.addBody(body);
+            this.bodies.push(body);
+        }
+    }
+
+    /**
+     * Build wall meshes and physics bodies from the layout, using the
+     * transparency shader that fades walls when the player is behind them.
+     */
+    protected buildWallsFromLayout(layout: DungeonLayout): void {
+        for (const wall of layout.walls) {
+            const geo = new THREE.BoxGeometry(wall.width, wall.height, wall.depth);
+            const mat = createWallMaterial(0x555555);
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(wall.centerX, wall.centerY, wall.centerZ);
+            mesh.castShadow = false;
+            mesh.receiveShadow = false;
+            mesh.renderOrder = 1;
+            this.scene.add(mesh);
+            this.meshes.push(mesh);
+            this.wallMaterials.push(mat);
+
+            const shape = new CANNON.Box(
+                new CANNON.Vec3(wall.width / 2, wall.height / 2, wall.depth / 2),
+            );
+            const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+            body.addShape(shape);
+            body.position.set(wall.centerX, wall.centerY, wall.centerZ);
+            this.physicsWorld.addBody(body);
+            this.bodies.push(body);
+        }
+    }
+
+    /**
+     * Build individual floor segments for each room and corridor so the floor
+     * only appears underneath walkable areas.
+     */
+    protected buildFloorFromLayout(layout: DungeonLayout, color: number = 0x222222): void {
+        const floorMat = new THREE.MeshStandardMaterial({ color, side: THREE.FrontSide });
+
+        for (const room of layout.rooms) {
+            const geo = new THREE.PlaneGeometry(room.width, room.depth);
+            geo.rotateX(-Math.PI / 2);
+            const mesh = new THREE.Mesh(geo, floorMat);
+            mesh.position.set(room.centerX, 0, room.centerZ);
+            mesh.receiveShadow = true;
+            this.scene.add(mesh);
+            this.meshes.push(mesh);
+        }
+
+        for (const cor of layout.corridors) {
+            const geo = new THREE.PlaneGeometry(cor.width, cor.depth);
+            geo.rotateX(-Math.PI / 2);
+            const mesh = new THREE.Mesh(geo, floorMat);
+            mesh.position.set(cor.centerX, 0, cor.centerZ);
+            mesh.receiveShadow = true;
+            this.scene.add(mesh);
+            this.meshes.push(mesh);
+        }
+    }
+
+    /**
+     * Spawn all enemies defined by a procedural dungeon layout and register
+     * them with their corresponding room so that room-based aggro can be applied.
+     * Enemies start with {@link Enemy.aggroEnabled} = false and are enabled
+     * individually when the player enters their room.
+     *
+     * A {@link DungeonNavGrid} is built from the layout so enemies can pathfind
+     * around walls and obstacles instead of walking in a straight line.
+     */
+    protected spawnEnemiesFromLayout(layout: DungeonLayout): void {
+        // Build the navigation grid once for the entire stage
+        this.navGrid = new DungeonNavGrid(layout);
+
+        for (const roomSpawns of layout.roomSpawns) {
+            const roomEnemies: Enemy[] = [];
+
+            for (const spawn of roomSpawns.spawns) {
+                const pos = new CANNON.Vec3(spawn.x, spawn.y, spawn.z);
+                const countBefore = this.enemies.length;
+
+                if (spawn.type === 'regular') {
+                    this.spawnEnemy(pos);
+                } else if (spawn.type === 'large') {
+                    this.spawnLargeEnemy(pos);
+                } else if (spawn.type === 'boss') {
+                    this.spawnBoss(pos);
+                }
+
+                // Verify the spawn added an enemy before accessing it
+                if (this.enemies.length > countBefore) {
+                    const enemy = this.enemies[this.enemies.length - 1];
+                    enemy.aggroEnabled = false;
+                    enemy.navGrid = this.navGrid;
+                    roomEnemies.push(enemy);
+                    this.totalEnemiesSpawned++;
+                }
+            }
+
+            this.roomEnemyMap.set(roomSpawns.roomId, roomEnemies);
+        }
     }
 
     /**
@@ -204,9 +381,11 @@ export abstract class BaseStage {
     }
 
     /**
-     * Update teleporter particles
+     * Update teleporter particles, NPC animations, mixers, and – when a
+     * procedural room layout is active – room-based enemy aggro, automatic
+     * teleporter activation, and wall transparency shader uniforms.
      */
-    update(dt: number, _player: Player, _anyMenuOpen: boolean): void {
+    update(dt: number, player: Player, _anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
         if (this.teleporter) {
             this.teleporter.update(dt);
         }
@@ -218,6 +397,56 @@ export abstract class BaseStage {
 
         for (const mixer of this.mixers) {
             mixer.update(dt);
+        }
+
+        if (this.dungeonRooms.length > 0) {
+            this.updateRoomAggro(player);
+            this.checkTeleporterActivation();
+
+            // Update wall transparency shader with player and camera positions
+            if (cameraPosition && this.wallMaterials.length > 0) {
+                updateWallUniforms(this.wallMaterials, player.position, cameraPosition);
+            }
+        }
+    }
+
+    /**
+     * Enable aggro for every enemy in the room that the player is currently
+     * standing in.  Once enabled, aggro is never revoked so enemies continue
+     * chasing even if the player retreats.
+     */
+    private updateRoomAggro(player: Player): void {
+        const px = player.body.position.x;
+        const pz = player.body.position.z;
+
+        for (const room of this.dungeonRooms) {
+            const inRoom =
+                Math.abs(px - room.centerX) <= room.width / 2 &&
+                Math.abs(pz - room.centerZ) <= room.depth / 2;
+
+            if (!inRoom) continue;
+
+            const roomEnemies = this.roomEnemyMap.get(room.id) ?? [];
+            for (const enemy of roomEnemies) {
+                if (!enemy.aggroEnabled) {
+                    enemy.aggroEnabled = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * Activate the teleporter once every enemy in the stage has been defeated.
+     *
+     * World.ts removes dead enemies from `stage.enemies` after cleanup, so the
+     * correct signal is `enemies.length === 0` combined with a guard that
+     * confirms at least one enemy was spawned (to avoid activating on empty stages).
+     */
+    private checkTeleporterActivation(): void {
+        if (!this.teleporter || this.teleporter.isActive) return;
+        if (this.totalEnemiesSpawned === 0) return;
+        if (this.enemies.length === 0) {
+            this.teleporter.activate();
         }
     }
 }

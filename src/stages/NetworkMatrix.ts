@@ -1,7 +1,8 @@
 import * as CANNON from 'cannon-es';
-import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
+import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
+import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 
 export class NetworkMatrix extends BaseStage {
     private static id: string = "networkMatrix";
@@ -13,6 +14,15 @@ export class NetworkMatrix extends BaseStage {
     description = NetworkMatrix.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
+
+    private static readonly generationConfig: RoomGenerationConfig = {
+        combatRoomCount: { min: 2, max: 4 },
+        combatRoomSize: { minWidth: 13, maxWidth: 20, minDepth: 13, maxDepth: 20 },
+        finalRoomSize: { minWidth: 16, maxWidth: 24, minDepth: 16, maxDepth: 24 },
+        enemyCount: { min: 2, max: 6, areaPerEnemy: 60, largeFraction: 0.25 },
+        obstacleCount: { min: 1, max: 2 },
+        hasBoss: false,
+    };
 
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
@@ -37,27 +47,28 @@ export class NetworkMatrix extends BaseStage {
         await this.loadEnvironmentMap();
         this.createFloorCollider();
 
-        const geo = new THREE.PlaneGeometry(50, 50);
-        geo.rotateX(-Math.PI / 2);
-        const mat = new THREE.MeshStandardMaterial({ color: 0x222222, side: THREE.FrontSide });
-        const floorPlane = new THREE.Mesh(geo, mat);
-        this.scene.add(floorPlane);
-        this.meshes.push(floorPlane);
-        
-        // Teleporter back to Lobby
-        this.createTeleporter(new CANNON.Vec3(-10, 0, -10), Lobby.getMetadata().id);
+        // Generate room-based procedural layout
+        const generator = new RoomBasedDungeonGenerator();
+        const layout = generator.generate(NetworkMatrix.generationConfig);
 
-        // Dungeon Obstacles
-        this.createBox(4, 1, 4, new CANNON.Vec3(5, 0.5, 5));
-        this.createBox(1, 4, 1, new CANNON.Vec3(-5, 2, 5));
+        // Update spawn position from generated layout
+        this.spawnPosition.set(layout.spawnPosition.x, 0.4, layout.spawnPosition.z);
 
-        // Spawn Enemies
-        this.spawnEnemy(new CANNON.Vec3(5, 0.5, -5));
-        this.spawnEnemy(new CANNON.Vec3(-5, 0.5, -5));
-        this.spawnEnemy(new CANNON.Vec3(8, 0.5, 8));
+        // Register rooms for per-room enemy aggro and teleporter activation
+        this.dungeonRooms = layout.rooms;
 
-        // Spawn Large Enemies
-        this.spawnLargeEnemy(new CANNON.Vec3(0, 1, 10));
-        this.spawnLargeEnemy(new CANNON.Vec3(10, 1, 0));
+        // Floor segments for each room and corridor
+        this.buildFloorFromLayout(layout);
+
+        // Build walls (with transparency shader) and obstacles
+        this.buildWallsFromLayout(layout);
+        this.buildObstaclesFromLayout(layout);
+
+        // Teleporter in the final room – starts inactive until all enemies are defeated
+        const tp = layout.teleporterPosition;
+        this.createTeleporter(new CANNON.Vec3(tp.x, 0, tp.z), Lobby.getMetadata().id, false);
+
+        // Spawn enemies with room assignments so aggro is room-gated
+        this.spawnEnemiesFromLayout(layout);
     }
 }

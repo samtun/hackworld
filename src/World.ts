@@ -303,7 +303,7 @@ export class World {
         this.gridPlaneMaterial.uniforms.u_cameraPosition.value.copy(cameraPosition);
 
         // Update stage (teleporters, etc.)
-        this.currentStage.update(dt, player, anyMenuOpen);
+        this.currentStage.update(dt, player, anyMenuOpen, cameraPosition);
 
         if (anyMenuOpen) {
             // If any menu is open, skip enemy and drop updates to pause the world
