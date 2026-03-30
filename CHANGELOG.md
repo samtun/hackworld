@@ -1,3 +1,19 @@
+# [1.62.0](https://github.com/samtun/hackworld/compare/v1.61.0...v1.62.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* address code review feedback for electric traps ([488bb68](https://github.com/samtun/hackworld/commit/488bb68d91dbdb008e113f9bd9cacfd512a63f23))
+* improve electric trap shader visibility and texture tiling ([3b74788](https://github.com/samtun/hackworld/commit/3b747887bac3c01d865aade4da8f80a08df4ac98)), closes [#DDDDDD](https://github.com/samtun/hackworld/issues/DDDDDD)
+* make particles visible ([5ddb02a](https://github.com/samtun/hackworld/commit/5ddb02a3898d7496727911e7088549e59e827310))
+* prevent enemies and barrels from spawning on trap positions ([959fb30](https://github.com/samtun/hackworld/commit/959fb30c5fcf281c1914cffd02b83dbe0bcb95df))
+
+
+### Features
+
+* add electric traps to dungeon stages ([ace163b](https://github.com/samtun/hackworld/commit/ace163b371503449bead56fc21c2b2ef949bd03d))
+* improve trap visibility ([d112831](https://github.com/samtun/hackworld/commit/d1128319580c20589678ac2d5b51bc2c47c23e8f))
+
 # [1.61.0](https://github.com/samtun/hackworld/compare/v1.60.0...v1.61.0) (2026-03-30)
 
 
