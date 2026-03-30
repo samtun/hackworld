@@ -265,7 +265,7 @@ export abstract class BaseStage {
     protected buildWallsFromLayout(layout: DungeonLayout): void {
         for (const wall of layout.walls) {
             const geo = new THREE.BoxGeometry(wall.width, wall.height, wall.depth);
-            const mat = createWallMaterial(0x555555);
+            const mat = createWallMaterial(0x555555, wall.width, wall.height, wall.depth);
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(wall.centerX, wall.centerY, wall.centerZ);
             mesh.castShadow = false;

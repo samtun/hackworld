@@ -142,7 +142,12 @@ gl_FragColor.a *= finalAlpha;
  * surface irregularities.  Becomes transparent when the player is between the
  * wall and the camera.
  */
-export function createWallMaterial(color: number = 0x555555): THREE.MeshStandardMaterial {
+export function createWallMaterial(
+    color: number = 0x555555,
+    width: number = 1,
+    height: number = 2,
+    depth: number = 0.5,
+): THREE.MeshStandardMaterial {
     const material = new THREE.MeshStandardMaterial({
         color,
         transparent: true,
@@ -153,6 +158,7 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
     material.onBeforeCompile = (shader) => {
         shader.uniforms.u_playerPos = { value: new THREE.Vector3() };
         shader.uniforms.u_cameraPos = { value: new THREE.Vector3() };
+        shader.uniforms.u_halfSize = { value: new THREE.Vector3(width / 2, height / 2, depth / 2) };
 
         // ---- vertex ----
         shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + VERTEX_WORLD_NORMAL_PREAMBLE + VERTEX_LOCAL_POS_PREAMBLE + shader.vertexShader;
@@ -165,6 +171,7 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
         shader.fragmentShader = `
             uniform vec3 u_playerPos;
             uniform vec3 u_cameraPos;
+            uniform vec3 u_halfSize;
             varying vec3 vWorldPosition;
             varying vec3 vWorldNormal;
             varying vec3 vLocalPosition;
@@ -174,27 +181,27 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
             ${shader.fragmentShader}
         `;
 
-        // Metal panel pattern using tri-planar projection with object-space
-        // UVs so panel seams align with geometry edges, not world-grid lines.
+        // Metal panel pattern with edge-aligned seams using shifted local coords
         shader.fragmentShader = shader.fragmentShader.replace(
             '#include <color_fragment>',
             `
             #include <color_fragment>
 
-            // Tri-planar projection: pick the two axes perpendicular to the
-            // dominant normal. Use local (object-space) position for the panel
-            // grid so seams align with geometry edges.
+            // Shift local position so UV grid starts at geometry edge
+            vec3 localShifted = vLocalPosition + u_halfSize;
+
+            // Tri-planar projection using shifted local coords for edge-aligned panels
             vec3 wallAbsN = abs(vWorldNormal);
             vec2 panelUV;
             float panelSeed;
             if (wallAbsN.x >= wallAbsN.y && wallAbsN.x >= wallAbsN.z) {
-                panelUV = vLocalPosition.yz;
+                panelUV = localShifted.yz;
                 panelSeed = floor(vWorldPosition.x * 0.5);
             } else if (wallAbsN.y >= wallAbsN.z) {
-                panelUV = vLocalPosition.xz;
+                panelUV = localShifted.xz;
                 panelSeed = floor(vWorldPosition.y * 0.5);
             } else {
-                panelUV = vLocalPosition.xy;
+                panelUV = localShifted.xy;
                 panelSeed = floor(vWorldPosition.z * 0.5);
             }
 
@@ -240,8 +247,33 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
             // Darken near seams for welded/sealed edge look
             float edgeDarken = (1.0 - seam) * 0.12;
 
+            // Bump height for procedural normal perturbation
+            float wallBumpHeight = grain + brush - scratches * 2.0 - smudge + (seam - 1.0) * 0.5;
+
             diffuseColor.rgb *= mix(0.65, 1.0, seam);
             diffuseColor.rgb += panelVar + grain + brush - scratches - smudge - edgeDarken;
+            `,
+        );
+
+        // Procedural bump normal from metal detail
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <normal_fragment_maps>',
+            `
+            #include <normal_fragment_maps>
+            {
+                float wBumpScale = 0.25;
+                vec3 wDpx = dFdx(vWorldPosition);
+                vec3 wDpy = dFdy(vWorldPosition);
+                float wDhx = dFdx(wallBumpHeight) * wBumpScale;
+                float wDhy = dFdy(wallBumpHeight) * wBumpScale;
+                vec3 wN = normalize(vWorldNormal);
+                vec3 wR1 = cross(wDpy, wN);
+                vec3 wR2 = cross(wN, wDpx);
+                float wDet = dot(wDpx, wR1);
+                vec3 wGrad = sign(wDet) * (wDhx * wR1 + wDhy * wR2);
+                vec3 wPertNorm = normalize(abs(wDet) * wN - wGrad);
+                normal = normalize(mat3(viewMatrix) * wPertNorm);
+            }
             `,
         );
 
@@ -307,19 +339,18 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
 
             vec3 obsAbsN = abs(vWorldNormal);
             bool isTopFace = obsAbsN.y > 0.5;
+            float obsBumpHeight = 0.0;
 
             if (isTopFace) {
                 // Dark flat surface on top
                 diffuseColor.rgb *= 0.5;
             } else {
-                // Height-based brightness gradient on side faces:
-                // 100% at the top edge, fading to 20% at the ground level
-                // with increasing fade strength toward the bottom (quadratic).
-                float heightFrac = clamp(
-                    (vLocalPosition.y + u_obstacleHeight * 0.5) / u_obstacleHeight,
-                    0.0, 1.0
-                );
-                float sideBrightness = mix(0.2, 1.0, heightFrac * heightFrac);
+                // Height-based brightness gradient: only fade in the last 1m
+                // above ground, leaving the rest at full brightness.
+                float heightAboveGround = vLocalPosition.y + u_obstacleHeight * 0.5;
+                float fadeZone = 1.0;
+                float fadeFrac = clamp(heightAboveGround / fadeZone, 0.0, 1.0);
+                float sideBrightness = mix(0.2, 1.0, fadeFrac * fadeFrac);
 
                 // Tri-planar side UV
                 vec2 sideUV;
@@ -363,9 +394,33 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
                 float lnV = step(0.5 - lnW, lnFrac.y) * step(lnFrac.y, 0.5 + lnW);
                 float linePattern = max(lnH, lnV);
 
+                obsBumpHeight = (obsSeam - 1.0) * 0.5 + cmpRect * 0.15 + linePattern * 0.08 + blkShade;
+
                 diffuseColor.rgb *= mix(0.7, 1.0, obsSeam);
                 diffuseColor.rgb += blkShade + cmpRect * 0.1 + linePattern * 0.06;
                 diffuseColor.rgb *= sideBrightness;
+            }
+            `,
+        );
+
+        // Procedural bump normal from obstacle detail
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <normal_fragment_maps>',
+            `
+            #include <normal_fragment_maps>
+            {
+                float oBumpScale = 0.2;
+                vec3 oDpx = dFdx(vWorldPosition);
+                vec3 oDpy = dFdy(vWorldPosition);
+                float oDhx = dFdx(obsBumpHeight) * oBumpScale;
+                float oDhy = dFdy(obsBumpHeight) * oBumpScale;
+                vec3 oN = normalize(vWorldNormal);
+                vec3 oR1 = cross(oDpy, oN);
+                vec3 oR2 = cross(oN, oDpx);
+                float oDet = dot(oDpx, oR1);
+                vec3 oGrad = sign(oDet) * (oDhx * oR1 + oDhy * oR2);
+                vec3 oPertNorm = normalize(abs(oDet) * oN - oGrad);
+                normal = normalize(mat3(viewMatrix) * oPertNorm);
             }
             `,
         );
@@ -451,9 +506,34 @@ export function createFloorMaterial(color: number = 0x0a2a0a): THREE.MeshStandar
 
             float circuitPattern = max(max(traces, pad), fineTraces);
 
+            // Bump height for procedural normal perturbation
+            float floorBumpHeight = circuitPattern * 0.5;
+
             // Copper-tinted traces on the base colour
             vec3 traceTint = diffuseColor.rgb * 1.6 + vec3(0.04, 0.03, 0.0);
             diffuseColor.rgb = mix(diffuseColor.rgb, traceTint, circuitPattern * 0.5);
+            `,
+        );
+
+        // Procedural bump normal from circuit board traces
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <normal_fragment_maps>',
+            `
+            #include <normal_fragment_maps>
+            {
+                float fBumpScale = 0.15;
+                vec3 fDpx = dFdx(vWorldPosition);
+                vec3 fDpy = dFdy(vWorldPosition);
+                float fDhx = dFdx(floorBumpHeight) * fBumpScale;
+                float fDhy = dFdy(floorBumpHeight) * fBumpScale;
+                vec3 fN = vec3(0.0, 1.0, 0.0);
+                vec3 fR1 = cross(fDpy, fN);
+                vec3 fR2 = cross(fN, fDpx);
+                float fDet = dot(fDpx, fR1);
+                vec3 fGrad = sign(fDet) * (fDhx * fR1 + fDhy * fR2);
+                vec3 fPertNorm = normalize(abs(fDet) * fN - fGrad);
+                normal = normalize(mat3(viewMatrix) * fPertNorm);
+            }
             `,
         );
     };
