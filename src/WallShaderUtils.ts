@@ -153,6 +153,9 @@ export function createWallMaterial(
         transparent: true,
         metalness: 0.6,
         roughness: 0.7,
+        polygonOffset: true,
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1,
     });
 
     material.onBeforeCompile = (shader) => {
@@ -247,33 +250,8 @@ export function createWallMaterial(
             // Darken near seams for welded/sealed edge look
             float edgeDarken = (1.0 - seam) * 0.12;
 
-            // Bump height for procedural normal perturbation (kept subtle)
-            float wallBumpHeight = grain * 0.5 + brush * 0.5 - scratches - smudge * 0.5 + (seam - 1.0) * 0.15;
-
             diffuseColor.rgb *= mix(0.65, 1.0, seam);
             diffuseColor.rgb += panelVar + grain + brush - scratches - smudge - edgeDarken;
-            `,
-        );
-
-        // Procedural bump normal from metal detail
-        shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <normal_fragment_maps>',
-            `
-            #include <normal_fragment_maps>
-            {
-                float wBumpScale = 0.035;
-                vec3 wDpx = dFdx(vWorldPosition);
-                vec3 wDpy = dFdy(vWorldPosition);
-                float wDhx = dFdx(wallBumpHeight) * wBumpScale;
-                float wDhy = dFdy(wallBumpHeight) * wBumpScale;
-                vec3 wN = normalize(vWorldNormal);
-                vec3 wR1 = cross(wDpy, wN);
-                vec3 wR2 = cross(wN, wDpx);
-                float wDet = dot(wDpx, wR1);
-                vec3 wGrad = sign(wDet) * (wDhx * wR1 + wDhy * wR2);
-                vec3 wPertNorm = normalize(abs(wDet) * wN - wGrad);
-                normal = normalize(mat3(viewMatrix) * wPertNorm);
-            }
             `,
         );
 
@@ -339,8 +317,6 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
 
             vec3 obsAbsN = abs(vWorldNormal);
             bool isTopFace = obsAbsN.y > 0.5;
-            float obsBumpHeight = 0.0;
-
             if (isTopFace) {
                 // Dark flat surface on top
                 diffuseColor.rgb *= 0.5;
@@ -394,33 +370,9 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
                 float lnV = step(0.5 - lnW, lnFrac.y) * step(lnFrac.y, 0.5 + lnW);
                 float linePattern = max(lnH, lnV);
 
-                obsBumpHeight = (obsSeam - 1.0) * 0.15 + cmpRect * 0.08 + linePattern * 0.04 + blkShade * 0.5;
-
                 diffuseColor.rgb *= mix(0.7, 1.0, obsSeam);
                 diffuseColor.rgb += blkShade + cmpRect * 0.1 + linePattern * 0.06;
                 diffuseColor.rgb *= sideBrightness;
-            }
-            `,
-        );
-
-        // Procedural bump normal from obstacle detail
-        shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <normal_fragment_maps>',
-            `
-            #include <normal_fragment_maps>
-            {
-                float oBumpScale = 0.03;
-                vec3 oDpx = dFdx(vWorldPosition);
-                vec3 oDpy = dFdy(vWorldPosition);
-                float oDhx = dFdx(obsBumpHeight) * oBumpScale;
-                float oDhy = dFdy(obsBumpHeight) * oBumpScale;
-                vec3 oN = normalize(vWorldNormal);
-                vec3 oR1 = cross(oDpy, oN);
-                vec3 oR2 = cross(oN, oDpx);
-                float oDet = dot(oDpx, oR1);
-                vec3 oGrad = sign(oDet) * (oDhx * oR1 + oDhy * oR2);
-                vec3 oPertNorm = normalize(abs(oDet) * oN - oGrad);
-                normal = normalize(mat3(viewMatrix) * oPertNorm);
             }
             `,
         );
@@ -506,36 +458,12 @@ export function createFloorMaterial(color: number = 0x0a2a0a): THREE.MeshStandar
 
             float circuitPattern = max(max(traces, pad), fineTraces);
 
-            // Bump height for procedural normal perturbation
-            float floorBumpHeight = circuitPattern * 0.15;
-
             // Copper-tinted traces on the base colour
             vec3 traceTint = diffuseColor.rgb * 1.6 + vec3(0.04, 0.03, 0.0);
             diffuseColor.rgb = mix(diffuseColor.rgb, traceTint, circuitPattern * 0.5);
             `,
         );
 
-        // Procedural bump normal from circuit board traces
-        shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <normal_fragment_maps>',
-            `
-            #include <normal_fragment_maps>
-            {
-                float fBumpScale = 0.025;
-                vec3 fDpx = dFdx(vWorldPosition);
-                vec3 fDpy = dFdy(vWorldPosition);
-                float fDhx = dFdx(floorBumpHeight) * fBumpScale;
-                float fDhy = dFdy(floorBumpHeight) * fBumpScale;
-                vec3 fN = vec3(0.0, 1.0, 0.0);
-                vec3 fR1 = cross(fDpy, fN);
-                vec3 fR2 = cross(fN, fDpx);
-                float fDet = dot(fDpx, fR1);
-                vec3 fGrad = sign(fDet) * (fDhx * fR1 + fDhy * fR2);
-                vec3 fPertNorm = normalize(abs(fDet) * fN - fGrad);
-                normal = normalize(mat3(viewMatrix) * fPertNorm);
-            }
-            `,
-        );
     };
 
     material.needsUpdate = true;
