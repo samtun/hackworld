@@ -1,3 +1,10 @@
+# [1.63.0](https://github.com/samtun/hackworld/compare/v1.62.0...v1.63.0) (2026-03-30)
+
+
+### Features
+
+* add destruction animation to breakable barrels ([b028438](https://github.com/samtun/hackworld/commit/b028438c8c37cbf7d129c00a03511be871c9425b))
+
 # [1.62.0](https://github.com/samtun/hackworld/compare/v1.61.0...v1.62.0) (2026-03-30)
 
 
