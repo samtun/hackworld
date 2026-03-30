@@ -34,10 +34,18 @@ float valueNoise(vec2 p) {
 /** Vertex shader: declare the world-position varying. */
 const VERTEX_WORLD_POS_PREAMBLE = 'varying vec3 vWorldPosition;\n';
 
+/** Vertex shader: declare the world-normal varying (for tri-planar projection). */
+const VERTEX_WORLD_NORMAL_PREAMBLE = 'varying vec3 vWorldNormal;\n';
+
 /** Vertex shader: compute the world-position varying. */
 const VERTEX_WORLD_POS_CALC = `
 #include <worldpos_vertex>
 vWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;
+`;
+
+/** Vertex shader: compute the world-normal varying. */
+const VERTEX_WORLD_NORMAL_CALC = `
+vWorldNormal = normalize(mat3(modelMatrix) * normal);
 `;
 
 /**
@@ -110,10 +118,10 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
         shader.uniforms.u_cameraPos = { value: new THREE.Vector3() };
 
         // ---- vertex ----
-        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + shader.vertexShader;
+        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + VERTEX_WORLD_NORMAL_PREAMBLE + shader.vertexShader;
         shader.vertexShader = shader.vertexShader.replace(
             '#include <worldpos_vertex>',
-            VERTEX_WORLD_POS_CALC,
+            VERTEX_WORLD_POS_CALC + VERTEX_WORLD_NORMAL_CALC,
         );
 
         // ---- fragment ----
@@ -121,31 +129,47 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
             uniform vec3 u_playerPos;
             uniform vec3 u_cameraPos;
             varying vec3 vWorldPosition;
+            varying vec3 vWorldNormal;
             ${GLSL_HASH}
             ${GLSL_VALUE_NOISE}
             ${shader.fragmentShader}
         `;
 
-        // Metal panel pattern (modifies diffuseColor before lighting)
+        // Metal panel pattern using tri-planar projection so seams are
+        // not stretched on thin walls.
         shader.fragmentShader = shader.fragmentShader.replace(
             '#include <color_fragment>',
             `
             #include <color_fragment>
 
-            // 2 m metal panel grid using all three axes so the seams
-            // appear correctly on any axis-aligned face.
-            vec3 pPos = vWorldPosition * 0.5;
-            vec3 pFrac = fract(pPos);
-            vec3 pId = floor(pPos);
+            // Tri-planar projection: pick the two axes perpendicular to the
+            // dominant normal so the pattern maps flat onto each face.
+            vec3 wallAbsN = abs(vWorldNormal);
+            vec2 panelUV;
+            float panelSeed;
+            if (wallAbsN.x >= wallAbsN.y && wallAbsN.x >= wallAbsN.z) {
+                panelUV = vWorldPosition.yz;
+                panelSeed = floor(vWorldPosition.x * 0.5);
+            } else if (wallAbsN.y >= wallAbsN.z) {
+                panelUV = vWorldPosition.xz;
+                panelSeed = floor(vWorldPosition.y * 0.5);
+            } else {
+                panelUV = vWorldPosition.xy;
+                panelSeed = floor(vWorldPosition.z * 0.5);
+            }
+
+            // 2 m metal panel grid
+            vec2 pScaled = panelUV * 0.5;
+            vec2 pFrac = fract(pScaled);
+            vec2 pId = floor(pScaled);
 
             float sw = 0.04;
             float sA = smoothstep(0.0, sw, pFrac.x) * smoothstep(0.0, sw, 1.0 - pFrac.x);
             float sB = smoothstep(0.0, sw, pFrac.y) * smoothstep(0.0, sw, 1.0 - pFrac.y);
-            float sC = smoothstep(0.0, sw, pFrac.z) * smoothstep(0.0, sw, 1.0 - pFrac.z);
-            float seam = sA * sB * sC;
+            float seam = sA * sB;
 
-            float panelVar = shaderHash(pId.xy + pId.z * 37.0) * 0.12 - 0.06;
-            float surfNoise = valueNoise(vWorldPosition.xz * 4.0 + vWorldPosition.y * 3.0) * 0.08 - 0.04;
+            float panelVar = shaderHash(pId + panelSeed * 37.0) * 0.12 - 0.06;
+            float surfNoise = valueNoise(panelUV * 4.0) * 0.08 - 0.04;
 
             diffuseColor.rgb *= mix(0.65, 1.0, seam);
             diffuseColor.rgb += panelVar + surfNoise;
@@ -187,10 +211,10 @@ export function createObstacleMaterial(color: number = 0x555555): THREE.MeshStan
         shader.uniforms.u_cameraPos = { value: new THREE.Vector3() };
 
         // ---- vertex ----
-        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + shader.vertexShader;
+        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + VERTEX_WORLD_NORMAL_PREAMBLE + shader.vertexShader;
         shader.vertexShader = shader.vertexShader.replace(
             '#include <worldpos_vertex>',
-            VERTEX_WORLD_POS_CALC,
+            VERTEX_WORLD_POS_CALC + VERTEX_WORLD_NORMAL_CALC,
         );
 
         // ---- fragment ----
@@ -198,50 +222,69 @@ export function createObstacleMaterial(color: number = 0x555555): THREE.MeshStan
             uniform vec3 u_playerPos;
             uniform vec3 u_cameraPos;
             varying vec3 vWorldPosition;
+            varying vec3 vWorldNormal;
             ${GLSL_HASH}
             ${shader.fragmentShader}
         `;
 
-        // Tech panel + line pattern
+        // Tech panel + line pattern with dark top and tri-planar sides
         shader.fragmentShader = shader.fragmentShader.replace(
             '#include <color_fragment>',
             `
             #include <color_fragment>
 
-            // Block grid – per-cell shade variation
-            vec3 blkPos = vWorldPosition * 1.5;
-            vec3 blkFrac = fract(blkPos);
-            vec3 blkId = floor(blkPos);
-            float blkHash = shaderHash(blkId.xy + blkId.z * 19.0);
-            float blkShade = blkHash * 0.15 - 0.075;
+            vec3 obsAbsN = abs(vWorldNormal);
+            bool isTopFace = obsAbsN.y > 0.5;
 
-            // Seams between blocks
-            float obsW = 0.03;
-            float obsSA = smoothstep(0.0, obsW, blkFrac.x) * smoothstep(0.0, obsW, 1.0 - blkFrac.x);
-            float obsSB = smoothstep(0.0, obsW, blkFrac.y) * smoothstep(0.0, obsW, 1.0 - blkFrac.y);
-            float obsSC = smoothstep(0.0, obsW, blkFrac.z) * smoothstep(0.0, obsW, 1.0 - blkFrac.z);
-            float obsSeam = obsSA * obsSB * obsSC;
+            if (isTopFace) {
+                // Dark flat surface on top
+                diffuseColor.rgb *= 0.7;
+            } else {
+                // Tri-planar side UV
+                vec2 sideUV;
+                float sideSeed;
+                if (obsAbsN.x >= obsAbsN.z) {
+                    sideUV = vWorldPosition.yz;
+                    sideSeed = floor(vWorldPosition.x);
+                } else {
+                    sideUV = vWorldPosition.xy;
+                    sideSeed = floor(vWorldPosition.z);
+                }
 
-            // Smaller rectangular components (random presence per cell)
-            vec3 cmpPos = vWorldPosition * 4.0;
-            vec3 cmpFrac = fract(cmpPos);
-            vec3 cmpId = floor(cmpPos);
-            float cmpHash = shaderHash(cmpId.xy + cmpId.z * 41.0);
-            float cmpW = 0.25 + cmpHash * 0.45;
-            float cmpH = 0.25 + shaderHash(cmpId.yz + cmpId.x * 37.0) * 0.45;
-            float hasCmp = step(0.5, cmpHash);
-            float cmpRect = step(0.5 - cmpW * 0.5, cmpFrac.x) * step(cmpFrac.x, 0.5 + cmpW * 0.5) *
-                            step(0.5 - cmpH * 0.5, cmpFrac.y) * step(cmpFrac.y, 0.5 + cmpH * 0.5) * hasCmp;
+                // Block grid with non-square cells for less regularity
+                vec2 blkScaled = sideUV * vec2(1.5, 1.2);
+                vec2 blkFrac = fract(blkScaled);
+                vec2 blkId = floor(blkScaled);
+                float blkHash = shaderHash(blkId + sideSeed * 19.0);
+                float blkShade = blkHash * 0.15 - 0.075;
 
-            // Horizontal and vertical lines
-            vec3 lnFrac = fract(vWorldPosition * 6.0);
-            float lnW = 0.04;
-            float lnH = step(0.5 - lnW, lnFrac.x) * step(lnFrac.x, 0.5 + lnW);
-            float lnV = step(0.5 - lnW, lnFrac.y) * step(lnFrac.y, 0.5 + lnW);
-            float linePattern = max(lnH, lnV);
+                // Seams between blocks
+                float obsW = 0.03;
+                float obsSA = smoothstep(0.0, obsW, blkFrac.x) * smoothstep(0.0, obsW, 1.0 - blkFrac.x);
+                float obsSB = smoothstep(0.0, obsW, blkFrac.y) * smoothstep(0.0, obsW, 1.0 - blkFrac.y);
+                float obsSeam = obsSA * obsSB;
 
-            diffuseColor.rgb *= mix(0.7, 1.0, obsSeam);
-            diffuseColor.rgb += blkShade + cmpRect * 0.1 + linePattern * 0.06;
+                // Irregular rectangular components with varying sizes
+                vec2 cmpScaled = sideUV * vec2(3.5, 4.5);
+                vec2 cmpFrac = fract(cmpScaled);
+                vec2 cmpId = floor(cmpScaled);
+                float cmpHash = shaderHash(cmpId + sideSeed * 41.0);
+                float cmpW = 0.15 + cmpHash * 0.65;
+                float cmpH = 0.15 + shaderHash(cmpId.yx + sideSeed * 37.0) * 0.65;
+                float hasCmp = step(0.55, cmpHash);
+                float cmpRect = step(0.5 - cmpW * 0.5, cmpFrac.x) * step(cmpFrac.x, 0.5 + cmpW * 0.5) *
+                                step(0.5 - cmpH * 0.5, cmpFrac.y) * step(cmpFrac.y, 0.5 + cmpH * 0.5) * hasCmp;
+
+                // Horizontal and vertical lines
+                vec2 lnFrac = fract(sideUV * 6.0);
+                float lnW = 0.04;
+                float lnH = step(0.5 - lnW, lnFrac.x) * step(lnFrac.x, 0.5 + lnW);
+                float lnV = step(0.5 - lnW, lnFrac.y) * step(lnFrac.y, 0.5 + lnW);
+                float linePattern = max(lnH, lnV);
+
+                diffuseColor.rgb *= mix(0.7, 1.0, obsSeam);
+                diffuseColor.rgb += blkShade + cmpRect * 0.1 + linePattern * 0.06;
+            }
             `,
         );
 

@@ -58,7 +58,7 @@ export class SecurityCore extends BaseStage {
         this.dungeonRooms = layout.rooms;
 
         // Floor segments for each room and corridor
-        this.buildFloorFromLayout(layout);
+        this.buildFloorFromLayout(layout, 0x100a28);
 
         // Build walls (with transparency shader) and obstacles
         this.buildWallsFromLayout(layout);
