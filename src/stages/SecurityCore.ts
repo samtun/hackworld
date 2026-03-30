@@ -27,6 +27,18 @@ export class SecurityCore extends BaseStage {
         chestQualityFactor: 1.2,
         chestInTeleporterRoom: true,
         barrelCount: { min: 1, max: 4 },
+        trapConfig: {
+            count: { min: 1, max: 3 },
+            width: { min: 2, max: 5 },
+            length: { min: 2, max: 5 },
+            damage: 12,
+            patterns: [
+                [1000, 1500],
+                [600, 800, 600, 1500],
+                [400, 600, 400, 600, 400, 2000],
+                [],
+            ],
+        },
     };
 
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
@@ -76,8 +88,9 @@ export class SecurityCore extends BaseStage {
         // Spawn enemies with room assignments so aggro is room-gated
         this.spawnEnemiesFromLayout(layout);
 
-        // Build loot chests and breakable barrels
+        // Build loot chests, breakable barrels, and electric traps
         this.buildChestsFromLayout(layout);
         this.buildBarrelsFromLayout(layout);
+        this.buildTrapsFromLayout(layout);
     }
 }
