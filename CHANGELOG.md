@@ -1,3 +1,11 @@
+## [1.58.1](https://github.com/samtun/hackworld/compare/v1.58.0...v1.58.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* limit level-up shockwave damage to enemies within 15m range ([e6301ed](https://github.com/samtun/hackworld/commit/e6301ed644ac68472ff095284c19f3ebc685591c))
+* reduce level up shockwave range ([9638d3d](https://github.com/samtun/hackworld/commit/9638d3d438fe3e5396ae416afd9300b7a066c723))
+
 # [1.58.0](https://github.com/samtun/hackworld/compare/v1.57.0...v1.58.0) (2026-03-30)
 
 
