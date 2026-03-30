@@ -8,6 +8,7 @@ import { WeaponType } from './items/weapons/WeaponType';
 import { Tier, TierManager } from './items/TierManager';
 import { CardCollection } from './items/cards/CardCollection';
 import { Album } from './items/cards/Card';
+import { Enemy } from './enemies/Enemy';
 
 /**
  * Create a minimal Player instance for unit testing without instantiating
@@ -40,6 +41,7 @@ function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
         WALK_SPEED: 6,
         LEVEL_UP_PARTICLE_LIFETIME: 0.6,
         LEVEL_UP_SHOCKWAVE_DELAY: 0.4,
+        LEVEL_UP_SHOCKWAVE_RANGE: 15,
 
         // Base stats
         baseHp: 170,
@@ -1261,6 +1263,93 @@ describe('Player collection bonus getters', () => {
             mockComplete(Album.C002);
             expect(player.collectionBonusSkillCooldownReduction).toBeCloseTo(0.10);
         });
+    });
+});
+
+// ─── executeLevelUpShockwave ─────────────────────────────────────────────────
+
+describe('Player.executeLevelUpShockwave', () => {
+    function makeEnemyBody(x: number, z: number, isDead = false, isDying = false) {
+        const enemy = Object.create(Enemy.prototype) as Enemy;
+        Object.assign(enemy, { isDead, isDying, takeDamage: vi.fn() });
+        return {
+            position: { x, y: 0, z },
+            entity: enemy,
+        };
+    }
+
+    it('damages enemies within 15m range', () => {
+        const nearBody = makeEnemyBody(5, 0);
+        const player = makePlayer({
+            world: { bodies: [nearBody] },
+        } as any);
+        (player as any).getHitDamage = vi.fn().mockReturnValue(50);
+        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
+        (player as any).body.position = { x: 0, y: 0, z: 0 };
+
+        (player as any).executeLevelUpShockwave();
+
+        expect((nearBody.entity as any).takeDamage).toHaveBeenCalledWith(50, false, player.body.position);
+    });
+
+    it('does not damage enemies beyond 15m range', () => {
+        const farBody = makeEnemyBody(20, 20);
+        const player = makePlayer({
+            world: { bodies: [farBody] },
+        } as any);
+        (player as any).getHitDamage = vi.fn().mockReturnValue(50);
+        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
+        (player as any).body.position = { x: 0, y: 0, z: 0 };
+
+        (player as any).executeLevelUpShockwave();
+
+        expect((farBody.entity as any).takeDamage).not.toHaveBeenCalled();
+    });
+
+    it('damages near enemies and skips far enemies in mixed group', () => {
+        const nearBody = makeEnemyBody(10, 0);
+        const farBody = makeEnemyBody(0, 16);
+        const player = makePlayer({
+            world: { bodies: [nearBody, farBody] },
+        } as any);
+        (player as any).getHitDamage = vi.fn().mockReturnValue(50);
+        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
+        (player as any).body.position = { x: 0, y: 0, z: 0 };
+
+        (player as any).executeLevelUpShockwave();
+
+        expect((nearBody.entity as any).takeDamage).toHaveBeenCalled();
+        expect((farBody.entity as any).takeDamage).not.toHaveBeenCalled();
+    });
+
+    it('damages enemy at exactly 15m boundary', () => {
+        const boundaryBody = makeEnemyBody(15, 0);
+        const player = makePlayer({
+            world: { bodies: [boundaryBody] },
+        } as any);
+        (player as any).getHitDamage = vi.fn().mockReturnValue(50);
+        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
+        (player as any).body.position = { x: 0, y: 0, z: 0 };
+
+        (player as any).executeLevelUpShockwave();
+
+        expect((boundaryBody.entity as any).takeDamage).toHaveBeenCalled();
+    });
+
+    it('skips dead and dying enemies', () => {
+        const deadBody = makeEnemyBody(5, 0, true, false);
+        const dyingBody = makeEnemyBody(5, 0, false, true);
+        const player = makePlayer({
+            world: { bodies: [deadBody, dyingBody] },
+        } as any);
+        (player as any).getHitDamage = vi.fn().mockReturnValue(50);
+        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
+        (player as any).body.position = { x: 0, y: 0, z: 0 };
+
+        (player as any).executeLevelUpShockwave();
+
+        expect((deadBody.entity as any).takeDamage).not.toHaveBeenCalled();
+        expect((dyingBody.entity as any).takeDamage).not.toHaveBeenCalled();
     });
 });
 
