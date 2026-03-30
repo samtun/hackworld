@@ -355,7 +355,7 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
                 float obsSeam = obsSA * obsSB;
 
                 // Irregular rectangular components with varying sizes (scroll upward slowly)
-                vec2 cmpScaled = sideUV * vec2(3.5, 4.5) + vec2(0.0, u_time * 0.05);
+                vec2 cmpScaled = sideUV * vec2(3.5, 4.5) + vec2(0.0, -u_time);
                 vec2 cmpFrac = fract(cmpScaled);
                 vec2 cmpId = floor(cmpScaled);
                 float cmpHash = shaderHash(cmpId + sideSeed * 41.0);
