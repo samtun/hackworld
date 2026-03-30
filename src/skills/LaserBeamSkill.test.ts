@@ -59,9 +59,19 @@ vi.mock('../Player', () => ({ Player: class {} }));
 vi.mock('../enemies/Enemy', () => ({ Enemy: class {} }));
 
 import { LaserBeamSkill } from './LaserBeamSkill';
+import { Enemy } from '../enemies/Enemy';
 import { Tier } from '../items/TierManager';
 import { SkillTechType } from './SkillTechType';
 import type { Player } from '../Player';
+
+function makeEnemy(x: number, y: number, z: number) {
+    const enemy = Object.create(Enemy.prototype);
+    enemy.isDead = false;
+    enemy.isDying = false;
+    enemy.takeDamage = vi.fn();
+    const body = { position: { x, y, z }, entity: enemy };
+    return { enemy, body };
+}
 
 function makePlayer(tier = Tier.STABLE) {
     return {
@@ -200,6 +210,19 @@ describe('LaserBeamSkill', () => {
             (skill as any).cooldownTimer = 3.0;
             skill.update(1.0);
             expect((skill as any).cooldownTimer).toBeCloseTo(2.0);
+        });
+
+        it('does not hit enemies beyond RANGE even with a large dt', () => {
+            const player = makePlayer(Tier.STABLE);
+            // Place enemy along Z axis at distance 12 (beyond RANGE=10)
+            const farEnemy = makeEnemy(0, 0.5, 12);
+            const scene = { add: vi.fn(), remove: vi.fn() } as any;
+            const world = { bodies: [farEnemy.body], addBody: vi.fn(), removeBody: vi.fn() } as any;
+            (skill as any).execute(player, scene, world);
+            // Large dt that pushes progress well past 1, which previously caused
+            // currentLength to exceed RANGE
+            skill.update(10);
+            expect(farEnemy.enemy.takeDamage).not.toHaveBeenCalled();
         });
     });
 
