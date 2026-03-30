@@ -22,11 +22,17 @@ import { getHint, HintConfigs } from './ui/InputHints';
 import { Teleporter } from './Teleporter';
 import { LoreIntroduction } from './LoreIntroduction';
 import { StartMenuOption } from './StartMenu';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 export class Game {
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
+    floatingIndicatorCamera: THREE.PerspectiveCamera; // Separate camera for floating indicators to render on a different layer
     renderer: THREE.WebGLRenderer;
+    composer: EffectComposer;
     physicsWorld: CANNON.World;
     defaultMaterial: CANNON.Material;
 
@@ -75,16 +81,52 @@ export class Game {
     constructor() {
         // Setup Three.js
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color(0x121212);
+        this.scene.background = null;
+
+        const bgGeometry = new THREE.PlaneGeometry(9999, 9999);
+        bgGeometry.rotateX(-Math.PI / 2);
+        const bgMaterial = new THREE.MeshBasicMaterial({ 
+            color: 0x121212, 
+            depthWrite: false // Wichtig, damit es wirklich im Hintergrund bleibt
+        });
+        const bgMesh = new THREE.Mesh(bgGeometry, bgMaterial);
+        bgMesh.position.y = -10;
 
         this.camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 200);
+        this.camera.layers.enable(0); // Default layer for everything except floating indicators
+        this.camera.layers.disable(1); // Hide floating indicators layer
         // Isometric-ish view
         this.camera.position.copy(this.cameraOffset);
         this.camera.lookAt(0, 0, 0);
 
+        this.floatingIndicatorCamera = this.camera.clone();
+        this.floatingIndicatorCamera.layers.set(1); // Enable only the floating indicators layer
+
+        this.scene.add(bgMesh);
+
         this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        this.renderer.setSize( window.innerWidth, window.innerHeight );
+
+        this.composer = new EffectComposer( this.renderer );
+
+        const mainRenderPass = new RenderPass( this.scene, this.camera );
+        this.composer.addPass( mainRenderPass );
+
+        const ssaoPass = new SSAOPass( this.scene, this.camera, window.innerWidth, window.innerHeight );
+        this.composer.addPass( ssaoPass );
+        ssaoPass.kernelRadius = 0.2;
+        ssaoPass.minDistance = 0.005;
+        ssaoPass.maxDistance = 0.1;
+
+        const floatingIndicatorRenderPass = new RenderPass( this.scene, this.floatingIndicatorCamera );
+        floatingIndicatorRenderPass.clear = false; // Don't clear the depth buffer so it renders on top of the main scene
+        this.composer.addPass( floatingIndicatorRenderPass );
+
+        const outputPass = new OutputPass();
+        this.composer.addPass( outputPass );
+
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.enabled = false;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.getElementById('app')!.appendChild(this.renderer.domElement);
 
@@ -301,6 +343,7 @@ export class Game {
 
     private resetCameraPosition() {
         this.camera.position.copy(this.cameraOffset.clone().add(this.player.position));
+        this.floatingIndicatorCamera.position.copy(this.cameraOffset.clone().add(this.player.position));
     }
 
     /**
@@ -324,9 +367,14 @@ export class Game {
     }
 
     onWindowResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.floatingIndicatorCamera.aspect = width / height;
+        this.floatingIndicatorCamera.updateProjectionMatrix();// Enable only the floating indicators layer
+        this.renderer.setSize(width, height);
+		this.composer.setSize(width, height);
 
         // Update particle scale factors for screen-independent sizing
         if (this.world.currentStage) {
@@ -643,6 +691,9 @@ export class Game {
         this.camera.position.x += (targetX - this.camera.position.x) * lerpFactor;
         this.camera.position.y += (targetY - this.camera.position.y) * lerpFactor;
         this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
+        this.floatingIndicatorCamera.position.x += (targetX - this.floatingIndicatorCamera.position.x) * lerpFactor;
+        this.floatingIndicatorCamera.position.y += (targetY - this.floatingIndicatorCamera.position.y) * lerpFactor;
+        this.floatingIndicatorCamera.position.z += (targetZ - this.floatingIndicatorCamera.position.z) * lerpFactor;
 
         // Handle interactions (use variables we already calculated)
         const isSelectPressed = this.input.isSelectPressed();
@@ -671,6 +722,6 @@ export class Game {
         }
 
         this.wasSelectPressed = isSelectPressed;
-        this.renderer.render(this.scene, this.camera);
+        this.composer.render();
     }
 }
