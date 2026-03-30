@@ -247,8 +247,8 @@ export function createWallMaterial(
             // Darken near seams for welded/sealed edge look
             float edgeDarken = (1.0 - seam) * 0.12;
 
-            // Bump height for procedural normal perturbation
-            float wallBumpHeight = grain + brush - scratches * 2.0 - smudge + (seam - 1.0) * 0.5;
+            // Bump height for procedural normal perturbation (kept subtle)
+            float wallBumpHeight = grain * 0.5 + brush * 0.5 - scratches - smudge * 0.5 + (seam - 1.0) * 0.15;
 
             diffuseColor.rgb *= mix(0.65, 1.0, seam);
             diffuseColor.rgb += panelVar + grain + brush - scratches - smudge - edgeDarken;
@@ -261,7 +261,7 @@ export function createWallMaterial(
             `
             #include <normal_fragment_maps>
             {
-                float wBumpScale = 0.25;
+                float wBumpScale = 0.035;
                 vec3 wDpx = dFdx(vWorldPosition);
                 vec3 wDpy = dFdy(vWorldPosition);
                 float wDhx = dFdx(wallBumpHeight) * wBumpScale;
@@ -394,7 +394,7 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
                 float lnV = step(0.5 - lnW, lnFrac.y) * step(lnFrac.y, 0.5 + lnW);
                 float linePattern = max(lnH, lnV);
 
-                obsBumpHeight = (obsSeam - 1.0) * 0.5 + cmpRect * 0.15 + linePattern * 0.08 + blkShade;
+                obsBumpHeight = (obsSeam - 1.0) * 0.15 + cmpRect * 0.08 + linePattern * 0.04 + blkShade * 0.5;
 
                 diffuseColor.rgb *= mix(0.7, 1.0, obsSeam);
                 diffuseColor.rgb += blkShade + cmpRect * 0.1 + linePattern * 0.06;
@@ -409,7 +409,7 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
             `
             #include <normal_fragment_maps>
             {
-                float oBumpScale = 0.2;
+                float oBumpScale = 0.03;
                 vec3 oDpx = dFdx(vWorldPosition);
                 vec3 oDpy = dFdy(vWorldPosition);
                 float oDhx = dFdx(obsBumpHeight) * oBumpScale;
@@ -507,7 +507,7 @@ export function createFloorMaterial(color: number = 0x0a2a0a): THREE.MeshStandar
             float circuitPattern = max(max(traces, pad), fineTraces);
 
             // Bump height for procedural normal perturbation
-            float floorBumpHeight = circuitPattern * 0.5;
+            float floorBumpHeight = circuitPattern * 0.15;
 
             // Copper-tinted traces on the base colour
             vec3 traceTint = diffuseColor.rgb * 1.6 + vec3(0.04, 0.03, 0.0);
@@ -521,7 +521,7 @@ export function createFloorMaterial(color: number = 0x0a2a0a): THREE.MeshStandar
             `
             #include <normal_fragment_maps>
             {
-                float fBumpScale = 0.15;
+                float fBumpScale = 0.025;
                 vec3 fDpx = dFdx(vWorldPosition);
                 vec3 fDpy = dFdy(vWorldPosition);
                 float fDhx = dFdx(floorBumpHeight) * fBumpScale;
