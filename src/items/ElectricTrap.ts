@@ -32,10 +32,10 @@ const ELECTRIC_COLOR = new THREE.Color(1.0, 0.95, 0.2);
 const PARTICLE_COUNT = 60;
 
 /** How high particles travel before resetting (metres). */
-const PARTICLE_MAX_Y = 1.8;
+const PARTICLE_MAX_Y = 0.8;
 
 /** Base particle size. */
-const PARTICLE_SIZE = 0.18;
+const PARTICLE_SIZE = 0.7;
 
 /** Minimum time between consecutive damage ticks to the same target (seconds). */
 const DAMAGE_COOLDOWN = 0.5;
