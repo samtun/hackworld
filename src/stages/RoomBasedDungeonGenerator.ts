@@ -1228,8 +1228,8 @@ export class RoomBasedDungeonGenerator {
 
             const count = this.rangeInt(tc.count.min, tc.count.max);
             for (let i = 0; i < count; i++) {
-                const w = this.range(tc.width.min, tc.width.max);
-                const l = this.range(tc.length.min, tc.length.max);
+                const w = this.rangeInt(tc.width.min, tc.width.max);
+                const l = this.rangeInt(tc.length.min, tc.length.max);
                 const pos = this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos);
                 if (!pos) continue;
 

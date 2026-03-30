@@ -142,25 +142,23 @@ export class ElectricTrap {
     // Shader
     // ------------------------------------------------------------------
 
-    private createCableShaderMaterial(width: number, length: number): THREE.ShaderMaterial {
+    private createCableShaderMaterial(_width: number, _length: number): THREE.ShaderMaterial {
         return new THREE.ShaderMaterial({
             uniforms: {
                 u_active: { value: this.active ? 1.0 : 0.0 },
                 u_time: { value: 0.0 },
-                u_size: { value: new THREE.Vector2(width, length) },
             },
             vertexShader: /* glsl */ `
-                varying vec2 vUv;
+                varying vec3 vWorldPos;
                 void main() {
-                    vUv = uv;
+                    vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
                     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
                 }
             `,
             fragmentShader: /* glsl */ `
                 uniform float u_active;
                 uniform float u_time;
-                uniform vec2 u_size;
-                varying vec2 vUv;
+                varying vec3 vWorldPos;
 
                 float hash(vec2 p) {
                     return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -178,28 +176,28 @@ export class ElectricTrap {
                 }
 
                 void main() {
-                    // Scale UVs to world‑proportional coords
-                    vec2 uv = vUv * u_size;
+                    // World-space XZ as UV — tiles at 1 m intervals
+                    vec2 uv = vWorldPos.xz;
 
-                    // Layered cable lines (horizontal + vertical)
+                    // Layered cable lines (horizontal + vertical), tiling per metre
                     float cable = 0.0;
                     for (float i = 0.0; i < 4.0; i++) {
                         float seed = i * 3.17;
                         float freq = 1.5 + hash(vec2(seed, 0.0)) * 1.5;
                         float offset = hash(vec2(0.0, seed)) * 6.28;
-                        // Horizontal cable
-                        float yLine = sin(uv.x * freq + offset) * 0.4 + 0.5;
-                        float dH = abs(uv.y - yLine * u_size.y / u_size.x);
+                        // Horizontal cable (wiggles along x, distance in z)
+                        float zLine = sin(uv.x * freq + offset) * 0.3 + 0.5;
+                        float dH = abs(fract(uv.y) - zLine);
                         cable += smoothstep(0.06, 0.02, dH);
-                        // Vertical cable
-                        float xLine = sin(uv.y * freq + offset + 1.57) * 0.4 + 0.5;
-                        float dV = abs(uv.x - xLine * u_size.x / u_size.y);
+                        // Vertical cable (wiggles along z, distance in x)
+                        float xLine = sin(uv.y * freq + offset + 1.57) * 0.3 + 0.5;
+                        float dV = abs(fract(uv.x) - xLine);
                         cable += smoothstep(0.06, 0.02, dV);
                     }
                     cable = clamp(cable, 0.0, 1.0);
 
-                    // Inactive: dark grey cables
-                    vec3 inactiveColor = vec3(0.25, 0.25, 0.25) * cable;
+                    // Inactive: light grey cables (#DDDDDD)
+                    vec3 inactiveColor = vec3(0.867) * cable;
                     // Active: bright yellow glow with pulsing
                     float pulse = 0.85 + 0.15 * sin(u_time * 8.0);
                     vec3 activeColor = vec3(1.0, 0.95, 0.2) * cable * pulse;
@@ -208,7 +206,7 @@ export class ElectricTrap {
                     activeColor *= flicker;
 
                     vec3 col = mix(inactiveColor, activeColor, u_active);
-                    float alpha = cable * mix(0.55, 0.9, u_active);
+                    float alpha = cable * mix(0.7, 0.9, u_active);
 
                     gl_FragColor = vec4(col, alpha);
                 }
