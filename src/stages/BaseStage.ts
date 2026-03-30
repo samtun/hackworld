@@ -325,29 +325,102 @@ export abstract class BaseStage {
 
     /**
      * Build individual floor segments for each room and corridor so the floor
-     * only appears underneath walkable areas.
+     * only appears underneath walkable areas.  Elevated rooms get physics
+     * colliders; corridors between different elevations become ramps.
      */
     protected buildFloorFromLayout(layout: DungeonLayout, color: number = 0x0a2a0a): void {
         const floorMat = createFloorMaterial(color);
+        const FLOOR_THICKNESS = 0.5;
 
         for (const room of layout.rooms) {
             const geo = new THREE.PlaneGeometry(room.width, room.depth);
             geo.rotateX(-Math.PI / 2);
             const mesh = new THREE.Mesh(geo, floorMat);
-            mesh.position.set(room.centerX, 0, room.centerZ);
+            mesh.position.set(room.centerX, room.elevation, room.centerZ);
             mesh.receiveShadow = true;
             this.scene.add(mesh);
             this.meshes.push(mesh);
+
+            // Physics floor for elevated rooms
+            if (room.elevation > 0) {
+                const shape = new CANNON.Box(
+                    new CANNON.Vec3(room.width / 2, FLOOR_THICKNESS / 2, room.depth / 2),
+                );
+                const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+                body.addShape(shape);
+                body.position.set(room.centerX, room.elevation - FLOOR_THICKNESS / 2, room.centerZ);
+                this.physicsWorld.addBody(body);
+                this.bodies.push(body);
+            }
         }
 
         for (const cor of layout.corridors) {
-            const geo = new THREE.PlaneGeometry(cor.width, cor.depth);
-            geo.rotateX(-Math.PI / 2);
-            const mesh = new THREE.Mesh(geo, floorMat);
-            mesh.position.set(cor.centerX, 0, cor.centerZ);
-            mesh.receiveShadow = true;
-            this.scene.add(mesh);
-            this.meshes.push(mesh);
+            const elevDiff = cor.elevationEnd - cor.elevationStart;
+            const isHorizontal = cor.width > cor.depth;
+
+            if (Math.abs(elevDiff) < 0.01) {
+                // Flat corridor
+                const geo = new THREE.PlaneGeometry(cor.width, cor.depth);
+                geo.rotateX(-Math.PI / 2);
+                const mesh = new THREE.Mesh(geo, floorMat);
+                mesh.position.set(cor.centerX, cor.elevationStart, cor.centerZ);
+                mesh.receiveShadow = true;
+                this.scene.add(mesh);
+                this.meshes.push(mesh);
+
+                // Physics floor for elevated flat corridors
+                if (cor.elevationStart > 0) {
+                    const shape = new CANNON.Box(
+                        new CANNON.Vec3(cor.width / 2, FLOOR_THICKNESS / 2, cor.depth / 2),
+                    );
+                    const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+                    body.addShape(shape);
+                    body.position.set(cor.centerX, cor.elevationStart - FLOOR_THICKNESS / 2, cor.centerZ);
+                    this.physicsWorld.addBody(body);
+                    this.bodies.push(body);
+                }
+            } else {
+                // Ramp corridor – modify vertex Y values for the slope
+                const geo = new THREE.PlaneGeometry(cor.width, cor.depth);
+                geo.rotateX(-Math.PI / 2);
+
+                const posAttr = geo.getAttribute('position') as THREE.BufferAttribute;
+                const mainLen = isHorizontal ? cor.width : cor.depth;
+                for (let i = 0; i < posAttr.count; i++) {
+                    const axisVal = isHorizontal ? posAttr.getX(i) : posAttr.getZ(i);
+                    const t = (axisVal / mainLen) + 0.5; // 0 at negative end, 1 at positive end
+                    posAttr.setY(i, cor.elevationStart + t * elevDiff);
+                }
+                posAttr.needsUpdate = true;
+                geo.computeVertexNormals();
+
+                const mesh = new THREE.Mesh(geo, floorMat);
+                mesh.position.set(cor.centerX, 0, cor.centerZ);
+                mesh.receiveShadow = true;
+                this.scene.add(mesh);
+                this.meshes.push(mesh);
+
+                // Physics ramp: thin box rotated to match the slope
+                const slopeLen = Math.sqrt(mainLen * mainLen + elevDiff * elevDiff);
+                const rampAngle = Math.atan2(elevDiff, mainLen);
+                const midElev = (cor.elevationStart + cor.elevationEnd) / 2;
+
+                const rampShape = new CANNON.Box(new CANNON.Vec3(
+                    (isHorizontal ? slopeLen : cor.width) / 2,
+                    FLOOR_THICKNESS / 2,
+                    (isHorizontal ? cor.depth : slopeLen) / 2,
+                ));
+                const rampBody = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+                rampBody.addShape(rampShape);
+                rampBody.position.set(cor.centerX, midElev, cor.centerZ);
+                if (isHorizontal) {
+                    rampBody.quaternion.setFromEuler(0, 0, rampAngle);
+                } else {
+                    rampBody.quaternion.setFromEuler(-rampAngle, 0, 0);
+                }
+                this.physicsWorld.addBody(rampBody);
+                this.bodies.push(rampBody);
+            }
         }
     }
 
@@ -451,6 +524,7 @@ export abstract class BaseStage {
         for (const ts of layout.trapSpawns) {
             const trap = new ElectricTrap(this.scene, {
                 x: ts.x,
+                y: ts.y,
                 z: ts.z,
                 width: ts.width,
                 length: ts.length,

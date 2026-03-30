@@ -69,7 +69,7 @@ export class SecurityCore extends BaseStage {
         const layout = generator.generate(SecurityCore.generationConfig);
 
         // Update spawn position from generated layout
-        this.spawnPosition.set(layout.spawnPosition.x, 0.4, layout.spawnPosition.z);
+        this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
 
         // Register rooms for per-room enemy aggro and teleporter activation
         this.dungeonRooms = layout.rooms;
@@ -83,7 +83,7 @@ export class SecurityCore extends BaseStage {
 
         // Teleporter in the final room – starts inactive until all enemies are defeated
         const tp = layout.teleporterPosition;
-        this.createTeleporter(new CANNON.Vec3(tp.x, 0, tp.z), Lobby.getMetadata().id, false);
+        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getMetadata().id, false);
 
         // Spawn enemies with room assignments so aggro is room-gated
         this.spawnEnemiesFromLayout(layout);

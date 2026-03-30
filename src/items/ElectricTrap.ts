@@ -8,6 +8,8 @@ import { createParticleShaderMaterial, updateParticleScaleFactor } from '../Part
 export interface ElectricTrapConfig {
     /** Centre X position in world space. */
     x: number;
+    /** Floor elevation (Y coordinate) at the trap position. */
+    y: number;
     /** Centre Z position in world space. */
     z: number;
     /** Trap extent along the X axis (metres). */
@@ -62,6 +64,8 @@ export class ElectricTrap {
     /** World‑space centre of the trap. */
     readonly centerX: number;
     readonly centerZ: number;
+    /** Floor elevation at the trap position. */
+    readonly elevation: number;
     /** Trap half‑extents used for AABB overlap checks. */
     readonly halfWidth: number;
     readonly halfLength: number;
@@ -99,6 +103,7 @@ export class ElectricTrap {
         this.scene = scene;
         this.centerX = config.x;
         this.centerZ = config.z;
+        this.elevation = config.y;
         this.halfWidth = config.width / 2;
         this.halfLength = config.length / 2;
         this.damage = config.damage;
@@ -114,7 +119,7 @@ export class ElectricTrap {
         geo.rotateX(-Math.PI / 2);
         this.cableMaterial = this.createCableShaderMaterial(config.width, config.length);
         this.mesh = new THREE.Mesh(geo, this.cableMaterial);
-        this.mesh.position.set(config.x, 0.01, config.z); // slightly above floor
+        this.mesh.position.set(config.x, config.y + 0.01, config.z); // slightly above floor
         this.mesh.receiveShadow = false;
         this.mesh.castShadow = false;
         scene.add(this.mesh);
@@ -224,7 +229,7 @@ export class ElectricTrap {
     private resetParticle(index: number, stagger: boolean = false): void {
         const i3 = index * 3;
         this.particlePositions[i3] = this.centerX + (Math.random() - 0.5) * this.halfWidth * 2;
-        this.particlePositions[i3 + 1] = Math.random() * PARTICLE_MAX_Y * (stagger ? Math.random() : 0);
+        this.particlePositions[i3 + 1] = this.elevation + Math.random() * PARTICLE_MAX_Y * (stagger ? Math.random() : 0);
         this.particlePositions[i3 + 2] = this.centerZ + (Math.random() - 0.5) * this.halfLength * 2;
         this.particleSizes[index] = PARTICLE_SIZE * (0.5 + Math.random() * 0.5);
         this.particleLifetimes[index] = 0.6 + Math.random() * 0.8;
@@ -305,7 +310,7 @@ export class ElectricTrap {
         if (remaining > 0) return;
 
         // Apply damage with knockback from trap centre
-        const sourcePos = new CANNON.Vec3(this.centerX, 0, this.centerZ);
+        const sourcePos = new CANNON.Vec3(this.centerX, this.elevation, this.centerZ);
         player.takeDamage(this.damage, sourcePos);
 
         this.damageCooldowns.set(player, DAMAGE_COOLDOWN);
@@ -329,7 +334,7 @@ export class ElectricTrap {
             const remaining = this.damageCooldowns.get(enemy) ?? 0;
             if (remaining > 0) continue;
 
-            const sourcePos = new CANNON.Vec3(this.centerX, 0, this.centerZ);
+            const sourcePos = new CANNON.Vec3(this.centerX, this.elevation, this.centerZ);
             enemy.takeDamage(this.damage, false, sourcePos);
 
             this.damageCooldowns.set(enemy, DAMAGE_COOLDOWN);

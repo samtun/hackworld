@@ -5,6 +5,7 @@ import {
     WALL_THICKNESS,
     SAFE_ROOM_SIZE,
     TELEPORTER_ROOM_SIZE,
+    ROOM_ELEVATION_STEP,
 } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig, DungeonLayout } from './RoomBasedDungeonGenerator';
 
@@ -334,10 +335,12 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(tpObstacles).toHaveLength(0);
         });
 
-        it('obstacles have floor-anchored y (y = height / 2)', () => {
+        it('obstacles have floor-anchored y (y = elevation + height / 2)', () => {
             const layout = gen(32);
             for (const obs of layout.obstacles) {
-                expect(obs.y).toBeCloseTo(obs.height / 2, 10);
+                const baseElevation = obs.y - obs.height / 2;
+                expect(baseElevation).toBeGreaterThanOrEqual(0);
+                expect(baseElevation % ROOM_ELEVATION_STEP).toBeCloseTo(0, 5);
             }
         });
 
@@ -365,10 +368,10 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(layout.walls.length).toBeGreaterThan(0);
         });
 
-        it('all walls have WALL_HEIGHT height', () => {
+        it('all room walls have WALL_HEIGHT height', () => {
             const layout = gen(16);
             for (const wall of layout.walls) {
-                expect(wall.height).toBe(WALL_HEIGHT);
+                expect(wall.height).toBeGreaterThanOrEqual(WALL_HEIGHT);
             }
         });
 
@@ -380,10 +383,10 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
-        it('wall centres are at y = WALL_HEIGHT / 2', () => {
+        it('wall centres are at y >= WALL_HEIGHT / 2', () => {
             const layout = gen(18);
             for (const wall of layout.walls) {
-                expect(wall.centerY).toBeCloseTo(WALL_HEIGHT / 2, 10);
+                expect(wall.centerY).toBeGreaterThanOrEqual(WALL_HEIGHT / 2 - 0.01);
             }
         });
     });
@@ -505,6 +508,92 @@ describe('RoomBasedDungeonGenerator', () => {
             const l2 = gen(42, configWithChestsAndBarrels);
             expect(l1.chestSpawns).toEqual(l2.chestSpawns);
             expect(l1.barrelSpawns).toEqual(l2.barrelSpawns);
+        });
+    });
+
+    describe('room elevation', () => {
+        it('safe room always has elevation 0', () => {
+            for (let seed = 0; seed < 20; seed++) {
+                const layout = gen(seed);
+                const safe = layout.rooms.find(r => r.isSafe)!;
+                expect(safe.elevation).toBe(0);
+            }
+        });
+
+        it('all rooms have elevation >= 0', () => {
+            for (let seed = 0; seed < 20; seed++) {
+                const layout = gen(seed);
+                for (const room of layout.rooms) {
+                    expect(room.elevation).toBeGreaterThanOrEqual(0);
+                }
+            }
+        });
+
+        it('room elevation is always a multiple of ROOM_ELEVATION_STEP', () => {
+            for (let seed = 0; seed < 20; seed++) {
+                const layout = gen(seed);
+                for (const room of layout.rooms) {
+                    expect(room.elevation % ROOM_ELEVATION_STEP).toBe(0);
+                }
+            }
+        });
+
+        it('some layouts have rooms at different elevations', () => {
+            let foundDifferent = false;
+            for (let seed = 0; seed < 50; seed++) {
+                const layout = gen(seed);
+                const elevations = new Set(layout.rooms.map(r => r.elevation));
+                if (elevations.size > 1) {
+                    foundDifferent = true;
+                    break;
+                }
+            }
+            expect(foundDifferent).toBe(true);
+        });
+
+        it('corridor elevations match connected room elevations', () => {
+            for (let seed = 0; seed < 20; seed++) {
+                const layout = gen(seed);
+                const roomMap = new Map(layout.rooms.map(r => [r.id, r]));
+                for (const cor of layout.corridors) {
+                    const fromRoom = roomMap.get(cor.fromRoomId)!;
+                    const toRoom = roomMap.get(cor.toRoomId)!;
+                    const elevs = new Set([cor.elevationStart, cor.elevationEnd]);
+                    expect(elevs).toContain(fromRoom.elevation);
+                    expect(elevs).toContain(toRoom.elevation);
+                }
+            }
+        });
+
+        it('spawnElevation matches the safe room elevation', () => {
+            for (let seed = 0; seed < 10; seed++) {
+                const layout = gen(seed);
+                const safe = layout.rooms.find(r => r.isSafe)!;
+                expect(layout.spawnElevation).toBe(safe.elevation);
+            }
+        });
+
+        it('teleporterElevation matches the teleporter room elevation', () => {
+            for (let seed = 0; seed < 10; seed++) {
+                const layout = gen(seed);
+                const tpRoom = layout.rooms.find(r => r.isTeleporterRoom)!;
+                expect(layout.teleporterElevation).toBe(tpRoom.elevation);
+            }
+        });
+
+        it('corridor walls are taller when connecting rooms at different elevations', () => {
+            let foundTaller = false;
+            for (let seed = 0; seed < 50; seed++) {
+                const layout = gen(seed);
+                for (const wall of layout.walls) {
+                    if (wall.height > WALL_HEIGHT) {
+                        foundTaller = true;
+                        break;
+                    }
+                }
+                if (foundTaller) break;
+            }
+            expect(foundTaller).toBe(true);
         });
     });
 });
