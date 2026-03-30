@@ -31,6 +31,35 @@ float valueNoise(vec2 p) {
 }
 `;
 
+/** Multi-octave FBM, scratch lines, and smudge helpers for the wall shader. */
+const GLSL_METAL_DETAIL = `
+float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    vec2 shift = vec2(100.0);
+    for (int i = 0; i < 5; i++) {
+        v += a * valueNoise(p);
+        p = p * 2.0 + shift;
+        a *= 0.5;
+    }
+    return v;
+}
+
+float scratchLine(vec2 uv, vec2 id, float seed) {
+    float h = shaderHash(id + seed);
+    float angle = h * 3.14159;
+    float cs = cos(angle);
+    float sn = sin(angle);
+    vec2 f = fract(uv) - 0.5;
+    float along = f.x * cs + f.y * sn;
+    float perp = abs(-f.x * sn + f.y * cs);
+    float len = 0.15 + h * 0.35;
+    float present = step(0.6, shaderHash(id + seed + 77.0));
+    return (1.0 - smoothstep(0.003, 0.008, perp)) *
+           smoothstep(len, len - 0.02, abs(along)) * present;
+}
+`;
+
 /** Vertex shader: declare the world-position varying. */
 const VERTEX_WORLD_POS_PREAMBLE = 'varying vec3 vWorldPosition;\n';
 
@@ -132,6 +161,7 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
             varying vec3 vWorldNormal;
             ${GLSL_HASH}
             ${GLSL_VALUE_NOISE}
+            ${GLSL_METAL_DETAIL}
             ${shader.fragmentShader}
         `;
 
@@ -168,11 +198,40 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
             float sB = smoothstep(0.0, sw, pFrac.y) * smoothstep(0.0, sw, 1.0 - pFrac.y);
             float seam = sA * sB;
 
+            // Per-panel shade variation
             float panelVar = shaderHash(pId + panelSeed * 37.0) * 0.12 - 0.06;
-            float surfNoise = valueNoise(panelUV * 4.0) * 0.08 - 0.04;
+
+            // Multi-octave surface noise for fine grain
+            float grain = fbm(panelUV * 18.0 + panelSeed * 5.0) * 0.12 - 0.06;
+
+            // Directional brush marks (anisotropic streaks)
+            float brushAngle = shaderHash(pId + panelSeed * 13.0) * 0.4 - 0.2;
+            vec2 brushUV = vec2(
+                panelUV.x * cos(brushAngle) - panelUV.y * sin(brushAngle),
+                panelUV.x * sin(brushAngle) + panelUV.y * cos(brushAngle)
+            );
+            float brush = (valueNoise(vec2(brushUV.x * 3.0, brushUV.y * 40.0)) - 0.5) * 0.07;
+
+            // Scratch lines at two scales
+            vec2 scrUV1 = panelUV * 6.0;
+            vec2 scrId1 = floor(scrUV1);
+            float scr1 = scratchLine(scrUV1, scrId1, panelSeed);
+
+            vec2 scrUV2 = panelUV * 14.0;
+            vec2 scrId2 = floor(scrUV2);
+            float scr2 = scratchLine(scrUV2, scrId2, panelSeed + 50.0);
+
+            float scratches = max(scr1 * 0.14, scr2 * 0.08);
+
+            // Smudge splotches
+            float smudgeN = fbm(panelUV * 3.0 + panelSeed * 7.0);
+            float smudge = smoothstep(0.48, 0.55, smudgeN) * 0.08;
+
+            // Darken near seams for welded/sealed edge look
+            float edgeDarken = (1.0 - seam) * 0.12;
 
             diffuseColor.rgb *= mix(0.65, 1.0, seam);
-            diffuseColor.rgb += panelVar + surfNoise;
+            diffuseColor.rgb += panelVar + grain + brush - scratches - smudge - edgeDarken;
             `,
         );
 
