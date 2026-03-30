@@ -455,6 +455,11 @@ export abstract class BaseStage {
             mixer.update(dt);
         }
 
+        // Update barrel destruction animations
+        for (const barrel of this.breakableBarrels) {
+            barrel.update(dt);
+        }
+
         if (this.dungeonRooms.length > 0) {
             this.updateRoomAggro(player);
             this.checkTeleporterActivation();

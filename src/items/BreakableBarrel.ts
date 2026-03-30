@@ -29,6 +29,13 @@ export interface BreakableBarrelConfig {
  * Once destroyed it spawns loot (weapons, chips, cores, or bits) on the floor,
  * similar to enemy drops. Does NOT grant tech points.
  */
+/** A single fragment spawned when the barrel is destroyed. */
+interface BarrelFragment {
+    mesh: THREE.Mesh;
+    velocity: THREE.Vector3;
+    angularVelocity: THREE.Vector3;
+}
+
 export class BreakableBarrel implements Breakable {
     mesh: THREE.Mesh;
     body: CANNON.Body;
@@ -50,6 +57,22 @@ export class BreakableBarrel implements Breakable {
     private static readonly RADIAL_SEGMENTS = 8;
     /** Number of height segments (must be even so there is a middle ring). */
     private static readonly HEIGHT_SEGMENTS = 4;
+
+    /** Number of fragments spawned on destruction. */
+    private static readonly FRAGMENT_COUNT = 8;
+    /** Time (seconds) after destruction when fragments start fading. */
+    private static readonly FADE_START = 0.8;
+    /** Time (seconds) after destruction when fragments are fully transparent. */
+    private static readonly FADE_END = 1.1;
+    /** Gravity applied to fragments (m/s²). */
+    private static readonly FRAGMENT_GRAVITY = 9.8;
+
+    /** Active destruction fragments (empty until the barrel is hit). */
+    private fragments: BarrelFragment[] = [];
+    /** Elapsed time since the barrel was destroyed. */
+    private destroyTimer: number = 0;
+    /** Whether the destruction animation has finished and resources are disposed. */
+    private animationDone: boolean = false;
 
     constructor(
         scene: THREE.Scene,
@@ -116,11 +139,125 @@ export class BreakableBarrel implements Breakable {
         if (this.isDestroyed) return;
         this.isDestroyed = true;
 
-        // Remove visuals and physics
+        // Remove original mesh and physics body immediately
         this.scene.remove(this.mesh);
         this.mesh.geometry.dispose();
         (this.mesh.material as THREE.Material).dispose();
         this.world.removeBody(this.body);
+
+        // Spawn fragment meshes that fall apart
+        this.spawnFragments();
+        this.destroyTimer = 0;
+    }
+
+    /**
+     * Update the destruction animation. Must be called each frame after onHit.
+     * Moves fragments under gravity, applies tumble rotation, and fades them
+     * out between FADE_START and FADE_END seconds. Disposes resources once done.
+     */
+    update(dt: number): void {
+        if (!this.isDestroyed || this.animationDone || this.fragments.length === 0) return;
+
+        this.destroyTimer += dt;
+
+        // Compute opacity: 1 before FADE_START, ramp to 0 at FADE_END
+        let opacity = 1;
+        if (this.destroyTimer >= BreakableBarrel.FADE_END) {
+            opacity = 0;
+        } else if (this.destroyTimer >= BreakableBarrel.FADE_START) {
+            opacity = 1 - (this.destroyTimer - BreakableBarrel.FADE_START) /
+                (BreakableBarrel.FADE_END - BreakableBarrel.FADE_START);
+        }
+
+        for (const frag of this.fragments) {
+            // Apply gravity
+            frag.velocity.y -= BreakableBarrel.FRAGMENT_GRAVITY * dt;
+
+            // Move
+            frag.mesh.position.x += frag.velocity.x * dt;
+            frag.mesh.position.y += frag.velocity.y * dt;
+            frag.mesh.position.z += frag.velocity.z * dt;
+
+            // Tumble
+            frag.mesh.rotation.x += frag.angularVelocity.x * dt;
+            frag.mesh.rotation.y += frag.angularVelocity.y * dt;
+            frag.mesh.rotation.z += frag.angularVelocity.z * dt;
+
+            // Fade
+            (frag.mesh.material as THREE.MeshStandardMaterial).opacity = opacity;
+        }
+
+        // Once fully transparent, dispose all fragment resources
+        if (opacity <= 0) {
+            this.disposeFragments();
+        }
+    }
+
+    /** Create fragment meshes radiating outward from the barrel centre. */
+    private spawnFragments(): void {
+        const cx = this.mesh.position.x;
+        const cy = this.mesh.position.y;
+        const cz = this.mesh.position.z;
+        const halfH = BreakableBarrel.HEIGHT / 2;
+
+        const sharedGeo = new THREE.BoxGeometry(0.18, 0.25, 0.12);
+
+        for (let i = 0; i < BreakableBarrel.FRAGMENT_COUNT; i++) {
+            const angle = (i / BreakableBarrel.FRAGMENT_COUNT) * Math.PI * 2;
+            const r = BreakableBarrel.MID_RADIUS * 0.6;
+
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0x8B4513,
+                transparent: true,
+                opacity: 1.0,
+            });
+
+            const fMesh = new THREE.Mesh(sharedGeo, mat);
+            // Position fragments in a ring around the barrel centre, random height
+            fMesh.position.set(
+                cx + Math.cos(angle) * r,
+                cy + (Math.random() - 0.5) * halfH,
+                cz + Math.sin(angle) * r,
+            );
+            // Random initial rotation
+            fMesh.rotation.set(
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+                Math.random() * Math.PI,
+            );
+            fMesh.castShadow = true;
+            this.scene.add(fMesh);
+
+            // Outward + upward velocity
+            const speed = 1.5 + Math.random() * 1.5;
+            const vy = 2 + Math.random() * 2;
+            const velocity = new THREE.Vector3(
+                Math.cos(angle) * speed,
+                vy,
+                Math.sin(angle) * speed,
+            );
+
+            const angularVelocity = new THREE.Vector3(
+                (Math.random() - 0.5) * 8,
+                (Math.random() - 0.5) * 8,
+                (Math.random() - 0.5) * 8,
+            );
+
+            this.fragments.push({ mesh: fMesh, velocity, angularVelocity });
+        }
+    }
+
+    /** Remove all fragment meshes from the scene and dispose their materials. */
+    private disposeFragments(): void {
+        if (this.fragments.length === 0) return;
+        const sharedGeo = this.fragments[0].mesh.geometry;
+        for (const frag of this.fragments) {
+            this.scene.remove(frag.mesh);
+            (frag.mesh.material as THREE.Material).dispose();
+        }
+        sharedGeo.dispose();
+        this.fragments = [];
+        this.animationDone = true;
     }
 
     /**
@@ -239,5 +376,7 @@ export class BreakableBarrel implements Breakable {
             (this.mesh.material as THREE.Material).dispose();
             this.world.removeBody(this.body);
         }
+        // Always clean up any in-flight fragments
+        this.disposeFragments();
     }
 }
