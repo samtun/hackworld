@@ -81,6 +81,7 @@ export class FloatingIndicator {
         });
 
         this.mesh = new THREE.Mesh(geometry, material);
+        this.mesh.layers.set(1); // Use a specific layer for floating indicators
         this.mesh.position.set(numberPosition.x, numberPosition.y, numberPosition.z);
 
         // Set high render order to ensure it renders last (on top)
