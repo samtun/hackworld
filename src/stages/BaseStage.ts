@@ -480,6 +480,11 @@ export abstract class BaseStage {
             mixer.update(dt);
         }
 
+        // Update barrel destruction animations
+        for (const barrel of this.breakableBarrels) {
+            barrel.update(dt);
+        }
+      
         // Update electric traps (damage, particles, activation)
         for (const trap of this.electricTraps) {
             trap.update(dt, player, this.enemies);
