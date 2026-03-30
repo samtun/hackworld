@@ -189,7 +189,7 @@ export class Player extends BaseMesh {
     private readonly LEVEL_UP_PARTICLE_LIFETIME: number = 0.6; // 0.6 seconds for the explosion
 
     // Level up shockwave timing
-    private readonly LEVEL_UP_SHOCKWAVE_RANGE: number = 15;
+    private readonly LEVEL_UP_SHOCKWAVE_RANGE: number = 10;
     private readonly LEVEL_UP_SHOCKWAVE_DELAY: number = 0.4;
     private levelUpShockwaveTimer: number = 0;
     private shockwavePending: boolean = false;
