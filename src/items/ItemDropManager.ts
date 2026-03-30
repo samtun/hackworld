@@ -102,6 +102,17 @@ export class ItemDropManager {
         return null;
     }
 
+    /**
+     * Register an externally-created drop (e.g. from a breakable barrel) with
+     * the manager so it receives updates and can be picked up.
+     */
+    addDrop(drop: ItemDrop): void {
+        const arr = this.drops.get(drop.dropType);
+        if (arr) {
+            arr.push(drop);
+        }
+    }
+
     // Delegate pickup to strategy, then cleanup and remove the drop from internal storage
     pickup(key: ItemDropType, scene: THREE.Scene, drop: ItemDrop, player: Player) {
         const strategy = this.itemDropStrategies.find(strategy => strategy.key === key);

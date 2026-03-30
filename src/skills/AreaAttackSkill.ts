@@ -6,6 +6,7 @@ import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
 import { SkillTechType } from './SkillTechType';
 import { Tier } from '../items/TierManager';
+import { Breakable } from '../items/Breakable';
 
 /**
  * Area Attack Skill
@@ -122,6 +123,13 @@ export class AreaAttackSkill extends Skill {
                         this.hitEnemies.set(entity, 0);
                         this.player.tryIncrementSkillTech(SkillTechType.BLAST);
                         console.log(`Area attack hit enemy for ${damage} damage`);
+                    }
+                } else if (entity && typeof entity.onHit === 'function' && typeof entity.isDestroyed === 'boolean' && !(entity as Breakable).isDestroyed) {
+                    const dx = body.position.x - this.player.body.position.x;
+                    const dz = body.position.z - this.player.body.position.z;
+                    const distance = Math.sqrt(dx * dx + dz * dz);
+                    if (distance <= scale && this.player.onBreakableHit) {
+                        this.player.onBreakableHit(entity as Breakable);
                     }
                 }
             }

@@ -22,6 +22,10 @@ export class SecurityCore extends BaseStage {
         enemyCount: { min: 2, max: 8, areaPerEnemy: 50, largeFraction: 0.35 },
         obstacleCount: { min: 1, max: 3 },
         hasBoss: true,
+        chestCount: { min: 1, max: 3 },
+        chestItemCount: 4,
+        chestQualityFactor: 1.2,
+        barrelCount: { min: 1, max: 4 },
     };
 
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
@@ -70,5 +74,9 @@ export class SecurityCore extends BaseStage {
 
         // Spawn enemies with room assignments so aggro is room-gated
         this.spawnEnemiesFromLayout(layout);
+
+        // Build loot chests and breakable barrels
+        this.buildChestsFromLayout(layout);
+        this.buildBarrelsFromLayout(layout);
     }
 }

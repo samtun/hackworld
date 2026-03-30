@@ -11,6 +11,8 @@ import { BossEnemy } from '../enemies/BossEnemy';
 import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
 import { createWallMaterial, updateWallUniforms } from '../WallShaderUtils';
 import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
+import { LootChest } from '../items/LootChest';
+import { BreakableBarrel } from '../items/BreakableBarrel';
 
 /**
  * Base class for all dungeon stages
@@ -39,6 +41,8 @@ export abstract class BaseStage {
     enemies: Enemy[] = [];
     mixers: THREE.AnimationMixer[] = [];
     npcs: Set<Npc> = new Set<Npc>();
+    lootChests: LootChest[] = [];
+    breakableBarrels: BreakableBarrel[] = [];
 
     /**
      * Room definitions set by procedural stages.
@@ -164,6 +168,18 @@ export abstract class BaseStage {
             npc.cleanup(this.scene, this.physicsWorld);
         }
         this.npcs.clear();
+
+        // Clean up loot chests
+        for (const chest of this.lootChests) {
+            chest.cleanup();
+        }
+        this.lootChests = [];
+
+        // Clean up breakable barrels
+        for (const barrel of this.breakableBarrels) {
+            barrel.cleanup();
+        }
+        this.breakableBarrels = [];
 
         // Clear teleporter reference
         this.teleporter = undefined;
@@ -378,6 +394,33 @@ export abstract class BaseStage {
     protected spawnBoss(position: CANNON.Vec3): void {
         const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
         this.enemies.push(boss);
+    }
+
+    /**
+     * Build loot chests from the dungeon layout.
+     */
+    protected buildChestsFromLayout(layout: DungeonLayout): void {
+        for (const cs of layout.chestSpawns) {
+            const chest = new LootChest(
+                this.scene, this.physicsWorld, this.physicsMaterial,
+                new CANNON.Vec3(cs.x, cs.y, cs.z),
+                cs.itemCount, cs.itemQualityFactor,
+            );
+            this.lootChests.push(chest);
+        }
+    }
+
+    /**
+     * Build breakable barrels from the dungeon layout.
+     */
+    protected buildBarrelsFromLayout(layout: DungeonLayout): void {
+        for (const bs of layout.barrelSpawns) {
+            const barrel = new BreakableBarrel(
+                this.scene, this.physicsWorld, this.physicsMaterial,
+                new CANNON.Vec3(bs.x, bs.y, bs.z),
+            );
+            this.breakableBarrels.push(barrel);
+        }
     }
 
     /**

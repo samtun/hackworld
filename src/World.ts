@@ -11,6 +11,8 @@ import { HealingSystem } from './systems/HealingSystem';
 import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 import { GameProgressManager } from './GameProgressManager';
 import { ItemDrop } from './items/ItemDrop';
+import { LootChest } from './items/LootChest';
+import { BreakableBarrel } from './items/BreakableBarrel';
 
 export class World {
     scene: THREE.Scene;
@@ -419,5 +421,30 @@ export class World {
     pickupDrop(drop: ItemDrop, player: Player): void {
         this.floatingIndicatorManager.spawnPickupIndicator(drop);
         this.itemDropManager.pickup(drop.dropType, this.scene, drop, player);
+    }
+
+    /**
+     * Get all loot chests from the current stage.
+     */
+    getLootChests(): LootChest[] {
+        return this.currentStage?.lootChests ?? [];
+    }
+
+    /**
+     * Get all non-destroyed breakable barrels from the current stage.
+     */
+    getBreakableBarrels(): BreakableBarrel[] {
+        return (this.currentStage?.breakableBarrels ?? []).filter(b => !b.isDestroyed);
+    }
+
+    /**
+     * Destroy a breakable barrel and register its loot drop with the item drop manager.
+     */
+    destroyBarrel(barrel: BreakableBarrel, player: Player): void {
+        barrel.onHit();
+        const drop = barrel.generateDrop(this.scene, player);
+        if (drop) {
+            this.itemDropManager.addDrop(drop);
+        }
     }
 }

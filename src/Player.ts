@@ -13,6 +13,7 @@ import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { BaseMesh } from './BaseMesh';
 import { StatType } from './StatType';
 import { Skill } from './skills/Skill';
+import { Breakable } from './items/Breakable';
 import { LaserBeamSkill } from './skills/LaserBeamSkill';
 import { HealingSkill } from './skills/HealingSkill';
 import { AreaAttackSkill } from './skills/AreaAttackSkill';
@@ -168,6 +169,9 @@ export class Player extends BaseMesh {
     private attackHitEnemies: Set<Enemy> = new Set();
     private attackLockedUntilRelease: boolean = false;
 
+    /** Callback invoked when the player's weapon or skill hits a breakable entity. */
+    onBreakableHit?: (breakable: Breakable) => void;
+
     // Block state
     isBlocking: boolean = false;
     private blockTimer: number = 0;
@@ -298,6 +302,8 @@ export class Player extends BaseMesh {
             const entity = e.body.entity;
             if (entity && entity instanceof Enemy) {
                 this.handleAttackHit(entity);
+            } else if (entity && typeof entity.onHit === 'function' && typeof entity.isDestroyed === 'boolean') {
+                this.handleBreakableHit(entity as Breakable);
             }
         };
         this.setWeapon(swordItem);
@@ -1108,6 +1114,13 @@ export class Player extends BaseMesh {
 
         // Mark this enemy as hit during this attack
         this.attackHitEnemies.add(enemy);
+    }
+
+    private handleBreakableHit(breakable: Breakable): void {
+        if (breakable.isDestroyed) return;
+        if (this.onBreakableHit) {
+            this.onBreakableHit(breakable);
+        }
     }
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3, isCriticalHit: boolean = false): void {

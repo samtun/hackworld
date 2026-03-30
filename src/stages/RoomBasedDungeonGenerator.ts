@@ -129,6 +129,24 @@ export interface RoomObstacle {
     depth: number;
 }
 
+/** A loot chest spawn point. */
+export interface ChestSpawn {
+    x: number;
+    y: number;
+    z: number;
+    /** Number of items inside the chest. */
+    itemCount: number;
+    /** Bonus factor for item tier randomization. */
+    itemQualityFactor: number;
+}
+
+/** A breakable barrel spawn point. */
+export interface BarrelSpawn {
+    x: number;
+    y: number;
+    z: number;
+}
+
 /** Complete dungeon layout returned by {@link RoomBasedDungeonGenerator.generate}. */
 export interface DungeonLayout {
     rooms: DungeonRoom[];
@@ -136,6 +154,10 @@ export interface DungeonLayout {
     walls: WallSegment[];
     obstacles: RoomObstacle[];
     roomSpawns: RoomSpawns[];
+    /** Loot chest spawn positions. */
+    chestSpawns: ChestSpawn[];
+    /** Breakable barrel spawn positions. */
+    barrelSpawns: BarrelSpawn[];
     /** Centre of the safe (starting) room. */
     spawnPosition: Vec2;
     /** Position of the teleporter in the teleporter room (centred against the far wall). */
@@ -184,6 +206,14 @@ export interface RoomGenerationConfig {
     obstacleCount: { min: number; max: number };
     /** Whether a boss should be placed in the final room. */
     hasBoss: boolean;
+    /** Loot chest count range across the entire dungeon (default: 0). */
+    chestCount?: { min: number; max: number };
+    /** Number of items per chest (default: 3). */
+    chestItemCount?: number;
+    /** Quality factor for chest items (default: 1.0). */
+    chestQualityFactor?: number;
+    /** Breakable barrel count range per combat room (default: 0). */
+    barrelCount?: { min: number; max: number };
 }
 
 // ---------------------------------------------------------------------------
@@ -304,9 +334,12 @@ export class RoomBasedDungeonGenerator {
         const obstacles = this.buildObstacles(rooms, config);
         const roomSpawns = this.buildEnemySpawns(rooms, config, obstacles, teleporterPosition);
 
+        const chestSpawns = this.buildChestSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
+        const barrelSpawns = this.buildBarrelSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
+
         const floorBounds = this.computeFloorBounds(rooms, corridors);
 
-        return { rooms, corridors, walls, obstacles, roomSpawns, spawnPosition, teleporterPosition, floorBounds };
+        return { rooms, corridors, walls, obstacles, roomSpawns, chestSpawns, barrelSpawns, spawnPosition, teleporterPosition, floorBounds };
     }
 
     // -----------------------------------------------------------------------
@@ -985,6 +1018,121 @@ export class RoomBasedDungeonGenerator {
         for (let i = 0; i < numLarge; i++) trySpawn('large', 1.0);
 
         return spawns;
+    }
+
+    // -----------------------------------------------------------------------
+    // Chest spawn generation
+    // -----------------------------------------------------------------------
+
+    private buildChestSpawns(
+        rooms: DungeonRoom[],
+        config: RoomGenerationConfig,
+        obstacles: RoomObstacle[],
+        teleporterPos: Vec2,
+        spawnPos: Vec2,
+    ): ChestSpawn[] {
+        if (!config.chestCount) return [];
+
+        const totalChests = this.rangeInt(config.chestCount.min, config.chestCount.max);
+        if (totalChests <= 0) return [];
+
+        const itemCount = config.chestItemCount ?? 3;
+        const qualityFactor = config.chestQualityFactor ?? 1.0;
+
+        // Eligible rooms: combat rooms only (not safe, not teleporter)
+        const eligibleRooms = rooms.filter(r => !r.isSafe && !r.isTeleporterRoom);
+        if (eligibleRooms.length === 0) return [];
+
+        const chests: ChestSpawn[] = [];
+        // Distribute chests across eligible rooms
+        const shuffled = this.shuffle([...eligibleRooms]);
+
+        for (let i = 0; i < totalChests; i++) {
+            const room = shuffled[i % shuffled.length];
+            const pos = this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos);
+            if (pos) {
+                chests.push({ x: pos.x, y: 0, z: pos.z, itemCount, itemQualityFactor: qualityFactor });
+            }
+        }
+        return chests;
+    }
+
+    // -----------------------------------------------------------------------
+    // Barrel spawn generation
+    // -----------------------------------------------------------------------
+
+    private buildBarrelSpawns(
+        rooms: DungeonRoom[],
+        config: RoomGenerationConfig,
+        obstacles: RoomObstacle[],
+        teleporterPos: Vec2,
+        spawnPos: Vec2,
+    ): BarrelSpawn[] {
+        if (!config.barrelCount) return [];
+
+        const barrels: BarrelSpawn[] = [];
+
+        for (const room of rooms) {
+            if (room.isSafe || room.isTeleporterRoom) continue;
+
+            const count = this.rangeInt(config.barrelCount.min, config.barrelCount.max);
+            for (let i = 0; i < count; i++) {
+                const pos = this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos);
+                if (pos) {
+                    barrels.push({ x: pos.x, y: 0, z: pos.z });
+                }
+            }
+        }
+        return barrels;
+    }
+
+    /**
+     * Find a valid spawn position inside a room that avoids obstacles,
+     * the teleporter, and the player spawn.
+     */
+    private findSpawnPosition(
+        room: DungeonRoom,
+        obstacles: RoomObstacle[],
+        teleporterPos: Vec2,
+        spawnPos: Vec2,
+    ): Vec2 | null {
+        const exclusions: Array<{ x: number; z: number; radius: number }> = [];
+        exclusions.push({ x: teleporterPos.x, z: teleporterPos.z, radius: 3 });
+        exclusions.push({ x: spawnPos.x, z: spawnPos.z, radius: 3 });
+
+        for (const obs of obstacles) {
+            if (
+                obs.x >= room.centerX - room.width / 2 &&
+                obs.x <= room.centerX + room.width / 2 &&
+                obs.z >= room.centerZ - room.depth / 2 &&
+                obs.z <= room.centerZ + room.depth / 2
+            ) {
+                exclusions.push({ x: obs.x, z: obs.z, radius: Math.max(obs.width, obs.depth) });
+            }
+        }
+
+        // Also exclude door openings
+        for (const door of room.doors) {
+            const doorPos = this.doorWorldPosition(room, door);
+            exclusions.push({ x: doorPos.x, z: doorPos.z, radius: CORRIDOR_WIDTH + 1 });
+        }
+
+        const minX = room.centerX - room.width / 2 + SPAWN_PADDING;
+        const maxX = room.centerX + room.width / 2 - SPAWN_PADDING;
+        const minZ = room.centerZ - room.depth / 2 + SPAWN_PADDING;
+        const maxZ = room.centerZ + room.depth / 2 - SPAWN_PADDING;
+
+        for (let attempt = 0; attempt < 30; attempt++) {
+            const x = this.range(minX, maxX);
+            const z = this.range(minZ, maxZ);
+            const excluded = exclusions.some(ez => {
+                const dx = x - ez.x;
+                const dz = z - ez.z;
+                return dx * dx + dz * dz < ez.radius * ez.radius;
+            });
+            if (!excluded) return { x, z };
+        }
+        return null;
     }
 
     // -----------------------------------------------------------------------

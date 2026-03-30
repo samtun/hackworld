@@ -203,6 +203,15 @@ export class Game {
         this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, initialSpawn, this.input, this.defaultMaterial));
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
+        this.player.onBreakableHit = (breakable) => {
+            // Find the barrel that matches this breakable and destroy it
+            for (const barrel of this.world.getBreakableBarrels()) {
+                if (barrel === breakable) {
+                    this.world.destroyBarrel(barrel, this.player);
+                    break;
+                }
+            }
+        };
 
         // Register player with UI so skill indicators are created
         this.ui.registerPlayer(this.player);
@@ -306,7 +315,12 @@ export class Game {
             this.npcDialogue.isVisible ||
             this.xDataUpgrade.isVisible ||
             this.saveManager.isVisible ||
-            this.cardManager.isVisible;
+            this.cardManager.isVisible ||
+            this.isAnyChestUIOpen();
+    }
+
+    private isAnyChestUIOpen(): boolean {
+        return this.world.getLootChests().some(chest => chest.isUIVisible);
     }
 
     onWindowResize() {
@@ -495,6 +509,13 @@ export class Game {
             this.cardManager.update(this.player, this.input);
         }
 
+        // Update any open chest UIs
+        for (const chest of this.world.getLootChests()) {
+            if (chest.isUIVisible) {
+                chest.updateUI(this.player, this.input);
+            }
+        }
+
         // Update mobile skills button visibility based on any menu being open
         if (this.input.mobileControls) {
             this.input.mobileControls.setSkillsButtonVisible(!this.isAnyMenuOpen());
@@ -564,6 +585,23 @@ export class Game {
                             this.world.pickupDrop(interactiveDrop, this.player);
                         }
                     };
+                }
+            }
+
+            // Check loot chests
+            if (!nearbyInteractive) {
+                for (const chest of this.world.getLootChests()) {
+                    if (!chest.isOpened && chest.isPlayerNearby(this.player.position)) {
+                        nearbyInteractive = {
+                            type: InteractiveEntityType.CHEST,
+                            data: chest,
+                            hint: chest.getInteractionHint(this.input),
+                            action: () => {
+                                chest.open(this.player);
+                            }
+                        };
+                        break;
+                    }
                 }
             }
         }
