@@ -1,0 +1,115 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <radialGradient id="bg4" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#001825"/>
+      <stop offset="100%" stop-color="#000508"/>
+    </radialGradient>
+    <filter id="glow4">
+      <feGaussianBlur stdDeviation="3" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg4)"/>
+  <!-- Operations center floor and ceiling lines -->
+  <line x1="0" y1="900" x2="1920" y2="900" stroke="#00253a" stroke-width="2"/>
+  <line x1="0" y1="120" x2="1920" y2="120" stroke="#00253a" stroke-width="1" opacity="0.5"/>
+  <!-- Holographic display screens - main wall -->
+  <!-- Left screen cluster -->
+  <rect x="60" y="180" width="300" height="200" fill="#002030" stroke="#004466" stroke-width="2"/>
+  <rect x="65" y="185" width="290" height="190" fill="#001520"/>
+  <!-- Network map on left screen -->
+  <g stroke="#006699" stroke-width="1" fill="none" opacity="0.7">
+    <circle cx="150" cy="255" r="15" fill="none" stroke="#00aaff"/>
+    <circle cx="250" cy="230" r="10" fill="none" stroke="#00aaff"/>
+    <circle cx="300" cy="300" r="12" fill="none" stroke="#00aaff"/>
+    <line x1="150" y1="255" x2="250" y2="230"/>
+    <line x1="250" y1="230" x2="300" y2="300"/>
+    <line x1="150" y1="255" x2="300" y2="300"/>
+  </g>
+  <!-- Red infection spread zones on network map -->
+  <g fill="#cc0000" opacity="0.5" filter="url(#glow4)">
+    <circle cx="250" cy="230" r="25"/>
+    <circle cx="300" cy="300" r="30"/>
+    <circle cx="320" cy="250" r="18"/>
+  </g>
+  <text x="210" y="355" font-family="monospace" font-size="11" fill="#ff3300" opacity="0.9">CRITICAL BREACH</text>
+  <!-- Center main screen (large) -->
+  <rect x="460" y="150" width="1000" height="580" fill="#001828" stroke="#005577" stroke-width="3"/>
+  <rect x="465" y="155" width="990" height="570" fill="#000e18"/>
+  <!-- Large network map on center screen -->
+  <g stroke="#003344" stroke-width="1" opacity="0.5">
+    <line x1="465" y1="200" x2="1455" y2="200"/>
+    <line x1="465" y1="260" x2="1455" y2="260"/>
+    <line x1="465" y1="320" x2="1455" y2="320"/>
+    <line x1="465" y1="380" x2="1455" y2="380"/>
+    <line x1="465" y1="440" x2="1455" y2="440"/>
+    <line x1="465" y1="500" x2="1455" y2="500"/>
+    <line x1="465" y1="560" x2="1455" y2="560"/>
+    <line x1="565" y1="155" x2="565" y2="725"/>
+    <line x1="665" y1="155" x2="665" y2="725"/>
+    <line x1="765" y1="155" x2="765" y2="725"/>
+    <line x1="865" y1="155" x2="865" y2="725"/>
+    <line x1="965" y1="155" x2="965" y2="725"/>
+    <line x1="1065" y1="155" x2="1065" y2="725"/>
+    <line x1="1165" y1="155" x2="1165" y2="725"/>
+    <line x1="1265" y1="155" x2="1265" y2="725"/>
+    <line x1="1365" y1="155" x2="1365" y2="725"/>
+  </g>
+  <!-- Network nodes (healthy = blue, infected = red) -->
+  <g filter="url(#glow4)">
+    <circle cx="600" cy="250" r="8" fill="#0088ff"/>
+    <circle cx="760" cy="300" r="8" fill="#0088ff"/>
+    <circle cx="960" cy="280" r="10" fill="#0088ff"/>
+    <circle cx="1100" cy="350" r="8" fill="#0088ff"/>
+    <circle cx="1300" cy="300" r="8" fill="#0088ff"/>
+    <!-- Infected nodes -->
+    <circle cx="700" cy="400" r="12" fill="#ff2200" opacity="0.9"/>
+    <circle cx="850" cy="450" r="14" fill="#ff2200" opacity="0.9"/>
+    <circle cx="1000" cy="500" r="16" fill="#ff2200" opacity="0.85"/>
+    <circle cx="650" cy="550" r="11" fill="#ff4400" opacity="0.85"/>
+    <circle cx="1150" cy="520" r="13" fill="#ff2200" opacity="0.9"/>
+    <circle cx="900" cy="600" r="10" fill="#ff4400" opacity="0.8"/>
+  </g>
+  <!-- Connection lines between nodes -->
+  <g stroke="#003366" stroke-width="1" opacity="0.6">
+    <line x1="600" y1="250" x2="760" y2="300"/>
+    <line x1="760" y1="300" x2="960" y2="280"/>
+    <line x1="960" y1="280" x2="1100" y2="350"/>
+    <line x1="1100" y1="350" x2="1300" y2="300"/>
+  </g>
+  <g stroke="#cc0000" stroke-width="1" opacity="0.5">
+    <line x1="700" y1="400" x2="850" y2="450"/>
+    <line x1="850" y1="450" x2="1000" y2="500"/>
+    <line x1="1000" y1="500" x2="1150" y2="520"/>
+    <line x1="650" y1="550" x2="900" y2="600"/>
+  </g>
+  <!-- Status text -->
+  <text x="960" y="700" font-family="monospace" font-size="18" fill="#ff3300" text-anchor="middle" opacity="0.9" filter="url(#glow4)">⚠ ALL STANDARD COUNTERMEASURES FAILED ⚠</text>
+  <!-- Right screen cluster -->
+  <rect x="1560" y="180" width="300" height="200" fill="#002030" stroke="#004466" stroke-width="2"/>
+  <rect x="1565" y="185" width="290" height="190" fill="#001520"/>
+  <text x="1710" y="260" font-family="monospace" font-size="13" fill="#ff2200" text-anchor="middle">FIREWALL: OFFLINE</text>
+  <text x="1710" y="285" font-family="monospace" font-size="13" fill="#ff2200" text-anchor="middle">ANTIVIRUS: FAILED</text>
+  <text x="1710" y="310" font-family="monospace" font-size="13" fill="#ff2200" text-anchor="middle">BACKUP: CORRUPT</text>
+  <text x="1710" y="335" font-family="monospace" font-size="13" fill="#ff5500" text-anchor="middle">NEURAL LINK: READY</text>
+  <!-- Desk silhouettes -->
+  <g fill="#001018">
+    <rect x="0" y="880" width="400" height="80"/>
+    <rect x="500" y="860" width="400" height="100"/>
+    <rect x="1000" y="870" width="400" height="90"/>
+    <rect x="1500" y="880" width="420" height="80"/>
+  </g>
+  <!-- People silhouettes at desks -->
+  <g fill="#000c15">
+    <ellipse cx="200" cy="860" rx="25" ry="20"/>
+    <rect x="185" y="840" width="30" height="50"/>
+    <ellipse cx="700" cy="840" rx="25" ry="20"/>
+    <rect x="685" y="820" width="30" height="50"/>
+    <ellipse cx="1200" cy="850" rx="25" ry="20"/>
+    <rect x="1185" y="830" width="30" height="50"/>
+    <ellipse cx="1650" cy="860" rx="25" ry="20"/>
+    <rect x="1635" y="840" width="30" height="50"/>
+  </g>
+  <!-- Placeholder label -->
+  <text x="1880" y="30" font-family="monospace" font-size="12" fill="#333" text-anchor="end" opacity="0.5">PLACEHOLDER 04</text>
+</svg>
