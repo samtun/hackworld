@@ -89,10 +89,14 @@ export class StartMenu {
             if (item.enabled) {
                 el.style.cursor = 'pointer';
                 el.style.pointerEvents = 'auto';
-                el.addEventListener('click', () => {
-                    this.selectedIndex = i;
-                    this.updateStyles();
-                    this.confirm();
+                el.addEventListener('click', () => this.selectAndConfirm(i));
+                // On mobile the parent start-screen fires preventDefault() on touchstart,
+                // which blocks the browser from synthesising a click event.
+                // Handle touchend directly so tapping menu items works on touch devices.
+                el.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    this.selectAndConfirm(i);
                 });
             }
 
@@ -144,6 +148,12 @@ export class StartMenu {
                 this.itemEls[i].style.pointerEvents = 'auto';
             }
         });
+    }
+
+    private selectAndConfirm(index: number): void {
+        this.selectedIndex = index;
+        this.updateStyles();
+        this.confirm();
     }
 
     private navigate(direction: 1 | -1): void {
