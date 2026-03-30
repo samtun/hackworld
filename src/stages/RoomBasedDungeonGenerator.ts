@@ -376,11 +376,13 @@ export class RoomBasedDungeonGenerator {
         const teleporterPosition = this.computeTeleporterPosition(teleporterRoom);
 
         const obstacles = this.buildObstacles(rooms, config);
-        const roomSpawns = this.buildEnemySpawns(rooms, config, obstacles, teleporterPosition);
 
-        const chestSpawns = this.buildChestSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
-        const barrelSpawns = this.buildBarrelSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
+        // Build traps first so their areas can be excluded from enemy & barrel spawns
         const trapSpawns = this.buildTrapSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
+
+        const roomSpawns = this.buildEnemySpawns(rooms, config, obstacles, teleporterPosition, trapSpawns);
+        const chestSpawns = this.buildChestSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
+        const barrelSpawns = this.buildBarrelSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition, trapSpawns);
 
         const floorBounds = this.computeFloorBounds(rooms, corridors);
 
@@ -1058,10 +1060,11 @@ export class RoomBasedDungeonGenerator {
         config: RoomGenerationConfig,
         obstacles: RoomObstacle[],
         teleporterPos: Vec2,
+        trapSpawns: TrapSpawn[],
     ): RoomSpawns[] {
         return rooms.map(room => ({
             roomId: room.id,
-            spawns: this.spawnsForRoom(room, config, obstacles, teleporterPos),
+            spawns: this.spawnsForRoom(room, config, obstacles, teleporterPos, trapSpawns),
         }));
     }
 
@@ -1070,6 +1073,7 @@ export class RoomBasedDungeonGenerator {
         config: RoomGenerationConfig,
         obstacles: RoomObstacle[],
         teleporterPos: Vec2,
+        trapSpawns: TrapSpawn[],
     ): EnemySpawnPoint[] {
         if (room.isSafe || room.isTeleporterRoom || room.isLootRoom) return [];
 
@@ -1110,7 +1114,7 @@ export class RoomBasedDungeonGenerator {
                 const dx = x - ez.x;
                 const dz = z - ez.z;
                 return dx * dx + dz * dz < ez.radius * ez.radius;
-            });
+            }) || this.isOnTrap(x, z, trapSpawns);
 
         const spawns: EnemySpawnPoint[] = [];
 
@@ -1182,6 +1186,7 @@ export class RoomBasedDungeonGenerator {
         obstacles: RoomObstacle[],
         teleporterPos: Vec2,
         spawnPos: Vec2,
+        trapSpawns: TrapSpawn[],
     ): BarrelSpawn[] {
         if (!config.barrelCount) return [];
 
@@ -1196,8 +1201,8 @@ export class RoomBasedDungeonGenerator {
                 // to avoid breaking enemy navigation
                 const isEnemyRoom = !room.isLootRoom;
                 const pos = isEnemyRoom
-                    ? this.findPerimeterSpawnPosition(room, obstacles, teleporterPos, spawnPos)
-                    : this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos);
+                    ? this.findPerimeterSpawnPosition(room, obstacles, teleporterPos, spawnPos, trapSpawns)
+                    : this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos, trapSpawns);
                 if (pos) {
                     barrels.push({ x: pos.x, y: 0, z: pos.z });
                 }
@@ -1250,6 +1255,14 @@ export class RoomBasedDungeonGenerator {
         return traps;
     }
 
+    /** Check whether a point overlaps any trap (with 0.5m buffer). */
+    private isOnTrap(x: number, z: number, traps: TrapSpawn[]): boolean {
+        return traps.some(t =>
+            Math.abs(x - t.x) <= t.width / 2 + 0.5 &&
+            Math.abs(z - t.z) <= t.length / 2 + 0.5,
+        );
+    }
+
     /**
      * Find a valid spawn position inside a room that avoids obstacles,
      * the teleporter, and the player spawn.
@@ -1259,6 +1272,7 @@ export class RoomBasedDungeonGenerator {
         obstacles: RoomObstacle[],
         teleporterPos: Vec2,
         spawnPos: Vec2,
+        trapSpawns: TrapSpawn[] = [],
     ): Vec2 | null {
         const exclusions: Array<{ x: number; z: number; radius: number }> = [];
         exclusions.push({ x: teleporterPos.x, z: teleporterPos.z, radius: 3 });
@@ -1293,7 +1307,7 @@ export class RoomBasedDungeonGenerator {
                 const dx = x - ez.x;
                 const dz = z - ez.z;
                 return dx * dx + dz * dz < ez.radius * ez.radius;
-            });
+            }) || this.isOnTrap(x, z, trapSpawns);
             if (!excluded) return { x, z };
         }
         return null;
@@ -1309,6 +1323,7 @@ export class RoomBasedDungeonGenerator {
         obstacles: RoomObstacle[],
         teleporterPos: Vec2,
         spawnPos: Vec2,
+        trapSpawns: TrapSpawn[] = [],
     ): Vec2 | null {
         const exclusions: Array<{ x: number; z: number; radius: number }> = [];
         exclusions.push({ x: teleporterPos.x, z: teleporterPos.z, radius: 3 });
@@ -1345,7 +1360,7 @@ export class RoomBasedDungeonGenerator {
                 const dx = x - ez.x;
                 const dz = z - ez.z;
                 return dx * dx + dz * dz < ez.radius * ez.radius;
-            });
+            }) || this.isOnTrap(x, z, trapSpawns);
 
         for (let attempt = 0; attempt < MAX_SPAWN_ATTEMPTS; attempt++) {
             const x = this.range(minX, maxX);
