@@ -22,11 +22,16 @@ import { getHint, HintConfigs } from './ui/InputHints';
 import { Teleporter } from './Teleporter';
 import { LoreIntroduction } from './LoreIntroduction';
 import { StartMenuOption } from './StartMenu';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
+import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
+import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 export class Game {
     scene: THREE.Scene;
     camera: THREE.PerspectiveCamera;
     renderer: THREE.WebGLRenderer;
+    composer: EffectComposer;
     physicsWorld: CANNON.World;
     defaultMaterial: CANNON.Material;
 
@@ -83,8 +88,22 @@ export class Game {
         this.camera.lookAt(0, 0, 0);
 
         this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        this.renderer.setSize( window.innerWidth, window.innerHeight );
+
+        this.composer = new EffectComposer( this.renderer );
+
+        const renderPass = new RenderPass( this.scene, this.camera );
+        this.composer.addPass( renderPass );
+
+        const ssaoPass = new SSAOPass( this.scene, this.camera, window.innerWidth, window.innerHeight );
+        this.composer.addPass( ssaoPass );
+        ssaoPass.output = SSAOPass.OUTPUT.Default;
+
+        const outputPass = new OutputPass();
+        this.composer.addPass( outputPass );
+
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.shadowMap.enabled = true;
+        this.renderer.shadowMap.enabled = false;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
         document.getElementById('app')!.appendChild(this.renderer.domElement);
 
@@ -324,9 +343,12 @@ export class Game {
     }
 
     onWindowResize() {
-        this.camera.aspect = window.innerWidth / window.innerHeight;
+        const width = window.innerWidth;
+        const height = window.innerHeight;
+        this.camera.aspect = width / height;
         this.camera.updateProjectionMatrix();
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(width, height);
+		this.composer.setSize(width, height);
 
         // Update particle scale factors for screen-independent sizing
         if (this.world.currentStage) {
@@ -671,6 +693,6 @@ export class Game {
         }
 
         this.wasSelectPressed = isSelectPressed;
-        this.renderer.render(this.scene, this.camera);
+        this.composer.render();
     }
 }
