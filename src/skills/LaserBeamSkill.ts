@@ -6,6 +6,7 @@ import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
 import { SkillTechType } from './SkillTechType';
 import { Tier } from '../items/TierManager';
+import { Breakable, isBreakable } from '../items/Breakable';
 
 /**
  * Laser Beam Skill
@@ -194,6 +195,21 @@ export class LaserBeamSkill extends Skill {
                         hitEnemies.add(entity);
                         this.player.tryIncrementSkillTech(SkillTechType.RANGED);
                         console.log(`Laser beam hit enemy for ${damage} damage`);
+                        break;
+                    }
+                }
+            } else if (isBreakable(entity) && !entity.isDestroyed) {
+                for (let distance = 0; distance <= currentLength; distance += 1) {
+                    const checkPos = new CANNON.Vec3(
+                        startPos.x + forward.x * distance,
+                        startPos.y,
+                        startPos.z + forward.z * distance
+                    );
+                    const dx = body.position.x - checkPos.x;
+                    const dz = body.position.z - checkPos.z;
+                    const distanceToBeam = Math.sqrt(dx * dx + dz * dz);
+                    if (distanceToBeam <= this.effectiveRadius && this.player.onBreakableHit) {
+                        this.player.onBreakableHit(entity as Breakable);
                         break;
                     }
                 }

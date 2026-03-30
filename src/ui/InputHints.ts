@@ -79,5 +79,9 @@ export const HintConfigs = {
     menuNavigate: {
         keyboard: '<span class="key-icon">↑↓</span> Navigate | <span class="key-icon">ENTER</span> Select | <span class="key-icon">ESC</span> Back',
         controller: '<span class="btn-icon xbox-dpad">D-Pad</span> Navigate | <span class="btn-icon xbox-a">A</span> Select | <span class="btn-icon xbox-b">B</span> Back'
+    },
+    openChest: {
+        keyboard: '<span class="key-icon">ENTER</span> Open Chest',
+        controller: '<span class="btn-icon xbox-a">A</span> Open Chest'
     }
 };

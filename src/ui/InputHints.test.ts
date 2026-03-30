@@ -57,7 +57,7 @@ describe('HintConfigs', () => {
         const expectedKeys = [
             'interact', 'pickUp', 'enterTeleporter', 'continue', 'continueExit',
             'closeExit', 'buySellClose', 'upgradeClose', 'revealContinue',
-            'continuePack', 'inventoryNavigate', 'menuNavigate',
+            'continuePack', 'inventoryNavigate', 'menuNavigate', 'openChest',
         ];
         for (const key of expectedKeys) {
             expect(HintConfigs).toHaveProperty(key);
