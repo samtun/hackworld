@@ -22,6 +22,11 @@ export class NetworkMatrix extends BaseStage {
         enemyCount: { min: 2, max: 6, areaPerEnemy: 60, largeFraction: 0.25 },
         obstacleCount: { min: 1, max: 2 },
         hasBoss: false,
+        lootRoomCount: { min: 1, max: 1 },
+        chestsPerLootRoom: 3,
+        chestQualityFactor: 1.0,
+        chestInTeleporterRoom: true,
+        barrelCount: { min: 1, max: 3 },
     };
 
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
@@ -70,5 +75,9 @@ export class NetworkMatrix extends BaseStage {
 
         // Spawn enemies with room assignments so aggro is room-gated
         this.spawnEnemiesFromLayout(layout);
+
+        // Build loot chests and breakable barrels
+        this.buildChestsFromLayout(layout);
+        this.buildBarrelsFromLayout(layout);
     }
 }

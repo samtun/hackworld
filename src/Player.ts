@@ -13,6 +13,7 @@ import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { BaseMesh } from './BaseMesh';
 import { StatType } from './StatType';
 import { Skill } from './skills/Skill';
+import { Breakable, isBreakable } from './items/Breakable';
 import { LaserBeamSkill } from './skills/LaserBeamSkill';
 import { HealingSkill } from './skills/HealingSkill';
 import { AreaAttackSkill } from './skills/AreaAttackSkill';
@@ -168,6 +169,9 @@ export class Player extends BaseMesh {
     private attackHitEnemies: Set<Enemy> = new Set();
     private attackLockedUntilRelease: boolean = false;
 
+    /** Callback invoked when the player's weapon or skill hits a breakable entity. */
+    onBreakableHit?: (breakable: Breakable) => void;
+
     // Block state
     isBlocking: boolean = false;
     private blockTimer: number = 0;
@@ -298,6 +302,8 @@ export class Player extends BaseMesh {
             const entity = e.body.entity;
             if (entity && entity instanceof Enemy) {
                 this.handleAttackHit(entity);
+            } else if (isBreakable(entity) && !entity.isDestroyed) {
+                this.handleBreakableHit(entity);
             }
         };
         this.setWeapon(swordItem);
@@ -932,6 +938,35 @@ export class Player extends BaseMesh {
 
         // Weapon update & hit checks
         this.weapon.update(dt);
+
+        // Manual breakable detection during weapon attacks.
+        // Cannon-es broadphase skips static-static pairs, so the weapon
+        // trigger body (static) cannot detect static barrel bodies via
+        // physics events. Instead, check distance from the weapon hitbox
+        // to all breakable entities each frame while attacking.
+        // This follows the same pattern used by skill attacks (AreaAttackSkill,
+        // LaserBeamSkill) which also iterate world.bodies for breakable detection.
+        if (this.weapon.isAttacking && this.weapon.body) {
+            const weaponPos = this.weapon.body.position;
+            const weaponShape = this.weapon.body.shapes[0] as CANNON.Cylinder;
+            const weaponRadius = weaponShape ? weaponShape.radiusTop : 0.5;
+
+            for (const body of this.body.world!.bodies) {
+                const entity = (body as any).entity;
+                if (isBreakable(entity) && !entity.isDestroyed) {
+                    const dx = body.position.x - weaponPos.x;
+                    const dy = body.position.y - weaponPos.y;
+                    const dz = body.position.z - weaponPos.z;
+                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                    // Use the breakable's own collision shape radius for hit detection
+                    const breakableShape = body.shapes[0] as CANNON.Cylinder;
+                    const breakableRadius = breakableShape?.radiusTop ?? 0.4;
+                    if (dist <= weaponRadius + breakableRadius) {
+                        this.handleBreakableHit(entity);
+                    }
+                }
+            }
+        }
     }
 
     private startBlock(): void {
@@ -1108,6 +1143,13 @@ export class Player extends BaseMesh {
 
         // Mark this enemy as hit during this attack
         this.attackHitEnemies.add(enemy);
+    }
+
+    private handleBreakableHit(breakable: Breakable): void {
+        if (breakable.isDestroyed) return;
+        if (this.onBreakableHit) {
+            this.onBreakableHit(breakable);
+        }
     }
 
     takeDamage(amount: number, sourcePos?: CANNON.Vec3, isCriticalHit: boolean = false): void {
