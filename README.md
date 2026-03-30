@@ -18,6 +18,8 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 - **Tech Points** - Gain tech points by using a specific weapon type and use those points to equip higher level weapons
 - **Active Skills** - Use unique skills
 - **Loot** - Inventory system with randomized looting mechanics
+- **Loot Chests** - Find chests in dungeon rooms containing randomized weapons, cores, and chips. Open with interact (Enter / A) and take items freely
+- **Breakable Barrels** - Destroy barrels by attacking them (weapon or skill) to find loot dropped on the floor
 - **Card collectibles** - Collectible cards that are dropped by enemies in packs of 4 and can be opened in the lobby
 - **Save/Load system** - Save your game progress to a JSON file or load a previously saved game through the Save Manager NPC in the lobby. Save files are only compatible with the same major game version.
 - **Auto-Save** - Besides the option to manually save, your progress is automatically saved to the browser storage and restored on game start. The auto-save is only loaded when the major game version matches.

@@ -218,7 +218,7 @@ export class ChestUI {
         const navigateUp = input.isNavigateUpPressed();
         const navigateDown = input.isNavigateDownPressed();
         const select = input.isSelectPressed();
-        const cancel = (input as any).isCancelPressed ? (input as any).isCancelPressed() : false;
+        const cancel = input.isCancelPressed();
 
         if (cancel) {
             this.hide();

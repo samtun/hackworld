@@ -431,4 +431,72 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
     });
+
+    describe('chest and barrel spawns', () => {
+        const configWithChestsAndBarrels: RoomGenerationConfig = {
+            ...baseConfig,
+            chestCount: { min: 2, max: 3 },
+            chestItemCount: 4,
+            chestQualityFactor: 1.5,
+            barrelCount: { min: 1, max: 2 },
+        };
+
+        it('returns empty arrays when config omits chest/barrel settings', () => {
+            const layout = gen(42);
+            expect(layout.chestSpawns).toEqual([]);
+            expect(layout.barrelSpawns).toEqual([]);
+        });
+
+        it('generates chest spawns within configured range', () => {
+            const layout = gen(42, configWithChestsAndBarrels);
+            expect(layout.chestSpawns.length).toBeGreaterThanOrEqual(1);
+            expect(layout.chestSpawns.length).toBeLessThanOrEqual(3);
+        });
+
+        it('chest spawns carry itemCount and qualityFactor from config', () => {
+            const layout = gen(42, configWithChestsAndBarrels);
+            for (const cs of layout.chestSpawns) {
+                expect(cs.itemCount).toBe(4);
+                expect(cs.itemQualityFactor).toBe(1.5);
+            }
+        });
+
+        it('generates barrel spawns in combat rooms', () => {
+            const layout = gen(42, configWithChestsAndBarrels);
+            expect(layout.barrelSpawns.length).toBeGreaterThan(0);
+        });
+
+        it('chest/barrel spawns are inside room boundaries', () => {
+            for (const seed of [10, 42, 100, 200]) {
+                const layout = gen(seed, configWithChestsAndBarrels);
+                const allRoomBounds = layout.rooms.map(r => ({
+                    minX: r.centerX - r.width / 2,
+                    maxX: r.centerX + r.width / 2,
+                    minZ: r.centerZ - r.depth / 2,
+                    maxZ: r.centerZ + r.depth / 2,
+                }));
+
+                for (const cs of layout.chestSpawns) {
+                    const inSomeRoom = allRoomBounds.some(b =>
+                        cs.x >= b.minX && cs.x <= b.maxX && cs.z >= b.minZ && cs.z <= b.maxZ
+                    );
+                    expect(inSomeRoom).toBe(true);
+                }
+
+                for (const bs of layout.barrelSpawns) {
+                    const inSomeRoom = allRoomBounds.some(b =>
+                        bs.x >= b.minX && bs.x <= b.maxX && bs.z >= b.minZ && bs.z <= b.maxZ
+                    );
+                    expect(inSomeRoom).toBe(true);
+                }
+            }
+        });
+
+        it('chest/barrel spawns are deterministic for the same seed', () => {
+            const l1 = gen(42, configWithChestsAndBarrels);
+            const l2 = gen(42, configWithChestsAndBarrels);
+            expect(l1.chestSpawns).toEqual(l2.chestSpawns);
+            expect(l1.barrelSpawns).toEqual(l2.barrelSpawns);
+        });
+    });
 });
