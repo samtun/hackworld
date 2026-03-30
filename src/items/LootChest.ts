@@ -183,19 +183,15 @@ export class LootChest {
     // -----------------------------------------------------------------------
 
     /**
-     * Generate loot items. Base count is 1-2, then 2-3 additional items each
-     * with decreasing probability (60%, 35%, 15%).
+     * Generate loot items. One base item and then 2-3 additional items each
+     * with decreasing probability (50%, 15%, 5%).
      */
     private generateLoot(player: Player, qualityFactor: number): void {
-        // Base items: always 1, 50% chance of 2
-        const baseCount = Math.random() < 0.5 ? 2 : 1;
-        for (let i = 0; i < baseCount; i++) {
-            const item = this.generateSingleItem(player, qualityFactor);
-            if (item) this.chestItems.push(item);
-        }
+        const item = this.generateSingleItem(player, qualityFactor);
+        if (item) this.chestItems.push(item);
 
         // Additional items with decreasing probability
-        const additionalChances = [0.60, 0.35, 0.15];
+        const additionalChances = [0.50, 0.15, 0.05];
         for (const chance of additionalChances) {
             if (Math.random() < chance) {
                 const item = this.generateSingleItem(player, qualityFactor);
