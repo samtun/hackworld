@@ -37,9 +37,19 @@ vi.mock('../Player', () => ({ Player: class {} }));
 vi.mock('../enemies/Enemy', () => ({ Enemy: class {} }));
 
 import { AreaAttackSkill } from './AreaAttackSkill';
+import { Enemy } from '../enemies/Enemy';
 import { Tier } from '../items/TierManager';
 import { SkillTechType } from './SkillTechType';
 import type { Player } from '../Player';
+
+function makeEnemy(x: number, z: number) {
+    const enemy = Object.create(Enemy.prototype);
+    enemy.isDead = false;
+    enemy.isDying = false;
+    enemy.takeDamage = vi.fn();
+    const body = { position: { x, y: 0, z }, entity: enemy };
+    return { enemy, body };
+}
 
 function makePlayer(tier = Tier.STABLE) {
     return {
@@ -106,6 +116,15 @@ describe('AreaAttackSkill', () => {
             (skill as any).execute(player, scene, world);
             expect((skill as any).isBeingExecuted).toBe(true);
         });
+
+        it('resets effectTimer to 0 even when it had a residual value', () => {
+            const player = makePlayer(Tier.STABLE);
+            const scene = { add: vi.fn(), remove: vi.fn() } as any;
+            const world = { bodies: [] } as any;
+            (skill as any).effectTimer = 0.5;
+            (skill as any).execute(player, scene, world);
+            expect((skill as any).effectTimer).toBe(0);
+        });
     });
 
     describe('update()', () => {
@@ -114,7 +133,6 @@ describe('AreaAttackSkill', () => {
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [] } as any;
             (skill as any).execute(player, scene, world);
-            (skill as any).effectTimer = 0;
             skill.update(0.2);
             expect((skill as any).effectTimer).toBeCloseTo(0.2);
         });
@@ -132,6 +150,35 @@ describe('AreaAttackSkill', () => {
             (skill as any).cooldownTimer = 5.0;
             skill.update(1.0);
             expect((skill as any).cooldownTimer).toBeCloseTo(4.0);
+        });
+
+        it('does not damage enemies beyond RANGE', () => {
+            const player = makePlayer(Tier.STABLE);
+            const nearEnemy = makeEnemy(2, 0);
+            const farEnemy = makeEnemy(20, 0);
+            const scene = { add: vi.fn(), remove: vi.fn() } as any;
+            const world = { bodies: [nearEnemy.body, farEnemy.body] } as any;
+            (skill as any).execute(player, scene, world);
+
+            // Update to about half the duration so wave is expanded
+            skill.update(0.4);
+            expect(nearEnemy.enemy.takeDamage).toHaveBeenCalled();
+            expect(farEnemy.enemy.takeDamage).not.toHaveBeenCalled();
+        });
+
+        it('does not hit enemies when execute resets residual effectTimer', () => {
+            const player = makePlayer(Tier.STABLE);
+            const farEnemy = makeEnemy(4, 0);
+            const scene = { add: vi.fn(), remove: vi.fn() } as any;
+            const world = { bodies: [farEnemy.body] } as any;
+
+            // Simulate residual effectTimer from a previous interrupted execution
+            (skill as any).effectTimer = 0.7;
+            (skill as any).execute(player, scene, world);
+
+            // First update with a small dt should produce a small scale, not hit far enemies
+            skill.update(0.016);
+            expect(farEnemy.enemy.takeDamage).not.toHaveBeenCalled();
         });
     });
 

@@ -148,8 +148,8 @@ export class LaserBeamSkill extends Skill {
         this.effectTimer += dt;
         const progress = this.effectTimer / this.DURATION;
 
-        // Calculate current beam length based on progress (matching visual effect)
-        const currentLength = this.RANGE * Math.pow(progress, 2);
+        // Calculate current beam length based on progress (matching visual effect), clamped to RANGE
+        const currentLength = Math.min(this.RANGE * Math.pow(progress, 2), this.RANGE);
 
         // Check for hits on all active beams
         this.checkBeamHits(currentLength, this.startPos, this.forward, this.hitEnemies);

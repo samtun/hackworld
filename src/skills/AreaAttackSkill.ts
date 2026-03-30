@@ -74,6 +74,7 @@ export class AreaAttackSkill extends Skill {
 
         this.world = world;
         this.player = player;
+        this.effectTimer = 0;
         this.hitEnemies = new Map<Enemy, number>();
 
         // Create visual effect
