@@ -66,6 +66,9 @@ const VERTEX_WORLD_POS_PREAMBLE = 'varying vec3 vWorldPosition;\n';
 /** Vertex shader: declare the world-normal varying (for tri-planar projection). */
 const VERTEX_WORLD_NORMAL_PREAMBLE = 'varying vec3 vWorldNormal;\n';
 
+/** Vertex shader: declare the object-space position varying. */
+const VERTEX_LOCAL_POS_PREAMBLE = 'varying vec3 vLocalPosition;\n';
+
 /** Vertex shader: compute the world-position varying. */
 const VERTEX_WORLD_POS_CALC = `
 #include <worldpos_vertex>
@@ -75,6 +78,11 @@ vWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;
 /** Vertex shader: compute the world-normal varying. */
 const VERTEX_WORLD_NORMAL_CALC = `
 vWorldNormal = normalize(mat3(modelMatrix) * normal);
+`;
+
+/** Vertex shader: compute the object-space position varying. */
+const VERTEX_LOCAL_POS_CALC = `
+vLocalPosition = position;
 `;
 
 /**
@@ -147,10 +155,10 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
         shader.uniforms.u_cameraPos = { value: new THREE.Vector3() };
 
         // ---- vertex ----
-        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + VERTEX_WORLD_NORMAL_PREAMBLE + shader.vertexShader;
+        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + VERTEX_WORLD_NORMAL_PREAMBLE + VERTEX_LOCAL_POS_PREAMBLE + shader.vertexShader;
         shader.vertexShader = shader.vertexShader.replace(
             '#include <worldpos_vertex>',
-            VERTEX_WORLD_POS_CALC + VERTEX_WORLD_NORMAL_CALC,
+            VERTEX_WORLD_POS_CALC + VERTEX_WORLD_NORMAL_CALC + VERTEX_LOCAL_POS_CALC,
         );
 
         // ---- fragment ----
@@ -159,32 +167,34 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
             uniform vec3 u_cameraPos;
             varying vec3 vWorldPosition;
             varying vec3 vWorldNormal;
+            varying vec3 vLocalPosition;
             ${GLSL_HASH}
             ${GLSL_VALUE_NOISE}
             ${GLSL_METAL_DETAIL}
             ${shader.fragmentShader}
         `;
 
-        // Metal panel pattern using tri-planar projection so seams are
-        // not stretched on thin walls.
+        // Metal panel pattern using tri-planar projection with object-space
+        // UVs so panel seams align with geometry edges, not world-grid lines.
         shader.fragmentShader = shader.fragmentShader.replace(
             '#include <color_fragment>',
             `
             #include <color_fragment>
 
             // Tri-planar projection: pick the two axes perpendicular to the
-            // dominant normal so the pattern maps flat onto each face.
+            // dominant normal. Use local (object-space) position for the panel
+            // grid so seams align with geometry edges.
             vec3 wallAbsN = abs(vWorldNormal);
             vec2 panelUV;
             float panelSeed;
             if (wallAbsN.x >= wallAbsN.y && wallAbsN.x >= wallAbsN.z) {
-                panelUV = vWorldPosition.yz;
+                panelUV = vLocalPosition.yz;
                 panelSeed = floor(vWorldPosition.x * 0.5);
             } else if (wallAbsN.y >= wallAbsN.z) {
-                panelUV = vWorldPosition.xz;
+                panelUV = vLocalPosition.xz;
                 panelSeed = floor(vWorldPosition.y * 0.5);
             } else {
-                panelUV = vWorldPosition.xy;
+                panelUV = vLocalPosition.xy;
                 panelSeed = floor(vWorldPosition.z * 0.5);
             }
 
@@ -257,7 +267,7 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
  * panels, component outlines, and horizontal/vertical lines).  Uses the same
  * transparency shader as walls.
  */
-export function createObstacleMaterial(color: number = 0x555555): THREE.MeshStandardMaterial {
+export function createObstacleMaterial(color: number = 0x555555, height: number = 2.0): THREE.MeshStandardMaterial {
     const material = new THREE.MeshStandardMaterial({
         color,
         transparent: true,
@@ -268,20 +278,23 @@ export function createObstacleMaterial(color: number = 0x555555): THREE.MeshStan
     material.onBeforeCompile = (shader) => {
         shader.uniforms.u_playerPos = { value: new THREE.Vector3() };
         shader.uniforms.u_cameraPos = { value: new THREE.Vector3() };
+        shader.uniforms.u_obstacleHeight = { value: height };
 
         // ---- vertex ----
-        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + VERTEX_WORLD_NORMAL_PREAMBLE + shader.vertexShader;
+        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + VERTEX_WORLD_NORMAL_PREAMBLE + VERTEX_LOCAL_POS_PREAMBLE + shader.vertexShader;
         shader.vertexShader = shader.vertexShader.replace(
             '#include <worldpos_vertex>',
-            VERTEX_WORLD_POS_CALC + VERTEX_WORLD_NORMAL_CALC,
+            VERTEX_WORLD_POS_CALC + VERTEX_WORLD_NORMAL_CALC + VERTEX_LOCAL_POS_CALC,
         );
 
         // ---- fragment ----
         shader.fragmentShader = `
             uniform vec3 u_playerPos;
             uniform vec3 u_cameraPos;
+            uniform float u_obstacleHeight;
             varying vec3 vWorldPosition;
             varying vec3 vWorldNormal;
+            varying vec3 vLocalPosition;
             ${GLSL_HASH}
             ${shader.fragmentShader}
         `;
@@ -297,8 +310,17 @@ export function createObstacleMaterial(color: number = 0x555555): THREE.MeshStan
 
             if (isTopFace) {
                 // Dark flat surface on top
-                diffuseColor.rgb *= 0.7;
+                diffuseColor.rgb *= 0.5;
             } else {
+                // Height-based brightness gradient on side faces:
+                // 100% at the top edge, fading to 20% at the ground level
+                // with increasing fade strength toward the bottom (quadratic).
+                float heightFrac = clamp(
+                    (vLocalPosition.y + u_obstacleHeight * 0.5) / u_obstacleHeight,
+                    0.0, 1.0
+                );
+                float sideBrightness = mix(0.2, 1.0, heightFrac * heightFrac);
+
                 // Tri-planar side UV
                 vec2 sideUV;
                 float sideSeed;
@@ -343,6 +365,7 @@ export function createObstacleMaterial(color: number = 0x555555): THREE.MeshStan
 
                 diffuseColor.rgb *= mix(0.7, 1.0, obsSeam);
                 diffuseColor.rgb += blkShade + cmpRect * 0.1 + linePattern * 0.06;
+                diffuseColor.rgb *= sideBrightness;
             }
             `,
         );

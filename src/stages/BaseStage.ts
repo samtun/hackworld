@@ -237,7 +237,7 @@ export abstract class BaseStage {
     protected buildObstaclesFromLayout(layout: DungeonLayout): void {
         for (const obs of layout.obstacles) {
             const geo = new THREE.BoxGeometry(obs.width, obs.height, obs.depth);
-            const mat = createObstacleMaterial(0x555555);
+            const mat = createObstacleMaterial(0x555555, obs.height);
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(obs.x, obs.y, obs.z);
             mesh.castShadow = false;
