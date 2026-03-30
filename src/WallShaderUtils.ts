@@ -330,11 +330,12 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
                 float fadeFrac = clamp(heightAboveGround / fadeZone, 0.0, 1.0);
                 float sideBrightness = mix(0.2, 1.0, fadeFrac * fadeFrac);
 
-                // Tri-planar side UV
+                // Tri-planar side UV — world-Y always maps to sideUV.y
+                // so the time scroll direction is consistent (upward).
                 vec2 sideUV;
                 float sideSeed;
                 if (obsAbsN.x >= obsAbsN.z) {
-                    sideUV = vWorldPosition.yz;
+                    sideUV = vWorldPosition.zy;
                     sideSeed = floor(vWorldPosition.x);
                 } else {
                     sideUV = vWorldPosition.xy;
