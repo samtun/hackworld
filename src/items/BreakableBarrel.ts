@@ -69,6 +69,8 @@ export class BreakableBarrel implements Breakable {
 
     /** Active destruction fragments (empty until the barrel is hit). */
     private fragments: BarrelFragment[] = [];
+    /** Shared geometry for all fragments. */
+    private fragmentGeometry: THREE.BoxGeometry | null = null;
     /** Elapsed time since the barrel was destroyed. */
     private destroyTimer: number = 0;
     /** Whether the destruction animation has finished and resources are disposed. */
@@ -201,6 +203,7 @@ export class BreakableBarrel implements Breakable {
         const halfH = BreakableBarrel.HEIGHT / 2;
 
         const sharedGeo = new THREE.BoxGeometry(0.18, 0.25, 0.12);
+        this.fragmentGeometry = sharedGeo;
 
         for (let i = 0; i < BreakableBarrel.FRAGMENT_COUNT; i++) {
             const angle = (i / BreakableBarrel.FRAGMENT_COUNT) * Math.PI * 2;
@@ -249,13 +252,14 @@ export class BreakableBarrel implements Breakable {
 
     /** Remove all fragment meshes from the scene and dispose their materials. */
     private disposeFragments(): void {
-        if (this.fragments.length === 0) return;
-        const sharedGeo = this.fragments[0].mesh.geometry;
         for (const frag of this.fragments) {
             this.scene.remove(frag.mesh);
             (frag.mesh.material as THREE.Material).dispose();
         }
-        sharedGeo.dispose();
+        if (this.fragmentGeometry) {
+            this.fragmentGeometry.dispose();
+            this.fragmentGeometry = null;
+        }
         this.fragments = [];
         this.animationDone = true;
     }
