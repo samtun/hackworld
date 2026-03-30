@@ -8,12 +8,12 @@ import { ChipType } from './chips/Chip';
 import { WeaponType } from './weapons/WeaponType';
 import { Tier, TierManager } from './TierManager';
 
-function tier(t: Tier) {
+function getTierDef(t: Tier) {
     return TierManager.Instance.tiers.get(t)!;
 }
 
 function weapon(level: number, t: Tier = Tier.STABLE, type: WeaponType = WeaponType.SWORD): WeaponItem {
-    return new WeaponItem(crypto.randomUUID(), 'Sword', 100, 50, type, 10, 'model.glb', tier(t), level);
+    return new WeaponItem(crypto.randomUUID(), 'Sword', 100, 50, type, 10, 'model.glb', getTierDef(t), level);
 }
 
 function core(level: number): CoreItem {

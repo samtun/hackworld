@@ -4,6 +4,12 @@ import { WeaponItem } from './weapons/WeaponItem';
 /** Type ordering: Weapons first, then Cores, then Chips. */
 const TYPE_ORDER: Record<string, number> = { weapon: 0, core: 1, chip: 2 };
 
+/** Returns the numeric level of an item, or 0 if the item has no level. */
+function getItemLevel(item: Item): number {
+    const record = item as unknown as Record<string, unknown>;
+    return typeof record.level === 'number' ? record.level : 0;
+}
+
 /**
  * Sorts an inventory array in-place using the standard ordering:
  *   1. Item type – Weapons → Cores → Chips (unknown types sort last)
@@ -18,8 +24,8 @@ export function sortInventory(items: Item[]): void {
         if (typeA !== typeB) return typeA - typeB;
 
         // 2. Level (high to low)
-        const levelA = 'level' in a ? (a as any).level as number : 0;
-        const levelB = 'level' in b ? (b as any).level as number : 0;
+        const levelA = getItemLevel(a);
+        const levelB = getItemLevel(b);
         if (levelA !== levelB) return levelB - levelA;
 
         // 3. Tier (high to low, weapons only – higher minPercent = better tier)
