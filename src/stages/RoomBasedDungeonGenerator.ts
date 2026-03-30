@@ -153,6 +153,23 @@ export interface BarrelSpawn {
     z: number;
 }
 
+/** An electric trap spawn point with size and behaviour parameters. */
+export interface TrapSpawn {
+    x: number;
+    z: number;
+    /** Trap extent along the X axis (metres). */
+    width: number;
+    /** Trap extent along the Z axis (metres). */
+    length: number;
+    /** Damage dealt per activation tick. */
+    damage: number;
+    /**
+     * Activation pattern (ms).  Even indices are active durations, odd
+     * indices are pause durations.  Empty → always active.
+     */
+    activationInterval: number[];
+}
+
 /** Complete dungeon layout returned by {@link RoomBasedDungeonGenerator.generate}. */
 export interface DungeonLayout {
     rooms: DungeonRoom[];
@@ -164,6 +181,8 @@ export interface DungeonLayout {
     chestSpawns: ChestSpawn[];
     /** Breakable barrel spawn positions. */
     barrelSpawns: BarrelSpawn[];
+    /** Electric trap spawn positions. */
+    trapSpawns: TrapSpawn[];
     /** Centre of the safe (starting) room. */
     spawnPosition: Vec2;
     /** Position of the teleporter in the teleporter room (centred against the far wall). */
@@ -222,6 +241,23 @@ export interface RoomGenerationConfig {
     chestInTeleporterRoom?: boolean;
     /** Breakable barrel count range per combat/loot room (default: 0). */
     barrelCount?: { min: number; max: number };
+    /** Electric trap configuration (default: no traps). */
+    trapConfig?: {
+        /** Number of traps per combat room. */
+        count: { min: number; max: number };
+        /** Trap width range in metres. */
+        width: { min: number; max: number };
+        /** Trap length range in metres. */
+        length: { min: number; max: number };
+        /** Damage dealt per activation tick. */
+        damage: number;
+        /**
+         * Activation interval patterns to randomly choose from.
+         * Each sub-array follows the same convention as
+         * {@link ElectricTrapConfig.activationInterval}.
+         */
+        patterns: number[][];
+    };
 }
 
 // ---------------------------------------------------------------------------
@@ -344,10 +380,11 @@ export class RoomBasedDungeonGenerator {
 
         const chestSpawns = this.buildChestSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
         const barrelSpawns = this.buildBarrelSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
+        const trapSpawns = this.buildTrapSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
 
         const floorBounds = this.computeFloorBounds(rooms, corridors);
 
-        return { rooms, corridors, walls, obstacles, roomSpawns, chestSpawns, barrelSpawns, spawnPosition, teleporterPosition, floorBounds };
+        return { rooms, corridors, walls, obstacles, roomSpawns, chestSpawns, barrelSpawns, trapSpawns, spawnPosition, teleporterPosition, floorBounds };
     }
 
     // -----------------------------------------------------------------------
@@ -1167,6 +1204,50 @@ export class RoomBasedDungeonGenerator {
             }
         }
         return barrels;
+    }
+
+    // -----------------------------------------------------------------------
+    // Trap spawn generation
+    // -----------------------------------------------------------------------
+
+    private buildTrapSpawns(
+        rooms: DungeonRoom[],
+        config: RoomGenerationConfig,
+        obstacles: RoomObstacle[],
+        teleporterPos: Vec2,
+        spawnPos: Vec2,
+    ): TrapSpawn[] {
+        if (!config.trapConfig) return [];
+
+        const tc = config.trapConfig;
+        const traps: TrapSpawn[] = [];
+
+        for (const room of rooms) {
+            // Traps only in combat rooms (not safe, loot, or teleporter)
+            if (room.isSafe || room.isTeleporterRoom || room.isLootRoom) continue;
+
+            const count = this.rangeInt(tc.count.min, tc.count.max);
+            for (let i = 0; i < count; i++) {
+                const w = this.range(tc.width.min, tc.width.max);
+                const l = this.range(tc.length.min, tc.length.max);
+                const pos = this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos);
+                if (!pos) continue;
+
+                const pattern = tc.patterns.length > 0
+                    ? tc.patterns[this.rangeInt(0, tc.patterns.length - 1)]
+                    : [];
+
+                traps.push({
+                    x: pos.x,
+                    z: pos.z,
+                    width: Math.round(w),
+                    length: Math.round(l),
+                    damage: tc.damage,
+                    activationInterval: pattern,
+                });
+            }
+        }
+        return traps;
     }
 
     /**
