@@ -9,10 +9,16 @@ import { Player } from '../Player';
 import { Npc } from '../npcs/Npc';
 import { BossEnemy } from '../enemies/BossEnemy';
 import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
-import { createWallMaterial, updateWallUniforms } from '../WallShaderUtils';
+import { createWallMaterial, createObstacleMaterial, createFloorMaterial, updateWallUniforms } from '../WallShaderUtils';
 import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
 import { LootChest } from '../items/LootChest';
 import { BreakableBarrel } from '../items/BreakableBarrel';
+
+/**
+ * Tiny Y offset applied to north/south walls (those running along X) to
+ * prevent z-fighting where they overlap east/west walls at room corners.
+ */
+const NS_WALL_Y_OFFSET = 0.01;
 
 /**
  * Base class for all dungeon stages
@@ -75,6 +81,9 @@ export abstract class BaseStage {
      * Uniforms are updated each frame so walls fade when the player is behind them.
      */
     protected wallMaterials: THREE.MeshStandardMaterial[] = [];
+
+    /** Accumulated wall/obstacle shader time (seconds). */
+    private shaderTime = 0;
 
     constructor(
         scene: THREE.Scene,
@@ -253,7 +262,7 @@ export abstract class BaseStage {
     protected buildObstaclesFromLayout(layout: DungeonLayout): void {
         for (const obs of layout.obstacles) {
             const geo = new THREE.BoxGeometry(obs.width, obs.height, obs.depth);
-            const mat = createWallMaterial(0x555555);
+            const mat = createObstacleMaterial(0x555555, obs.height);
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(obs.x, obs.y, obs.z);
             mesh.castShadow = false;
@@ -281,9 +290,13 @@ export abstract class BaseStage {
     protected buildWallsFromLayout(layout: DungeonLayout): void {
         for (const wall of layout.walls) {
             const geo = new THREE.BoxGeometry(wall.width, wall.height, wall.depth);
-            const mat = createWallMaterial(0x555555);
+            const mat = createWallMaterial(0x555555, wall.width, wall.height, wall.depth);
             const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(wall.centerX, wall.centerY, wall.centerZ);
+            // N/S walls (running along X) get a tiny Y offset to avoid
+            // z-fighting where they overlap with E/W walls at corners.
+            const isNorthSouth = wall.width > wall.depth;
+            const yOffset = isNorthSouth ? NS_WALL_Y_OFFSET : 0;
+            mesh.position.set(wall.centerX, wall.centerY + yOffset, wall.centerZ);
             mesh.castShadow = false;
             mesh.receiveShadow = false;
             mesh.renderOrder = 1;
@@ -296,7 +309,7 @@ export abstract class BaseStage {
             );
             const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
             body.addShape(shape);
-            body.position.set(wall.centerX, wall.centerY, wall.centerZ);
+            body.position.set(wall.centerX, wall.centerY + yOffset, wall.centerZ);
             this.physicsWorld.addBody(body);
             this.bodies.push(body);
         }
@@ -306,8 +319,8 @@ export abstract class BaseStage {
      * Build individual floor segments for each room and corridor so the floor
      * only appears underneath walkable areas.
      */
-    protected buildFloorFromLayout(layout: DungeonLayout, color: number = 0x222222): void {
-        const floorMat = new THREE.MeshStandardMaterial({ color, side: THREE.FrontSide });
+    protected buildFloorFromLayout(layout: DungeonLayout, color: number = 0x0a2a0a): void {
+        const floorMat = createFloorMaterial(color);
 
         for (const room of layout.rooms) {
             const geo = new THREE.PlaneGeometry(room.width, room.depth);
@@ -448,7 +461,8 @@ export abstract class BaseStage {
 
             // Update wall transparency shader with player and camera positions
             if (cameraPosition && this.wallMaterials.length > 0) {
-                updateWallUniforms(this.wallMaterials, player.position, cameraPosition);
+                this.shaderTime += dt;
+                updateWallUniforms(this.wallMaterials, player.position, cameraPosition, this.shaderTime);
             }
         }
     }
