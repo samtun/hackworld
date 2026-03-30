@@ -1,3 +1,19 @@
+# [1.58.0](https://github.com/samtun/hackworld/compare/v1.57.0...v1.58.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* allow chest reopening, add opened lid visual, fix item counts and barrel weapon collision ([9070e18](https://github.com/samtun/hackworld/commit/9070e18dcd241329d85f8c341e24829c0052b7eb))
+* barrel STATIC body with manual weapon check and chest lid direction ([e57f2ff](https://github.com/samtun/hackworld/commit/e57f2ff45bd2f754885d4eeb2f49e836c232dd37))
+* chest lid rotation, collider heights, loot rooms, barrel shape and weapon collision ([b1c4742](https://github.com/samtun/hackworld/commit/b1c4742cbc4e1107daee73eab3c6c72082b2bcc5))
+* use breakable entity shape radius instead of magic number ([29752c8](https://github.com/samtun/hackworld/commit/29752c8998a3f9caaecd55a31f01530cfbc5c537))
+
+
+### Features
+
+* add Breakable interface for destructible entities ([bab6bdd](https://github.com/samtun/hackworld/commit/bab6bdd8a103ae03e977fc7bc37d7e74fe85e730))
+* add loot chests and breakable barrels ([d7c86a6](https://github.com/samtun/hackworld/commit/d7c86a6a4f9cbcb142815dd8b60e31d0846b736b))
+
 # [1.57.0](https://github.com/samtun/hackworld/compare/v1.56.2...v1.57.0) (2026-03-30)
 
 
