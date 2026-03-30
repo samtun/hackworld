@@ -34,10 +34,10 @@ vi.mock('cannon-es', () => {
         Vec3,
         Box: class {},
         Cylinder: class {},
-        Body: class {
+        Body: Object.assign(class {
             addShape = vi.fn();
             position = new Vec3();
-        },
+        }, { KINEMATIC: 4 }),
     };
 });
 

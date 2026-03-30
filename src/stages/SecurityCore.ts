@@ -23,7 +23,6 @@ export class SecurityCore extends BaseStage {
         obstacleCount: { min: 1, max: 3 },
         hasBoss: true,
         chestCount: { min: 1, max: 3 },
-        chestItemCount: 4,
         chestQualityFactor: 1.2,
         barrelCount: { min: 1, max: 4 },
     };

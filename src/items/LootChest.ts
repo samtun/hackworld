@@ -18,8 +18,6 @@ export interface LootChestConfig {
     x: number;
     y: number;
     z: number;
-    /** Number of items in the chest (default: 3). */
-    itemCount?: number;
     /**
      * Bonus factor applied to item tier randomization.
      * Higher values increase the chance of better tiers (default: 1.0).
@@ -30,10 +28,12 @@ export interface LootChestConfig {
 /**
  * A loot chest that the player can open via interaction (Enter / A).
  * Once opened, shows a chest inventory UI where the player can freely
- * take items (no purchase required).
+ * take items (no purchase required). The chest can be reopened as many
+ * times as desired, as long as items remain.
  */
 export class LootChest {
-    mesh: THREE.Mesh;
+    /** Group containing the base box and the lid. */
+    mesh: THREE.Group;
     body: CANNON.Body;
     isOpened: boolean = false;
 
@@ -41,13 +41,19 @@ export class LootChest {
     private world: CANNON.World;
     private chestItems: Item[] = [];
     private chestUI: ChestUI | null = null;
-    private itemCount: number;
     private itemQualityFactor: number;
+
+    private baseMesh!: THREE.Mesh;
+    private lidMesh!: THREE.Mesh;
 
     /** Width of the chest box. */
     private static readonly WIDTH = 1;
-    /** Height of the chest box. */
+    /** Total height of the closed chest (base + lid). */
     private static readonly HEIGHT = 0.8;
+    /** Height of the base portion. */
+    private static readonly BASE_HEIGHT = 0.5;
+    /** Height of the lid portion. */
+    private static readonly LID_HEIGHT = 0.3;
     /** Depth of the chest box. */
     private static readonly DEPTH = 0.8;
     /** Interaction range (distance from player). */
@@ -58,25 +64,43 @@ export class LootChest {
         world: CANNON.World,
         physicsMaterial: CANNON.Material,
         position: CANNON.Vec3,
-        itemCount: number = 3,
         itemQualityFactor: number = 1.0,
     ) {
         this.scene = scene;
         this.world = world;
-        this.itemCount = itemCount;
         this.itemQualityFactor = itemQualityFactor;
 
-        // Visual: simple chest box
-        const geo = new THREE.BoxGeometry(
+        this.mesh = new THREE.Group();
+        this.mesh.position.set(position.x, position.y, position.z);
+
+        // Base (lower box)
+        const baseGeo = new THREE.BoxGeometry(
             LootChest.WIDTH,
-            LootChest.HEIGHT,
+            LootChest.BASE_HEIGHT,
             LootChest.DEPTH,
         );
-        const mat = new THREE.MeshStandardMaterial({ color: 0xDAA520 });
-        this.mesh = new THREE.Mesh(geo, mat);
-        this.mesh.position.set(position.x, position.y + LootChest.HEIGHT / 2, position.z);
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
+        const baseMat = new THREE.MeshStandardMaterial({ color: 0xDAA520 });
+        this.baseMesh = new THREE.Mesh(baseGeo, baseMat);
+        this.baseMesh.position.y = LootChest.BASE_HEIGHT / 2;
+        this.baseMesh.castShadow = true;
+        this.baseMesh.receiveShadow = true;
+        this.mesh.add(this.baseMesh);
+
+        // Lid (upper box, hinged at the back edge)
+        const lidGeo = new THREE.BoxGeometry(
+            LootChest.WIDTH,
+            LootChest.LID_HEIGHT,
+            LootChest.DEPTH,
+        );
+        const lidMat = new THREE.MeshStandardMaterial({ color: 0xDAA520 });
+        this.lidMesh = new THREE.Mesh(lidGeo, lidMat);
+        // Position with pivot at the back-bottom edge of the lid
+        this.lidMesh.geometry.translate(0, LootChest.LID_HEIGHT / 2, -LootChest.DEPTH / 2);
+        this.lidMesh.position.set(0, LootChest.BASE_HEIGHT, LootChest.DEPTH / 2);
+        this.lidMesh.castShadow = true;
+        this.lidMesh.receiveShadow = true;
+        this.mesh.add(this.lidMesh);
+
         scene.add(this.mesh);
 
         // Physics body (static, blocks movement)
@@ -101,22 +125,30 @@ export class LootChest {
         return getHint(HintConfigs.openChest, inputManager);
     }
 
-    /** Open the chest and show the UI. Generates loot based on the player's current stats. */
+    /**
+     * Open or reopen the chest and show the UI.
+     * The first time, loot is generated based on the player's current stats.
+     * Subsequent opens reshow the same remaining contents.
+     */
     open(player: Player): void {
-        if (this.isOpened) return;
-        this.isOpened = true;
-        // Change colour to indicate opened
-        (this.mesh.material as THREE.MeshStandardMaterial).color.setHex(0x8B6914);
-
-        // Generate loot at open time based on the player's current level/tech
-        this.generateLoot(player, this.itemCount, this.itemQualityFactor);
-        this.chestUI = new ChestUI(this.chestItems);
-        this.chestUI.show();
+        // Generate loot on first open
+        if (!this.isOpened) {
+            this.isOpened = true;
+            this.showOpenedLid();
+            this.generateLoot(player, this.itemQualityFactor);
+            this.chestUI = new ChestUI(this.chestItems);
+        }
+        this.chestUI!.show();
     }
 
     /** Whether the chest UI is currently visible. */
     get isUIVisible(): boolean {
         return this.chestUI?.isVisible ?? false;
+    }
+
+    /** Whether the chest still has items remaining. */
+    get hasItems(): boolean {
+        return this.chestItems.length > 0;
     }
 
     /** Update the chest UI (navigation, rendering). */
@@ -128,19 +160,43 @@ export class LootChest {
     cleanup(): void {
         this.chestUI?.hide();
         this.scene.remove(this.mesh);
-        this.mesh.geometry.dispose();
-        (this.mesh.material as THREE.Material).dispose();
+        this.baseMesh.geometry.dispose();
+        (this.baseMesh.material as THREE.Material).dispose();
+        this.lidMesh.geometry.dispose();
+        (this.lidMesh.material as THREE.Material).dispose();
         this.world.removeBody(this.body);
+    }
+
+    /** Visually open the lid by rotating it back ~100 degrees around the back hinge. */
+    private showOpenedLid(): void {
+        this.lidMesh.rotation.x = -100 * (Math.PI / 180);
+        // Darken the base slightly to indicate opened state
+        (this.baseMesh.material as THREE.MeshStandardMaterial).color.setHex(0x8B6914);
     }
 
     // -----------------------------------------------------------------------
     // Loot generation
     // -----------------------------------------------------------------------
 
-    private generateLoot(player: Player, itemCount: number, qualityFactor: number): void {
-        for (let i = 0; i < itemCount; i++) {
+    /**
+     * Generate loot items. Base count is 1-2, then 2-3 additional items each
+     * with decreasing probability (60%, 35%, 15%).
+     */
+    private generateLoot(player: Player, qualityFactor: number): void {
+        // Base items: always 1, 50% chance of 2
+        const baseCount = Math.random() < 0.5 ? 2 : 1;
+        for (let i = 0; i < baseCount; i++) {
             const item = this.generateSingleItem(player, qualityFactor);
             if (item) this.chestItems.push(item);
+        }
+
+        // Additional items with decreasing probability
+        const additionalChances = [0.60, 0.35, 0.15];
+        for (const chance of additionalChances) {
+            if (Math.random() < chance) {
+                const item = this.generateSingleItem(player, qualityFactor);
+                if (item) this.chestItems.push(item);
+            }
         }
     }
 

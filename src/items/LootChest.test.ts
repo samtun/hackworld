@@ -10,14 +10,23 @@ vi.mock('three', () => {
     }
     return {
         Vector3: V3,
-        BoxGeometry: class { dispose = vi.fn(); },
+        BoxGeometry: class {
+            dispose = vi.fn();
+            translate = vi.fn();
+        },
         MeshStandardMaterial: class { color = { setHex: vi.fn() }; dispose = vi.fn(); },
         Mesh: class {
             position = new V3();
+            rotation = { x: 0, y: 0, z: 0 };
             castShadow = false;
             receiveShadow = false;
-            geometry = { dispose: vi.fn() };
+            geometry = { dispose: vi.fn(), translate: vi.fn() };
             material = { color: { setHex: vi.fn() }, dispose: vi.fn() };
+        },
+        Group: class {
+            position = new V3();
+            children: any[] = [];
+            add(child: any) { this.children.push(child); }
         },
         Material: class {},
     };
@@ -104,7 +113,7 @@ function makeChest(): { chest: LootChest; scene: any; world: any } {
     const scene = { add: vi.fn(), remove: vi.fn() } as any;
     const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
     const CANNON = require('cannon-es');
-    const chest = new LootChest(scene, world, {} as any, new CANNON.Vec3(5, 0, 5), 3, 1.0);
+    const chest = new LootChest(scene, world, {} as any, new CANNON.Vec3(5, 0, 5));
     return { chest, scene, world };
 }
 
@@ -123,10 +132,9 @@ describe('LootChest', () => {
 
     it('isPlayerNearby returns true when player is close', () => {
         const { chest } = makeChest();
-        // Mesh position is set during construction; directly test with known values
         chest.mesh.position.x = 5;
         chest.mesh.position.z = 5;
-        const playerPos = { x: 5, y: 0, z: 5 } as any; // distance 0
+        const playerPos = { x: 5, y: 0, z: 5 } as any;
         expect(chest.isPlayerNearby(playerPos)).toBe(true);
     });
 
@@ -146,12 +154,16 @@ describe('LootChest', () => {
         expect(chest.isUIVisible).toBe(true);
     });
 
-    it('open is idempotent (second call is ignored)', () => {
+    it('reopening shows the UI again without recreating loot', () => {
         const { chest } = makeChest();
         const mockPlayer = { level: 1, getTechForWeapon: vi.fn().mockReturnValue(0) } as any;
         chest.open(mockPlayer);
-        chest.open(mockPlayer); // Should not throw
-        expect(chest.isOpened).toBe(true);
+        // Close via the chestUI mock (simulate user closing)
+        (chest as any).chestUI.isVisible = false;
+        expect(chest.isUIVisible).toBe(false);
+        // Reopen
+        chest.open(mockPlayer);
+        expect(chest.isUIVisible).toBe(true);
     });
 
     it('getInteractionHint returns a string', () => {

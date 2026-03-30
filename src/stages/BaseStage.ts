@@ -404,7 +404,7 @@ export abstract class BaseStage {
             const chest = new LootChest(
                 this.scene, this.physicsWorld, this.physicsMaterial,
                 new CANNON.Vec3(cs.x, cs.y, cs.z),
-                cs.itemCount, cs.itemQualityFactor,
+                cs.itemQualityFactor,
             );
             this.lootChests.push(chest);
         }

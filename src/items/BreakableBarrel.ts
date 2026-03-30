@@ -73,14 +73,16 @@ export class BreakableBarrel implements Breakable {
         this.mesh.receiveShadow = true;
         scene.add(this.mesh);
 
-        // Physics body for collision detection (weapon/skill hits) and blocking movement
+        // Physics body for collision detection (weapon/skill hits) and blocking movement.
+        // Body type is KINEMATIC so it participates in trigger collisions with the
+        // weapon hitbox (cannon-es skips static-static pairs).
         const shape = new CANNON.Cylinder(
             BreakableBarrel.RADIUS,
             BreakableBarrel.RADIUS,
             BreakableBarrel.HEIGHT,
             BreakableBarrel.RADIAL_SEGMENTS,
         );
-        this.body = new CANNON.Body({ mass: 0, material: physicsMaterial });
+        this.body = new CANNON.Body({ mass: 0, material: physicsMaterial, type: CANNON.Body.KINEMATIC });
         this.body.addShape(shape);
         this.body.position.set(position.x, position.y + BreakableBarrel.HEIGHT / 2, position.z);
         (this.body as any).entity = this;

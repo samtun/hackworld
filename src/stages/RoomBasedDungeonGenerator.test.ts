@@ -436,7 +436,6 @@ describe('RoomBasedDungeonGenerator', () => {
         const configWithChestsAndBarrels: RoomGenerationConfig = {
             ...baseConfig,
             chestCount: { min: 2, max: 3 },
-            chestItemCount: 4,
             chestQualityFactor: 1.5,
             barrelCount: { min: 1, max: 2 },
         };
@@ -453,10 +452,9 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(layout.chestSpawns.length).toBeLessThanOrEqual(3);
         });
 
-        it('chest spawns carry itemCount and qualityFactor from config', () => {
+        it('chest spawns carry qualityFactor from config', () => {
             const layout = gen(42, configWithChestsAndBarrels);
             for (const cs of layout.chestSpawns) {
-                expect(cs.itemCount).toBe(4);
                 expect(cs.itemQualityFactor).toBe(1.5);
             }
         });

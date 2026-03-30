@@ -588,10 +588,10 @@ export class Game {
                 }
             }
 
-            // Check loot chests
+            // Check loot chests (unopened or opened with remaining items)
             if (!nearbyInteractive) {
                 for (const chest of this.world.getLootChests()) {
-                    if (!chest.isOpened && chest.isPlayerNearby(this.player.position)) {
+                    if ((!chest.isOpened || chest.hasItems) && !chest.isUIVisible && chest.isPlayerNearby(this.player.position)) {
                         nearbyInteractive = {
                             type: InteractiveEntityType.CHEST,
                             data: chest,

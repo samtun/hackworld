@@ -23,7 +23,6 @@ export class NetworkMatrix extends BaseStage {
         obstacleCount: { min: 1, max: 2 },
         hasBoss: false,
         chestCount: { min: 1, max: 2 },
-        chestItemCount: 3,
         chestQualityFactor: 1.0,
         barrelCount: { min: 1, max: 3 },
     };
