@@ -763,7 +763,7 @@ export class RoomBasedDungeonGenerator {
             isFinal,
             isTeleporterRoom,
             isLootRoom,
-            elevation,
+            elevation: isSafe ? 0 : elevation,
             doors: [],
             hasWestDoor: false,
             hasEastDoor: false,
