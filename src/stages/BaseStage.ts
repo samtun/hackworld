@@ -9,7 +9,7 @@ import { Player } from '../Player';
 import { Npc } from '../npcs/Npc';
 import { BossEnemy } from '../enemies/BossEnemy';
 import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
-import { createWallMaterial, updateWallUniforms } from '../WallShaderUtils';
+import { createWallMaterial, createObstacleMaterial, createFloorMaterial, updateWallUniforms } from '../WallShaderUtils';
 import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
 
 /**
@@ -237,7 +237,7 @@ export abstract class BaseStage {
     protected buildObstaclesFromLayout(layout: DungeonLayout): void {
         for (const obs of layout.obstacles) {
             const geo = new THREE.BoxGeometry(obs.width, obs.height, obs.depth);
-            const mat = createWallMaterial(0x555555);
+            const mat = createObstacleMaterial(0x555555);
             const mesh = new THREE.Mesh(geo, mat);
             mesh.position.set(obs.x, obs.y, obs.z);
             mesh.castShadow = false;
@@ -290,8 +290,8 @@ export abstract class BaseStage {
      * Build individual floor segments for each room and corridor so the floor
      * only appears underneath walkable areas.
      */
-    protected buildFloorFromLayout(layout: DungeonLayout, color: number = 0x222222): void {
-        const floorMat = new THREE.MeshStandardMaterial({ color, side: THREE.FrontSide });
+    protected buildFloorFromLayout(layout: DungeonLayout, color: number = 0x0a2a0a): void {
+        const floorMat = createFloorMaterial(color);
 
         for (const room of layout.rooms) {
             const geo = new THREE.PlaneGeometry(room.width, room.depth);

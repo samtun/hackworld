@@ -1,38 +1,119 @@
 import * as THREE from 'three';
 
 /**
- * Maps wall materials to their compiled shader objects so we can update
+ * Maps materials to their compiled shader objects so we can update
  * the player/camera position uniforms each frame without casting to `any`.
  */
 const wallShaderMap = new WeakMap<THREE.MeshStandardMaterial, THREE.WebGLProgramParametersWithUniforms>();
 
+// ---------------------------------------------------------------------------
+// Shared GLSL helpers
+// ---------------------------------------------------------------------------
+
+/** Hash function for procedural patterns. */
+const GLSL_HASH = `
+float shaderHash(vec2 p) {
+    return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+}
+`;
+
+/** Smooth 2D value noise built on top of shaderHash. */
+const GLSL_VALUE_NOISE = `
+float valueNoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f * f * (3.0 - 2.0 * f);
+    float a = shaderHash(i);
+    float b = shaderHash(i + vec2(1.0, 0.0));
+    float c = shaderHash(i + vec2(0.0, 1.0));
+    float d = shaderHash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+}
+`;
+
+/** Vertex shader: declare the world-position varying. */
+const VERTEX_WORLD_POS_PREAMBLE = 'varying vec3 vWorldPosition;\n';
+
+/** Vertex shader: compute the world-position varying. */
+const VERTEX_WORLD_POS_CALC = `
+#include <worldpos_vertex>
+vWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;
+`;
+
 /**
- * Creates a wall material that becomes transparent when the player is between
- * the wall and the camera, with a tech-styled circuit-pattern alpha mask on
- * the transparency edge.
- *
- * The shader keeps walls fully opaque when the player is on the camera side,
- * and smoothly fades them out when the player is occluded.
+ * Shared transparency logic for walls and obstacles. Injected in place of
+ * `#include <dithering_fragment>` so it runs at the very end.
+ */
+const TRANSPARENCY_FRAGMENT = `
+#include <dithering_fragment>
+
+float distToPlayer = length(vWorldPosition.xz - u_playerPos.xz);
+float proximityRadius = 5.0;
+float proximityFactor = 1.0 - smoothstep(0.0, proximityRadius, distToPlayer);
+
+vec2 camToPlayer = normalize(u_playerPos.xz - u_cameraPos.xz);
+float wallDist   = dot(vWorldPosition.xz - u_cameraPos.xz, camToPlayer);
+float playerDist = dot(u_playerPos.xz    - u_cameraPos.xz, camToPlayer);
+
+vec2 wallOffset = (vWorldPosition.xz - u_cameraPos.xz) - wallDist * camToPlayer;
+float lateralDist = length(wallOffset);
+
+float behindFactor = smoothstep(playerDist + 1.0, playerDist - 2.0, wallDist);
+float lateralFactor = 1.0 - smoothstep(0.0, 3.0, lateralDist);
+float fadeMask = behindFactor * lateralFactor * proximityFactor;
+
+vec2 gridPos = vWorldPosition.xz * 2.0;
+float gridX = abs(fract(gridPos.x) - 0.4);
+float gridZ = abs(fract(gridPos.y) - 0.4);
+float lineW = 0.1;
+float circuitH = step(lineW, gridX);
+float circuitV = step(lineW, gridZ);
+float circuit = 1.0 - circuitH * circuitV;
+float nodeDist = min(gridX, gridZ);
+float nodes = 1.0 - step(0.15, nodeDist);
+circuit = max(circuit, nodes);
+
+float edgeLow  = 0.15;
+float edgeHigh = 0.85;
+float edgeBand = smoothstep(edgeLow, edgeLow + 0.1, fadeMask) *
+                 (1.0 - smoothstep(edgeHigh - 0.1, edgeHigh, fadeMask));
+
+float solidAlpha = 1.0 - smoothstep(edgeLow, edgeLow + 0.1, fadeMask);
+float coreTransp = smoothstep(edgeHigh - 0.1, edgeHigh, fadeMask);
+float circuitAlpha = edgeBand * circuit * 0.6;
+float finalAlpha = solidAlpha + circuitAlpha;
+finalAlpha = clamp(finalAlpha, 0.0, 1.0);
+finalAlpha = mix(finalAlpha, 0.0, coreTransp);
+
+gl_FragColor.a *= finalAlpha;
+`;
+
+// ---------------------------------------------------------------------------
+// Wall material – grayish metal sheets with random irregularities
+// ---------------------------------------------------------------------------
+
+/**
+ * Creates a wall material that looks like metal panels with seams and subtle
+ * surface irregularities.  Becomes transparent when the player is between the
+ * wall and the camera.
  */
 export function createWallMaterial(color: number = 0x555555): THREE.MeshStandardMaterial {
-    const material = new THREE.MeshStandardMaterial({ color, transparent: true });
+    const material = new THREE.MeshStandardMaterial({
+        color,
+        transparent: true,
+        metalness: 0.6,
+        roughness: 0.7,
+    });
 
     material.onBeforeCompile = (shader) => {
-        // Uniforms updated each frame by BaseStage
         shader.uniforms.u_playerPos = { value: new THREE.Vector3() };
         shader.uniforms.u_cameraPos = { value: new THREE.Vector3() };
 
         // ---- vertex ----
-        shader.vertexShader = `
-            varying vec3 vWorldPosition;
-            ${shader.vertexShader}
-        `;
+        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + shader.vertexShader;
         shader.vertexShader = shader.vertexShader.replace(
             '#include <worldpos_vertex>',
-            `
-            #include <worldpos_vertex>
-            vWorldPosition = (modelMatrix * vec4(transformed, 1.0)).xyz;
-            `
+            VERTEX_WORLD_POS_CALC,
         );
 
         // ---- fragment ----
@@ -40,77 +121,43 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
             uniform vec3 u_playerPos;
             uniform vec3 u_cameraPos;
             varying vec3 vWorldPosition;
+            ${GLSL_HASH}
+            ${GLSL_VALUE_NOISE}
             ${shader.fragmentShader}
         `;
 
-        // Inject transparency logic at the very end of the fragment shader
+        // Metal panel pattern (modifies diffuseColor before lighting)
         shader.fragmentShader = shader.fragmentShader.replace(
-            '#include <dithering_fragment>',
+            '#include <color_fragment>',
             `
-            #include <dithering_fragment>
+            #include <color_fragment>
 
-            // Distance from this wall fragment to the player on the XZ plane
-            float distToPlayer = length(vWorldPosition.xz - u_playerPos.xz);
+            // 2 m metal panel grid using all three axes so the seams
+            // appear correctly on any axis-aligned face.
+            vec3 pPos = vWorldPosition * 0.5;
+            vec3 pFrac = fract(pPos);
+            vec3 pId = floor(pPos);
 
-            // Only fade walls that are close to the player (within a radius)
-            float proximityRadius = 5.0;
-            float proximityFactor = 1.0 - smoothstep(0.0, proximityRadius, distToPlayer);
+            float sw = 0.04;
+            float sA = smoothstep(0.0, sw, pFrac.x) * smoothstep(0.0, sw, 1.0 - pFrac.x);
+            float sB = smoothstep(0.0, sw, pFrac.y) * smoothstep(0.0, sw, 1.0 - pFrac.y);
+            float sC = smoothstep(0.0, sw, pFrac.z) * smoothstep(0.0, sw, 1.0 - pFrac.z);
+            float seam = sA * sB * sC;
 
-            // Direction from camera to player (on XZ plane only)
-            vec2 camToPlayer = normalize(u_playerPos.xz - u_cameraPos.xz);
+            float panelVar = shaderHash(pId.xy + pId.z * 37.0) * 0.12 - 0.06;
+            float surfNoise = valueNoise(vWorldPosition.xz * 4.0 + vWorldPosition.y * 3.0) * 0.08 - 0.04;
 
-            // How far along the camera→player line is this fragment?
-            float wallDist   = dot(vWorldPosition.xz - u_cameraPos.xz, camToPlayer);
-            float playerDist = dot(u_playerPos.xz    - u_cameraPos.xz, camToPlayer);
-
-            // Lateral offset of the fragment from the camera→player line
-            vec2 wallOffset = (vWorldPosition.xz - u_cameraPos.xz) - wallDist * camToPlayer;
-            float lateralDist = length(wallOffset);
-
-            // The wall fragment must be between the camera and the player
-            // (closer to camera than the player) and close to the camera-player line
-            float behindFactor = smoothstep(playerDist + 1.0, playerDist - 2.0, wallDist);
-            float lateralFactor = 1.0 - smoothstep(0.0, 3.0, lateralDist);
-            float fadeMask = behindFactor * lateralFactor * proximityFactor;
-
-            // --- Tech-styled circuit alpha mask on the transparency edge ---
-            // Use world XZ coordinates to create a grid pattern
-            vec2 gridPos = vWorldPosition.xz * 2.0;
-            float gridX = abs(fract(gridPos.x) - 0.4);
-            float gridZ = abs(fract(gridPos.y) - 0.4);
-            // Circuit-like line pattern: horizontal and vertical lines
-            float lineW = 0.1;
-            float circuitH = step(lineW, gridX);
-            float circuitV = step(lineW, gridZ);
-            // Combine into a grid where lines are visible
-            float circuit = 1.0 - circuitH * circuitV;
-            // Add nodes at intersections
-            float nodeDist = min(gridX, gridZ);
-            float nodes = 1.0 - step(0.15, nodeDist);
-            circuit = max(circuit, nodes);
-
-            // Edge band: partially transparent region where circuit pattern shows
-            float edgeLow  = 0.15;
-            float edgeHigh = 0.85;
-            float edgeBand = smoothstep(edgeLow, edgeLow + 0.1, fadeMask) *
-                             (1.0 - smoothstep(edgeHigh - 0.1, edgeHigh, fadeMask));
-
-            // Final alpha:
-            //   fully opaque when fadeMask < edgeLow
-            //   circuit-masked in the edge band
-            //   fully transparent when fadeMask > edgeHigh
-            float solidAlpha = 1.0 - smoothstep(edgeLow, edgeLow + 0.1, fadeMask);
-            float coreTransp = smoothstep(edgeHigh - 0.1, edgeHigh, fadeMask);
-            float circuitAlpha = edgeBand * circuit * 0.6;
-            float finalAlpha = solidAlpha + circuitAlpha;
-            finalAlpha = clamp(finalAlpha, 0.0, 1.0);
-            finalAlpha = mix(finalAlpha, 0.0, coreTransp);
-
-            gl_FragColor.a *= finalAlpha;
-            `
+            diffuseColor.rgb *= mix(0.65, 1.0, seam);
+            diffuseColor.rgb += panelVar + surfNoise;
+            `,
         );
 
-        // Store the shader reference in the WeakMap for uniform updates
+        // Transparency
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <dithering_fragment>',
+            TRANSPARENCY_FRAGMENT,
+        );
+
         wallShaderMap.set(material, shader);
     };
 
@@ -118,8 +165,185 @@ export function createWallMaterial(color: number = 0x555555): THREE.MeshStandard
     return material;
 }
 
+// ---------------------------------------------------------------------------
+// Obstacle material – random rectangular shapes and tech lines
+// ---------------------------------------------------------------------------
+
 /**
- * Update the player and camera position uniforms for all wall materials.
+ * Creates an obstacle material with a procedural tech pattern (rectangular
+ * panels, component outlines, and horizontal/vertical lines).  Uses the same
+ * transparency shader as walls.
+ */
+export function createObstacleMaterial(color: number = 0x555555): THREE.MeshStandardMaterial {
+    const material = new THREE.MeshStandardMaterial({
+        color,
+        transparent: true,
+        metalness: 0.5,
+        roughness: 0.6,
+    });
+
+    material.onBeforeCompile = (shader) => {
+        shader.uniforms.u_playerPos = { value: new THREE.Vector3() };
+        shader.uniforms.u_cameraPos = { value: new THREE.Vector3() };
+
+        // ---- vertex ----
+        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <worldpos_vertex>',
+            VERTEX_WORLD_POS_CALC,
+        );
+
+        // ---- fragment ----
+        shader.fragmentShader = `
+            uniform vec3 u_playerPos;
+            uniform vec3 u_cameraPos;
+            varying vec3 vWorldPosition;
+            ${GLSL_HASH}
+            ${shader.fragmentShader}
+        `;
+
+        // Tech panel + line pattern
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <color_fragment>',
+            `
+            #include <color_fragment>
+
+            // Block grid – per-cell shade variation
+            vec3 blkPos = vWorldPosition * 1.5;
+            vec3 blkFrac = fract(blkPos);
+            vec3 blkId = floor(blkPos);
+            float blkHash = shaderHash(blkId.xy + blkId.z * 19.0);
+            float blkShade = blkHash * 0.15 - 0.075;
+
+            // Seams between blocks
+            float obsW = 0.03;
+            float obsSA = smoothstep(0.0, obsW, blkFrac.x) * smoothstep(0.0, obsW, 1.0 - blkFrac.x);
+            float obsSB = smoothstep(0.0, obsW, blkFrac.y) * smoothstep(0.0, obsW, 1.0 - blkFrac.y);
+            float obsSC = smoothstep(0.0, obsW, blkFrac.z) * smoothstep(0.0, obsW, 1.0 - blkFrac.z);
+            float obsSeam = obsSA * obsSB * obsSC;
+
+            // Smaller rectangular components (random presence per cell)
+            vec3 cmpPos = vWorldPosition * 4.0;
+            vec3 cmpFrac = fract(cmpPos);
+            vec3 cmpId = floor(cmpPos);
+            float cmpHash = shaderHash(cmpId.xy + cmpId.z * 41.0);
+            float cmpW = 0.25 + cmpHash * 0.45;
+            float cmpH = 0.25 + shaderHash(cmpId.yz + cmpId.x * 37.0) * 0.45;
+            float hasCmp = step(0.5, cmpHash);
+            float cmpRect = step(0.5 - cmpW * 0.5, cmpFrac.x) * step(cmpFrac.x, 0.5 + cmpW * 0.5) *
+                            step(0.5 - cmpH * 0.5, cmpFrac.y) * step(cmpFrac.y, 0.5 + cmpH * 0.5) * hasCmp;
+
+            // Horizontal and vertical lines
+            vec3 lnFrac = fract(vWorldPosition * 6.0);
+            float lnW = 0.04;
+            float lnH = step(0.5 - lnW, lnFrac.x) * step(lnFrac.x, 0.5 + lnW);
+            float lnV = step(0.5 - lnW, lnFrac.y) * step(lnFrac.y, 0.5 + lnW);
+            float linePattern = max(lnH, lnV);
+
+            diffuseColor.rgb *= mix(0.7, 1.0, obsSeam);
+            diffuseColor.rgb += blkShade + cmpRect * 0.1 + linePattern * 0.06;
+            `,
+        );
+
+        // Transparency (same as walls)
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <dithering_fragment>',
+            TRANSPARENCY_FRAGMENT,
+        );
+
+        wallShaderMap.set(material, shader);
+    };
+
+    material.needsUpdate = true;
+    return material;
+}
+
+// ---------------------------------------------------------------------------
+// Floor material – circuit board pattern
+// ---------------------------------------------------------------------------
+
+/**
+ * Creates a floor material with a procedural circuit-board pattern.
+ * The base colour tints the board (e.g. green, blue).
+ */
+export function createFloorMaterial(color: number = 0x0a2a0a): THREE.MeshStandardMaterial {
+    const material = new THREE.MeshStandardMaterial({
+        color,
+        side: THREE.FrontSide,
+        metalness: 0.1,
+        roughness: 0.8,
+    });
+
+    material.onBeforeCompile = (shader) => {
+        // ---- vertex ----
+        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <worldpos_vertex>',
+            VERTEX_WORLD_POS_CALC,
+        );
+
+        // ---- fragment ----
+        shader.fragmentShader = `
+            varying vec3 vWorldPosition;
+            ${GLSL_HASH}
+            ${shader.fragmentShader}
+        `;
+
+        // Circuit board traces and pads
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <color_fragment>',
+            `
+            #include <color_fragment>
+
+            vec2 cbUV = vWorldPosition.xz;
+
+            // Main trace grid (~0.33 m cells)
+            vec2 trUV = cbUV * 3.0;
+            vec2 trFrac = fract(trUV);
+            vec2 trId = floor(trUV);
+            float hasH = step(0.45, shaderHash(trId));
+            float hasV = step(0.45, shaderHash(trId + 73.0));
+            float trW = 0.06;
+            float trH = step(0.5 - trW, trFrac.y) * step(trFrac.y, 0.5 + trW) * hasH;
+            float trV = step(0.5 - trW, trFrac.x) * step(trFrac.x, 0.5 + trW) * hasV;
+            float traces = max(trH, trV);
+
+            // Solder pads at some intersections
+            float padHash = shaderHash(trId + 137.0);
+            float padDist = length(trFrac - 0.5);
+            float pad = step(padHash, 0.25) * (1.0 - smoothstep(0.06, 0.09, padDist));
+
+            // Finer sub-grid traces
+            vec2 fUV = cbUV * 8.0;
+            vec2 fFrac = fract(fUV);
+            vec2 fId = floor(fUV);
+            float fHas = step(0.6, shaderHash(fId + 200.0));
+            float fVHas = step(0.6, shaderHash(fId + 300.0));
+            float fW = 0.03;
+            float fTraceH = step(0.5 - fW, fFrac.y) * step(fFrac.y, 0.5 + fW) * fHas;
+            float fTraceV = step(0.5 - fW, fFrac.x) * step(fFrac.x, 0.5 + fW) * fVHas;
+            float fineTraces = max(fTraceH, fTraceV);
+
+            float circuitPattern = max(max(traces, pad), fineTraces);
+
+            // Copper-tinted traces on the base colour
+            vec3 traceTint = diffuseColor.rgb * 1.6 + vec3(0.04, 0.03, 0.0);
+            diffuseColor.rgb = mix(diffuseColor.rgb, traceTint, circuitPattern * 0.5);
+            `,
+        );
+    };
+
+    material.needsUpdate = true;
+    return material;
+}
+
+// ---------------------------------------------------------------------------
+// Uniform updates
+// ---------------------------------------------------------------------------
+
+/**
+ * Update the player and camera position uniforms for all wall / obstacle
+ * materials that use the transparency shader.
  */
 export function updateWallUniforms(
     materials: THREE.MeshStandardMaterial[],
