@@ -944,6 +944,8 @@ export class Player extends BaseMesh {
         // trigger body (static) cannot detect static barrel bodies via
         // physics events. Instead, check distance from the weapon hitbox
         // to all breakable entities each frame while attacking.
+        // This follows the same pattern used by skill attacks (AreaAttackSkill,
+        // LaserBeamSkill) which also iterate world.bodies for breakable detection.
         if (this.weapon.isAttacking && this.weapon.body) {
             const weaponPos = this.weapon.body.position;
             const weaponShape = this.weapon.body.shapes[0] as CANNON.Cylinder;
@@ -956,7 +958,10 @@ export class Player extends BaseMesh {
                     const dy = body.position.y - weaponPos.y;
                     const dz = body.position.z - weaponPos.z;
                     const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                    if (dist <= weaponRadius + 0.5) {
+                    // Use the breakable's own collision shape radius for hit detection
+                    const breakableShape = body.shapes[0] as CANNON.Cylinder;
+                    const breakableRadius = breakableShape?.radiusTop ?? 0.4;
+                    if (dist <= weaponRadius + breakableRadius) {
                         this.handleBreakableHit(entity);
                     }
                 }
