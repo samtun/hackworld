@@ -21,6 +21,9 @@ export const TELEPORTER_ROOM_SIZE = 12;
 /** Minimum distance in metres between an enemy/obstacle spawn point and the nearest wall. */
 const SPAWN_PADDING = 2;
 
+/** Maximum random-position attempts when placing a chest or barrel. */
+const MAX_SPAWN_ATTEMPTS = 30;
+
 // ---------------------------------------------------------------------------
 // Data types – all are plain serialisable data; no Three.js / CANNON deps.
 // ---------------------------------------------------------------------------
@@ -1122,7 +1125,7 @@ export class RoomBasedDungeonGenerator {
         const minZ = room.centerZ - room.depth / 2 + SPAWN_PADDING;
         const maxZ = room.centerZ + room.depth / 2 - SPAWN_PADDING;
 
-        for (let attempt = 0; attempt < 30; attempt++) {
+        for (let attempt = 0; attempt < MAX_SPAWN_ATTEMPTS; attempt++) {
             const x = this.range(minX, maxX);
             const z = this.range(minZ, maxZ);
             const excluded = exclusions.some(ez => {

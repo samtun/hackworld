@@ -13,7 +13,7 @@ import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { BaseMesh } from './BaseMesh';
 import { StatType } from './StatType';
 import { Skill } from './skills/Skill';
-import { Breakable } from './items/Breakable';
+import { Breakable, isBreakable } from './items/Breakable';
 import { LaserBeamSkill } from './skills/LaserBeamSkill';
 import { HealingSkill } from './skills/HealingSkill';
 import { AreaAttackSkill } from './skills/AreaAttackSkill';
@@ -302,8 +302,8 @@ export class Player extends BaseMesh {
             const entity = e.body.entity;
             if (entity && entity instanceof Enemy) {
                 this.handleAttackHit(entity);
-            } else if (entity && typeof entity.onHit === 'function' && typeof entity.isDestroyed === 'boolean') {
-                this.handleBreakableHit(entity as Breakable);
+            } else if (isBreakable(entity) && !entity.isDestroyed) {
+                this.handleBreakableHit(entity);
             }
         };
         this.setWeapon(swordItem);

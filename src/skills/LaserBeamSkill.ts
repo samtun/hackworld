@@ -6,7 +6,7 @@ import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
 import { SkillTechType } from './SkillTechType';
 import { Tier } from '../items/TierManager';
-import { Breakable } from '../items/Breakable';
+import { Breakable, isBreakable } from '../items/Breakable';
 
 /**
  * Laser Beam Skill
@@ -198,7 +198,7 @@ export class LaserBeamSkill extends Skill {
                         break;
                     }
                 }
-            } else if (entity && typeof entity.onHit === 'function' && typeof entity.isDestroyed === 'boolean' && !(entity as Breakable).isDestroyed) {
+            } else if (isBreakable(entity) && !entity.isDestroyed) {
                 for (let distance = 0; distance <= currentLength; distance += 1) {
                     const checkPos = new CANNON.Vec3(
                         startPos.x + forward.x * distance,

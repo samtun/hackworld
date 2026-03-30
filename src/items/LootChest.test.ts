@@ -90,6 +90,12 @@ vi.mock('./ItemLevelHelper', () => ({
 
 vi.mock('../ui/InputHints', () => ({
     getHint: vi.fn().mockReturnValue('Open Chest'),
+    HintConfigs: {
+        openChest: {
+            keyboard: '<span class="key-icon">ENTER</span> Open Chest',
+            controller: '<span class="btn-icon xbox-a">A</span> Open Chest',
+        },
+    },
 }));
 
 import { LootChest } from './LootChest';

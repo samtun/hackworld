@@ -10,7 +10,7 @@ import { WeaponBonusCalculator } from './weapons/WeaponBonusCalculator';
 import { ChipRepository } from './chips/ChipRepository';
 import { CoreRepository } from './cores/CoreRepository';
 import { ItemLevelHelper } from './ItemLevelHelper';
-import { getHint } from '../ui/InputHints';
+import { getHint, HintConfigs } from '../ui/InputHints';
 import { ChestUI } from './ChestUI';
 
 /** Configuration for a single loot chest placement. */
@@ -98,11 +98,7 @@ export class LootChest {
 
     /** Get the interaction hint text. */
     getInteractionHint(inputManager: InputManager): string {
-        const hintConfig = {
-            keyboard: '<span class="key-icon">ENTER</span> Open Chest',
-            controller: '<span class="btn-icon xbox-a">A</span> Open Chest',
-        };
-        return getHint(hintConfig, inputManager);
+        return getHint(HintConfigs.openChest, inputManager);
     }
 
     /** Open the chest and show the UI. Generates loot based on the player's current stats. */
