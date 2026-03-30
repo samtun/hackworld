@@ -1,3 +1,10 @@
+# [1.61.0](https://github.com/samtun/hackworld/compare/v1.60.0...v1.61.0) (2026-03-30)
+
+
+### Features
+
+* sort inventories when opening trader, chest, and player inventory ([34a9f34](https://github.com/samtun/hackworld/commit/34a9f341c902b47051c01eea6c95860dcca26145))
+
 # [1.60.0](https://github.com/samtun/hackworld/compare/v1.59.0...v1.60.0) (2026-03-30)
 
 
