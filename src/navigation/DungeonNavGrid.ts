@@ -1,4 +1,4 @@
-import type { DungeonLayout, DungeonRoom, WallSegment, RoomObstacle, Corridor } from '../stages/RoomBasedDungeonGenerator';
+import type { DungeonLayout, DungeonRoom, WallSegment, RoomObstacle, Corridor, TrapSpawn } from '../stages/RoomBasedDungeonGenerator';
 
 /** Size of each navigation grid cell in metres. */
 export const NAV_CELL_SIZE = 1;
@@ -59,6 +59,11 @@ export class DungeonNavGrid {
         // Block cells occupied by walls and obstacles
         this.blockWalls(layout.walls);
         this.blockObstacles(layout.obstacles);
+
+        // Block cells occupied by electric traps
+        if (layout.trapSpawns) {
+            this.blockTraps(layout.trapSpawns);
+        }
     }
 
     // -------------------------------------------------------------------
@@ -141,6 +146,21 @@ export class DungeonNavGrid {
                 obs.x + halfW,
                 obs.z - halfD,
                 obs.z + halfD,
+                false,
+            );
+        }
+    }
+
+    /** Block cells under electric traps so enemies pathfind around them. */
+    private blockTraps(traps: TrapSpawn[]): void {
+        for (const trap of traps) {
+            const halfW = trap.width / 2;
+            const halfL = trap.length / 2;
+            this.setRect(
+                trap.x - halfW,
+                trap.x + halfW,
+                trap.z - halfL,
+                trap.z + halfL,
                 false,
             );
         }

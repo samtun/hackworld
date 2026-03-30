@@ -27,6 +27,17 @@ export class NetworkMatrix extends BaseStage {
         chestQualityFactor: 1.0,
         chestInTeleporterRoom: true,
         barrelCount: { min: 1, max: 3 },
+        trapConfig: {
+            count: { min: 1, max: 2 },
+            width: { min: 2, max: 4 },
+            length: { min: 2, max: 4 },
+            damage: 8,
+            patterns: [
+                [1500, 2000],
+                [800, 1200, 800, 2000],
+                [],
+            ],
+        },
     };
 
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
@@ -76,8 +87,9 @@ export class NetworkMatrix extends BaseStage {
         // Spawn enemies with room assignments so aggro is room-gated
         this.spawnEnemiesFromLayout(layout);
 
-        // Build loot chests and breakable barrels
+        // Build loot chests, breakable barrels, and electric traps
         this.buildChestsFromLayout(layout);
         this.buildBarrelsFromLayout(layout);
+        this.buildTrapsFromLayout(layout);
     }
 }

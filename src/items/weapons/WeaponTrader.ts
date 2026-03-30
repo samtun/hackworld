@@ -8,6 +8,7 @@ import { InputManager } from '../../InputManager';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
 import { TierManager } from '../TierManager';
 import { WeaponBonusCalculator } from './WeaponBonusCalculator';
+import { sortInventory } from '../ItemSorter';
 import { CardCollection } from '../cards/CardCollection';
 import { Album } from '../cards/Card';
 
@@ -119,26 +120,7 @@ export class WeaponTrader extends BaseTrader {
             }
         }
 
-        // Sort inventory:
-        // 1. Weapon Type
-        // 2. Weapon Level
-        // 3. Weapon Tier
-        (this.traderInventory as WeaponItem[]).sort((a, b) => {
-            // 1. Weapon Type order
-            if (a.weaponType !== b.weaponType) {
-                return WeaponTrader.ALL_WEAPON_TYPES.indexOf(a.weaponType) - WeaponTrader.ALL_WEAPON_TYPES.indexOf(b.weaponType);
-            }
-            
-            // 2. Weapon Level (ascending)
-            if (a.level !== b.level) {
-                return a.level - b.level;
-            }
-
-            // 3. Weapon Tier (descending quality/minPercent)
-            const tierA = (a.tier && typeof a.tier.minPercent === 'number') ? a.tier.minPercent : -1000;
-            const tierB = (b.tier && typeof b.tier.minPercent === 'number') ? b.tier.minPercent : -1000;
-            return tierB - tierA;
-        });
+        sortInventory(this.traderInventory);
     }
 
     /**

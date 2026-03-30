@@ -6,6 +6,7 @@ import { resetInputDebounce } from '../ui/UiUtils';
 import { formatItemLabel } from './ItemDisplay';
 import { EquippableItem } from './EquippableItem';
 import { getHint } from '../ui/InputHints';
+import { sortInventory } from './ItemSorter';
 import { MenuManager, MENU_COLORS } from '../ui/MenuManager';
 import { UIManager } from '../ui/UIManager';
 
@@ -151,6 +152,7 @@ export class ChestUI {
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.selectedIndex = 0;
+        sortInventory(this.chestInventory);
         this.needsRender = true;
         resetInputDebounce(this as any);
     }

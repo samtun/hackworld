@@ -13,6 +13,7 @@ import { createWallMaterial, createObstacleMaterial, createFloorMaterial, update
 import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
 import { LootChest } from '../items/LootChest';
 import { BreakableBarrel } from '../items/BreakableBarrel';
+import { ElectricTrap } from '../items/ElectricTrap';
 
 /**
  * Tiny Y offset applied to north/south walls (those running along X) to
@@ -49,6 +50,7 @@ export abstract class BaseStage {
     npcs: Set<Npc> = new Set<Npc>();
     lootChests: LootChest[] = [];
     breakableBarrels: BreakableBarrel[] = [];
+    electricTraps: ElectricTrap[] = [];
 
     /**
      * Room definitions set by procedural stages.
@@ -189,6 +191,12 @@ export abstract class BaseStage {
             barrel.cleanup();
         }
         this.breakableBarrels = [];
+
+        // Clean up electric traps
+        for (const trap of this.electricTraps) {
+            trap.cleanup();
+        }
+        this.electricTraps = [];
 
         // Clear teleporter reference
         this.teleporter = undefined;
@@ -437,6 +445,23 @@ export abstract class BaseStage {
     }
 
     /**
+     * Build electric traps from the dungeon layout.
+     */
+    protected buildTrapsFromLayout(layout: DungeonLayout): void {
+        for (const ts of layout.trapSpawns) {
+            const trap = new ElectricTrap(this.scene, {
+                x: ts.x,
+                z: ts.z,
+                width: ts.width,
+                length: ts.length,
+                damage: ts.damage,
+                activationInterval: ts.activationInterval,
+            });
+            this.electricTraps.push(trap);
+        }
+    }
+
+    /**
      * Update teleporter particles, NPC animations, mixers, and – when a
      * procedural room layout is active – room-based enemy aggro, automatic
      * teleporter activation, and wall transparency shader uniforms.
@@ -458,6 +483,11 @@ export abstract class BaseStage {
         // Update barrel destruction animations
         for (const barrel of this.breakableBarrels) {
             barrel.update(dt);
+        }
+      
+        // Update electric traps (damage, particles, activation)
+        for (const trap of this.electricTraps) {
+            trap.update(dt, player, this.enemies);
         }
 
         if (this.dungeonRooms.length > 0) {

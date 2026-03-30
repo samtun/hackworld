@@ -8,6 +8,7 @@ import { TradeMode } from './TradeMode';
 import { TraderPanel } from './TraderPanel';
 import { EquippableItem } from './EquippableItem';
 import { getHint, HintConfigs } from '../ui/InputHints';
+import { sortInventory } from './ItemSorter';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
 import { UIManager } from '../ui/UIManager';
 
@@ -57,6 +58,9 @@ export abstract class BaseTrader {
 
     // inventories
     traderInventory: Item[] = [];
+
+    // Sort flag – set when the trader opens so player inventory is sorted once
+    protected pendingSort: boolean = false;
 
     protected uiConfig: TraderUIConfig;
     protected menuManager: MenuManager;
@@ -263,6 +267,8 @@ export abstract class BaseTrader {
         this.playerSelectedIndex = 0;
         this.activePanel = TraderPanel.TRADER;
         this.needsRender = true;
+        this.pendingSort = true;
+        sortInventory(this.traderInventory);
         resetInputDebounce(this as any);
     }
 
@@ -276,6 +282,12 @@ export abstract class BaseTrader {
 
     update(player: Player, input?: InputManager) {
         if (!this.isVisible) return;
+
+        if (this.pendingSort) {
+            sortInventory(player.inventory);
+            this.pendingSort = false;
+        }
+
         if (input) {
             // Update centralized control hints based on input method
             this.uiManager.showControlHints(getHint(HintConfigs.buySellClose, input));

@@ -46,6 +46,12 @@ export class Enemy extends BaseMesh {
     aggroEnabled: boolean = true;
 
     /**
+     * When true this enemy is immune to electric trap damage and knockback.
+     * Subclasses can set this to `true` to create trap-resistant enemy types.
+     */
+    trapImmune: boolean = false;
+
+    /**
      * Optional navigation grid for pathfinding around walls and obstacles.
      * When set, the enemy follows an A*-computed path instead of moving
      * directly toward the player.
