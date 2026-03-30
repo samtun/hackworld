@@ -199,6 +199,12 @@ describe('Enemy.takeDamage', () => {
         // Critical-hit indicator uses a golden colour
         expect(call[2]).toBe('#bf860c');
     });
+
+    it('enables aggro when hit while aggroEnabled is false', () => {
+        enemy.aggroEnabled = false;
+        enemy.takeDamage(10, false);
+        expect(enemy.aggroEnabled).toBe(true);
+    });
 });
 
 // ─── die ───────────────────────────────────────────────────────────────────────

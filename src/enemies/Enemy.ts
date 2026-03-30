@@ -683,6 +683,10 @@ export class Enemy extends BaseMesh {
     takeDamage(amount: number, isCriticalHit: boolean, sourcePos?: CANNON.Vec3, knockbackFactor: number = 1.0): void {
         if (this.isDying || this.isDead) return;
 
+        // Taking damage from the player immediately enables aggro so the
+        // enemy fights back even when hit from outside its room.
+        this.aggroEnabled = true;
+
         // Knockback
         if (sourcePos) {
             const knockbackDir = this.body.position.vsub(sourcePos);
