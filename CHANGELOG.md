@@ -1,3 +1,34 @@
+## [1.56.1](https://github.com/samtun/hackworld/compare/v1.56.0...v1.56.1) (2026-03-30)
+
+
+### Bug Fixes
+
+* reset effectTimer in AreaAttackSkill execute and clamp LaserBeamSkill range ([63715e5](https://github.com/samtun/hackworld/commit/63715e5d4c6ad004eadeaabfd21675c59f20eee5))
+
+# [1.56.0](https://github.com/samtun/hackworld/compare/v1.55.1...v1.56.0) (2026-03-30)
+
+
+### Bug Fixes
+
+* centre teleporter in its room for accessibility from all sides ([1e25f6e](https://github.com/samtun/hackworld/commit/1e25f6eec052a56dcded9ac22362228a0047c753))
+* localise wall transparency to player area, disable wall shadows, fix floor gaps ([7e32378](https://github.com/samtun/hackworld/commit/7e32378a756aa4503f93b1ca59956792133a8d50))
+* make test WeaponDrops despawn when leaving MovementTest stage ([685d930](https://github.com/samtun/hackworld/commit/685d93068a5a3a875abb14d09d8ece114c550fee))
+* teleporter activation, room sizes, enemy count, obstacles ([a1c54f8](https://github.com/samtun/hackworld/commit/a1c54f83e2da39c988e4970cf159329a4c76fd3d))
+
+
+### Features
+
+* add procedurally generated environments to dungeon stages ([53d6027](https://github.com/samtun/hackworld/commit/53d6027e8955c49eda242a30e99695645cbd413b))
+* apply wall transparency shader to obstacles ([1279e14](https://github.com/samtun/hackworld/commit/1279e146a7539ab09c7351fd854ae1cf5e2ed16a))
+* branching room layout, dedicated teleporter room, grid-snapped obstacles ([2292632](https://github.com/samtun/hackworld/commit/229263265caca66166af9de0da0e42804cad54b1))
+* change weapon tier colors ([b3fee8a](https://github.com/samtun/hackworld/commit/b3fee8a557850db15fc6654e2b39cde6d114d5dc))
+* decrease enemy item drop rate ([312fc5d](https://github.com/samtun/hackworld/commit/312fc5d8ba9310abcc5c200a04911ffa975952dc))
+* enable enemy aggro on damage from outside room ([1b522d7](https://github.com/samtun/hackworld/commit/1b522d787b3e364ffc24ebce45d4472713da4d61))
+* increase room sizes 1.3x, halve enemy spawns, 2m obstacles, A* pathfinding ([437f7d1](https://github.com/samtun/hackworld/commit/437f7d1bbe60008436005226aa15e0f6c795a9f9))
+* larger teleporter room, wall transparency shader, per-room floor segments ([be79d5f](https://github.com/samtun/hackworld/commit/be79d5f763b2cc9148d578c0586eefa43cdcb586))
+* reduce wall shader alpha mask size ([d53e633](https://github.com/samtun/hackworld/commit/d53e633f75806dc7935033523f20a79d09fb1b6f))
+* room-based procedural dungeon generation with enemy room aggro and teleporter activation ([c6cffc9](https://github.com/samtun/hackworld/commit/c6cffc99490a057c347b18cf5a23adef13d7aca9))
+
 ## [1.55.1](https://github.com/samtun/hackworld/compare/v1.55.0...v1.55.1) (2026-03-25)
 
 
