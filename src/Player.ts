@@ -189,6 +189,7 @@ export class Player extends BaseMesh {
     private readonly LEVEL_UP_PARTICLE_LIFETIME: number = 0.6; // 0.6 seconds for the explosion
 
     // Level up shockwave timing
+    private readonly LEVEL_UP_SHOCKWAVE_RANGE: number = 10;
     private readonly LEVEL_UP_SHOCKWAVE_DELAY: number = 0.4;
     private levelUpShockwaveTimer: number = 0;
     private shockwavePending: boolean = false;
@@ -1542,17 +1543,22 @@ export class Player extends BaseMesh {
     }
 
     /**
-     * Execute shockwave attack hitting all nearby enemies
+     * Execute shockwave attack hitting enemies within range
      */
     private executeLevelUpShockwave(): void {
-        // Find all enemies in the world and damage them
         for (const body of this.world.bodies) {
             const entity = (body as any).entity;
             if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
-                const isCriticalHit = Math.random() < this.getCriticalChance();
-                const damage = this.getHitDamage(isCriticalHit);
-                entity.takeDamage(damage, isCriticalHit, this.body.position);
-                console.log(`Level-up shockwave hit enemy for ${damage} damage`);
+                const dx = body.position.x - this.body.position.x;
+                const dz = body.position.z - this.body.position.z;
+                const distance = Math.sqrt(dx * dx + dz * dz);
+
+                if (distance <= this.LEVEL_UP_SHOCKWAVE_RANGE) {
+                    const isCriticalHit = Math.random() < this.getCriticalChance();
+                    const damage = this.getHitDamage(isCriticalHit);
+                    entity.takeDamage(damage, isCriticalHit, this.body.position);
+                    console.log(`Level-up shockwave hit enemy for ${damage} damage`);
+                }
             }
         }
     }
