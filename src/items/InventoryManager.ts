@@ -9,6 +9,7 @@ import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';
+import { sortInventory } from './ItemSorter';
 import { WeaponType } from './weapons/WeaponType';
 import { SkillTechType } from '../skills/SkillTechType';
 import {
@@ -35,6 +36,9 @@ export class InventoryManager {
     selectedIndex: number = 0;
     itemElements: HTMLDivElement[] = [];
     needsRender: boolean = false;
+
+    // Sort flag – set when the inventory opens so items are sorted once
+    private pendingSort: boolean = false;
 
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
@@ -153,6 +157,7 @@ export class InventoryManager {
         if (this.isVisible) {
             this.selectedIndex = 0;
             this.needsRender = true;
+            this.pendingSort = true;
         } else {
             // Hide centralized control hints when menu closes
             this.uiManager.hideControlHints();
@@ -161,6 +166,11 @@ export class InventoryManager {
 
     update(player: Player, input?: InputManager) {
         if (!this.isVisible) return;
+
+        if (this.pendingSort) {
+            sortInventory(player.inventory);
+            this.pendingSort = false;
+        }
 
         // Handle keyboard/gamepad navigation
         if (input) {
