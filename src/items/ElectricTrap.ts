@@ -197,7 +197,7 @@ export class ElectricTrap {
                     cable = clamp(cable, 0.0, 1.0);
 
                     // Inactive: light grey cables (#DDDDDD)
-                    vec3 inactiveColor = vec3(0.867) * cable;
+                    vec3 inactiveColor = vec3(0.18) * cable;
                     // Active: bright yellow glow with pulsing
                     float pulse = 0.85 + 0.15 * sin(u_time * 8.0);
                     vec3 activeColor = vec3(1.0, 0.95, 0.2) * cable * pulse;
