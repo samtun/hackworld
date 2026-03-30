@@ -1,3 +1,11 @@
+# [1.59.0](https://github.com/samtun/hackworld/compare/v1.58.1...v1.59.0) (2026-03-30)
+
+
+### Features
+
+* add ssao ([edceeb5](https://github.com/samtun/hackworld/commit/edceeb5e1291521f41d93631dc4bbd97f11a6046))
+* implement separate camera for floating indicators and adjust rendering layers ([81d82ea](https://github.com/samtun/hackworld/commit/81d82ea6d5842955ba525d3685045f611ca95169))
+
 ## [1.58.1](https://github.com/samtun/hackworld/compare/v1.58.0...v1.58.1) (2026-03-30)
 
 
