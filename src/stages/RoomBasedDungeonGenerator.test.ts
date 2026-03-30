@@ -435,8 +435,10 @@ describe('RoomBasedDungeonGenerator', () => {
     describe('chest and barrel spawns', () => {
         const configWithChestsAndBarrels: RoomGenerationConfig = {
             ...baseConfig,
-            chestCount: { min: 2, max: 3 },
+            lootRoomCount: { min: 1, max: 1 },
+            chestsPerLootRoom: 3,
             chestQualityFactor: 1.5,
+            chestInTeleporterRoom: true,
             barrelCount: { min: 1, max: 2 },
         };
 
@@ -446,10 +448,12 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(layout.barrelSpawns).toEqual([]);
         });
 
-        it('generates chest spawns within configured range', () => {
+        it('generates chest spawns in loot rooms and teleporter room', () => {
             const layout = gen(42, configWithChestsAndBarrels);
+            // At least 1 from loot room + 1 from teleporter room
             expect(layout.chestSpawns.length).toBeGreaterThanOrEqual(1);
-            expect(layout.chestSpawns.length).toBeLessThanOrEqual(3);
+            // Max 3 from loot room + 1 from teleporter room
+            expect(layout.chestSpawns.length).toBeLessThanOrEqual(4);
         });
 
         it('chest spawns carry qualityFactor from config', () => {
@@ -459,9 +463,15 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
-        it('generates barrel spawns in combat rooms', () => {
+        it('generates barrel spawns in combat and loot rooms', () => {
             const layout = gen(42, configWithChestsAndBarrels);
             expect(layout.barrelSpawns.length).toBeGreaterThan(0);
+        });
+
+        it('generates loot rooms when configured', () => {
+            const layout = gen(42, configWithChestsAndBarrels);
+            const lootRooms = layout.rooms.filter(r => r.isLootRoom);
+            expect(lootRooms.length).toBe(1);
         });
 
         it('chest/barrel spawns are inside room boundaries', () => {

@@ -22,8 +22,10 @@ export class SecurityCore extends BaseStage {
         enemyCount: { min: 2, max: 8, areaPerEnemy: 50, largeFraction: 0.35 },
         obstacleCount: { min: 1, max: 3 },
         hasBoss: true,
-        chestCount: { min: 1, max: 3 },
+        lootRoomCount: { min: 1, max: 2 },
+        chestsPerLootRoom: 3,
         chestQualityFactor: 1.2,
+        chestInTeleporterRoom: true,
         barrelCount: { min: 1, max: 4 },
     };
 

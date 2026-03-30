@@ -22,8 +22,10 @@ export class NetworkMatrix extends BaseStage {
         enemyCount: { min: 2, max: 6, areaPerEnemy: 60, largeFraction: 0.25 },
         obstacleCount: { min: 1, max: 2 },
         hasBoss: false,
-        chestCount: { min: 1, max: 2 },
+        lootRoomCount: { min: 1, max: 1 },
+        chestsPerLootRoom: 3,
         chestQualityFactor: 1.0,
+        chestInTeleporterRoom: true,
         barrelCount: { min: 1, max: 3 },
     };
 

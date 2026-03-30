@@ -38,14 +38,18 @@ export class BreakableBarrel implements Breakable {
     private world: CANNON.World;
     private maxTier: Tier;
 
-    /** Radius of the barrel cylinder. */
+    /** Radius of the barrel at the top and bottom. */
     private static readonly RADIUS = 0.3;
+    /** Radius of the barrel at the middle (bulge). */
+    private static readonly MID_RADIUS = 0.4;
     /** Height of the barrel cylinder. */
     private static readonly HEIGHT = 1;
+    /** Height of the physics collider (tall to prevent jumping on). */
+    private static readonly COLLIDER_HEIGHT = 2;
     /** Number of radial segments. */
     private static readonly RADIAL_SEGMENTS = 8;
-    /** Number of height segments. */
-    private static readonly HEIGHT_SEGMENTS = 3;
+    /** Number of height segments (must be even so there is a middle ring). */
+    private static readonly HEIGHT_SEGMENTS = 4;
 
     constructor(
         scene: THREE.Scene,
@@ -58,7 +62,7 @@ export class BreakableBarrel implements Breakable {
         this.world = world;
         this.maxTier = maxTier;
 
-        // Visual: barrel-shaped cylinder
+        // Visual: barrel shape with a bulge in the middle
         const geo = new THREE.CylinderGeometry(
             BreakableBarrel.RADIUS,
             BreakableBarrel.RADIUS,
@@ -66,6 +70,19 @@ export class BreakableBarrel implements Breakable {
             BreakableBarrel.RADIAL_SEGMENTS,
             BreakableBarrel.HEIGHT_SEGMENTS,
         );
+        // Expand the middle ring(s) outward to create a barrel bulge
+        const posAttr = geo.attributes.position;
+        const halfH = BreakableBarrel.HEIGHT / 2;
+        for (let i = 0; i < posAttr.count; i++) {
+            const y = posAttr.getY(i);
+            // t=0 at top/bottom, t=1 at centre
+            const t = 1 - Math.abs(y) / halfH;
+            const bulge = 1 + (BreakableBarrel.MID_RADIUS / BreakableBarrel.RADIUS - 1) * t;
+            posAttr.setX(i, posAttr.getX(i) * bulge);
+            posAttr.setZ(i, posAttr.getZ(i) * bulge);
+        }
+        posAttr.needsUpdate = true;
+        geo.computeVertexNormals();
         const mat = new THREE.MeshStandardMaterial({ color: 0x8B4513 });
         this.mesh = new THREE.Mesh(geo, mat);
         this.mesh.position.set(position.x, position.y + BreakableBarrel.HEIGHT / 2, position.z);
@@ -74,17 +91,25 @@ export class BreakableBarrel implements Breakable {
         scene.add(this.mesh);
 
         // Physics body for collision detection (weapon/skill hits) and blocking movement.
-        // Body type is KINEMATIC so it participates in trigger collisions with the
-        // weapon hitbox (cannon-es skips static-static pairs).
-        const shape = new CANNON.Cylinder(
-            BreakableBarrel.RADIUS,
-            BreakableBarrel.RADIUS,
-            BreakableBarrel.HEIGHT,
+        // Body is DYNAMIC with a small mass so it participates in trigger collisions
+        // with the weapon hitbox (cannon-es skips static-static broadphase pairs,
+        // and some configurations skip static-kinematic pairs too).
+        // High damping and fixedRotation keep it from moving.
+        const physShape = new CANNON.Cylinder(
+            BreakableBarrel.MID_RADIUS,
+            BreakableBarrel.MID_RADIUS,
+            BreakableBarrel.COLLIDER_HEIGHT,
             BreakableBarrel.RADIAL_SEGMENTS,
         );
-        this.body = new CANNON.Body({ mass: 0, material: physicsMaterial, type: CANNON.Body.KINEMATIC });
-        this.body.addShape(shape);
-        this.body.position.set(position.x, position.y + BreakableBarrel.HEIGHT / 2, position.z);
+        this.body = new CANNON.Body({
+            mass: 0.001,
+            material: physicsMaterial,
+            fixedRotation: true,
+            linearDamping: 1,
+            angularDamping: 1,
+        });
+        this.body.addShape(physShape);
+        this.body.position.set(position.x, position.y + BreakableBarrel.COLLIDER_HEIGHT / 2, position.z);
         (this.body as any).entity = this;
         world.addBody(this.body);
     }

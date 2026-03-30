@@ -48,8 +48,6 @@ export class LootChest {
 
     /** Width of the chest box. */
     private static readonly WIDTH = 1;
-    /** Total height of the closed chest (base + lid). */
-    private static readonly HEIGHT = 0.8;
     /** Height of the base portion. */
     private static readonly BASE_HEIGHT = 0.5;
     /** Height of the lid portion. */
@@ -94,22 +92,26 @@ export class LootChest {
         );
         const lidMat = new THREE.MeshStandardMaterial({ color: 0xDAA520 });
         this.lidMesh = new THREE.Mesh(lidGeo, lidMat);
-        // Position with pivot at the back-bottom edge of the lid
-        this.lidMesh.geometry.translate(0, LootChest.LID_HEIGHT / 2, -LootChest.DEPTH / 2);
-        this.lidMesh.position.set(0, LootChest.BASE_HEIGHT, LootChest.DEPTH / 2);
+        // Translate geometry so the pivot sits at the back-bottom edge.
+        // Geometry extends forward (+Z) and upward (+Y) from the pivot.
+        this.lidMesh.geometry.translate(0, LootChest.LID_HEIGHT / 2, LootChest.DEPTH / 2);
+        // Place the pivot at the back-top of the base
+        this.lidMesh.position.set(0, LootChest.BASE_HEIGHT, -LootChest.DEPTH / 2);
         this.lidMesh.castShadow = true;
         this.lidMesh.receiveShadow = true;
         this.mesh.add(this.lidMesh);
 
         scene.add(this.mesh);
 
-        // Physics body (static, blocks movement)
+        // Physics body (static, blocks movement). Collider extends 2m high to
+        // prevent the player from jumping on top of the chest.
+        const colliderHeight = 2;
         const shape = new CANNON.Box(
-            new CANNON.Vec3(LootChest.WIDTH / 2, LootChest.HEIGHT / 2, LootChest.DEPTH / 2),
+            new CANNON.Vec3(LootChest.WIDTH / 2, colliderHeight / 2, LootChest.DEPTH / 2),
         );
         this.body = new CANNON.Body({ mass: 0, material: physicsMaterial });
         this.body.addShape(shape);
-        this.body.position.set(position.x, position.y + LootChest.HEIGHT / 2, position.z);
+        this.body.position.set(position.x, position.y + colliderHeight / 2, position.z);
         world.addBody(this.body);
     }
 
@@ -169,7 +171,8 @@ export class LootChest {
 
     /** Visually open the lid by rotating it back ~100 degrees around the back hinge. */
     private showOpenedLid(): void {
-        this.lidMesh.rotation.x = -100 * (Math.PI / 180);
+        // Positive X rotation swings the lid upward and backward from the back-edge pivot
+        this.lidMesh.rotation.x = 100 * (Math.PI / 180);
         // Darken the base slightly to indicate opened state
         (this.baseMesh.material as THREE.MeshStandardMaterial).color.setHex(0x8B6914);
     }

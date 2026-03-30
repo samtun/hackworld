@@ -8,16 +8,29 @@ vi.mock('three', () => {
         constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
         set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; }
     }
+    const mockPositionAttr = {
+        count: 0,
+        getX: vi.fn().mockReturnValue(0),
+        getY: vi.fn().mockReturnValue(0),
+        getZ: vi.fn().mockReturnValue(0),
+        setX: vi.fn(),
+        setZ: vi.fn(),
+        needsUpdate: false,
+    };
     return {
         Vector3: V3,
         BoxGeometry: class { dispose = vi.fn(); },
-        CylinderGeometry: class { dispose = vi.fn(); },
+        CylinderGeometry: class {
+            dispose = vi.fn();
+            attributes = { position: mockPositionAttr };
+            computeVertexNormals = vi.fn();
+        },
         MeshStandardMaterial: class { color = { setHex: vi.fn() }; dispose = vi.fn(); },
         Mesh: class {
             position = new V3();
             castShadow = false;
             receiveShadow = false;
-            geometry = { dispose: vi.fn() };
+            geometry = { dispose: vi.fn(), attributes: { position: mockPositionAttr }, computeVertexNormals: vi.fn() };
             material = { dispose: vi.fn() };
         },
         Material: class {},
@@ -34,10 +47,10 @@ vi.mock('cannon-es', () => {
         Vec3,
         Box: class {},
         Cylinder: class {},
-        Body: Object.assign(class {
+        Body: class {
             addShape = vi.fn();
             position = new Vec3();
-        }, { KINEMATIC: 4 }),
+        },
     };
 });
 
