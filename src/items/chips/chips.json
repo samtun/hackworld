@@ -7,7 +7,7 @@
             "weaponRangeMultiplier": 1.10
         },
         "buyPrice": 150,
-        "sellPrice": 75,
+        "sellPrice": 50,
         "level": 1
     },
     {
@@ -18,7 +18,7 @@
             "weaponRangeMultiplier": 1.12
         },
         "buyPrice": 225,
-        "sellPrice": 112,
+        "sellPrice": 75,
         "level": 2
     },
     {
@@ -29,7 +29,7 @@
             "weaponRangeMultiplier": 1.14
         },
         "buyPrice": 300,
-        "sellPrice": 150,
+        "sellPrice": 100,
         "level": 3
     },
     {
@@ -40,7 +40,7 @@
             "weaponRangeMultiplier": 1.16
         },
         "buyPrice": 450,
-        "sellPrice": 225,
+        "sellPrice": 150,
         "level": 4
     },
     {
@@ -51,7 +51,7 @@
             "weaponRangeMultiplier": 1.18
         },
         "buyPrice": 750,
-        "sellPrice": 375,
+        "sellPrice": 250,
         "level": 5
     },
     {
@@ -62,7 +62,7 @@
             "weaponRangeMultiplier": 1.20
         },
         "buyPrice": 1200,
-        "sellPrice": 600,
+        "sellPrice": 400,
         "level": 6
     },
     {
@@ -73,7 +73,7 @@
             "walkSpeedMultiplier": 1.10
         },
         "buyPrice": 150,
-        "sellPrice": 75,
+        "sellPrice": 50,
         "level": 1
     },
     {
@@ -84,7 +84,7 @@
             "walkSpeedMultiplier": 1.12
         },
         "buyPrice": 225,
-        "sellPrice": 112,
+        "sellPrice": 75,
         "level": 2
     },
     {
@@ -95,7 +95,7 @@
             "walkSpeedMultiplier": 1.14
         },
         "buyPrice": 300,
-        "sellPrice": 150,
+        "sellPrice": 100,
         "level": 3
     },
     {
@@ -106,7 +106,7 @@
             "walkSpeedMultiplier": 1.16
         },
         "buyPrice": 450,
-        "sellPrice": 225,
+        "sellPrice": 150,
         "level": 4
     },
     {
@@ -117,7 +117,7 @@
             "walkSpeedMultiplier": 1.18
         },
         "buyPrice": 750,
-        "sellPrice": 375,
+        "sellPrice": 250,
         "level": 5
     },
     {
@@ -128,7 +128,7 @@
             "walkSpeedMultiplier": 1.20
         },
         "buyPrice": 1200,
-        "sellPrice": 600,
+        "sellPrice": 400,
         "level": 6
     }
 ]
