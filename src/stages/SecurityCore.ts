@@ -19,7 +19,7 @@ export class SecurityCore extends BaseStage {
         combatRoomCount: { min: 3, max: 5 },
         combatRoomSize: { minWidth: 13, maxWidth: 33, minDepth: 13, maxDepth: 33 },
         finalRoomSize: { minWidth: 20, maxWidth: 39, minDepth: 20, maxDepth: 39 },
-        enemyCount: { min: 2, max: 8, areaPerEnemy: 60, largeFraction: 0.25 },
+        enemyCount: { min: 1, max: 6, areaPerEnemy: 60, largeFraction: 0.25 },
         obstacleCount: { min: 1, max: 3 },
         hasBoss: true,
         lootRoomCount: { min: 1, max: 2 },
