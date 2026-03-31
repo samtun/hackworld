@@ -15,6 +15,7 @@ export class InputManager {
     private previousSkill2State: boolean = false; // L1 + B
     private previousSkill3State: boolean = false; // L1 + X
     private previousBlockState: boolean = false;
+    private previousPauseState: boolean = false;
 
     public static get Instance(): InputManager {
         return this.instance || (this.instance = new this());
@@ -54,6 +55,7 @@ export class InputManager {
         this.previousSkill2State = this.isSkill2Pressed();
         this.previousSkill3State = this.isSkill3Pressed();
         this.previousBlockState = this.isBlockPressed();
+        this.previousPauseState = this.isPausePressed();
         this.mobileControls?.updateState();
     }
 
@@ -467,6 +469,31 @@ export class InputManager {
     isBlockJustPressed(): boolean {
         const currentState = this.isBlockPressed();
         return !this.previousBlockState && currentState;
+    }
+
+    isPausePressed(): boolean {
+        // Keyboard: Escape (but not when Q/L1 is held for skills)
+        if (this.keys['Escape'] && !this.keys['KeyQ']) return true;
+
+        // Gamepad Start (Button 9)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[9]?.pressed) return true;
+            }
+        }
+
+        // Mobile pause button
+        if (this.mobileControls?.isMobile && this.mobileControls?.isPausePressed) {
+            return true;
+        }
+
+        return false;
+    }
+
+    isPauseJustPressed(): boolean {
+        const currentState = this.isPausePressed();
+        return !this.previousPauseState && currentState;
     }
 
     // Returns the right thumbstick Y-axis value (-1 to 1). Positive = down, negative = up.

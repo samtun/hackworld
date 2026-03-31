@@ -30,6 +30,8 @@ function makeInputManager(overrides: Record<string, unknown> = {}): InputManager
         previousSkill1State: false,
         previousSkill2State: false,
         previousSkill3State: false,
+        previousBlockState: false,
+        previousPauseState: false,
         ...overrides,
     });
     return im;
@@ -409,6 +411,45 @@ describe('InputManager', () => {
     describe('getRightThumbstickY()', () => {
         it('returns 0 when no gamepad connected', () => {
             expect(manager.getRightThumbstickY()).toBe(0);
+        });
+    });
+
+    describe('isPausePressed()', () => {
+        it('returns false initially', () => {
+            expect(manager.isPausePressed()).toBe(false);
+        });
+
+        it('returns true with Escape alone', () => {
+            manager.keys['Escape'] = true;
+            expect(manager.isPausePressed()).toBe(true);
+        });
+
+        it('returns false with Escape + KeyQ (skill 2 combo)', () => {
+            manager.keys['Escape'] = true;
+            manager.keys['KeyQ'] = true;
+            expect(manager.isPausePressed()).toBe(false);
+        });
+    });
+
+    describe('isPauseJustPressed()', () => {
+        it('returns true when newly pressed', () => {
+            manager.keys['Escape'] = true;
+            expect(manager.isPauseJustPressed()).toBe(true);
+        });
+
+        it('returns false when already pressed', () => {
+            manager.keys['Escape'] = true;
+            manager.updateState();
+            expect(manager.isPauseJustPressed()).toBe(false);
+        });
+
+        it('returns true after release and re-press', () => {
+            manager.keys['Escape'] = true;
+            manager.updateState();
+            manager.keys['Escape'] = false;
+            manager.updateState();
+            manager.keys['Escape'] = true;
+            expect(manager.isPauseJustPressed()).toBe(true);
         });
     });
 });
