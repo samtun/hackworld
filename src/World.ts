@@ -331,6 +331,11 @@ export class World {
                     // The ItemDropManager will select one strategy based on probabilities
                     // and each strategy will check enemy.itemDropChance internally
                     this.itemDropManager.tryDropItem(this.scene, e, player);
+
+                    // Independently try to drop an HP or TP potion (5% base chance)
+                    const potionPos = e.getDeathPosition();
+                    potionPos.y += 0.5;
+                    this.itemDropManager.tryDropPotion(this.scene, potionPos, player, 0.05);
                 };
             }
 
@@ -407,7 +412,7 @@ export class World {
      * Returns the first match in priority order
      */
     checkNearestAutoPickupDrop(playerPosition: THREE.Vector3): ItemDrop | null {
-        const dropTypes = [ItemDropType.XDATA, ItemDropType.MONEY] as const;
+        const dropTypes = [ItemDropType.XDATA, ItemDropType.MONEY, ItemDropType.HP_POTION, ItemDropType.TP_POTION] as const;
         for (const dropType of dropTypes) {
             const drop = this.itemDropManager.checkInteraction(dropType, playerPosition);
             if (drop) return drop;

@@ -4,15 +4,15 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { NetworkMatrix } from './NetworkMatrix';
 import { SecurityCore } from './SecurityCore';
-import { MovementTest } from './MovementTest';
+import { GameTest } from './GameTest';
 
 // Re-export for convenience
 export { BaseStage, Lobby, NetworkMatrix as CrimsonDepths, SecurityCore as VioletAbyss };
 
 // Registry of all available dungeons for selection UI
-// MovementTest is only included in dev builds
+// GameTest is only included in dev builds
 export const AVAILABLE_DUNGEONS = import.meta.env.DEV 
-    ? [NetworkMatrix, SecurityCore, MovementTest]
+    ? [NetworkMatrix, SecurityCore, GameTest]
     : [NetworkMatrix, SecurityCore];
 
 // Stage factory type
@@ -27,7 +27,7 @@ const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstr
     [Lobby.getMetadata().id, Lobby],
     [NetworkMatrix.getMetadata().id, NetworkMatrix],
     [SecurityCore.getMetadata().id, SecurityCore],
-    ...(import.meta.env.DEV ? [[MovementTest.getMetadata().id, MovementTest] as [string, StageConstructor]] : [])
+    ...(import.meta.env.DEV ? [[GameTest.getMetadata().id, GameTest] as [string, StageConstructor]] : [])
 ]);
 
 /**

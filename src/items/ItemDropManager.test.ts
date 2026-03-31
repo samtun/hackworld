@@ -7,6 +7,7 @@ import { XDataDropStrategy } from './xdata/XDataDropStrategy';
 import { WeaponDropStrategy } from './weapons/WeaponDropStrategy';
 import { ChipDropStrategy } from './chips/ChipDropStrategy';
 import { CoreDropStrategy } from './cores/CoreDropStrategy';
+import { HPPotionDropStrategy, TPPotionDropStrategy } from './potions/PotionDropStrategies';
 import { CardCollection } from './cards/CardCollection';
 import { Album } from './cards/Card';
 
@@ -38,7 +39,12 @@ function makePlayerStub(overrides: Record<string, unknown> = {}) {
         weaponDropBonusFactor: 1.0,
         inventory: [],
         tech: { SWORD: 0, DUAL_BLADE: 0, LANCE: 0, HAMMER: 0 },
+        hp: 100,
+        maxHp: 170,
+        tp: 30,
+        maxTp: 60,
         getTechForWeapon: vi.fn(() => 0),
+        heal: vi.fn(),
         ...overrides,
     };
     stub.collectXData = vi.fn((n: number) => { stub.xData += n; });
@@ -418,5 +424,88 @@ describe('XDataDropStrategy – C.001 bonus', () => {
         const player = { level: 100, collectXData: vi.fn() } as any;
         const drop = strategy.drop(mockScene, enemy, player);
         expect((drop as any)?.amount).toBe(20);
+    });
+});
+
+// ─── HPPotionDropStrategy ─────────────────────────────────────────────────────
+
+describe('HPPotionDropStrategy', () => {
+    const strategy = new HPPotionDropStrategy();
+
+    it('has distribution weight 0 (not part of weighted drops)', () => {
+        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(0);
+    });
+
+    it('drop returns null', () => {
+        expect(strategy.drop()).toBeNull();
+    });
+
+    it('pickup calls player.heal with HP amount', () => {
+        const player = makePlayerStub();
+        const drop = { amount: 40, level: 2 } as any;
+        strategy.pickup(drop, player);
+        expect(player.heal).toHaveBeenCalledWith(40, 0, true);
+    });
+});
+
+// ─── TPPotionDropStrategy ─────────────────────────────────────────────────────
+
+describe('TPPotionDropStrategy', () => {
+    const strategy = new TPPotionDropStrategy();
+
+    it('has distribution weight 0 (not part of weighted drops)', () => {
+        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(0);
+    });
+
+    it('drop returns null', () => {
+        expect(strategy.drop()).toBeNull();
+    });
+
+    it('pickup calls player.heal with TP amount', () => {
+        const player = makePlayerStub();
+        const drop = { amount: 60, level: 5 } as any;
+        strategy.pickup(drop, player);
+        expect(player.heal).toHaveBeenCalledWith(0, 60, true);
+    });
+});
+
+// ─── ItemDropManager.tryDropPotion ────────────────────────────────────────────
+
+describe('ItemDropManager.tryDropPotion', () => {
+    beforeEach(() => {
+        (ItemDropManager as any).instance = undefined;
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('does not drop when random roll exceeds base chance', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0.9);
+        const mgr = ItemDropManager.Instance;
+        const player = makePlayerStub();
+        mgr.tryDropPotion({} as any, { x: 0, y: 1, z: 0 } as any, player, 0.05);
+        expect(mgr.checkInteraction(ItemDropType.HP_POTION, { x: 0, y: 0, z: 0, distanceTo: () => 0 } as any)).toBeNull();
+        expect(mgr.checkInteraction(ItemDropType.TP_POTION, { x: 0, y: 0, z: 0, distanceTo: () => 0 } as any)).toBeNull();
+    });
+
+    it('drops an HP potion when both rolls succeed for HP', () => {
+        // First random: 0.01 < 0.05 → passes base chance
+        // Second random: 0.3 < 0.5 → HP potion
+        vi.spyOn(Math, 'random').mockReturnValueOnce(0.01).mockReturnValueOnce(0.3);
+        const mgr = ItemDropManager.Instance;
+        const player = makePlayerStub({ level: 50 });
+        mgr.tryDropPotion({ add: vi.fn() } as any, { x: 0, y: 1, z: 0 } as any, player, 0.05);
+        const drop = mgr.checkInteraction(ItemDropType.HP_POTION, { x: 0, y: 1, z: 0, distanceTo: () => 0 } as any);
+        expect(drop).not.toBeNull();
+    });
+
+    it('drops a TP potion when second roll >= 0.5', () => {
+        vi.spyOn(Math, 'random').mockReturnValueOnce(0.01).mockReturnValueOnce(0.7);
+        const mgr = ItemDropManager.Instance;
+        const player = makePlayerStub({ level: 50 });
+        mgr.tryDropPotion({ add: vi.fn() } as any, { x: 0, y: 1, z: 0 } as any, player, 0.05);
+        const drop = mgr.checkInteraction(ItemDropType.TP_POTION, { x: 0, y: 1, z: 0, distanceTo: () => 0 } as any);
+        expect(drop).not.toBeNull();
     });
 });
