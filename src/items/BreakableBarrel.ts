@@ -202,7 +202,7 @@ export class BreakableBarrel implements Breakable {
         const cz = this.mesh.position.z;
         const halfH = BreakableBarrel.HEIGHT / 2;
 
-        const sharedGeo = new THREE.BoxGeometry(0.18, 0.25, 0.12);
+        const sharedGeo = new THREE.BoxGeometry(0.12, 0.25, 0.08);
         this.fragmentGeometry = sharedGeo;
 
         for (let i = 0; i < BreakableBarrel.FRAGMENT_COUNT; i++) {

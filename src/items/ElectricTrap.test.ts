@@ -93,6 +93,7 @@ function makeScene() {
 function makeConfig(overrides: Partial<ElectricTrapConfig> = {}): ElectricTrapConfig {
     return {
         x: 5,
+        y: 0,
         z: 5,
         width: 4,
         length: 4,

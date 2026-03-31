@@ -12,6 +12,9 @@ export const CORRIDOR_WIDTH = 3;
 /** Length of the corridor connecting two rooms (in metres). */
 export const CORRIDOR_LENGTH = 5;
 
+/** Height step (in metres) by which rooms may rise or drop relative to their parent. */
+export const ROOM_ELEVATION_STEP = 2;
+
 /** Fixed size (width = depth) for the safe starting room (in metres). */
 export const SAFE_ROOM_SIZE = 10;
 
@@ -69,6 +72,8 @@ export interface DungeonRoom {
     isTeleporterRoom: boolean;
     /** True for loot rooms that contain chests and barrels but no enemies. */
     isLootRoom: boolean;
+    /** Floor elevation of this room in metres (always >= 0). */
+    elevation: number;
     /** All door openings for this room. */
     doors: DoorOpening[];
     /**
@@ -97,6 +102,16 @@ export interface Corridor {
     width: number;
     /** Corridor extent along Z. */
     depth: number;
+    /**
+     * Floor elevation at the corridor's lower-coordinate end
+     * (minX for horizontal, minZ for vertical corridors).
+     */
+    elevationStart: number;
+    /**
+     * Floor elevation at the corridor's higher-coordinate end
+     * (maxX for horizontal, maxZ for vertical corridors).
+     */
+    elevationEnd: number;
 }
 
 /** A single axis-aligned wall box described by its centre and extents. */
@@ -156,6 +171,8 @@ export interface BarrelSpawn {
 /** An electric trap spawn point with size and behaviour parameters. */
 export interface TrapSpawn {
     x: number;
+    /** Floor elevation at the trap position. */
+    y: number;
     z: number;
     /** Trap extent along the X axis (metres). */
     width: number;
@@ -185,8 +202,12 @@ export interface DungeonLayout {
     trapSpawns: TrapSpawn[];
     /** Centre of the safe (starting) room. */
     spawnPosition: Vec2;
+    /** Floor elevation of the safe (starting) room. */
+    spawnElevation: number;
     /** Position of the teleporter in the teleporter room (centred against the far wall). */
     teleporterPosition: Vec2;
+    /** Floor elevation of the teleporter room. */
+    teleporterElevation: number;
     /** Bounding rectangle covering all rooms + corridors (for floor geometry). */
     floorBounds: { minX: number; maxX: number; minZ: number; maxZ: number };
 }
@@ -353,6 +374,37 @@ export class RoomBasedDungeonGenerator {
         return arr;
     }
 
+    /**
+     * Pick a random elevation for a child room relative to its parent.
+     * The result is clamped so rooms never drop below 0 m.
+     */
+    private pickChildElevation(parentElevation: number): number {
+        const roll = this.rangeInt(0, 2); // 0 = same, 1 = up, 2 = down
+        if (roll === 1) return parentElevation + ROOM_ELEVATION_STEP;
+        if (roll === 2) return Math.max(0, parentElevation - ROOM_ELEVATION_STEP);
+        return parentElevation;
+    }
+
+    /**
+     * Compute corridor elevation endpoints aligned with the spatial axis.
+     * elevationStart = elevation at the corridor's lower-coordinate end
+     * (minX for horizontal, minZ for vertical).
+     */
+    private corridorElevations(
+        dir: Direction, parentElevation: number, childElevation: number,
+    ): { elevationStart: number; elevationEnd: number } {
+        switch (dir) {
+            case 'east':
+            case 'north':
+                // Parent is at negative axis end, child at positive
+                return { elevationStart: parentElevation, elevationEnd: childElevation };
+            case 'west':
+            case 'south':
+                // Child is at negative axis end, parent at positive
+                return { elevationStart: childElevation, elevationEnd: parentElevation };
+        }
+    }
+
     // -----------------------------------------------------------------------
     // Public API
     // -----------------------------------------------------------------------
@@ -386,7 +438,10 @@ export class RoomBasedDungeonGenerator {
 
         const floorBounds = this.computeFloorBounds(rooms, corridors);
 
-        return { rooms, corridors, walls, obstacles, roomSpawns, chestSpawns, barrelSpawns, trapSpawns, spawnPosition, teleporterPosition, floorBounds };
+        const spawnElevation = safeRoom.elevation;
+        const teleporterElevation = teleporterRoom.elevation;
+
+        return { rooms, corridors, walls, obstacles, roomSpawns, chestSpawns, barrelSpawns, trapSpawns, spawnPosition, spawnElevation, teleporterPosition, teleporterElevation, floorBounds };
     }
 
     // -----------------------------------------------------------------------
@@ -489,7 +544,8 @@ export class RoomBasedDungeonGenerator {
 
                 if (!overlaps) {
                     // Place the room
-                    const room = this.createRoom(id, cx, cz, width, depth, isSafe, isFinal, isTeleporterRoom);
+                    const childElevation = this.pickChildElevation(parent.elevation);
+                    const room = this.createRoom(id, cx, cz, width, depth, isSafe, isFinal, isTeleporterRoom, false, childElevation);
                     const returnDir = oppositeDir(dir);
                     const returnOffset = this.computeReturnDoorOffset(parent, dir, doorOffset, room);
 
@@ -501,6 +557,7 @@ export class RoomBasedDungeonGenerator {
 
                     // Add corridor
                     if (corAABB) {
+                        const { elevationStart, elevationEnd } = this.corridorElevations(dir, parent.elevation, childElevation);
                         corridors.push({
                             fromRoomId: parent.id,
                             toRoomId: room.id,
@@ -508,6 +565,8 @@ export class RoomBasedDungeonGenerator {
                             centerZ: (corAABB.minZ + corAABB.maxZ) / 2,
                             width: corAABB.maxX - corAABB.minX,
                             depth: corAABB.maxZ - corAABB.minZ,
+                            elevationStart,
+                            elevationEnd,
                         });
                         occupied.push(corAABB);
                     }
@@ -537,8 +596,9 @@ export class RoomBasedDungeonGenerator {
                                  (corAABB && occupied.some(o => aabbOverlap(o, corAABB)));
 
                 if (!overlaps) {
+                    const childElevation = this.pickChildElevation(parent.elevation);
                     const room = this.createRoom(
-                        id, cx, cz, fallbackWidth, fallbackDepth, isSafe, isFinal, isTeleporterRoom,
+                        id, cx, cz, fallbackWidth, fallbackDepth, isSafe, isFinal, isTeleporterRoom, false, childElevation,
                     );
                     const returnDir = oppositeDir(dir);
                     const returnOffset = this.computeReturnDoorOffset(parent, dir, doorOffset, room);
@@ -550,6 +610,7 @@ export class RoomBasedDungeonGenerator {
                     occupied.push(roomAABB(cx, cz, fallbackWidth, fallbackDepth));
 
                     if (corAABB) {
+                        const { elevationStart, elevationEnd } = this.corridorElevations(dir, parent.elevation, childElevation);
                         corridors.push({
                             fromRoomId: parent.id,
                             toRoomId: room.id,
@@ -557,6 +618,8 @@ export class RoomBasedDungeonGenerator {
                             centerZ: (corAABB.minZ + corAABB.maxZ) / 2,
                             width: corAABB.maxX - corAABB.minX,
                             depth: corAABB.maxZ - corAABB.minZ,
+                            elevationStart,
+                            elevationEnd,
                         });
                         occupied.push(corAABB);
                     }
@@ -592,7 +655,8 @@ export class RoomBasedDungeonGenerator {
                              (corAABB && occupied.some(o => aabbOverlap(o, corAABB)));
 
             if (!overlaps) {
-                const room = this.createRoom(id, cx, cz, w, d, false, false, true);
+                const childElevation = this.pickChildElevation(finalRoom.elevation);
+                const room = this.createRoom(id, cx, cz, w, d, false, false, true, false, childElevation);
                 const returnDir = oppositeDir(dir);
                 const returnOffset = this.computeReturnDoorOffset(finalRoom, dir, doorOffset, room);
 
@@ -603,6 +667,7 @@ export class RoomBasedDungeonGenerator {
                 occupied.push(roomAABB(cx, cz, w, d));
 
                 if (corAABB) {
+                    const { elevationStart, elevationEnd } = this.corridorElevations(dir, finalRoom.elevation, childElevation);
                     corridors.push({
                         fromRoomId: finalRoom.id,
                         toRoomId: room.id,
@@ -610,6 +675,8 @@ export class RoomBasedDungeonGenerator {
                         centerZ: (corAABB.minZ + corAABB.maxZ) / 2,
                         width: corAABB.maxX - corAABB.minX,
                         depth: corAABB.maxZ - corAABB.minZ,
+                        elevationStart,
+                        elevationEnd,
                     });
                     occupied.push(corAABB);
                 }
@@ -647,7 +714,8 @@ export class RoomBasedDungeonGenerator {
                                  (corAABB && occupied.some(o => aabbOverlap(o, corAABB)));
 
                 if (!overlaps) {
-                    const room = this.createRoom(id, cx, cz, w, d, false, false, false, true);
+                    const childElevation = this.pickChildElevation(parent.elevation);
+                    const room = this.createRoom(id, cx, cz, w, d, false, false, false, true, childElevation);
                     const returnDir = oppositeDir(dir);
                     const returnOffset = this.computeReturnDoorOffset(parent, dir, doorOffset, room);
 
@@ -658,6 +726,7 @@ export class RoomBasedDungeonGenerator {
                     occupied.push(roomAABB(cx, cz, w, d));
 
                     if (corAABB) {
+                        const { elevationStart, elevationEnd } = this.corridorElevations(dir, parent.elevation, childElevation);
                         corridors.push({
                             fromRoomId: parent.id,
                             toRoomId: room.id,
@@ -665,6 +734,8 @@ export class RoomBasedDungeonGenerator {
                             centerZ: (corAABB.minZ + corAABB.maxZ) / 2,
                             width: corAABB.maxX - corAABB.minX,
                             depth: corAABB.maxZ - corAABB.minZ,
+                            elevationStart,
+                            elevationEnd,
                         });
                         occupied.push(corAABB);
                     }
@@ -680,7 +751,7 @@ export class RoomBasedDungeonGenerator {
     private createRoom(
         id: number, cx: number, cz: number, width: number, depth: number,
         isSafe: boolean, isFinal: boolean, isTeleporterRoom: boolean,
-        isLootRoom: boolean = false,
+        isLootRoom: boolean = false, elevation: number = 0,
     ): DungeonRoom {
         return {
             id,
@@ -692,6 +763,7 @@ export class RoomBasedDungeonGenerator {
             isFinal,
             isTeleporterRoom,
             isLootRoom,
+            elevation: isSafe ? 0 : elevation,
             doors: [],
             hasWestDoor: false,
             hasEastDoor: false,
@@ -845,25 +917,25 @@ export class RoomBasedDungeonGenerator {
      */
     private buildRoomWalls(room: DungeonRoom): WallSegment[] {
         const walls: WallSegment[] = [];
-        const { centerX: cx, centerZ: cz, width, depth } = room;
+        const { centerX: cx, centerZ: cz, width, depth, elevation } = room;
         const halfW = width / 2;
         const halfD = depth / 2;
 
         // North wall (at cz + halfD, runs along X)
         const northDoors = room.doors.filter(d => d.direction === 'north');
-        walls.push(...this.buildWallWithDoors(cx, cz + halfD, width, 'x', northDoors));
+        walls.push(...this.buildWallWithDoors(cx, cz + halfD, width, 'x', northDoors, elevation));
 
         // South wall (at cz - halfD, runs along X)
         const southDoors = room.doors.filter(d => d.direction === 'south');
-        walls.push(...this.buildWallWithDoors(cx, cz - halfD, width, 'x', southDoors));
+        walls.push(...this.buildWallWithDoors(cx, cz - halfD, width, 'x', southDoors, elevation));
 
         // East wall (at cx + halfW, runs along Z)
         const eastDoors = room.doors.filter(d => d.direction === 'east');
-        walls.push(...this.buildWallWithDoors(cx + halfW, cz, depth, 'z', eastDoors));
+        walls.push(...this.buildWallWithDoors(cx + halfW, cz, depth, 'z', eastDoors, elevation));
 
         // West wall (at cx - halfW, runs along Z)
         const westDoors = room.doors.filter(d => d.direction === 'west');
-        walls.push(...this.buildWallWithDoors(cx - halfW, cz, depth, 'z', westDoors));
+        walls.push(...this.buildWallWithDoors(cx - halfW, cz, depth, 'z', westDoors, elevation));
 
         return walls;
     }
@@ -879,14 +951,14 @@ export class RoomBasedDungeonGenerator {
      */
     private buildWallWithDoors(
         wallPrimary: number, wallSecondary: number, wallLength: number,
-        axis: 'x' | 'z', doors: DoorOpening[],
+        axis: 'x' | 'z', doors: DoorOpening[], elevation: number = 0,
     ): WallSegment[] {
         if (doors.length === 0) {
             // Solid wall — no doors
             if (axis === 'x') {
-                return [this.xWall(wallPrimary, wallSecondary, wallLength)];
+                return [this.xWall(wallPrimary, wallSecondary, wallLength, elevation)];
             } else {
-                return [this.zWall(wallPrimary, wallSecondary, wallLength)];
+                return [this.zWall(wallPrimary, wallSecondary, wallLength, elevation)];
             }
         }
 
@@ -907,9 +979,9 @@ export class RoomBasedDungeonGenerator {
             if (segLength > 0.01) {
                 const segCenter = (cursor + doorStart) / 2;
                 if (axis === 'x') {
-                    segments.push(this.xWall(wallPrimary + segCenter, wallSecondary, segLength));
+                    segments.push(this.xWall(wallPrimary + segCenter, wallSecondary, segLength, elevation));
                 } else {
-                    segments.push(this.zWall(wallPrimary, wallSecondary + segCenter, segLength));
+                    segments.push(this.zWall(wallPrimary, wallSecondary + segCenter, segLength, elevation));
                 }
             }
             cursor = doorEnd;
@@ -920,29 +992,33 @@ export class RoomBasedDungeonGenerator {
         if (remaining > 0.01) {
             const segCenter = (cursor + halfLength) / 2;
             if (axis === 'x') {
-                segments.push(this.xWall(wallPrimary + segCenter, wallSecondary, remaining));
+                segments.push(this.xWall(wallPrimary + segCenter, wallSecondary, remaining, elevation));
             } else {
-                segments.push(this.zWall(wallPrimary, wallSecondary + segCenter, remaining));
+                segments.push(this.zWall(wallPrimary, wallSecondary + segCenter, remaining, elevation));
             }
         }
 
         return segments;
     }
 
-    /** Build side walls for a corridor. */
+    /** Build side walls for a corridor, extended in height for elevation changes. */
     private buildCorridorWalls(cor: Corridor): WallSegment[] {
-        // Determine orientation from the corridor's aspect ratio
+        const minElev = Math.min(cor.elevationStart, cor.elevationEnd);
+        const maxElev = Math.max(cor.elevationStart, cor.elevationEnd);
+        const wallH = WALL_HEIGHT + (maxElev - minElev);
+        const wallCenterY = minElev + wallH / 2;
+
         if (cor.width > cor.depth) {
             // Horizontal corridor (runs along X) → side walls run along X at ±Z
             return [
-                this.xWall(cor.centerX, cor.centerZ + cor.depth / 2, cor.width),
-                this.xWall(cor.centerX, cor.centerZ - cor.depth / 2, cor.width),
+                { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ + cor.depth / 2, width: cor.width, height: wallH, depth: WALL_THICKNESS },
+                { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ - cor.depth / 2, width: cor.width, height: wallH, depth: WALL_THICKNESS },
             ];
         } else {
             // Vertical corridor (runs along Z) → side walls run along Z at ±X
             return [
-                this.zWall(cor.centerX + cor.width / 2, cor.centerZ, cor.depth),
-                this.zWall(cor.centerX - cor.width / 2, cor.centerZ, cor.depth),
+                { centerX: cor.centerX + cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: cor.depth },
+                { centerX: cor.centerX - cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: cor.depth },
             ];
         }
     }
@@ -952,10 +1028,10 @@ export class RoomBasedDungeonGenerator {
     // -----------------------------------------------------------------------
 
     /** Wall extending along the X axis (north/south room walls, horizontal corridor side walls). */
-    private xWall(centerX: number, centerZ: number, length: number): WallSegment {
+    private xWall(centerX: number, centerZ: number, length: number, elevation: number = 0): WallSegment {
         return {
             centerX,
-            centerY: WALL_HEIGHT / 2,
+            centerY: elevation + WALL_HEIGHT / 2,
             centerZ,
             width: length,
             height: WALL_HEIGHT,
@@ -964,10 +1040,10 @@ export class RoomBasedDungeonGenerator {
     }
 
     /** Wall extending along the Z axis (east/west room walls, vertical corridor side walls). */
-    private zWall(centerX: number, centerZ: number, length: number): WallSegment {
+    private zWall(centerX: number, centerZ: number, length: number, elevation: number = 0): WallSegment {
         return {
             centerX,
-            centerY: WALL_HEIGHT / 2,
+            centerY: elevation + WALL_HEIGHT / 2,
             centerZ,
             width: WALL_THICKNESS,
             height: WALL_HEIGHT,
@@ -1027,7 +1103,7 @@ export class RoomBasedDungeonGenerator {
                 });
 
                 if (!excluded) {
-                    obstacles.push({ x, y: h / 2, z, width: w, height: h, depth: d });
+                    obstacles.push({ x, y: room.elevation + h / 2, z, width: w, height: h, depth: d });
                     exclusions.push({ x, z, radius: Math.max(w, d) + 1 });
                     placed++;
                 }
@@ -1079,7 +1155,7 @@ export class RoomBasedDungeonGenerator {
 
         // Boss room: only the boss spawns here — no regular or large enemies
         if (room.isFinal && config.hasBoss) {
-            return [{ x: room.centerX, y: 0.5, z: room.centerZ, type: 'boss' }];
+            return [{ x: room.centerX, y: room.elevation + 0.5, z: room.centerZ, type: 'boss' }];
         }
 
         const area = room.width * room.depth;
@@ -1130,8 +1206,8 @@ export class RoomBasedDungeonGenerator {
             }
         };
 
-        for (let i = 0; i < numRegular; i++) trySpawn('regular', 0.5);
-        for (let i = 0; i < numLarge; i++) trySpawn('large', 1.0);
+        for (let i = 0; i < numRegular; i++) trySpawn('regular', room.elevation + 0.5);
+        for (let i = 0; i < numLarge; i++) trySpawn('large', room.elevation + 1.0);
 
         return spawns;
     }
@@ -1157,7 +1233,7 @@ export class RoomBasedDungeonGenerator {
             for (let i = 0; i < chestsPerRoom; i++) {
                 const pos = this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos);
                 if (pos) {
-                    chests.push({ x: pos.x, y: 0, z: pos.z, itemQualityFactor: qualityFactor });
+                    chests.push({ x: pos.x, y: room.elevation, z: pos.z, itemQualityFactor: qualityFactor });
                 }
             }
         }
@@ -1168,7 +1244,7 @@ export class RoomBasedDungeonGenerator {
             if (tpRoom) {
                 const pos = this.findSpawnPosition(tpRoom, obstacles, teleporterPos, spawnPos);
                 if (pos) {
-                    chests.push({ x: pos.x, y: 0, z: pos.z, itemQualityFactor: qualityFactor });
+                    chests.push({ x: pos.x, y: tpRoom.elevation, z: pos.z, itemQualityFactor: qualityFactor });
                 }
             }
         }
@@ -1204,7 +1280,7 @@ export class RoomBasedDungeonGenerator {
                     ? this.findPerimeterSpawnPosition(room, obstacles, teleporterPos, spawnPos, trapSpawns)
                     : this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos, trapSpawns);
                 if (pos) {
-                    barrels.push({ x: pos.x, y: 0, z: pos.z });
+                    barrels.push({ x: pos.x, y: room.elevation, z: pos.z });
                 }
             }
         }
@@ -1244,6 +1320,7 @@ export class RoomBasedDungeonGenerator {
 
                 traps.push({
                     x: pos.x,
+                    y: room.elevation,
                     z: pos.z,
                     width: w,
                     length: l,

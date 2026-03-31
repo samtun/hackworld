@@ -19,11 +19,11 @@ export class SecurityCore extends BaseStage {
         combatRoomCount: { min: 3, max: 5 },
         combatRoomSize: { minWidth: 13, maxWidth: 33, minDepth: 13, maxDepth: 33 },
         finalRoomSize: { minWidth: 20, maxWidth: 39, minDepth: 20, maxDepth: 39 },
-        enemyCount: { min: 2, max: 8, areaPerEnemy: 50, largeFraction: 0.35 },
+        enemyCount: { min: 1, max: 6, areaPerEnemy: 60, largeFraction: 0.25 },
         obstacleCount: { min: 1, max: 3 },
         hasBoss: true,
         lootRoomCount: { min: 1, max: 2 },
-        chestsPerLootRoom: 3,
+        chestsPerLootRoom: 1,
         chestQualityFactor: 1.2,
         chestInTeleporterRoom: true,
         barrelCount: { min: 1, max: 4 },
@@ -69,7 +69,7 @@ export class SecurityCore extends BaseStage {
         const layout = generator.generate(SecurityCore.generationConfig);
 
         // Update spawn position from generated layout
-        this.spawnPosition.set(layout.spawnPosition.x, 0.4, layout.spawnPosition.z);
+        this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
 
         // Register rooms for per-room enemy aggro and teleporter activation
         this.dungeonRooms = layout.rooms;
@@ -83,7 +83,7 @@ export class SecurityCore extends BaseStage {
 
         // Teleporter in the final room – starts inactive until all enemies are defeated
         const tp = layout.teleporterPosition;
-        this.createTeleporter(new CANNON.Vec3(tp.x, 0, tp.z), Lobby.getMetadata().id, false);
+        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getMetadata().id, false);
 
         // Spawn enemies with room assignments so aggro is room-gated
         this.spawnEnemiesFromLayout(layout);
