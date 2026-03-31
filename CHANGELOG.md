@@ -1,3 +1,12 @@
+# [2.2.0](https://github.com/samtun/hackworld/compare/v2.1.0...v2.2.0) (2026-03-31)
+
+
+### Features
+
+* add HP and TP potion drop items ([e99a777](https://github.com/samtun/hackworld/commit/e99a777f1528163feed8dd8a501850a167abb898))
+* rename MovementTest to GameTest and add potion test drops ([ebf6f38](https://github.com/samtun/hackworld/commit/ebf6f386759c804fc6c8f84933477b5d6e4da60b))
+* scale potion ball radius by level for better readability ([8bf2835](https://github.com/samtun/hackworld/commit/8bf28356b22ad255732a94a2f3d39f91c768f342))
+
 # [2.1.0](https://github.com/samtun/hackworld/compare/v2.0.0...v2.1.0) (2026-03-31)
 
 
