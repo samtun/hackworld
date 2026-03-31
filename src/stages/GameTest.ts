@@ -4,25 +4,42 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { WeaponDrop } from '../items/weapons/WeaponDrop';
 import { WeaponType } from '../items/weapons/WeaponType';
+import { PotionDrop } from '../items/potions/PotionDrop';
+import { PotionType } from '../items/potions/PotionDefinitions';
+import { ItemDropManager } from '../items/ItemDropManager';
+import { Player } from '../Player';
 
-export class MovementTest extends BaseStage {
-    private static id: string = "movementTest";
-    private static name: string = "Movement Test";
-    private static description: string = "A test stage for movement mechanics";
+/** Spawn config for a test potion that auto-respawns after collection. */
+interface PotionSpawnConfig {
+    position: CANNON.Vec3;
+    potionType: PotionType;
+    level: number;
+}
 
-    id = MovementTest.id;
-    name = MovementTest.name;
-    description = MovementTest.description;
+/** Respawn delay in seconds for collected test potions. */
+const POTION_RESPAWN_DELAY = 3;
+
+export class GameTest extends BaseStage {
+    private static id: string = "gameTest";
+    private static stageName: string = "Game Test";
+    private static description: string = "A test stage for game mechanics";
+
+    id = GameTest.id;
+    name = GameTest.stageName;
+    description = GameTest.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     private testDrops: WeaponDrop[] = [];
+    private potionSpawns: PotionSpawnConfig[] = [];
+    private activePotions: Map<PotionDrop, PotionSpawnConfig> = new Map();
+    private respawnTimers: { config: PotionSpawnConfig; timer: number }[] = [];
 
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
-            id: MovementTest.id,
-            name: MovementTest.name,
-            description: MovementTest.description,
+            id: GameTest.id,
+            name: GameTest.stageName,
+            description: GameTest.description,
             requiredProgress: -1,
         };
     }
@@ -39,6 +56,9 @@ export class MovementTest extends BaseStage {
             drop.cleanup(this.scene);
         }
         this.testDrops = [];
+        this.potionSpawns = [];
+        this.activePotions.clear();
+        this.respawnTimers = [];
         super.clear();
     }
 
@@ -76,7 +96,7 @@ export class MovementTest extends BaseStage {
             this.createBox(6, 0.5, 2, new CANNON.Vec3(0, 0.5, 4 + i * 2), new CANNON.Quaternion().setFromEuler(0, 0, -Math.PI / 2 + i * 0.2));
         }
 
-        // Test weapon drops (unusabe, just for visual testing)
+        // Test weapon drops (unusable, just for visual testing)
         // Broken
         this.testDrops.push(new WeaponDrop(
             "aegis_sword_alpha",
@@ -160,5 +180,60 @@ export class MovementTest extends BaseStage {
             1,
             1.2
         ));
+
+        // HP potion test drops (levels 1–6, 2m apart along X at z = -4)
+        for (let level = 1; level <= 6; level++) {
+            this.potionSpawns.push({
+                position: new CANNON.Vec3(2 + (level - 1) * 2, 0.5, -4),
+                potionType: PotionType.HP,
+                level,
+            });
+        }
+
+        // TP potion test drops (levels 1–6, 2m apart along X at z = -6)
+        for (let level = 1; level <= 6; level++) {
+            this.potionSpawns.push({
+                position: new CANNON.Vec3(2 + (level - 1) * 2, 0.5, -6),
+                potionType: PotionType.TP,
+                level,
+            });
+        }
+
+        // Spawn all test potions and register them with the drop manager
+        for (const config of this.potionSpawns) {
+            this.spawnTestPotion(config);
+        }
+    }
+
+    /**
+     * Called each frame by World. Ticks respawn timers for collected potions
+     * and re-spawns them after the delay.
+     */
+    update(dt: number, player: Player, anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
+        super.update(dt, player, anyMenuOpen, cameraPosition);
+
+        // Check for collected potions and start their respawn timers
+        for (const [drop, config] of this.activePotions) {
+            if (!drop.mesh.parent) {
+                // Drop was picked up and removed from scene → start respawn
+                this.activePotions.delete(drop);
+                this.respawnTimers.push({ config, timer: POTION_RESPAWN_DELAY });
+            }
+        }
+
+        // Tick respawn timers
+        for (let i = this.respawnTimers.length - 1; i >= 0; i--) {
+            this.respawnTimers[i].timer -= dt;
+            if (this.respawnTimers[i].timer <= 0) {
+                this.spawnTestPotion(this.respawnTimers[i].config);
+                this.respawnTimers.splice(i, 1);
+            }
+        }
+    }
+
+    private spawnTestPotion(config: PotionSpawnConfig): void {
+        const drop = new PotionDrop(this.scene, config.position, config.potionType, config.level);
+        ItemDropManager.Instance.addDrop(drop);
+        this.activePotions.set(drop, config);
     }
 }

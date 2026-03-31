@@ -123,7 +123,7 @@ export class DungeonSelectionManager {
         const unlockedDungeons = this.dungeonClasses.filter((DungeonClass) => {
             const metadata = DungeonClass.getMetadata();
             if ((!import.meta.env.DEV && metadata.requiredProgress < 0) || metadata.requiredProgress === 0) {
-                // Skip stages with negative requiredProgress (like MovementTest) and skip Lobby (0)
+                // Skip stages with negative requiredProgress (like GameTest) and skip Lobby (0)
                 return false;
             }
             return progressManager.progress >= metadata.requiredProgress;
