@@ -21,11 +21,11 @@ const POTION_RESPAWN_DELAY = 3;
 
 export class GameTest extends BaseStage {
     private static id: string = "gameTest";
-    private static stageName: string = "Game Test";
+    private static name: string = "Game Test";
     private static description: string = "A test stage for game mechanics";
 
     id = GameTest.id;
-    name = GameTest.stageName;
+    name = GameTest.name;
     description = GameTest.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
@@ -38,7 +38,7 @@ export class GameTest extends BaseStage {
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
             id: GameTest.id,
-            name: GameTest.stageName,
+            name: GameTest.name,
             description: GameTest.description,
             requiredProgress: -1,
         };
