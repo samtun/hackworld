@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { PauseMenu, PauseMenuCallbacks } from './PauseMenu';
+import { PauseMenu, PauseMenuCallbacks, PERFORMANCE_MODE_STORAGE_KEY } from './PauseMenu';
 import { InputManager } from './InputManager';
 
 vi.mock('./MobileControlsManager', () => ({
@@ -157,6 +157,12 @@ describe('PauseMenu', () => {
             const items = document.querySelectorAll('[data-pause-menu] [data-index]');
             const restartEl = items[2] as HTMLElement;
             expect(restartEl.style.cursor).toBe('pointer');
+        });
+    });
+
+    describe('PERFORMANCE_MODE_STORAGE_KEY export', () => {
+        it('exports the correct localStorage key', () => {
+            expect(PERFORMANCE_MODE_STORAGE_KEY).toBe('hackworld_performance_mode');
         });
     });
 });

@@ -2,6 +2,9 @@ import { InputManager } from './InputManager';
 
 const PAUSE_FADE_MS = 300;
 
+/** localStorage key used to persist Performance Mode across sessions */
+export const PERFORMANCE_MODE_STORAGE_KEY = 'hackworld_performance_mode';
+
 export interface PauseMenuCallbacks {
     onContinue: () => void;
     onTogglePerformanceMode: () => boolean;
