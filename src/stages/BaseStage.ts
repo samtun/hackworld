@@ -412,7 +412,7 @@ export abstract class BaseStage {
                 ));
                 const rampBody = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
                 rampBody.addShape(rampShape);
-                rampBody.position.set(cor.centerX, midElev, cor.centerZ);
+                rampBody.position.set(cor.centerX, midElev - FLOOR_THICKNESS / 2, cor.centerZ);
                 if (isHorizontal) {
                     rampBody.quaternion.setFromEuler(0, 0, rampAngle);
                 } else {
