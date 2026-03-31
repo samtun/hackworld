@@ -22,6 +22,7 @@ import { getHint, HintConfigs } from './ui/InputHints';
 import { Teleporter } from './Teleporter';
 import { LoreIntroduction } from './LoreIntroduction';
 import { StartMenuOption } from './StartMenu';
+import { PauseMenu } from './PauseMenu';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
@@ -33,6 +34,7 @@ export class Game {
     floatingIndicatorCamera: THREE.PerspectiveCamera; // Separate camera for floating indicators to render on a different layer
     renderer: THREE.WebGLRenderer;
     composer: EffectComposer;
+    ssaoPass!: SSAOPass;
     physicsWorld: CANNON.World;
     defaultMaterial: CANNON.Material;
 
@@ -40,6 +42,7 @@ export class Game {
     world: World;
     input: InputManager;
     ui: UIManager;
+    pauseMenu!: PauseMenu;
     inventory!: InventoryManager;
     trader!: WeaponTrader;
     chipTrader!: ChipTrader;
@@ -114,6 +117,7 @@ export class Game {
 
         const ssaoPass = new SSAOPass( this.scene, this.camera, window.innerWidth, window.innerHeight );
         this.composer.addPass( ssaoPass );
+        this.ssaoPass = ssaoPass;
         ssaoPass.kernelRadius = 0.2;
         ssaoPass.minDistance = 0.005;
         ssaoPass.maxDistance = 0.1;
@@ -258,6 +262,16 @@ export class Game {
         // Register player with UI so skill indicators are created
         this.ui.registerPlayer(this.player);
 
+        // Create pause menu
+        this.pauseMenu = new PauseMenu(this.input, this.ssaoPass.enabled, {
+            onContinue: () => {},
+            onToggleSSAO: () => {
+                this.ssaoPass.enabled = !this.ssaoPass.enabled;
+                return this.ssaoPass.enabled;
+            },
+            onRestartArea: () => this.respawnPlayer(),
+        });
+
         // Set up teleporter callback for handling teleporter interactions
         Teleporter.setTeleporterCallback((destination: string) => {
             if (destination === 'selection') {
@@ -359,6 +373,7 @@ export class Game {
             this.xDataUpgrade.isVisible ||
             this.saveManager.isVisible ||
             this.cardManager.isVisible ||
+            this.pauseMenu.visible ||
             this.isAnyChestUIOpen();
     }
 
@@ -510,6 +525,15 @@ export class Game {
             }
         }
         this.wasInventoryPressed = isInventoryPressed;
+
+        // Check pause menu toggle (ESC / Start)
+        if (this.input.isPauseJustPressed()) {
+            if (this.pauseMenu.visible) {
+                this.pauseMenu.hide();
+            } else if (!this.isAnyMenuOpen() && !this.ui.isDeathOverlayVisible()) {
+                this.pauseMenu.show();
+            }
+        }
 
         // Update inventory if visible (pass input for navigation)
         if (this.inventory.isVisible) {
