@@ -1,3 +1,25 @@
+# [2.0.0](https://github.com/samtun/hackworld/compare/v1.63.0...v2.0.0) (2026-03-31)
+
+
+* feat!: introduce rooms on various heights with corridor ramps ([be12435](https://github.com/samtun/hackworld/commit/be12435f38ba3b054bba66184719e9a89910b5a2))
+
+
+### Bug Fixes
+
+* adjust dimensions of shared geometry for barrel fragments ([00dfa15](https://github.com/samtun/hackworld/commit/00dfa1555a5bc94e042c290ca4ffbce4a0658a3e))
+* adjust enemy count area per enemy and chests per loot room in NetworkMatrix and SecurityCore ([b0eac85](https://github.com/samtun/hackworld/commit/b0eac85015df5cb85e7fea1dcdafd28c035b008c))
+* adjust enemy count limits in NetworkMatrix and SecurityCore stages ([670595e](https://github.com/samtun/hackworld/commit/670595e3617400087d08e893c216f90ddd132d5e))
+* adjust ramp body position to account for floor thickness ([a773f03](https://github.com/samtun/hackworld/commit/a773f034e3246eb9c543d7fc93044b3f9c2ebb27))
+* adjust sell prices for chips, cores, and weapons to balance economy ([6a0f4f3](https://github.com/samtun/hackworld/commit/6a0f4f36901ebbc3b0982a3b250579b4fbf34b8a))
+* enforce safe room elevation to 0 in createRoom ([8cfda60](https://github.com/samtun/hackworld/commit/8cfda60b871bd023d15f748e857b347805acbbe3))
+
+
+### BREAKING CHANGES
+
+* stage geometry data model changed
+
+Agent-Logs-Url: https://github.com/samtun/hackworld/sessions/a1a91180-5e98-4c7e-a127-b80235643ba9
+
 # [1.63.0](https://github.com/samtun/hackworld/compare/v1.62.0...v1.63.0) (2026-03-30)
 
 
