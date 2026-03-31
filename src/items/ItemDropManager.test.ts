@@ -7,6 +7,7 @@ import { XDataDropStrategy } from './xdata/XDataDropStrategy';
 import { WeaponDropStrategy } from './weapons/WeaponDropStrategy';
 import { ChipDropStrategy } from './chips/ChipDropStrategy';
 import { CoreDropStrategy } from './cores/CoreDropStrategy';
+import { HPPotionDropStrategy, TPPotionDropStrategy } from './potions/PotionDropStrategies';
 import { CardCollection } from './cards/CardCollection';
 import { Album } from './cards/Card';
 
@@ -38,7 +39,12 @@ function makePlayerStub(overrides: Record<string, unknown> = {}) {
         weaponDropBonusFactor: 1.0,
         inventory: [],
         tech: { SWORD: 0, DUAL_BLADE: 0, LANCE: 0, HAMMER: 0 },
+        hp: 100,
+        maxHp: 170,
+        tp: 30,
+        maxTp: 60,
         getTechForWeapon: vi.fn(() => 0),
+        heal: vi.fn(),
         ...overrides,
     };
     stub.collectXData = vi.fn((n: number) => { stub.xData += n; });
@@ -418,5 +424,47 @@ describe('XDataDropStrategy – C.001 bonus', () => {
         const player = { level: 100, collectXData: vi.fn() } as any;
         const drop = strategy.drop(mockScene, enemy, player);
         expect((drop as any)?.amount).toBe(20);
+    });
+});
+
+// ─── HPPotionDropStrategy ─────────────────────────────────────────────────────
+
+describe('HPPotionDropStrategy', () => {
+    const strategy = new HPPotionDropStrategy();
+
+    it('has distribution weight 0 (not part of weighted drops)', () => {
+        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(0);
+    });
+
+    it('drop returns null', () => {
+        expect(strategy.drop()).toBeNull();
+    });
+
+    it('pickup calls player.heal with HP amount', () => {
+        const player = makePlayerStub();
+        const drop = { amount: 40, level: 2 } as any;
+        strategy.pickup(drop, player);
+        expect(player.heal).toHaveBeenCalledWith(40, 0, true);
+    });
+});
+
+// ─── TPPotionDropStrategy ─────────────────────────────────────────────────────
+
+describe('TPPotionDropStrategy', () => {
+    const strategy = new TPPotionDropStrategy();
+
+    it('has distribution weight 0 (not part of weighted drops)', () => {
+        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(0);
+    });
+
+    it('drop returns null', () => {
+        expect(strategy.drop()).toBeNull();
+    });
+
+    it('pickup calls player.heal with TP amount', () => {
+        const player = makePlayerStub();
+        const drop = { amount: 60, level: 5 } as any;
+        strategy.pickup(drop, player);
+        expect(player.heal).toHaveBeenCalledWith(0, 60, true);
     });
 });

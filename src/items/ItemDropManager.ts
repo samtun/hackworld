@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
 import { Enemy } from '../enemies/Enemy';
 import { Player } from '../Player';
 import { ItemDrop } from './ItemDrop';
@@ -9,6 +10,9 @@ import { CoreDropStrategy } from './cores/CoreDropStrategy';
 import { BoosterPackDropStrategy } from './cards/BoosterPackDropStrategy';
 import { XDataDropStrategy } from './xdata/XDataDropStrategy';
 import { MoneyDropStrategy } from './bits/MoneyDropStrategy';
+import { HPPotionDropStrategy, TPPotionDropStrategy } from './potions/PotionDropStrategies';
+import { PotionDrop } from './potions/PotionDrop';
+import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
 
 export interface ItemDropStrategy {
     // unique identifier for this strategy type
@@ -33,6 +37,8 @@ export class ItemDropManager {
         this.registerStrategy(new BoosterPackDropStrategy());
         this.registerStrategy(new XDataDropStrategy());
         this.registerStrategy(new MoneyDropStrategy());
+        this.registerStrategy(new HPPotionDropStrategy());
+        this.registerStrategy(new TPPotionDropStrategy());
     }
 
     public static get Instance(): ItemDropManager {
@@ -81,6 +87,21 @@ export class ItemDropManager {
             const arr = this.drops.get(strategy.key)!;
             arr.push(drop);
         }
+    }
+
+    /**
+     * Try to drop an HP or TP potion with a flat base chance, independent
+     * of the normal weighted item-drop system.
+     * @param baseChance probability (0–1) of a potion dropping (e.g. 0.05)
+     */
+    tryDropPotion(scene: THREE.Scene, position: CANNON.Vec3, player: Player, baseChance: number): void {
+        if (Math.random() > baseChance) return;
+
+        const potionType = Math.random() < 0.5 ? PotionType.HP : PotionType.TP;
+        const level = determinePotionLevel(player.level);
+        const drop = new PotionDrop(scene, position, potionType, level);
+        const key = potionType === PotionType.HP ? ItemDropType.HP_POTION : ItemDropType.TP_POTION;
+        this.drops.get(key)!.push(drop);
     }
 
     // Common update logic for all drops: call each drop.update

@@ -583,9 +583,9 @@ export class Game {
         let nearbyInteractive: InteractiveEntity | null = null;
 
         if (!anyMenuOpen) {
-            // Auto-pickup XData and money drops
+            // Auto-pickup XData, money, and potion drops
             const autoPickupDrop = this.world.checkNearestAutoPickupDrop(this.player.position);
-            if (autoPickupDrop) {
+            if (autoPickupDrop && autoPickupDrop.canPickup(this.player)) {
                 this.world.pickupDrop(autoPickupDrop, this.player);
             }
 

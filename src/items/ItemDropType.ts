@@ -5,5 +5,7 @@ export enum ItemDropType {
     CORE = 'core',
     BOOSTER_PACK = 'boosterPack',
     XDATA = 'xData',
-    MONEY = 'money'
+    MONEY = 'money',
+    HP_POTION = 'hpPotion',
+    TP_POTION = 'tpPotion',
 }

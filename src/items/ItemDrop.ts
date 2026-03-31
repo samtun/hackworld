@@ -9,6 +9,15 @@ export abstract class ItemDrop {
 
     abstract update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void;
 
+    /**
+     * Whether this drop can be picked up given the player's current stats.
+     * Override in subclasses to implement conditional pickup (e.g. potions
+     * should not be collected when the relevant stat is already full).
+     */
+    canPickup(_playerStats: { hp: number; maxHp: number; tp: number; maxTp: number }): boolean {
+        return true;
+    }
+
     cleanup(scene: THREE.Scene): void {
         scene.remove(this.mesh);
 

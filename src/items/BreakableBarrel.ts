@@ -14,6 +14,8 @@ import { MoneyDrop } from './bits/MoneyDrop';
 import { ItemLevelHelper } from './ItemLevelHelper';
 import { Tier, TierManager } from './TierManager';
 import { WeaponItem } from './weapons/WeaponItem';
+import { PotionDrop } from './potions/PotionDrop';
+import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
 
 /** Configuration for a single breakable barrel placement. */
 export interface BreakableBarrelConfig {
@@ -286,6 +288,8 @@ export class BreakableBarrel implements Breakable {
             return this.generateCoreDrop(scene, player, dropPosition);
         } else if (roll < 0.40){
             return this.generateMoneyDrop(scene, player, dropPosition);
+        } else if (roll < 0.50) {
+            return this.generatePotionDrop(scene, player, dropPosition);
         } else {
             return null;
         }
@@ -339,6 +343,12 @@ export class BreakableBarrel implements Breakable {
             if (random < cumulative) return new MoneyDrop(scene, pos, amount);
         }
         return new MoneyDrop(scene, pos, 10);
+    }
+
+    private generatePotionDrop(scene: THREE.Scene, player: Player, pos: CANNON.Vec3): PotionDrop {
+        const potionType = Math.random() < 0.5 ? PotionType.HP : PotionType.TP;
+        const level = determinePotionLevel(player.level);
+        return new PotionDrop(scene, pos, potionType, level);
     }
 
     /**
