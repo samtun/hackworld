@@ -10,12 +10,18 @@ const SPACING_RATIO = 1.6;
 const HP_COLOR = 0xFF0000;
 const TP_COLOR = 0x0055FF;
 
+/** Ball radius for the largest cluster (level 6). */
+const MIN_BALL_RADIUS = 0.12;
+/** How much the radius increases per level below 6. */
+const BALL_RADIUS_STEP = 0.02;
+
 /**
  * Ball radius scales inversely with level — larger for fewer balls so
  * small potions remain clearly visible. Level 6 keeps the original size.
  */
 function getBallRadius(level: number): number {
-    return 0.24 - 0.02 * Math.min(Math.max(level, 1), 6);
+    const clamped = Math.min(Math.max(level, 1), 6);
+    return MIN_BALL_RADIUS + BALL_RADIUS_STEP * (6 - clamped);
 }
 
 /**
