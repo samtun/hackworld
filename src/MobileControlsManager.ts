@@ -13,6 +13,7 @@ export class MobileControlsManager {
     private inventoryButton!: HTMLButtonElement;
     private closeButton!: HTMLButtonElement;
     private blockButton!: HTMLButtonElement;
+    private pauseButton!: HTMLButtonElement;
 
     // Button elements
     private jumpButton!: HTMLButtonElement;
@@ -26,6 +27,7 @@ export class MobileControlsManager {
     public isInventoryPressed: boolean = false;
     public isCancelPressed: boolean = false;
     public isBlockPressed: boolean = false;
+    public isPausePressed: boolean = false;
 
     // Skill mode state
     private isSkillMode: boolean = false;
@@ -120,6 +122,11 @@ export class MobileControlsManager {
         this.blockButton = this.createButton('L', 'mobile-block-btn');
         document.body.appendChild(this.blockButton);
         this.setupButtonListeners(this.blockButton, 'isBlockPressed');
+
+        // Create pause button (top-right, next to inventory)
+        this.pauseButton = this.createButton('☰', 'mobile-pause-btn');
+        document.body.appendChild(this.pauseButton);
+        this.setupButtonListeners(this.pauseButton, 'isPausePressed');
     }
 
     public static get Instance(): MobileControlsManager {
@@ -147,7 +154,7 @@ export class MobileControlsManager {
         return button;
     }
 
-    private setupButtonListeners(button: HTMLButtonElement, normalStateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInventoryPressed' | 'isCancelPressed' | 'isBlockPressed', skillStateKey?: 'isSkill1Pressed' | 'isSkill2Pressed' | 'isSkill3Pressed') {
+    private setupButtonListeners(button: HTMLButtonElement, normalStateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInventoryPressed' | 'isCancelPressed' | 'isBlockPressed' | 'isPausePressed', skillStateKey?: 'isSkill1Pressed' | 'isSkill2Pressed' | 'isSkill3Pressed') {
         button.addEventListener('touchstart', (e) => {
             e.preventDefault();
             if (this.isSkillMode && skillStateKey) {
@@ -281,6 +288,7 @@ export class MobileControlsManager {
         if (this.closeButton) this.closeButton.style.display = display;
         if (this.skillToggleButton) this.skillToggleButton.style.display = display;
         if (this.blockButton) this.blockButton.style.display = display;
+        if (this.pauseButton) this.pauseButton.style.display = display;
     }
 
     /**
@@ -330,6 +338,10 @@ export class MobileControlsManager {
 
         if (this.blockButton && this.blockButton.parentNode) {
             this.blockButton.parentNode.removeChild(this.blockButton);
+        }
+
+        if (this.pauseButton && this.pauseButton.parentNode) {
+            this.pauseButton.parentNode.removeChild(this.pauseButton);
         }
     }
 }

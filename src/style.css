@@ -360,6 +360,26 @@ body {
     font-size: 22px;
 }
 
+.mobile-pause-btn {
+    position: fixed;
+    top: 20px;
+    right: 90px;
+    color: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.7);
+    font-family: 'Share Tech', sans-serif;
+    font-size: 22px;
+    font-weight: bold;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+    cursor: pointer;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    z-index: 2000;
+    pointer-events: auto;
+}
+
 @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }

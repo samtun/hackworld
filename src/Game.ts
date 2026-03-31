@@ -22,6 +22,7 @@ import { getHint, HintConfigs } from './ui/InputHints';
 import { Teleporter } from './Teleporter';
 import { LoreIntroduction } from './LoreIntroduction';
 import { StartMenuOption } from './StartMenu';
+import { PauseMenu, PERFORMANCE_MODE_STORAGE_KEY } from './PauseMenu';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
@@ -33,6 +34,7 @@ export class Game {
     floatingIndicatorCamera: THREE.PerspectiveCamera; // Separate camera for floating indicators to render on a different layer
     renderer: THREE.WebGLRenderer;
     composer: EffectComposer;
+    ssaoPass!: SSAOPass;
     physicsWorld: CANNON.World;
     defaultMaterial: CANNON.Material;
 
@@ -40,6 +42,7 @@ export class Game {
     world: World;
     input: InputManager;
     ui: UIManager;
+    pauseMenu!: PauseMenu;
     inventory!: InventoryManager;
     trader!: WeaponTrader;
     chipTrader!: ChipTrader;
@@ -67,6 +70,7 @@ export class Game {
     wasL3Pressed: boolean = false; // Track L3 button for debug value editor toggle
     wasR3Pressed: boolean = false; // Track R3 button for debug mode toggle
     wasJustInteracted: boolean = false; // Prevent immediate action (e.g. pickup or NPC interaction)
+    wasPausePressed: boolean = false; // Track pause button for edge detection (independent of Player.updateState)
     isTransitioning: boolean = false;
 
     // Spawn position constants
@@ -114,9 +118,16 @@ export class Game {
 
         const ssaoPass = new SSAOPass( this.scene, this.camera, window.innerWidth, window.innerHeight );
         this.composer.addPass( ssaoPass );
+        this.ssaoPass = ssaoPass;
         ssaoPass.kernelRadius = 0.2;
         ssaoPass.minDistance = 0.005;
         ssaoPass.maxDistance = 0.1;
+
+        // Restore Performance Mode setting from localStorage (Performance Mode on = SSAO off)
+        const savedPerfMode = localStorage.getItem(PERFORMANCE_MODE_STORAGE_KEY);
+        if (savedPerfMode === 'true') {
+            ssaoPass.enabled = false;
+        }
 
         const floatingIndicatorRenderPass = new RenderPass( this.scene, this.floatingIndicatorCamera );
         floatingIndicatorRenderPass.clear = false; // Don't clear the depth buffer so it renders on top of the main scene
@@ -258,6 +269,18 @@ export class Game {
         // Register player with UI so skill indicators are created
         this.ui.registerPlayer(this.player);
 
+        // Create pause menu
+        this.pauseMenu = new PauseMenu(this.input, !this.ssaoPass.enabled, {
+            onContinue: () => {},
+            onTogglePerformanceMode: () => {
+                this.ssaoPass.enabled = !this.ssaoPass.enabled;
+                const perfMode = !this.ssaoPass.enabled;
+                localStorage.setItem(PERFORMANCE_MODE_STORAGE_KEY, String(perfMode));
+                return perfMode;
+            },
+            onRestartArea: () => this.respawnPlayer(),
+        });
+
         // Set up teleporter callback for handling teleporter interactions
         Teleporter.setTeleporterCallback((destination: string) => {
             if (destination === 'selection') {
@@ -359,6 +382,7 @@ export class Game {
             this.xDataUpgrade.isVisible ||
             this.saveManager.isVisible ||
             this.cardManager.isVisible ||
+            this.pauseMenu.visible ||
             this.isAnyChestUIOpen();
     }
 
@@ -510,6 +534,19 @@ export class Game {
             }
         }
         this.wasInventoryPressed = isInventoryPressed;
+
+        // Check pause menu toggle (ESC / Start)
+        // Uses local wasPausePressed for edge detection because Player.updateState()
+        // is not called while menus are open (preventMovement early-return).
+        // Only opens the menu here; PauseMenu's own inputLoop handles closing.
+        const isPausePressed = this.input.isPausePressed();
+        if (isPausePressed && !this.wasPausePressed) {
+            if (!this.pauseMenu.visible && !this.isAnyMenuOpen() && !this.ui.isDeathOverlayVisible()) {
+                const isInLobby = this.currentScene === Lobby.getMetadata().id;
+                this.pauseMenu.show(!isInLobby);
+            }
+        }
+        this.wasPausePressed = isPausePressed;
 
         // Update inventory if visible (pass input for navigation)
         if (this.inventory.isVisible) {

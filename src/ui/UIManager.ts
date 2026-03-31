@@ -723,4 +723,11 @@ export class UIManager {
             }, 1000);
         }
     }
+
+    /**
+     * Whether the death overlay is currently visible
+     */
+    isDeathOverlayVisible(): boolean {
+        return this.deathOverlay?.style.display !== 'none';
+    }
 }
