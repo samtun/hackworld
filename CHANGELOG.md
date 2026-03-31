@@ -1,3 +1,16 @@
+# [2.1.0](https://github.com/samtun/hackworld/compare/v2.0.0...v2.1.0) (2026-03-31)
+
+
+### Bug Fixes
+
+* require ESC release before closing pause menu and disable Restart Area in lobby ([820acd9](https://github.com/samtun/hackworld/commit/820acd9f65db9756c82685475a619589f50a6db2))
+
+
+### Features
+
+* add pause menu with Continue, SSAO toggle, and Restart Area options ([b10b6f3](https://github.com/samtun/hackworld/commit/b10b6f33d018bda6a9dfbe0ae6b291598b3f3546))
+* persist Performance Mode setting in localStorage ([6c68a36](https://github.com/samtun/hackworld/commit/6c68a3644c5fb761b9748665dbd50a7ecad9acfe))
+
 # [2.0.0](https://github.com/samtun/hackworld/compare/v1.63.0...v2.0.0) (2026-03-31)
 
 
