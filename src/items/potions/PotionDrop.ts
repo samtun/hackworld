@@ -5,17 +5,26 @@ import { ItemDropType } from '../ItemDropType';
 import { InteractiveEntityType } from '../../InteractiveEntityType';
 import { PotionType, getPotionAmount } from './PotionDefinitions';
 
-const BALL_RADIUS = 0.12;
 const BALL_SEGMENTS = 8;
-const SPACING = BALL_RADIUS * 1.6;
+const SPACING_RATIO = 1.6;
 const HP_COLOR = 0xFF0000;
 const TP_COLOR = 0x0055FF;
 
 /**
+ * Ball radius scales inversely with level — larger for fewer balls so
+ * small potions remain clearly visible. Level 6 keeps the original size.
+ */
+function getBallRadius(level: number): number {
+    return 0.24 - 0.02 * Math.min(Math.max(level, 1), 6);
+}
+
+/**
  * Compute ball positions for a given potion level (1–6 balls in a cluster).
+ * Spacing scales with ball radius to keep the overall proportions consistent.
  */
 function getBallPositions(level: number): THREE.Vector3[] {
-    const s = SPACING;
+    const r = getBallRadius(level);
+    const s = r * SPACING_RATIO;
     const h = s * 0.866; // √3/2 for hexagonal stacking height
     switch (level) {
         case 1: return [new THREE.Vector3(0, 0, 0)];
@@ -79,7 +88,8 @@ export class PotionDrop extends ItemDrop {
 
         const group = new THREE.Group();
         const color = potionType === PotionType.HP ? HP_COLOR : TP_COLOR;
-        const geometry = new THREE.SphereGeometry(BALL_RADIUS, BALL_SEGMENTS, BALL_SEGMENTS);
+        const radius = getBallRadius(level);
+        const geometry = new THREE.SphereGeometry(radius, BALL_SEGMENTS, BALL_SEGMENTS);
         const material = new THREE.MeshStandardMaterial({
             color,
             emissive: color,
