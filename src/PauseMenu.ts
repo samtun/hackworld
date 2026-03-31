@@ -33,9 +33,8 @@ export class PauseMenu {
     private animFrameId?: number;
     private prevNavUp = false;
     private prevNavDown = false;
-    // Start as true so the key that opened the menu must be released first
-    private prevConfirm = true;
-    private prevCancel = true;
+    private prevConfirm = false;
+    private prevCancel = false;
 
     private _visible = false;
 
