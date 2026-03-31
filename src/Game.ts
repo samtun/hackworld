@@ -70,6 +70,7 @@ export class Game {
     wasL3Pressed: boolean = false; // Track L3 button for debug value editor toggle
     wasR3Pressed: boolean = false; // Track R3 button for debug mode toggle
     wasJustInteracted: boolean = false; // Prevent immediate action (e.g. pickup or NPC interaction)
+    wasPausePressed: boolean = false; // Track pause button for edge detection (independent of Player.updateState)
     isTransitioning: boolean = false;
 
     // Spawn position constants
@@ -527,13 +528,17 @@ export class Game {
         this.wasInventoryPressed = isInventoryPressed;
 
         // Check pause menu toggle (ESC / Start)
-        if (this.input.isPauseJustPressed()) {
-            if (this.pauseMenu.visible) {
-                this.pauseMenu.hide();
-            } else if (!this.isAnyMenuOpen() && !this.ui.isDeathOverlayVisible()) {
-                this.pauseMenu.show();
+        // Uses local wasPausePressed for edge detection because Player.updateState()
+        // is not called while menus are open (preventMovement early-return).
+        // Only opens the menu here; PauseMenu's own inputLoop handles closing.
+        const isPausePressed = this.input.isPausePressed();
+        if (isPausePressed && !this.wasPausePressed) {
+            if (!this.pauseMenu.visible && !this.isAnyMenuOpen() && !this.ui.isDeathOverlayVisible()) {
+                const isInLobby = this.currentScene === Lobby.getMetadata().id;
+                this.pauseMenu.show(!isInLobby);
             }
         }
+        this.wasPausePressed = isPausePressed;
 
         // Update inventory if visible (pass input for navigation)
         if (this.inventory.isVisible) {

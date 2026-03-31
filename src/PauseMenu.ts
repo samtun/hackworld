@@ -26,6 +26,7 @@ export class PauseMenu {
     private readonly items: PauseMenuItem[];
     private ssaoEnabled: boolean;
     private ssaoStatusEl!: HTMLSpanElement;
+    private restartEnabled: boolean = true;
     private selectedIndex: number = 0;
 
     private readonly callbacks: PauseMenuCallbacks;
@@ -125,10 +126,12 @@ export class PauseMenu {
 
     /**
      * Show the pause menu with fade-in
+     * @param restartEnabled Whether the "Restart Area" option is available
      */
-    show(): void {
+    show(restartEnabled: boolean = true): void {
         if (this._visible) return;
         this._visible = true;
+        this.restartEnabled = restartEnabled;
         this.selectedIndex = 0;
 
         // Reset edge-detection states so the key that opened the menu
@@ -199,8 +202,8 @@ export class PauseMenu {
         }
     }
 
-    private itemStyle(selected: boolean): string {
-        const color = selected ? '#ffffff' : '#cccccc';
+    private itemStyle(selected: boolean, enabled: boolean = true): string {
+        const color = !enabled ? '#555555' : selected ? '#ffffff' : '#cccccc';
         const fontWeight = selected ? 'bold' : 'normal';
         return [
             'font-family:"Share Tech",sans-serif',
@@ -217,8 +220,9 @@ export class PauseMenu {
 
     private updateStyles(): void {
         this.itemEls.forEach((el, i) => {
-            el.style.cssText = this.itemStyle(i === this.selectedIndex);
-            el.style.cursor = 'pointer';
+            const enabled = this.items[i].id !== 'restart' || this.restartEnabled;
+            el.style.cssText = this.itemStyle(i === this.selectedIndex, enabled);
+            el.style.cursor = enabled ? 'pointer' : 'default';
         });
         // Restore the SSAO status colour after cssText overwrite
         if (this.ssaoStatusEl) {
@@ -228,10 +232,18 @@ export class PauseMenu {
 
     private navigate(direction: 1 | -1): void {
         let next = this.selectedIndex + direction;
-        if (next < 0) next = this.items.length - 1;
-        if (next >= this.items.length) next = 0;
-        this.selectedIndex = next;
-        this.updateStyles();
+        // Wrap and skip disabled items
+        for (let guard = 0; guard < this.items.length; guard++) {
+            if (next < 0) next = this.items.length - 1;
+            if (next >= this.items.length) next = 0;
+            const enabled = this.items[next].id !== 'restart' || this.restartEnabled;
+            if (enabled) {
+                this.selectedIndex = next;
+                this.updateStyles();
+                return;
+            }
+            next += direction;
+        }
     }
 
     private selectAndConfirm(index: number): void {
@@ -242,6 +254,9 @@ export class PauseMenu {
 
     private confirm(): void {
         const item = this.items[this.selectedIndex];
+
+        // Guard against disabled items
+        if (item.id === 'restart' && !this.restartEnabled) return;
 
         switch (item.id) {
             case 'continue':

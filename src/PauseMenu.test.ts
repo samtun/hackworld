@@ -135,4 +135,28 @@ describe('PauseMenu', () => {
         const afterCount = document.querySelectorAll('[data-pause-menu]').length;
         expect(afterCount).toBe(beforeCount - 1);
     });
+
+    describe('Restart Area availability', () => {
+        it('shows Restart Area as enabled by default', () => {
+            menu.show();
+            const items = document.querySelectorAll('[data-pause-menu] [data-index]');
+            const restartEl = items[2] as HTMLElement;
+            expect(restartEl.style.cursor).toBe('pointer');
+        });
+
+        it('shows Restart Area as disabled when restartEnabled is false', () => {
+            menu.show(false);
+            const items = document.querySelectorAll('[data-pause-menu] [data-index]');
+            const restartEl = items[2] as HTMLElement;
+            expect(restartEl.style.cursor).toBe('default');
+            expect(restartEl.style.color).toContain('85, 85, 85');
+        });
+
+        it('shows Restart Area as enabled when restartEnabled is true', () => {
+            menu.show(true);
+            const items = document.querySelectorAll('[data-pause-menu] [data-index]');
+            const restartEl = items[2] as HTMLElement;
+            expect(restartEl.style.cursor).toBe('pointer');
+        });
+    });
 });
