@@ -264,11 +264,11 @@ export class Game {
         this.ui.registerPlayer(this.player);
 
         // Create pause menu
-        this.pauseMenu = new PauseMenu(this.input, this.ssaoPass.enabled, {
+        this.pauseMenu = new PauseMenu(this.input, !this.ssaoPass.enabled, {
             onContinue: () => {},
-            onToggleSSAO: () => {
+            onTogglePerformanceMode: () => {
                 this.ssaoPass.enabled = !this.ssaoPass.enabled;
-                return this.ssaoPass.enabled;
+                return !this.ssaoPass.enabled;
             },
             onRestartArea: () => this.respawnPlayer(),
         });

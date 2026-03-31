@@ -4,7 +4,7 @@ const PAUSE_FADE_MS = 300;
 
 export interface PauseMenuCallbacks {
     onContinue: () => void;
-    onToggleSSAO: () => boolean;
+    onTogglePerformanceMode: () => boolean;
     onRestartArea: () => void;
 }
 
@@ -17,15 +17,15 @@ interface PauseMenuItem {
 /**
  * Full-screen pause menu shown when the player presses ESC / Start.
  * Backdrop mirrors the death screen; text style mirrors the start-screen main menu.
- * Options: Continue, SSAO on/off, Restart Area.
+ * Options: Continue, Performance Mode on/off, Restart Area.
  */
 export class PauseMenu {
     private readonly overlay: HTMLDivElement;
     private readonly itemEls: HTMLDivElement[] = [];
     private readonly input: InputManager;
     private readonly items: PauseMenuItem[];
-    private ssaoEnabled: boolean;
-    private ssaoStatusEl!: HTMLSpanElement;
+    private performanceModeEnabled: boolean;
+    private performanceStatusEl!: HTMLSpanElement;
     private restartEnabled: boolean = true;
     private selectedIndex: number = 0;
 
@@ -45,16 +45,16 @@ export class PauseMenu {
 
     constructor(
         input: InputManager,
-        ssaoEnabled: boolean,
+        performanceModeEnabled: boolean,
         callbacks: PauseMenuCallbacks,
     ) {
         this.input = input;
-        this.ssaoEnabled = ssaoEnabled;
+        this.performanceModeEnabled = performanceModeEnabled;
         this.callbacks = callbacks;
 
         this.items = [
             { id: 'continue', label: 'Continue', buildEl: (item) => this.buildSimpleItem(item) },
-            { id: 'ssao', label: '', buildEl: (item) => this.buildSSAOItem(item) },
+            { id: 'performance', label: '', buildEl: (item) => this.buildPerformanceItem(item) },
             { id: 'restart', label: 'Restart Area', buildEl: (item) => this.buildSimpleItem(item) },
         ];
 
@@ -183,22 +183,22 @@ export class PauseMenu {
         return el;
     }
 
-    private buildSSAOItem(_item: PauseMenuItem): HTMLDivElement {
+    private buildPerformanceItem(_item: PauseMenuItem): HTMLDivElement {
         const el = document.createElement('div');
         const labelSpan = document.createElement('span');
-        labelSpan.textContent = 'SSAO ';
+        labelSpan.textContent = 'Performance Mode ';
         el.appendChild(labelSpan);
 
-        this.ssaoStatusEl = document.createElement('span');
-        this.ssaoStatusEl.style.color = '#33DDFF';
-        this.updateSSAOLabel();
-        el.appendChild(this.ssaoStatusEl);
+        this.performanceStatusEl = document.createElement('span');
+        this.performanceStatusEl.style.color = '#33DDFF';
+        this.updatePerformanceLabel();
+        el.appendChild(this.performanceStatusEl);
         return el;
     }
 
-    private updateSSAOLabel(): void {
-        if (this.ssaoStatusEl) {
-            this.ssaoStatusEl.textContent = this.ssaoEnabled ? 'on' : 'off';
+    private updatePerformanceLabel(): void {
+        if (this.performanceStatusEl) {
+            this.performanceStatusEl.textContent = this.performanceModeEnabled ? 'on' : 'off';
         }
     }
 
@@ -224,9 +224,9 @@ export class PauseMenu {
             el.style.cssText = this.itemStyle(i === this.selectedIndex, enabled);
             el.style.cursor = enabled ? 'pointer' : 'default';
         });
-        // Restore the SSAO status colour after cssText overwrite
-        if (this.ssaoStatusEl) {
-            this.ssaoStatusEl.style.color = '#33DDFF';
+        // Restore the Performance Mode status colour after cssText overwrite
+        if (this.performanceStatusEl) {
+            this.performanceStatusEl.style.color = '#33DDFF';
         }
     }
 
@@ -263,9 +263,9 @@ export class PauseMenu {
                 this.hide();
                 this.callbacks.onContinue();
                 break;
-            case 'ssao':
-                this.ssaoEnabled = this.callbacks.onToggleSSAO();
-                this.updateSSAOLabel();
+            case 'performance':
+                this.performanceModeEnabled = this.callbacks.onTogglePerformanceMode();
+                this.updatePerformanceLabel();
                 break;
             case 'restart':
                 this.hide();

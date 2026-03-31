@@ -37,13 +37,13 @@ function makeInputManager(): InputManager {
     return im;
 }
 
-function makeCallbacks(): PauseMenuCallbacks & { continueCalled: boolean; restartCalled: boolean; ssaoState: boolean } {
+function makeCallbacks(): PauseMenuCallbacks & { continueCalled: boolean; restartCalled: boolean; performanceMode: boolean } {
     const cbs = {
         continueCalled: false,
         restartCalled: false,
-        ssaoState: true,
+        performanceMode: false,
         onContinue: () => { cbs.continueCalled = true; },
-        onToggleSSAO: () => { cbs.ssaoState = !cbs.ssaoState; return cbs.ssaoState; },
+        onTogglePerformanceMode: () => { cbs.performanceMode = !cbs.performanceMode; return cbs.performanceMode; },
         onRestartArea: () => { cbs.restartCalled = true; },
     };
     return cbs;
@@ -57,7 +57,7 @@ describe('PauseMenu', () => {
     beforeEach(() => {
         input = makeInputManager();
         callbacks = makeCallbacks();
-        menu = new PauseMenu(input, true, callbacks);
+        menu = new PauseMenu(input, false, callbacks);
     });
 
     afterEach(() => {
@@ -101,29 +101,29 @@ describe('PauseMenu', () => {
         expect(overlay?.textContent).toContain('Execution Paused');
     });
 
-    it('renders Continue, SSAO, and Restart Area options', () => {
+    it('renders Continue, Performance Mode, and Restart Area options', () => {
         const overlay = document.querySelector('[data-pause-menu]');
         const text = overlay?.textContent ?? '';
         expect(text).toContain('Continue');
-        expect(text).toContain('SSAO');
+        expect(text).toContain('Performance Mode');
         expect(text).toContain('Restart Area');
     });
 
-    it('shows SSAO status as "on" when ssaoEnabled is true', () => {
+    it('shows Performance Mode status as "off" when performanceModeEnabled is false', () => {
         const overlay = document.querySelector('[data-pause-menu]');
         const text = overlay?.textContent ?? '';
-        expect(text).toContain('SSAO on');
+        expect(text).toContain('Performance Mode off');
     });
 
-    it('shows SSAO status as "off" when ssaoEnabled is false', () => {
+    it('shows Performance Mode status as "on" when performanceModeEnabled is true', () => {
         menu.destroy();
-        menu = new PauseMenu(input, false, callbacks);
+        menu = new PauseMenu(input, true, callbacks);
         const overlay = document.querySelector('[data-pause-menu]');
         const text = overlay?.textContent ?? '';
-        expect(text).toContain('SSAO off');
+        expect(text).toContain('Performance Mode on');
     });
 
-    it('SSAO status span has the correct colour', () => {
+    it('Performance Mode status span has the correct colour', () => {
         const span = document.querySelector('[data-pause-menu] span[style*="color"]');
         expect(span).not.toBeNull();
         expect((span as HTMLElement)?.style.color).toContain('51, 221, 255');
