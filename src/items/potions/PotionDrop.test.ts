@@ -109,16 +109,16 @@ describe('PotionDrop.canPickup', () => {
 // ─── PotionDrop.update ────────────────────────────────────────────────────────
 
 describe('PotionDrop.update', () => {
-    it('applies bobbing animation', () => {
+    it('applies sinusoidal bobbing animation', () => {
         const drop = new PotionDrop(makeScene(), makePosition(0, 2, 0), PotionType.HP, 1);
-        const initialY = drop.mesh.position.y;
-        drop.update(0.5, {} as any, {} as any);
-        expect(drop.mesh.position.y).not.toBe(initialY);
+        // After a quarter cycle (FLOAT_SPEED=2, period = π), peak at t = π/4 ≈ 0.785s
+        drop.update(Math.PI / 4, {} as any, {} as any);
+        expect(drop.mesh.position.y).toBeCloseTo(2 + 0.15, 2);
     });
 
-    it('rotates the group over time', () => {
+    it('rotates the group at 1.5 rad/s', () => {
         const drop = new PotionDrop(makeScene(), makePosition(), PotionType.TP, 2);
         drop.update(1.0, {} as any, {} as any);
-        expect(drop.mesh.rotation.y).toBeGreaterThan(0);
+        expect(drop.mesh.rotation.y).toBeCloseTo(1.5, 5);
     });
 });

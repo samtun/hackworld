@@ -468,3 +468,44 @@ describe('TPPotionDropStrategy', () => {
         expect(player.heal).toHaveBeenCalledWith(0, 60, true);
     });
 });
+
+// ─── ItemDropManager.tryDropPotion ────────────────────────────────────────────
+
+describe('ItemDropManager.tryDropPotion', () => {
+    beforeEach(() => {
+        (ItemDropManager as any).instance = undefined;
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
+    it('does not drop when random roll exceeds base chance', () => {
+        vi.spyOn(Math, 'random').mockReturnValue(0.9);
+        const mgr = ItemDropManager.Instance;
+        const player = makePlayerStub();
+        mgr.tryDropPotion({} as any, { x: 0, y: 1, z: 0 } as any, player, 0.05);
+        expect(mgr.checkInteraction(ItemDropType.HP_POTION, { x: 0, y: 0, z: 0, distanceTo: () => 0 } as any)).toBeNull();
+        expect(mgr.checkInteraction(ItemDropType.TP_POTION, { x: 0, y: 0, z: 0, distanceTo: () => 0 } as any)).toBeNull();
+    });
+
+    it('drops an HP potion when both rolls succeed for HP', () => {
+        // First random: 0.01 < 0.05 → passes base chance
+        // Second random: 0.3 < 0.5 → HP potion
+        vi.spyOn(Math, 'random').mockReturnValueOnce(0.01).mockReturnValueOnce(0.3);
+        const mgr = ItemDropManager.Instance;
+        const player = makePlayerStub({ level: 50 });
+        mgr.tryDropPotion({ add: vi.fn() } as any, { x: 0, y: 1, z: 0 } as any, player, 0.05);
+        const drop = mgr.checkInteraction(ItemDropType.HP_POTION, { x: 0, y: 1, z: 0, distanceTo: () => 0 } as any);
+        expect(drop).not.toBeNull();
+    });
+
+    it('drops a TP potion when second roll >= 0.5', () => {
+        vi.spyOn(Math, 'random').mockReturnValueOnce(0.01).mockReturnValueOnce(0.7);
+        const mgr = ItemDropManager.Instance;
+        const player = makePlayerStub({ level: 50 });
+        mgr.tryDropPotion({ add: vi.fn() } as any, { x: 0, y: 1, z: 0 } as any, player, 0.05);
+        const drop = mgr.checkInteraction(ItemDropType.TP_POTION, { x: 0, y: 1, z: 0, distanceTo: () => 0 } as any);
+        expect(drop).not.toBeNull();
+    });
+});
