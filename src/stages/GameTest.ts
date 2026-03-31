@@ -65,6 +65,10 @@ const ITEM_GRID_SPACING = 2;
 const BARREL_POS = new CANNON.Vec3(22, 0, -12);
 const CHEST_POS = new CANNON.Vec3(26, 0, -12);
 
+/** Aegis Sword Alpha pricing used for test weapon drops. */
+const AEGIS_SWORD_BUY_PRICE = 100;
+const AEGIS_SWORD_SELL_PRICE = 50;
+
 // ─── GameTest ─────────────────────────────────────────────────────────────────
 
 export class GameTest extends BaseStage {
@@ -151,7 +155,7 @@ export class GameTest extends BaseStage {
 
         this.tickDropRespawns(dt);
         this.tickBarrelRespawn(dt);
-        this.tickChestRespawn(dt, player);
+        this.tickChestRespawn(dt);
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -356,7 +360,7 @@ export class GameTest extends BaseStage {
         for (const wc of weaponConfigs) {
             this.addDropConfig(pos(), (scene, p) =>
                 new WeaponDrop('aegis_sword_alpha', scene, p, WeaponType.SWORD,
-                    'Aegis Sword Alpha', wc.damage, 100, 50, wc.level, wc.factor));
+                    'Aegis Sword Alpha', wc.damage, AEGIS_SWORD_BUY_PRICE, AEGIS_SWORD_SELL_PRICE, wc.level, wc.factor));
             next();
         }
         nextRow();
@@ -499,7 +503,7 @@ export class GameTest extends BaseStage {
     }
 
     /** Detect emptied chest and respawn after delay. */
-    private tickChestRespawn(dt: number, _player: Player): void {
+    private tickChestRespawn(dt: number): void {
         if (!this.chestEmptied) {
             const chest = this.lootChests.find(c => c.isOpened && !c.hasItems && !c.isUIVisible);
             if (chest) {
