@@ -20,6 +20,9 @@ import { XDataDrop } from '../items/xdata/XDataDrop';
 import { BoosterPackDrop } from '../items/cards/BoosterPackDrop';
 import { BreakableBarrel } from '../items/BreakableBarrel';
 import { LootChest } from '../items/LootChest';
+import { Enemy } from '../enemies/Enemy';
+import { LargeEnemy } from '../enemies/LargeEnemy';
+import { BossEnemy } from '../enemies/BossEnemy';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -35,13 +38,6 @@ interface TestDropSpawnConfig {
 /** Respawn delay in seconds for collected test items. */
 const RESPAWN_DELAY = 3;
 
-/** Wall height for hand-crafted rooms. */
-const ROOM_WALL_HEIGHT = 2;
-/** Wall thickness for hand-crafted rooms. */
-const ROOM_WALL_THICKNESS = 0.5;
-/** Door opening width for hand-crafted rooms. */
-const ROOM_DOOR_WIDTH = 3;
-
 /** Floor size for the entire test stage. */
 const FLOOR_SIZE = 120;
 
@@ -52,9 +48,8 @@ const BUTTON_AREA_X = 25;
 const BUTTON_AREA_Z = 8;
 /** Distance from buttons to enemy spawn zone (just outside aggro range of 15). */
 const ENEMY_SPAWN_OFFSET_Z = 17;
-
-/** Room area */
-const ROOM_AREA_X = -30;
+/** Padding around the spawn area indicator plane. */
+const SPAWN_AREA_PADDING = 3;
 
 /** Item grid area */
 const ITEM_GRID_X = 5;
@@ -65,7 +60,7 @@ const ITEM_GRID_SPACING = 2;
 const BARREL_POS = new CANNON.Vec3(22, 0, -12);
 const CHEST_POS = new CANNON.Vec3(26, 0, -12);
 
-/** Aegis Sword Alpha pricing used for test weapon drops. */
+/** Aegis Sword pricing used for test weapon drops. */
 const AEGIS_SWORD_BUY_PRICE = 100;
 const AEGIS_SWORD_SELL_PRICE = 50;
 
@@ -139,9 +134,8 @@ export class GameTest extends BaseStage {
         this.scene.add(floorPlane);
         this.meshes.push(floorPlane);
 
-        // Build the four test areas
+        // Build the test areas
         this.buildEnemySpawnArea();
-        this.buildTestRooms();
         this.buildItemGrid();
         this.buildBarrelChestArea();
     }
@@ -179,164 +173,52 @@ export class GameTest extends BaseStage {
         addButton(-2, 'Enemy',       0xff3333, (pos) => this.spawnEnemy(pos));
         addButton( 0, 'Large Enemy',  0xff8800, (pos) => this.spawnLargeEnemy(pos));
         addButton( 2, 'Boss',         0xaa00ff, (pos) => this.spawnBoss(pos));
+
+        // Indicator plane spanning the button row and the spawn zone
+        const minX = BUTTON_AREA_X - 2 - SPAWN_AREA_PADDING;
+        const maxX = BUTTON_AREA_X + 2 + SPAWN_AREA_PADDING;
+        const minZ = BUTTON_AREA_Z - SPAWN_AREA_PADDING;
+        const maxZ = spawnZ + SPAWN_AREA_PADDING;
+        const planeW = maxX - minX;
+        const planeD = maxZ - minZ;
+        const planeCX = (minX + maxX) / 2;
+        const planeCZ = (minZ + maxZ) / 2;
+
+        const planeGeo = new THREE.PlaneGeometry(planeW, planeD);
+        planeGeo.rotateX(-Math.PI / 2);
+        const planeMat = new THREE.MeshStandardMaterial({
+            color: 0x334455,
+            transparent: true,
+            opacity: 0.35,
+            side: THREE.FrontSide,
+        });
+        const planeMesh = new THREE.Mesh(planeGeo, planeMat);
+        planeMesh.position.set(planeCX, 0.01, planeCZ);
+        planeMesh.receiveShadow = true;
+        this.scene.add(planeMesh);
+        this.meshes.push(planeMesh);
+    }
+
+    protected override spawnEnemy(position: CANNON.Vec3): void {
+        const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+        enemy.update(0);
+        this.enemies.push(enemy);
+    }
+
+    protected override spawnLargeEnemy(position: CANNON.Vec3): void {
+        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+        largeEnemy.update(0);
+        this.enemies.push(largeEnemy);
+    }
+
+    protected override spawnBoss(position: CANNON.Vec3): void {
+        const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+        boss.update(0);
+        this.enemies.push(boss);
     }
 
     // ───────────────────────────────────────────────────────────────────────────
-    //  Area 2 – Hand-Crafted Rooms
-    // ───────────────────────────────────────────────────────────────────────────
-
-    private buildTestRooms(): void {
-        // Room 1 (5×5, ground level) – entry from south
-        this.buildRoomWalls(ROOM_AREA_X, 0, 20, 5, 5,
-            { south: true, north: true });
-
-        // Corridor 1 – ramp from elevation 0 → 2
-        this.buildCorridor(ROOM_AREA_X, 25, ROOM_DOOR_WIDTH, 5, 0, 2);
-
-        // Room 2 (7×5, elevated 2 m) – obstacles of increasing size
-        this.buildRoomWalls(ROOM_AREA_X, 2, 30, 7, 5,
-            { south: true, north: true });
-        this.buildElevatedFloor(ROOM_AREA_X, 2, 30, 7, 5);
-        // Obstacles (1×1, 1.5×1.5, 2×2) placed inside room
-        this.createBox(1,   1,   1,   new CANNON.Vec3(ROOM_AREA_X - 2, 2 + 0.5,  29));
-        this.createBox(1.5, 1.5, 1.5, new CANNON.Vec3(ROOM_AREA_X,     2 + 0.75, 30));
-        this.createBox(2,   2,   2,   new CANNON.Vec3(ROOM_AREA_X + 2, 2 + 1,    31));
-
-        // Corridor 2 – ramp from elevation 2 → 0
-        this.buildCorridor(ROOM_AREA_X, 35, ROOM_DOOR_WIDTH, 5, 2, 0);
-
-        // Room 3 (12×12, ground level) – exit from north
-        this.buildRoomWalls(ROOM_AREA_X, 0, 43.5, 12, 12,
-            { south: true, north: true });
-    }
-
-    /**
-     * Build walls for a rectangular room at the given centre / size / elevation.
-     * Openings are cut on the specified sides.
-     */
-    private buildRoomWalls(
-        cx: number, elevation: number, cz: number,
-        width: number, depth: number,
-        openings: { south?: boolean; north?: boolean; east?: boolean; west?: boolean },
-    ): void {
-        const WH = ROOM_WALL_HEIGHT;
-        const WT = ROOM_WALL_THICKNESS;
-        const DW = ROOM_DOOR_WIDTH;
-        const wy = elevation + WH / 2;
-        const halfW = width / 2;
-        const halfD = depth / 2;
-
-        // N/S walls (running along X, placed outside the room edge)
-        for (const [side, sign] of [['south', -1], ['north', 1]] as const) {
-            const wallZ = cz + sign * (halfD + WT / 2);
-            if (openings[side]) {
-                const sideW = (width - DW) / 2;
-                if (sideW > 0) {
-                    this.createBox(sideW, WH, WT, new CANNON.Vec3(cx - halfW + sideW / 2, wy, wallZ));
-                    this.createBox(sideW, WH, WT, new CANNON.Vec3(cx + halfW - sideW / 2, wy, wallZ));
-                }
-            } else {
-                this.createBox(width + WT, WH, WT, new CANNON.Vec3(cx, wy, wallZ));
-            }
-        }
-
-        // E/W walls (running along Z)
-        for (const [side, sign] of [['west', -1], ['east', 1]] as const) {
-            const wallX = cx + sign * (halfW + WT / 2);
-            if (openings[side]) {
-                const sideD = (depth - DW) / 2;
-                if (sideD > 0) {
-                    this.createBox(WT, WH, sideD, new CANNON.Vec3(wallX, wy, cz - halfD + sideD / 2));
-                    this.createBox(WT, WH, sideD, new CANNON.Vec3(wallX, wy, cz + halfD - sideD / 2));
-                }
-            } else {
-                this.createBox(WT, WH, depth + WT, new CANNON.Vec3(wallX, wy, cz));
-            }
-        }
-    }
-
-    /** Build a corridor with side walls and a ramp between two elevations. */
-    private buildCorridor(
-        cx: number, cz: number,
-        width: number, depth: number,
-        elevStart: number, elevEnd: number,
-    ): void {
-        const WT = ROOM_WALL_THICKNESS;
-        const maxElev = Math.max(elevStart, elevEnd);
-        const wallHeight = maxElev + ROOM_WALL_HEIGHT;
-        const wallCenterY = wallHeight / 2;
-
-        // Side walls
-        this.createBox(WT, wallHeight, depth, new CANNON.Vec3(cx - width / 2 - WT / 2, wallCenterY, cz));
-        this.createBox(WT, wallHeight, depth, new CANNON.Vec3(cx + width / 2 + WT / 2, wallCenterY, cz));
-
-        const elevDiff = elevEnd - elevStart;
-        const midElev = (elevStart + elevEnd) / 2;
-
-        if (Math.abs(elevDiff) < 0.01) {
-            // Flat corridor – elevated collider if needed
-            if (elevStart > 0) {
-                this.buildElevatedFloor(cx, elevStart, cz, width, depth);
-            }
-        } else {
-            // Ramp visual
-            const rampGeo = new THREE.PlaneGeometry(width, depth);
-            rampGeo.rotateX(-Math.PI / 2);
-            const posAttr = rampGeo.getAttribute('position') as THREE.BufferAttribute;
-            for (let i = 0; i < posAttr.count; i++) {
-                const z = posAttr.getZ(i);
-                const t = (z / depth) + 0.5;
-                posAttr.setY(i, elevStart + t * elevDiff);
-            }
-            posAttr.needsUpdate = true;
-            rampGeo.computeVertexNormals();
-
-            const rampMat = new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.FrontSide });
-            const rampMesh = new THREE.Mesh(rampGeo, rampMat);
-            rampMesh.position.set(cx, 0, cz);
-            rampMesh.receiveShadow = true;
-            this.scene.add(rampMesh);
-            this.meshes.push(rampMesh);
-
-            // Ramp physics
-            const FLOOR_T = 0.5;
-            const slopeLen = Math.sqrt(depth * depth + elevDiff * elevDiff);
-            const rampAngle = Math.atan2(elevDiff, depth);
-            const rampShape = new CANNON.Box(new CANNON.Vec3(width / 2, FLOOR_T / 2, slopeLen / 2));
-            const rampBody = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
-            rampBody.addShape(rampShape);
-            rampBody.position.set(cx, midElev - FLOOR_T / 2, cz);
-            rampBody.quaternion.setFromEuler(-rampAngle, 0, 0);
-            this.physicsWorld.addBody(rampBody);
-            this.bodies.push(rampBody);
-        }
-    }
-
-    /** Create a visible floor plane with a physics collider for an elevated area. */
-    private buildElevatedFloor(
-        cx: number, elevation: number, cz: number,
-        width: number, depth: number,
-    ): void {
-        const floorGeo = new THREE.PlaneGeometry(width, depth);
-        floorGeo.rotateX(-Math.PI / 2);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x333333, side: THREE.FrontSide });
-        const floorMesh = new THREE.Mesh(floorGeo, floorMat);
-        floorMesh.position.set(cx, elevation, cz);
-        floorMesh.receiveShadow = true;
-        this.scene.add(floorMesh);
-        this.meshes.push(floorMesh);
-
-        const FLOOR_T = 0.5;
-        const shape = new CANNON.Box(new CANNON.Vec3(width / 2, FLOOR_T / 2, depth / 2));
-        const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
-        body.addShape(shape);
-        body.position.set(cx, elevation - FLOOR_T / 2, cz);
-        this.physicsWorld.addBody(body);
-        this.bodies.push(body);
-    }
-
-    // ───────────────────────────────────────────────────────────────────────────
-    //  Area 3 – Item Drop Grid
+    //  Area 2 – Item Drop Grid
     // ───────────────────────────────────────────────────────────────────────────
 
     private buildItemGrid(): void {
@@ -348,7 +230,7 @@ export class GameTest extends BaseStage {
         const next = () => { col++; };
         const nextRow = () => { col = 0; row++; };
 
-        // Row 0: Aegis Sword Alpha – one per tier
+        // Row 0: Aegis Sword – one per tier
         const weaponConfigs: { damage: number; level: number; factor: number }[] = [
             { damage: 8,    level: 1, factor: 0.80 },  // Broken
             { damage: 10,   level: 1, factor: 1.00 },  // Stable
@@ -360,7 +242,7 @@ export class GameTest extends BaseStage {
         for (const wc of weaponConfigs) {
             this.addDropConfig(pos(), (scene, p) =>
                 new WeaponDrop('aegis_sword_alpha', scene, p, WeaponType.SWORD,
-                    'Aegis Sword Alpha', wc.damage, AEGIS_SWORD_BUY_PRICE, AEGIS_SWORD_SELL_PRICE, wc.level, wc.factor));
+                    'Aegis Sword', wc.damage, AEGIS_SWORD_BUY_PRICE, AEGIS_SWORD_SELL_PRICE, wc.level, wc.factor));
             next();
         }
         nextRow();
