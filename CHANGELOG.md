@@ -1,3 +1,16 @@
+# [2.3.0](https://github.com/samtun/hackworld/compare/v2.2.0...v2.3.0) (2026-04-01)
+
+
+### Bug Fixes
+
+* address review feedback - fix weapon name, remove rooms, fix enemy flash, add spawn indicator ([9bf814c](https://github.com/samtun/hackworld/commit/9bf814cf5cb3eff2238fb356d315856f89b9fd3a))
+* adjust spawn area positions for enemy, item grid, barrel, and chest ([c4a249b](https://github.com/samtun/hackworld/commit/c4a249bee3b1a9d3a05abe8553095abac834066d))
+
+
+### Features
+
+* improve GameTest stage with enemy spawn buttons, rooms, item grid, and barrel/chest areas ([ec37940](https://github.com/samtun/hackworld/commit/ec37940908eb13db04b8801d81b5b1f963d4414f))
+
 # [2.2.0](https://github.com/samtun/hackworld/compare/v2.1.0...v2.2.0) (2026-03-31)
 
 
