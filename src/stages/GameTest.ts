@@ -44,7 +44,7 @@ const FLOOR_SIZE = 120;
 // ─── Area origins ─────────────────────────────────────────────────────────────
 
 /** Enemy spawn button area */
-const BUTTON_AREA_X = 25;
+const BUTTON_AREA_X = 0;
 const BUTTON_AREA_Z = 8;
 /** Distance from buttons to enemy spawn zone (just outside aggro range of 15). */
 const ENEMY_SPAWN_OFFSET_Z = 17;
@@ -53,12 +53,12 @@ const SPAWN_AREA_PADDING = 3;
 
 /** Item grid area */
 const ITEM_GRID_X = 5;
-const ITEM_GRID_Z = -12;
+const ITEM_GRID_Z = -10;
 const ITEM_GRID_SPACING = 2;
 
 /** Barrel / chest area */
-const BARREL_POS = new CANNON.Vec3(22, 0, -12);
-const CHEST_POS = new CANNON.Vec3(26, 0, -12);
+const BARREL_POS = new CANNON.Vec3(12, 0, 0);
+const CHEST_POS = new CANNON.Vec3(14, 0, 0);
 
 /** Aegis Sword pricing used for test weapon drops. */
 const AEGIS_SWORD_BUY_PRICE = 100;
