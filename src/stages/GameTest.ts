@@ -7,17 +7,64 @@ import { WeaponType } from '../items/weapons/WeaponType';
 import { PotionDrop } from '../items/potions/PotionDrop';
 import { PotionType } from '../items/potions/PotionDefinitions';
 import { ItemDropManager } from '../items/ItemDropManager';
+import { ItemDrop } from '../items/ItemDrop';
 import { Player } from '../Player';
+import { SpawnButton } from './SpawnButton';
+import { Npc } from '../npcs/Npc';
+import { CoreDrop } from '../items/cores/CoreDrop';
+import { CoreRepository } from '../items/cores/CoreRepository';
+import { ChipDrop } from '../items/chips/ChipDrop';
+import { ChipRepository } from '../items/chips/ChipRepository';
+import { MoneyDrop } from '../items/bits/MoneyDrop';
+import { XDataDrop } from '../items/xdata/XDataDrop';
+import { BoosterPackDrop } from '../items/cards/BoosterPackDrop';
+import { BreakableBarrel } from '../items/BreakableBarrel';
+import { LootChest } from '../items/LootChest';
+import { Enemy } from '../enemies/Enemy';
+import { LargeEnemy } from '../enemies/LargeEnemy';
+import { BossEnemy } from '../enemies/BossEnemy';
 
-/** Spawn config for a test potion that auto-respawns after collection. */
-interface PotionSpawnConfig {
+// ─── Interfaces ───────────────────────────────────────────────────────────────
+
+/** Generic spawn config for any test item drop that auto-respawns. */
+interface TestDropSpawnConfig {
     position: CANNON.Vec3;
-    potionType: PotionType;
-    level: number;
+    /** Factory that creates a fresh drop instance at the configured position. */
+    create: (scene: THREE.Scene, position: CANNON.Vec3) => ItemDrop;
 }
 
-/** Respawn delay in seconds for collected test potions. */
-const POTION_RESPAWN_DELAY = 3;
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+/** Respawn delay in seconds for collected test items. */
+const RESPAWN_DELAY = 3;
+
+/** Floor size for the entire test stage. */
+const FLOOR_SIZE = 120;
+
+// ─── Area origins ─────────────────────────────────────────────────────────────
+
+/** Enemy spawn button area */
+const BUTTON_AREA_X = 0;
+const BUTTON_AREA_Z = 8;
+/** Distance from buttons to enemy spawn zone (just outside aggro range of 15). */
+const ENEMY_SPAWN_OFFSET_Z = 17;
+/** Padding around the spawn area indicator plane. */
+const SPAWN_AREA_PADDING = 3;
+
+/** Item grid area */
+const ITEM_GRID_X = 5;
+const ITEM_GRID_Z = -10;
+const ITEM_GRID_SPACING = 2;
+
+/** Barrel / chest area */
+const BARREL_POS = new CANNON.Vec3(12, 0, 0);
+const CHEST_POS = new CANNON.Vec3(14, 0, 0);
+
+/** Aegis Sword pricing used for test weapon drops. */
+const AEGIS_SWORD_BUY_PRICE = 100;
+const AEGIS_SWORD_SELL_PRICE = 50;
+
+// ─── GameTest ─────────────────────────────────────────────────────────────────
 
 export class GameTest extends BaseStage {
     private static id: string = "gameTest";
@@ -30,10 +77,20 @@ export class GameTest extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
-    private testDrops: WeaponDrop[] = [];
-    private potionSpawns: PotionSpawnConfig[] = [];
-    private activePotions: Map<PotionDrop, PotionSpawnConfig> = new Map();
-    private respawnTimers: { config: PotionSpawnConfig; timer: number }[] = [];
+    /** Unified drop spawn configs (weapons, cores, chips, money, xdata, potions, booster). */
+    private dropSpawnConfigs: TestDropSpawnConfig[] = [];
+    /** Maps live drops → their spawn config so we can detect pickup and respawn. */
+    private activeDrops: Map<ItemDrop, TestDropSpawnConfig> = new Map();
+    /** Pending respawn timers. */
+    private dropRespawnTimers: { config: TestDropSpawnConfig; timer: number }[] = [];
+
+    /** Barrel respawn tracking. */
+    private barrelRespawnTimer = -1;
+    private barrelDestroyed = false;
+
+    /** Chest respawn tracking. */
+    private chestRespawnTimer = -1;
+    private chestEmptied = false;
 
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
@@ -44,21 +101,20 @@ export class GameTest extends BaseStage {
         };
     }
 
-    /**
-     * Get assets required by this dungeon
-     */
     getRequiredAssets(): string[] {
-        return [];
+        return [
+            'models/monster.glb',
+        ];
     }
 
     clear(): void {
-        for (const drop of this.testDrops) {
-            drop.cleanup(this.scene);
-        }
-        this.testDrops = [];
-        this.potionSpawns = [];
-        this.activePotions.clear();
-        this.respawnTimers = [];
+        this.dropSpawnConfigs = [];
+        this.activeDrops.clear();
+        this.dropRespawnTimers = [];
+        this.barrelRespawnTimer = -1;
+        this.barrelDestroyed = false;
+        this.chestRespawnTimer = -1;
+        this.chestEmptied = false;
         super.clear();
     }
 
@@ -68,172 +124,286 @@ export class GameTest extends BaseStage {
         this.createFloorCollider();
 
         // Teleporter back to Lobby
-        this.createTeleporter(new CANNON.Vec3(0, 0, -8), Lobby.getMetadata().id);
+        this.createTeleporter(new CANNON.Vec3(0, 0, -3), Lobby.getMetadata().id);
 
-        const geo = new THREE.PlaneGeometry(50, 50);
+        // Ground plane
+        const geo = new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE);
         geo.rotateX(-Math.PI / 2);
         const mat = new THREE.MeshStandardMaterial({ color: 0x222222, side: THREE.FrontSide });
         const floorPlane = new THREE.Mesh(geo, mat);
         this.scene.add(floorPlane);
         this.meshes.push(floorPlane);
 
-        // Obstacles
-        let yPos = -0.45;
-        for (let i = 0; i < 10; i++) {
-            this.createBox(2, 1.0, 2, new CANNON.Vec3(4 + i * 2, yPos, 0));
-            yPos += i * 0.05;
-        }
-
-        let xDepth = 1;
-        let accXDepth = xDepth;
-        for (let i = 0; i < 10; i++) {
-            this.createBox(xDepth, 1, 3, new CANNON.Vec3(-4 - accXDepth, i, 0));
-            accXDepth += xDepth;
-            xDepth += i * 0.2;
-        }
-
-        for (let i = 0; i <= 24; i++) {
-            this.createBox(6, 0.5, 2, new CANNON.Vec3(0, 0.5, 4 + i * 2), new CANNON.Quaternion().setFromEuler(0, 0, -Math.PI / 2 + i * 0.2));
-        }
-
-        // Test weapon drops (unusable, just for visual testing)
-        // Broken
-        this.testDrops.push(new WeaponDrop(
-            "aegis_sword_alpha",
-            this.scene,
-            new CANNON.Vec3(10, 0.5, 10),
-            WeaponType.SWORD,
-            "Aegis Sword Alpha",
-            8,
-            100,
-            50,
-            3,
-            0.8
-        ));
-
-        // Stable
-        this.testDrops.push(new WeaponDrop(
-            "aegis_sword_alpha",
-            this.scene,
-            new CANNON.Vec3(11, 0.5, 10),
-            WeaponType.SWORD,
-            "Aegis Sword Alpha",
-            10,
-            100,
-            50,
-            3,
-            1
-        ));
-
-        // Maintained
-        this.testDrops.push(new WeaponDrop(
-            "aegis_sword_alpha",
-            this.scene,
-            new CANNON.Vec3(12, 0.5, 10),
-            WeaponType.SWORD,
-            "Aegis Sword Alpha",
-            10.5,
-            100,
-            50,
-            3,
-            1.05
-        ));
-
-        // Overclocked
-        this.testDrops.push(new WeaponDrop(
-            "aegis_sword_alpha",
-            this.scene,
-            new CANNON.Vec3(13, 0.5, 10),
-            WeaponType.SWORD,
-            "Aegis Sword Alpha",
-            12,
-            100,
-            50,
-            1,
-            1.1
-        ));
-
-        // ZeroDay
-        this.testDrops.push(new WeaponDrop(
-            "aegis_sword_alpha",
-            this.scene,
-            new CANNON.Vec3(14, 0.5, 10),
-            WeaponType.SWORD,
-            "Aegis Sword Alpha",
-            12,
-            100,
-            50,
-            1,
-            1.15
-        ));
-
-        // Leet
-        this.testDrops.push(new WeaponDrop(
-            "aegis_sword_alpha",
-            this.scene,
-            new CANNON.Vec3(15, 0.5, 10),
-            WeaponType.SWORD,
-            "Aegis Sword Alpha",
-            12,
-            100,
-            50,
-            1,
-            1.2
-        ));
-
-        // HP potion test drops (levels 1–6, 2m apart along X at z = -4)
-        for (let level = 1; level <= 6; level++) {
-            this.potionSpawns.push({
-                position: new CANNON.Vec3(2 + (level - 1) * 2, 0.5, -4),
-                potionType: PotionType.HP,
-                level,
-            });
-        }
-
-        // TP potion test drops (levels 1–6, 2m apart along X at z = -6)
-        for (let level = 1; level <= 6; level++) {
-            this.potionSpawns.push({
-                position: new CANNON.Vec3(2 + (level - 1) * 2, 0.5, -6),
-                potionType: PotionType.TP,
-                level,
-            });
-        }
-
-        // Spawn all test potions and register them with the drop manager
-        for (const config of this.potionSpawns) {
-            this.spawnTestPotion(config);
-        }
+        // Build the test areas
+        this.buildEnemySpawnArea();
+        this.buildItemGrid();
+        this.buildBarrelChestArea();
     }
 
-    /**
-     * Called each frame by World. Ticks respawn timers for collected potions
-     * and re-spawns them after the delay.
-     */
+    // ───────────────────────────────────────────────────────────────────────────
+    //  Update
+    // ───────────────────────────────────────────────────────────────────────────
+
     update(dt: number, player: Player, anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
         super.update(dt, player, anyMenuOpen, cameraPosition);
 
-        // Check for collected potions and start their respawn timers
-        for (const [drop, config] of this.activePotions) {
+        this.tickDropRespawns(dt);
+        this.tickBarrelRespawn(dt);
+        this.tickChestRespawn(dt);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    //  Area 1 – Enemy Spawn Buttons
+    // ───────────────────────────────────────────────────────────────────────────
+
+    private buildEnemySpawnArea(): void {
+        const spawnZ = BUTTON_AREA_Z + ENEMY_SPAWN_OFFSET_Z;
+
+        const addButton = (xOffset: number, label: string, color: number, spawn: (pos: CANNON.Vec3) => void) => {
+            const btn = new SpawnButton(
+                this.scene, this.physicsWorld, this.physicsMaterial,
+                new CANNON.Vec3(BUTTON_AREA_X + xOffset, 0, BUTTON_AREA_Z),
+                label, `Spawn ${label}`, color,
+                () => spawn(new CANNON.Vec3(BUTTON_AREA_X + xOffset, 0.5, spawnZ)),
+            );
+            // SpawnButton duck-types the Npc interface used by Game.ts interaction loop
+            this.npcs.add(btn as unknown as Npc);
+        };
+
+        addButton(-2, 'Enemy',       0xff3333, (pos) => this.spawnEnemy(pos));
+        addButton( 0, 'Large Enemy',  0xff8800, (pos) => this.spawnLargeEnemy(pos));
+        addButton( 2, 'Boss',         0xaa00ff, (pos) => this.spawnBoss(pos));
+
+        // Indicator plane spanning the button row and the spawn zone
+        const minX = BUTTON_AREA_X - 2 - SPAWN_AREA_PADDING;
+        const maxX = BUTTON_AREA_X + 2 + SPAWN_AREA_PADDING;
+        const minZ = BUTTON_AREA_Z - SPAWN_AREA_PADDING;
+        const maxZ = spawnZ + SPAWN_AREA_PADDING;
+        const planeW = maxX - minX;
+        const planeD = maxZ - minZ;
+        const planeCX = (minX + maxX) / 2;
+        const planeCZ = (minZ + maxZ) / 2;
+
+        const planeGeo = new THREE.PlaneGeometry(planeW, planeD);
+        planeGeo.rotateX(-Math.PI / 2);
+        const planeMat = new THREE.MeshStandardMaterial({
+            color: 0x334455,
+            transparent: true,
+            opacity: 0.35,
+            side: THREE.FrontSide,
+        });
+        const planeMesh = new THREE.Mesh(planeGeo, planeMat);
+        planeMesh.position.set(planeCX, 0.01, planeCZ);
+        planeMesh.receiveShadow = true;
+        this.scene.add(planeMesh);
+        this.meshes.push(planeMesh);
+    }
+
+    protected override spawnEnemy(position: CANNON.Vec3): void {
+        const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+        enemy.update(0);
+        this.enemies.push(enemy);
+    }
+
+    protected override spawnLargeEnemy(position: CANNON.Vec3): void {
+        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+        largeEnemy.update(0);
+        this.enemies.push(largeEnemy);
+    }
+
+    protected override spawnBoss(position: CANNON.Vec3): void {
+        const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+        boss.update(0);
+        this.enemies.push(boss);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    //  Area 2 – Item Drop Grid
+    // ───────────────────────────────────────────────────────────────────────────
+
+    private buildItemGrid(): void {
+        const S = ITEM_GRID_SPACING;
+        let col = 0;
+        let row = 0;
+
+        const pos = () => new CANNON.Vec3(ITEM_GRID_X + col * S, 0.5, ITEM_GRID_Z - row * S);
+        const next = () => { col++; };
+        const nextRow = () => { col = 0; row++; };
+
+        // Row 0: Aegis Sword – one per tier
+        const weaponConfigs: { damage: number; level: number; factor: number }[] = [
+            { damage: 8,    level: 1, factor: 0.80 },  // Broken
+            { damage: 10,   level: 1, factor: 1.00 },  // Stable
+            { damage: 10,   level: 1, factor: 1.05 },  // Maintained
+            { damage: 11,   level: 1, factor: 1.10 },  // Overclocked
+            { damage: 12,   level: 1, factor: 1.15 },  // ZeroDay
+            { damage: 12,   level: 1, factor: 1.20 },  // Leet
+        ];
+        for (const wc of weaponConfigs) {
+            this.addDropConfig(pos(), (scene, p) =>
+                new WeaponDrop('aegis_sword_alpha', scene, p, WeaponType.SWORD,
+                    'Aegis Sword', wc.damage, AEGIS_SWORD_BUY_PRICE, AEGIS_SWORD_SELL_PRICE, wc.level, wc.factor));
+            next();
+        }
+        nextRow();
+
+        // Row 1: Core, Chip, Booster Pack
+        const coreRepo = CoreRepository.Instance;
+        const core = coreRepo.getCoreByNameAndLevel('Herald Core', 1);
+        if (core) {
+            this.addDropConfig(pos(), (scene, p) =>
+                new CoreDrop(scene, p, core.id, core.name, core.buyPrice, core.sellPrice, core.level));
+        }
+        next();
+
+        const chipRepo = ChipRepository.Instance;
+        const chip = chipRepo.getChipByNameAndLevel('Firewire', 1);
+        if (chip) {
+            this.addDropConfig(pos(), (scene, p) =>
+                new ChipDrop(scene, p, chip.id, chip.name, chip.chipType, chip.buyPrice, chip.sellPrice, chip.level));
+        }
+        next();
+
+        this.addDropConfig(pos(), (scene, p) => new BoosterPackDrop(scene, p));
+        nextRow();
+
+        // Row 2: Money – all available amounts
+        for (const amount of [10, 100, 200, 500]) {
+            this.addDropConfig(pos(), (scene, p) => new MoneyDrop(scene, p, amount));
+            next();
+        }
+        nextRow();
+
+        // Row 3: XData – all available amounts
+        for (const amount of [1, 5, 20, 100]) {
+            this.addDropConfig(pos(), (scene, p) => new XDataDrop(scene, p, amount));
+            next();
+        }
+        nextRow();
+
+        // Row 4: HP Potions (levels 1–6)
+        for (let level = 1; level <= 6; level++) {
+            this.addDropConfig(pos(), (scene, p) => new PotionDrop(scene, p, PotionType.HP, level));
+            next();
+        }
+        nextRow();
+
+        // Row 5: TP Potions (levels 1–6)
+        for (let level = 1; level <= 6; level++) {
+            this.addDropConfig(pos(), (scene, p) => new PotionDrop(scene, p, PotionType.TP, level));
+            next();
+        }
+
+        // Spawn all configured drops
+        for (const config of this.dropSpawnConfigs) {
+            this.spawnTestDrop(config);
+        }
+    }
+
+    /** Register a drop config and remember it for respawning. */
+    private addDropConfig(
+        position: CANNON.Vec3,
+        create: (scene: THREE.Scene, position: CANNON.Vec3) => ItemDrop,
+    ): void {
+        this.dropSpawnConfigs.push({ position, create });
+    }
+
+    /** Create a drop from config, register with ItemDropManager, and track it. */
+    private spawnTestDrop(config: TestDropSpawnConfig): void {
+        const drop = config.create(this.scene, config.position.clone());
+        ItemDropManager.Instance.addDrop(drop);
+        this.activeDrops.set(drop, config);
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    //  Area 4 – Barrel & Chest
+    // ───────────────────────────────────────────────────────────────────────────
+
+    private buildBarrelChestArea(): void {
+        this.spawnBarrel();
+        this.spawnChest();
+    }
+
+    private spawnBarrel(): void {
+        const barrel = new BreakableBarrel(
+            this.scene, this.physicsWorld, this.physicsMaterial, BARREL_POS);
+        this.breakableBarrels.push(barrel);
+        this.barrelDestroyed = false;
+    }
+
+    private spawnChest(): void {
+        const chest = new LootChest(
+            this.scene, this.physicsWorld, this.physicsMaterial, CHEST_POS);
+        this.lootChests.push(chest);
+        this.chestEmptied = false;
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    //  Respawn tick helpers
+    // ───────────────────────────────────────────────────────────────────────────
+
+    /** Detect picked-up drops and tick their respawn timers. */
+    private tickDropRespawns(dt: number): void {
+        for (const [drop, config] of this.activeDrops) {
             if (!drop.mesh.parent) {
-                // Drop was picked up and removed from scene → start respawn
-                this.activePotions.delete(drop);
-                this.respawnTimers.push({ config, timer: POTION_RESPAWN_DELAY });
+                this.activeDrops.delete(drop);
+                this.dropRespawnTimers.push({ config, timer: RESPAWN_DELAY });
             }
         }
 
-        // Tick respawn timers
-        for (let i = this.respawnTimers.length - 1; i >= 0; i--) {
-            this.respawnTimers[i].timer -= dt;
-            if (this.respawnTimers[i].timer <= 0) {
-                this.spawnTestPotion(this.respawnTimers[i].config);
-                this.respawnTimers.splice(i, 1);
+        for (let i = this.dropRespawnTimers.length - 1; i >= 0; i--) {
+            this.dropRespawnTimers[i].timer -= dt;
+            if (this.dropRespawnTimers[i].timer <= 0) {
+                this.spawnTestDrop(this.dropRespawnTimers[i].config);
+                this.dropRespawnTimers.splice(i, 1);
             }
         }
     }
 
-    private spawnTestPotion(config: PotionSpawnConfig): void {
-        const drop = new PotionDrop(this.scene, config.position, config.potionType, config.level);
-        ItemDropManager.Instance.addDrop(drop);
-        this.activePotions.set(drop, config);
+    /** Detect barrel destruction and respawn after delay. */
+    private tickBarrelRespawn(dt: number): void {
+        if (!this.barrelDestroyed) {
+            const barrel = this.breakableBarrels.find(b => b.isDestroyed);
+            if (barrel) {
+                this.barrelDestroyed = true;
+                this.barrelRespawnTimer = RESPAWN_DELAY;
+            }
+        }
+
+        if (this.barrelRespawnTimer >= 0) {
+            this.barrelRespawnTimer -= dt;
+            if (this.barrelRespawnTimer <= 0) {
+                // Remove all destroyed barrels
+                for (const b of this.breakableBarrels) {
+                    b.cleanup();
+                }
+                this.breakableBarrels = [];
+                this.spawnBarrel();
+                this.barrelRespawnTimer = -1;
+            }
+        }
+    }
+
+    /** Detect emptied chest and respawn after delay. */
+    private tickChestRespawn(dt: number): void {
+        if (!this.chestEmptied) {
+            const chest = this.lootChests.find(c => c.isOpened && !c.hasItems && !c.isUIVisible);
+            if (chest) {
+                this.chestEmptied = true;
+                this.chestRespawnTimer = RESPAWN_DELAY;
+            }
+        }
+
+        if (this.chestRespawnTimer >= 0) {
+            this.chestRespawnTimer -= dt;
+            if (this.chestRespawnTimer <= 0) {
+                for (const c of this.lootChests) {
+                    c.cleanup();
+                }
+                this.lootChests = [];
+                this.spawnChest();
+                this.chestRespawnTimer = -1;
+            }
+        }
     }
 }
