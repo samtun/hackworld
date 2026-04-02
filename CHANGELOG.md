@@ -1,3 +1,18 @@
+# [2.4.0](https://github.com/samtun/hackworld/compare/v2.3.0...v2.4.0) (2026-04-02)
+
+
+### Bug Fixes
+
+* address mobile UI review feedback ([d027471](https://github.com/samtun/hackworld/commit/d027471b48802b3846b54c375de23fbdc0940ecd))
+* increase barrel fragment gravity test frames to prevent flaky failure ([aaa0a15](https://github.com/samtun/hackworld/commit/aaa0a1523bb448daa839d33dd1c8dd11dcb1ca68))
+* suppress jump after menu close by consuming A-button until released ([a070614](https://github.com/samtun/hackworld/commit/a0706149f099bce365cfead173d14c426e507925))
+* vertically center inventory toggle button and fix stat allocation breaking slider ([14e5126](https://github.com/samtun/hackworld/commit/14e5126f55cc4841f9baaf0891e3ca991bfb3c9b))
+
+
+### Features
+
+* fix mobile controls and visuals ([835cb3d](https://github.com/samtun/hackworld/commit/835cb3d682ecb2dfb8327cfba166a004c036b3ec))
+
 # [2.3.0](https://github.com/samtun/hackworld/compare/v2.2.0...v2.3.0) (2026-04-01)
 
 
