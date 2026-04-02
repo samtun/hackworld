@@ -71,6 +71,7 @@ export class Game {
     wasR3Pressed: boolean = false; // Track R3 button for debug mode toggle
     wasJustInteracted: boolean = false; // Prevent immediate action (e.g. pickup or NPC interaction)
     wasPausePressed: boolean = false; // Track pause button for edge detection (independent of Player.updateState)
+    wasAnyMenuOpen: boolean = false; // Track menu state for jump suppression after menu close
     isTransitioning: boolean = false;
 
     // Spawn position constants
@@ -440,6 +441,7 @@ export class Game {
     private continueAfterIntro() {
         this.currentScene = Lobby.getMetadata().id;
         this.input.initializeMobileControls();
+        this.input.consumeJump();
         this.clock.getDelta(); // Reset clock
         this.isTransitioning = false;
     }
@@ -596,6 +598,13 @@ export class Game {
 
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.isAnyMenuOpen();
+
+        // Suppress jump when a menu just closed so the A-button press that
+        // confirmed the menu action does not also make the player jump.
+        if (this.wasAnyMenuOpen && !anyMenuOpen) {
+            this.input.consumeJump();
+        }
+        this.wasAnyMenuOpen = anyMenuOpen;
 
         // Define interactive entity types
         interface InteractiveEntity {

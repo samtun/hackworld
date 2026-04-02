@@ -12,6 +12,7 @@ import { formatItemLabel } from './ItemDisplay';
 import { sortInventory } from './ItemSorter';
 import { WeaponType } from './weapons/WeaponType';
 import { SkillTechType } from '../skills/SkillTechType';
+import { MobileControlsManager } from '../MobileControlsManager';
 import {
     ICON_HP, ICON_TP, ICON_STRENGTH, ICON_DEFENSE, ICON_AGILITY, ICON_LUCK,
     ICON_BITS, ICON_NEXTLVL, ICON_XDATA, ICON_BOOSTER,
@@ -49,6 +50,11 @@ export class InventoryManager {
     // Scrollable stats panel reference for R-Thumbstick scrolling
     private statsScrollPanel: HTMLDivElement | null = null;
 
+    // Mobile inventory panel toggle
+    private mobileShowingStats: boolean = false;
+    private mobileToggleButton: HTMLButtonElement | null = null;
+    private mobileSlider: HTMLDivElement | null = null;
+
     private menuManager: MenuManager;
     private uiManager: UIManager;
 
@@ -63,10 +69,20 @@ export class InventoryManager {
     }
 
     private createUI() {
+        const isMobile = MobileControlsManager.Instance.isMobile;
+
         // Main Container Overlay
         this.container = this.menuManager.createOverlay();
         document.body.appendChild(this.container);
 
+        if (isMobile) {
+            this.createMobileUI();
+        } else {
+            this.createDesktopUI();
+        }
+    }
+
+    private createDesktopUI() {
         // Main Window
         const windowDiv = this.menuManager.createGridWindow('30% 1fr', '1fr 1fr');
         this.container.appendChild(windowDiv);
@@ -147,6 +163,184 @@ export class InventoryManager {
         this.itemDetailsPanel = document.createElement('div');
         this.itemDetailsPanel.style.fontSize = '16px';
         extraPanel.appendChild(this.itemDetailsPanel);
+    }
+
+    private createMobileUI() {
+        // Mobile: single-column layout with a toggle between stats and items
+        // Extra bottom margin avoids overlap with the interaction hint bar
+        const windowDiv = this.menuManager.createWindow({
+            margin: '0 0 10vh 0',
+        });
+        windowDiv.style.display = 'flex';
+        windowDiv.style.flexDirection = 'column';
+        windowDiv.style.position = 'relative';
+        windowDiv.style.overflow = 'hidden';
+        this.container.appendChild(windowDiv);
+
+        // Slider container holds both panels side by side
+        const slider = document.createElement('div');
+        slider.style.display = 'flex';
+        slider.style.flex = '1';
+        slider.style.transition = 'transform 250ms ease-in-out';
+        slider.style.width = '200%';
+        slider.style.minHeight = '0';
+        windowDiv.appendChild(slider);
+        this.mobileSlider = slider;
+
+        // Stats panel (left half of slider)
+        const statsPanel = this.menuManager.createPanel({
+            backgroundColor: MENU_COLORS.PANEL_STATS,
+        });
+        statsPanel.style.width = '50%';
+        statsPanel.style.flexShrink = '0';
+        statsPanel.style.fontSize = '16px';
+        statsPanel.style.display = 'flex';
+        statsPanel.style.flexDirection = 'column';
+        statsPanel.style.overflow = 'hidden';
+        statsPanel.style.boxSizing = 'border-box';
+        slider.appendChild(statsPanel);
+
+        // Level display container with stat points
+        const levelContainer = document.createElement('div');
+        levelContainer.style.display = 'flex';
+        levelContainer.style.justifyContent = 'space-between';
+        levelContainer.style.alignItems = 'center';
+        levelContainer.style.marginBottom = '12px';
+        levelContainer.style.flexShrink = '0';
+        statsPanel.appendChild(levelContainer);
+
+        const levelDisplay = document.createElement('div');
+        levelDisplay.id = 'level-display';
+        levelDisplay.style.fontSize = '20px';
+        levelDisplay.style.fontWeight = 'bold';
+        levelDisplay.style.color = '#ffd700';
+        levelDisplay.style.textShadow = '2px 2px 0px #000';
+        levelContainer.appendChild(levelDisplay);
+
+        const statsScrollPanel = document.createElement('div');
+        statsScrollPanel.style.overflowY = 'auto';
+        statsScrollPanel.style.flex = '1';
+        statsPanel.appendChild(statsScrollPanel);
+        this.statsScrollPanel = statsScrollPanel;
+
+        this.statsText = document.createElement('div');
+        statsScrollPanel.appendChild(this.statsText);
+
+        // Items wrapper (right half of slider) - contains loot + details vertically
+        const itemsWrapper = document.createElement('div');
+        itemsWrapper.style.width = '50%';
+        itemsWrapper.style.flexShrink = '0';
+        itemsWrapper.style.display = 'flex';
+        itemsWrapper.style.flexDirection = 'column';
+        itemsWrapper.style.gap = '10px';
+        itemsWrapper.style.boxSizing = 'border-box';
+        slider.appendChild(itemsWrapper);
+
+        // Loot Panel
+        this.lootPanel = this.menuManager.createPanel({
+            backgroundColor: MENU_COLORS.PANEL_LOOT,
+        });
+        this.lootPanel.style.overflowY = 'auto';
+        this.lootPanel.style.flex = '1';
+        itemsWrapper.appendChild(this.lootPanel);
+
+        const lootTitle = document.createElement('div');
+        lootTitle.innerText = "Collected loot";
+        lootTitle.style.marginBottom = '10px';
+        lootTitle.style.fontWeight = 'bold';
+        this.lootPanel.appendChild(lootTitle);
+
+        this.lootList = document.createElement('div');
+        this.lootPanel.appendChild(this.lootList);
+
+        // Item Details Panel
+        const extraPanel = this.menuManager.createPanel({
+            backgroundColor: MENU_COLORS.PANEL_LOOT,
+        });
+        extraPanel.style.position = 'relative';
+        extraPanel.style.flexShrink = '0';
+        extraPanel.style.maxHeight = '35%';
+        extraPanel.style.overflowY = 'auto';
+        itemsWrapper.appendChild(extraPanel);
+
+        const itemDetailsTitle = document.createElement('div');
+        itemDetailsTitle.innerText = "Item Details";
+        itemDetailsTitle.style.marginBottom = '10px';
+        itemDetailsTitle.style.fontWeight = 'bold';
+        extraPanel.appendChild(itemDetailsTitle);
+
+        this.itemDetailsPanel = document.createElement('div');
+        this.itemDetailsPanel.style.fontSize = '14px';
+        extraPanel.appendChild(this.itemDetailsPanel);
+
+        // Toggle button - vertically centered, transitions between left and right
+        const toggleBtn = document.createElement('button');
+        toggleBtn.style.cssText = [
+            'position:absolute',
+            'top:50%',
+            'transform:translateY(-50%)',
+            'width:48px',
+            'height:48px',
+            'border-radius:50%',
+            'border:2px solid #fff',
+            'background:rgba(0,0,0,0.7)',
+            'color:#fff',
+            'font-size:20px',
+            'cursor:pointer',
+            'z-index:10',
+            'display:flex',
+            'align-items:center',
+            'justify-content:center',
+            'touch-action:manipulation',
+            'user-select:none',
+            '-webkit-user-select:none',
+            '-webkit-tap-highlight-color:transparent',
+            'pointer-events:auto',
+            'transition:left 250ms ease-in-out, right 250ms ease-in-out',
+        ].join(';');
+        windowDiv.appendChild(toggleBtn);
+        this.mobileToggleButton = toggleBtn;
+
+        // Start with items panel visible as it's the primary view on mobile
+        this.mobileShowingStats = false;
+        slider.style.transform = 'translateX(-50%)';
+        this.updateToggleButtonPosition();
+
+        toggleBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.toggleMobilePanel();
+        });
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleMobilePanel();
+        });
+    }
+
+    private updateToggleButtonPosition() {
+        if (!this.mobileToggleButton) return;
+        if (this.mobileShowingStats) {
+            // Showing stats - button on right side pointing to items
+            this.mobileToggleButton.style.left = 'auto';
+            this.mobileToggleButton.style.right = '10px';
+            this.mobileToggleButton.textContent = '»';
+        } else {
+            // Showing items - button on left side pointing to stats
+            this.mobileToggleButton.style.left = '10px';
+            this.mobileToggleButton.style.right = 'auto';
+            this.mobileToggleButton.textContent = '«';
+        }
+    }
+
+    private toggleMobilePanel() {
+        if (!this.mobileSlider) return;
+        this.mobileShowingStats = !this.mobileShowingStats;
+        if (this.mobileShowingStats) {
+            this.mobileSlider.style.transform = 'translateX(0)';
+        } else {
+            this.mobileSlider.style.transform = 'translateX(-50%)';
+        }
+        this.updateToggleButtonPosition();
     }
 
     toggle() {
@@ -255,12 +449,18 @@ export class InventoryManager {
             this.lootList.appendChild(itemDiv);
         });
 
-        // Scroll selected item into view
-        if (this.itemElements[this.selectedIndex]) {
-            this.itemElements[this.selectedIndex].scrollIntoView({
-                behavior: 'auto',
-                block: 'nearest'
-            });
+        // Scroll selected item into view within the loot panel only.
+        // Avoid scrollIntoView() which can scroll ancestor elements and
+        // break the mobile slider's translateX positioning.
+        const el = this.itemElements[this.selectedIndex];
+        if (el && this.lootPanel) {
+            const elRect = el.getBoundingClientRect();
+            const panelRect = this.lootPanel.getBoundingClientRect();
+            if (elRect.top < panelRect.top) {
+                this.lootPanel.scrollTop -= panelRect.top - elRect.top;
+            } else if (elRect.bottom > panelRect.bottom) {
+                this.lootPanel.scrollTop += elRect.bottom - panelRect.bottom;
+            }
         }
     }
 
