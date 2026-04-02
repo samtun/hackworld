@@ -273,11 +273,12 @@ export class InventoryManager {
         this.itemDetailsPanel.style.fontSize = '14px';
         extraPanel.appendChild(this.itemDetailsPanel);
 
-        // Toggle button - transitions between left and right positions
+        // Toggle button - vertically centered, transitions between left and right
         const toggleBtn = document.createElement('button');
         toggleBtn.style.cssText = [
             'position:absolute',
-            'bottom:10px',
+            'top:50%',
+            'transform:translateY(-50%)',
             'width:48px',
             'height:48px',
             'border-radius:50%',
@@ -448,12 +449,18 @@ export class InventoryManager {
             this.lootList.appendChild(itemDiv);
         });
 
-        // Scroll selected item into view
-        if (this.itemElements[this.selectedIndex]) {
-            this.itemElements[this.selectedIndex].scrollIntoView({
-                behavior: 'auto',
-                block: 'nearest'
-            });
+        // Scroll selected item into view within the loot panel only.
+        // Avoid scrollIntoView() which can scroll ancestor elements and
+        // break the mobile slider's translateX positioning.
+        const el = this.itemElements[this.selectedIndex];
+        if (el && this.lootPanel) {
+            const elRect = el.getBoundingClientRect();
+            const panelRect = this.lootPanel.getBoundingClientRect();
+            if (elRect.top < panelRect.top) {
+                this.lootPanel.scrollTop -= panelRect.top - elRect.top;
+            } else if (elRect.bottom > panelRect.bottom) {
+                this.lootPanel.scrollTop += elRect.bottom - panelRect.bottom;
+            }
         }
     }
 
