@@ -1,3 +1,23 @@
+# [3.0.0](https://github.com/samtun/hackworld/compare/v2.4.0...v3.0.0) (2026-04-02)
+
+
+* feat!: rework loot chests to spawn item drops instead of showing UI ([4dfbe28](https://github.com/samtun/hackworld/commit/4dfbe28b2c3f1a2b8f90c085c2a4d4748c0553bc))
+
+
+### Bug Fixes
+
+* address code review - guard Math.log10 and extract magic constant ([683a24c](https://github.com/samtun/hackworld/commit/683a24cfc301f7a358e1509c2e9708c84ebd4585))
+* spawn drops at fixed +Z position in front of chest instead of toward player ([5191a0a](https://github.com/samtun/hackworld/commit/5191a0a8d28223cfd9d036949de43f0f0cd3a2c3))
+
+
+### BREAKING CHANGES
+
+* ChestUI removed. Chests now spawn 1-3 item drops (weapons,
+chips, cores, potions, money) in front of the chest on interaction.
+Chest color reflects item tier (orange for ZeroDay/Leet, gray/brown otherwise).
+
+Agent-Logs-Url: https://github.com/samtun/hackworld/sessions/381d0fc9-b5b7-49b0-8226-a8366fb7ff72
+
 # [2.4.0](https://github.com/samtun/hackworld/compare/v2.3.0...v2.4.0) (2026-04-02)
 
 
