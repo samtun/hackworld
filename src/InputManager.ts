@@ -16,6 +16,7 @@ export class InputManager {
     private previousSkill3State: boolean = false; // L1 + X
     private previousBlockState: boolean = false;
     private previousPauseState: boolean = false;
+    private jumpConsumed: boolean = false;
 
     public static get Instance(): InputManager {
         return this.instance || (this.instance = new this());
@@ -57,6 +58,11 @@ export class InputManager {
         this.previousBlockState = this.isBlockPressed();
         this.previousPauseState = this.isPausePressed();
         this.mobileControls?.updateState();
+
+        // Clear jump consumed flag once the jump button is physically released
+        if (this.jumpConsumed && !this.isRawJumpPressed()) {
+            this.jumpConsumed = false;
+        }
     }
 
     getMovementVector(): THREE.Vector2 {
@@ -133,24 +139,25 @@ export class InputManager {
         return justPressed;
     }
 
-    isJumpPressed(): boolean {
-        if (this.keys['Space']) return true;
+    /** Suppress jump until the physical button is released. */
+    consumeJump(): void {
+        this.jumpConsumed = true;
+    }
 
-        // Gamepad Button (A is button 0)
+    /** Raw jump state without the consumed-flag check (used internally). */
+    private isRawJumpPressed(): boolean {
+        if (this.keys['Space']) return true;
         if (this.gamepadIndex !== null) {
             const gp = navigator.getGamepads()[this.gamepadIndex];
-            if (gp) {
-                // Button 0 (A/Cross)
-                if (gp.buttons[0].pressed) return true;
-            }
+            if (gp && gp.buttons[0].pressed) return true;
         }
-
-        // Mobile touch button
-        if (this.mobileControls?.isMobile && this.mobileControls?.isJumpPressed) {
-            return true;
-        }
-
+        if (this.mobileControls?.isMobile && this.mobileControls?.isJumpPressed) return true;
         return false;
+    }
+
+    isJumpPressed(): boolean {
+        if (this.jumpConsumed) return false;
+        return this.isRawJumpPressed();
     }
 
     isInventoryPressed(): boolean {
