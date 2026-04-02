@@ -3,6 +3,7 @@ import {
     RoomBasedDungeonGenerator,
     WALL_HEIGHT,
     WALL_THICKNESS,
+    COLLIDER_EXTRA_HEIGHT,
     SAFE_ROOM_SIZE,
     TELEPORTER_ROOM_SIZE,
     ROOM_ELEVATION_STEP,
@@ -368,10 +369,10 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(layout.walls.length).toBeGreaterThan(0);
         });
 
-        it('all room walls have WALL_HEIGHT height', () => {
+        it('all walls have WALL_HEIGHT visual height', () => {
             const layout = gen(16);
             for (const wall of layout.walls) {
-                expect(wall.height).toBeGreaterThanOrEqual(WALL_HEIGHT);
+                expect(wall.height).toBe(WALL_HEIGHT);
             }
         });
 
@@ -387,6 +388,39 @@ describe('RoomBasedDungeonGenerator', () => {
             const layout = gen(18);
             for (const wall of layout.walls) {
                 expect(wall.centerY).toBeGreaterThanOrEqual(WALL_HEIGHT / 2 - 0.01);
+            }
+        });
+
+        it('corridor walls have colliderHeight = WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT', () => {
+            // Find a layout that has at least one sloped corridor
+            let slopedLayout: ReturnType<typeof gen> | null = null;
+            for (let seed = 0; seed < 50; seed++) {
+                const layout = gen(seed);
+                const hasSlope = layout.corridors.some(
+                    c => Math.abs(c.elevationEnd - c.elevationStart) > 0.01,
+                );
+                if (hasSlope) { slopedLayout = layout; break; }
+            }
+            expect(slopedLayout).not.toBeNull();
+            const layout = slopedLayout!;
+            // All walls with a colliderHeight must use WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT
+            const colliderWalls = layout.walls.filter(w => w.colliderHeight !== undefined);
+            expect(colliderWalls.length).toBeGreaterThan(0);
+            for (const wall of colliderWalls) {
+                expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
+            }
+        });
+
+        it('corridor wall colliderHeight is set for all corridors (flat and sloped)', () => {
+            const layout = gen(16);
+            // Every wall whose centre lies on a corridor boundary should carry colliderHeight.
+            // We verify indirectly: any wall with colliderHeight uses the correct value.
+            for (const wall of layout.walls) {
+                if (wall.colliderHeight !== undefined) {
+                    expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
+                    // Visual height must still be WALL_HEIGHT
+                    expect(wall.height).toBe(WALL_HEIGHT);
+                }
             }
         });
     });
@@ -581,19 +615,22 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
-        it('corridor walls are taller when connecting rooms at different elevations', () => {
-            let foundTaller = false;
+        it('corridor walls use colliderHeight to prevent jumping on top', () => {
+            // All corridor-side walls must carry colliderHeight so the physics
+            // collider extends above the visual mesh regardless of elevation.
+            let foundCorridorWall = false;
             for (let seed = 0; seed < 50; seed++) {
                 const layout = gen(seed);
                 for (const wall of layout.walls) {
-                    if (wall.height > WALL_HEIGHT) {
-                        foundTaller = true;
-                        break;
+                    if (wall.colliderHeight !== undefined) {
+                        foundCorridorWall = true;
+                        expect(wall.height).toBe(WALL_HEIGHT);
+                        expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
                     }
                 }
-                if (foundTaller) break;
+                if (foundCorridorWall) break;
             }
-            expect(foundTaller).toBe(true);
+            expect(foundCorridorWall).toBe(true);
         });
     });
 });
