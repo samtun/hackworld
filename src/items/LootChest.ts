@@ -45,6 +45,8 @@ export interface LootChestConfig {
 const HIGH_TIER_COLOR = 0xFF8C00;
 /** Color for chests without high-tier weapons. */
 const NORMAL_COLOR = 0x8B7355;
+/** Minimum squared length to consider a direction valid. */
+const MIN_DIRECTION_SQ = 0.001;
 
 /**
  * A loot chest that the player can open via interaction (Enter / A).
@@ -211,7 +213,7 @@ export class LootChest {
         );
 
         // Default to +Z (chest front) if the player is exactly on top
-        if (dir.lengthSq() < 0.001) {
+        if (dir.lengthSq() < MIN_DIRECTION_SQ) {
             dir.set(0, 0, 1);
         } else {
             dir.normalize();
@@ -380,7 +382,8 @@ export class LootChest {
     }
 
     private generateMoneyEntry(player: Player): ChestLootEntry {
-        const levelBonus = Math.pow(Math.log10(player.level), 2) / 400;
+        const safeLevel = Math.max(1, player.level);
+        const levelBonus = Math.pow(Math.log10(safeLevel), 2) / 400;
         const chances = [
             { amount: 500, baseChance: 0.01 },
             { amount: 200, baseChance: 0.05 },
