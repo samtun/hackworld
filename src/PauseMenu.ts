@@ -84,12 +84,13 @@ export class PauseMenu {
         // Title: "Execution Paused"
         const title = document.createElement('div');
         title.style.cssText = [
-            'font-size:72px',
+            'font-size:min(72px, 10vw)',
             'font-weight:bold',
             'color:#8B0000',
             'margin-bottom:50px',
             'text-shadow:4px 4px 8px rgba(0,0,0,0.8)',
             'text-align:center',
+            'padding:0 20px',
         ].join(';');
         title.textContent = 'Execution Paused';
         this.overlay.appendChild(title);
@@ -100,7 +101,7 @@ export class PauseMenu {
             'display:flex',
             'flex-direction:column',
             'align-items:center',
-            'gap:18px',
+            'gap:min(28px, 5vh)',
         ].join(';');
 
         this.items.forEach((item, i) => {
@@ -210,7 +211,7 @@ export class PauseMenu {
         const fontWeight = selected ? 'bold' : 'normal';
         return [
             'font-family:"Share Tech",sans-serif',
-            'font-size:6vh',
+            'font-size:min(6vh, 6vw)',
             `color:${color}`,
             `font-weight:${fontWeight}`,
             'user-select:none',
@@ -218,6 +219,7 @@ export class PauseMenu {
             'text-align:center',
             'text-shadow:-2px -2px 2px #000, 2px 2px 2px #000, -2px 2px 2px #000, 2px -2px 2px #000',
             'transition:color 0.15s,font-weight 0.15s',
+            'padding:0 20px',
         ].join(';');
     }
 

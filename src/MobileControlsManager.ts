@@ -12,13 +12,11 @@ export class MobileControlsManager {
     private buttonsContainer!: HTMLDivElement;
     private inventoryButton!: HTMLButtonElement;
     private closeButton!: HTMLButtonElement;
-    private blockButton!: HTMLButtonElement;
     private pauseButton!: HTMLButtonElement;
 
     // Button elements
     private jumpButton!: HTMLButtonElement;
     private attackButton!: HTMLButtonElement;
-    private skillToggleButton!: HTMLButtonElement;
 
     // Input state
     public movementVector: THREE.Vector2 = new THREE.Vector2(0, 0);
@@ -29,11 +27,10 @@ export class MobileControlsManager {
     public isBlockPressed: boolean = false;
     public isPausePressed: boolean = false;
 
-    // Skill mode state
-    private isSkillMode: boolean = false;
-    public isSkill1Pressed: boolean = false; // Laser (was Jump/A)
-    public isSkill2Pressed: boolean = false; // Heal (was Close/B)
-    public isSkill3Pressed: boolean = false; // Area (was Attack/X)
+    // Skill state (triggered from HUD skill indicators)
+    public isSkill1Pressed: boolean = false; // Laser
+    public isSkill2Pressed: boolean = false; // Heal
+    public isSkill3Pressed: boolean = false; // Area
 
     // Track previous states for edge detection
     private previousJumpState: boolean = false;
@@ -93,11 +90,6 @@ export class MobileControlsManager {
         this.buttonsContainer.className = 'mobile-buttons-container';
         document.body.appendChild(this.buttonsContainer);
 
-        // Create skill toggle button (at top of button stack)
-        this.skillToggleButton = this.createButton('', 'mobile-skill-toggle-btn');
-        this.buttonsContainer.appendChild(this.skillToggleButton);
-        this.setupSkillToggleListener();
-
         // Create action buttons (A for Jump, X for Attack)
         // Using Xbox controller button names for consistency
         this.jumpButton = this.createButton('A', 'mobile-jump-btn');
@@ -108,22 +100,17 @@ export class MobileControlsManager {
         this.buttonsContainer.appendChild(this.closeButton);
         this.buttonsContainer.appendChild(this.attackButton);
 
-        // Setup button event listeners with skill mode support
-        this.setupButtonListeners(this.jumpButton, 'isJumpPressed', 'isSkill1Pressed');
-        this.setupButtonListeners(this.attackButton, 'isAttackPressed', 'isSkill3Pressed');
-        this.setupButtonListeners(this.closeButton, 'isCancelPressed', 'isSkill2Pressed');
+        // Setup button event listeners (no skill mode toggle - skills triggered via HUD indicators)
+        this.setupButtonListeners(this.jumpButton, 'isJumpPressed');
+        this.setupButtonListeners(this.attackButton, 'isAttackPressed');
+        this.setupButtonListeners(this.closeButton, 'isCancelPressed');
 
-        // Create inventory button (top center) - using Select button convention
+        // Create inventory button (top right)
         this.inventoryButton = this.createButton('', 'mobile-inventory-btn');
         document.body.appendChild(this.inventoryButton);
         this.setupButtonListeners(this.inventoryButton, 'isInventoryPressed');
 
-        // Create block button (left side, above joystick)
-        this.blockButton = this.createButton('L', 'mobile-block-btn');
-        document.body.appendChild(this.blockButton);
-        this.setupButtonListeners(this.blockButton, 'isBlockPressed');
-
-        // Create pause button (top-right, next to inventory)
+        // Create pause button (top center)
         this.pauseButton = this.createButton('☰', 'mobile-pause-btn');
         document.body.appendChild(this.pauseButton);
         this.setupButtonListeners(this.pauseButton, 'isPausePressed');
@@ -154,69 +141,32 @@ export class MobileControlsManager {
         return button;
     }
 
-    private setupButtonListeners(button: HTMLButtonElement, normalStateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInventoryPressed' | 'isCancelPressed' | 'isBlockPressed' | 'isPausePressed', skillStateKey?: 'isSkill1Pressed' | 'isSkill2Pressed' | 'isSkill3Pressed') {
+    private setupButtonListeners(button: HTMLButtonElement, normalStateKey: 'isJumpPressed' | 'isAttackPressed' | 'isInventoryPressed' | 'isCancelPressed' | 'isBlockPressed' | 'isPausePressed') {
         button.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            if (this.isSkillMode && skillStateKey) {
-                this[skillStateKey] = true;
-            } else {
-                this[normalStateKey] = true;
-            }
+            this[normalStateKey] = true;
         });
 
         button.addEventListener('touchend', (e) => {
             e.preventDefault();
-            if (this.isSkillMode && skillStateKey) {
-                this[skillStateKey] = false;
-                // Exit skill mode after using a skill
-                this.toggleSkillMode();
-            } else {
-                this[normalStateKey] = false;
-            }
+            this[normalStateKey] = false;
         });
 
         button.addEventListener('touchcancel', (e) => {
             e.preventDefault();
-            if (this.isSkillMode && skillStateKey) {
-                this[skillStateKey] = false;
-            } else {
-                this[normalStateKey] = false;
-            }
+            this[normalStateKey] = false;
         });
     }
 
-    private setupSkillToggleListener() {
-        this.skillToggleButton.addEventListener('touchstart', (e) => {
-            e.preventDefault();
-            this.toggleSkillMode();
-        });
-    }
-
-    private toggleSkillMode() {
-        this.isSkillMode = !this.isSkillMode;
-        this.updateButtons();
-    }
-
-    private updateButtons() {
-        if (this.isSkillMode) {
-            // Change to skill labels
-            this.jumpButton.textContent = '';
-            this.jumpButton.classList.add('skill');
-            this.closeButton.textContent = '';
-            this.closeButton.classList.add('skill');
-            this.attackButton.textContent = '';
-            this.attackButton.classList.add('skill');
-            this.skillToggleButton.classList.add('active');
-        } else {
-            // Change back to normal labels
-            this.jumpButton.textContent = 'A';
-            this.jumpButton.classList.remove('skill');
-            this.closeButton.textContent = 'B';
-            this.closeButton.classList.remove('skill');
-            this.attackButton.textContent = 'X';
-            this.attackButton.classList.remove('skill');
-            this.skillToggleButton.classList.remove('active');
-        }
+    /**
+     * Trigger a skill press from the HUD skill indicator buttons
+     */
+    public triggerSkillPress(skillKey: 'isSkill1Pressed' | 'isSkill2Pressed' | 'isSkill3Pressed') {
+        this[skillKey] = true;
+        // Auto-release after a short delay to simulate a button press
+        setTimeout(() => {
+            this[skillKey] = false;
+        }, 100);
     }
 
     /**
@@ -286,19 +236,15 @@ export class MobileControlsManager {
         if (this.buttonsContainer) this.buttonsContainer.style.display = display;
         if (this.inventoryButton) this.inventoryButton.style.display = display;
         if (this.closeButton) this.closeButton.style.display = display;
-        if (this.skillToggleButton) this.skillToggleButton.style.display = display;
-        if (this.blockButton) this.blockButton.style.display = display;
         if (this.pauseButton) this.pauseButton.style.display = display;
     }
 
     /**
-     * Show or hide skills toggle button (for hiding when menus/inventory are open)
+     * Show or hide skills toggle button.
+     * No-op since skill toggle was removed; skills are now triggered via HUD indicators.
+     * Kept for backward compatibility with callers in Game.ts.
      */
-    public setSkillsButtonVisible(visible: boolean) {
-        if (!this.isMobileDevice) return;
-
-        const display = visible ? 'block' : 'none';
-        if (this.skillToggleButton) this.skillToggleButton.style.display = display;
+    public setSkillsButtonVisible(_visible: boolean) {
     }
 
     /**
@@ -330,14 +276,6 @@ export class MobileControlsManager {
 
         if (this.closeButton && this.closeButton.parentNode) {
             this.closeButton.parentNode.removeChild(this.closeButton);
-        }
-
-        if (this.skillToggleButton && this.skillToggleButton.parentNode) {
-            this.skillToggleButton.parentNode.removeChild(this.skillToggleButton);
-        }
-
-        if (this.blockButton && this.blockButton.parentNode) {
-            this.blockButton.parentNode.removeChild(this.blockButton);
         }
 
         if (this.pauseButton && this.pauseButton.parentNode) {
