@@ -394,37 +394,33 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
-        it('corridor walls have colliderHeight = WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT', () => {
-            // Find a layout that has at least one sloped corridor
-            let slopedLayout: ReturnType<typeof gen> | null = null;
-            for (let seed = 0; seed < 50; seed++) {
-                const layout = gen(seed);
-                const hasSlope = layout.corridors.some(
-                    c => Math.abs(c.elevationEnd - c.elevationStart) > 0.01,
-                );
-                if (hasSlope) { slopedLayout = layout; break; }
-            }
-            expect(slopedLayout).not.toBeNull();
-            const layout = slopedLayout!;
-            // All walls with a colliderHeight must use WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT
-            const colliderWalls = layout.walls.filter(w => w.colliderHeight !== undefined);
-            expect(colliderWalls.length).toBeGreaterThan(0);
-            for (const wall of colliderWalls) {
+        it('all walls carry colliderHeight = WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT', () => {
+            // Every wall (room walls and corridor walls) must have an extended physics
+            // collider so the player cannot jump on top of any wall.
+            const layout = gen(16);
+            expect(layout.walls.length).toBeGreaterThan(0);
+            for (const wall of layout.walls) {
                 expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
             }
         });
 
-        it('corridor wall colliderHeight is set for all corridors (flat and sloped)', () => {
+        it('corridor walls have visual height = WALL_HEIGHT - 0.05 to prevent z-fighting', () => {
+            // Corridor walls are trimmed 0.05 m below WALL_HEIGHT so their top faces
+            // never coincide with room wall tops at junction corners.
             const layout = gen(16);
-            // Every wall whose centre lies on a corridor boundary should carry colliderHeight.
-            // We verify indirectly: any wall with colliderHeight uses the correct value.
-            for (const wall of layout.walls) {
-                if (wall.colliderHeight !== undefined) {
-                    expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
-                    // Visual height must be at most WALL_HEIGHT (sloped corridor walls are
-                    // trimmed slightly shorter to avoid z-fighting with adjacent room geometry)
-                    expect(wall.height).toBeLessThanOrEqual(WALL_HEIGHT);
-                }
+            const corridorCenterXSet = new Set(
+                layout.corridors.flatMap(c =>
+                    c.width > c.depth
+                        ? [c.centerZ + c.depth / 2, c.centerZ - c.depth / 2]
+                        : [c.centerX + c.width / 2, c.centerX - c.width / 2],
+                ),
+            );
+            // At least some walls should be corridor walls with trimmed height
+            const trimmedWalls = layout.walls.filter(w => w.height < WALL_HEIGHT);
+            expect(trimmedWalls.length).toBeGreaterThan(0);
+            for (const wall of trimmedWalls) {
+                expect(wall.height).toBeCloseTo(WALL_HEIGHT - 0.05, 5);
+                expect(corridorCenterXSet.size).toBeGreaterThan(0);
             }
         });
     });
@@ -619,24 +615,16 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
-        it('corridor walls use colliderHeight to prevent jumping on top', () => {
-            // All corridor-side walls must carry colliderHeight so the physics
-            // collider extends above the visual mesh regardless of elevation.
-            let foundCorridorWall = false;
-            for (let seed = 0; seed < 50; seed++) {
+        it('all walls carry colliderHeight to prevent jumping on top', () => {
+            // Every wall (room walls and corridor walls) must have an extended physics
+            // collider height so the player cannot jump on top of any wall.
+            for (let seed = 0; seed < 3; seed++) {
                 const layout = gen(seed);
                 for (const wall of layout.walls) {
-                    if (wall.colliderHeight !== undefined) {
-                        foundCorridorWall = true;
-                        // Visual height is at most WALL_HEIGHT (sloped corridor walls
-                        // are trimmed slightly shorter to prevent z-fighting)
-                        expect(wall.height).toBeLessThanOrEqual(WALL_HEIGHT);
-                        expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
-                    }
+                    expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
+                    expect(wall.height).toBeLessThanOrEqual(WALL_HEIGHT);
                 }
-                if (foundCorridorWall) break;
             }
-            expect(foundCorridorWall).toBe(true);
         });
     });
 });

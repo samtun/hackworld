@@ -1016,13 +1016,10 @@ export class RoomBasedDungeonGenerator {
     /** Build side walls for a corridor, extended in height for elevation changes. */
     private buildCorridorWalls(cor: Corridor): WallSegment[] {
         const minElev = Math.min(cor.elevationStart, cor.elevationEnd);
-        const elevDiff = Math.abs(cor.elevationEnd - cor.elevationStart);
-        // Visual height: for sloped corridors, trim 0.05 m below WALL_HEIGHT so the
-        // mesh top face does not coincide with the higher room's floor or wall bottoms
-        // (ROOM_ELEVATION_STEP === WALL_HEIGHT, so without this trim the faces are
-        // perfectly co-planar and cause z-fighting at the junction corners).
-        // Flat corridors keep the standard WALL_HEIGHT.
-        const wallH = elevDiff > 0.01 ? WALL_HEIGHT - 0.05 : WALL_HEIGHT;
+        // Trim corridor wall visual height 0.05 m below WALL_HEIGHT so the mesh
+        // top face never coincides with room wall tops or the higher room's floor
+        // at junction corners, preventing z-fighting in both flat and sloped corridors.
+        const wallH = WALL_HEIGHT - 0.05;
         const wallCenterY = minElev + wallH / 2;
         // Collider extends well above the mesh so the player cannot jump on top.
         const colliderHeight = WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT;
@@ -1055,6 +1052,7 @@ export class RoomBasedDungeonGenerator {
             width: length,
             height: WALL_HEIGHT,
             depth: WALL_THICKNESS,
+            colliderHeight: WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT,
         };
     }
 
@@ -1067,6 +1065,7 @@ export class RoomBasedDungeonGenerator {
             width: WALL_THICKNESS,
             height: WALL_HEIGHT,
             depth: length,
+            colliderHeight: WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT,
         };
     }
 
