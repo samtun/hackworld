@@ -203,7 +203,8 @@ describe('BreakableBarrel', () => {
             const frags = (barrel as any).fragments;
             const initialY = frags[0].mesh.position.y;
             // Step enough frames to let gravity overcome initial upward velocity
-            for (let i = 0; i < 15; i++) barrel.update(0.05);
+            // (max initial vy is 4 m/s, gravity is 9.8 m/s²; 25 × 0.05 = 1.25s is enough)
+            for (let i = 0; i < 25; i++) barrel.update(0.05);
             expect(frags[0].mesh.position.y).toBeLessThan(initialY);
         });
     });

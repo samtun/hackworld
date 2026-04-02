@@ -2,6 +2,7 @@ import { Player } from '../Player';
 import { MENU_STYLES } from './MenuManager';
 import { StartMenu, StartMenuOption } from '../StartMenu';
 import { InputManager } from '../InputManager';
+import { MobileControlsManager } from '../MobileControlsManager';
 
 class PlayerUI {
     id: string;
@@ -22,10 +23,17 @@ class PlayerUI {
     constructor(parent: HTMLDivElement, player: Player) {
         this.id = player.id;
 
+        const isMobileDevice = MobileControlsManager.Instance.isMobile;
+
         this.wrapper = document.createElement('div');
         this.wrapper.style.position = 'absolute';
-        this.wrapper.style.bottom = '30px';
-        this.wrapper.style.left = '30px';
+        if (isMobileDevice) {
+            this.wrapper.style.top = '0';
+            this.wrapper.style.left = '0';
+        } else {
+            this.wrapper.style.bottom = '30px';
+            this.wrapper.style.left = '30px';
+        }
         this.wrapper.style.width = '120px';
         this.wrapper.style.height = '120px';
         this.wrapper.style.pointerEvents = 'none';
@@ -138,11 +146,12 @@ class PlayerUI {
         skillsWrapper.style.gap = '6px';
         skillsWrapper.style.width = '168px';
         skillsWrapper.style.justifyContent = 'center';
-        skillsWrapper.style.pointerEvents = 'none';
+        const mobileControls = MobileControlsManager.Instance;
+        skillsWrapper.style.pointerEvents = mobileControls.isMobile ? 'auto' : 'none';
         this.wrapper.appendChild(skillsWrapper);
 
         // Create skill slots
-        player.skills.forEach((skill) => {
+        player.skills.forEach((skill, index) => {
             const box = document.createElement('div');
             box.style.width = '52px';
             box.style.height = '42px';
@@ -152,7 +161,22 @@ class PlayerUI {
             box.style.boxSizing = 'border-box';
             box.style.position = 'relative';
             box.style.zIndex = '1';
-            box.style.pointerEvents = 'none';
+
+            if (isMobileDevice) {
+                box.style.pointerEvents = 'auto';
+                box.style.cursor = 'pointer';
+                box.style.touchAction = 'manipulation';
+                box.style.webkitUserSelect = 'none';
+                box.style.userSelect = 'none';
+                const skillKey = `isSkill${index + 1}Pressed` as 'isSkill1Pressed' | 'isSkill2Pressed' | 'isSkill3Pressed';
+                box.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    mobileControls.triggerSkillPress(skillKey);
+                });
+            } else {
+                box.style.pointerEvents = 'none';
+            }
 
             const fill = document.createElement('div');
             fill.style.position = 'absolute';
@@ -322,14 +346,21 @@ export class UIManager {
 
         this.container = document.createElement('div');
         this.container.style.position = 'absolute';
-        this.container.style.bottom = '30px';
-        this.container.style.left = '30px';
-        this.container.style.width = '120px';
-        this.container.style.height = '120px';
         this.container.style.pointerEvents = 'none';
         this.container.style.fontFamily = '"Share Tech", Arial, sans-serif';
         this.container.style.fontWeight = 'bold';
         this.container.style.overflow = 'visible';
+
+        const isMobile = MobileControlsManager.Instance.isMobile;
+        if (isMobile) {
+            this.container.style.top = '100px';
+            this.container.style.left = '10px';
+        } else {
+            this.container.style.bottom = '30px';
+            this.container.style.left = '30px';
+        }
+        this.container.style.width = '120px';
+        this.container.style.height = '120px';
         document.body.appendChild(this.container);
 
         // Skill cooldown indicators (3 squares above HP/TP)
