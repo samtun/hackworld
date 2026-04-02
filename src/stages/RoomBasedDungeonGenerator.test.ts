@@ -369,10 +369,11 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(layout.walls.length).toBeGreaterThan(0);
         });
 
-        it('all walls have WALL_HEIGHT visual height', () => {
+        it('all walls have visual height ≤ WALL_HEIGHT', () => {
             const layout = gen(16);
             for (const wall of layout.walls) {
-                expect(wall.height).toBe(WALL_HEIGHT);
+                expect(wall.height).toBeLessThanOrEqual(WALL_HEIGHT);
+                expect(wall.height).toBeGreaterThan(0);
             }
         });
 
@@ -384,10 +385,12 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
-        it('wall centres are at y >= WALL_HEIGHT / 2', () => {
+        it('wall centres are at y >= (WALL_HEIGHT - 0.05) / 2', () => {
             const layout = gen(18);
             for (const wall of layout.walls) {
-                expect(wall.centerY).toBeGreaterThanOrEqual(WALL_HEIGHT / 2 - 0.01);
+                // Sloped corridor walls are trimmed 0.05 m below WALL_HEIGHT,
+                // so their centre is at (WALL_HEIGHT - 0.05) / 2 at minimum.
+                expect(wall.centerY).toBeGreaterThanOrEqual((WALL_HEIGHT - 0.05) / 2 - 0.01);
             }
         });
 
@@ -418,8 +421,9 @@ describe('RoomBasedDungeonGenerator', () => {
             for (const wall of layout.walls) {
                 if (wall.colliderHeight !== undefined) {
                     expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
-                    // Visual height must still be WALL_HEIGHT
-                    expect(wall.height).toBe(WALL_HEIGHT);
+                    // Visual height must be at most WALL_HEIGHT (sloped corridor walls are
+                    // trimmed slightly shorter to avoid z-fighting with adjacent room geometry)
+                    expect(wall.height).toBeLessThanOrEqual(WALL_HEIGHT);
                 }
             }
         });
@@ -624,7 +628,9 @@ describe('RoomBasedDungeonGenerator', () => {
                 for (const wall of layout.walls) {
                     if (wall.colliderHeight !== undefined) {
                         foundCorridorWall = true;
-                        expect(wall.height).toBe(WALL_HEIGHT);
+                        // Visual height is at most WALL_HEIGHT (sloped corridor walls
+                        // are trimmed slightly shorter to prevent z-fighting)
+                        expect(wall.height).toBeLessThanOrEqual(WALL_HEIGHT);
                         expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
                     }
                 }
