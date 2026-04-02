@@ -240,10 +240,11 @@ export class MobileControlsManager {
     }
 
     /**
-     * Show or hide skills toggle button (for hiding when menus/inventory are open)
+     * Show or hide skills toggle button.
+     * No-op since skill toggle was removed; skills are now triggered via HUD indicators.
+     * Kept for backward compatibility with callers in Game.ts.
      */
     public setSkillsButtonVisible(_visible: boolean) {
-        // Skill toggle button has been removed; skill activation is now on the HUD
     }
 
     /**

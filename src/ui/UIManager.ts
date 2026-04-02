@@ -150,11 +150,6 @@ class PlayerUI {
         skillsWrapper.style.pointerEvents = mobileControls.isMobile ? 'auto' : 'none';
         this.wrapper.appendChild(skillsWrapper);
 
-        // Skill key mapping for mobile touch triggers
-        const skillKeys: Array<'isSkill1Pressed' | 'isSkill2Pressed' | 'isSkill3Pressed'> = [
-            'isSkill1Pressed', 'isSkill2Pressed', 'isSkill3Pressed'
-        ];
-
         // Create skill slots
         player.skills.forEach((skill, index) => {
             const box = document.createElement('div');
@@ -173,14 +168,12 @@ class PlayerUI {
                 box.style.touchAction = 'manipulation';
                 box.style.webkitUserSelect = 'none';
                 box.style.userSelect = 'none';
-                const skillKey = skillKeys[index];
-                if (skillKey) {
-                    box.addEventListener('touchstart', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        mobileControls.triggerSkillPress(skillKey);
-                    });
-                }
+                const skillKey = `isSkill${index + 1}Pressed` as 'isSkill1Pressed' | 'isSkill2Pressed' | 'isSkill3Pressed';
+                box.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    mobileControls.triggerSkillPress(skillKey);
+                });
             } else {
                 box.style.pointerEvents = 'none';
             }

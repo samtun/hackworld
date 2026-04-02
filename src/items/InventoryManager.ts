@@ -297,7 +297,7 @@ export class InventoryManager {
         windowDiv.appendChild(toggleBtn);
         this.mobileToggleButton = toggleBtn;
 
-        // Start showing items (slider at 0 = stats visible isn't useful on mobile; show items first)
+        // Start with items panel visible as it's the primary view on mobile
         this.mobileShowingStats = false;
         slider.style.transform = 'translateX(-50%)';
 
