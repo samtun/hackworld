@@ -167,6 +167,7 @@ export class InventoryManager {
 
     private createMobileUI() {
         // Mobile: single-column layout with a toggle between stats and items
+        // Extra bottom margin avoids overlap with the interaction hint bar
         const windowDiv = this.menuManager.createWindow({
             margin: '0 0 10vh 0',
         });
