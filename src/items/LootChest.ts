@@ -45,8 +45,6 @@ export interface LootChestConfig {
 const HIGH_TIER_COLOR = 0xFF8C00;
 /** Color for chests without high-tier weapons. */
 const NORMAL_COLOR = 0x8B7355;
-/** Minimum squared length to consider a direction valid. */
-const MIN_DIRECTION_SQ = 0.001;
 
 /**
  * A loot chest that the player can open via interaction (Enter / A).
@@ -168,7 +166,7 @@ export class LootChest {
         this.isOpened = true;
         this.prepareLoot(player);
         this.showOpenedLid();
-        this.spawnDrops(this.lootEntries!, player);
+        this.spawnDrops(this.lootEntries!);
     }
 
     /** Clean up all resources when the stage is cleared. */
@@ -199,44 +197,28 @@ export class LootChest {
     }
 
     /**
-     * Spawn item drops in front of the chest, in a row centered 1m ahead
-     * of the chest toward the player, with 1m spacing between items.
+     * Spawn item drops in front of the chest (+Z direction), in a row
+     * centered 1m ahead with 1m spacing along the X axis.
      */
-    private spawnDrops(loot: ChestLootEntry[], player: Player): void {
+    private spawnDrops(loot: ChestLootEntry[]): void {
         if (loot.length === 0) return;
 
         const chestPos = this.mesh.position;
-        const dir = new THREE.Vector3(
-            player.position.x - chestPos.x,
-            0,
-            player.position.z - chestPos.z,
-        );
-
-        // Default to +Z (chest front) if the player is exactly on top
-        if (dir.lengthSq() < MIN_DIRECTION_SQ) {
-            dir.set(0, 0, 1);
-        } else {
-            dir.normalize();
-        }
-
-        // Center point 1m in front of the chest
-        const centerX = chestPos.x + dir.x;
+        // Center point 1m in front of the chest (+Z is the front)
+        const centerX = chestPos.x;
         const centerY = chestPos.y + 0.5;
-        const centerZ = chestPos.z + dir.z;
-
-        // Perpendicular direction for the row
-        const perpX = -dir.z;
-        const perpZ = dir.x;
+        const centerZ = chestPos.z + 1;
 
         const count = loot.length;
         const dropManager = ItemDropManager.Instance;
 
         for (let i = 0; i < count; i++) {
+            // Spread items along X, centered on the chest
             const offset = (i - (count - 1) / 2);
             const pos = new CANNON.Vec3(
-                centerX + perpX * offset,
+                centerX + offset,
                 centerY,
-                centerZ + perpZ * offset,
+                centerZ,
             );
             const drop = this.createDrop(loot[i], pos);
             if (drop) {
