@@ -53,6 +53,7 @@ export class InventoryManager {
     // Mobile inventory panel toggle
     private mobileShowingStats: boolean = false;
     private mobileToggleButton: HTMLButtonElement | null = null;
+    private mobileSlider: HTMLDivElement | null = null;
 
     private menuManager: MenuManager;
     private uiManager: UIManager;
@@ -166,7 +167,9 @@ export class InventoryManager {
 
     private createMobileUI() {
         // Mobile: single-column layout with a toggle between stats and items
-        const windowDiv = this.menuManager.createWindow();
+        const windowDiv = this.menuManager.createWindow({
+            margin: '0 0 10vh 0',
+        });
         windowDiv.style.display = 'flex';
         windowDiv.style.flexDirection = 'column';
         windowDiv.style.position = 'relative';
@@ -181,6 +184,7 @@ export class InventoryManager {
         slider.style.width = '200%';
         slider.style.minHeight = '0';
         windowDiv.appendChild(slider);
+        this.mobileSlider = slider;
 
         // Stats panel (left half of slider)
         const statsPanel = this.menuManager.createPanel({
@@ -268,13 +272,11 @@ export class InventoryManager {
         this.itemDetailsPanel.style.fontSize = '14px';
         extraPanel.appendChild(this.itemDetailsPanel);
 
-        // Toggle button (fixed at bottom center of window)
+        // Toggle button - transitions between left and right positions
         const toggleBtn = document.createElement('button');
         toggleBtn.style.cssText = [
             'position:absolute',
             'bottom:10px',
-            'left:50%',
-            'transform:translateX(-50%)',
             'width:48px',
             'height:48px',
             'border-radius:50%',
@@ -292,34 +294,51 @@ export class InventoryManager {
             '-webkit-user-select:none',
             '-webkit-tap-highlight-color:transparent',
             'pointer-events:auto',
+            'transition:left 250ms ease-in-out, right 250ms ease-in-out',
         ].join(';');
-        toggleBtn.textContent = '«';
         windowDiv.appendChild(toggleBtn);
         this.mobileToggleButton = toggleBtn;
 
         // Start with items panel visible as it's the primary view on mobile
         this.mobileShowingStats = false;
         slider.style.transform = 'translateX(-50%)';
+        this.updateToggleButtonPosition();
 
         toggleBtn.addEventListener('touchend', (e) => {
             e.preventDefault();
             e.stopPropagation();
-            this.toggleMobilePanel(slider);
+            this.toggleMobilePanel();
         });
-        toggleBtn.addEventListener('click', () => {
-            this.toggleMobilePanel(slider);
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.toggleMobilePanel();
         });
     }
 
-    private toggleMobilePanel(slider: HTMLElement) {
+    private updateToggleButtonPosition() {
+        if (!this.mobileToggleButton) return;
+        if (this.mobileShowingStats) {
+            // Showing stats - button on right side pointing to items
+            this.mobileToggleButton.style.left = 'auto';
+            this.mobileToggleButton.style.right = '10px';
+            this.mobileToggleButton.textContent = '»';
+        } else {
+            // Showing items - button on left side pointing to stats
+            this.mobileToggleButton.style.left = '10px';
+            this.mobileToggleButton.style.right = 'auto';
+            this.mobileToggleButton.textContent = '«';
+        }
+    }
+
+    private toggleMobilePanel() {
+        if (!this.mobileSlider) return;
         this.mobileShowingStats = !this.mobileShowingStats;
         if (this.mobileShowingStats) {
-            slider.style.transform = 'translateX(0)';
-            if (this.mobileToggleButton) this.mobileToggleButton.textContent = '»';
+            this.mobileSlider.style.transform = 'translateX(0)';
         } else {
-            slider.style.transform = 'translateX(-50%)';
-            if (this.mobileToggleButton) this.mobileToggleButton.textContent = '«';
+            this.mobileSlider.style.transform = 'translateX(-50%)';
         }
+        this.updateToggleButtonPosition();
     }
 
     toggle() {

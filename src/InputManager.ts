@@ -311,6 +311,12 @@ export class InputManager {
                 if (gp.buttons[9]?.pressed) return true;
             }
         }
+
+        // Mobile A button also acts as start
+        if (this.mobileControls?.isMobile && this.mobileControls?.isJumpPressed) {
+            return true;
+        }
+
         return false;
     }
 

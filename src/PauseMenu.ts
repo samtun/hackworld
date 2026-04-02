@@ -101,7 +101,7 @@ export class PauseMenu {
             'display:flex',
             'flex-direction:column',
             'align-items:center',
-            'gap:18px',
+            'gap:min(28px, 5vh)',
         ].join(';');
 
         this.items.forEach((item, i) => {
@@ -211,7 +211,7 @@ export class PauseMenu {
         const fontWeight = selected ? 'bold' : 'normal';
         return [
             'font-family:"Share Tech",sans-serif',
-            'font-size:min(6vh, 5vw)',
+            'font-size:min(6vh, 6vw)',
             `color:${color}`,
             `font-weight:${fontWeight}`,
             'user-select:none',
