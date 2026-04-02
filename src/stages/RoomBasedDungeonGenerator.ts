@@ -791,7 +791,10 @@ export class RoomBasedDungeonGenerator {
         const halfDoor = CORRIDOR_WIDTH / 2;
         let halfExtent: number;
         if (dir === 'north' || dir === 'south') {
-            halfExtent = room.width / 2;
+            // N/S walls are trimmed by WALL_THICKNESS in total (WALL_THICKNESS / 2
+            // = 0.5 m per end) to avoid corner overlap with E/W walls, so use the
+            // reduced half-extent here to keep door placement within bounds.
+            halfExtent = room.width / 2 - WALL_THICKNESS / 2;
         } else {
             halfExtent = room.depth / 2;
         }
@@ -933,19 +936,25 @@ export class RoomBasedDungeonGenerator {
         const halfW = width / 2;
         const halfD = depth / 2;
 
+        // N/S walls (running along X) are trimmed by WALL_THICKNESS in total
+        // (WALL_THICKNESS / 2 = 0.5 m on each end) so they fit exactly between
+        // the E/W walls at each corner.  This eliminates the corner geometry
+        // overlap that caused z-fighting.
+        const nsWidth = width - WALL_THICKNESS;
+
         // North wall (at cz + halfD, runs along X)
         const northDoors = room.doors.filter(d => d.direction === 'north');
-        walls.push(...this.buildWallWithDoors(cx, cz + halfD, width, 'x', northDoors, elevation));
+        walls.push(...this.buildWallWithDoors(cx, cz + halfD, nsWidth, 'x', northDoors, elevation));
 
         // South wall (at cz - halfD, runs along X)
         const southDoors = room.doors.filter(d => d.direction === 'south');
-        walls.push(...this.buildWallWithDoors(cx, cz - halfD, width, 'x', southDoors, elevation));
+        walls.push(...this.buildWallWithDoors(cx, cz - halfD, nsWidth, 'x', southDoors, elevation));
 
-        // East wall (at cx + halfW, runs along Z)
+        // East wall (at cx + halfW, runs along Z) — full depth, covers the corner space
         const eastDoors = room.doors.filter(d => d.direction === 'east');
         walls.push(...this.buildWallWithDoors(cx + halfW, cz, depth, 'z', eastDoors, elevation));
 
-        // West wall (at cx - halfW, runs along Z)
+        // West wall (at cx - halfW, runs along Z) — full depth, covers the corner space
         const westDoors = room.doors.filter(d => d.direction === 'west');
         walls.push(...this.buildWallWithDoors(cx - halfW, cz, depth, 'z', westDoors, elevation));
 
