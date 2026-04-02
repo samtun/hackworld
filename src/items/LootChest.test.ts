@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -7,6 +7,12 @@ vi.mock('three', () => {
         x = 0; y = 0; z = 0;
         constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
         set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; }
+        lengthSq() { return this.x * this.x + this.y * this.y + this.z * this.z; }
+        normalize() {
+            const len = Math.sqrt(this.lengthSq());
+            if (len > 0) { this.x /= len; this.y /= len; this.z /= len; }
+            return this;
+        }
     }
     return {
         Vector3: V3,
@@ -47,16 +53,6 @@ vi.mock('cannon-es', () => {
         },
     };
 });
-
-// Mock ChestUI to avoid DOM operations
-vi.mock('./ChestUI', () => ({
-    ChestUI: class {
-        isVisible = false;
-        show() { this.isVisible = true; }
-        hide() { this.isVisible = false; }
-        update = vi.fn();
-    },
-}));
 
 // Mock repositories to avoid loading JSON data
 vi.mock('./weapons/WeaponRepository', () => ({
@@ -107,6 +103,52 @@ vi.mock('../ui/InputHints', () => ({
     },
 }));
 
+// Mock drop constructors to avoid 3D/DOM operations
+vi.mock('./weapons/WeaponDrop', () => ({
+    WeaponDrop: vi.fn().mockImplementation(function(this: any) {
+        this.dropType = 'weapon';
+        this.mesh = { position: { x: 0, y: 0, z: 0 } };
+    }),
+}));
+vi.mock('./chips/ChipDrop', () => ({
+    ChipDrop: vi.fn().mockImplementation(function(this: any) {
+        this.dropType = 'chip';
+        this.mesh = { position: { x: 0, y: 0, z: 0 } };
+    }),
+}));
+vi.mock('./cores/CoreDrop', () => ({
+    CoreDrop: vi.fn().mockImplementation(function(this: any) {
+        this.dropType = 'core';
+        this.mesh = { position: { x: 0, y: 0, z: 0 } };
+    }),
+}));
+vi.mock('./potions/PotionDrop', () => ({
+    PotionDrop: vi.fn().mockImplementation(function(this: any) {
+        this.dropType = 'hpPotion';
+        this.mesh = { position: { x: 0, y: 0, z: 0 } };
+    }),
+}));
+vi.mock('./bits/MoneyDrop', () => ({
+    MoneyDrop: vi.fn().mockImplementation(function(this: any) {
+        this.dropType = 'money';
+        this.mesh = { position: { x: 0, y: 0, z: 0 } };
+    }),
+}));
+
+const addDropMock = vi.hoisted(() => vi.fn());
+vi.mock('./ItemDropManager', () => ({
+    ItemDropManager: {
+        Instance: {
+            addDrop: addDropMock,
+        },
+    },
+}));
+
+vi.mock('./potions/PotionDefinitions', () => ({
+    PotionType: { HP: 'hp', TP: 'tp' },
+    determinePotionLevel: vi.fn().mockReturnValue(1),
+}));
+
 import { LootChest } from './LootChest';
 
 function makeChest(): { chest: LootChest; scene: any; world: any } {
@@ -117,17 +159,25 @@ function makeChest(): { chest: LootChest; scene: any; world: any } {
     return { chest, scene, world };
 }
 
+function makePlayer(overrides: Record<string, any> = {}): any {
+    return {
+        level: 1,
+        position: { x: 5, y: 0, z: 7 },
+        getTechForWeapon: vi.fn().mockReturnValue(0),
+        ...overrides,
+    };
+}
+
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('LootChest', () => {
+    beforeEach(() => {
+        addDropMock.mockClear();
+    });
+
     it('starts not opened', () => {
         const { chest } = makeChest();
         expect(chest.isOpened).toBe(false);
-    });
-
-    it('isUIVisible returns false before opening', () => {
-        const { chest } = makeChest();
-        expect(chest.isUIVisible).toBe(false);
     });
 
     it('isPlayerNearby returns true when player is close', () => {
@@ -146,24 +196,28 @@ describe('LootChest', () => {
         expect(chest.isPlayerNearby(playerPos)).toBe(false);
     });
 
-    it('open marks chest as opened and shows UI', () => {
+    it('open marks chest as opened', () => {
         const { chest } = makeChest();
-        const mockPlayer = { level: 1, getTechForWeapon: vi.fn().mockReturnValue(0) } as any;
-        chest.open(mockPlayer);
+        chest.open(makePlayer());
         expect(chest.isOpened).toBe(true);
-        expect(chest.isUIVisible).toBe(true);
     });
 
-    it('reopening shows the UI again without recreating loot', () => {
+    it('open is idempotent — second call does nothing', () => {
         const { chest } = makeChest();
-        const mockPlayer = { level: 1, getTechForWeapon: vi.fn().mockReturnValue(0) } as any;
-        chest.open(mockPlayer);
-        // Close via the chestUI mock (simulate user closing)
-        (chest as any).chestUI.isVisible = false;
-        expect(chest.isUIVisible).toBe(false);
-        // Reopen
-        chest.open(mockPlayer);
-        expect(chest.isUIVisible).toBe(true);
+        const player = makePlayer();
+        chest.open(player);
+        const callCount = addDropMock.mock.calls.length;
+        chest.open(player);
+        expect(addDropMock.mock.calls.length).toBe(callCount);
+    });
+
+    it('prepareLoot is idempotent — second call does not regenerate', () => {
+        const { chest } = makeChest();
+        const player = makePlayer();
+        chest.prepareLoot(player);
+        const entries1 = (chest as any).lootEntries;
+        chest.prepareLoot(player);
+        expect((chest as any).lootEntries).toBe(entries1);
     });
 
     it('getInteractionHint returns a string', () => {

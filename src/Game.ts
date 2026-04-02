@@ -383,12 +383,7 @@ export class Game {
             this.xDataUpgrade.isVisible ||
             this.saveManager.isVisible ||
             this.cardManager.isVisible ||
-            this.pauseMenu.visible ||
-            this.isAnyChestUIOpen();
-    }
-
-    private isAnyChestUIOpen(): boolean {
-        return this.world.getLootChests().some(chest => chest.isUIVisible);
+            this.pauseMenu.visible;
     }
 
     onWindowResize() {
@@ -596,13 +591,6 @@ export class Game {
             this.cardManager.update(this.player, this.input);
         }
 
-        // Update any open chest UIs
-        for (const chest of this.world.getLootChests()) {
-            if (chest.isUIVisible) {
-                chest.updateUI(this.player, this.input);
-            }
-        }
-
         // Update mobile skills button visibility based on any menu being open
         if (this.input.mobileControls) {
             this.input.mobileControls.setSkillsButtonVisible(!this.isAnyMenuOpen());
@@ -682,10 +670,11 @@ export class Game {
                 }
             }
 
-            // Check loot chests (unopened or opened with remaining items)
+            // Check loot chests (unopened only)
             if (!nearbyInteractive) {
                 for (const chest of this.world.getLootChests()) {
-                    if ((!chest.isOpened || chest.hasItems) && !chest.isUIVisible && chest.isPlayerNearby(this.player.position)) {
+                    if (!chest.isOpened && chest.isPlayerNearby(this.player.position)) {
+                        chest.prepareLoot(this.player);
                         nearbyInteractive = {
                             type: InteractiveEntityType.CHEST,
                             data: chest,

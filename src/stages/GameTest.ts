@@ -387,7 +387,7 @@ export class GameTest extends BaseStage {
     /** Detect emptied chest and respawn after delay. */
     private tickChestRespawn(dt: number): void {
         if (!this.chestEmptied) {
-            const chest = this.lootChests.find(c => c.isOpened && !c.hasItems && !c.isUIVisible);
+            const chest = this.lootChests.find(c => c.isOpened);
             if (chest) {
                 this.chestEmptied = true;
                 this.chestRespawnTimer = RESPAWN_DELAY;
