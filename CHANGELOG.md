@@ -1,3 +1,17 @@
+# [3.2.0](https://github.com/samtun/hackworld/compare/v3.1.0...v3.2.0) (2026-04-07)
+
+
+### Bug Fixes
+
+* compute initial BokehPass focus from camera offset ([d12a2cd](https://github.com/samtun/hackworld/commit/d12a2cd0ecb47f4472c53c85f4c86ffb9f8be1fd))
+* restrict DoF to far-field only and add FXAA anti-aliasing ([5e398ed](https://github.com/samtun/hackworld/commit/5e398ed44f438ed1dee53b2e4e0c831160a3a0f9))
+
+
+### Features
+
+* add bloom and depth-of-field post-processing effects ([83e9f97](https://github.com/samtun/hackworld/commit/83e9f974500fa28ab50a7e7ed071f2a97d2a348c))
+* remove bokeh pass ([24d8cd6](https://github.com/samtun/hackworld/commit/24d8cd6d4c522e1555d4abf1b43b8d7bc08e8eaf))
+
 # [3.1.0](https://github.com/samtun/hackworld/compare/v3.0.1...v3.1.0) (2026-04-07)
 
 
