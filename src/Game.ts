@@ -139,8 +139,9 @@ export class Game {
         this.bloomPass = bloomPass;
 
         // Depth of Field – focus at player distance, blur starts ~10 m behind player
+        // Initial focus is cameraOffset magnitude + 10; overwritten each frame in animate()
         const bokehPass = new BokehPass( this.scene, this.camera, {
-            focus: 14.0,
+            focus: this.cameraOffset.length() + 10,
             aperture: 0.002,
             maxblur: 0.005,
         });
