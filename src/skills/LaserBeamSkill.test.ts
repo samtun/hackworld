@@ -91,6 +91,7 @@ function makePlayer(tier = Tier.STABLE) {
         position: { x: 0, y: 0, z: 0 },
         getCriticalChance: vi.fn().mockReturnValue(0),
         CRITICAL_HIT_MULTIPLIER: 2,
+        getCriticalHitMultiplier: vi.fn().mockReturnValue(2),
         tryIncrementSkillTech: vi.fn(),
     } as any;
 }

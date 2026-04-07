@@ -127,6 +127,16 @@ export class ItemDetailsPanel {
             details.push({ label: 'Luck', value: `+${percentIncrease}%` });
         }
 
+        if (effectiveStats.criticalDamageMultiplier !== undefined) {
+            const percentIncrease = ((effectiveStats.criticalDamageMultiplier - 1) * 100).toFixed(0);
+            details.push({ label: 'Crit Damage', value: `+${percentIncrease}%` });
+        }
+
+        if (effectiveStats.healingMultiplier !== undefined) {
+            const percentIncrease = ((effectiveStats.healingMultiplier - 1) * 100).toFixed(0);
+            details.push({ label: 'Healing', value: `+${percentIncrease}%` });
+        }
+
         details.push({ label: 'Price', value: `${item.sellPrice} bits` });
 
         return details;
