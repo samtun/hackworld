@@ -1,3 +1,13 @@
+## [3.0.1](https://github.com/samtun/hackworld/compare/v3.0.0...v3.0.1) (2026-04-07)
+
+
+### Bug Fixes
+
+* apply wall trim to all corridors and extend colliders to all walls ([51d8674](https://github.com/samtun/hackworld/commit/51d86747bfa3928eedf8bdd1ef114620b55e765a))
+* eliminate room wall corner z-fighting by trimming N/S walls to T-junctions ([998ac8a](https://github.com/samtun/hackworld/commit/998ac8ad7dd8f4fbb73eb9f02ba15d380c9236af))
+* extend corridor wall colliders 10m up and fix sloped corridor wall visual height ([adeaccf](https://github.com/samtun/hackworld/commit/adeaccf48c2288cabaddc8ee97e47379eb2f19e1))
+* trim sloped corridor wall mesh height to eliminate z-fighting at room junctions ([e1e7cd8](https://github.com/samtun/hackworld/commit/e1e7cd8f68dceabdf9262a72cecb593dbd82a5fe))
+
 # [3.0.0](https://github.com/samtun/hackworld/compare/v2.4.0...v3.0.0) (2026-04-02)
 
 
