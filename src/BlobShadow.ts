@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+/** Y-offset above the floor for the shadow mesh (avoids z-fighting). */
+const SHADOW_Y_OFFSET = 0.02;
+
 /**
  * A flat circular shadow projected straight down beneath a character,
  * representing a purely vertical light source.
@@ -41,7 +44,7 @@ export class BlobShadow {
      * @param z World Z of the entity.
      */
     update(x: number, z: number): void {
-        this.mesh.position.set(x, 0.02, z);
+        this.mesh.position.set(x, SHADOW_Y_OFFSET, z);
     }
 
     get visible(): boolean {

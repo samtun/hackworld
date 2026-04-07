@@ -361,10 +361,10 @@ export class Enemy extends BaseMesh {
         // Update animation mixer
         if (this.mixer) this.mixer.update(dt);
 
-        // Always keep the shadow aligned with the physics body position
-        this.blobShadow.update(this.body.position.x, this.body.position.z);
-
         if (this.isDead) return;
+
+        // Keep the shadow aligned with the physics body position
+        this.blobShadow.update(this.body.position.x, this.body.position.z);
 
         if (this.isDying || this.isDead || this.isDeathFading) {
             // Keep at death height to prevent falling through floor
