@@ -1,3 +1,10 @@
+# [3.1.0](https://github.com/samtun/hackworld/compare/v3.0.1...v3.1.0) (2026-04-07)
+
+
+### Features
+
+* add Razorwire and Patchwork chip types ([81675f8](https://github.com/samtun/hackworld/commit/81675f8b21ea1e78f9652b76955f225bfecc2f8b))
+
 ## [3.0.1](https://github.com/samtun/hackworld/compare/v3.0.0...v3.0.1) (2026-04-07)
 
 
