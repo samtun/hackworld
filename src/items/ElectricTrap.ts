@@ -43,13 +43,6 @@ const PARTICLE_SIZE = 0.7;
 const DAMAGE_COOLDOWN = 0.5;
 
 /**
- * Maximum height (metres) above the trap's floor elevation at which a target
- * is still considered "on the ground".  Targets above this threshold are
- * treated as airborne and are not damaged.
- */
-const GROUND_CLEARANCE = 1.0;
-
-/**
  * An electric trap placed on the ground.
  *
  * **Visual** – a flat plane with a custom shader (grey cables when inactive,
@@ -312,10 +305,8 @@ export class ElectricTrap {
         const pz = player.body.position.z;
         if (!this.overlaps(px, pz)) return;
 
-        // Only damage the player when they are on the ground — jumping over the
-        // trap must be possible.  The body Y sits at roughly elevation + foot‑sphere
-        // radius when standing; anything higher than GROUND_CLEARANCE means airborne.
-        if (player.body.position.y > this.elevation + GROUND_CLEARANCE) return;
+        // Only damage the player when they are on the ground
+        if (player.basePositionY > this.elevation) return;
 
         // Check cooldown
         const remaining = this.damageCooldowns.get(player) ?? 0;

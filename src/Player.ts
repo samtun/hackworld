@@ -93,6 +93,9 @@ export class Player extends BaseMesh {
     // Invulnerability duration
     private readonly HIT_INVULNERABILITY: number = 1.0;
 
+    // Body half height
+    private readonly BODY_HEIGHT = 1.6;
+
     // Base Stats (without equipment modifiers or upgrades)
     private baseHp: number = 170;
     private baseTp: number = 60;
@@ -225,6 +228,10 @@ export class Player extends BaseMesh {
         return this.luck / this.LUCK_DIVISOR;
     }
 
+    get basePositionY(): number {
+        return this.body.position.y - this.BODY_HEIGHT / 2;
+    }
+
     /**
      * Additional item drop chance bonus from completed card collections (B.001/B.002/B.003).
      * Stacks: B.001 +2%, B.002 +3%, B.003 +5% → max +10%
@@ -323,13 +330,14 @@ export class Player extends BaseMesh {
         box.getSize(size);
 
         const radius = 0.5;
-        const bodyHeight = 1.6;
+        const bodyHalfHeight = this.BODY_HEIGHT / 2;
+        const bodyThirdHeight = this.BODY_HEIGHT / 3;
         const endSphereRadius = radius * 0.6;
 
         // Add base body collider
         this.body = new CANNON.Body({
             mass: 3, // Dynamic body
-            position: new CANNON.Vec3(position.x, bodyHeight / 2, position.z),
+            position: new CANNON.Vec3(position.x, bodyHalfHeight, position.z),
             fixedRotation: true,
             material: physicsMaterial
         });
@@ -339,10 +347,10 @@ export class Player extends BaseMesh {
         this.body.addShape(new CANNON.Sphere(endSphereRadius), new CANNON.Vec3(0, 0, 0));
 
         // Add center sphere for most hit and collision detection
-        this.body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, bodyHeight / 3, 0));
+        this.body.addShape(new CANNON.Sphere(radius), new CANNON.Vec3(0, bodyThirdHeight, 0));
 
         // Add head (to make objects colliding from above slide off)
-        this.body.addShape(new CANNON.Sphere(endSphereRadius), new CANNON.Vec3(0, bodyHeight / 2 + endSphereRadius, 0));
+        this.body.addShape(new CANNON.Sphere(endSphereRadius), new CANNON.Vec3(0, bodyHalfHeight + endSphereRadius, 0));
 
         // Damping to stop sliding
         this.body.linearDamping = 0.9;
