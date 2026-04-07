@@ -23,6 +23,7 @@ import { LootChest } from '../items/LootChest';
 import { Enemy } from '../enemies/Enemy';
 import { LargeEnemy } from '../enemies/LargeEnemy';
 import { BossEnemy } from '../enemies/BossEnemy';
+import { ElectricTrap } from '../items/ElectricTrap';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -63,6 +64,10 @@ const CHEST_POS = new CANNON.Vec3(14, 0, 0);
 /** Aegis Sword pricing used for test weapon drops. */
 const AEGIS_SWORD_BUY_PRICE = 100;
 const AEGIS_SWORD_SELL_PRICE = 50;
+
+/* Traps area */
+const TRAPS_AREA_X = 12;
+const TRAPS_AREA_Z = -5;
 
 // ─── GameTest ─────────────────────────────────────────────────────────────────
 
@@ -138,6 +143,7 @@ export class GameTest extends BaseStage {
         this.buildEnemySpawnArea();
         this.buildItemGrid();
         this.buildBarrelChestArea();
+        this.buildTrapsArea();
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -153,7 +159,7 @@ export class GameTest extends BaseStage {
     }
 
     // ───────────────────────────────────────────────────────────────────────────
-    //  Area 1 – Enemy Spawn Buttons
+    //  Enemy Spawn Buttons
     // ───────────────────────────────────────────────────────────────────────────
 
     private buildEnemySpawnArea(): void {
@@ -218,7 +224,7 @@ export class GameTest extends BaseStage {
     }
 
     // ───────────────────────────────────────────────────────────────────────────
-    //  Area 2 – Item Drop Grid
+    //  Item Drop Grid
     // ───────────────────────────────────────────────────────────────────────────
 
     private buildItemGrid(): void {
@@ -316,7 +322,7 @@ export class GameTest extends BaseStage {
     }
 
     // ───────────────────────────────────────────────────────────────────────────
-    //  Area 4 – Barrel & Chest
+    //  Barrel & Chest
     // ───────────────────────────────────────────────────────────────────────────
 
     private buildBarrelChestArea(): void {
@@ -337,6 +343,40 @@ export class GameTest extends BaseStage {
         this.lootChests.push(chest);
         this.chestEmptied = false;
     }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    //  Traps
+    // ───────────────────────────────────────────────────────────────────────────
+
+    private buildTrapsArea(): void {
+        this.electricTraps.push(new ElectricTrap(this.scene, {
+            x: TRAPS_AREA_X,
+            y: 0,
+            z: TRAPS_AREA_Z,
+            width: 1,
+            length: 1,
+            damage: 10,
+            activationInterval: [1000, 1000],
+        }));
+        this.electricTraps.push(new ElectricTrap(this.scene, {
+            x: TRAPS_AREA_X + 3,
+            y: 0,
+            z: TRAPS_AREA_Z,
+            width: 2,
+            length: 1,
+            damage: 10,
+            activationInterval: [500, 500, 1000, 500, 3000, 500],
+        }));
+        this.electricTraps.push(new ElectricTrap(this.scene, {
+            x: TRAPS_AREA_X + 6,
+            y: 0,
+            z: TRAPS_AREA_Z,
+            width: 2,
+            length: 1,
+            damage: 10,
+            activationInterval: [],
+        }));
+        }
 
     // ───────────────────────────────────────────────────────────────────────────
     //  Respawn tick helpers

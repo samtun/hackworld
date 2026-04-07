@@ -305,6 +305,9 @@ export class ElectricTrap {
         const pz = player.body.position.z;
         if (!this.overlaps(px, pz)) return;
 
+        // Only damage the player when they are on the ground
+        if (player.basePositionY > this.elevation) return;
+
         // Check cooldown
         const remaining = this.damageCooldowns.get(player) ?? 0;
         if (remaining > 0) return;
