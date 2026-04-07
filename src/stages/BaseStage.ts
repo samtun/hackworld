@@ -313,11 +313,16 @@ export abstract class BaseStage {
             this.wallMaterials.push(mat);
 
             const shape = new CANNON.Box(
-                new CANNON.Vec3(wall.width / 2, wall.height / 2, wall.depth / 2),
+                new CANNON.Vec3(wall.width / 2, (wall.colliderHeight ?? wall.height) / 2, wall.depth / 2),
             );
             const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
             body.addShape(shape);
-            body.position.set(wall.centerX, wall.centerY + yOffset, wall.centerZ);
+            // Keep the collider bottom flush with the visual mesh bottom so
+            // any extra colliderHeight extends upward above the mesh.
+            const wallBottom = wall.centerY - wall.height / 2;
+            const colliderH = wall.colliderHeight ?? wall.height;
+            const colliderCenterY = wallBottom + colliderH / 2;
+            body.position.set(wall.centerX, colliderCenterY + yOffset, wall.centerZ);
             this.physicsWorld.addBody(body);
             this.bodies.push(body);
         }

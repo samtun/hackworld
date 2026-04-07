@@ -6,6 +6,12 @@
 export const WALL_HEIGHT = 2;
 export const WALL_THICKNESS = 1;
 
+/**
+ * Extra height (in metres) added to corridor wall physics colliders above the
+ * visual mesh.  Prevents the player from jumping on top of corridor walls.
+ */
+export const COLLIDER_EXTRA_HEIGHT = 10;
+
 /** Width of the corridor / door opening that connects adjacent rooms (in metres). */
 export const CORRIDOR_WIDTH = 3;
 
@@ -121,10 +127,16 @@ export interface WallSegment {
     centerZ: number;
     /** Extent along the X axis. */
     width: number;
-    /** Extent along the Y axis (always WALL_HEIGHT). */
+    /** Extent along the Y axis (visual mesh height). */
     height: number;
     /** Extent along the Z axis. */
     depth: number;
+    /**
+     * When set, the physics collider uses this height instead of {@link height}.
+     * The collider bottom is kept flush with the visual mesh bottom so the
+     * extra height extends upward, preventing the player from jumping on top.
+     */
+    colliderHeight?: number;
 }
 
 /** A single enemy spawn point together with the enemy archetype. */
@@ -779,7 +791,10 @@ export class RoomBasedDungeonGenerator {
         const halfDoor = CORRIDOR_WIDTH / 2;
         let halfExtent: number;
         if (dir === 'north' || dir === 'south') {
-            halfExtent = room.width / 2;
+            // N/S walls are trimmed by WALL_THICKNESS in total (WALL_THICKNESS / 2
+            // = 0.5 m per end) to avoid corner overlap with E/W walls, so use the
+            // reduced half-extent here to keep door placement within bounds.
+            halfExtent = room.width / 2 - WALL_THICKNESS / 2;
         } else {
             halfExtent = room.depth / 2;
         }
@@ -921,19 +936,25 @@ export class RoomBasedDungeonGenerator {
         const halfW = width / 2;
         const halfD = depth / 2;
 
+        // N/S walls (running along X) are trimmed by WALL_THICKNESS in total
+        // (WALL_THICKNESS / 2 = 0.5 m on each end) so they fit exactly between
+        // the E/W walls at each corner.  This eliminates the corner geometry
+        // overlap that caused z-fighting.
+        const nsWidth = width - WALL_THICKNESS;
+
         // North wall (at cz + halfD, runs along X)
         const northDoors = room.doors.filter(d => d.direction === 'north');
-        walls.push(...this.buildWallWithDoors(cx, cz + halfD, width, 'x', northDoors, elevation));
+        walls.push(...this.buildWallWithDoors(cx, cz + halfD, nsWidth, 'x', northDoors, elevation));
 
         // South wall (at cz - halfD, runs along X)
         const southDoors = room.doors.filter(d => d.direction === 'south');
-        walls.push(...this.buildWallWithDoors(cx, cz - halfD, width, 'x', southDoors, elevation));
+        walls.push(...this.buildWallWithDoors(cx, cz - halfD, nsWidth, 'x', southDoors, elevation));
 
-        // East wall (at cx + halfW, runs along Z)
+        // East wall (at cx + halfW, runs along Z) — full depth, covers the corner space
         const eastDoors = room.doors.filter(d => d.direction === 'east');
         walls.push(...this.buildWallWithDoors(cx + halfW, cz, depth, 'z', eastDoors, elevation));
 
-        // West wall (at cx - halfW, runs along Z)
+        // West wall (at cx - halfW, runs along Z) — full depth, covers the corner space
         const westDoors = room.doors.filter(d => d.direction === 'west');
         walls.push(...this.buildWallWithDoors(cx - halfW, cz, depth, 'z', westDoors, elevation));
 
@@ -1004,21 +1025,25 @@ export class RoomBasedDungeonGenerator {
     /** Build side walls for a corridor, extended in height for elevation changes. */
     private buildCorridorWalls(cor: Corridor): WallSegment[] {
         const minElev = Math.min(cor.elevationStart, cor.elevationEnd);
-        const maxElev = Math.max(cor.elevationStart, cor.elevationEnd);
-        const wallH = WALL_HEIGHT + (maxElev - minElev);
+        // Trim corridor wall visual height 0.05 m below WALL_HEIGHT so the mesh
+        // top face never coincides with room wall tops or the higher room's floor
+        // at junction corners, preventing z-fighting in both flat and sloped corridors.
+        const wallH = WALL_HEIGHT - 0.05;
         const wallCenterY = minElev + wallH / 2;
+        // Collider extends well above the mesh so the player cannot jump on top.
+        const colliderHeight = WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT;
 
         if (cor.width > cor.depth) {
             // Horizontal corridor (runs along X) → side walls run along X at ±Z
             return [
-                { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ + cor.depth / 2, width: cor.width, height: wallH, depth: WALL_THICKNESS },
-                { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ - cor.depth / 2, width: cor.width, height: wallH, depth: WALL_THICKNESS },
+                { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ + cor.depth / 2, width: cor.width, height: wallH, depth: WALL_THICKNESS, colliderHeight },
+                { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ - cor.depth / 2, width: cor.width, height: wallH, depth: WALL_THICKNESS, colliderHeight },
             ];
         } else {
             // Vertical corridor (runs along Z) → side walls run along Z at ±X
             return [
-                { centerX: cor.centerX + cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: cor.depth },
-                { centerX: cor.centerX - cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: cor.depth },
+                { centerX: cor.centerX + cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: cor.depth, colliderHeight },
+                { centerX: cor.centerX - cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: cor.depth, colliderHeight },
             ];
         }
     }
@@ -1036,6 +1061,7 @@ export class RoomBasedDungeonGenerator {
             width: length,
             height: WALL_HEIGHT,
             depth: WALL_THICKNESS,
+            colliderHeight: WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT,
         };
     }
 
@@ -1048,6 +1074,7 @@ export class RoomBasedDungeonGenerator {
             width: WALL_THICKNESS,
             height: WALL_HEIGHT,
             depth: length,
+            colliderHeight: WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT,
         };
     }
 

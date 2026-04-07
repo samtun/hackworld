@@ -3,6 +3,7 @@ import {
     RoomBasedDungeonGenerator,
     WALL_HEIGHT,
     WALL_THICKNESS,
+    COLLIDER_EXTRA_HEIGHT,
     SAFE_ROOM_SIZE,
     TELEPORTER_ROOM_SIZE,
     ROOM_ELEVATION_STEP,
@@ -368,10 +369,11 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(layout.walls.length).toBeGreaterThan(0);
         });
 
-        it('all room walls have WALL_HEIGHT height', () => {
+        it('all walls have visual height ≤ WALL_HEIGHT', () => {
             const layout = gen(16);
             for (const wall of layout.walls) {
-                expect(wall.height).toBeGreaterThanOrEqual(WALL_HEIGHT);
+                expect(wall.height).toBeLessThanOrEqual(WALL_HEIGHT);
+                expect(wall.height).toBeGreaterThan(0);
             }
         });
 
@@ -383,10 +385,42 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
-        it('wall centres are at y >= WALL_HEIGHT / 2', () => {
+        it('wall centres are at y >= (WALL_HEIGHT - 0.05) / 2', () => {
             const layout = gen(18);
             for (const wall of layout.walls) {
-                expect(wall.centerY).toBeGreaterThanOrEqual(WALL_HEIGHT / 2 - 0.01);
+                // Sloped corridor walls are trimmed 0.05 m below WALL_HEIGHT,
+                // so their centre is at (WALL_HEIGHT - 0.05) / 2 at minimum.
+                expect(wall.centerY).toBeGreaterThanOrEqual((WALL_HEIGHT - 0.05) / 2 - 0.01);
+            }
+        });
+
+        it('all walls carry colliderHeight = WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT', () => {
+            // Every wall (room walls and corridor walls) must have an extended physics
+            // collider so the player cannot jump on top of any wall.
+            const layout = gen(16);
+            expect(layout.walls.length).toBeGreaterThan(0);
+            for (const wall of layout.walls) {
+                expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
+            }
+        });
+
+        it('corridor walls have visual height = WALL_HEIGHT - 0.05 to prevent z-fighting', () => {
+            // Corridor walls are trimmed 0.05 m below WALL_HEIGHT so their top faces
+            // never coincide with room wall tops at junction corners.
+            const layout = gen(16);
+            const corridorCenterXSet = new Set(
+                layout.corridors.flatMap(c =>
+                    c.width > c.depth
+                        ? [c.centerZ + c.depth / 2, c.centerZ - c.depth / 2]
+                        : [c.centerX + c.width / 2, c.centerX - c.width / 2],
+                ),
+            );
+            // At least some walls should be corridor walls with trimmed height
+            const trimmedWalls = layout.walls.filter(w => w.height < WALL_HEIGHT);
+            expect(trimmedWalls.length).toBeGreaterThan(0);
+            for (const wall of trimmedWalls) {
+                expect(wall.height).toBeCloseTo(WALL_HEIGHT - 0.05, 5);
+                expect(corridorCenterXSet.size).toBeGreaterThan(0);
             }
         });
     });
@@ -581,19 +615,16 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
-        it('corridor walls are taller when connecting rooms at different elevations', () => {
-            let foundTaller = false;
-            for (let seed = 0; seed < 50; seed++) {
+        it('all walls carry colliderHeight to prevent jumping on top', () => {
+            // Every wall (room walls and corridor walls) must have an extended physics
+            // collider height so the player cannot jump on top of any wall.
+            for (let seed = 0; seed < 3; seed++) {
                 const layout = gen(seed);
                 for (const wall of layout.walls) {
-                    if (wall.height > WALL_HEIGHT) {
-                        foundTaller = true;
-                        break;
-                    }
+                    expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
+                    expect(wall.height).toBeLessThanOrEqual(WALL_HEIGHT);
                 }
-                if (foundTaller) break;
             }
-            expect(foundTaller).toBe(true);
         });
     });
 });
