@@ -130,5 +130,71 @@
         "buyPrice": 1200,
         "sellPrice": 400,
         "level": 6
+    },
+    {
+        "id": "datamine_alpha",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.10
+        },
+        "buyPrice": 150,
+        "sellPrice": 50,
+        "level": 1
+    },
+    {
+        "id": "datamine_beta",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.12
+        },
+        "buyPrice": 225,
+        "sellPrice": 75,
+        "level": 2
+    },
+    {
+        "id": "datamine_gamma",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.14
+        },
+        "buyPrice": 300,
+        "sellPrice": 100,
+        "level": 3
+    },
+    {
+        "id": "datamine_delta",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.16
+        },
+        "buyPrice": 450,
+        "sellPrice": 150,
+        "level": 4
+    },
+    {
+        "id": "datamine_epsilon",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.18
+        },
+        "buyPrice": 750,
+        "sellPrice": 250,
+        "level": 5
+    },
+    {
+        "id": "datamine_omega",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.20
+        },
+        "buyPrice": 1200,
+        "sellPrice": 400,
+        "level": 6
     }
 ]

@@ -425,6 +425,18 @@ export class Player extends BaseMesh {
             if (effectiveStats.defense !== undefined) {
                 this.defense = Math.min(this.defense + effectiveStats.defense, this.MAX_STAT_VALUE);
             }
+            if (effectiveStats.agility !== undefined) {
+                this.agility = Math.min(this.agility + effectiveStats.agility, this.MAX_STAT_VALUE);
+            }
+        }
+
+        // Apply chip modifiers if a chip is equipped
+        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
+        if (equippedChip) {
+            const chipStats = equippedChip.stats;
+            if (chipStats.luckMultiplier !== undefined) {
+                this.luck = Math.min(Math.floor(this.luck * chipStats.luckMultiplier), this.MAX_STAT_VALUE);
+            }
         }
     }
 

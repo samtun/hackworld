@@ -244,6 +244,32 @@ describe('Player.recalculateStats', () => {
         expect(player.strength).toBe(11); // 1 base + 10 from core
         expect(player.defense).toBe(6);   // 1 base + 5 from core
     });
+
+    it('applies equipped core agility bonus', () => {
+        const core = new CoreItem('c1', 'Swift Core', 150, 50,
+            { agility: 22, defense: -11 }, 3);
+        core.isEquipped = true;
+        player.inventory = [core];
+        player.recalculateStats();
+        expect(player.agility).toBe(23); // 1 base + 22 from core
+    });
+
+    it('applies equipped chip luck multiplier', () => {
+        const chip = new ChipItem('ch1', 'Datamine', 150, 50, 'datamine' as any, { luckMultiplier: 1.20 }, 1);
+        chip.isEquipped = true;
+        player.inventory = [chip];
+        player.recalculateStats();
+        expect(player.luck).toBe(1); // floor(1 * 1.20) = 1 (low base luck)
+    });
+
+    it('applies chip luck multiplier at higher luck values', () => {
+        (player as any).luckPoints = 99;
+        const chip = new ChipItem('ch1', 'Datamine', 150, 50, 'datamine' as any, { luckMultiplier: 1.10 }, 1);
+        chip.isEquipped = true;
+        player.inventory = [chip];
+        player.recalculateStats();
+        expect(player.luck).toBe(110); // floor(100 * 1.10) = 110
+    });
 });
 
 // ─── getCriticalChance ──────────────────────────────────────────────────────────
