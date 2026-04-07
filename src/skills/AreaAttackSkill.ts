@@ -119,7 +119,7 @@ export class AreaAttackSkill extends Skill {
 
                     if (distance <= scale) {
                         const isCriticalHit = Math.random() < this.player.getCriticalChance();
-                        const damage = isCriticalHit ? this.effectiveDamage * this.player.CRITICAL_HIT_MULTIPLIER : this.effectiveDamage;
+                        const damage = isCriticalHit ? this.effectiveDamage * this.player.getCriticalHitMultiplier() : this.effectiveDamage;
                         entity.takeDamage(damage, isCriticalHit, this.player.body.position, 0.2);
                         this.hitEnemies.set(entity, 0);
                         this.player.tryIncrementSkillTech(SkillTechType.BLAST);

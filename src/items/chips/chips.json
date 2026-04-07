@@ -130,5 +130,203 @@
         "buyPrice": 1200,
         "sellPrice": 400,
         "level": 6
+    },
+    {
+        "id": "datamine_alpha",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.10
+        },
+        "buyPrice": 150,
+        "sellPrice": 50,
+        "level": 1
+    },
+    {
+        "id": "datamine_beta",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.12
+        },
+        "buyPrice": 225,
+        "sellPrice": 75,
+        "level": 2
+    },
+    {
+        "id": "datamine_gamma",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.14
+        },
+        "buyPrice": 300,
+        "sellPrice": 100,
+        "level": 3
+    },
+    {
+        "id": "datamine_delta",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.16
+        },
+        "buyPrice": 450,
+        "sellPrice": 150,
+        "level": 4
+    },
+    {
+        "id": "datamine_epsilon",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.18
+        },
+        "buyPrice": 750,
+        "sellPrice": 250,
+        "level": 5
+    },
+    {
+        "id": "datamine_omega",
+        "name": "Datamine",
+        "chipType": "datamine",
+        "stats": {
+            "luckMultiplier": 1.20
+        },
+        "buyPrice": 1200,
+        "sellPrice": 400,
+        "level": 6
+    },
+    {
+        "id": "razorwire_alpha",
+        "name": "Razorwire",
+        "chipType": "razorwire",
+        "stats": {
+            "criticalDamageMultiplier": 1.10
+        },
+        "buyPrice": 150,
+        "sellPrice": 50,
+        "level": 1
+    },
+    {
+        "id": "razorwire_beta",
+        "name": "Razorwire",
+        "chipType": "razorwire",
+        "stats": {
+            "criticalDamageMultiplier": 1.14
+        },
+        "buyPrice": 225,
+        "sellPrice": 75,
+        "level": 2
+    },
+    {
+        "id": "razorwire_gamma",
+        "name": "Razorwire",
+        "chipType": "razorwire",
+        "stats": {
+            "criticalDamageMultiplier": 1.18
+        },
+        "buyPrice": 300,
+        "sellPrice": 100,
+        "level": 3
+    },
+    {
+        "id": "razorwire_delta",
+        "name": "Razorwire",
+        "chipType": "razorwire",
+        "stats": {
+            "criticalDamageMultiplier": 1.22
+        },
+        "buyPrice": 450,
+        "sellPrice": 150,
+        "level": 4
+    },
+    {
+        "id": "razorwire_epsilon",
+        "name": "Razorwire",
+        "chipType": "razorwire",
+        "stats": {
+            "criticalDamageMultiplier": 1.26
+        },
+        "buyPrice": 750,
+        "sellPrice": 250,
+        "level": 5
+    },
+    {
+        "id": "razorwire_omega",
+        "name": "Razorwire",
+        "chipType": "razorwire",
+        "stats": {
+            "criticalDamageMultiplier": 1.30
+        },
+        "buyPrice": 1200,
+        "sellPrice": 400,
+        "level": 6
+    },
+    {
+        "id": "patchwork_alpha",
+        "name": "Patchwork",
+        "chipType": "patchwork",
+        "stats": {
+            "healingMultiplier": 1.15
+        },
+        "buyPrice": 150,
+        "sellPrice": 50,
+        "level": 1
+    },
+    {
+        "id": "patchwork_beta",
+        "name": "Patchwork",
+        "chipType": "patchwork",
+        "stats": {
+            "healingMultiplier": 1.20
+        },
+        "buyPrice": 225,
+        "sellPrice": 75,
+        "level": 2
+    },
+    {
+        "id": "patchwork_gamma",
+        "name": "Patchwork",
+        "chipType": "patchwork",
+        "stats": {
+            "healingMultiplier": 1.25
+        },
+        "buyPrice": 300,
+        "sellPrice": 100,
+        "level": 3
+    },
+    {
+        "id": "patchwork_delta",
+        "name": "Patchwork",
+        "chipType": "patchwork",
+        "stats": {
+            "healingMultiplier": 1.30
+        },
+        "buyPrice": 450,
+        "sellPrice": 150,
+        "level": 4
+    },
+    {
+        "id": "patchwork_epsilon",
+        "name": "Patchwork",
+        "chipType": "patchwork",
+        "stats": {
+            "healingMultiplier": 1.35
+        },
+        "buyPrice": 750,
+        "sellPrice": 250,
+        "level": 5
+    },
+    {
+        "id": "patchwork_omega",
+        "name": "Patchwork",
+        "chipType": "patchwork",
+        "stats": {
+            "healingMultiplier": 1.40
+        },
+        "buyPrice": 1200,
+        "sellPrice": 400,
+        "level": 6
     }
 ]

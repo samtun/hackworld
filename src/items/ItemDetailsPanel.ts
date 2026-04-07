@@ -82,6 +82,7 @@ export class ItemDetailsPanel {
         const effectiveStats = item.stats
         this.addStatIfPresent(details, 'Strength', effectiveStats.strength);
         this.addStatIfPresent(details, 'Defense', effectiveStats.defense);
+        this.addStatIfPresent(details, 'Agility', effectiveStats.agility);
 
         details.push({ label: 'Price', value: `${item.sellPrice} bits` });
 
@@ -119,6 +120,21 @@ export class ItemDetailsPanel {
         if (effectiveStats.walkSpeedMultiplier !== undefined) {
             const percentIncrease = ((effectiveStats.walkSpeedMultiplier - 1) * 100).toFixed(0);
             details.push({ label: 'Walk Speed', value: `+${percentIncrease}%` });
+        }
+
+        if (effectiveStats.luckMultiplier !== undefined) {
+            const percentIncrease = ((effectiveStats.luckMultiplier - 1) * 100).toFixed(0);
+            details.push({ label: 'Luck', value: `+${percentIncrease}%` });
+        }
+
+        if (effectiveStats.criticalDamageMultiplier !== undefined) {
+            const percentIncrease = ((effectiveStats.criticalDamageMultiplier - 1) * 100).toFixed(0);
+            details.push({ label: 'Crit Damage', value: `+${percentIncrease}%` });
+        }
+
+        if (effectiveStats.healingMultiplier !== undefined) {
+            const percentIncrease = ((effectiveStats.healingMultiplier - 1) * 100).toFixed(0);
+            details.push({ label: 'Healing', value: `+${percentIncrease}%` });
         }
 
         details.push({ label: 'Price', value: `${item.sellPrice} bits` });

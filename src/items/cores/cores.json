@@ -69,7 +69,7 @@
         "id": "swift_core_alpha",
         "name": "Swift Core",
         "stats": {
-            "speed": 4,
+            "agility": 4,
             "defense": -2
         },
         "buyPrice": 150,
@@ -80,7 +80,7 @@
         "id": "swift_core_beta",
         "name": "Swift Core",
         "stats": {
-            "speed": 13,
+            "agility": 13,
             "defense": -6
         },
         "buyPrice": 225,
@@ -91,7 +91,7 @@
         "id": "swift_core_gamma",
         "name": "Swift Core",
         "stats": {
-            "speed": 22,
+            "agility": 22,
             "defense": -11
         },
         "buyPrice": 300,
@@ -102,7 +102,7 @@
         "id": "swift_core_delta",
         "name": "Swift Core",
         "stats": {
-            "speed": 30,
+            "agility": 30,
             "defense": -15
         },
         "buyPrice": 450,
@@ -113,7 +113,7 @@
         "id": "swift_core_epsilon",
         "name": "Swift Core",
         "stats": {
-            "speed": 39,
+            "agility": 39,
             "defense": -20
         },
         "buyPrice": 750,
@@ -124,7 +124,7 @@
         "id": "swift_core_omega",
         "name": "Swift Core",
         "stats": {
-            "speed": 48,
+            "agility": 48,
             "defense": -24
         },
         "buyPrice": 1200,

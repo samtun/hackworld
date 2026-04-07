@@ -190,7 +190,7 @@ export class LaserBeamSkill extends Skill {
 
                     if (distanceToBeam <= this.effectiveRadius && Math.abs(dy) <= 2) {
                         const isCriticalHit = Math.random() < this.player.getCriticalChance();
-                        const damage = isCriticalHit ? this.effectiveDamage * this.player.CRITICAL_HIT_MULTIPLIER : this.effectiveDamage;
+                        const damage = isCriticalHit ? this.effectiveDamage * this.player.getCriticalHitMultiplier() : this.effectiveDamage;
                         entity.takeDamage(damage, isCriticalHit, this.player.body.position);
                         hitEnemies.add(entity);
                         this.player.tryIncrementSkillTech(SkillTechType.RANGED);
