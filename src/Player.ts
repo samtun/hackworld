@@ -425,6 +425,18 @@ export class Player extends BaseMesh {
             if (effectiveStats.defense !== undefined) {
                 this.defense = Math.min(this.defense + effectiveStats.defense, this.MAX_STAT_VALUE);
             }
+            if (effectiveStats.agility !== undefined) {
+                this.agility = Math.min(this.agility + effectiveStats.agility, this.MAX_STAT_VALUE);
+            }
+        }
+
+        // Apply chip modifiers if a chip is equipped
+        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
+        if (equippedChip) {
+            const chipStats = equippedChip.stats;
+            if (chipStats.luckMultiplier !== undefined) {
+                this.luck = Math.min(Math.floor(this.luck * chipStats.luckMultiplier), this.MAX_STAT_VALUE);
+            }
         }
     }
 
@@ -434,6 +446,28 @@ export class Player extends BaseMesh {
             const effectiveStats = equippedChip.stats;
             if (effectiveStats.weaponRangeMultiplier !== undefined) {
                 return effectiveStats.weaponRangeMultiplier;
+            }
+        }
+        return 1.0; // Default: no multiplier
+    }
+
+    getCriticalHitMultiplier(): number {
+        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
+        if (equippedChip) {
+            const effectiveStats = equippedChip.stats;
+            if (effectiveStats.criticalDamageMultiplier !== undefined) {
+                return this.CRITICAL_HIT_MULTIPLIER * effectiveStats.criticalDamageMultiplier;
+            }
+        }
+        return this.CRITICAL_HIT_MULTIPLIER;
+    }
+
+    getHealingMultiplier(): number {
+        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
+        if (equippedChip) {
+            const effectiveStats = equippedChip.stats;
+            if (effectiveStats.healingMultiplier !== undefined) {
+                return effectiveStats.healingMultiplier;
             }
         }
         return 1.0; // Default: no multiplier
@@ -510,7 +544,7 @@ export class Player extends BaseMesh {
         const strengthMultiplier = 1 + this.getStrengthMultiplier();
         console.log(`Calculating damage: strengthMultiplier=${strengthMultiplier.toFixed(2)}`);
 
-        const critMultiplier = isCriticalHit ? this.CRITICAL_HIT_MULTIPLIER : 1.0;
+        const critMultiplier = isCriticalHit ? this.getCriticalHitMultiplier() : 1.0;
 
         // Damage is directly from weapon (which already has level scaling in weapons.json)
         const damage = Math.floor(this.weapon.damage * baseMultiplier * strengthMultiplier * critMultiplier);
@@ -1245,16 +1279,20 @@ export class Player extends BaseMesh {
      * @param showNumber - Whether to show the healing numbers
      */
     heal(hpAmount: number, tpAmount: number = 0, showNumber: boolean = false): void {
-        if (hpAmount > 0 && this.hp < this.maxHp) {
-            const actualHpHeal = Math.min(hpAmount, this.maxHp - this.hp);
+        const healMult = this.getHealingMultiplier();
+        const boostedHp = hpAmount > 0 ? Math.floor(hpAmount * healMult) : 0;
+        const boostedTp = tpAmount > 0 ? Math.floor(tpAmount * healMult) : 0;
+
+        if (boostedHp > 0 && this.hp < this.maxHp) {
+            const actualHpHeal = Math.min(boostedHp, this.maxHp - this.hp);
             this.hp += actualHpHeal;
             if (showNumber) {
                 console.log(`Player healed for ${actualHpHeal} HP. Current HP: ${this.hp}/${this.maxHp}`);
                 this.floatingIndicatorManager.spawnHeal(this.body.position, actualHpHeal);
             }
         }
-        if (tpAmount > 0 && this.tp < this.maxTp) {
-            const actualTpHeal = Math.min(tpAmount, this.maxTp - this.tp);
+        if (boostedTp > 0 && this.tp < this.maxTp) {
+            const actualTpHeal = Math.min(boostedTp, this.maxTp - this.tp);
             this.tp += actualTpHeal;
             if (showNumber) {
                 this.floatingIndicatorManager.spawnTp(this.body.position, actualTpHeal);

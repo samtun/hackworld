@@ -244,6 +244,32 @@ describe('Player.recalculateStats', () => {
         expect(player.strength).toBe(11); // 1 base + 10 from core
         expect(player.defense).toBe(6);   // 1 base + 5 from core
     });
+
+    it('applies equipped core agility bonus', () => {
+        const core = new CoreItem('c1', 'Swift Core', 150, 50,
+            { agility: 22, defense: -11 }, 3);
+        core.isEquipped = true;
+        player.inventory = [core];
+        player.recalculateStats();
+        expect(player.agility).toBe(23); // 1 base + 22 from core
+    });
+
+    it('applies equipped chip luck multiplier', () => {
+        const chip = new ChipItem('ch1', 'Datamine', 150, 50, 'datamine' as any, { luckMultiplier: 1.20 }, 1);
+        chip.isEquipped = true;
+        player.inventory = [chip];
+        player.recalculateStats();
+        expect(player.luck).toBe(1); // floor(1 * 1.20) = 1 (low base luck)
+    });
+
+    it('applies chip luck multiplier at higher luck values', () => {
+        (player as any).luckPoints = 99;
+        const chip = new ChipItem('ch1', 'Datamine', 150, 50, 'datamine' as any, { luckMultiplier: 1.10 }, 1);
+        chip.isEquipped = true;
+        player.inventory = [chip];
+        player.recalculateStats();
+        expect(player.luck).toBe(110); // floor(100 * 1.10) = 110
+    });
 });
 
 // ─── getCriticalChance ──────────────────────────────────────────────────────────
@@ -949,6 +975,87 @@ describe('Player.getWeaponRangeMultiplier', () => {
         chip.isEquipped = true;
         const player = makePlayer({ inventory: [chip] });
         expect(player.getWeaponRangeMultiplier()).toBe(1.0);
+    });
+});
+
+// ─── Player.getCriticalHitMultiplier ─────────────────────────────────────────
+
+describe('Player.getCriticalHitMultiplier', () => {
+    it('returns base 1.5 when no chip is equipped', () => {
+        const player = makePlayer({ inventory: [] });
+        expect(player.getCriticalHitMultiplier()).toBe(1.5);
+    });
+
+    it('returns boosted multiplier from an equipped Razorwire chip', () => {
+        const chip = new ChipItem('chip1', 'Razorwire', 150, 50, 'razorwire' as any, { criticalDamageMultiplier: 1.20 }, 1);
+        chip.isEquipped = true;
+        const player = makePlayer({ inventory: [chip] });
+        // 1.5 * 1.20 = 1.80
+        expect(player.getCriticalHitMultiplier()).toBeCloseTo(1.80, 4);
+    });
+
+    it('returns base 1.5 when chip has no criticalDamageMultiplier stat', () => {
+        const chip = new ChipItem('chip1', 'Firewire', 150, 75, 'firewire' as any, { weaponRangeMultiplier: 1.15 }, 1);
+        chip.isEquipped = true;
+        const player = makePlayer({ inventory: [chip] });
+        expect(player.getCriticalHitMultiplier()).toBe(1.5);
+    });
+});
+
+// ─── Player.getHealingMultiplier ─────────────────────────────────────────────
+
+describe('Player.getHealingMultiplier', () => {
+    it('returns 1.0 when no chip is equipped', () => {
+        const player = makePlayer({ inventory: [] });
+        expect(player.getHealingMultiplier()).toBe(1.0);
+    });
+
+    it('returns the multiplier from an equipped Patchwork chip', () => {
+        const chip = new ChipItem('chip1', 'Patchwork', 150, 50, 'patchwork' as any, { healingMultiplier: 1.30 }, 1);
+        chip.isEquipped = true;
+        const player = makePlayer({ inventory: [chip] });
+        expect(player.getHealingMultiplier()).toBe(1.30);
+    });
+
+    it('returns 1.0 when chip has no healingMultiplier stat', () => {
+        const chip = new ChipItem('chip1', 'Overclock', 150, 75, 'overclock' as any, { walkSpeedMultiplier: 1.10 }, 1);
+        chip.isEquipped = true;
+        const player = makePlayer({ inventory: [chip] });
+        expect(player.getHealingMultiplier()).toBe(1.0);
+    });
+});
+
+// ─── Player.heal with Patchwork chip ─────────────────────────────────────────
+
+describe('Player.heal with Patchwork chip', () => {
+    it('applies healing multiplier to HP', () => {
+        const player = makePlayer();
+        player.hp = 100;
+        const chip = new ChipItem('chip1', 'Patchwork', 150, 50, 'patchwork' as any, { healingMultiplier: 1.40 }, 1);
+        chip.isEquipped = true;
+        player.inventory = [chip];
+        player.heal(50); // 50 * 1.40 = 70
+        expect(player.hp).toBe(170);
+    });
+
+    it('applies healing multiplier to TP', () => {
+        const player = makePlayer();
+        player.tp = 20;
+        const chip = new ChipItem('chip1', 'Patchwork', 150, 50, 'patchwork' as any, { healingMultiplier: 1.20 }, 1);
+        chip.isEquipped = true;
+        player.inventory = [chip];
+        player.heal(0, 10); // 10 * 1.20 = 12
+        expect(player.tp).toBe(32);
+    });
+
+    it('does not exceed maxHp when healing with multiplier', () => {
+        const player = makePlayer();
+        player.hp = 160;
+        const chip = new ChipItem('chip1', 'Patchwork', 150, 50, 'patchwork' as any, { healingMultiplier: 1.40 }, 1);
+        chip.isEquipped = true;
+        player.inventory = [chip];
+        player.heal(50); // 50 * 1.40 = 70, but maxHp is 170, so capped to 170
+        expect(player.hp).toBe(170);
     });
 });
 
