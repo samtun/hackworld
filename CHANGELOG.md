@@ -1,3 +1,10 @@
+# [3.3.0](https://github.com/samtun/hackworld/compare/v3.2.0...v3.3.0) (2026-04-07)
+
+
+### Features
+
+* revise chip and core trader inventories to be player-level-aware ([9878568](https://github.com/samtun/hackworld/commit/9878568cdb2e1e66b0a993aaee2f448e6f608101))
+
 # [3.2.0](https://github.com/samtun/hackworld/compare/v3.1.0...v3.2.0) (2026-04-07)
 
 

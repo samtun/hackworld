@@ -6,6 +6,8 @@ import { Item } from '../Item';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
 import { CardCollection } from '../cards/CardCollection';
 import { Album } from '../cards/Card';
+import { InputManager } from '../../InputManager';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 /** A.002 bonus: 5% buy discount and 5% sell bonus on cores when collection A.002 is complete */
 const A002_DISCOUNT = 0.05;
@@ -14,6 +16,7 @@ export class CoreTrader extends BaseTrader {
     private static instance: CoreTrader; // Singleton
 
     private coreRepository: CoreRepository;
+    private pendingInventoryInit: boolean = true;
 
     private constructor() {
         const cfg: TraderUIConfig = {
@@ -39,11 +42,43 @@ export class CoreTrader extends BaseTrader {
         return this.instance || (this.instance = new this());
     }
 
+    update(player: Player, input?: InputManager) {
+        if (this.pendingInventoryInit) {
+            this.refreshInventory(player);
+            this.pendingInventoryInit = false;
+            this.needsRender = true;
+        }
+        super.update(player, input);
+    }
+
     protected initializeTraderInventory() {
         this.traderInventory = [];
+    }
 
-        // Get all cores from repository (already cloned with unique IDs)
-        this.traderInventory = this.coreRepository.getAllCores();
+    /**
+     * Populates the trader inventory based on the player's current level.
+     * Spawns 1–3 cores equippable by the player and 1–2 cores one level below.
+     */
+    private refreshInventory(player: Player): void {
+        this.traderInventory = [];
+        const equippableLevel = ItemLevelHelper.getEquippableLevel(player.level);
+        const lowerLevel = Math.max(1, equippableLevel - 1);
+
+        // Spawn 1-3 cores at the equippable level
+        const equippableCount = 1 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < equippableCount; i++) {
+            const core = this.coreRepository.getRandomCoreOfLevel(equippableLevel);
+            if (core) this.traderInventory.push(core);
+        }
+
+        // Spawn 1-2 cores one level below (only if there is a level below)
+        if (lowerLevel < equippableLevel) {
+            const lowerCount = 1 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < lowerCount; i++) {
+                const core = this.coreRepository.getRandomCoreOfLevel(lowerLevel);
+                if (core) this.traderInventory.push(core);
+            }
+        }
     }
 
     protected getEffectiveBuyPrice(item: Item, _player: Player): number {

@@ -1,19 +1,26 @@
 import { Player } from '../../Player';
 import { Item } from '../Item';
 import { ChipItem } from './ChipItem';
+import { ChipType } from './Chip';
 import { ChipRepository } from './ChipRepository';
 import { BaseTrader } from '../BaseTrader';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
 import { CardCollection } from '../cards/CardCollection';
 import { Album } from '../cards/Card';
+import { InputManager } from '../../InputManager';
+import { ItemLevelHelper } from '../ItemLevelHelper';
 
 /** A.001 bonus: 5% buy discount and 5% sell bonus on chips when collection A.001 is complete */
 const A001_DISCOUNT = 0.05;
+
+/** Chip types that should NOT appear in the trader inventory (drop-only items) */
+const TRADER_EXCLUDED_CHIP_TYPES: ChipType[] = [ChipType.RAZORWIRE, ChipType.DATAMINE];
 
 export class ChipTrader extends BaseTrader {
     private static instance: ChipTrader; // Singleton
 
     private chipRepository: ChipRepository;
+    private pendingInventoryInit: boolean = true;
 
     private constructor() {
         super({
@@ -38,11 +45,44 @@ export class ChipTrader extends BaseTrader {
         return this.instance || (this.instance = new this());
     }
 
+    update(player: Player, input?: InputManager) {
+        if (this.pendingInventoryInit) {
+            this.refreshInventory(player);
+            this.pendingInventoryInit = false;
+            this.needsRender = true;
+        }
+        super.update(player, input);
+    }
+
     protected initializeTraderInventory() {
         this.traderInventory = [];
+    }
 
-        // Get all chips from repository (already cloned with unique IDs)
-        this.traderInventory = this.chipRepository.getAllChips();
+    /**
+     * Populates the trader inventory based on the player's current level.
+     * Spawns 1–3 chips equippable by the player and 1–2 chips one level below.
+     * Razorwire and Datamine chips are excluded (drop-only items).
+     */
+    private refreshInventory(player: Player): void {
+        this.traderInventory = [];
+        const equippableLevel = ItemLevelHelper.getEquippableLevel(player.level);
+        const lowerLevel = Math.max(1, equippableLevel - 1);
+
+        // Spawn 1-3 chips at the equippable level
+        const equippableCount = 1 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < equippableCount; i++) {
+            const chip = this.chipRepository.getRandomChipOfLevelExcluding(equippableLevel, TRADER_EXCLUDED_CHIP_TYPES);
+            if (chip) this.traderInventory.push(chip);
+        }
+
+        // Spawn 1-2 chips one level below (only if there is a level below)
+        if (lowerLevel < equippableLevel) {
+            const lowerCount = 1 + Math.floor(Math.random() * 2);
+            for (let i = 0; i < lowerCount; i++) {
+                const chip = this.chipRepository.getRandomChipOfLevelExcluding(lowerLevel, TRADER_EXCLUDED_CHIP_TYPES);
+                if (chip) this.traderInventory.push(chip);
+            }
+        }
     }
 
     protected getEffectiveBuyPrice(item: Item, _player: Player): number {
