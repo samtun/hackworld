@@ -48,14 +48,9 @@ export class ItemLevelHelper {
     }
 
     /**
-     * Determine the appropriate item level to drop based on player level
-     * Logic:
-     * - 70% chance to drop an item that is equippable (at or below player's level)
-     * - If player is <= 5 levels away from next item level, 8% chance to drop one level higher
-     * - Otherwise drop one level lower than currently equippable
+     * Returns the highest chip/core level the player can equip based on their level.
      */
-    public static determineDropLevel(playerLevel: number): number {
-        // Find the highest level the player can equip
+    public static getEquippableLevel(playerLevel: number): number {
         let equippableLevel = 1;
         for (let i = this.CHIP_CORE_LEVELS.length - 1; i >= 0; i--) {
             if (playerLevel >= this.CHIP_CORE_LEVELS[i].requiredLevel) {
@@ -63,6 +58,18 @@ export class ItemLevelHelper {
                 break;
             }
         }
+        return equippableLevel;
+    }
+
+    /**
+     * Determine the appropriate item level to drop based on player level
+     * Logic:
+     * - 70% chance to drop an item that is equippable (at or below player's level)
+     * - If player is <= 5 levels away from next item level, 8% chance to drop one level higher
+     * - Otherwise drop one level lower than currently equippable
+     */
+    public static determineDropLevel(playerLevel: number): number {
+        const equippableLevel = this.getEquippableLevel(playerLevel);
 
         const roll = Math.random();
 

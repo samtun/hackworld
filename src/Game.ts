@@ -26,6 +26,9 @@ import { PauseMenu, PERFORMANCE_MODE_STORAGE_KEY } from './PauseMenu';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 export class Game {
@@ -35,6 +38,8 @@ export class Game {
     renderer: THREE.WebGLRenderer;
     composer: EffectComposer;
     ssaoPass!: SSAOPass;
+    bloomPass!: UnrealBloomPass;
+    fxaaPass!: ShaderPass;
     physicsWorld: CANNON.World;
     defaultMaterial: CANNON.Material;
 
@@ -124,10 +129,21 @@ export class Game {
         ssaoPass.minDistance = 0.005;
         ssaoPass.maxDistance = 0.1;
 
-        // Restore Performance Mode setting from localStorage (Performance Mode on = SSAO off)
+        // Bloom – selective via luminance threshold; only bright emissive objects (skills, level-up, teleporter) bloom
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2( window.innerWidth, window.innerHeight ),
+            0.15,   // strength
+            0.1,   // radius
+            1   // threshold – only pixels brighter than this bloom
+        );
+        this.composer.addPass( bloomPass );
+        this.bloomPass = bloomPass;
+
+        // Restore Performance Mode setting from localStorage (Performance Mode on = all post-processing off)
         const savedPerfMode = localStorage.getItem(PERFORMANCE_MODE_STORAGE_KEY);
         if (savedPerfMode === 'true') {
             ssaoPass.enabled = false;
+            bloomPass.enabled = false;
         }
 
         const floatingIndicatorRenderPass = new RenderPass( this.scene, this.floatingIndicatorCamera );
@@ -136,6 +152,16 @@ export class Game {
 
         const outputPass = new OutputPass();
         this.composer.addPass( outputPass );
+
+        // FXAA – anti-aliasing pass applied after all rendering and tone mapping
+        const fxaaPass = new ShaderPass( FXAAShader );
+        fxaaPass.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
+        this.composer.addPass( fxaaPass );
+        this.fxaaPass = fxaaPass;
+
+        if (savedPerfMode === 'true') {
+            fxaaPass.enabled = false;
+        }
 
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = false;
@@ -276,6 +302,8 @@ export class Game {
             onTogglePerformanceMode: () => {
                 this.ssaoPass.enabled = !this.ssaoPass.enabled;
                 const perfMode = !this.ssaoPass.enabled;
+                this.bloomPass.enabled = !perfMode;
+                this.fxaaPass.enabled = !perfMode;
                 localStorage.setItem(PERFORMANCE_MODE_STORAGE_KEY, String(perfMode));
                 return perfMode;
             },
@@ -395,6 +423,7 @@ export class Game {
         this.floatingIndicatorCamera.updateProjectionMatrix();// Enable only the floating indicators layer
         this.renderer.setSize(width, height);
 		this.composer.setSize(width, height);
+        this.fxaaPass.uniforms[ 'resolution' ].value.set( 1 / width, 1 / height );
 
         // Update particle scale factors for screen-independent sizing
         if (this.world.currentStage) {
