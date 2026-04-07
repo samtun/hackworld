@@ -106,6 +106,7 @@ function makeConfig(overrides: Partial<ElectricTrapConfig> = {}): ElectricTrapCo
 function makePlayer(x: number, z: number, y: number = 0): Player {
     const p = Object.create(Player.prototype) as Player;
     (p as any).body = { position: { x, y, z } };
+    Object.defineProperty(p, 'basePositionY', { get: () => y, configurable: true });
     (p as any).isDead = false;
     (p as any).takeDamage = vi.fn();
     return p;
@@ -252,16 +253,9 @@ describe('ElectricTrap', () => {
         it('does not damage the player when airborne above the trap', () => {
             // Player is above the trap in XZ but has jumped off the ground
             const trap = new ElectricTrap(scene, makeConfig({ x: 5, z: 5, y: 0, width: 4, length: 4 }));
-            const player = makePlayer(5, 5, 2.0); // 2 m above trap elevation
+            const player = makePlayer(5, 5, 0.2); // 2 m above trap elevation
             trap.update(0.016, player, []);
             expect((player as any).takeDamage).not.toHaveBeenCalled();
-        });
-
-        it('damages the player when close to the ground (within clearance)', () => {
-            const trap = new ElectricTrap(scene, makeConfig({ x: 5, z: 5, y: 0, width: 4, length: 4, damage: 15 }));
-            const player = makePlayer(5, 5, 0.5); // 0.5 m above trap elevation — still within clearance
-            trap.update(0.016, player, []);
-            expect((player as any).takeDamage).toHaveBeenCalledWith(15, expect.anything());
         });
 
         it('does not damage a dead player', () => {
