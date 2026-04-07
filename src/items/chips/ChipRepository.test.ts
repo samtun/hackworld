@@ -77,6 +77,34 @@ describe('ChipRepository', () => {
         });
     });
 
+    describe('getRandomChipOfLevelExcluding', () => {
+        it('returns a chip of the requested level', () => {
+            const chip = repo.getRandomChipOfLevelExcluding(1, []);
+            expect(chip).toBeDefined();
+            expect(chip!.level).toBe(1);
+        });
+
+        it('does not return a chip of an excluded type', () => {
+            // Run many times to reduce false-negative probability
+            for (let i = 0; i < 30; i++) {
+                const chip = repo.getRandomChipOfLevelExcluding(1, [ChipType.RAZORWIRE, ChipType.DATAMINE]);
+                if (chip) {
+                    expect(chip.chipType).not.toBe(ChipType.RAZORWIRE);
+                    expect(chip.chipType).not.toBe(ChipType.DATAMINE);
+                }
+            }
+        });
+
+        it('returns undefined for an out-of-range level', () => {
+            expect(repo.getRandomChipOfLevelExcluding(999, [])).toBeUndefined();
+        });
+
+        it('returns undefined when all chips at the level are excluded', () => {
+            const allTypesAtLevel1 = Object.values(ChipType);
+            expect(repo.getRandomChipOfLevelExcluding(1, allTypesAtLevel1)).toBeUndefined();
+        });
+    });
+
     describe('getChipByNameAndLevel', () => {
         it('returns a chip for a known name and level', () => {
             const all = repo.getAllChips();
