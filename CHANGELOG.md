@@ -1,3 +1,16 @@
+# [3.4.0](https://github.com/samtun/hackworld/compare/v3.3.0...v3.4.0) (2026-04-07)
+
+
+### Bug Fixes
+
+* make traps only damage player when touching the ground ([acd5262](https://github.com/samtun/hackworld/commit/acd5262f4dac8094842064ae70103fa19a38ad6b))
+* trap tests ([c3a22df](https://github.com/samtun/hackworld/commit/c3a22df68e34d970de958d57e6006dbeb8f77b52))
+
+
+### Features
+
+* enhance player and electric trap interactions with ground detection ([cc49d8b](https://github.com/samtun/hackworld/commit/cc49d8b9244aa4e1588601852ec524b0b57588ee))
+
 # [3.3.0](https://github.com/samtun/hackworld/compare/v3.2.0...v3.3.0) (2026-04-07)
 
 
