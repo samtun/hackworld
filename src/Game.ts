@@ -27,7 +27,6 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
@@ -40,7 +39,6 @@ export class Game {
     composer: EffectComposer;
     ssaoPass!: SSAOPass;
     bloomPass!: UnrealBloomPass;
-    bokehPass!: BokehPass;
     fxaaPass!: ShaderPass;
     physicsWorld: CANNON.World;
     defaultMaterial: CANNON.Material;
@@ -134,37 +132,18 @@ export class Game {
         // Bloom – selective via luminance threshold; only bright emissive objects (skills, level-up, teleporter) bloom
         const bloomPass = new UnrealBloomPass(
             new THREE.Vector2( window.innerWidth, window.innerHeight ),
-            0.4,   // strength
-            0.4,   // radius
-            0.85   // threshold – only pixels brighter than this bloom
+            0.15,   // strength
+            0.1,   // radius
+            1   // threshold – only pixels brighter than this bloom
         );
         this.composer.addPass( bloomPass );
         this.bloomPass = bloomPass;
-
-        // Depth of Field – far-field only; blur starts ~10 m behind player
-        // Initial focus is cameraOffset magnitude + 10; overwritten each frame in animate()
-        const bokehPass = new BokehPass( this.scene, this.camera, {
-            focus: this.cameraOffset.length() + 10,
-            aperture: 0.002,
-            maxblur: 0.005,
-        });
-        // Patch the bokeh shader to only blur far-field objects (beyond the focal plane).
-        // The original shader blurs both near and far; clamping the upper bound to 0.0
-        // removes near-field blur so only objects 10 m+ behind the player become unfocused.
-        (bokehPass as any).materialBokeh.fragmentShader =
-            (bokehPass as any).materialBokeh.fragmentShader.replace(
-                'clamp( factor * aperture, -maxblur, maxblur )',
-                'clamp( factor * aperture, -maxblur, 0.0 )'
-            );
-        this.composer.addPass( bokehPass );
-        this.bokehPass = bokehPass;
 
         // Restore Performance Mode setting from localStorage (Performance Mode on = all post-processing off)
         const savedPerfMode = localStorage.getItem(PERFORMANCE_MODE_STORAGE_KEY);
         if (savedPerfMode === 'true') {
             ssaoPass.enabled = false;
             bloomPass.enabled = false;
-            bokehPass.enabled = false;
         }
 
         const floatingIndicatorRenderPass = new RenderPass( this.scene, this.floatingIndicatorCamera );
@@ -324,7 +303,6 @@ export class Game {
                 this.ssaoPass.enabled = !this.ssaoPass.enabled;
                 const perfMode = !this.ssaoPass.enabled;
                 this.bloomPass.enabled = !perfMode;
-                this.bokehPass.enabled = !perfMode;
                 this.fxaaPass.enabled = !perfMode;
                 localStorage.setItem(PERFORMANCE_MODE_STORAGE_KEY, String(perfMode));
                 return perfMode;
@@ -780,13 +758,6 @@ export class Game {
         this.floatingIndicatorCamera.position.x += (targetX - this.floatingIndicatorCamera.position.x) * lerpFactor;
         this.floatingIndicatorCamera.position.y += (targetY - this.floatingIndicatorCamera.position.y) * lerpFactor;
         this.floatingIndicatorCamera.position.z += (targetZ - this.floatingIndicatorCamera.position.z) * lerpFactor;
-
-        // Update Depth-of-Field focal distance so the player stays sharp
-        // Focus = camera→player distance + 10 m so blur starts 10 m behind the player
-        if (this.bokehPass.enabled) {
-            const camToPlayer = this.camera.position.distanceTo(this.player.position);
-            (this.bokehPass.uniforms as { focus: { value: number } }).focus.value = camToPlayer + 10;
-        }
 
         // Handle interactions (use variables we already calculated)
         const isSelectPressed = this.input.isSelectPressed();
