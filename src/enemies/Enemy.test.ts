@@ -123,6 +123,9 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         blockTimer: 0,
         BLOCK_DURATION: 0.5,
         blockShield: null,
+
+        // Blob shadow
+        blobShadow: { update: vi.fn(), cleanup: vi.fn(), visible: true },
     });
 
     Object.assign(enemy, overrides);

@@ -7,6 +7,8 @@ import { AssetManager } from '../AssetManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { BlockShield } from '../BlockShield';
 import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
+import { BlobShadow } from '../BlobShadow';
+import { PERFORMANCE_MODE_STORAGE_KEY } from '../PauseMenu';
 
 enum EnemyActionType {
     Idle = 'Idle',
@@ -115,6 +117,9 @@ export class Enemy extends BaseMesh {
     protected world: CANNON.World;
     protected physicsMaterial: CANNON.Material;
 
+    /** Flat circular shadow below the enemy. Hidden in performance mode. */
+    public blobShadow!: BlobShadow;
+
     private floatingIndicatorManager: FloatingIndicatorManager;
 
 
@@ -161,6 +166,10 @@ export class Enemy extends BaseMesh {
         world.addBody(this.body);
 
         this.player = PlayerRegistry.Instance.activePlayers[0];
+
+        // Blob shadow – hidden when performance mode is active
+        const perfMode = localStorage.getItem(PERFORMANCE_MODE_STORAGE_KEY) === 'true';
+        this.blobShadow = new BlobShadow(scene, 0.5, !perfMode);
     }
 
     protected setupAnimations() {
@@ -351,6 +360,9 @@ export class Enemy extends BaseMesh {
     update(dt: number) {
         // Update animation mixer
         if (this.mixer) this.mixer.update(dt);
+
+        // Always keep the shadow aligned with the physics body position
+        this.blobShadow.update(this.body.position.x, this.body.position.z);
 
         if (this.isDead) return;
 
@@ -776,6 +788,7 @@ export class Enemy extends BaseMesh {
             this.blockShield.dispose();
             this.blockShield = null;
         }
+        this.blobShadow.cleanup();
         this.scene.remove(this.mesh);
         this.world.removeBody(this.body);
         this.disposeMesh();

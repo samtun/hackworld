@@ -151,6 +151,9 @@ function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
         BLOCK_DURATION: 0.5,
         blockShield: { attachTo: vi.fn(), detach: vi.fn(), dispose: vi.fn() },
         isGrounded: true,
+
+        // Blob shadow
+        blobShadow: { update: vi.fn(), cleanup: vi.fn(), visible: true },
     });
 
     // Override syncPosition to avoid THREE.Vector3 creation

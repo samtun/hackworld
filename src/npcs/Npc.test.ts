@@ -120,6 +120,7 @@ function makeNpc(overrides: Partial<{
         },
         body: { position: { x: 0, y: 0, z: 0 } },
         disposeMesh: vi.fn(),
+        blobShadow: { update: vi.fn(), cleanup: vi.fn(), visible: true },
         ...overrides,
     });
     return npc as InstanceType<typeof Npc>;

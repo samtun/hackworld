@@ -23,6 +23,8 @@ import { Tier, TierManager } from './items/TierManager';
 import { BlockShield } from './BlockShield';
 import { CardCollection } from './items/cards/CardCollection';
 import { Album } from './items/cards/Card';
+import { BlobShadow } from './BlobShadow';
+import { PERFORMANCE_MODE_STORAGE_KEY } from './PauseMenu';
 
 enum ActionType {
     Idle = 'Idle',
@@ -51,6 +53,9 @@ export class Player extends BaseMesh {
     // Scene and World references for items
     public scene: THREE.Scene;
     public world: CANNON.World;
+
+    /** Flat circular shadow below the player. Hidden in performance mode. */
+    public blobShadow!: BlobShadow;
 
     private weaponRepository: WeaponRepository;
     private floatingIndicatorManager: FloatingIndicatorManager;
@@ -373,6 +378,10 @@ export class Player extends BaseMesh {
             new LaserBeamSkill(this.resetSkillUsage),
             new AreaAttackSkill(this.resetSkillUsage)
         ];
+
+        // Blob shadow – hidden when performance mode is active
+        const perfMode = localStorage.getItem(PERFORMANCE_MODE_STORAGE_KEY) === 'true';
+        this.blobShadow = new BlobShadow(scene, 0.5, !perfMode);
     }
 
     private resetSkillUsage = () => {
@@ -1118,6 +1127,7 @@ export class Player extends BaseMesh {
         const newPosition = new THREE.Vector3(this.body.position.x, this.body.position.y - 0.3, this.body.position.z);
         this.position.copy(newPosition);
         this.mesh.position.copy(newPosition);
+        this.blobShadow.update(this.body.position.x, this.body.position.z);
     }
 
     /**
