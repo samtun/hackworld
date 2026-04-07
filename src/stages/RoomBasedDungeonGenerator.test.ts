@@ -404,6 +404,41 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
+        it('corridor side walls do not volumetrically overlap room walls (no z-fighting)', () => {
+            // Corridor side walls must be trimmed by WALL_THICKNESS so their ends
+            // are flush with the room wall outer faces and don't overlap them.
+            for (let seed = 0; seed < 10; seed++) {
+                const layout = gen(seed);
+
+                // Helper: does AABB a overlap AABB b (strict interior overlap)?
+                function overlaps(
+                    a: { x1: number; x2: number; z1: number; z2: number },
+                    b: { x1: number; x2: number; z1: number; z2: number },
+                ): boolean {
+                    return a.x1 < b.x2 && a.x2 > b.x1 && a.z1 < b.z2 && a.z2 > b.z1;
+                }
+
+                function wallAABB(w: { centerX: number; width: number; centerZ: number; depth: number }) {
+                    return {
+                        x1: w.centerX - w.width / 2,
+                        x2: w.centerX + w.width / 2,
+                        z1: w.centerZ - w.depth / 2,
+                        z2: w.centerZ + w.depth / 2,
+                    };
+                }
+
+                // Identify corridor side walls (height < WALL_HEIGHT) vs room walls
+                const corridorWalls = layout.walls.filter(w => w.height < WALL_HEIGHT);
+                const roomWalls = layout.walls.filter(w => w.height === WALL_HEIGHT);
+
+                for (const cw of corridorWalls) {
+                    for (const rw of roomWalls) {
+                        expect(overlaps(wallAABB(cw), wallAABB(rw))).toBe(false);
+                    }
+                }
+            }
+        });
+
         it('corridor walls have visual height = WALL_HEIGHT - 0.05 to prevent z-fighting', () => {
             // Corridor walls are trimmed 0.05 m below WALL_HEIGHT so their top faces
             // never coincide with room wall tops at junction corners.

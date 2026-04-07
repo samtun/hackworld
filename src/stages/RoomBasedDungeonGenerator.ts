@@ -1034,16 +1034,22 @@ export class RoomBasedDungeonGenerator {
         const colliderHeight = WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT;
 
         if (cor.width > cor.depth) {
-            // Horizontal corridor (runs along X) → side walls run along X at ±Z
+            // Horizontal corridor (runs along X) → side walls run along X at ±Z.
+            // Trim the wall length by WALL_THICKNESS (½ from each end) so the
+            // corridor side walls fit exactly between the room wall outer faces
+            // and do not overlap them, eliminating z-fighting at junctions.
+            const sideWallWidth = cor.width - WALL_THICKNESS;
             return [
-                { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ + cor.depth / 2, width: cor.width, height: wallH, depth: WALL_THICKNESS, colliderHeight },
-                { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ - cor.depth / 2, width: cor.width, height: wallH, depth: WALL_THICKNESS, colliderHeight },
+                { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ + cor.depth / 2, width: sideWallWidth, height: wallH, depth: WALL_THICKNESS, colliderHeight },
+                { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ - cor.depth / 2, width: sideWallWidth, height: wallH, depth: WALL_THICKNESS, colliderHeight },
             ];
         } else {
-            // Vertical corridor (runs along Z) → side walls run along Z at ±X
+            // Vertical corridor (runs along Z) → side walls run along Z at ±X.
+            // Same trim in the depth (Z) direction for the same reason.
+            const sideWallDepth = cor.depth - WALL_THICKNESS;
             return [
-                { centerX: cor.centerX + cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: cor.depth, colliderHeight },
-                { centerX: cor.centerX - cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: cor.depth, colliderHeight },
+                { centerX: cor.centerX + cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: sideWallDepth, colliderHeight },
+                { centerX: cor.centerX - cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: sideWallDepth, colliderHeight },
             ];
         }
     }
