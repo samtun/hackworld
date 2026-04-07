@@ -66,6 +66,32 @@ describe('ItemLevelHelper.getStatMultiplierForLevel', () => {
     });
 });
 
+describe('ItemLevelHelper.getEquippableLevel', () => {
+    it('returns 1 for a player at level 1', () => {
+        expect(ItemLevelHelper.getEquippableLevel(1)).toBe(1);
+    });
+
+    it('returns 2 for a player at level 10', () => {
+        expect(ItemLevelHelper.getEquippableLevel(10)).toBe(2);
+    });
+
+    it('returns 2 for a player at level 23 (just below level 3 threshold)', () => {
+        expect(ItemLevelHelper.getEquippableLevel(23)).toBe(2);
+    });
+
+    it('returns 3 for a player at level 24', () => {
+        expect(ItemLevelHelper.getEquippableLevel(24)).toBe(3);
+    });
+
+    it('returns 6 for a player at level 124', () => {
+        expect(ItemLevelHelper.getEquippableLevel(124)).toBe(6);
+    });
+
+    it('returns 6 for a player above max required level', () => {
+        expect(ItemLevelHelper.getEquippableLevel(200)).toBe(6);
+    });
+});
+
 describe('ItemLevelHelper.determineDropLevel', () => {
     it('returns equippable level on 70% roll', () => {
         // player at level 10 can equip level 2, roll < 0.70 → returns 2

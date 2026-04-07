@@ -97,6 +97,30 @@ export class ChipRepository {
     }
 
     /**
+     * Get a random chip of a specific level, excluding specified chip types
+     * Returns a cloned instance with the original ID
+     */
+    getRandomChipOfLevelExcluding(level: number, excludeTypes: ChipType[]): ChipItem | undefined {
+        const levelIndex = level - 1;
+        if (levelIndex < 0 || levelIndex >= this.chipsByLevel.length) return undefined;
+
+        const levelMap = this.chipsByLevel[levelIndex];
+        if (!levelMap) return undefined;
+
+        const allChipsAtLevel: ChipItem[] = [];
+        for (const [type, chips] of levelMap.entries()) {
+            if (!excludeTypes.includes(type)) {
+                allChipsAtLevel.push(...chips);
+            }
+        }
+
+        if (allChipsAtLevel.length === 0) return undefined;
+
+        const randomChip = allChipsAtLevel[Math.floor(Math.random() * allChipsAtLevel.length)];
+        return randomChip.clone();
+    }
+
+    /**
      * Get a random chip of a specific level
      * Returns a cloned instance with the original ID
      */
