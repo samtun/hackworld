@@ -28,6 +28,8 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { BokehPass } from 'three/examples/jsm/postprocessing/BokehPass.js';
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { FXAAShader } from 'three/examples/jsm/shaders/FXAAShader.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 
 export class Game {
@@ -39,6 +41,7 @@ export class Game {
     ssaoPass!: SSAOPass;
     bloomPass!: UnrealBloomPass;
     bokehPass!: BokehPass;
+    fxaaPass!: ShaderPass;
     physicsWorld: CANNON.World;
     defaultMaterial: CANNON.Material;
 
@@ -138,13 +141,21 @@ export class Game {
         this.composer.addPass( bloomPass );
         this.bloomPass = bloomPass;
 
-        // Depth of Field – focus at player distance, blur starts ~10 m behind player
+        // Depth of Field – far-field only; blur starts ~10 m behind player
         // Initial focus is cameraOffset magnitude + 10; overwritten each frame in animate()
         const bokehPass = new BokehPass( this.scene, this.camera, {
             focus: this.cameraOffset.length() + 10,
             aperture: 0.002,
             maxblur: 0.005,
         });
+        // Patch the bokeh shader to only blur far-field objects (beyond the focal plane).
+        // The original shader blurs both near and far; clamping the upper bound to 0.0
+        // removes near-field blur so only objects 10 m+ behind the player become unfocused.
+        (bokehPass as any).materialBokeh.fragmentShader =
+            (bokehPass as any).materialBokeh.fragmentShader.replace(
+                'clamp( factor * aperture, -maxblur, maxblur )',
+                'clamp( factor * aperture, -maxblur, 0.0 )'
+            );
         this.composer.addPass( bokehPass );
         this.bokehPass = bokehPass;
 
@@ -162,6 +173,16 @@ export class Game {
 
         const outputPass = new OutputPass();
         this.composer.addPass( outputPass );
+
+        // FXAA – anti-aliasing pass applied after all rendering and tone mapping
+        const fxaaPass = new ShaderPass( FXAAShader );
+        fxaaPass.uniforms[ 'resolution' ].value.set( 1 / window.innerWidth, 1 / window.innerHeight );
+        this.composer.addPass( fxaaPass );
+        this.fxaaPass = fxaaPass;
+
+        if (savedPerfMode === 'true') {
+            fxaaPass.enabled = false;
+        }
 
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = false;
@@ -304,6 +325,7 @@ export class Game {
                 const perfMode = !this.ssaoPass.enabled;
                 this.bloomPass.enabled = !perfMode;
                 this.bokehPass.enabled = !perfMode;
+                this.fxaaPass.enabled = !perfMode;
                 localStorage.setItem(PERFORMANCE_MODE_STORAGE_KEY, String(perfMode));
                 return perfMode;
             },
@@ -423,6 +445,7 @@ export class Game {
         this.floatingIndicatorCamera.updateProjectionMatrix();// Enable only the floating indicators layer
         this.renderer.setSize(width, height);
 		this.composer.setSize(width, height);
+        this.fxaaPass.uniforms[ 'resolution' ].value.set( 1 / width, 1 / height );
 
         // Update particle scale factors for screen-independent sizing
         if (this.world.currentStage) {
