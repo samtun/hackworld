@@ -33,11 +33,15 @@ type: description
 - ❌ `WIP changes` (not conventional format)
 
 #### Breaking Changes
-For breaking changes, add `BREAKING CHANGE:` in the commit body or use `!` after the type:
-```
-feat!: redesign player movement system
+**CRITICAL**: Breaking changes (major version bumps) must **ONLY** be used when the `SaveData` structure in `SaveManager.ts` becomes incompatible with the previous version. This includes adding, removing, or changing the meaning of fields in the `SaveData` interface.
 
-BREAKING CHANGE: Player movement now requires new input handling
+**Do NOT** use breaking changes for any other reason, even if the code change is significant (e.g., redesigning a game system, removing a UI component, or changing game mechanics). These are regular `feat` or `fix` commits.
+
+To mark a save-game-breaking change, add `BREAKING CHANGE:` in the commit body or use `!` after the type:
+```
+feat!: add player skill tree to save data
+
+BREAKING CHANGE: SaveData structure changed – old saves are incompatible.
 ```
 
 #### Enforcement
@@ -260,7 +264,9 @@ The game includes a comprehensive save/load system managed by `SaveManager.ts` a
 - Call `player.recalculateStats()` after loading to ensure equipped items apply their effects correctly
 
 #### Save Game Version Compatibility
-**CRITICAL**: Save files are only compatible with the same **major** game version. Whenever you make any change to the `SaveData` structure — adding fields, removing fields, or changing the meaning of existing fields — you **MUST** trigger a **major version bump** by using a breaking-change conventional commit:
+**CRITICAL**: Save files are only compatible with the same **major** game version. A major version bump must **ONLY** be triggered by changes to the `SaveData` structure — adding fields, removing fields, or changing the meaning of existing fields. No other kind of change (gameplay, UI, rendering, physics, etc.) should ever use a breaking-change commit.
+
+When you make a save-breaking change, you **MUST** use a breaking-change conventional commit:
 
 ```
 feat!: <description of save-breaking change>
@@ -322,6 +328,7 @@ function makePlayer(overrides = {}): Player {
 - ❌ Don't leave excessive debug logging (use console.log sparingly for important events only)
 - ❌ Don't forget to dispose of resources (geometries, materials, bodies)
 - ❌ Don't add or change comments in the code to explain changes to previous versions
+- ❌ Don't use breaking-change commits (`!` or `BREAKING CHANGE:`) for anything other than `SaveData` structure changes
 - ❌ Don't forget to consider all control schemes when implementing new controls or input features
 
 ## Control Schemes
