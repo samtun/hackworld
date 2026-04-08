@@ -31,10 +31,11 @@ export const TELEPORTER_ROOM_SIZE = 16;
 export const LOOT_ROOM_SIZE = 12;
 
 /**
- * Small overlap (in metres) by which walls embed into the perpendicular walls
- * they butt against, and by which obstacles are raised above the floor.
- * This prevents coplanar-face z-fighting at every wall junction and at the
- * obstacle–floor boundary without creating any perceptible visual gap.
+ * Tiny clearance (in metres) by which butting wall ends are shortened relative to
+ * the perpendicular wall's inner face, and by which obstacles are raised above the
+ * floor.  The resulting 1 mm gap is imperceptible at game viewing distances but
+ * ensures that no two geometry faces are ever exactly coplanar, eliminating
+ * z-fighting at every wall junction and at the obstacle–floor boundary.
  */
 export const EMBED_DEPTH = 0.001;
 
@@ -945,11 +946,12 @@ export class RoomBasedDungeonGenerator {
         const halfD = depth / 2;
 
         // N/S walls (running along X) are trimmed by WALL_THICKNESS so they fit
-        // between the E/W walls at each corner, then extended by 2 × EMBED_DEPTH so
-        // each end embeds 1 mm into the adjacent E/W wall.  The tiny embed hides the
-        // N/S wall end faces inside the E/W wall geometry, eliminating the coplanar-
-        // face z-fighting that occurs when the faces simply touch at the same plane.
-        const nsWidth = width - WALL_THICKNESS + 2 * EMBED_DEPTH;
+        // between the E/W walls at each corner.  Each end is then pulled back by a
+        // further EMBED_DEPTH (1 mm) so the N/S wall end face is 1 mm clear of the
+        // E/W wall inner face.  This eliminates the coplanar-face z-fighting that
+        // occurs when the end faces are exactly flush.  The 1 mm gap is visually
+        // imperceptible but ensures the faces are never at the exact same depth.
+        const nsWidth = width - WALL_THICKNESS - 2 * EMBED_DEPTH;
 
         // North wall (at cz + halfD, runs along X)
         const northDoors = room.doors.filter(d => d.direction === 'north');
@@ -1045,17 +1047,17 @@ export class RoomBasedDungeonGenerator {
         if (cor.width > cor.depth) {
             // Horizontal corridor (runs along X) → side walls run along X at ±Z.
             // Trimmed by WALL_THICKNESS so they don't span beyond the room walls,
-            // then extended by 2 × EMBED_DEPTH so each end embeds 1 mm into the
-            // adjacent room wall, hiding the end faces and preventing z-fighting.
-            const sideWallWidth = cor.width - WALL_THICKNESS + 2 * EMBED_DEPTH;
+            // then pulled back by a further EMBED_DEPTH (1 mm) at each end so the
+            // side wall end faces are clear of the room wall inner faces.
+            const sideWallWidth = cor.width - WALL_THICKNESS - 2 * EMBED_DEPTH;
             return [
                 { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ + cor.depth / 2, width: sideWallWidth, height: wallH, depth: WALL_THICKNESS, colliderHeight },
                 { centerX: cor.centerX, centerY: wallCenterY, centerZ: cor.centerZ - cor.depth / 2, width: sideWallWidth, height: wallH, depth: WALL_THICKNESS, colliderHeight },
             ];
         } else {
             // Vertical corridor (runs along Z) → side walls run along Z at ±X.
-            // Same embed in the depth (Z) direction for the same reason.
-            const sideWallDepth = cor.depth - WALL_THICKNESS + 2 * EMBED_DEPTH;
+            // Same 1 mm clearance in the depth (Z) direction for the same reason.
+            const sideWallDepth = cor.depth - WALL_THICKNESS - 2 * EMBED_DEPTH;
             return [
                 { centerX: cor.centerX + cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: sideWallDepth, colliderHeight },
                 { centerX: cor.centerX - cor.width / 2, centerY: wallCenterY, centerZ: cor.centerZ, width: WALL_THICKNESS, height: wallH, depth: sideWallDepth, colliderHeight },
@@ -1145,8 +1147,8 @@ export class RoomBasedDungeonGenerator {
                 });
 
                 if (!excluded) {
-                    // Raise the obstacle by EMBED_DEPTH so its bottom face sits
-                    // 1 mm above the floor plane, preventing coplanar z-fighting.
+                    // Raise by EMBED_DEPTH so the bottom face is 1 mm above the floor
+                    // plane, preventing coplanar z-fighting between obstacle and floor.
                     obstacles.push({ x, y: room.elevation + h / 2 + EMBED_DEPTH, z, width: w, height: h, depth: d });
                     exclusions.push({ x, z, radius: Math.max(w, d) + 1 });
                     placed++;

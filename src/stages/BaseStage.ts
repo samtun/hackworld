@@ -16,12 +16,6 @@ import { BreakableBarrel } from '../items/BreakableBarrel';
 import { ElectricTrap } from '../items/ElectricTrap';
 
 /**
- * Tiny Y offset applied to north/south walls (those running along X) to
- * prevent z-fighting where they overlap east/west walls at room corners.
- */
-const NS_WALL_Y_OFFSET = 0.01;
-
-/**
  * Base class for all dungeon stages
  * Each dungeon stage should extend this and implement the load() method
  */
@@ -300,11 +294,7 @@ export abstract class BaseStage {
             const geo = new THREE.BoxGeometry(wall.width, wall.height, wall.depth);
             const mat = createWallMaterial(0x555555, wall.width, wall.height, wall.depth);
             const mesh = new THREE.Mesh(geo, mat);
-            // N/S walls (running along X) get a tiny Y offset to avoid
-            // z-fighting where they overlap with E/W walls at corners.
-            const isNorthSouth = wall.width > wall.depth;
-            const yOffset = isNorthSouth ? NS_WALL_Y_OFFSET : 0;
-            mesh.position.set(wall.centerX, wall.centerY + yOffset, wall.centerZ);
+            mesh.position.set(wall.centerX, wall.centerY, wall.centerZ);
             mesh.castShadow = false;
             mesh.receiveShadow = false;
             mesh.renderOrder = 1;
@@ -322,7 +312,7 @@ export abstract class BaseStage {
             const wallBottom = wall.centerY - wall.height / 2;
             const colliderH = wall.colliderHeight ?? wall.height;
             const colliderCenterY = wallBottom + colliderH / 2;
-            body.position.set(wall.centerX, colliderCenterY + yOffset, wall.centerZ);
+            body.position.set(wall.centerX, colliderCenterY, wall.centerZ);
             this.physicsWorld.addBody(body);
             this.bodies.push(body);
         }

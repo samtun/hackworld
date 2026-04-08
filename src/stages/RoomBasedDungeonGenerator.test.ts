@@ -337,15 +337,13 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(tpObstacles).toHaveLength(0);
         });
 
-        it('obstacles have floor-anchored y raised by EMBED_DEPTH to prevent z-fighting', () => {
-            // obs.y = room.elevation + height / 2 + EMBED_DEPTH so the obstacle's
-            // bottom face sits 1 mm above the floor plane, eliminating z-fighting.
+        it('obstacles have floor-anchored y raised by EMBED_DEPTH (y = elevation + height / 2 + EMBED_DEPTH)', () => {
             const layout = gen(32);
             for (const obs of layout.obstacles) {
                 const baseElevation = obs.y - obs.height / 2;
                 expect(baseElevation).toBeGreaterThanOrEqual(0);
-                // baseElevation = room.elevation + EMBED_DEPTH; elevation is a multiple
-                // of ROOM_ELEVATION_STEP, so (baseElevation - EMBED_DEPTH) % step ≈ 0.
+                // baseElevation = room.elevation + EMBED_DEPTH; subtract EMBED_DEPTH
+                // to get back to the room elevation which must be a multiple of the step.
                 expect((baseElevation - EMBED_DEPTH) % ROOM_ELEVATION_STEP).toBeCloseTo(0, 5);
             }
         });
@@ -409,46 +407,6 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
-        it('corridor side walls embed at most EMBED_DEPTH into room walls (no large z-fighting overlap)', () => {
-            // Corridor side walls are trimmed by WALL_THICKNESS then extended by
-            // 2 × EMBED_DEPTH so each end embeds exactly EMBED_DEPTH into the
-            // adjacent room wall.  The overlap must not exceed EMBED_DEPTH per end
-            // to keep end faces hidden without producing large geometry clipping.
-            for (let seed = 0; seed < 10; seed++) {
-                const layout = gen(seed);
-
-                function wallAABB(w: { centerX: number; width: number; centerZ: number; depth: number }) {
-                    return {
-                        x1: w.centerX - w.width / 2,
-                        x2: w.centerX + w.width / 2,
-                        z1: w.centerZ - w.depth / 2,
-                        z2: w.centerZ + w.depth / 2,
-                    };
-                }
-
-                function overlapLength(a1: number, a2: number, b1: number, b2: number): number {
-                    return Math.max(0, Math.min(a2, b2) - Math.max(a1, b1));
-                }
-
-                const corridorWalls = layout.walls.filter(w => w.height < WALL_HEIGHT);
-                const roomWalls = layout.walls.filter(w => w.height === WALL_HEIGHT);
-
-                for (const cw of corridorWalls) {
-                    const cwBox = wallAABB(cw);
-                    for (const rw of roomWalls) {
-                        const rwBox = wallAABB(rw);
-                        const xOver = overlapLength(cwBox.x1, cwBox.x2, rwBox.x1, rwBox.x2);
-                        const zOver = overlapLength(cwBox.z1, cwBox.z2, rwBox.z1, rwBox.z2);
-                        if (xOver > 0 && zOver > 0) {
-                            // Any overlap must be the intentional embed, not a large intersection
-                            const minOverlap = Math.min(xOver, zOver);
-                            expect(minOverlap).toBeLessThanOrEqual(EMBED_DEPTH + 1e-9);
-                        }
-                    }
-                }
-            }
-        });
-
         it('corridor walls have visual height = WALL_HEIGHT - 0.05 to prevent z-fighting', () => {
             // Corridor walls are trimmed 0.05 m below WALL_HEIGHT so their top faces
             // never coincide with room wall tops at junction corners.
@@ -466,6 +424,36 @@ describe('RoomBasedDungeonGenerator', () => {
             for (const wall of trimmedWalls) {
                 expect(wall.height).toBeCloseTo(WALL_HEIGHT - 0.05, 5);
                 expect(corridorCenterXSet.size).toBeGreaterThan(0);
+            }
+        });
+
+        it('corridor side walls do not overlap room walls (no coplanar z-fighting faces)', () => {
+            // Corridor side walls are trimmed by WALL_THICKNESS then pulled back
+            // EMBED_DEPTH at each end, so they never overlap the adjacent room wall.
+            for (let seed = 0; seed < 10; seed++) {
+                const layout = gen(seed);
+
+                function wallAABB(w: { centerX: number; width: number; centerZ: number; depth: number }) {
+                    return {
+                        x1: w.centerX - w.width / 2,
+                        x2: w.centerX + w.width / 2,
+                        z1: w.centerZ - w.depth / 2,
+                        z2: w.centerZ + w.depth / 2,
+                    };
+                }
+
+                const corridorWalls = layout.walls.filter(w => w.height < WALL_HEIGHT);
+                const roomWalls = layout.walls.filter(w => w.height === WALL_HEIGHT);
+
+                for (const cw of corridorWalls) {
+                    const cwBox = wallAABB(cw);
+                    for (const rw of roomWalls) {
+                        const rwBox = wallAABB(rw);
+                        const xOver = Math.max(0, Math.min(cwBox.x2, rwBox.x2) - Math.max(cwBox.x1, rwBox.x1));
+                        const zOver = Math.max(0, Math.min(cwBox.z2, rwBox.z2) - Math.max(cwBox.z1, rwBox.z1));
+                        expect(xOver > 0 && zOver > 0).toBe(false);
+                    }
+                }
             }
         });
     });
