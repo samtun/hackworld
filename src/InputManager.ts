@@ -7,6 +7,8 @@ export class InputManager {
     keys: { [key: string]: boolean } = {};
     gamepadIndex: number | null = null;
     mobileControls?: MobileControlsManager;
+    /** Set to true each frame when any UI menu is open. Affects B-button dual role. */
+    menuOpen: boolean = false;
 
     // Track previous button states for detecting press and release
     private previousAttackState: boolean = false;
@@ -292,16 +294,17 @@ export class InputManager {
     isCancelPressed(): boolean {
         if (this.keys['Escape']) return true;
 
-        // Gamepad B button (button 1)
-        if (this.gamepadIndex !== null) {
+        // Gamepad B button (button 1) — acts as cancel only when a menu is open
+        // (when no menu is open it acts as block instead)
+        if (this.menuOpen && this.gamepadIndex !== null) {
             const gp = navigator.getGamepads()[this.gamepadIndex];
             if (gp) {
                 if (gp.buttons[1]?.pressed) return true;
             }
         }
 
-        // Mobile close button
-        if (this.mobileControls?.isMobile && this.mobileControls?.isCancelPressed) {
+        // Mobile B button — acts as cancel only when a menu is open
+        if (this.menuOpen && this.mobileControls?.isMobile && this.mobileControls?.isCancelPressed) {
             return true;
         }
 
@@ -458,21 +461,29 @@ export class InputManager {
         return !this.previousSkill3State && currentState;
     }
 
-    // Block (L key / R1 button / mobile block button)
+    // Block (L key / R1 button / B button when no menu open / mobile B when no menu open)
     isBlockPressed(): boolean {
         // L key for keyboard
         if (this.keys['KeyL']) return true;
 
-        // Gamepad R1 (button 5)
         if (this.gamepadIndex !== null) {
             const gp = navigator.getGamepads()[this.gamepadIndex];
             if (gp) {
+                // Gamepad R1 (button 5)
                 if (gp.buttons[5]?.pressed) return true;
+                // B button (button 1) acts as block when no menu is open and L1 (button 4) is not held
+                // (L1 + B is reserved for Skill 2)
+                if (!this.menuOpen && gp.buttons[1]?.pressed && !gp.buttons[4]?.pressed) return true;
             }
         }
 
         // Mobile block button
         if (this.mobileControls?.isMobile && this.mobileControls?.isBlockPressed) {
+            return true;
+        }
+
+        // Mobile B button acts as block when no menu is open
+        if (!this.menuOpen && this.mobileControls?.isMobile && this.mobileControls?.isCancelPressed) {
             return true;
         }
 
