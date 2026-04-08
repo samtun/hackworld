@@ -2,7 +2,7 @@
 
 ![Hackworld promo image](public/images/promo.png)
 
-A 3D web game developed with TypeScript, Three.js, and Cannon-es. In 2053, a technician's mind becomes trapped within a corrupted corporate server system. Fight through infected digital sectors to cleanse the malware and save Ometec's infrastructure.
+A 3D web game developed with TypeScript, Three.js, and Cannon-es.
 
 ## Story
 
@@ -11,18 +11,13 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 ## Features
 
 - Hack and slash gameplay with quest progression
-- **Quest System** - Talk to the Mainframe NPC to unlock new stages as you cleanse infected sectors
 - **Hub-based game world** - Multiple stages progressively unlocked through gameplay
 - **Procedurally generated dungeons** - Obstacle layouts and enemy placements are randomised every time a dungeon stage is entered, keeping exploration fresh
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
-- **Tech Points** - Gain tech points by using a specific weapon type and use those points to equip higher level weapons
-- **Active Skills** - Use unique skills
-- **Loot** - Inventory system with randomized looting mechanics
-- **Loot Chests** - Find chests in dungeon rooms containing randomized weapons, cores, and chips. Open with interact (Enter / A) and take items freely
-- **Breakable Barrels** - Destroy barrels by attacking them (weapon or skill) to find loot dropped on the floor
-- **Card collectibles** - Collectible cards that are dropped by enemies in packs of 4 and can be opened in the lobby
-- **Save/Load system** - Save your game progress to a JSON file or load a previously saved game through the Save Manager NPC in the lobby. Save files are only compatible with the same major game version.
-- **Auto-Save** - Besides the option to manually save, your progress is automatically saved to the browser storage and restored on game start. The auto-save is only loaded when the major game version matches.
+- **Tech Points** - Gain tech points by using a specific weapon or skill to unlock higher level items and skill variants
+- **Loot Mechanics** - Inventory system with randomized looting mechanics
+- **Card collectibles** - Collectible cards that are dropped by enemies in packs of 4 and can be opened in the lobby to unlock unique bonuses
+- **Save/Load system** - Save your game progress to a file or load a previously saved game through the Save Manager NPC in the lobby. The game also automatically saves in the local browser storage.
 
 ## Tech Stack
 
@@ -78,7 +73,7 @@ The game is fully playable with keyboard, controller (tested with XBox controlle
 - **Q + K / L1 + X**: Area Attack skill (5m circular area, 18 damage, 10s cooldown)
 - **I / Select**: Toggle inventory
 - **Enter / A**: Interact and select in menus
-- **ESC / B**: Close menus
+- **ESC / B**: Close menus / Block (B)
 
 #### Mobile Touch Controls
 Mobile devices (phones and tablets) automatically display on-screen touch controls.
@@ -94,7 +89,6 @@ To prevent this use the argument `fresh` on `npm run dev` to always start with a
 ```
 npm run dev:fresh
 ```
-
 
 ### Commit Conventions
 
@@ -137,8 +131,7 @@ When debug mode is enabled (F8), you get access to:
    - **Player Stats Editor**: Modify HP, TP, Strength, Defense, Speed, Level, X-Data, Money, and Quest Progress in real-time
    - **Add Items**: Add any weapons, cores and chips to the player inventory
    - **Collapsible UI**: Click the arrow button (▼/▲) to expand or collapse the editor panel
-
-**Note**: The GameTest stage is only available in debug/development builds and will not appear in production.
+3. **GameTest stage**: A stage filled with various gameplay elements to test the game with
 
 ## Deployment
 
