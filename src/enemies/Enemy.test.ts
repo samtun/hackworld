@@ -246,6 +246,13 @@ describe('Enemy.die', () => {
         expect((enemy as any).body.collisionResponse).toBe(false);
     });
 
+    it('zeroes horizontal velocity on death to prevent knockback drift', () => {
+        (enemy as any).body.velocity = { x: 10, y: 0, z: -8 };
+        enemy.die();
+        expect((enemy as any).body.velocity.x).toBe(0);
+        expect((enemy as any).body.velocity.z).toBe(0);
+    });
+
     it('cancels an in-progress attack on death', () => {
         (enemy as any).isAttacking = true;
         enemy.die();

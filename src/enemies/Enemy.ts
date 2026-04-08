@@ -763,8 +763,11 @@ export class Enemy extends BaseMesh {
             this.deactivateAttackHitbox();
         }
 
-        // Disable collision with other objects while keeping knockback velocity
+        // Disable collision and clear velocity to prevent positioning drift
+        // from knockback impulses applied just before death
         this.body.collisionResponse = false;
+        this.body.velocity.x = 0;
+        this.body.velocity.z = 0;
 
         // Play death animation
         this.fadeToAction(EnemyActionType.Death, 0.1);
