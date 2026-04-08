@@ -614,6 +614,9 @@ export class Game {
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.isAnyMenuOpen();
 
+        // Keep InputManager informed so B button knows whether to act as block or cancel
+        this.input.menuOpen = anyMenuOpen;
+
         // Suppress jump when a menu just closed so the A-button press that
         // confirmed the menu action does not also make the player jump.
         if (this.wasAnyMenuOpen && !anyMenuOpen) {
