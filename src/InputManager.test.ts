@@ -32,6 +32,7 @@ function makeInputManager(overrides: Record<string, unknown> = {}): InputManager
         previousSkill3State: false,
         previousBlockState: false,
         previousPauseState: false,
+        menuOpen: false,
         ...overrides,
     });
     return im;
@@ -39,6 +40,17 @@ function makeInputManager(overrides: Record<string, unknown> = {}): InputManager
 
 describe('InputManager', () => {
     let manager: InputManager;
+
+    /** Define navigator.getGamepads to return a gamepad with the specified button indices pressed. */
+    function mockGamepadButtons(pressedIndices: number[]) {
+        const buttons = Array.from({ length: 20 }, (_, i) => ({
+            pressed: pressedIndices.includes(i),
+            touched: false,
+            value: pressedIndices.includes(i) ? 1 : 0,
+        }));
+        const mockGp = { buttons, axes: [0, 0, 0, 0], connected: true, id: 'test', index: 0, mapping: 'standard', timestamp: 0, hapticActuators: [], vibrationActuator: null };
+        Object.defineProperty(navigator, 'getGamepads', { value: () => [mockGp, null, null, null], configurable: true, writable: true });
+    }
 
     beforeEach(() => {
         manager = makeInputManager();
@@ -213,6 +225,60 @@ describe('InputManager', () => {
         it('returns true with Escape', () => {
             manager.keys['Escape'] = true;
             expect(manager.isCancelPressed()).toBe(true);
+        });
+
+        it('returns true with Escape even when menu is closed', () => {
+            manager.menuOpen = false;
+            manager.keys['Escape'] = true;
+            expect(manager.isCancelPressed()).toBe(true);
+        });
+    });
+
+    describe('isCancelPressed() — B button dual role', () => {
+        it('returns false for B button when menu is closed (B acts as block instead)', () => {
+            manager.menuOpen = false;
+            manager.gamepadIndex = 0;
+            mockGamepadButtons([1]); // B button pressed
+            expect(manager.isCancelPressed()).toBe(false);
+        });
+
+        it('returns true for B button when menu is open (B acts as cancel)', () => {
+            manager.menuOpen = true;
+            manager.gamepadIndex = 0;
+            mockGamepadButtons([1]); // B button pressed
+            expect(manager.isCancelPressed()).toBe(true);
+        });
+    });
+
+    describe('isBlockPressed() — B button dual role', () => {
+        it('returns false initially', () => {
+            expect(manager.isBlockPressed()).toBe(false);
+        });
+
+        it('returns true with KeyL', () => {
+            manager.keys['KeyL'] = true;
+            expect(manager.isBlockPressed()).toBe(true);
+        });
+
+        it('returns true for B button when menu is closed', () => {
+            manager.menuOpen = false;
+            manager.gamepadIndex = 0;
+            mockGamepadButtons([1]); // B button pressed
+            expect(manager.isBlockPressed()).toBe(true);
+        });
+
+        it('returns false for B button when menu is open (B acts as cancel)', () => {
+            manager.menuOpen = true;
+            manager.gamepadIndex = 0;
+            mockGamepadButtons([1]); // B button pressed
+            expect(manager.isBlockPressed()).toBe(false);
+        });
+
+        it('returns false for B button when L1 is held (L1+B = Skill 2, not block)', () => {
+            manager.menuOpen = false;
+            manager.gamepadIndex = 0;
+            mockGamepadButtons([1, 4]); // B + L1 pressed
+            expect(manager.isBlockPressed()).toBe(false);
         });
     });
 
