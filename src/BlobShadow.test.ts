@@ -21,6 +21,7 @@ function makeShadow(overrides: Partial<Record<string, unknown>> = {}): BlobShado
             z: 0,
         },
         rotation: { x: 0 },
+        scale: { set: vi.fn() },
         visible: true,
         geometry: { dispose: vi.fn() },
         material: { dispose: vi.fn() },
@@ -71,6 +72,21 @@ describe('BlobShadow.update', () => {
         const setFn = (shadow as any).mesh.position.set;
         expect(setFn).toHaveBeenNthCalledWith(1, 1, 0.02, 2);
         expect(setFn).toHaveBeenNthCalledWith(2, 9, 0.02, 4);
+    });
+});
+
+describe('BlobShadow.setScale', () => {
+    it('sets mesh scale uniformly in XZ (X and Y in mesh space)', () => {
+        const shadow = makeShadow();
+        shadow.setScale(0.5);
+        expect((shadow as any).mesh.scale.set).toHaveBeenCalledWith(0.5, 0.5, 1);
+    });
+
+    it('restores full scale at 1.0', () => {
+        const shadow = makeShadow();
+        shadow.setScale(0.5);
+        shadow.setScale(1.0);
+        expect((shadow as any).mesh.scale.set).toHaveBeenLastCalledWith(1.0, 1.0, 1);
     });
 });
 

@@ -1127,6 +1127,27 @@ export class Player extends BaseMesh {
         const newPosition = new THREE.Vector3(this.body.position.x, this.body.position.y - 0.3, this.body.position.z);
         this.position.copy(newPosition);
         this.mesh.position.copy(newPosition);
+
+        // Scale shadow based on height above ground: 1.0 at ground → 0.5 at 2m above
+        const SHADOW_MAX_HEIGHT = 2.0;
+        const SHADOW_SCALE_MIN = 0.5;
+        const footOffset = this.BODY_HEIGHT / 2; // distance from body center to feet
+        const rayStart = new CANNON.Vec3(this.body.position.x, this.body.position.y, this.body.position.z);
+        const rayEnd = new CANNON.Vec3(
+            this.body.position.x,
+            this.body.position.y - footOffset - SHADOW_MAX_HEIGHT - 1.0,
+            this.body.position.z
+        );
+        const groundRay = new CANNON.Ray(rayStart, rayEnd);
+        const groundRayResult = new CANNON.RaycastResult();
+        groundRay.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: groundRayResult, skipBackfaces: true });
+
+        let shadowScale = SHADOW_SCALE_MIN;
+        if (groundRayResult.hasHit && groundRayResult.body !== this.body) {
+            const groundDist = Math.max(0, this.body.position.y - footOffset - groundRayResult.hitPointWorld.y);
+            shadowScale = Math.max(SHADOW_SCALE_MIN, 1.0 - (groundDist / SHADOW_MAX_HEIGHT) * (1.0 - SHADOW_SCALE_MIN));
+        }
+        this.blobShadow.setScale(shadowScale);
         this.blobShadow.update(this.body.position.x, this.body.position.z);
     }
 

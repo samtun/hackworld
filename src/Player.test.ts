@@ -153,7 +153,7 @@ function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
         isGrounded: true,
 
         // Blob shadow
-        blobShadow: { update: vi.fn(), cleanup: vi.fn(), visible: true },
+        blobShadow: { update: vi.fn(), cleanup: vi.fn(), visible: true, setScale: vi.fn() },
     });
 
     // Override syncPosition to avoid THREE.Vector3 creation

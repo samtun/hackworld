@@ -47,6 +47,14 @@ export class BlobShadow {
         this.mesh.position.set(x, SHADOW_Y_OFFSET, z);
     }
 
+    /**
+     * Uniformly scale the shadow in the XZ plane.
+     * @param scale Scale factor (1.0 = original size, 0.5 = half size).
+     */
+    setScale(scale: number): void {
+        this.mesh.scale.set(scale, scale, 1);
+    }
+
     get visible(): boolean {
         return this.mesh.visible;
     }

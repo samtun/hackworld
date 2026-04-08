@@ -111,6 +111,13 @@ export class Enemy extends BaseMesh {
     protected isDeathFading: boolean = false;
     private deathYPosition: number = 0;
 
+    // Death shadow animation – shadow slides backwards over the death animation
+    private deathShadowStartX: number = 0;
+    private deathShadowStartZ: number = 0;
+    private deathShadowOffsetX: number = 0; // full 1m offset in X at animation end
+    private deathShadowOffsetZ: number = 0; // full 1m offset in Z at animation end
+    private deathAnimDuration: number = 1.5; // fallback; overwritten in die()
+
     protected materials: THREE.Material[] = [];
     private player: Player;
     protected scene: THREE.Scene;
@@ -363,8 +370,18 @@ export class Enemy extends BaseMesh {
 
         if (this.isDead) return;
 
-        // Keep the shadow aligned with the physics body position
-        this.blobShadow.update(this.body.position.x, this.body.position.z);
+        // Update shadow position – slide backwards during death animation so it
+        // stays beneath the falling model rather than the stationary physics body
+        if (this.isDying || this.isDeathFading) {
+            const progress = Math.min(this.deathTimer / this.deathAnimDuration, 1.0);
+            this.blobShadow.update(
+                this.deathShadowStartX + this.deathShadowOffsetX * progress,
+                this.deathShadowStartZ + this.deathShadowOffsetZ * progress,
+            );
+        } else {
+            // Keep the shadow aligned with the physics body position
+            this.blobShadow.update(this.body.position.x, this.body.position.z);
+        }
 
         if (this.isDying || this.isDead || this.isDeathFading) {
             // Keep at death height to prevent falling through floor
@@ -758,6 +775,16 @@ export class Enemy extends BaseMesh {
         this.isDying = true;
         this.deathTimer = 0;
         this.deathYPosition = this.body.position.y;
+
+        // Record the shadow's start position and the backward slide target for
+        // the death animation (shadow drifts ~1m in the direction the model falls)
+        this.deathShadowStartX = this.body.position.x;
+        this.deathShadowStartZ = this.body.position.z;
+        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
+        const DEATH_SHADOW_BACK_DIST = 1.0;
+        this.deathShadowOffsetX = -forward.x * DEATH_SHADOW_BACK_DIST;
+        this.deathShadowOffsetZ = -forward.z * DEATH_SHADOW_BACK_DIST;
+        this.deathAnimDuration = (this.actions[EnemyActionType.Death] as any)?.getClip?.()?.duration ?? 1.5;
 
         // Cancel any ongoing attack
         if (this.isAttacking) {
