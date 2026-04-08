@@ -1,3 +1,19 @@
+# [3.6.0](https://github.com/samtun/hackworld/compare/v3.5.0...v3.6.0) (2026-04-08)
+
+
+### Bug Fixes
+
+* clear velocity on enemy death to prevent positioning drift ([8c6328c](https://github.com/samtun/hackworld/commit/8c6328c1c4d9745966cc155984bf66279e5d5df9))
+* dynamic floor-height shadows using downward CANNON raycasts; slope alignment via quaternion ([d6feb31](https://github.com/samtun/hackworld/commit/d6feb318263085d39eeeb7cc27d6ab7bdc636c8b))
+* enemy shadow tracks body position during death; shadows always visible ([73a3681](https://github.com/samtun/hackworld/commit/73a3681e4c1a0d5563eb330fa27f7a8a87d56b48))
+* remove blurry FXAA pass ([e62ee4a](https://github.com/samtun/hackworld/commit/e62ee4a58643f6ec7840b7bf75efce2fde6d5e7c))
+
+
+### Features
+
+* add blob shadows to player, enemies and NPCs ([44fc58a](https://github.com/samtun/hackworld/commit/44fc58ade492cbfb257b33af8081ef9564ac506a))
+* scale player shadow by ground height; slide enemy shadow during death animation ([ad7eb92](https://github.com/samtun/hackworld/commit/ad7eb928321d3aaa354a54cebef9a83a57991592))
+
 # [3.5.0](https://github.com/samtun/hackworld/compare/v3.4.0...v3.5.0) (2026-04-08)
 
 
