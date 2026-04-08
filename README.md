@@ -138,7 +138,7 @@ When debug mode is enabled (F8), you get access to:
    - **Add Items**: Add any weapons, cores and chips to the player inventory
    - **Collapsible UI**: Click the arrow button (▼/▲) to expand or collapse the editor panel
 
-**Note**: The Movement Test stage is only available in debug/development builds and will not appear in production.
+**Note**: The GameTest stage is only available in debug/development builds and will not appear in production.
 
 ## Deployment
 
