@@ -932,7 +932,22 @@ export class RoomBasedDungeonGenerator {
             walls.push(...this.buildCorridorWalls(cor));
         }
 
-        return walls;
+        // Deduplicate: remove any wall segment whose centre and dimensions are
+        // identical (within 0.5 mm) to one already in the list.  Duplicate walls
+        // at the same position produce coplanar faces that flicker every frame.
+        const unique: WallSegment[] = [];
+        for (const w of walls) {
+            const isDup = unique.some(
+                u =>
+                    Math.abs(u.centerX - w.centerX) < 0.0005 &&
+                    Math.abs(u.centerY - w.centerY) < 0.0005 &&
+                    Math.abs(u.centerZ - w.centerZ) < 0.0005 &&
+                    Math.abs(u.width - w.width) < 0.0005 &&
+                    Math.abs(u.depth - w.depth) < 0.0005,
+            );
+            if (!isDup) unique.push(w);
+        }
+        return unique;
     }
 
     /**

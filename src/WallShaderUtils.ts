@@ -283,6 +283,9 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
         transparent: true,
         metalness: 0.5,
         roughness: 0.6,
+        polygonOffset: true,
+        polygonOffsetFactor: 1,
+        polygonOffsetUnits: 1,
     });
 
     material.onBeforeCompile = (shader) => {
