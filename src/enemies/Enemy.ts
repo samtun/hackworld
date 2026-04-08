@@ -7,6 +7,10 @@ import { AssetManager } from '../AssetManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { BlockShield } from '../BlockShield';
 import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
+import { BlobShadow } from '../BlobShadow';
+
+/** Maximum downward distance (metres) for the shadow floor raycast. */
+const SHADOW_CAST_DIST = 4.0;
 
 enum EnemyActionType {
     Idle = 'Idle',
@@ -115,6 +119,9 @@ export class Enemy extends BaseMesh {
     protected world: CANNON.World;
     protected physicsMaterial: CANNON.Material;
 
+    /** Flat circular shadow below the enemy. */
+    public blobShadow!: BlobShadow;
+
     private floatingIndicatorManager: FloatingIndicatorManager;
 
 
@@ -161,6 +168,9 @@ export class Enemy extends BaseMesh {
         world.addBody(this.body);
 
         this.player = PlayerRegistry.Instance.activePlayers[0];
+
+        // Blob shadow – always visible
+        this.blobShadow = new BlobShadow(scene, 0.5);
     }
 
     protected setupAnimations() {
@@ -353,6 +363,26 @@ export class Enemy extends BaseMesh {
         if (this.mixer) this.mixer.update(dt);
 
         if (this.isDead) return;
+
+        // Cast a ray straight down to find the floor surface position and normal,
+        // so the shadow is placed at the correct height on both flat and sloped floors.
+        const floorRayStart = new CANNON.Vec3(this.body.position.x, this.body.position.y, this.body.position.z);
+        const floorRayEnd = new CANNON.Vec3(this.body.position.x, this.body.position.y - SHADOW_CAST_DIST, this.body.position.z);
+        const floorRay = new CANNON.Ray(floorRayStart, floorRayEnd);
+        const floorRayResult = new CANNON.RaycastResult();
+        floorRay.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: floorRayResult, skipBackfaces: true });
+
+        let shadowY = this.body.position.y - this.bodyHalfExtentY;
+        let shadowNormal: THREE.Vector3 | undefined;
+        if (floorRayResult.hasHit && floorRayResult.body !== this.body) {
+            shadowY = floorRayResult.hitPointWorld.y;
+            shadowNormal = new THREE.Vector3(
+                floorRayResult.hitNormalWorld.x,
+                floorRayResult.hitNormalWorld.y,
+                floorRayResult.hitNormalWorld.z,
+            );
+        }
+        this.blobShadow.update(this.body.position.x, shadowY, this.body.position.z, shadowNormal);
 
         if (this.isDying || this.isDead || this.isDeathFading) {
             // Keep at death height to prevent falling through floor
@@ -753,8 +783,11 @@ export class Enemy extends BaseMesh {
             this.deactivateAttackHitbox();
         }
 
-        // Disable collision with other objects while keeping knockback velocity
+        // Disable collision and clear velocity to prevent positioning drift
+        // from knockback impulses applied just before death
         this.body.collisionResponse = false;
+        this.body.velocity.x = 0;
+        this.body.velocity.z = 0;
 
         // Play death animation
         this.fadeToAction(EnemyActionType.Death, 0.1);
@@ -776,6 +809,7 @@ export class Enemy extends BaseMesh {
             this.blockShield.dispose();
             this.blockShield = null;
         }
+        this.blobShadow.cleanup();
         this.scene.remove(this.mesh);
         this.world.removeBody(this.body);
         this.disposeMesh();

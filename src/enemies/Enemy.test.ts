@@ -86,7 +86,12 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         },
 
         // Mocked scene/world
-        world: { addBody: vi.fn(), removeBody: vi.fn() },
+        world: {
+            addBody: vi.fn(),
+            removeBody: vi.fn(),
+            bodies: [],
+            broadphase: { aabbQuery: vi.fn().mockReturnValue([]) },
+        },
         scene: { remove: vi.fn() },
         mesh: {
             position: { x: 0, y: 0, z: 0, copy: vi.fn() },
@@ -123,6 +128,9 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         blockTimer: 0,
         BLOCK_DURATION: 0.5,
         blockShield: null,
+
+        // Blob shadow
+        blobShadow: { update: vi.fn(), cleanup: vi.fn(), visible: true },
     });
 
     Object.assign(enemy, overrides);
@@ -236,6 +244,13 @@ describe('Enemy.die', () => {
         expect((enemy as any).body.collisionResponse).toBe(false);
     });
 
+    it('zeroes horizontal velocity on death to prevent knockback drift', () => {
+        (enemy as any).body.velocity = { x: 10, y: 0, z: -8 };
+        enemy.die();
+        expect((enemy as any).body.velocity.x).toBe(0);
+        expect((enemy as any).body.velocity.z).toBe(0);
+    });
+
     it('cancels an in-progress attack on death', () => {
         (enemy as any).isAttacking = true;
         enemy.die();
@@ -255,6 +270,48 @@ describe('Enemy.die', () => {
         (enemy as any).onDeathFadeStart!(enemy);
 
         expect(cb).toHaveBeenCalledWith(enemy);
+    });
+});
+
+// ─── update – shadow follows body position ────────────────────────────────────
+
+describe('Enemy.update – shadow position', () => {
+    // The mock world has bodies:[] so the downward raycast always misses.
+    // The fallback shadow Y = body.position.y - bodyHalfExtentY = 1 - 0.875 = 0.125.
+
+    it('follows body XZ position (with floor-hit fallback Y) when alive', () => {
+        const enemy = makeEnemy() as any;
+        enemy.body.position.x = 7;
+        enemy.body.position.z = -2;
+        enemy.player = { isDead: true, body: { position: { x: 0, y: 0, z: 0 } } };
+        enemy.update(0.016);
+        expect(enemy.blobShadow.update).toHaveBeenCalledWith(7, 0.125, -2, undefined);
+    });
+
+    it('follows body XZ position while isDying', () => {
+        const enemy = makeEnemy() as any;
+        enemy.isDying = true;
+        enemy.body.position.x = 3;
+        enemy.body.position.z = -5;
+        enemy.update(0.016);
+        expect(enemy.blobShadow.update).toHaveBeenCalledWith(3, 0.125, -5, undefined);
+    });
+
+    it('follows body XZ position while isDeathFading', () => {
+        const enemy = makeEnemy() as any;
+        enemy.isDeathFading = true;
+        enemy.deathFadeTimer = 0;
+        enemy.deathFadeDuration = 0.5;
+        enemy.body.position.x = -1;
+        enemy.body.position.z = 4;
+        enemy.update(0.1);
+        expect(enemy.blobShadow.update).toHaveBeenCalledWith(-1, 0.125, 4, undefined);
+    });
+
+    it('does not update shadow when isDead', () => {
+        const enemy = makeEnemy({ isDead: true } as any);
+        enemy.update(0.016);
+        expect(enemy.blobShadow.update).not.toHaveBeenCalled();
     });
 });
 
