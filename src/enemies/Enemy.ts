@@ -114,9 +114,14 @@ export class Enemy extends BaseMesh {
     // Death shadow animation – shadow slides backwards over the death animation
     private deathShadowStartX: number = 0;
     private deathShadowStartZ: number = 0;
-    private deathShadowOffsetX: number = 0; // full 1m offset in X at animation end
-    private deathShadowOffsetZ: number = 0; // full 1m offset in Z at animation end
+    private deathShadowOffsetX: number = 0; // full offset in X at animation end
+    private deathShadowOffsetZ: number = 0; // full offset in Z at animation end
     private deathAnimDuration: number = 1.5; // fallback; overwritten in die()
+
+    /** How far (metres) the shadow slides backwards during the death animation. */
+    private readonly DEATH_SHADOW_BACK_DIST: number = 1.0;
+    /** Fallback death animation duration when the clip duration cannot be read. */
+    private readonly DEFAULT_DEATH_ANIM_DURATION: number = 1.5;
 
     protected materials: THREE.Material[] = [];
     private player: Player;
@@ -777,14 +782,13 @@ export class Enemy extends BaseMesh {
         this.deathYPosition = this.body.position.y;
 
         // Record the shadow's start position and the backward slide target for
-        // the death animation (shadow drifts ~1m in the direction the model falls)
+        // the death animation (shadow drifts in the direction the model falls)
         this.deathShadowStartX = this.body.position.x;
         this.deathShadowStartZ = this.body.position.z;
         const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-        const DEATH_SHADOW_BACK_DIST = 1.0;
-        this.deathShadowOffsetX = -forward.x * DEATH_SHADOW_BACK_DIST;
-        this.deathShadowOffsetZ = -forward.z * DEATH_SHADOW_BACK_DIST;
-        this.deathAnimDuration = (this.actions[EnemyActionType.Death] as any)?.getClip?.()?.duration ?? 1.5;
+        this.deathShadowOffsetX = -forward.x * this.DEATH_SHADOW_BACK_DIST;
+        this.deathShadowOffsetZ = -forward.z * this.DEATH_SHADOW_BACK_DIST;
+        this.deathAnimDuration = (this.actions[EnemyActionType.Death] as any)?.getClip?.()?.duration ?? this.DEFAULT_DEATH_ANIM_DURATION;
 
         // Cancel any ongoing attack
         if (this.isAttacking) {

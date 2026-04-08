@@ -1131,11 +1131,12 @@ export class Player extends BaseMesh {
         // Scale shadow based on height above ground: 1.0 at ground → 0.5 at 2m above
         const SHADOW_MAX_HEIGHT = 2.0;
         const SHADOW_SCALE_MIN = 0.5;
+        const SHADOW_RAYCAST_MARGIN = 1.0; // extra depth below max height for safety
         const footOffset = this.BODY_HEIGHT / 2; // distance from body center to feet
         const rayStart = new CANNON.Vec3(this.body.position.x, this.body.position.y, this.body.position.z);
         const rayEnd = new CANNON.Vec3(
             this.body.position.x,
-            this.body.position.y - footOffset - SHADOW_MAX_HEIGHT - 1.0,
+            this.body.position.y - footOffset - SHADOW_MAX_HEIGHT - SHADOW_RAYCAST_MARGIN,
             this.body.position.z
         );
         const groundRay = new CANNON.Ray(rayStart, rayEnd);
