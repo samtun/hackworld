@@ -1,3 +1,15 @@
+# [3.5.0](https://github.com/samtun/hackworld/compare/v3.4.0...v3.5.0) (2026-04-08)
+
+
+### Bug Fixes
+
+* remove R1 from block; only B (controller) and L (keyboard) block ([b3b5020](https://github.com/samtun/hackworld/commit/b3b50203a5bb3e18a32bf05635b88dd77eb454df))
+
+
+### Features
+
+* make B on controller execute a block when no menu is open ([a29cc99](https://github.com/samtun/hackworld/commit/a29cc99a7a466da0538cefdcd50472dab7118bba))
+
 # [3.4.0](https://github.com/samtun/hackworld/compare/v3.3.0...v3.4.0) (2026-04-07)
 
 
