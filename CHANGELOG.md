@@ -1,3 +1,10 @@
+## [3.6.1](https://github.com/samtun/hackworld/compare/v3.6.0...v3.6.1) (2026-04-08)
+
+
+### Bug Fixes
+
+* suppress B button block after closing a menu ([0cb96e9](https://github.com/samtun/hackworld/commit/0cb96e9c96ae2e7376f36a82b94244fc35fdb84f))
+
 # [3.6.0](https://github.com/samtun/hackworld/compare/v3.5.0...v3.6.0) (2026-04-08)
 
 
