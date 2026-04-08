@@ -9,6 +9,9 @@ import { BlockShield } from '../BlockShield';
 import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
 import { BlobShadow } from '../BlobShadow';
 
+/** Maximum downward distance (metres) for the shadow floor raycast. */
+const SHADOW_CAST_DIST = 4.0;
+
 enum EnemyActionType {
     Idle = 'Idle',
     Run = 'Run',
@@ -116,7 +119,7 @@ export class Enemy extends BaseMesh {
     protected world: CANNON.World;
     protected physicsMaterial: CANNON.Material;
 
-    /** Flat circular shadow below the enemy. Hidden in performance mode. */
+    /** Flat circular shadow below the enemy. */
     public blobShadow!: BlobShadow;
 
     private floatingIndicatorManager: FloatingIndicatorManager;
@@ -361,8 +364,25 @@ export class Enemy extends BaseMesh {
 
         if (this.isDead) return;
 
-        // Keep the shadow aligned with the physics body position
-        this.blobShadow.update(this.body.position.x, this.body.position.z);
+        // Cast a ray straight down to find the floor surface position and normal,
+        // so the shadow is placed at the correct height on both flat and sloped floors.
+        const floorRayStart = new CANNON.Vec3(this.body.position.x, this.body.position.y, this.body.position.z);
+        const floorRayEnd = new CANNON.Vec3(this.body.position.x, this.body.position.y - SHADOW_CAST_DIST, this.body.position.z);
+        const floorRay = new CANNON.Ray(floorRayStart, floorRayEnd);
+        const floorRayResult = new CANNON.RaycastResult();
+        floorRay.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: floorRayResult, skipBackfaces: true });
+
+        let shadowY = this.body.position.y - this.bodyHalfExtentY;
+        let shadowNormal: THREE.Vector3 | undefined;
+        if (floorRayResult.hasHit && floorRayResult.body !== this.body) {
+            shadowY = floorRayResult.hitPointWorld.y;
+            shadowNormal = new THREE.Vector3(
+                floorRayResult.hitNormalWorld.x,
+                floorRayResult.hitNormalWorld.y,
+                floorRayResult.hitNormalWorld.z,
+            );
+        }
+        this.blobShadow.update(this.body.position.x, shadowY, this.body.position.z, shadowNormal);
 
         if (this.isDying || this.isDead || this.isDeathFading) {
             // Keep at death height to prevent falling through floor

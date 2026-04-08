@@ -6,6 +6,11 @@ import { getHint } from '../ui/InputHints';
 import { NpcRegistry } from './NpcRegistry';
 import { BlobShadow } from '../BlobShadow';
 
+/** Distance above the NPC body centre from which the shadow raycast starts. */
+const NPC_SHADOW_RAY_UP = 1;
+/** Distance below the NPC body centre to which the shadow raycast searches. */
+const NPC_SHADOW_RAY_DOWN = 2;
+
 export class Npc extends BaseMesh {
     name: string;
     body?: CANNON.Body;
@@ -58,9 +63,24 @@ export class Npc extends BaseMesh {
         scene.add(this.mesh);
         world.addBody(this.body);
 
-        // Blob shadow – always visible; static NPC, set once
+        // Blob shadow – always visible; static NPC, positioned once using a downward
+        // raycast to find the correct floor height (handles elevated rooms).
         this.blobShadow = new BlobShadow(scene, 0.4);
-        this.blobShadow.update(position.x, position.z);
+        const npcRayStart = new CANNON.Vec3(position.x, this.body.position.y + NPC_SHADOW_RAY_UP, position.z);
+        const npcRayEnd = new CANNON.Vec3(position.x, this.body.position.y - NPC_SHADOW_RAY_DOWN, position.z);
+        const npcRay = new CANNON.Ray(npcRayStart, npcRayEnd);
+        const npcRayResult = new CANNON.RaycastResult();
+        npcRay.intersectWorld(world, { mode: CANNON.Ray.CLOSEST, result: npcRayResult, skipBackfaces: true });
+        if (npcRayResult.hasHit && npcRayResult.body !== this.body) {
+            const normal = new THREE.Vector3(
+                npcRayResult.hitNormalWorld.x,
+                npcRayResult.hitNormalWorld.y,
+                npcRayResult.hitNormalWorld.z,
+            );
+            this.blobShadow.update(position.x, npcRayResult.hitPointWorld.y, position.z, normal);
+        } else {
+            this.blobShadow.update(position.x, 0, position.z);
+        }
     }
 
     /**

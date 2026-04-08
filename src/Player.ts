@@ -1142,12 +1142,22 @@ export class Player extends BaseMesh {
         groundRay.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: groundRayResult, skipBackfaces: true });
 
         let shadowScale = SHADOW_SCALE_MIN;
+        // Fallback floor position: at entity's feet with flat orientation
+        let shadowY = this.body.position.y - footOffset;
+        let shadowNormal: THREE.Vector3 | undefined;
+
         if (groundRayResult.hasHit && groundRayResult.body !== this.body) {
             const groundDist = Math.max(0, this.body.position.y - footOffset - groundRayResult.hitPointWorld.y);
             shadowScale = Math.max(SHADOW_SCALE_MIN, 1.0 - (groundDist / SHADOW_MAX_HEIGHT) * (1.0 - SHADOW_SCALE_MIN));
+            shadowY = groundRayResult.hitPointWorld.y;
+            shadowNormal = new THREE.Vector3(
+                groundRayResult.hitNormalWorld.x,
+                groundRayResult.hitNormalWorld.y,
+                groundRayResult.hitNormalWorld.z,
+            );
         }
         this.blobShadow.setScale(shadowScale);
-        this.blobShadow.update(this.body.position.x, this.body.position.z);
+        this.blobShadow.update(this.body.position.x, shadowY, this.body.position.z, shadowNormal);
     }
 
     /**

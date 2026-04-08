@@ -20,7 +20,7 @@ function makeShadow(overrides: Partial<Record<string, unknown>> = {}): BlobShado
             y: 0,
             z: 0,
         },
-        rotation: { x: 0 },
+        quaternion: { setFromUnitVectors: vi.fn() },
         scale: { set: vi.fn() },
         visible: true,
         geometry: { dispose: vi.fn() },
@@ -59,19 +59,26 @@ describe('BlobShadow.visible', () => {
 });
 
 describe('BlobShadow.update', () => {
-    it('repositions the shadow to the given XZ coordinates at Y=0.02', () => {
+    it('positions the shadow at x, y+offset, z for a flat surface', () => {
         const shadow = makeShadow();
-        shadow.update(5, -3);
-        expect((shadow as any).mesh.position.set).toHaveBeenCalledWith(5, 0.02, -3);
+        shadow.update(5, 3, -3);
+        // Y = floor hit Y (3) + SHADOW_Y_OFFSET (0.02) * normal.y (1) = 3.02
+        expect((shadow as any).mesh.position.set).toHaveBeenCalledWith(5, 3.02, -3);
     });
 
-    it('updates X and Z independently on repeated calls', () => {
+    it('updates position independently on repeated calls', () => {
         const shadow = makeShadow();
-        shadow.update(1, 2);
-        shadow.update(9, 4);
+        shadow.update(1, 0, 2);
+        shadow.update(9, 5, 4);
         const setFn = (shadow as any).mesh.position.set;
         expect(setFn).toHaveBeenNthCalledWith(1, 1, 0.02, 2);
-        expect(setFn).toHaveBeenNthCalledWith(2, 9, 0.02, 4);
+        expect(setFn).toHaveBeenNthCalledWith(2, 9, 5.02, 4);
+    });
+
+    it('calls setFromUnitVectors to orient the shadow circle', () => {
+        const shadow = makeShadow();
+        shadow.update(0, 0, 0);
+        expect((shadow as any).mesh.quaternion.setFromUnitVectors).toHaveBeenCalledOnce();
     });
 });
 

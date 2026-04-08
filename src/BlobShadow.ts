@@ -1,11 +1,23 @@
 import * as THREE from 'three';
 
-/** Y-offset above the floor for the shadow mesh (avoids z-fighting). */
+/** Small offset above the surface along its normal to avoid z-fighting. */
 const SHADOW_Y_OFFSET = 0.02;
 
 /**
- * A flat circular shadow projected straight down beneath a character,
- * representing a purely vertical light source.
+ * Default face normal of a CircleGeometry in its local space (+Z before any rotation).
+ * Used as the "from" vector when aligning the circle to a surface normal.
+ */
+const CIRCLE_NORMAL = new THREE.Vector3(0, 0, 1);
+
+/** World-up vector used as the default floor normal for flat horizontal surfaces. */
+const WORLD_UP = new THREE.Vector3(0, 1, 0);
+
+/**
+ * A flat circular shadow that sits on the floor surface beneath a character.
+ *
+ * The shadow is positioned at the hit point returned by a downward raycast and
+ * its orientation is aligned to the surface normal, so it renders correctly on
+ * both flat floors and sloped ramps.
  *
  * Used for players, enemies and NPCs.
  */
@@ -30,21 +42,29 @@ export class BlobShadow {
         });
 
         this.mesh = new THREE.Mesh(geometry, material);
-        // Lay the circle flat on the XZ plane (face up toward +Y)
-        this.mesh.rotation.x = -Math.PI / 2;
         this.mesh.visible = visible;
         scene.add(this.mesh);
     }
 
     /**
-     * Reposition the shadow directly beneath the entity.
-     * Call every frame with the entity's XZ position.
+     * Reposition and reorient the shadow to sit on the floor surface below the entity.
      *
-     * @param x World X of the entity.
-     * @param z World Z of the entity.
+     * @param x      World X of the entity (used for horizontal placement).
+     * @param y      World Y of the floor surface hit point (from a downward raycast).
+     * @param z      World Z of the entity (used for horizontal placement).
+     * @param normal Floor surface normal at the hit point.
+     *               Defaults to world +Y for flat horizontal floors.
      */
-    update(x: number, z: number): void {
-        this.mesh.position.set(x, SHADOW_Y_OFFSET, z);
+    update(x: number, y: number, z: number, normal?: THREE.Vector3): void {
+        const n = normal ?? WORLD_UP;
+        // Offset slightly above the surface along its normal to avoid z-fighting
+        this.mesh.position.set(
+            x + n.x * SHADOW_Y_OFFSET,
+            y + n.y * SHADOW_Y_OFFSET,
+            z + n.z * SHADOW_Y_OFFSET,
+        );
+        // Rotate the circle so its face normal (+Z local) aligns with the floor normal
+        this.mesh.quaternion.setFromUnitVectors(CIRCLE_NORMAL, n);
     }
 
     /**
