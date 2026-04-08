@@ -282,6 +282,45 @@ describe('InputManager', () => {
         });
     });
 
+    describe('consumeCancel() — suppress B as block after menu close', () => {
+        it('suppresses B from triggering isBlockPressed while B is still held', () => {
+            manager.menuOpen = false;
+            manager.gamepadIndex = 0;
+            mockGamepadButtons([1]); // B still held after closing menu
+            manager.consumeCancel();
+            expect(manager.isBlockPressed()).toBe(false);
+        });
+
+        it('does not affect KeyL block while cancel is consumed', () => {
+            manager.consumeCancel();
+            manager.keys['KeyL'] = true;
+            expect(manager.isBlockPressed()).toBe(true);
+        });
+
+        it('clears consumed flag once B is physically released, allowing block again', () => {
+            manager.menuOpen = false;
+            manager.gamepadIndex = 0;
+            mockGamepadButtons([1]); // B held — consume it
+            manager.consumeCancel();
+            manager.updateState(); // B still held — flag stays consumed
+
+            mockGamepadButtons([]); // B released
+            manager.updateState(); // consumed flag cleared
+
+            mockGamepadButtons([1]); // B pressed again
+            expect(manager.isBlockPressed()).toBe(true);
+        });
+
+        it('consumed flag stays active until B is released (not just one frame)', () => {
+            manager.menuOpen = false;
+            manager.gamepadIndex = 0;
+            mockGamepadButtons([1]);
+            manager.consumeCancel();
+            manager.updateState(); // B still held
+            expect(manager.isBlockPressed()).toBe(false); // still suppressed
+        });
+    });
+
     describe('isStartPressed()', () => {
         it('returns false initially', () => {
             expect(manager.isStartPressed()).toBe(false);
