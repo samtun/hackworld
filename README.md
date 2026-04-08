@@ -72,7 +72,7 @@ The game is fully playable with keyboard, controller (tested with XBox controlle
 - **WASD / Arrow Keys / LStick**: Move player
 - **Space / A**: Jump
 - **K / X**: Attack (tap for normal attack, hold for 1s then release for charged dash attack)
-- **L / R1 / B**: Block (absorbs incoming damage for 0.5s, immobilises the player briefly)
+- **L / B**: Block (absorbs incoming damage for 0.5s, immobilises the player briefly)
 - **Q + Space / L1 + A**: Laser Beam skill (ranged attack, 30m range, 20 damage, 10s cooldown)
 - **Q + Escape / L1 + B**: Healing skill (heal 40 HP, 5s cooldown)
 - **Q + K / L1 + X**: Area Attack skill (5m circular area, 18 damage, 10s cooldown)

@@ -461,7 +461,7 @@ export class InputManager {
         return !this.previousSkill3State && currentState;
     }
 
-    // Block (L key / R1 button / B button when no menu open / mobile B when no menu open)
+    // Block (L key / B button when no menu open / mobile B when no menu open)
     isBlockPressed(): boolean {
         // L key for keyboard
         if (this.keys['KeyL']) return true;
@@ -469,8 +469,6 @@ export class InputManager {
         if (this.gamepadIndex !== null) {
             const gp = navigator.getGamepads()[this.gamepadIndex];
             if (gp) {
-                // Gamepad R1 (button 5)
-                if (gp.buttons[5]?.pressed) return true;
                 // B button (button 1) acts as block when no menu is open and L1 (button 4) is not held
                 // (L1 + B is reserved for Skill 2)
                 if (!this.menuOpen && gp.buttons[1]?.pressed && !gp.buttons[4]?.pressed) return true;
