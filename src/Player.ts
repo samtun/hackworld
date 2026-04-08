@@ -24,7 +24,6 @@ import { BlockShield } from './BlockShield';
 import { CardCollection } from './items/cards/CardCollection';
 import { Album } from './items/cards/Card';
 import { BlobShadow } from './BlobShadow';
-import { PERFORMANCE_MODE_STORAGE_KEY } from './PauseMenu';
 
 enum ActionType {
     Idle = 'Idle',
@@ -379,9 +378,8 @@ export class Player extends BaseMesh {
             new AreaAttackSkill(this.resetSkillUsage)
         ];
 
-        // Blob shadow – hidden when performance mode is active
-        const perfMode = localStorage.getItem(PERFORMANCE_MODE_STORAGE_KEY) === 'true';
-        this.blobShadow = new BlobShadow(scene, 0.5, !perfMode);
+        // Blob shadow – always visible
+        this.blobShadow = new BlobShadow(scene, 0.5);
     }
 
     private resetSkillUsage = () => {

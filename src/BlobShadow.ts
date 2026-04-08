@@ -7,7 +7,7 @@ const SHADOW_Y_OFFSET = 0.02;
  * A flat circular shadow projected straight down beneath a character,
  * representing a purely vertical light source.
  *
- * Used for players, enemies and NPCs. Hidden when performance mode is active.
+ * Used for players, enemies and NPCs.
  */
 export class BlobShadow {
     private mesh: THREE.Mesh;

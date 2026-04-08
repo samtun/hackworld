@@ -5,7 +5,6 @@ import { InputManager } from '../InputManager';
 import { getHint } from '../ui/InputHints';
 import { NpcRegistry } from './NpcRegistry';
 import { BlobShadow } from '../BlobShadow';
-import { PERFORMANCE_MODE_STORAGE_KEY } from '../PauseMenu';
 
 export class Npc extends BaseMesh {
     name: string;
@@ -59,9 +58,8 @@ export class Npc extends BaseMesh {
         scene.add(this.mesh);
         world.addBody(this.body);
 
-        // Blob shadow – hidden when performance mode is active; static NPC, set once
-        const perfMode = localStorage.getItem(PERFORMANCE_MODE_STORAGE_KEY) === 'true';
-        this.blobShadow = new BlobShadow(scene, 0.4, !perfMode);
+        // Blob shadow – always visible; static NPC, set once
+        this.blobShadow = new BlobShadow(scene, 0.4);
         this.blobShadow.update(position.x, position.z);
     }
 

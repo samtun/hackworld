@@ -8,7 +8,6 @@ import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { BlockShield } from '../BlockShield';
 import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
 import { BlobShadow } from '../BlobShadow';
-import { PERFORMANCE_MODE_STORAGE_KEY } from '../PauseMenu';
 
 enum EnemyActionType {
     Idle = 'Idle',
@@ -111,18 +110,6 @@ export class Enemy extends BaseMesh {
     protected isDeathFading: boolean = false;
     private deathYPosition: number = 0;
 
-    // Death shadow animation – shadow slides backwards over the death animation
-    private deathShadowStartX: number = 0;
-    private deathShadowStartZ: number = 0;
-    private deathShadowOffsetX: number = 0; // full offset in X at animation end
-    private deathShadowOffsetZ: number = 0; // full offset in Z at animation end
-    private deathAnimDuration: number = 1.5; // fallback; overwritten in die()
-
-    /** How far (metres) the shadow slides backwards during the death animation. */
-    private readonly DEATH_SHADOW_BACK_DIST: number = 1.0;
-    /** Fallback death animation duration when the clip duration cannot be read. */
-    private readonly DEFAULT_DEATH_ANIM_DURATION: number = 1.5;
-
     protected materials: THREE.Material[] = [];
     private player: Player;
     protected scene: THREE.Scene;
@@ -179,9 +166,8 @@ export class Enemy extends BaseMesh {
 
         this.player = PlayerRegistry.Instance.activePlayers[0];
 
-        // Blob shadow – hidden when performance mode is active
-        const perfMode = localStorage.getItem(PERFORMANCE_MODE_STORAGE_KEY) === 'true';
-        this.blobShadow = new BlobShadow(scene, 0.5, !perfMode);
+        // Blob shadow – always visible
+        this.blobShadow = new BlobShadow(scene, 0.5);
     }
 
     protected setupAnimations() {
@@ -375,18 +361,8 @@ export class Enemy extends BaseMesh {
 
         if (this.isDead) return;
 
-        // Update shadow position – slide backwards during death animation so it
-        // stays beneath the falling model rather than the stationary physics body
-        if (this.isDying || this.isDeathFading) {
-            const progress = Math.min(this.deathTimer / this.deathAnimDuration, 1.0);
-            this.blobShadow.update(
-                this.deathShadowStartX + this.deathShadowOffsetX * progress,
-                this.deathShadowStartZ + this.deathShadowOffsetZ * progress,
-            );
-        } else {
-            // Keep the shadow aligned with the physics body position
-            this.blobShadow.update(this.body.position.x, this.body.position.z);
-        }
+        // Keep the shadow aligned with the physics body position
+        this.blobShadow.update(this.body.position.x, this.body.position.z);
 
         if (this.isDying || this.isDead || this.isDeathFading) {
             // Keep at death height to prevent falling through floor
@@ -780,15 +756,6 @@ export class Enemy extends BaseMesh {
         this.isDying = true;
         this.deathTimer = 0;
         this.deathYPosition = this.body.position.y;
-
-        // Record the shadow's start position and the backward slide target for
-        // the death animation (shadow drifts in the direction the model falls)
-        this.deathShadowStartX = this.body.position.x;
-        this.deathShadowStartZ = this.body.position.z;
-        const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
-        this.deathShadowOffsetX = -forward.x * this.DEATH_SHADOW_BACK_DIST;
-        this.deathShadowOffsetZ = -forward.z * this.DEATH_SHADOW_BACK_DIST;
-        this.deathAnimDuration = (this.actions[EnemyActionType.Death] as any)?.getClip?.()?.duration ?? this.DEFAULT_DEATH_ANIM_DURATION;
 
         // Cancel any ongoing attack
         if (this.isAttacking) {

@@ -268,62 +268,42 @@ describe('Enemy.die', () => {
     });
 });
 
-// ─── update – death shadow interpolation ─────────────────────────────────────
+// ─── update – shadow follows body position ────────────────────────────────────
 
-describe('Enemy.update – death shadow interpolation', () => {
-    it('slides shadow proportionally backward while isDying', () => {
-        const enemy = makeEnemy() as any;
-        enemy.isDying = true;
-        enemy.deathShadowStartX = 5;
-        enemy.deathShadowStartZ = 3;
-        enemy.deathShadowOffsetX = 1.0; // 1m right
-        enemy.deathShadowOffsetZ = 0;
-        enemy.deathTimer = 0.75;
-        enemy.deathAnimDuration = 1.5;
-        enemy.update(0.016);
-        // progress = 0.75 / 1.5 = 0.5 → shadow at (5 + 0.5, 3 + 0)
-        expect(enemy.blobShadow.update).toHaveBeenCalledWith(5.5, 3);
-    });
-
-    it('clamps shadow progress to 1.0 at animation end', () => {
-        const enemy = makeEnemy() as any;
-        enemy.isDying = true;
-        enemy.deathShadowStartX = 0;
-        enemy.deathShadowStartZ = 0;
-        enemy.deathShadowOffsetX = 0;
-        enemy.deathShadowOffsetZ = -1.0; // 1m backward in Z
-        enemy.deathTimer = 2.0; // past the end
-        enemy.deathAnimDuration = 1.5;
-        enemy.update(0.016);
-        // progress capped at 1.0 → shadow at (0, 0 - 1)
-        expect(enemy.blobShadow.update).toHaveBeenCalledWith(0, -1.0);
-    });
-
-    it('keeps shadow at final position during isDeathFading', () => {
-        const enemy = makeEnemy() as any;
-        enemy.isDying = false;
-        enemy.isDeathFading = true;
-        enemy.deathShadowStartX = 2;
-        enemy.deathShadowStartZ = 4;
-        enemy.deathShadowOffsetX = 0;
-        enemy.deathShadowOffsetZ = -1.0;
-        enemy.deathTimer = 1.5; // deathTimer does not increment during deathFading
-        enemy.deathAnimDuration = 1.5;
-        enemy.deathFadeTimer = 0;
-        enemy.deathFadeDuration = 0.5;
-        enemy.update(0.1);
-        // progress = 1.5/1.5 = 1.0 → shadow at (2, 4 - 1) = (2, 3)
-        expect(enemy.blobShadow.update).toHaveBeenCalledWith(2, 3);
-    });
-
-    it('follows body position when alive and not dying', () => {
+describe('Enemy.update – shadow position', () => {
+    it('follows body position when alive', () => {
         const enemy = makeEnemy() as any;
         enemy.body.position.x = 7;
         enemy.body.position.z = -2;
-        // Provide a player so the AI path does not throw
         enemy.player = { isDead: true, body: { position: { x: 0, y: 0, z: 0 } } };
         enemy.update(0.016);
         expect(enemy.blobShadow.update).toHaveBeenCalledWith(7, -2);
+    });
+
+    it('follows body position while isDying', () => {
+        const enemy = makeEnemy() as any;
+        enemy.isDying = true;
+        enemy.body.position.x = 3;
+        enemy.body.position.z = -5;
+        enemy.update(0.016);
+        expect(enemy.blobShadow.update).toHaveBeenCalledWith(3, -5);
+    });
+
+    it('follows body position while isDeathFading', () => {
+        const enemy = makeEnemy() as any;
+        enemy.isDeathFading = true;
+        enemy.deathFadeTimer = 0;
+        enemy.deathFadeDuration = 0.5;
+        enemy.body.position.x = -1;
+        enemy.body.position.z = 4;
+        enemy.update(0.1);
+        expect(enemy.blobShadow.update).toHaveBeenCalledWith(-1, 4);
+    });
+
+    it('does not update shadow when isDead', () => {
+        const enemy = makeEnemy({ isDead: true } as any);
+        enemy.update(0.016);
+        expect(enemy.blobShadow.update).not.toHaveBeenCalled();
     });
 });
 

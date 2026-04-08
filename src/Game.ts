@@ -306,16 +306,6 @@ export class Game {
                 this.fxaaPass.enabled = !perfMode;
                 localStorage.setItem(PERFORMANCE_MODE_STORAGE_KEY, String(perfMode));
 
-                // Toggle blob shadows on all active characters (visible when NOT in performance mode)
-                const shadowVisible = !perfMode;
-                this.player.blobShadow.visible = shadowVisible;
-                for (const enemy of this.world.enemies) {
-                    enemy.blobShadow.visible = shadowVisible;
-                }
-                for (const npc of this.world.getAllNpcs()) {
-                    npc.blobShadow.visible = shadowVisible;
-                }
-
                 return perfMode;
             },
             onRestartArea: () => this.respawnPlayer(),
