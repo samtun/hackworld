@@ -617,10 +617,11 @@ export class Game {
         // Keep InputManager informed so B button knows whether to act as block or cancel
         this.input.menuOpen = anyMenuOpen;
 
-        // Suppress jump when a menu just closed so the A-button press that
-        // confirmed the menu action does not also make the player jump.
+        // Suppress jump and block when a menu just closed so the A/B-button press that
+        // confirmed/cancelled the menu action does not also make the player jump or block.
         if (this.wasAnyMenuOpen && !anyMenuOpen) {
             this.input.consumeJump();
+            this.input.consumeCancel();
         }
         this.wasAnyMenuOpen = anyMenuOpen;
 

@@ -19,6 +19,7 @@ export class InputManager {
     private previousBlockState: boolean = false;
     private previousPauseState: boolean = false;
     private jumpConsumed: boolean = false;
+    private cancelConsumed: boolean = false;
 
     public static get Instance(): InputManager {
         return this.instance || (this.instance = new this());
@@ -64,6 +65,11 @@ export class InputManager {
         // Clear jump consumed flag once the jump button is physically released
         if (this.jumpConsumed && !this.isRawJumpPressed()) {
             this.jumpConsumed = false;
+        }
+
+        // Clear cancel consumed flag once the B button is physically released
+        if (this.cancelConsumed && !this.isRawCancelPressed()) {
+            this.cancelConsumed = false;
         }
     }
 
@@ -160,6 +166,21 @@ export class InputManager {
     isJumpPressed(): boolean {
         if (this.jumpConsumed) return false;
         return this.isRawJumpPressed();
+    }
+
+    /** Suppress the B button (block role) until the physical button is released. */
+    consumeCancel(): void {
+        this.cancelConsumed = true;
+    }
+
+    /** Raw B-button state without menu or consumed-flag checks (used internally). */
+    private isRawCancelPressed(): boolean {
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp && gp.buttons[1]?.pressed) return true;
+        }
+        if (this.mobileControls?.isMobile && this.mobileControls?.isCancelPressed) return true;
+        return false;
     }
 
     isInventoryPressed(): boolean {
@@ -471,7 +492,7 @@ export class InputManager {
             if (gp) {
                 // B button (button 1) acts as block when no menu is open and L1 (button 4) is not held
                 // (L1 + B is reserved for Skill 2)
-                if (!this.menuOpen && gp.buttons[1]?.pressed && !gp.buttons[4]?.pressed) return true;
+                if (!this.menuOpen && !this.cancelConsumed && gp.buttons[1]?.pressed && !gp.buttons[4]?.pressed) return true;
             }
         }
 
@@ -481,7 +502,7 @@ export class InputManager {
         }
 
         // Mobile B button acts as block when no menu is open
-        if (!this.menuOpen && this.mobileControls?.isMobile && this.mobileControls?.isCancelPressed) {
+        if (!this.menuOpen && !this.cancelConsumed && this.mobileControls?.isMobile && this.mobileControls?.isCancelPressed) {
             return true;
         }
 
