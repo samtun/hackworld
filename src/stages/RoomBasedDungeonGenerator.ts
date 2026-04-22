@@ -522,7 +522,9 @@ export class RoomBasedDungeonGenerator {
             if (placed) nextId++;
         }
 
-        // 3. Attach the dedicated teleporter room to the final boss room
+        // 3. Attach the dedicated teleporter room to the deepest boss room.
+        // With multiple boss rooms we anchor to the highest-id final room,
+        // which corresponds to the last boss room placed in generation order.
         const finalRoom = rooms.filter(r => r.isFinal).sort((a, b) => b.id - a.id)[0];
         if (finalRoom) {
             this.tryAttachTeleporterRoom(nextId, finalRoom, rooms, corridors, occupied);

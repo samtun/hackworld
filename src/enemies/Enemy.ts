@@ -216,9 +216,11 @@ export class Enemy extends BaseMesh {
                 if (child.material instanceof THREE.MeshStandardMaterial) {
                     const tint = new THREE.Color(resolvedConfig.color);
                     child.material.color.add(tint);
-                    child.material.color.r = Math.min(child.material.color.r, 1);
-                    child.material.color.g = Math.min(child.material.color.g, 1);
-                    child.material.color.b = Math.min(child.material.color.b, 1);
+                    child.material.color.setRGB(
+                        Math.min(child.material.color.r, 1),
+                        Math.min(child.material.color.g, 1),
+                        Math.min(child.material.color.b, 1),
+                    );
                 }
                 this.materials.push(child.material);
             }

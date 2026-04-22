@@ -9,8 +9,8 @@ import { SecurityCore } from './SecurityCore';
 import { KernelTerminus } from './KernelTerminus';
 import { GameTest } from './GameTest';
 
-// Re-export for convenience
-export { BaseStage, Lobby, NetworkMatrix, PacketForge, CipherNull, SecurityCore, KernelTerminus };
+// Re-export for convenience (including legacy aliases still used by some callers)
+export { BaseStage, Lobby, NetworkMatrix, PacketForge, CipherNull, SecurityCore, KernelTerminus, NetworkMatrix as CrimsonDepths, SecurityCore as VioletAbyss };
 
 // Registry of all available dungeons for selection UI
 // GameTest is only included in dev builds

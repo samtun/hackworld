@@ -92,7 +92,7 @@ export class SecurityCore extends BaseStage {
             id: SecurityCore.id,
             name: SecurityCore.name,
             description: SecurityCore.description,
-            requiredProgress: 7 // Unlocked after finishing stage 3 and talking to Mainframe again
+            requiredProgress: 7 // Unlocked after finishing Cipher Null and talking to Mainframe again
         };
     }
 

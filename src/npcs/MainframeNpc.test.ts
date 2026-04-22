@@ -29,6 +29,17 @@ describe('MainframeNpc', () => {
         expect(npc.updateDialogue).not.toHaveBeenCalled();
     });
 
+    it('unlocks Kernel Terminus when interacting at progress 8', () => {
+        const npc = Object.create(MainframeNpc.prototype) as MainframeNpc;
+        npc.updateDialogue = vi.fn();
+        GameProgressManager.Instance.progress = 8;
+
+        (npc as any).onInteract();
+
+        expect(GameProgressManager.Instance.progress).toBe(9);
+        expect(npc.updateDialogue).toHaveBeenCalledWith(9);
+    });
+
     it('dialogue at progress 8 references Kernel Terminus and two boss sectors', () => {
         const dialogue = (MainframeNpc as any).getDialogueForProgress(8) as string[];
         expect(dialogue.join(' ')).toContain('Kernel Terminus');
