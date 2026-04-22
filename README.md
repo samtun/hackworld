@@ -13,7 +13,7 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 - Hack and slash gameplay with quest progression
 - **Hub-based game world** - Multiple stages progressively unlocked through gameplay
 - **Procedurally generated dungeons** - Obstacle layouts and enemy placements are randomised every time a dungeon stage is entered, keeping exploration fresh
-- **Stage minimap system** - A 240x180 minimap appears in the top-right corner; in dungeon stages it unlocks after picking up the **Grid Tracer** item from one loot room chest area, while the Lobby minimap is always visible
+- **Stage minimap system** - A 240x180 minimap appears in the top-right corner; in dungeon stages it unlocks after picking up the **Grid Tracer** item from one loot room, while the Lobby minimap is always visible
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
 - **Tech Points** - Gain tech points by using a specific weapon or skill to unlock higher level items and skill variants
 - **Loot Mechanics** - Inventory system with randomized looting mechanics

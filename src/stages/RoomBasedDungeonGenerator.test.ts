@@ -533,7 +533,8 @@ describe('RoomBasedDungeonGenerator', () => {
             }
 
             for (const barrel of layout.barrelSpawns) {
-                if (Math.abs(barrel.y - (mapSpawn.y - MAP_ITEM_SPAWN_Y_OFFSET)) > 0.1) continue;
+                const roomElevation = mapSpawn.y - MAP_ITEM_SPAWN_Y_OFFSET;
+                if (Math.abs(barrel.y - roomElevation) > 0.1) continue;
                 const dx = barrel.x - mapSpawn.x;
                 const dz = barrel.z - mapSpawn.z;
                 expect(Math.hypot(dx, dz)).toBeGreaterThanOrEqual(2);
