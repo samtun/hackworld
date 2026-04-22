@@ -3,6 +3,7 @@ import { MENU_STYLES } from './MenuManager';
 import { StartMenu, StartMenuOption } from '../StartMenu';
 import { InputManager } from '../InputManager';
 import { MobileControlsManager } from '../MobileControlsManager';
+import type { StageMinimapLayout } from '../stages/StageMinimapLayout';
 
 class PlayerUI {
     id: string;
@@ -313,6 +314,10 @@ export class UIManager {
     private startScreenTapHandler?: (e: TouchEvent) => void;
     private startMenu?: StartMenu;
     private startScreenShown: boolean = false;
+    private minimapWrapper: HTMLDivElement;
+    private minimapCanvas: HTMLCanvasElement;
+    private minimapLayout: StageMinimapLayout | null = null;
+    private minimapVisible = false;
 
     public startScreenTapped: boolean = false;
 
@@ -491,6 +496,24 @@ export class UIManager {
 
         this.deathOverlay.appendChild(buttonContainer);
         document.body.appendChild(this.deathOverlay);
+
+        this.minimapWrapper = document.createElement('div');
+        this.minimapWrapper.style.position = 'fixed';
+        this.minimapWrapper.style.top = '20px';
+        this.minimapWrapper.style.right = '20px';
+        this.minimapWrapper.style.width = '240px';
+        this.minimapWrapper.style.height = '180px';
+        this.minimapWrapper.style.pointerEvents = 'none';
+        this.minimapWrapper.style.zIndex = '1200';
+        this.minimapWrapper.style.display = 'none';
+        document.body.appendChild(this.minimapWrapper);
+
+        this.minimapCanvas = document.createElement('canvas');
+        this.minimapCanvas.width = 240;
+        this.minimapCanvas.height = 180;
+        this.minimapCanvas.style.width = '240px';
+        this.minimapCanvas.style.height = '180px';
+        this.minimapWrapper.appendChild(this.minimapCanvas);
     }
 
     /**
@@ -522,6 +545,8 @@ export class UIManager {
     }
 
     update(player: Player, deltaTime: number): void {
+        this.renderMinimap(player);
+
         // If no registered player UIs exist, skip
         if (this.playerUIs.size === 0) return;
 
@@ -530,6 +555,90 @@ export class UIManager {
         if (!pui) return;
 
         pui.update(player, deltaTime);
+    }
+
+    setMinimapState(layout: StageMinimapLayout | null, visible: boolean): void {
+        this.minimapLayout = layout;
+        this.minimapVisible = visible;
+    }
+
+    private renderMinimap(player: Player): void {
+        if (!this.minimapCanvas || !this.minimapWrapper || !this.minimapLayout || !this.minimapVisible) {
+            if (this.minimapWrapper) this.minimapWrapper.style.display = 'none';
+            return;
+        }
+
+        const ctx = this.minimapCanvas.getContext('2d');
+        if (!ctx) return;
+        this.minimapWrapper.style.display = 'block';
+
+        const width = this.minimapCanvas.width;
+        const height = this.minimapCanvas.height;
+        const margin = 10;
+        const bounds = this.minimapLayout.bounds;
+        const worldWidth = Math.max(1, bounds.maxX - bounds.minX);
+        const worldHeight = Math.max(1, bounds.maxZ - bounds.minZ);
+        const scale = Math.min((width - margin * 2) / worldWidth, (height - margin * 2) / worldHeight);
+        const drawWidth = worldWidth * scale;
+        const drawHeight = worldHeight * scale;
+        const offsetX = (width - drawWidth) / 2;
+        const offsetY = (height - drawHeight) / 2;
+
+        const toCanvasX = (x: number): number => offsetX + (x - bounds.minX) * scale;
+        const toCanvasY = (z: number): number => offsetY + drawHeight - (z - bounds.minZ) * scale;
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = 'rgba(6, 10, 14, 0.8)';
+        ctx.fillRect(0, 0, width, height);
+
+        for (const rect of this.minimapLayout.rects) {
+            const x = toCanvasX(rect.x - rect.width / 2);
+            const y = toCanvasY(rect.z + rect.depth / 2);
+            const w = rect.width * scale;
+            const h = rect.depth * scale;
+            if (rect.kind === 'corridor') {
+                ctx.fillStyle = 'rgba(80, 130, 180, 0.55)';
+                ctx.fillRect(x, y, w, h);
+            } else {
+                ctx.fillStyle = 'rgba(95, 185, 230, 0.7)';
+                ctx.fillRect(x, y, w, h);
+                ctx.strokeStyle = 'rgba(180, 235, 255, 0.8)';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(x, y, w, h);
+            }
+        }
+
+        const dotX = toCanvasX(player.position.x);
+        const dotY = toCanvasY(player.position.z);
+        ctx.fillStyle = '#ffea00';
+        ctx.beginPath();
+        ctx.arc(dotX, dotY, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        const fadeSize = 24;
+        const topFade = ctx.createLinearGradient(0, 0, 0, fadeSize);
+        topFade.addColorStop(0, 'rgba(0,0,0,0.95)');
+        topFade.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = topFade;
+        ctx.fillRect(0, 0, width, fadeSize);
+
+        const bottomFade = ctx.createLinearGradient(0, height, 0, height - fadeSize);
+        bottomFade.addColorStop(0, 'rgba(0,0,0,0.95)');
+        bottomFade.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = bottomFade;
+        ctx.fillRect(0, height - fadeSize, width, fadeSize);
+
+        const leftFade = ctx.createLinearGradient(0, 0, fadeSize, 0);
+        leftFade.addColorStop(0, 'rgba(0,0,0,0.95)');
+        leftFade.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = leftFade;
+        ctx.fillRect(0, 0, fadeSize, height);
+
+        const rightFade = ctx.createLinearGradient(width, 0, width - fadeSize, 0);
+        rightFade.addColorStop(0, 'rgba(0,0,0,0.95)');
+        rightFade.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = rightFade;
+        ctx.fillRect(width - fadeSize, 0, fadeSize, height);
     }
 
     showInteractionHint(show: boolean, text: string = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Interact') {

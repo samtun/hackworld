@@ -1,3 +1,5 @@
+import type { StageMinimapLayout } from './StageMinimapLayout';
+
 /**
  * Wall height and thickness constants (in metres).
  * 2 m height prevents the player from jumping over walls.
@@ -180,6 +182,14 @@ export interface BarrelSpawn {
     z: number;
 }
 
+/** A single minimap unlock item spawn point in a loot room. */
+export interface MapItemSpawn {
+    x: number;
+    y: number;
+    z: number;
+    roomId: number;
+}
+
 /** An electric trap spawn point with size and behaviour parameters. */
 export interface TrapSpawn {
     x: number;
@@ -210,8 +220,12 @@ export interface DungeonLayout {
     chestSpawns: ChestSpawn[];
     /** Breakable barrel spawn positions. */
     barrelSpawns: BarrelSpawn[];
+    /** Minimap unlock item spawn position (null when no loot room exists). */
+    mapItemSpawn: MapItemSpawn | null;
     /** Electric trap spawn positions. */
     trapSpawns: TrapSpawn[];
+    /** Flattened minimap rectangles generated from rooms/corridors. */
+    minimapLayout: StageMinimapLayout;
     /** Centre of the safe (starting) room. */
     spawnPosition: Vec2;
     /** Floor elevation of the safe (starting) room. */
@@ -440,20 +454,38 @@ export class RoomBasedDungeonGenerator {
         const teleporterPosition = this.computeTeleporterPosition(teleporterRoom);
 
         const obstacles = this.buildObstacles(rooms, config);
+        const mapItemSpawn = this.buildMapItemSpawn(rooms);
 
         // Build traps first so their areas can be excluded from enemy & barrel spawns
         const trapSpawns = this.buildTrapSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
 
         const roomSpawns = this.buildEnemySpawns(rooms, config, obstacles, teleporterPosition, trapSpawns);
-        const chestSpawns = this.buildChestSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition);
-        const barrelSpawns = this.buildBarrelSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition, trapSpawns);
+        const chestSpawns = this.buildChestSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition, mapItemSpawn);
+        const barrelSpawns = this.buildBarrelSpawns(rooms, config, obstacles, teleporterPosition, spawnPosition, trapSpawns, mapItemSpawn);
 
         const floorBounds = this.computeFloorBounds(rooms, corridors);
+        const minimapLayout = this.buildMinimapLayout(rooms, corridors, floorBounds);
 
         const spawnElevation = safeRoom.elevation;
         const teleporterElevation = teleporterRoom.elevation;
 
-        return { rooms, corridors, walls, obstacles, roomSpawns, chestSpawns, barrelSpawns, trapSpawns, spawnPosition, spawnElevation, teleporterPosition, teleporterElevation, floorBounds };
+        return {
+            rooms,
+            corridors,
+            walls,
+            obstacles,
+            roomSpawns,
+            chestSpawns,
+            barrelSpawns,
+            mapItemSpawn,
+            trapSpawns,
+            minimapLayout,
+            spawnPosition,
+            spawnElevation,
+            teleporterPosition,
+            teleporterElevation,
+            floorBounds,
+        };
     }
 
     // -----------------------------------------------------------------------
@@ -1249,6 +1281,7 @@ export class RoomBasedDungeonGenerator {
         obstacles: RoomObstacle[],
         teleporterPos: Vec2,
         spawnPos: Vec2,
+        mapItemSpawn: MapItemSpawn | null,
     ): ChestSpawn[] {
         const qualityFactor = config.chestQualityFactor ?? 1.0;
         const chestsPerRoom = config.chestsPerLootRoom ?? 3;
@@ -1257,8 +1290,11 @@ export class RoomBasedDungeonGenerator {
         // Place chests in dedicated loot rooms (up to chestsPerRoom each)
         const lootRooms = rooms.filter(r => r.isLootRoom);
         for (const room of lootRooms) {
+            const extraExclusions = (mapItemSpawn && mapItemSpawn.roomId === room.id)
+                ? [{ x: mapItemSpawn.x, z: mapItemSpawn.z, radius: 2 }]
+                : [];
             for (let i = 0; i < chestsPerRoom; i++) {
-                const pos = this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos);
+                const pos = this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos, [], extraExclusions);
                 if (pos) {
                     chests.push({ x: pos.x, y: room.elevation, z: pos.z, itemQualityFactor: qualityFactor });
                 }
@@ -1290,6 +1326,7 @@ export class RoomBasedDungeonGenerator {
         teleporterPos: Vec2,
         spawnPos: Vec2,
         trapSpawns: TrapSpawn[],
+        mapItemSpawn: MapItemSpawn | null,
     ): BarrelSpawn[] {
         if (!config.barrelCount) return [];
 
@@ -1303,9 +1340,12 @@ export class RoomBasedDungeonGenerator {
                 // In enemy (combat) rooms, barrels spawn only on the perimeter
                 // to avoid breaking enemy navigation
                 const isEnemyRoom = !room.isLootRoom;
+                const extraExclusions = (mapItemSpawn && mapItemSpawn.roomId === room.id)
+                    ? [{ x: mapItemSpawn.x, z: mapItemSpawn.z, radius: 2 }]
+                    : [];
                 const pos = isEnemyRoom
-                    ? this.findPerimeterSpawnPosition(room, obstacles, teleporterPos, spawnPos, trapSpawns)
-                    : this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos, trapSpawns);
+                    ? this.findPerimeterSpawnPosition(room, obstacles, teleporterPos, spawnPos, trapSpawns, extraExclusions)
+                    : this.findSpawnPosition(room, obstacles, teleporterPos, spawnPos, trapSpawns, extraExclusions);
                 if (pos) {
                     barrels.push({ x: pos.x, y: room.elevation, z: pos.z });
                 }
@@ -1377,6 +1417,7 @@ export class RoomBasedDungeonGenerator {
         teleporterPos: Vec2,
         spawnPos: Vec2,
         trapSpawns: TrapSpawn[] = [],
+        extraExclusions: Array<{ x: number; z: number; radius: number }> = [],
     ): Vec2 | null {
         const exclusions: Array<{ x: number; z: number; radius: number }> = [];
         exclusions.push({ x: teleporterPos.x, z: teleporterPos.z, radius: 3 });
@@ -1398,6 +1439,7 @@ export class RoomBasedDungeonGenerator {
             const doorPos = this.doorWorldPosition(room, door);
             exclusions.push({ x: doorPos.x, z: doorPos.z, radius: CORRIDOR_WIDTH + 1 });
         }
+        exclusions.push(...extraExclusions);
 
         const minX = room.centerX - room.width / 2 + SPAWN_PADDING;
         const maxX = room.centerX + room.width / 2 - SPAWN_PADDING;
@@ -1428,6 +1470,7 @@ export class RoomBasedDungeonGenerator {
         teleporterPos: Vec2,
         spawnPos: Vec2,
         trapSpawns: TrapSpawn[] = [],
+        extraExclusions: Array<{ x: number; z: number; radius: number }> = [],
     ): Vec2 | null {
         const exclusions: Array<{ x: number; z: number; radius: number }> = [];
         exclusions.push({ x: teleporterPos.x, z: teleporterPos.z, radius: 3 });
@@ -1448,6 +1491,7 @@ export class RoomBasedDungeonGenerator {
             const doorPos = this.doorWorldPosition(room, door);
             exclusions.push({ x: doorPos.x, z: doorPos.z, radius: CORRIDOR_WIDTH + 1 });
         }
+        exclusions.push(...extraExclusions);
 
         const perimeterDepth = SPAWN_PADDING + 1;
         const minX = room.centerX - room.width / 2 + SPAWN_PADDING;
@@ -1474,6 +1518,44 @@ export class RoomBasedDungeonGenerator {
             if (!isExcluded(x, z)) return { x, z };
         }
         return null;
+    }
+
+    private buildMapItemSpawn(rooms: DungeonRoom[]): MapItemSpawn | null {
+        const lootRooms = rooms.filter(r => r.isLootRoom);
+        if (lootRooms.length === 0) return null;
+
+        const room = lootRooms[this.rangeInt(0, lootRooms.length - 1)];
+        return {
+            x: room.centerX,
+            y: room.elevation + 0.45,
+            z: room.centerZ,
+            roomId: room.id,
+        };
+    }
+
+    private buildMinimapLayout(
+        rooms: DungeonRoom[],
+        corridors: Corridor[],
+        floorBounds: { minX: number; maxX: number; minZ: number; maxZ: number },
+    ): StageMinimapLayout {
+        const rects = [
+            ...rooms.map(room => ({
+                x: room.centerX,
+                z: room.centerZ,
+                width: room.width,
+                depth: room.depth,
+                kind: 'room' as const,
+            })),
+            ...corridors.map(corridor => ({
+                x: corridor.centerX,
+                z: corridor.centerZ,
+                width: corridor.width,
+                depth: corridor.depth,
+                kind: 'corridor' as const,
+            })),
+        ];
+
+        return { rects, bounds: floorBounds };
     }
 
     // -----------------------------------------------------------------------

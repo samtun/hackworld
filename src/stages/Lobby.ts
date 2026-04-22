@@ -13,6 +13,7 @@ import { CoreTrader } from '../items/cores/CoreTrader';
 import { CardManager } from '../items/cards/CardManager';
 import { ShaderUtils } from '../ShaderUtils';
 import { GameProgressManager } from '../GameProgressManager';
+import type { StageMinimapLayout } from './StageMinimapLayout';
 
 export class Lobby extends BaseStage {
     id = 'lobby';
@@ -57,6 +58,10 @@ export class Lobby extends BaseStage {
     private cardManager?: CardManager;
 
     private bannerTexture?: THREE.Texture | null = null;
+    private static readonly minimapLayout: StageMinimapLayout = {
+        rects: [{ x: 0, z: 0, width: 34, depth: 34, kind: 'room' }],
+        bounds: { minX: -18, maxX: 18, minZ: -18, maxZ: 18 },
+    };
 
     // Healing Station
     healingStation?: HealingStation;
@@ -72,6 +77,7 @@ export class Lobby extends BaseStage {
         this.clear();
         console.log("Loading Lobby...");
         await this.loadEnvironmentMap();
+        this.setMinimapLayout(Lobby.minimapLayout, true);
 
         // Update Mainframe dialogue on each load (in case progress changed)
         this.updateMainframeDialogue();

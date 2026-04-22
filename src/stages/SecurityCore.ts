@@ -67,6 +67,7 @@ export class SecurityCore extends BaseStage {
         // Generate room-based procedural layout
         const generator = new RoomBasedDungeonGenerator();
         const layout = generator.generate(SecurityCore.generationConfig);
+        this.setMinimapLayout(layout.minimapLayout, false);
 
         // Update spawn position from generated layout
         this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
@@ -91,6 +92,7 @@ export class SecurityCore extends BaseStage {
         // Build loot chests, breakable barrels, and electric traps
         this.buildChestsFromLayout(layout);
         this.buildBarrelsFromLayout(layout);
+        this.buildMinimapDropFromLayout(layout);
         this.buildTrapsFromLayout(layout);
     }
 }

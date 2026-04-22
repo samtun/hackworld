@@ -483,6 +483,7 @@ describe('RoomBasedDungeonGenerator', () => {
             const layout = gen(42);
             expect(layout.chestSpawns).toEqual([]);
             expect(layout.barrelSpawns).toEqual([]);
+            expect(layout.mapItemSpawn).toBeNull();
         });
 
         it('generates chest spawns in loot rooms and teleporter room', () => {
@@ -509,6 +510,33 @@ describe('RoomBasedDungeonGenerator', () => {
             const layout = gen(42, configWithChestsAndBarrels);
             const lootRooms = layout.rooms.filter(r => r.isLootRoom);
             expect(lootRooms.length).toBe(1);
+        });
+
+        it('generates exactly one minimap item spawn in a loot room', () => {
+            const layout = gen(42, configWithChestsAndBarrels);
+            expect(layout.mapItemSpawn).not.toBeNull();
+            const lootRoomIds = new Set(layout.rooms.filter(r => r.isLootRoom).map(r => r.id));
+            expect(lootRoomIds.has(layout.mapItemSpawn!.roomId)).toBe(true);
+        });
+
+        it('keeps chest and barrel spawns away from the minimap item spawn', () => {
+            const layout = gen(42, configWithChestsAndBarrels);
+            expect(layout.mapItemSpawn).not.toBeNull();
+            const mapSpawn = layout.mapItemSpawn!;
+
+            for (const chest of layout.chestSpawns) {
+                if (Math.abs(chest.y - mapSpawn.y) > 0.1) continue;
+                const dx = chest.x - mapSpawn.x;
+                const dz = chest.z - mapSpawn.z;
+                expect(Math.hypot(dx, dz)).toBeGreaterThanOrEqual(2);
+            }
+
+            for (const barrel of layout.barrelSpawns) {
+                if (Math.abs(barrel.y - (mapSpawn.y - 0.45)) > 0.1) continue;
+                const dx = barrel.x - mapSpawn.x;
+                const dz = barrel.z - mapSpawn.z;
+                expect(Math.hypot(dx, dz)).toBeGreaterThanOrEqual(2);
+            }
         });
 
         it('chest/barrel spawns are inside room boundaries', () => {
@@ -542,6 +570,22 @@ describe('RoomBasedDungeonGenerator', () => {
             const l2 = gen(42, configWithChestsAndBarrels);
             expect(l1.chestSpawns).toEqual(l2.chestSpawns);
             expect(l1.barrelSpawns).toEqual(l2.barrelSpawns);
+            expect(l1.mapItemSpawn).toEqual(l2.mapItemSpawn);
+        });
+    });
+
+    describe('minimap layout', () => {
+        it('contains one rectangle for each room and corridor', () => {
+            const layout = gen(42, {
+                ...baseConfig,
+                lootRoomCount: { min: 1, max: 1 },
+            });
+            expect(layout.minimapLayout.rects.length).toBe(layout.rooms.length + layout.corridors.length);
+        });
+
+        it('uses floor bounds as minimap bounds', () => {
+            const layout = gen(42);
+            expect(layout.minimapLayout.bounds).toEqual(layout.floorBounds);
         });
     });
 
