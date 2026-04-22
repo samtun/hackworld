@@ -80,6 +80,35 @@ function makeInput(overrides: Partial<{
     };
 }
 
+function makeMockMinimapContext() {
+    const arcCalls: Array<{ color: string; x: number; y: number; radius: number }> = [];
+    let fillStyle = '';
+
+    const ctx = {
+        clearRect: vi.fn(),
+        fillRect: vi.fn(),
+        beginPath: vi.fn(),
+        moveTo: vi.fn(),
+        lineTo: vi.fn(),
+        closePath: vi.fn(),
+        stroke: vi.fn(),
+        fill: vi.fn(),
+        createLinearGradient: vi.fn(() => ({ addColorStop: vi.fn() })),
+        arc: vi.fn((x: number, y: number, radius: number) => {
+            arcCalls.push({ color: fillStyle, x, y, radius });
+        }),
+    } as any;
+
+    Object.defineProperty(ctx, 'fillStyle', {
+        get: () => fillStyle,
+        set: (value: string) => {
+            fillStyle = value;
+        },
+    });
+
+    return { ctx, arcCalls };
+}
+
 // ─── displayInsufficientTPWarning ───────────────────────────────────────────
 
 describe('displayInsufficientTPWarning', () => {
@@ -131,6 +160,52 @@ describe('update', () => {
         ui.update(player, 0.016);
 
         expect(pui.update).not.toHaveBeenCalled();
+    });
+});
+
+describe('minimap teleporter marker', () => {
+    it('renders inactive teleporter marker as gray', () => {
+        const { ctx, arcCalls } = makeMockMinimapContext();
+        const canvas = document.createElement('canvas');
+        (canvas as any).getContext = vi.fn().mockReturnValue(ctx);
+        const wrapper = document.createElement('div');
+        const ui = makeUIManager({
+            minimapCanvas: canvas,
+            minimapWrapper: wrapper,
+            minimapVisible: true,
+            minimapLayout: {
+                rects: [],
+                bounds: { minX: -1, maxX: 1, minZ: -1, maxZ: 1 },
+                teleporter: { x: 3, z: -2, active: false },
+            },
+        });
+
+        ui.update({ id: 'p1', position: { x: 0, z: 0 } } as any, 0.016);
+
+        expect(arcCalls.some(call => call.color === '#8f96a0')).toBe(true);
+        expect(arcCalls.some(call => call.color === '#ffea00')).toBe(true);
+    });
+
+    it('renders active teleporter marker as teal', () => {
+        const { ctx, arcCalls } = makeMockMinimapContext();
+        const canvas = document.createElement('canvas');
+        (canvas as any).getContext = vi.fn().mockReturnValue(ctx);
+        const wrapper = document.createElement('div');
+        const ui = makeUIManager({
+            minimapCanvas: canvas,
+            minimapWrapper: wrapper,
+            minimapVisible: true,
+            minimapLayout: {
+                rects: [],
+                bounds: { minX: -1, maxX: 1, minZ: -1, maxZ: 1 },
+                teleporter: { x: 3, z: -2, active: true },
+            },
+        });
+
+        ui.update({ id: 'p1', position: { x: 0, z: 0 } } as any, 0.016);
+
+        expect(arcCalls.some(call => call.color === '#29bfd3')).toBe(true);
+        expect(arcCalls.some(call => call.color === '#ffea00')).toBe(true);
     });
 });
 

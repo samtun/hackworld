@@ -11,6 +11,9 @@ const MINIMAP_VIEWPORT_MARGIN = 14;
 const MINIMAP_WORLD_RADIUS = 24;
 /** Vertical squash ratio used to simulate camera tilt in the isometric minimap. */
 const MINIMAP_TILT_FACTOR = 0.58;
+const MINIMAP_MARKER_RADIUS = 3;
+const MINIMAP_TELEPORTER_INACTIVE_COLOR = '#8f96a0';
+const MINIMAP_TELEPORTER_ACTIVE_COLOR = '#29bfd3';
 
 class PlayerUI {
     id: string;
@@ -638,9 +641,19 @@ export class UIManager {
             }
         }
 
+        if (this.minimapLayout.teleporter) {
+            const teleporter = project(this.minimapLayout.teleporter.x, this.minimapLayout.teleporter.z);
+            ctx.fillStyle = this.minimapLayout.teleporter.active
+                ? MINIMAP_TELEPORTER_ACTIVE_COLOR
+                : MINIMAP_TELEPORTER_INACTIVE_COLOR;
+            ctx.beginPath();
+            ctx.arc(teleporter.x, teleporter.y, MINIMAP_MARKER_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
         ctx.fillStyle = '#ffea00';
         ctx.beginPath();
-        ctx.arc(centerX, centerY, 3, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, MINIMAP_MARKER_RADIUS, 0, Math.PI * 2);
         ctx.fill();
 
         const fadeSize = 24;

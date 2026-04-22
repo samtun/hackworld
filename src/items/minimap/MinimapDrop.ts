@@ -9,6 +9,7 @@ export class MinimapDrop extends ItemDrop {
     dropType = ItemDropType.MINIMAP;
     interactiveType = InteractiveEntityType.ITEM_DROP;
     private textMesh: THREE.Mesh;
+    private plateMesh: THREE.Mesh;
     private floatTimer = 0;
     private baseHeight: number;
 
@@ -21,7 +22,7 @@ export class MinimapDrop extends ItemDrop {
         this.baseHeight = position.y;
         this.mesh = new THREE.Group();
 
-        const plate = new THREE.Mesh(
+        this.plateMesh = new THREE.Mesh(
             new THREE.BoxGeometry(0.95, 0.04, 0.65),
             new THREE.MeshStandardMaterial({
                 color: 0x66d8ff,
@@ -31,8 +32,8 @@ export class MinimapDrop extends ItemDrop {
                 roughness: 0.25,
             }),
         );
-        plate.rotation.x = -0.35;
-        this.mesh.add(plate);
+        this.plateMesh.rotation.x = -0.35;
+        this.mesh.add(this.plateMesh);
 
         this.textMesh = this.createTextLabel('Grid Tracer');
         this.textMesh.position.y = 0.55;
@@ -45,7 +46,7 @@ export class MinimapDrop extends ItemDrop {
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3): void {
         this.floatTimer += deltaTime;
         this.mesh.position.y = this.baseHeight + Math.sin(this.floatTimer * this.FLOAT_SPEED) * this.FLOAT_AMPLITUDE;
-        this.mesh.rotation.y += this.ROTATION_SPEED * deltaTime;
+        this.plateMesh.rotation.y += this.ROTATION_SPEED * deltaTime;
 
         const isNearPlayer = this.mesh.position.distanceTo(playerPosition) < this.PICKUP_DISTANCE;
         this.textMesh.visible = isNearPlayer;

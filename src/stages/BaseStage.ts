@@ -563,7 +563,16 @@ export abstract class BaseStage {
     }
 
     getMinimapLayout(): StageMinimapLayout | null {
-        return this.minimapLayout;
+        if (!this.minimapLayout) return null;
+        if (!this.teleporter) return this.minimapLayout;
+        return {
+            ...this.minimapLayout,
+            teleporter: {
+                x: this.teleporter.position.x,
+                z: this.teleporter.position.z,
+                active: this.teleporter.isActive,
+            },
+        };
     }
 
     isMinimapVisible(): boolean {
