@@ -13,6 +13,7 @@ import { GameProgressManager } from './GameProgressManager';
 import { ItemDrop } from './items/ItemDrop';
 import { LootChest } from './items/LootChest';
 import { BreakableBarrel } from './items/BreakableBarrel';
+import type { StageMinimapLayout } from './stages/StageMinimapLayout';
 
 export class World {
     scene: THREE.Scene;
@@ -399,7 +400,7 @@ export class World {
      * Returns the first match in priority order
      */
     checkNearestInteractiveDrop(playerPosition: THREE.Vector3): ItemDrop | null {
-        const dropTypes = [ItemDropType.WEAPON, ItemDropType.CHIP, ItemDropType.CORE, ItemDropType.BOOSTER_PACK] as const;
+        const dropTypes = [ItemDropType.MINIMAP, ItemDropType.WEAPON, ItemDropType.CHIP, ItemDropType.CORE, ItemDropType.BOOSTER_PACK] as const;
         for (const dropType of dropTypes) {
             const drop = this.itemDropManager.checkInteraction(dropType, playerPosition);
             if (drop) return drop;
@@ -426,6 +427,16 @@ export class World {
     pickupDrop(drop: ItemDrop, player: Player): void {
         this.floatingIndicatorManager.spawnPickupIndicator(drop);
         this.itemDropManager.pickup(drop.dropType, this.scene, drop, player);
+        if (drop.dropType === ItemDropType.MINIMAP) {
+            this.currentStage?.revealMinimap();
+        }
+    }
+
+    getCurrentMinimapState(): { layout: StageMinimapLayout | null; visible: boolean } {
+        return {
+            layout: this.currentStage?.getMinimapLayout() ?? null,
+            visible: this.currentStage?.isMinimapVisible() ?? false,
+        };
     }
 
     /**

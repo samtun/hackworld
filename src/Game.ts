@@ -725,6 +725,8 @@ export class Game {
         // Prevent movement when in a menu
         this.player.update(dt, preventJump, anyMenuOpen);
         this.world.update(dt, this.player, this.camera.position, anyMenuOpen);
+        const minimapState = this.world.getCurrentMinimapState();
+        this.ui.setMinimapState(minimapState.layout, minimapState.visible);
 
         this.ui.update(this.player, dt);
 

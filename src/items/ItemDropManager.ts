@@ -8,6 +8,7 @@ import { WeaponDropStrategy } from './weapons/WeaponDropStrategy';
 import { ChipDropStrategy } from './chips/ChipDropStrategy';
 import { CoreDropStrategy } from './cores/CoreDropStrategy';
 import { BoosterPackDropStrategy } from './cards/BoosterPackDropStrategy';
+import { MinimapDropStrategy } from './minimap/MinimapDropStrategy';
 import { XDataDropStrategy } from './xdata/XDataDropStrategy';
 import { MoneyDropStrategy } from './bits/MoneyDropStrategy';
 import { HPPotionDropStrategy, TPPotionDropStrategy } from './potions/PotionDropStrategies';
@@ -35,6 +36,7 @@ export class ItemDropManager {
         this.registerStrategy(new ChipDropStrategy());
         this.registerStrategy(new CoreDropStrategy());
         this.registerStrategy(new BoosterPackDropStrategy());
+        this.registerStrategy(new MinimapDropStrategy());
         this.registerStrategy(new XDataDropStrategy());
         this.registerStrategy(new MoneyDropStrategy());
         this.registerStrategy(new HPPotionDropStrategy());

@@ -14,6 +14,9 @@ import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
 import { LootChest } from '../items/LootChest';
 import { BreakableBarrel } from '../items/BreakableBarrel';
 import { ElectricTrap } from '../items/ElectricTrap';
+import type { StageMinimapLayout } from './StageMinimapLayout';
+import { ItemDropManager } from '../items/ItemDropManager';
+import { MinimapDrop } from '../items/minimap/MinimapDrop';
 
 /**
  * Tiny Y offset applied to north/south walls (those running along X) to
@@ -83,6 +86,8 @@ export abstract class BaseStage {
      * Uniforms are updated each frame so walls fade when the player is behind them.
      */
     protected wallMaterials: THREE.MeshStandardMaterial[] = [];
+    private minimapLayout: StageMinimapLayout | null = null;
+    private minimapVisible = false;
 
     /** Accumulated wall/obstacle shader time (seconds). */
     private shaderTime = 0;
@@ -134,6 +139,8 @@ export abstract class BaseStage {
         this.roomEnemyMap.clear();
         this.totalEnemiesSpawned = 0;
         this.navGrid = null;
+        this.minimapLayout = null;
+        this.minimapVisible = false;
 
         // Dispose wall shader materials before clearing the array
         for (const mat of this.wallMaterials) {
@@ -538,6 +545,38 @@ export abstract class BaseStage {
             });
             this.electricTraps.push(trap);
         }
+    }
+
+    protected setMinimapLayout(layout: StageMinimapLayout | null, visible: boolean): void {
+        this.minimapLayout = layout;
+        this.minimapVisible = visible;
+    }
+
+    protected buildMinimapDropFromLayout(layout: DungeonLayout): void {
+        if (!layout.mapItemSpawn) return;
+        const pos = layout.mapItemSpawn;
+        ItemDropManager.Instance.addDrop(new MinimapDrop(this.scene, new CANNON.Vec3(pos.x, pos.y, pos.z)));
+    }
+
+    revealMinimap(): void {
+        this.minimapVisible = true;
+    }
+
+    getMinimapLayout(): StageMinimapLayout | null {
+        if (!this.minimapLayout) return null;
+        if (!this.teleporter) return this.minimapLayout;
+        return {
+            ...this.minimapLayout,
+            teleporter: {
+                x: this.teleporter.position.x,
+                z: this.teleporter.position.z,
+                active: this.teleporter.isActive,
+            },
+        };
+    }
+
+    isMinimapVisible(): boolean {
+        return this.minimapVisible;
     }
 
     /**

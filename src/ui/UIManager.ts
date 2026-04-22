@@ -3,6 +3,19 @@ import { MENU_STYLES } from './MenuManager';
 import { StartMenu, StartMenuOption } from '../StartMenu';
 import { InputManager } from '../InputManager';
 import { MobileControlsManager } from '../MobileControlsManager';
+import type { StageMinimapLayout } from '../stages/StageMinimapLayout';
+
+/** Empty border inside the 240x180 minimap canvas (pixels). */
+const MINIMAP_VIEWPORT_MARGIN = 14;
+/** Radius around the player represented in the minimap viewport (world metres). */
+const MINIMAP_WORLD_RADIUS = 40;
+/** Vertical squash ratio used to simulate camera tilt in the isometric minimap. */
+const MINIMAP_TILT_FACTOR = 0.58;
+const MINIMAP_MARKER_RADIUS = 4;
+const MINIMAP_TELEPORTER_INACTIVE_COLOR = '#8f96a0';
+const MINIMAP_TELEPORTER_ACTIVE_COLOR = '#29bfd3';
+const MINIMAP_BACKGROUND_ALPHA = 0.5;
+const MINIMAP_EDGE_FADE_SIZE = 24;
 
 class PlayerUI {
     id: string;
@@ -293,7 +306,7 @@ export class UIManager {
     private static instance: UIManager; // Singleton
 
     container: HTMLDivElement;
-    
+
     interactionHint: HTMLDivElement;
     controlHints: HTMLDivElement; // Centralized control hints display
     startScreen: HTMLDivElement;
@@ -303,7 +316,7 @@ export class UIManager {
     deathOverlay: HTMLDivElement;
     // Skill cooldown indicator elements (three skills)
     skillsWrapper?: HTMLDivElement;
-    
+
     playerUIs: Map<string, PlayerUI> = new Map();
     private retryCallback?: () => void;
     private lobbyCallback?: () => void;
@@ -313,6 +326,10 @@ export class UIManager {
     private startScreenTapHandler?: (e: TouchEvent) => void;
     private startMenu?: StartMenu;
     private startScreenShown: boolean = false;
+    private minimapWrapper: HTMLDivElement;
+    private minimapCanvas: HTMLCanvasElement;
+    private minimapLayout: StageMinimapLayout | null = null;
+    private minimapVisible = false;
 
     public startScreenTapped: boolean = false;
 
@@ -491,6 +508,24 @@ export class UIManager {
 
         this.deathOverlay.appendChild(buttonContainer);
         document.body.appendChild(this.deathOverlay);
+
+        this.minimapWrapper = document.createElement('div');
+        this.minimapWrapper.style.position = 'fixed';
+        this.minimapWrapper.style.top = '20px';
+        this.minimapWrapper.style.right = '20px';
+        this.minimapWrapper.style.width = '240px';
+        this.minimapWrapper.style.height = '180px';
+        this.minimapWrapper.style.pointerEvents = 'none';
+        this.minimapWrapper.style.zIndex = '1200';
+        this.minimapWrapper.style.display = 'none';
+        document.body.appendChild(this.minimapWrapper);
+
+        this.minimapCanvas = document.createElement('canvas');
+        this.minimapCanvas.width = 240;
+        this.minimapCanvas.height = 180;
+        this.minimapCanvas.style.width = '240px';
+        this.minimapCanvas.style.height = '180px';
+        this.minimapWrapper.appendChild(this.minimapCanvas);
     }
 
     /**
@@ -522,6 +557,8 @@ export class UIManager {
     }
 
     update(player: Player, deltaTime: number): void {
+        this.renderMinimap(player);
+
         // If no registered player UIs exist, skip
         if (this.playerUIs.size === 0) return;
 
@@ -532,12 +569,131 @@ export class UIManager {
         pui.update(player, deltaTime);
     }
 
+    setMinimapState(layout: StageMinimapLayout | null, visible: boolean): void {
+        this.minimapLayout = layout;
+        this.minimapVisible = visible;
+    }
+
+    private renderMinimap(player: Player): void {
+        if (!this.minimapCanvas || !this.minimapWrapper || !this.minimapLayout || !this.minimapVisible) {
+            if (this.minimapWrapper) this.minimapWrapper.style.display = 'none';
+            return;
+        }
+
+        const ctx = this.minimapCanvas.getContext('2d');
+        if (!ctx) return;
+        this.minimapWrapper.style.display = 'block';
+
+        const width = this.minimapCanvas.width;
+        const height = this.minimapCanvas.height;
+        const isoRotation = Math.PI / 4;
+        const cos = Math.cos(isoRotation);
+        const sin = Math.sin(isoRotation);
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const scale = Math.min(
+            (width - MINIMAP_VIEWPORT_MARGIN * 2) / (MINIMAP_WORLD_RADIUS * 2),
+            (height - MINIMAP_VIEWPORT_MARGIN * 2) / (MINIMAP_WORLD_RADIUS * 2 * MINIMAP_TILT_FACTOR),
+        );
+
+        /**
+         * Project world XZ coordinates into the minimap's local isometric space.
+         * The player position is treated as the viewport center, then a 45° yaw
+         * rotation and vertical tilt are applied for the minimap perspective.
+         */
+        const project = (x: number, z: number): { x: number; y: number } => {
+            const dx = x - player.position.x;
+            const dz = z - player.position.z;
+            const rotatedX = dx * cos - dz * sin;
+            const rotatedZ = dx * sin + dz * cos;
+            return {
+                x: centerX + rotatedX * scale,
+                y: centerY + rotatedZ * scale * MINIMAP_TILT_FACTOR,
+            };
+        };
+
+        ctx.clearRect(0, 0, width, height);
+        ctx.fillStyle = `rgba(6, 10, 14, ${MINIMAP_BACKGROUND_ALPHA})`;
+        ctx.fillRect(0, 0, width, height);
+
+        for (const rect of this.minimapLayout.rects) {
+            const corners = [
+                project(rect.x - rect.width / 2, rect.z - rect.depth / 2),
+                project(rect.x + rect.width / 2, rect.z - rect.depth / 2),
+                project(rect.x + rect.width / 2, rect.z + rect.depth / 2),
+                project(rect.x - rect.width / 2, rect.z + rect.depth / 2),
+            ];
+
+            ctx.beginPath();
+            ctx.moveTo(corners[0].x, corners[0].y);
+            ctx.lineTo(corners[1].x, corners[1].y);
+            ctx.lineTo(corners[2].x, corners[2].y);
+            ctx.lineTo(corners[3].x, corners[3].y);
+            ctx.closePath();
+
+            if (rect.kind === 'corridor') {
+                ctx.fillStyle = 'rgba(80, 130, 180, 0.55)';
+                ctx.fill();
+            } else {
+                ctx.fillStyle = 'rgba(95, 185, 230, 0.7)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(180, 235, 255, 0.8)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
+            }
+        }
+
+        if (this.minimapLayout.teleporter) {
+            const teleporter = project(this.minimapLayout.teleporter.x, this.minimapLayout.teleporter.z);
+            ctx.fillStyle = this.minimapLayout.teleporter.active
+                ? MINIMAP_TELEPORTER_ACTIVE_COLOR
+                : MINIMAP_TELEPORTER_INACTIVE_COLOR;
+            ctx.beginPath();
+            ctx.arc(teleporter.x, teleporter.y, MINIMAP_MARKER_RADIUS, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.fillStyle = '#ffea00';
+        ctx.beginPath();
+        ctx.arc(centerX, centerY, MINIMAP_MARKER_RADIUS, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+
+        const topFade = ctx.createLinearGradient(0, 0, 0, MINIMAP_EDGE_FADE_SIZE);
+        topFade.addColorStop(0, 'rgba(0,0,0,1)');
+        topFade.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = topFade;
+        ctx.fillRect(0, 0, width, MINIMAP_EDGE_FADE_SIZE);
+
+        const bottomFade = ctx.createLinearGradient(0, height, 0, height - MINIMAP_EDGE_FADE_SIZE);
+        bottomFade.addColorStop(0, 'rgba(0,0,0,1)');
+        bottomFade.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = bottomFade;
+        ctx.fillRect(0, height - MINIMAP_EDGE_FADE_SIZE, width, MINIMAP_EDGE_FADE_SIZE);
+
+        const leftFade = ctx.createLinearGradient(0, 0, MINIMAP_EDGE_FADE_SIZE, 0);
+        leftFade.addColorStop(0, 'rgba(0,0,0,1)');
+        leftFade.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = leftFade;
+        ctx.fillRect(0, 0, MINIMAP_EDGE_FADE_SIZE, height);
+
+        const rightFade = ctx.createLinearGradient(width, 0, width - MINIMAP_EDGE_FADE_SIZE, 0);
+        rightFade.addColorStop(0, 'rgba(0,0,0,1)');
+        rightFade.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = rightFade;
+        ctx.fillRect(width - MINIMAP_EDGE_FADE_SIZE, 0, MINIMAP_EDGE_FADE_SIZE, height);
+
+        ctx.restore();
+    }
+
     showInteractionHint(show: boolean, text: string = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Interact') {
         this.interactionHint.style.display = show ? 'block' : 'none';
         this.interactionHint.innerHTML = text;
     }
 
-    
+
 
     /**
      * Shows the main menu on the start screen after START is pressed.
