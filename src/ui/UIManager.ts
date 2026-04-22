@@ -8,7 +8,7 @@ import type { StageMinimapLayout } from '../stages/StageMinimapLayout';
 /** Empty border inside the 240x180 minimap canvas (pixels). */
 const MINIMAP_VIEWPORT_MARGIN = 14;
 /** Radius around the player represented in the minimap viewport (world metres). */
-const MINIMAP_WORLD_RADIUS = 24;
+const MINIMAP_WORLD_RADIUS = 40;
 /** Vertical squash ratio used to simulate camera tilt in the isometric minimap. */
 const MINIMAP_TILT_FACTOR = 0.58;
 const MINIMAP_MARKER_RADIUS = 3;
@@ -304,7 +304,7 @@ export class UIManager {
     private static instance: UIManager; // Singleton
 
     container: HTMLDivElement;
-    
+
     interactionHint: HTMLDivElement;
     controlHints: HTMLDivElement; // Centralized control hints display
     startScreen: HTMLDivElement;
@@ -314,7 +314,7 @@ export class UIManager {
     deathOverlay: HTMLDivElement;
     // Skill cooldown indicator elements (three skills)
     skillsWrapper?: HTMLDivElement;
-    
+
     playerUIs: Map<string, PlayerUI> = new Map();
     private retryCallback?: () => void;
     private lobbyCallback?: () => void;
@@ -687,7 +687,7 @@ export class UIManager {
         this.interactionHint.innerHTML = text;
     }
 
-    
+
 
     /**
      * Shows the main menu on the start screen after START is pressed.
