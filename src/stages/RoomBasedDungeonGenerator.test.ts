@@ -7,6 +7,7 @@ import {
     SAFE_ROOM_SIZE,
     TELEPORTER_ROOM_SIZE,
     ROOM_ELEVATION_STEP,
+    MAP_ITEM_SPAWN_Y_OFFSET,
 } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig, DungeonLayout } from './RoomBasedDungeonGenerator';
 
@@ -24,7 +25,6 @@ function gen(seed: number, config: RoomGenerationConfig = baseConfig): DungeonLa
 }
 
 describe('RoomBasedDungeonGenerator', () => {
-    const MAP_ITEM_VISUAL_Y_OFFSET = 0.45;
     describe('determinism', () => {
         it('produces identical layouts for the same seed', () => {
             const l1 = gen(42);
@@ -533,7 +533,7 @@ describe('RoomBasedDungeonGenerator', () => {
             }
 
             for (const barrel of layout.barrelSpawns) {
-                if (Math.abs(barrel.y - (mapSpawn.y - MAP_ITEM_VISUAL_Y_OFFSET)) > 0.1) continue;
+                if (Math.abs(barrel.y - (mapSpawn.y - MAP_ITEM_SPAWN_Y_OFFSET)) > 0.1) continue;
                 const dx = barrel.x - mapSpawn.x;
                 const dz = barrel.z - mapSpawn.z;
                 expect(Math.hypot(dx, dz)).toBeGreaterThanOrEqual(2);

@@ -37,6 +37,8 @@ const SPAWN_PADDING = 2;
 
 /** Maximum random-position attempts when placing a chest or barrel. */
 const MAX_SPAWN_ATTEMPTS = 30;
+/** Y offset for the minimap unlock item above room floor elevation. */
+export const MAP_ITEM_SPAWN_Y_OFFSET = 0.45;
 
 // ---------------------------------------------------------------------------
 // Data types – all are plain serialisable data; no Three.js / CANNON deps.
@@ -1527,7 +1529,7 @@ export class RoomBasedDungeonGenerator {
         const room = lootRooms[this.rangeInt(0, lootRooms.length - 1)];
         return {
             x: room.centerX,
-            y: room.elevation + 0.45,
+            y: room.elevation + MAP_ITEM_SPAWN_Y_OFFSET,
             z: room.centerZ,
             roomId: room.id,
         };
