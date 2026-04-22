@@ -14,6 +14,8 @@ const MINIMAP_TILT_FACTOR = 0.58;
 const MINIMAP_MARKER_RADIUS = 4;
 const MINIMAP_TELEPORTER_INACTIVE_COLOR = '#8f96a0';
 const MINIMAP_TELEPORTER_ACTIVE_COLOR = '#29bfd3';
+const MINIMAP_BACKGROUND_ALPHA = 0.5;
+const MINIMAP_EDGE_FADE_SIZE = 24;
 
 class PlayerUI {
     id: string;
@@ -611,7 +613,7 @@ export class UIManager {
         };
 
         ctx.clearRect(0, 0, width, height);
-        ctx.fillStyle = 'rgba(6, 10, 14, 0.8)';
+        ctx.fillStyle = `rgba(6, 10, 14, ${MINIMAP_BACKGROUND_ALPHA})`;
         ctx.fillRect(0, 0, width, height);
 
         for (const rect of this.minimapLayout.rects) {
@@ -656,30 +658,34 @@ export class UIManager {
         ctx.arc(centerX, centerY, MINIMAP_MARKER_RADIUS, 0, Math.PI * 2);
         ctx.fill();
 
-        const fadeSize = 24;
-        const topFade = ctx.createLinearGradient(0, 0, 0, fadeSize);
-        topFade.addColorStop(0, 'rgba(0,0,0,0.95)');
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-out';
+
+        const topFade = ctx.createLinearGradient(0, 0, 0, MINIMAP_EDGE_FADE_SIZE);
+        topFade.addColorStop(0, 'rgba(0,0,0,1)');
         topFade.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = topFade;
-        ctx.fillRect(0, 0, width, fadeSize);
+        ctx.fillRect(0, 0, width, MINIMAP_EDGE_FADE_SIZE);
 
-        const bottomFade = ctx.createLinearGradient(0, height, 0, height - fadeSize);
-        bottomFade.addColorStop(0, 'rgba(0,0,0,0.95)');
+        const bottomFade = ctx.createLinearGradient(0, height, 0, height - MINIMAP_EDGE_FADE_SIZE);
+        bottomFade.addColorStop(0, 'rgba(0,0,0,1)');
         bottomFade.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = bottomFade;
-        ctx.fillRect(0, height - fadeSize, width, fadeSize);
+        ctx.fillRect(0, height - MINIMAP_EDGE_FADE_SIZE, width, MINIMAP_EDGE_FADE_SIZE);
 
-        const leftFade = ctx.createLinearGradient(0, 0, fadeSize, 0);
-        leftFade.addColorStop(0, 'rgba(0,0,0,0.95)');
+        const leftFade = ctx.createLinearGradient(0, 0, MINIMAP_EDGE_FADE_SIZE, 0);
+        leftFade.addColorStop(0, 'rgba(0,0,0,1)');
         leftFade.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = leftFade;
-        ctx.fillRect(0, 0, fadeSize, height);
+        ctx.fillRect(0, 0, MINIMAP_EDGE_FADE_SIZE, height);
 
-        const rightFade = ctx.createLinearGradient(width, 0, width - fadeSize, 0);
-        rightFade.addColorStop(0, 'rgba(0,0,0,0.95)');
+        const rightFade = ctx.createLinearGradient(width, 0, width - MINIMAP_EDGE_FADE_SIZE, 0);
+        rightFade.addColorStop(0, 'rgba(0,0,0,1)');
         rightFade.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = rightFade;
-        ctx.fillRect(width - fadeSize, 0, fadeSize, height);
+        ctx.fillRect(width - MINIMAP_EDGE_FADE_SIZE, 0, MINIMAP_EDGE_FADE_SIZE, height);
+
+        ctx.restore();
     }
 
     showInteractionHint(show: boolean, text: string = '<span class="key-icon">ENTER</span> / <span class="btn-icon xbox-a">A</span> Interact') {
