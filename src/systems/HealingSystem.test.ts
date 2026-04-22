@@ -95,6 +95,24 @@ describe('HealingSystem', () => {
             expect(heal).toHaveBeenCalled();
         });
 
+        it('accumulates small TP heals across updates', () => {
+            const station = makeStation(0, 0, 0, 3);
+            system.register(station);
+
+            const heal = vi.fn();
+            const player = makePlayer({ hp: 0, maxHp: 0, tp: 0, maxTp: 50, position: new THREE.Vector3(0, 0, 0), heal });
+            PlayerRegistry.Instance.addPlayer(player);
+
+            // 50 * (0.016 / 2.5) = 0.32 TP per frame; needs accumulation to produce whole TP.
+            system.update(0.016);
+            system.update(0.016);
+            system.update(0.016);
+            expect(heal).not.toHaveBeenCalled();
+
+            system.update(0.016);
+            expect(heal).toHaveBeenCalledWith(0, 1);
+        });
+
         it('does not heal the player when hp and tp are both full', () => {
             const station = makeStation(0, 0, 0, 3);
             system.register(station);
