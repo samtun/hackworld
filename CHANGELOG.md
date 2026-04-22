@@ -1,3 +1,19 @@
+# [3.7.0](https://github.com/samtun/hackworld/compare/v3.6.2...v3.7.0) (2026-04-22)
+
+
+### Bug Fixes
+
+* hide lobby minimap and add player-following tilted map view ([2ce3e88](https://github.com/samtun/hackworld/commit/2ce3e88111e496ec899bcdc222603050321ee33b))
+* reduce minimap background alpha and fade edges to transparency ([cac6020](https://github.com/samtun/hackworld/commit/cac60208f01186e030df5160f671c4bde0a6dd82))
+
+
+### Features
+
+* add minimap teleporter marker and fix Grid Tracer label billboarding ([aad67bc](https://github.com/samtun/hackworld/commit/aad67bc993d74d1657a0d36e5283f2946c49322b))
+* add minimap unlock item and stage minimap rendering ([95bc29c](https://github.com/samtun/hackworld/commit/95bc29cd46ab7db0f59811d2300738274e38515a))
+* display more of the world on the minimap ([c413ea4](https://github.com/samtun/hackworld/commit/c413ea4cac4fe2e2b3880fd848837fe6af1ae2a9))
+* increase minimap marker size ([5e274ea](https://github.com/samtun/hackworld/commit/5e274eaf61afff3bda3b5db8adfc10bf11707df3))
+
 ## [3.6.2](https://github.com/samtun/hackworld/compare/v3.6.1...v3.6.2) (2026-04-22)
 
 
