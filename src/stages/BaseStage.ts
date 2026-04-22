@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { Enemy } from '../enemies/Enemy';
-import { LargeEnemy } from '../enemies/LargeEnemy';
+import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 import { AssetManager } from '../AssetManager';
 import { Teleporter } from '../Teleporter';
 import { Player } from '../Player';
@@ -17,6 +17,7 @@ import { ElectricTrap } from '../items/ElectricTrap';
 import type { StageMinimapLayout } from './StageMinimapLayout';
 import { ItemDropManager } from '../items/ItemDropManager';
 import { MinimapDrop } from '../items/minimap/MinimapDrop';
+import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
 
 /**
  * Tiny Y offset applied to north/south walls (those running along X) to
@@ -456,12 +457,10 @@ export abstract class BaseStage {
                 const pos = new CANNON.Vec3(spawn.x, spawn.y, spawn.z);
                 const countBefore = this.enemies.length;
 
-                if (spawn.type === 'regular') {
-                    this.spawnEnemy(pos);
-                } else if (spawn.type === 'large') {
-                    this.spawnLargeEnemy(pos);
+                if (spawn.type === 'regular' || spawn.type === 'large') {
+                    this.spawnEnemy(pos, spawn.type, spawn);
                 } else if (spawn.type === 'boss') {
-                    this.spawnBoss(pos);
+                    this.spawnBoss(pos, spawn);
                 }
 
                 // Verify the spawn added an enemy before accessing it
@@ -481,25 +480,37 @@ export abstract class BaseStage {
     /**
      * Spawn regular enemy
      */
-    protected spawnEnemy(position: CANNON.Vec3): void {
-        const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+    protected spawnEnemy(position: CANNON.Vec3, spawnType: 'regular' | 'large' = 'regular', spawn?: EnemySpawnPoint): void {
+        const enemy = new Enemy(
+            this.scene,
+            this.physicsWorld,
+            position,
+            this.physicsMaterial,
+            this.getEnemyConfig(spawnType, spawn),
+        );
         this.enemies.push(enemy);
-    }
-
-    /**
-     * Spawn large enemy
-     */
-    protected spawnLargeEnemy(position: CANNON.Vec3): void {
-        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
-        this.enemies.push(largeEnemy);
     }
 
     /**
      * Spawn boss enemy
      */
-    protected spawnBoss(position: CANNON.Vec3): void {
-        const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+    protected spawnBoss(position: CANNON.Vec3, spawn?: EnemySpawnPoint): void {
+        const boss = new BossEnemy(
+            this.scene,
+            this.physicsWorld,
+            position,
+            this.physicsMaterial,
+            this.getBossConfig(spawn),
+        );
         this.enemies.push(boss);
+    }
+
+    protected getEnemyConfig(_spawnType: 'regular' | 'large', _spawn?: EnemySpawnPoint): Partial<EnemyArchetypeConfig> {
+        return {};
+    }
+
+    protected getBossConfig(_spawn?: EnemySpawnPoint): Partial<EnemyArchetypeConfig> {
+        return {};
     }
 
     /**

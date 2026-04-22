@@ -76,7 +76,7 @@ export interface DungeonRoom {
     depth: number;
     /** True for the starting room – no enemies, player spawns here. */
     isSafe: boolean;
-    /** True for the last combat room – contains the boss. */
+    /** True for combat rooms that contain bosses. */
     isFinal: boolean;
     /** True for the dedicated teleporter room. */
     isTeleporterRoom: boolean;
@@ -278,8 +278,10 @@ export interface RoomGenerationConfig {
     };
     /** Obstacle count range per room (safe room always gets zero). */
     obstacleCount: { min: number; max: number };
-    /** Whether a boss should be placed in the final room. */
+    /** Whether bosses should be placed in final rooms. */
     hasBoss: boolean;
+    /** Number of boss rooms among the combat rooms (default: 1). */
+    bossRoomCount?: number;
     /** Number of dedicated loot rooms to generate (default: 0). */
     lootRoomCount?: { min: number; max: number };
     /** Max chests per loot room (default: 3). */
@@ -509,9 +511,10 @@ export class RoomBasedDungeonGenerator {
 
         // 2. Place combat rooms by branching from existing rooms
         const numCombat = this.rangeInt(config.combatRoomCount.min, config.combatRoomCount.max);
+        const bossRoomCount = Math.max(1, Math.min(numCombat, config.bossRoomCount ?? 1));
 
         for (let i = 0; i < numCombat; i++) {
-            const isFinalCombat = i === numCombat - 1;
+            const isFinalCombat = i >= numCombat - bossRoomCount;
             const sizeConfig = isFinalCombat ? config.finalRoomSize : config.combatRoomSize;
             const placed = this.tryAttachRoom(
                 nextId, rooms, corridors, occupied, sizeConfig, false, isFinalCombat, false,
@@ -519,8 +522,8 @@ export class RoomBasedDungeonGenerator {
             if (placed) nextId++;
         }
 
-        // 3. Attach the dedicated teleporter room to the final room
-        const finalRoom = rooms.find(r => r.isFinal);
+        // 3. Attach the dedicated teleporter room to the final boss room
+        const finalRoom = rooms.filter(r => r.isFinal).sort((a, b) => b.id - a.id)[0];
         if (finalRoom) {
             this.tryAttachTeleporterRoom(nextId, finalRoom, rooms, corridors, occupied);
             nextId++;

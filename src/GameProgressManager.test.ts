@@ -77,12 +77,32 @@ describe('GameProgressManager', () => {
             expect(GameProgressManager.Instance.hasStageBossBeenDefeated(1)).toBe(true);
         });
 
-        it('SecurityCore boss is defeated at progress 4 (requiredProgress=3)', () => {
+        it('PacketForge boss is defeated at progress 4 (requiredProgress=3)', () => {
             GameProgressManager.Instance.progress = 4;
             expect(GameProgressManager.Instance.hasStageBossBeenDefeated(3)).toBe(true);
         });
 
-        it('SecurityCore boss is not defeated at progress 3 (requiredProgress=3)', () => {
+        it('SecurityCore boss is not defeated at progress 7 (requiredProgress=7)', () => {
+            GameProgressManager.Instance.progress = 7;
+            expect(GameProgressManager.Instance.hasStageBossBeenDefeated(7)).toBe(false);
+        });
+
+        it('SecurityCore boss is defeated at progress 8 (requiredProgress=7)', () => {
+            GameProgressManager.Instance.progress = 8;
+            expect(GameProgressManager.Instance.hasStageBossBeenDefeated(7)).toBe(true);
+        });
+
+        it('KernelTerminus boss rooms are defeated at progress 10 (requiredProgress=9)', () => {
+            GameProgressManager.Instance.progress = 10;
+            expect(GameProgressManager.Instance.hasStageBossBeenDefeated(9)).toBe(true);
+        });
+
+        it('KernelTerminus boss rooms are not defeated at progress 9 (requiredProgress=9)', () => {
+            GameProgressManager.Instance.progress = 9;
+            expect(GameProgressManager.Instance.hasStageBossBeenDefeated(9)).toBe(false);
+        });
+
+        it('PacketForge boss is not defeated at progress 3 (requiredProgress=3)', () => {
             GameProgressManager.Instance.progress = 3;
             expect(GameProgressManager.Instance.hasStageBossBeenDefeated(3)).toBe(false);
         });
@@ -103,11 +123,18 @@ describe('GameProgressManager', () => {
             expect(mgr.progress).toBe(0); // no change
         });
 
-        it('advances progress for SecurityCore boss (requiredProgress=3)', () => {
+        it('advances progress for PacketForge boss (requiredProgress=3)', () => {
             const mgr = GameProgressManager.Instance;
-            mgr.progress = 3; // SecurityCore unlocked
+            mgr.progress = 3; // PacketForge unlocked
             mgr.markBossDefeated(3);
             expect(mgr.progress).toBe(4);
+        });
+
+        it('advances progress for SecurityCore boss (requiredProgress=7)', () => {
+            const mgr = GameProgressManager.Instance;
+            mgr.progress = 7;
+            mgr.markBossDefeated(7);
+            expect(mgr.progress).toBe(8);
         });
     });
 
@@ -134,6 +161,16 @@ describe('GameProgressManager', () => {
         it('returns 3 at progress 5', () => {
             GameProgressManager.Instance.progress = 5;
             expect(GameProgressManager.Instance.getUnlockedStageCount()).toBe(3);
+        });
+
+        it('returns 4 at progress 7', () => {
+            GameProgressManager.Instance.progress = 7;
+            expect(GameProgressManager.Instance.getUnlockedStageCount()).toBe(4);
+        });
+
+        it('returns 5 at progress 9', () => {
+            GameProgressManager.Instance.progress = 9;
+            expect(GameProgressManager.Instance.getUnlockedStageCount()).toBe(5);
         });
     });
 

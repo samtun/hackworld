@@ -3,6 +3,7 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
+import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
 export class NetworkMatrix extends BaseStage {
     private static id: string = "networkMatrix";
@@ -15,11 +16,41 @@ export class NetworkMatrix extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
+    private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 60,
+        speed: 3,
+        damage: 10,
+        baseExp: 10,
+        itemDropChance: 0.08,
+        techDropRateFactor: 1.0,
+        xDataDropChanceWeight: 1.0,
+        criticalChance: 0.04,
+        criticalHitMultiplier: 1.2,
+        blockChance: 0.2,
+        size: 1.75,
+        color: 0x0d2f18,
+    };
+
+    private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 150,
+        speed: 3.75,
+        damage: 15,
+        baseExp: 25,
+        itemDropChance: 0.30,
+        techDropRateFactor: 1.3,
+        xDataDropChanceWeight: 1.5,
+        criticalChance: 0.05,
+        criticalHitMultiplier: 1.4,
+        blockChance: 0.2,
+        size: 2.75,
+        color: 0x204a2e,
+    };
+
     private static readonly generationConfig: RoomGenerationConfig = {
-        combatRoomCount: { min: 2, max: 4 },
+        combatRoomCount: { min: 5, max: 7 },
         combatRoomSize: { minWidth: 13, maxWidth: 20, minDepth: 13, maxDepth: 20 },
         finalRoomSize: { minWidth: 16, maxWidth: 24, minDepth: 16, maxDepth: 24 },
-        enemyCount: { min: 1, max: 3, areaPerEnemy: 70, largeFraction: 0.1 },
+        enemyCount: { min: 1, max: 4, areaPerEnemy: 70, largeFraction: 0.15 },
         obstacleCount: { min: 1, max: 2 },
         hasBoss: false,
         lootRoomCount: { min: 1, max: 1 },
@@ -56,6 +87,12 @@ export class NetworkMatrix extends BaseStage {
         return [
             'models/monster.glb'
         ];
+    }
+
+    protected override getEnemyConfig(spawnType: 'regular' | 'large'): Partial<EnemyArchetypeConfig> {
+        return spawnType === 'large'
+            ? NetworkMatrix.eliteEnemyConfig
+            : NetworkMatrix.regularEnemyConfig;
     }
 
     async load(): Promise<void> {

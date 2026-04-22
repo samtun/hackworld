@@ -3,6 +3,7 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
+import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
 export class SecurityCore extends BaseStage {
     private static id: string = "securityCore";
@@ -15,27 +16,72 @@ export class SecurityCore extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
+    private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 190,
+        speed: 4.05,
+        damage: 20,
+        baseExp: 40,
+        itemDropChance: 0.34,
+        techDropRateFactor: 1.5,
+        xDataDropChanceWeight: 2.0,
+        criticalChance: 0.06,
+        criticalHitMultiplier: 1.5,
+        blockChance: 0.24,
+        size: 2.55,
+        color: 0x2b1648,
+    };
+
+    private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 260,
+        speed: 4.35,
+        damage: 27,
+        baseExp: 58,
+        itemDropChance: 0.40,
+        techDropRateFactor: 1.7,
+        xDataDropChanceWeight: 2.5,
+        criticalChance: 0.07,
+        criticalHitMultiplier: 1.6,
+        blockChance: 0.28,
+        size: 3.1,
+        color: 0x4e2a78,
+    };
+
+    private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 920,
+        speed: 4.75,
+        damage: 42,
+        baseExp: 220,
+        itemDropChance: 1,
+        techDropRateFactor: 2.0,
+        xDataDropChanceWeight: 4.4,
+        criticalChance: 0.09,
+        criticalHitMultiplier: 1.75,
+        blockChance: 0.32,
+        size: 4.4,
+        color: 0x6f3da6,
+    };
+
     private static readonly generationConfig: RoomGenerationConfig = {
-        combatRoomCount: { min: 3, max: 5 },
+        combatRoomCount: { min: 12, max: 15 },
         combatRoomSize: { minWidth: 13, maxWidth: 33, minDepth: 13, maxDepth: 33 },
         finalRoomSize: { minWidth: 20, maxWidth: 39, minDepth: 20, maxDepth: 39 },
-        enemyCount: { min: 1, max: 6, areaPerEnemy: 60, largeFraction: 0.25 },
-        obstacleCount: { min: 1, max: 3 },
+        enemyCount: { min: 2, max: 8, areaPerEnemy: 48, largeFraction: 0.45 },
+        obstacleCount: { min: 2, max: 4 },
         hasBoss: true,
-        lootRoomCount: { min: 1, max: 2 },
-        chestsPerLootRoom: 1,
-        chestQualityFactor: 1.2,
+        lootRoomCount: { min: 2, max: 3 },
+        chestsPerLootRoom: 2,
+        chestQualityFactor: 1.55,
         chestInTeleporterRoom: true,
-        barrelCount: { min: 1, max: 4 },
+        barrelCount: { min: 2, max: 5 },
         trapConfig: {
-            count: { min: 1, max: 3 },
-            width: { min: 2, max: 5 },
-            length: { min: 2, max: 5 },
-            damage: 12,
+            count: { min: 2, max: 4 },
+            width: { min: 2, max: 6 },
+            length: { min: 2, max: 6 },
+            damage: 20,
             patterns: [
-                [1000, 1500],
-                [600, 800, 600, 1500],
-                [400, 600, 400, 600, 400, 2000],
+                [900, 1400],
+                [500, 700, 500, 1200],
+                [350, 500, 350, 500, 350, 1600],
                 [],
             ],
         },
@@ -46,7 +92,7 @@ export class SecurityCore extends BaseStage {
             id: SecurityCore.id,
             name: SecurityCore.name,
             description: SecurityCore.description,
-            requiredProgress: 3 // Unlocked after finishing NetworkMatrix and talking to Mainframe again
+            requiredProgress: 7 // Unlocked after finishing stage 3 and talking to Mainframe again
         };
     }
 
@@ -57,6 +103,16 @@ export class SecurityCore extends BaseStage {
         return [
             'models/monster.glb'
         ];
+    }
+
+    protected override getEnemyConfig(spawnType: 'regular' | 'large'): Partial<EnemyArchetypeConfig> {
+        return spawnType === 'large'
+            ? SecurityCore.eliteEnemyConfig
+            : SecurityCore.regularEnemyConfig;
+    }
+
+    protected override getBossConfig(): Partial<EnemyArchetypeConfig> {
+        return SecurityCore.bossConfig;
     }
 
     async load(): Promise<void> {

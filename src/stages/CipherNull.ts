@@ -1,0 +1,140 @@
+import * as CANNON from 'cannon-es';
+import { BaseStage } from './BaseStage';
+import { Lobby } from './Lobby';
+import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
+import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
+import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+
+export class CipherNull extends BaseStage {
+    private static id: string = "cipherNull";
+    private static name: string = "Cipher Null";
+    private static description: string = "Failover archives where encrypted sectors collapse into void";
+
+    id = CipherNull.id;
+    name = CipherNull.name;
+    description = CipherNull.description;
+    environmentMap: string = 'textures/environments/lobby_env.exr';
+    spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
+
+    private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 130,
+        speed: 3.65,
+        damage: 16,
+        baseExp: 24,
+        itemDropChance: 0.23,
+        techDropRateFactor: 1.3,
+        xDataDropChanceWeight: 1.6,
+        criticalChance: 0.05,
+        criticalHitMultiplier: 1.35,
+        blockChance: 0.22,
+        size: 2.2,
+        color: 0x11363f,
+    };
+
+    private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 210,
+        speed: 4.1,
+        damage: 23,
+        baseExp: 40,
+        itemDropChance: 0.34,
+        techDropRateFactor: 1.55,
+        xDataDropChanceWeight: 2.2,
+        criticalChance: 0.065,
+        criticalHitMultiplier: 1.5,
+        blockChance: 0.27,
+        size: 3.0,
+        color: 0x1a515d,
+    };
+
+    private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 760,
+        speed: 4.55,
+        damage: 36,
+        baseExp: 180,
+        itemDropChance: 1,
+        techDropRateFactor: 1.9,
+        xDataDropChanceWeight: 3.9,
+        criticalChance: 0.085,
+        criticalHitMultiplier: 1.68,
+        blockChance: 0.3,
+        size: 4.1,
+        color: 0x2a7888,
+    };
+
+    private static readonly generationConfig: RoomGenerationConfig = {
+        combatRoomCount: { min: 9, max: 13 },
+        combatRoomSize: { minWidth: 14, maxWidth: 30, minDepth: 14, maxDepth: 30 },
+        finalRoomSize: { minWidth: 20, maxWidth: 35, minDepth: 20, maxDepth: 35 },
+        enemyCount: { min: 2, max: 7, areaPerEnemy: 55, largeFraction: 0.35 },
+        obstacleCount: { min: 2, max: 4 },
+        hasBoss: true,
+        lootRoomCount: { min: 2, max: 2 },
+        chestsPerLootRoom: 2,
+        chestQualityFactor: 1.35,
+        chestInTeleporterRoom: true,
+        barrelCount: { min: 2, max: 4 },
+        trapConfig: {
+            count: { min: 2, max: 4 },
+            width: { min: 2, max: 5 },
+            length: { min: 2, max: 6 },
+            damage: 17,
+            patterns: [
+                [1000, 1300],
+                [600, 700, 600, 1300],
+                [450, 600, 450, 600, 450, 1600],
+                [],
+            ],
+        },
+    };
+
+    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
+        return {
+            id: CipherNull.id,
+            name: CipherNull.name,
+            description: CipherNull.description,
+            requiredProgress: 5,
+        };
+    }
+
+    getRequiredAssets(): string[] {
+        return [
+            'models/monster.glb'
+        ];
+    }
+
+    protected override getEnemyConfig(spawnType: 'regular' | 'large'): Partial<EnemyArchetypeConfig> {
+        return spawnType === 'large'
+            ? CipherNull.eliteEnemyConfig
+            : CipherNull.regularEnemyConfig;
+    }
+
+    protected override getBossConfig(): Partial<EnemyArchetypeConfig> {
+        return CipherNull.bossConfig;
+    }
+
+    async load(): Promise<void> {
+        this.clear();
+        await this.loadEnvironmentMap();
+        this.createFloorCollider();
+
+        const generator = new RoomBasedDungeonGenerator();
+        const layout = generator.generate(CipherNull.generationConfig);
+        this.setMinimapLayout(layout.minimapLayout, false);
+
+        this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
+        this.dungeonRooms = layout.rooms;
+
+        this.buildFloorFromLayout(layout, 0x0d2630);
+        this.buildWallsFromLayout(layout);
+        this.buildObstaclesFromLayout(layout);
+
+        const tp = layout.teleporterPosition;
+        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getMetadata().id, false);
+
+        this.spawnEnemiesFromLayout(layout);
+        this.buildChestsFromLayout(layout);
+        this.buildBarrelsFromLayout(layout);
+        this.buildMinimapDropFromLayout(layout);
+        this.buildTrapsFromLayout(layout);
+    }
+}

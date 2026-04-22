@@ -56,6 +56,13 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
+        it('supports multiple final boss rooms when bossRoomCount is configured', () => {
+            const config: RoomGenerationConfig = { ...baseConfig, combatRoomCount: { min: 6, max: 6 }, bossRoomCount: 2 };
+            const layout = gen(7, config);
+            const finalRooms = layout.rooms.filter(r => r.isFinal);
+            expect(finalRooms).toHaveLength(2);
+        });
+
         it('always contains exactly one teleporter room', () => {
             for (let seed = 0; seed < 10; seed++) {
                 const layout = gen(seed);
@@ -242,6 +249,23 @@ describe('RoomBasedDungeonGenerator', () => {
                 const others = finalSpawns.spawns.filter(s => s.type !== 'boss');
                 expect(bosses).toHaveLength(1);
                 expect(others).toHaveLength(0);
+            }
+        });
+
+        it('spawns one boss in each configured final room', () => {
+            const config: RoomGenerationConfig = {
+                ...baseConfig,
+                combatRoomCount: { min: 7, max: 7 },
+                bossRoomCount: 2,
+                hasBoss: true,
+            };
+            const layout = gen(19, config);
+            const finalRooms = layout.rooms.filter(r => r.isFinal);
+            expect(finalRooms).toHaveLength(2);
+            for (const room of finalRooms) {
+                const spawns = layout.roomSpawns.find(rs => rs.roomId === room.id)!;
+                expect(spawns.spawns.filter(s => s.type === 'boss')).toHaveLength(1);
+                expect(spawns.spawns.filter(s => s.type !== 'boss')).toHaveLength(0);
             }
         });
 

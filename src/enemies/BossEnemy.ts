@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Enemy } from './Enemy';
+import type { EnemyArchetypeConfig } from './Enemy';
 
 enum BossAttackType {
     Melee1 = 'Melee1',
@@ -18,48 +19,28 @@ export class BossEnemy extends Enemy {
     private healthBarFill: HTMLDivElement | null = null;
     private healthBarVisible: boolean = false;
 
-    constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
-        super(scene, world, position, physicsMaterial);
-
-        // Boss-level stats
-        this.maxHp = 500;
-        this.hp = this.maxHp;
-        this.speed = 4.5;
-        this.itemDropChance = 1;
-        this.xDataDropChanceWeight = 3;
-        this.baseExp = 120;
-        this.techDropRateFactor = 1.6;
-        this.damage = 25;
-        this.attackCooldown = 1.0; // Longer cooldown between attacks
-        this.size = 3.5;
-        this.radius = 1.25;
-        this.attackRange = 3.0;
-
-        // Scale up the mesh significantly
-        scene.remove(this.mesh);
-        this.mesh.scale.set(2.5, 2.5, 2.5);
-        scene.add(this.mesh);
-
-        // Update physics body size
-        world.removeBody(this.body);
-        const shape = new CANNON.Cylinder(this.radius, this.radius, this.size, 8);
-        this.bodyHalfExtentY = shape.height / 2;
-        this.body = new CANNON.Body({
-            mass: 4, // Changed to CANNON.Body.STATIC or reducing mass for stability
-            material: physicsMaterial,
-            fixedRotation: true
+    constructor(
+        scene: THREE.Scene,
+        world: CANNON.World,
+        position: CANNON.Vec3,
+        physicsMaterial: CANNON.Material,
+        config: Partial<EnemyArchetypeConfig> = {},
+    ) {
+        super(scene, world, position, physicsMaterial, {
+            maxHp: 500,
+            speed: 4.5,
+            damage: 25,
+            baseExp: 120,
+            itemDropChance: 1,
+            techDropRateFactor: 1.6,
+            xDataDropChanceWeight: 3,
+            criticalChance: 0.07,
+            criticalHitMultiplier: 1.5,
+            blockChance: 0.2,
+            size: 3.5,
+            color: 0x000000,
+            ...config,
         });
-        this.body.addShape(shape);
-        this.body.position.copy(position);
-        (this.body as any).entity = this;
-        world.addBody(this.body);
-
-        // Much larger attack hitbox for boss
-        this.attackHitboxSize = new CANNON.Vec3(1.2, 1.2, 1.5);
-        this.attackHitboxOffset = 2.0;
-
-        this.criticalChance = 0.07;
-        this.criticalHitMultiplier = 1.5;
 
         // Create health bar UI
         this.setupHealthBar();

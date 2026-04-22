@@ -3,17 +3,20 @@ import * as CANNON from 'cannon-es';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { NetworkMatrix } from './NetworkMatrix';
+import { PacketForge } from './PacketForge';
+import { CipherNull } from './CipherNull';
 import { SecurityCore } from './SecurityCore';
+import { KernelTerminus } from './KernelTerminus';
 import { GameTest } from './GameTest';
 
 // Re-export for convenience
-export { BaseStage, Lobby, NetworkMatrix as CrimsonDepths, SecurityCore as VioletAbyss };
+export { BaseStage, Lobby, NetworkMatrix, PacketForge, CipherNull, SecurityCore, KernelTerminus };
 
 // Registry of all available dungeons for selection UI
 // GameTest is only included in dev builds
 export const AVAILABLE_DUNGEONS = import.meta.env.DEV 
-    ? [NetworkMatrix, SecurityCore, GameTest]
-    : [NetworkMatrix, SecurityCore];
+    ? [NetworkMatrix, PacketForge, CipherNull, SecurityCore, KernelTerminus, GameTest]
+    : [NetworkMatrix, PacketForge, CipherNull, SecurityCore, KernelTerminus];
 
 // Stage factory type
 type StageConstructor = new (
@@ -26,7 +29,10 @@ type StageConstructor = new (
 const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstructor>([
     [Lobby.getMetadata().id, Lobby],
     [NetworkMatrix.getMetadata().id, NetworkMatrix],
+    [PacketForge.getMetadata().id, PacketForge],
+    [CipherNull.getMetadata().id, CipherNull],
     [SecurityCore.getMetadata().id, SecurityCore],
+    [KernelTerminus.getMetadata().id, KernelTerminus],
     ...(import.meta.env.DEV ? [[GameTest.getMetadata().id, GameTest] as [string, StageConstructor]] : [])
 ]);
 

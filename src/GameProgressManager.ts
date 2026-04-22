@@ -6,11 +6,16 @@
  * 
  * Progress Values:
  * 0 - Initial state (no stages accessible on teleporter)
- * 1 - Talked to Mainframe for first time (first stage unlocked)
- * 2 - First stage boss defeated
- * 3 - Talked to Mainframe after first boss (second stage unlocked)
- * 4 - Second stage boss defeated
- * 5 - Talked to Mainframe after second boss (third stage unlocked)
+ * 1 - Talked to Mainframe for first time (Network Matrix unlocked)
+ * 2 - Network Matrix cleared
+ * 3 - Talked to Mainframe (Packet Forge unlocked)
+ * 4 - Packet Forge cleared
+ * 5 - Talked to Mainframe (Cipher Null unlocked)
+ * 6 - Cipher Null cleared
+ * 7 - Talked to Mainframe (Security Core unlocked)
+ * 8 - Security Core cleared
+ * 9 - Talked to Mainframe (Kernel Terminus unlocked)
+ * 10 - Kernel Terminus cleared
  * ... (pattern continues for future stages)
  * 
  * This system allows for incremental unlocking of game content through
@@ -84,9 +89,7 @@ export class GameProgressManager {
      * Get the number of stages currently unlocked
      */
     getUnlockedStageCount(): number {
-        // Progress 1,2 = 1 stage unlocked
-        // Progress 3,4 = 2 stages unlocked
-        // Progress 5,6 = 3 stages unlocked
+        // Every odd/even pair unlocks one additional stage
         return Math.ceil(this._progress / 2);
     }
     
