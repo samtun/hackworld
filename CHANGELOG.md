@@ -1,3 +1,11 @@
+## [3.6.2](https://github.com/samtun/hackworld/compare/v3.6.1...v3.6.2) (2026-04-22)
+
+
+### Bug Fixes
+
+* accumulate fractional healing station recovery ([1b57191](https://github.com/samtun/hackworld/commit/1b57191409a73ee4a5982cafb021843678b2ae52))
+* restore continuous tp healing at stations ([b94bf5a](https://github.com/samtun/hackworld/commit/b94bf5a9ec7666ca39e6e753e6eb9a6d32815980))
+
 ## [3.6.1](https://github.com/samtun/hackworld/compare/v3.6.0...v3.6.1) (2026-04-08)
 
 
