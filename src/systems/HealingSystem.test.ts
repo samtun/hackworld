@@ -103,7 +103,7 @@ describe('HealingSystem', () => {
             const player = makePlayer({ hp: 0, maxHp: 0, tp: 0, maxTp: 50, position: new THREE.Vector3(0, 0, 0), heal });
             PlayerRegistry.Instance.addPlayer(player);
 
-            // 50 * (0.016 / 2.5) = 0.32 TP per frame; needs accumulation to produce whole TP.
+            // 50 * (0.016 / 2.5) = 0.32 TP per frame; after 4 frames this is 1.28, so heal(0, 1) triggers.
             system.update(0.016);
             system.update(0.016);
             system.update(0.016);

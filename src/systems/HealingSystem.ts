@@ -1,11 +1,12 @@
 import { PlayerRegistry } from '../PlayerRegistry';
+import { Player } from '../Player';
 import { IHealingStation } from './IHealingStation';
 
 export class HealingSystem {
     private static instance: HealingSystem;
     private stations: Set<IHealingStation> = new Set();
     private readonly HEALING_DURATION = 2.5; // seconds to full heal
-    private stationHealRemainders: WeakMap<object, { hp: number; tp: number }> = new WeakMap();
+    private healAccumulators: WeakMap<Player, { hp: number; tp: number }> = new WeakMap();
 
     private constructor() { }
 
@@ -26,11 +27,10 @@ export class HealingSystem {
         if (!players || players.length === 0) {
             // Still update visuals (turn off healing on stations)
             for (const s of this.stations) s.setHealing(false);
-            this.stationHealRemainders = new WeakMap();
             return;
         }
 
-        const playersInHealingRange = new Set<object>();
+        const playersInHealingRange = new Set<Player>();
 
         for (const station of this.stations) {
             const stationPos = station.getPosition();
@@ -48,9 +48,9 @@ export class HealingSystem {
                         const hpHeal = player.maxHp * healPercentage;
                         const tpHeal = player.maxTp * healPercentage;
 
-                        const remainder = this.stationHealRemainders.get(player) ?? { hp: 0, tp: 0 };
-                        const hpTotal = remainder.hp + hpHeal;
-                        const tpTotal = remainder.tp + tpHeal;
+                        const accumulatedFractional = this.healAccumulators.get(player) ?? { hp: 0, tp: 0 };
+                        const hpTotal = accumulatedFractional.hp + hpHeal;
+                        const tpTotal = accumulatedFractional.tp + tpHeal;
                         const hpWhole = Math.floor(hpTotal);
                         const tpWhole = Math.floor(tpTotal);
 
@@ -58,7 +58,7 @@ export class HealingSystem {
                             player.heal(hpWhole, tpWhole);
                         }
 
-                        this.stationHealRemainders.set(player, {
+                        this.healAccumulators.set(player, {
                             hp: hpTotal - hpWhole,
                             tp: tpTotal - tpWhole,
                         });
@@ -71,7 +71,7 @@ export class HealingSystem {
 
         for (const player of players) {
             if (!playersInHealingRange.has(player)) {
-                this.stationHealRemainders.delete(player);
+                this.healAccumulators.delete(player);
             }
         }
     }
