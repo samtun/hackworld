@@ -5,8 +5,11 @@ import { InputManager } from '../InputManager';
 import { MobileControlsManager } from '../MobileControlsManager';
 import type { StageMinimapLayout } from '../stages/StageMinimapLayout';
 
+/** Empty border inside the 240x180 minimap canvas (pixels). */
 const MINIMAP_VIEWPORT_MARGIN = 14;
+/** Radius around the player represented in the minimap viewport (world metres). */
 const MINIMAP_WORLD_RADIUS = 24;
+/** Vertical squash ratio used to simulate camera tilt in the isometric minimap. */
 const MINIMAP_TILT_FACTOR = 0.58;
 
 class PlayerUI {
