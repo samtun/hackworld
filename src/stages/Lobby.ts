@@ -77,7 +77,7 @@ export class Lobby extends BaseStage {
         this.clear();
         console.log("Loading Lobby...");
         await this.loadEnvironmentMap();
-        this.setMinimapLayout(Lobby.minimapLayout, true);
+        this.setMinimapLayout(Lobby.minimapLayout, false);
 
         // Update Mainframe dialogue on each load (in case progress changed)
         this.updateMainframeDialogue();

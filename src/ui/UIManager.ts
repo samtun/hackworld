@@ -574,45 +574,64 @@ export class UIManager {
 
         const width = this.minimapCanvas.width;
         const height = this.minimapCanvas.height;
-        const margin = 10;
-        const bounds = this.minimapLayout.bounds;
-        const worldWidth = Math.max(1, bounds.maxX - bounds.minX);
-        const worldHeight = Math.max(1, bounds.maxZ - bounds.minZ);
-        const scale = Math.min((width - margin * 2) / worldWidth, (height - margin * 2) / worldHeight);
-        const drawWidth = worldWidth * scale;
-        const drawHeight = worldHeight * scale;
-        const offsetX = (width - drawWidth) / 2;
-        const offsetY = (height - drawHeight) / 2;
+        const viewportMargin = 14;
+        const worldRadius = 24;
+        const isoRotation = Math.PI / 4;
+        const tiltFactor = 0.58;
+        const cos = Math.cos(isoRotation);
+        const sin = Math.sin(isoRotation);
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const scale = Math.min(
+            (width - viewportMargin * 2) / (worldRadius * 2),
+            (height - viewportMargin * 2) / (worldRadius * 2 * tiltFactor),
+        );
 
-        const toCanvasX = (x: number): number => offsetX + (x - bounds.minX) * scale;
-        const toCanvasY = (z: number): number => offsetY + drawHeight - (z - bounds.minZ) * scale;
+        const project = (x: number, z: number): { x: number; y: number } => {
+            const dx = x - player.position.x;
+            const dz = z - player.position.z;
+            const rotatedX = dx * cos - dz * sin;
+            const rotatedZ = dx * sin + dz * cos;
+            return {
+                x: centerX + rotatedX * scale,
+                y: centerY + rotatedZ * scale * tiltFactor,
+            };
+        };
 
         ctx.clearRect(0, 0, width, height);
         ctx.fillStyle = 'rgba(6, 10, 14, 0.8)';
         ctx.fillRect(0, 0, width, height);
 
         for (const rect of this.minimapLayout.rects) {
-            const x = toCanvasX(rect.x - rect.width / 2);
-            const y = toCanvasY(rect.z + rect.depth / 2);
-            const w = rect.width * scale;
-            const h = rect.depth * scale;
+            const corners = [
+                project(rect.x - rect.width / 2, rect.z - rect.depth / 2),
+                project(rect.x + rect.width / 2, rect.z - rect.depth / 2),
+                project(rect.x + rect.width / 2, rect.z + rect.depth / 2),
+                project(rect.x - rect.width / 2, rect.z + rect.depth / 2),
+            ];
+
+            ctx.beginPath();
+            ctx.moveTo(corners[0].x, corners[0].y);
+            ctx.lineTo(corners[1].x, corners[1].y);
+            ctx.lineTo(corners[2].x, corners[2].y);
+            ctx.lineTo(corners[3].x, corners[3].y);
+            ctx.closePath();
+
             if (rect.kind === 'corridor') {
                 ctx.fillStyle = 'rgba(80, 130, 180, 0.55)';
-                ctx.fillRect(x, y, w, h);
+                ctx.fill();
             } else {
                 ctx.fillStyle = 'rgba(95, 185, 230, 0.7)';
-                ctx.fillRect(x, y, w, h);
+                ctx.fill();
                 ctx.strokeStyle = 'rgba(180, 235, 255, 0.8)';
                 ctx.lineWidth = 1;
-                ctx.strokeRect(x, y, w, h);
+                ctx.stroke();
             }
         }
 
-        const dotX = toCanvasX(player.position.x);
-        const dotY = toCanvasY(player.position.z);
         ctx.fillStyle = '#ffea00';
         ctx.beginPath();
-        ctx.arc(dotX, dotY, 3, 0, Math.PI * 2);
+        ctx.arc(centerX, centerY, 3, 0, Math.PI * 2);
         ctx.fill();
 
         const fadeSize = 24;
