@@ -5,6 +5,10 @@ import { InputManager } from '../InputManager';
 import { MobileControlsManager } from '../MobileControlsManager';
 import type { StageMinimapLayout } from '../stages/StageMinimapLayout';
 
+const MINIMAP_VIEWPORT_MARGIN = 14;
+const MINIMAP_WORLD_RADIUS = 24;
+const MINIMAP_TILT_FACTOR = 0.58;
+
 class PlayerUI {
     id: string;
     wrapper: HTMLDivElement;
@@ -574,19 +578,21 @@ export class UIManager {
 
         const width = this.minimapCanvas.width;
         const height = this.minimapCanvas.height;
-        const viewportMargin = 14;
-        const worldRadius = 24;
         const isoRotation = Math.PI / 4;
-        const tiltFactor = 0.58;
         const cos = Math.cos(isoRotation);
         const sin = Math.sin(isoRotation);
         const centerX = width / 2;
         const centerY = height / 2;
         const scale = Math.min(
-            (width - viewportMargin * 2) / (worldRadius * 2),
-            (height - viewportMargin * 2) / (worldRadius * 2 * tiltFactor),
+            (width - MINIMAP_VIEWPORT_MARGIN * 2) / (MINIMAP_WORLD_RADIUS * 2),
+            (height - MINIMAP_VIEWPORT_MARGIN * 2) / (MINIMAP_WORLD_RADIUS * 2 * MINIMAP_TILT_FACTOR),
         );
 
+        /**
+         * Project world XZ coordinates into the minimap's local isometric space.
+         * The player position is treated as the viewport center, then a 45° yaw
+         * rotation and vertical tilt are applied for the minimap perspective.
+         */
         const project = (x: number, z: number): { x: number; y: number } => {
             const dx = x - player.position.x;
             const dz = z - player.position.z;
@@ -594,7 +600,7 @@ export class UIManager {
             const rotatedZ = dx * sin + dz * cos;
             return {
                 x: centerX + rotatedX * scale,
-                y: centerY + rotatedZ * scale * tiltFactor,
+                y: centerY + rotatedZ * scale * MINIMAP_TILT_FACTOR,
             };
         };
 
