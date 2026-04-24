@@ -1,3 +1,12 @@
+# [3.8.0](https://github.com/samtun/hackworld/compare/v3.7.0...v3.8.0) (2026-04-24)
+
+
+### Features
+
+* add five-stage progression and configurable enemy archetypes ([93b5492](https://github.com/samtun/hackworld/commit/93b5492d2af818ab62d0bcca9e9c9d038c863359))
+* improve xData indicator color ([7f862d3](https://github.com/samtun/hackworld/commit/7f862d34b77d921c9b99bf39134b496716ab4a5f))
+* raise stage damage scaling and rename elite spawn types ([4ef730b](https://github.com/samtun/hackworld/commit/4ef730b1959e3ea0f4fcc30cb9edfce638788f97))
+
 # [3.7.0](https://github.com/samtun/hackworld/compare/v3.6.2...v3.7.0) (2026-04-22)
 
 
