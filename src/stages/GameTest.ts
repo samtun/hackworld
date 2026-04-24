@@ -2,6 +2,7 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
+import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import { WeaponDrop } from '../items/weapons/WeaponDrop';
 import { WeaponType } from '../items/weapons/WeaponType';
 import { PotionDrop } from '../items/potions/PotionDrop';
@@ -176,7 +177,7 @@ export class GameTest extends BaseStage {
         };
 
         addButton(-2, 'Enemy',       0xff3333, (pos) => this.spawnEnemy(pos));
-        addButton( 0, 'Elite Enemy',  0xff8800, (pos) => this.spawnEnemy(pos, 'large'));
+        addButton( 0, 'Elite Enemy',  0xff8800, (pos) => this.spawnEnemy(pos, EnemySpawnType.Elite));
         addButton( 2, 'Boss',         0xaa00ff, (pos) => this.spawnBoss(pos));
 
         // Indicator plane spanning the button row and the spawn zone
@@ -204,8 +205,11 @@ export class GameTest extends BaseStage {
         this.meshes.push(planeMesh);
     }
 
-    protected override spawnEnemy(position: CANNON.Vec3, spawnType: 'regular' | 'large' = 'regular'): void {
-        const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial, spawnType === 'large' ? {
+    protected override spawnEnemy(
+        position: CANNON.Vec3,
+        spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite = EnemySpawnType.Regular,
+    ): void {
+        const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial, spawnType === EnemySpawnType.Elite ? {
             maxHp: 150,
             speed: 3.75,
             damage: 15,

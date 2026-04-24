@@ -3,6 +3,7 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
+import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
 export class CipherNull extends BaseStage {
@@ -19,7 +20,7 @@ export class CipherNull extends BaseStage {
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 130,
         speed: 3.65,
-        damage: 16,
+        damage: 60,
         baseExp: 24,
         itemDropChance: 0.23,
         techDropRateFactor: 1.3,
@@ -34,7 +35,7 @@ export class CipherNull extends BaseStage {
     private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 210,
         speed: 4.1,
-        damage: 23,
+        damage: 110,
         baseExp: 40,
         itemDropChance: 0.34,
         techDropRateFactor: 1.55,
@@ -49,7 +50,7 @@ export class CipherNull extends BaseStage {
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 760,
         speed: 4.55,
-        damage: 36,
+        damage: 160,
         baseExp: 180,
         itemDropChance: 1,
         techDropRateFactor: 1.9,
@@ -65,7 +66,7 @@ export class CipherNull extends BaseStage {
         combatRoomCount: { min: 9, max: 13 },
         combatRoomSize: { minWidth: 14, maxWidth: 30, minDepth: 14, maxDepth: 30 },
         finalRoomSize: { minWidth: 20, maxWidth: 35, minDepth: 20, maxDepth: 35 },
-        enemyCount: { min: 2, max: 7, areaPerEnemy: 55, largeFraction: 0.35 },
+        enemyCount: { min: 2, max: 7, areaPerEnemy: 55, eliteFraction: 0.35 },
         obstacleCount: { min: 2, max: 4 },
         hasBoss: true,
         lootRoomCount: { min: 2, max: 2 },
@@ -77,7 +78,7 @@ export class CipherNull extends BaseStage {
             count: { min: 2, max: 4 },
             width: { min: 2, max: 5 },
             length: { min: 2, max: 6 },
-            damage: 17,
+            damage: 130,
             patterns: [
                 [1000, 1300],
                 [600, 700, 600, 1300],
@@ -102,8 +103,10 @@ export class CipherNull extends BaseStage {
         ];
     }
 
-    protected override getEnemyConfig(spawnType: 'regular' | 'large'): Partial<EnemyArchetypeConfig> {
-        return spawnType === 'large'
+    protected override getEnemyConfig(
+        spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite,
+    ): Partial<EnemyArchetypeConfig> {
+        return spawnType === EnemySpawnType.Elite
             ? CipherNull.eliteEnemyConfig
             : CipherNull.regularEnemyConfig;
     }

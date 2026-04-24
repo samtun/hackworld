@@ -40,9 +40,11 @@ describe('MainframeNpc', () => {
         expect(npc.updateDialogue).toHaveBeenCalledWith(9);
     });
 
-    it('dialogue at progress 8 references Kernel Terminus and two boss sectors', () => {
+    it('dialogue at progress 8 references Kernel Terminus without boss or room terms', () => {
         const dialogue = (MainframeNpc as any).getDialogueForProgress(8) as string[];
-        expect(dialogue.join(' ')).toContain('Kernel Terminus');
-        expect(dialogue.join(' ')).toContain('Two boss sectors');
+        const text = dialogue.join(' ');
+        expect(text).toContain('Kernel Terminus');
+        expect(text).not.toContain('boss');
+        expect(text).not.toContain('room');
     });
 });

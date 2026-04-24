@@ -148,7 +148,13 @@ export interface EnemySpawnPoint {
     x: number;
     y: number;
     z: number;
-    type: 'regular' | 'large' | 'boss';
+    type: EnemySpawnType;
+}
+
+export enum EnemySpawnType {
+    Regular = 'regular',
+    Elite = 'elite',
+    Boss = 'boss',
 }
 
 /** All enemy spawn points that belong to one room. */
@@ -264,7 +270,7 @@ export interface RoomGenerationConfig {
     /**
      * Enemy count configuration.
      * Total enemies per room are computed as `floor(area / areaPerEnemy)`, then
-     * clamped to [min, max].  A fixed fraction of enemies are large type.
+     * clamped to [min, max]. A fixed fraction of enemies are elite type.
      */
     enemyCount: {
         /** Minimum enemies per combat room (applied even in small rooms). */
@@ -273,8 +279,8 @@ export interface RoomGenerationConfig {
         max: number;
         /** Floor area (m²) per enemy — lower values mean higher density. */
         areaPerEnemy: number;
-        /** Fraction of total enemies that are spawned as large type (0–1). */
-        largeFraction: number;
+        /** Fraction of total enemies that are spawned as elite type (0–1). */
+        eliteFraction: number;
     };
     /** Obstacle count range per room (safe room always gets zero). */
     obstacleCount: { min: number; max: number };
@@ -1219,9 +1225,9 @@ export class RoomBasedDungeonGenerator {
     ): EnemySpawnPoint[] {
         if (room.isSafe || room.isTeleporterRoom || room.isLootRoom) return [];
 
-        // Boss room: only the boss spawns here — no regular or large enemies
+        // Boss room: only the boss spawns here — no regular or elite enemies
         if (room.isFinal && config.hasBoss) {
-            return [{ x: room.centerX, y: room.elevation + 0.5, z: room.centerZ, type: 'boss' }];
+            return [{ x: room.centerX, y: room.elevation + 0.5, z: room.centerZ, type: EnemySpawnType.Boss }];
         }
 
         const area = room.width * room.depth;
@@ -1229,8 +1235,8 @@ export class RoomBasedDungeonGenerator {
             config.enemyCount.min,
             Math.min(config.enemyCount.max, Math.floor(area / config.enemyCount.areaPerEnemy)),
         );
-        const numLarge = Math.round(totalEnemies * config.enemyCount.largeFraction);
-        const numRegular = totalEnemies - numLarge;
+        const numElite = Math.round(totalEnemies * config.enemyCount.eliteFraction);
+        const numRegular = totalEnemies - numElite;
 
         // Exclusion zones: obstacles in this room + teleporter
         const exclusions: Array<{ x: number; z: number; radius: number }> = [];
@@ -1260,7 +1266,7 @@ export class RoomBasedDungeonGenerator {
 
         const spawns: EnemySpawnPoint[] = [];
 
-        const trySpawn = (type: 'regular' | 'large', y: number): void => {
+        const trySpawn = (type: EnemySpawnType.Regular | EnemySpawnType.Elite, y: number): void => {
             const maxAttempts = 20;
             for (let i = 0; i < maxAttempts; i++) {
                 const x = this.range(minX, maxX);
@@ -1272,8 +1278,8 @@ export class RoomBasedDungeonGenerator {
             }
         };
 
-        for (let i = 0; i < numRegular; i++) trySpawn('regular', room.elevation + 0.5);
-        for (let i = 0; i < numLarge; i++) trySpawn('large', room.elevation + 1.0);
+        for (let i = 0; i < numRegular; i++) trySpawn(EnemySpawnType.Regular, room.elevation + 0.5);
+        for (let i = 0; i < numElite; i++) trySpawn(EnemySpawnType.Elite, room.elevation + 1.0);
 
         return spawns;
     }

@@ -3,6 +3,7 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
+import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
 export class PacketForge extends BaseStage {
@@ -19,7 +20,7 @@ export class PacketForge extends BaseStage {
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 90,
         speed: 3.35,
-        damage: 13,
+        damage: 35,
         baseExp: 16,
         itemDropChance: 0.16,
         techDropRateFactor: 1.15,
@@ -34,7 +35,7 @@ export class PacketForge extends BaseStage {
     private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 170,
         speed: 3.85,
-        damage: 19,
+        damage: 60,
         baseExp: 30,
         itemDropChance: 0.30,
         techDropRateFactor: 1.35,
@@ -49,7 +50,7 @@ export class PacketForge extends BaseStage {
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 620,
         speed: 4.35,
-        damage: 30,
+        damage: 95,
         baseExp: 145,
         itemDropChance: 1,
         techDropRateFactor: 1.75,
@@ -65,7 +66,7 @@ export class PacketForge extends BaseStage {
         combatRoomCount: { min: 6, max: 9 },
         combatRoomSize: { minWidth: 14, maxWidth: 24, minDepth: 14, maxDepth: 24 },
         finalRoomSize: { minWidth: 19, maxWidth: 29, minDepth: 19, maxDepth: 29 },
-        enemyCount: { min: 2, max: 5, areaPerEnemy: 62, largeFraction: 0.25 },
+        enemyCount: { min: 2, max: 5, areaPerEnemy: 62, eliteFraction: 0.25 },
         obstacleCount: { min: 1, max: 3 },
         hasBoss: true,
         lootRoomCount: { min: 1, max: 2 },
@@ -77,7 +78,7 @@ export class PacketForge extends BaseStage {
             count: { min: 1, max: 3 },
             width: { min: 2, max: 5 },
             length: { min: 2, max: 5 },
-            damage: 13,
+            damage: 60,
             patterns: [
                 [1200, 1500],
                 [700, 900, 700, 1500],
@@ -102,8 +103,10 @@ export class PacketForge extends BaseStage {
         ];
     }
 
-    protected override getEnemyConfig(spawnType: 'regular' | 'large'): Partial<EnemyArchetypeConfig> {
-        return spawnType === 'large'
+    protected override getEnemyConfig(
+        spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite,
+    ): Partial<EnemyArchetypeConfig> {
+        return spawnType === EnemySpawnType.Elite
             ? PacketForge.eliteEnemyConfig
             : PacketForge.regularEnemyConfig;
     }

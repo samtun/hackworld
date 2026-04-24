@@ -8,6 +8,7 @@ import {
     TELEPORTER_ROOM_SIZE,
     ROOM_ELEVATION_STEP,
     MAP_ITEM_SPAWN_Y_OFFSET,
+    EnemySpawnType,
 } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig, DungeonLayout } from './RoomBasedDungeonGenerator';
 
@@ -15,7 +16,7 @@ const baseConfig: RoomGenerationConfig = {
     combatRoomCount: { min: 2, max: 4 },
     combatRoomSize: { minWidth: 13, maxWidth: 26, minDepth: 13, maxDepth: 26 },
     finalRoomSize: { minWidth: 16, maxWidth: 33, minDepth: 16, maxDepth: 33 },
-    enemyCount: { min: 2, max: 8, areaPerEnemy: 60, largeFraction: 0.3 },
+    enemyCount: { min: 2, max: 8, areaPerEnemy: 60, eliteFraction: 0.3 },
     obstacleCount: { min: 1, max: 2 },
     hasBoss: true,
 };
@@ -245,8 +246,8 @@ describe('RoomBasedDungeonGenerator', () => {
                 const layout = gen(seed);
                 const finalRoom = layout.rooms.find(r => r.isFinal)!;
                 const finalSpawns = layout.roomSpawns.find(rs => rs.roomId === finalRoom.id)!;
-                const bosses = finalSpawns.spawns.filter(s => s.type === 'boss');
-                const others = finalSpawns.spawns.filter(s => s.type !== 'boss');
+                const bosses = finalSpawns.spawns.filter(s => s.type === EnemySpawnType.Boss);
+                const others = finalSpawns.spawns.filter(s => s.type !== EnemySpawnType.Boss);
                 expect(bosses).toHaveLength(1);
                 expect(others).toHaveLength(0);
             }
@@ -264,8 +265,8 @@ describe('RoomBasedDungeonGenerator', () => {
             expect(finalRooms).toHaveLength(2);
             for (const room of finalRooms) {
                 const spawns = layout.roomSpawns.find(rs => rs.roomId === room.id)!;
-                expect(spawns.spawns.filter(s => s.type === 'boss')).toHaveLength(1);
-                expect(spawns.spawns.filter(s => s.type !== 'boss')).toHaveLength(0);
+                expect(spawns.spawns.filter(s => s.type === EnemySpawnType.Boss)).toHaveLength(1);
+                expect(spawns.spawns.filter(s => s.type !== EnemySpawnType.Boss)).toHaveLength(0);
             }
         });
 
@@ -274,7 +275,7 @@ describe('RoomBasedDungeonGenerator', () => {
             const layout = gen(12, config);
             const finalRoom = layout.rooms.find(r => r.isFinal)!;
             const finalSpawns = layout.roomSpawns.find(rs => rs.roomId === finalRoom.id)!;
-            const bosses = finalSpawns.spawns.filter(s => s.type === 'boss');
+            const bosses = finalSpawns.spawns.filter(s => s.type === EnemySpawnType.Boss);
             expect(bosses).toHaveLength(0);
         });
 
@@ -301,7 +302,7 @@ describe('RoomBasedDungeonGenerator', () => {
                 combatRoomCount: { min: 2, max: 2 },
                 combatRoomSize: { minWidth: 10, maxWidth: 10, minDepth: 10, maxDepth: 10 },
                 finalRoomSize: { minWidth: 10, maxWidth: 10, minDepth: 10, maxDepth: 10 },
-                enemyCount: { min: 1, max: 20, areaPerEnemy: 30, largeFraction: 0 },
+                enemyCount: { min: 1, max: 20, areaPerEnemy: 30, eliteFraction: 0 },
                 hasBoss: false,
             };
             const largeCfg: RoomGenerationConfig = {

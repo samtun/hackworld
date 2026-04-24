@@ -97,13 +97,13 @@ export class MainframeNpc extends Npc {
             return [
                 "Security Core secured.",
                 "Final breach detected: Kernel Terminus.",
-                "Two boss sectors are active in that layer. Extreme caution advised."
+                "Kernel defenses are splitting into multiple high-threat signatures. Extreme caution advised."
             ];
         } else if (progress === 9) {
             return [
                 "Kernel Terminus is the final infected layer currently mapped.",
                 "Hostiles there are significantly stronger than prior sectors.",
-                "Clear both boss rooms and end this outbreak."
+                "Neutralize every active malware signature and end this outbreak."
             ];
         } else {
             return [

@@ -3,6 +3,7 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
+import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
 export class KernelTerminus extends BaseStage {
@@ -19,7 +20,7 @@ export class KernelTerminus extends BaseStage {
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 240,
         speed: 4.25,
-        damage: 30,
+        damage: 140,
         baseExp: 62,
         itemDropChance: 0.40,
         techDropRateFactor: 1.75,
@@ -34,7 +35,7 @@ export class KernelTerminus extends BaseStage {
     private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 360,
         speed: 4.55,
-        damage: 38,
+        damage: 250,
         baseExp: 85,
         itemDropChance: 0.46,
         techDropRateFactor: 2.0,
@@ -49,7 +50,7 @@ export class KernelTerminus extends BaseStage {
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 1450,
         speed: 4.95,
-        damage: 58,
+        damage: 320,
         baseExp: 340,
         itemDropChance: 1,
         techDropRateFactor: 2.5,
@@ -65,7 +66,7 @@ export class KernelTerminus extends BaseStage {
         combatRoomCount: { min: 14, max: 18 },
         combatRoomSize: { minWidth: 14, maxWidth: 36, minDepth: 14, maxDepth: 36 },
         finalRoomSize: { minWidth: 24, maxWidth: 42, minDepth: 24, maxDepth: 42 },
-        enemyCount: { min: 3, max: 10, areaPerEnemy: 42, largeFraction: 0.52 },
+        enemyCount: { min: 3, max: 10, areaPerEnemy: 42, eliteFraction: 0.52 },
         obstacleCount: { min: 2, max: 5 },
         hasBoss: true,
         bossRoomCount: 2,
@@ -78,7 +79,7 @@ export class KernelTerminus extends BaseStage {
             count: { min: 3, max: 5 },
             width: { min: 2, max: 6 },
             length: { min: 2, max: 7 },
-            damage: 26,
+            damage: 400,
             patterns: [
                 [800, 900],
                 [450, 550, 450, 900],
@@ -103,8 +104,10 @@ export class KernelTerminus extends BaseStage {
         ];
     }
 
-    protected override getEnemyConfig(spawnType: 'regular' | 'large'): Partial<EnemyArchetypeConfig> {
-        return spawnType === 'large'
+    protected override getEnemyConfig(
+        spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite,
+    ): Partial<EnemyArchetypeConfig> {
+        return spawnType === EnemySpawnType.Elite
             ? KernelTerminus.eliteEnemyConfig
             : KernelTerminus.regularEnemyConfig;
     }

@@ -10,6 +10,7 @@ import { Npc } from '../npcs/Npc';
 import { BossEnemy } from '../enemies/BossEnemy';
 import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
 import { createWallMaterial, createObstacleMaterial, createFloorMaterial, updateWallUniforms } from '../WallShaderUtils';
+import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
 import { LootChest } from '../items/LootChest';
 import { BreakableBarrel } from '../items/BreakableBarrel';
@@ -457,9 +458,9 @@ export abstract class BaseStage {
                 const pos = new CANNON.Vec3(spawn.x, spawn.y, spawn.z);
                 const countBefore = this.enemies.length;
 
-                if (spawn.type === 'regular' || spawn.type === 'large') {
+                if (spawn.type === EnemySpawnType.Regular || spawn.type === EnemySpawnType.Elite) {
                     this.spawnEnemy(pos, spawn.type, spawn);
-                } else if (spawn.type === 'boss') {
+                } else if (spawn.type === EnemySpawnType.Boss) {
                     this.spawnBoss(pos, spawn);
                 }
 
@@ -480,7 +481,11 @@ export abstract class BaseStage {
     /**
      * Spawn regular enemy
      */
-    protected spawnEnemy(position: CANNON.Vec3, spawnType: 'regular' | 'large' = 'regular', spawn?: EnemySpawnPoint): void {
+    protected spawnEnemy(
+        position: CANNON.Vec3,
+        spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite = EnemySpawnType.Regular,
+        spawn?: EnemySpawnPoint,
+    ): void {
         const enemy = new Enemy(
             this.scene,
             this.physicsWorld,
@@ -505,7 +510,10 @@ export abstract class BaseStage {
         this.enemies.push(boss);
     }
 
-    protected getEnemyConfig(_spawnType: 'regular' | 'large', _spawn?: EnemySpawnPoint): Partial<EnemyArchetypeConfig> {
+    protected getEnemyConfig(
+        _spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite,
+        _spawn?: EnemySpawnPoint,
+    ): Partial<EnemyArchetypeConfig> {
         return {};
     }
 

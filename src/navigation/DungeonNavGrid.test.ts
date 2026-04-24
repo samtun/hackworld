@@ -8,7 +8,7 @@ const simpleConfig: RoomGenerationConfig = {
     combatRoomCount: { min: 1, max: 1 },
     combatRoomSize: { minWidth: 10, maxWidth: 10, minDepth: 10, maxDepth: 10 },
     finalRoomSize: { minWidth: 10, maxWidth: 10, minDepth: 10, maxDepth: 10 },
-    enemyCount: { min: 0, max: 0, areaPerEnemy: 999, largeFraction: 0 },
+    enemyCount: { min: 0, max: 0, areaPerEnemy: 999, eliteFraction: 0 },
     obstacleCount: { min: 0, max: 0 },
     hasBoss: false,
 };

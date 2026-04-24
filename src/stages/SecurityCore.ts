@@ -3,6 +3,7 @@ import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
+import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
 export class SecurityCore extends BaseStage {
@@ -19,7 +20,7 @@ export class SecurityCore extends BaseStage {
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 190,
         speed: 4.05,
-        damage: 20,
+        damage: 95,
         baseExp: 40,
         itemDropChance: 0.34,
         techDropRateFactor: 1.5,
@@ -34,7 +35,7 @@ export class SecurityCore extends BaseStage {
     private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 260,
         speed: 4.35,
-        damage: 27,
+        damage: 170,
         baseExp: 58,
         itemDropChance: 0.40,
         techDropRateFactor: 1.7,
@@ -49,7 +50,7 @@ export class SecurityCore extends BaseStage {
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 920,
         speed: 4.75,
-        damage: 42,
+        damage: 230,
         baseExp: 220,
         itemDropChance: 1,
         techDropRateFactor: 2.0,
@@ -65,7 +66,7 @@ export class SecurityCore extends BaseStage {
         combatRoomCount: { min: 12, max: 15 },
         combatRoomSize: { minWidth: 13, maxWidth: 33, minDepth: 13, maxDepth: 33 },
         finalRoomSize: { minWidth: 20, maxWidth: 39, minDepth: 20, maxDepth: 39 },
-        enemyCount: { min: 2, max: 8, areaPerEnemy: 48, largeFraction: 0.45 },
+        enemyCount: { min: 2, max: 8, areaPerEnemy: 48, eliteFraction: 0.45 },
         obstacleCount: { min: 2, max: 4 },
         hasBoss: true,
         lootRoomCount: { min: 2, max: 3 },
@@ -77,7 +78,7 @@ export class SecurityCore extends BaseStage {
             count: { min: 2, max: 4 },
             width: { min: 2, max: 6 },
             length: { min: 2, max: 6 },
-            damage: 20,
+            damage: 250,
             patterns: [
                 [900, 1400],
                 [500, 700, 500, 1200],
@@ -105,8 +106,10 @@ export class SecurityCore extends BaseStage {
         ];
     }
 
-    protected override getEnemyConfig(spawnType: 'regular' | 'large'): Partial<EnemyArchetypeConfig> {
-        return spawnType === 'large'
+    protected override getEnemyConfig(
+        spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite,
+    ): Partial<EnemyArchetypeConfig> {
+        return spawnType === EnemySpawnType.Elite
             ? SecurityCore.eliteEnemyConfig
             : SecurityCore.regularEnemyConfig;
     }
