@@ -1,0 +1,50 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { MainframeNpc } from './MainframeNpc';
+import { GameProgressManager } from '../GameProgressManager';
+
+describe('MainframeNpc', () => {
+    beforeEach(() => {
+        (GameProgressManager as any).instance = undefined;
+    });
+
+    it('unlocks a stage when interacting at progress 0', () => {
+        const npc = Object.create(MainframeNpc.prototype) as MainframeNpc;
+        npc.updateDialogue = vi.fn();
+        GameProgressManager.Instance.progress = 0;
+
+        (npc as any).onInteract();
+
+        expect(GameProgressManager.Instance.progress).toBe(1);
+        expect(npc.updateDialogue).toHaveBeenCalledWith(1);
+    });
+
+    it('does not unlock a stage when interacting at odd progress', () => {
+        const npc = Object.create(MainframeNpc.prototype) as MainframeNpc;
+        npc.updateDialogue = vi.fn();
+        GameProgressManager.Instance.progress = 3;
+
+        (npc as any).onInteract();
+
+        expect(GameProgressManager.Instance.progress).toBe(3);
+        expect(npc.updateDialogue).not.toHaveBeenCalled();
+    });
+
+    it('unlocks Kernel Terminus when interacting at progress 8', () => {
+        const npc = Object.create(MainframeNpc.prototype) as MainframeNpc;
+        npc.updateDialogue = vi.fn();
+        GameProgressManager.Instance.progress = 8;
+
+        (npc as any).onInteract();
+
+        expect(GameProgressManager.Instance.progress).toBe(9);
+        expect(npc.updateDialogue).toHaveBeenCalledWith(9);
+    });
+
+    it('dialogue at progress 8 references Kernel Terminus without boss or room terms', () => {
+        const dialogue = (MainframeNpc as any).getDialogueForProgress(8) as string[];
+        const text = dialogue.join(' ');
+        expect(text).toContain('Kernel Terminus');
+        expect(text).not.toContain('boss');
+        expect(text).not.toContain('room');
+    });
+});

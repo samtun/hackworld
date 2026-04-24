@@ -9,7 +9,7 @@ const baseConfig: GenerationConfig = {
     bounds,
     exclusionZones,
     obstacleCount: { min: 4, max: 6 },
-    enemyCounts: { regular: { min: 2, max: 4 }, large: { min: 1, max: 2 } },
+    enemyCounts: { regular: { min: 2, max: 4 }, elite: { min: 1, max: 2 } },
 };
 
 describe('ProceduralEnvironmentGenerator', () => {
@@ -109,11 +109,11 @@ describe('ProceduralEnvironmentGenerator', () => {
             expect(layout.enemyPositions.length).toBeLessThanOrEqual(5);
         });
 
-        it('large enemy count falls within the configured range', () => {
-            const config: GenerationConfig = { ...baseConfig, enemyCounts: { large: { min: 1, max: 3 } } };
+        it('elite enemy count falls within the configured range', () => {
+            const config: GenerationConfig = { ...baseConfig, enemyCounts: { elite: { min: 1, max: 3 } } };
             const layout = new ProceduralEnvironmentGenerator(11).generateLayout(config);
-            expect(layout.largeEnemyPositions.length).toBeGreaterThanOrEqual(1);
-            expect(layout.largeEnemyPositions.length).toBeLessThanOrEqual(3);
+            expect(layout.eliteEnemyPositions.length).toBeGreaterThanOrEqual(1);
+            expect(layout.eliteEnemyPositions.length).toBeLessThanOrEqual(3);
         });
 
         it('generates the exact number of bosses when specified', () => {
@@ -126,7 +126,7 @@ describe('ProceduralEnvironmentGenerator', () => {
             const config: GenerationConfig = { ...baseConfig, enemyCounts: {} };
             const layout = new ProceduralEnvironmentGenerator(13).generateLayout(config);
             expect(layout.enemyPositions).toHaveLength(0);
-            expect(layout.largeEnemyPositions).toHaveLength(0);
+            expect(layout.eliteEnemyPositions).toHaveLength(0);
             expect(layout.bossPositions).toHaveLength(0);
         });
 
@@ -150,7 +150,7 @@ describe('ProceduralEnvironmentGenerator', () => {
             const l2 = new ProceduralEnvironmentGenerator(42).generateLayout(baseConfig);
             expect(l1.obstacles).toEqual(l2.obstacles);
             expect(l1.enemyPositions).toEqual(l2.enemyPositions);
-            expect(l1.largeEnemyPositions).toEqual(l2.largeEnemyPositions);
+            expect(l1.eliteEnemyPositions).toEqual(l2.eliteEnemyPositions);
             expect(l1.bossPositions).toEqual(l2.bossPositions);
         });
     });

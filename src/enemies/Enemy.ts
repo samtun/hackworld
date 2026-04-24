@@ -20,14 +20,51 @@ enum EnemyActionType {
     TakeHit = 'TakeHit'
 }
 
+export interface EnemyArchetypeConfig {
+    maxHp: number;
+    speed: number;
+    damage: number;
+    baseExp: number;
+    itemDropChance: number;
+    techDropRateFactor: number;
+    xDataDropChanceWeight: number;
+    criticalChance: number;
+    criticalHitMultiplier: number;
+    blockChance: number;
+    size: number;
+    color: number;
+}
+
+const BASE_ENEMY_SIZE = 1.75;
+const BASE_ENEMY_MASS = 5;
+const ENEMY_RADIUS_FACTOR = 0.326;
+const ENEMY_ATTACK_RANGE_FACTOR = 0.792;
+const BASE_ATTACK_HITBOX_SIZE = new CANNON.Vec3(0.5, 0.5, 0.8);
+const BASE_ATTACK_HITBOX_OFFSET = 1.0;
+
+export const DEFAULT_ENEMY_ARCHETYPE: EnemyArchetypeConfig = {
+    maxHp: 60,
+    speed: 3,
+    damage: 10,
+    baseExp: 10,
+    itemDropChance: 0.08,
+    techDropRateFactor: 1.0,
+    xDataDropChanceWeight: 1.0,
+    criticalChance: 0.04,
+    criticalHitMultiplier: 1.2,
+    blockChance: 0.2,
+    size: BASE_ENEMY_SIZE,
+    color: 0x000000,
+};
+
 export class Enemy extends BaseMesh {
     body: CANNON.Body;
-    maxHp: number = 60;
+    maxHp: number = DEFAULT_ENEMY_ARCHETYPE.maxHp;
     hp: number = this.maxHp;
-    protected speed: number = 3;
-    protected size: number = 1.75;
-    protected radius: number = 0.6;
-    protected attackRange: number = 1.5;
+    protected speed: number = DEFAULT_ENEMY_ARCHETYPE.speed;
+    protected size: number = DEFAULT_ENEMY_ARCHETYPE.size;
+    protected radius: number = DEFAULT_ENEMY_ARCHETYPE.size * ENEMY_RADIUS_FACTOR;
+    protected attackRange: number = DEFAULT_ENEMY_ARCHETYPE.size * ENEMY_ATTACK_RANGE_FACTOR;
     protected attackCooldown: number = 1.0;
     protected attackTimer: number = 0;
     isDead: boolean = false;
@@ -35,12 +72,12 @@ export class Enemy extends BaseMesh {
     deathTimer: number = 0;
     flashTimer: number = 0;
     stunTimer: number = 0;
-    itemDropChance: number = 0.08;
-    xDataDropChanceWeight: number = 1;
-    baseExp: number = 10; // EXP granted on defeat, is influenced by player luck
-    damage: number = 10;
-    protected criticalChance: number = 0.04;
-    protected criticalHitMultiplier: number = 1.2;
+    itemDropChance: number = DEFAULT_ENEMY_ARCHETYPE.itemDropChance;
+    xDataDropChanceWeight: number = DEFAULT_ENEMY_ARCHETYPE.xDataDropChanceWeight;
+    baseExp: number = DEFAULT_ENEMY_ARCHETYPE.baseExp; // EXP granted on defeat, is influenced by player luck
+    damage: number = DEFAULT_ENEMY_ARCHETYPE.damage;
+    protected criticalChance: number = DEFAULT_ENEMY_ARCHETYPE.criticalChance;
+    protected criticalHitMultiplier: number = DEFAULT_ENEMY_ARCHETYPE.criticalHitMultiplier;
 
     /**
      * When false the enemy idles in place regardless of player proximity.
@@ -82,7 +119,7 @@ export class Enemy extends BaseMesh {
     // Animation
     isAttacking: boolean = false;
     protected attackAnimTimer: number = 0;
-    techDropRateFactor: number = 1.0;
+    techDropRateFactor: number = DEFAULT_ENEMY_ARCHETYPE.techDropRateFactor;
     protected bodyHalfExtentY: number;
 
     // Animation system
@@ -96,12 +133,12 @@ export class Enemy extends BaseMesh {
     protected attackHitboxDelay: number = 0.42;
     protected attackHitboxDuration: number = 0.2;
     protected attackMaxDuration: number = 1.0;
-    protected attackHitboxSize: CANNON.Vec3 = new CANNON.Vec3(0.5, 0.5, 0.8);
-    protected attackHitboxOffset: number = 1.0;
+    protected attackHitboxSize: CANNON.Vec3 = BASE_ATTACK_HITBOX_SIZE.clone();
+    protected attackHitboxOffset: number = BASE_ATTACK_HITBOX_OFFSET;
     protected hasDealtDamageThisAttack: boolean = false;
 
     // Block state
-    protected blockChance: number = 0.2;
+    protected blockChance: number = DEFAULT_ENEMY_ARCHETYPE.blockChance;
     protected isBlocking: boolean = false;
     private blockTimer: number = 0;
     private readonly BLOCK_DURATION: number = 0.5;
@@ -131,13 +168,42 @@ export class Enemy extends BaseMesh {
     // Callback when death fade starts (for rewards, drops, etc.)
     onDeathFadeStart?: (enemy: Enemy) => void;
 
-    constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
+    constructor(
+        scene: THREE.Scene,
+        world: CANNON.World,
+        position: CANNON.Vec3,
+        physicsMaterial: CANNON.Material,
+        config: Partial<EnemyArchetypeConfig> = {},
+    ) {
         super('models/monster.glb');
 
         this.scene = scene;
         this.world = world;
         this.physicsMaterial = physicsMaterial;
         this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
+        const resolvedConfig: EnemyArchetypeConfig = { ...DEFAULT_ENEMY_ARCHETYPE, ...config };
+
+        this.maxHp = resolvedConfig.maxHp;
+        this.hp = this.maxHp;
+        this.speed = resolvedConfig.speed;
+        this.damage = resolvedConfig.damage;
+        this.baseExp = resolvedConfig.baseExp;
+        this.itemDropChance = resolvedConfig.itemDropChance;
+        this.techDropRateFactor = resolvedConfig.techDropRateFactor;
+        this.xDataDropChanceWeight = resolvedConfig.xDataDropChanceWeight;
+        this.criticalChance = resolvedConfig.criticalChance;
+        this.criticalHitMultiplier = resolvedConfig.criticalHitMultiplier;
+        this.blockChance = resolvedConfig.blockChance;
+        this.size = resolvedConfig.size;
+        this.radius = this.size * ENEMY_RADIUS_FACTOR;
+        this.attackRange = this.size * ENEMY_ATTACK_RANGE_FACTOR;
+        const sizeScale = this.size / BASE_ENEMY_SIZE;
+        this.attackHitboxSize.set(
+            BASE_ATTACK_HITBOX_SIZE.x * sizeScale,
+            BASE_ATTACK_HITBOX_SIZE.y * sizeScale,
+            BASE_ATTACK_HITBOX_SIZE.z * sizeScale,
+        );
+        this.attackHitboxOffset = BASE_ATTACK_HITBOX_OFFSET * sizeScale;
 
         // Store base position for return behavior
         this.basePosition = position.clone();
@@ -147,9 +213,19 @@ export class Enemy extends BaseMesh {
         this.mesh.traverse((child) => {
             if (child instanceof THREE.Mesh) {
                 child.material = child.material.clone();
+                if (child.material instanceof THREE.MeshStandardMaterial) {
+                    const tint = new THREE.Color(resolvedConfig.color);
+                    child.material.color.add(tint);
+                    child.material.color.setRGB(
+                        Math.min(child.material.color.r, 1),
+                        Math.min(child.material.color.g, 1),
+                        Math.min(child.material.color.b, 1),
+                    );
+                }
                 this.materials.push(child.material);
             }
         });
+        this.mesh.scale.setScalar(sizeScale);
 
         // Setup animations
         this.setupAnimations();
@@ -158,7 +234,7 @@ export class Enemy extends BaseMesh {
         const shape = new CANNON.Cylinder(this.radius, this.radius, this.size, 8);
         this.bodyHalfExtentY = shape.height / 2;
         this.body = new CANNON.Body({
-            mass: 5,
+            mass: Math.max(1, Math.round(BASE_ENEMY_MASS * sizeScale * sizeScale * sizeScale)),
             material: physicsMaterial,
             fixedRotation: true
         });
@@ -170,7 +246,7 @@ export class Enemy extends BaseMesh {
         this.player = PlayerRegistry.Instance.activePlayers[0];
 
         // Blob shadow – always visible
-        this.blobShadow = new BlobShadow(scene, 0.5);
+        this.blobShadow = new BlobShadow(scene, 0.5 * sizeScale);
     }
 
     protected setupAnimations() {

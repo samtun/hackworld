@@ -2,6 +2,7 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
+import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import { WeaponDrop } from '../items/weapons/WeaponDrop';
 import { WeaponType } from '../items/weapons/WeaponType';
 import { PotionDrop } from '../items/potions/PotionDrop';
@@ -21,7 +22,6 @@ import { BoosterPackDrop } from '../items/cards/BoosterPackDrop';
 import { BreakableBarrel } from '../items/BreakableBarrel';
 import { LootChest } from '../items/LootChest';
 import { Enemy } from '../enemies/Enemy';
-import { LargeEnemy } from '../enemies/LargeEnemy';
 import { BossEnemy } from '../enemies/BossEnemy';
 import { ElectricTrap } from '../items/ElectricTrap';
 
@@ -177,7 +177,7 @@ export class GameTest extends BaseStage {
         };
 
         addButton(-2, 'Enemy',       0xff3333, (pos) => this.spawnEnemy(pos));
-        addButton( 0, 'Large Enemy',  0xff8800, (pos) => this.spawnLargeEnemy(pos));
+        addButton( 0, 'Elite Enemy',  0xff8800, (pos) => this.spawnEnemy(pos, EnemySpawnType.Elite));
         addButton( 2, 'Boss',         0xaa00ff, (pos) => this.spawnBoss(pos));
 
         // Indicator plane spanning the button row and the spawn zone
@@ -205,16 +205,26 @@ export class GameTest extends BaseStage {
         this.meshes.push(planeMesh);
     }
 
-    protected override spawnEnemy(position: CANNON.Vec3): void {
-        const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+    protected override spawnEnemy(
+        position: CANNON.Vec3,
+        spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite = EnemySpawnType.Regular,
+    ): void {
+        const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial, spawnType === EnemySpawnType.Elite ? {
+            maxHp: 150,
+            speed: 3.75,
+            damage: 15,
+            baseExp: 25,
+            itemDropChance: 0.30,
+            techDropRateFactor: 1.3,
+            xDataDropChanceWeight: 1.5,
+            criticalChance: 0.05,
+            criticalHitMultiplier: 1.4,
+            blockChance: 0.2,
+            size: 2.75,
+            color: 0x663300,
+        } : {});
         enemy.update(0);
         this.enemies.push(enemy);
-    }
-
-    protected override spawnLargeEnemy(position: CANNON.Vec3): void {
-        const largeEnemy = new LargeEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
-        largeEnemy.update(0);
-        this.enemies.push(largeEnemy);
     }
 
     protected override spawnBoss(position: CANNON.Vec3): void {

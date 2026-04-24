@@ -24,7 +24,7 @@ export interface ExclusionZone {
  */
 export interface EnemyCounts {
     regular?: { min: number; max: number };
-    large?: { min: number; max: number };
+    elite?: { min: number; max: number };
     boss?: number;
 }
 
@@ -44,7 +44,7 @@ export interface GenerationConfig {
 export interface EnvironmentLayout {
     obstacles: ObstacleConfig[];
     enemyPositions: { x: number; y: number; z: number }[];
-    largeEnemyPositions: { x: number; y: number; z: number }[];
+    eliteEnemyPositions: { x: number; y: number; z: number }[];
     bossPositions: { x: number; y: number; z: number }[];
 }
 
@@ -177,14 +177,14 @@ export class ProceduralEnvironmentGenerator {
             : 0;
         const enemyPositions = this.generatePositions(numRegular, bounds, spawnZones, 0.5);
 
-        const numLarge = enemyCounts.large
-            ? this.rangeInt(enemyCounts.large.min, enemyCounts.large.max)
+        const numElite = enemyCounts.elite
+            ? this.rangeInt(enemyCounts.elite.min, enemyCounts.elite.max)
             : 0;
-        const largeEnemyPositions = this.generatePositions(numLarge, bounds, spawnZones, 1.0);
+        const eliteEnemyPositions = this.generatePositions(numElite, bounds, spawnZones, 1.0);
 
         const numBoss = enemyCounts.boss ?? 0;
         const bossPositions = this.generatePositions(numBoss, bounds, spawnZones, 0.5);
 
-        return { obstacles, enemyPositions, largeEnemyPositions, bossPositions };
+        return { obstacles, enemyPositions, eliteEnemyPositions, bossPositions };
     }
 }

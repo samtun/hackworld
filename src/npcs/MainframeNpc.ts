@@ -46,50 +46,72 @@ export class MainframeNpc extends Npc {
                 "The world you perceive is the company's vast digital infrastructure, now under siege.",
                 "Multiple system layers are infected with aggressive malware, self-replicating and destructive.",
                 "I require your assistance to cleanse these corrupted sectors before total system collapse.",
-                "The Security Core is the first line of defense. It has been completely overrun.",
-                "Navigate to the southern teleporter when you are ready. Eliminate the virus at its source.",
+                "The Network Matrix is our first tactical lane. It has been compromised.",
+                "Navigate to the southern teleporter when you are ready. Purge all hostile entities in that layer.",
                 "The fate of Ometec's entire digital existence rests in your hands."
             ];
         } else if (progress === 1) {
             return [
-                "The Security Core awaits cleansing.",
-                "Locate and eliminate the primary virus threat within.",
-                "Until it is destroyed, the infection will continue to spread.",
-                "Use the southern teleporter to access the corrupted sector."
+                "The Network Matrix remains unstable.",
+                "Clear every combat room to restore routing integrity.",
+                "When the sector is clean, return for your next assignment."
             ];
         } else if (progress === 2) {
             return [
                 "POSITIVE FEEDBACK DETECTED...",
-                "The Security Core has been successfully sanitized. Excellent work.",
-                "However, the malware has already spread to secondary systems.",
-                "The Network Matrix - our communication infrastructure - is now under heavy attack.",
-                "Multiple malicious entities have established themselves throughout the network.",
-                "These must be purged before they can compromise our data integrity.",
-                "The Network Matrix is now accessible through the teleporter.",
-                "Proceed with extreme caution. The malware is evolving."
+                "Network Matrix pathways stabilized. Excellent work.",
+                "The malware has moved into Packet Forge, our packet refinement layer.",
+                "The next sector is now unlocked via teleporter."
             ];
         } else if (progress === 3) {
             return [
-                "The Network Matrix infection is severe.",
-                "Multiple malware instances detected within the communication hub.",
-                "Systematic elimination is required to restore network functionality.",
-                "Access the sector via the teleporter when ready."
+                "Packet Forge is dense with aggressive malware workers.",
+                "Expect increased resistance and faster swarm patterns.",
+                "Cleanse the forge and report back."
             ];
         } else if (progress === 4) {
             return [
-                "ANALYSIS COMPLETE...",
-                "Network Matrix successfully restored. Communication channels are secure.",
-                "Further system layers require attention, but diagnostics are still in progress.",
-                "Return here when additional sectors come online.",
-                "Your efficiency has been... remarkable."
+                "Packet Forge sanitized.",
+                "Cipher Null has now destabilized and must be contained.",
+                "Teleporter coordinates updated."
+            ];
+        } else if (progress === 5) {
+            return [
+                "Cipher Null houses archived threat fragments and encrypted predators.",
+                "Expect stronger elites and volatile trap activity.",
+                "Eliminate all hostiles before escalation."
+            ];
+        } else if (progress === 6) {
+            return [
+                "Cipher Null restoration confirmed.",
+                "Security Core is now exposed and has entered critical threat status.",
+                "Proceed when prepared."
+            ];
+        } else if (progress === 7) {
+            return [
+                "Security Core now contains hardened malware guardians.",
+                "Survival probability improves with high defense and damage output.",
+                "Purge the core and return immediately."
+            ];
+        } else if (progress === 8) {
+            return [
+                "Security Core secured.",
+                "Final breach detected: Kernel Terminus.",
+                "Kernel defenses are splitting into multiple high-threat signatures. Extreme caution advised."
+            ];
+        } else if (progress === 9) {
+            return [
+                "Kernel Terminus is the final infected layer currently mapped.",
+                "Hostiles there are significantly stronger than prior sectors.",
+                "Neutralize every active malware signature and end this outbreak."
             ];
         } else {
             return [
                 "SYSTEM STATUS: STABLE",
-                "All currently accessible sectors have been cleansed.",
-                "Additional infrastructure layers are being analyzed.",
-                "Stand by for further mission parameters.",
-                "Your contributions to system integrity are invaluable."
+                "All mapped sectors are currently cleansed.",
+                "Kernel integrity is recovering.",
+                "Stand by for future mission parameters.",
+                "Your contributions to system integrity remain invaluable."
             ];
         }
     }

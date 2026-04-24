@@ -111,7 +111,7 @@ export class FloatingIndicatorManager {
             let text = `${drop.amount} XData`;
             this.spawn(position, {
                 text: text,
-                color: '#8a2bbd',
+                color: '#cf84f8',
                 fontSize: 50,
                 priority: false
             });
