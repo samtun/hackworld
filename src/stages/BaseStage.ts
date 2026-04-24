@@ -583,15 +583,48 @@ export abstract class BaseStage {
 
     getMinimapLayout(): StageMinimapLayout | null {
         if (!this.minimapLayout) return null;
-        if (!this.teleporter) return this.minimapLayout;
+
+        const clearedRoomIds = this.computeClearedRoomIds();
+
+        const rects = this.minimapLayout.rects.map(rect => {
+            if (rect.kind === 'room' && rect.roomId !== undefined && clearedRoomIds.has(rect.roomId)) {
+                return { ...rect, cleared: true };
+            }
+            return rect;
+        });
+
+        const layout: StageMinimapLayout = { ...this.minimapLayout, rects };
+
+        if (!this.teleporter) return layout;
         return {
-            ...this.minimapLayout,
+            ...layout,
             teleporter: {
                 x: this.teleporter.position.x,
                 z: this.teleporter.position.z,
                 active: this.teleporter.isActive,
             },
         };
+    }
+
+    /**
+     * Compute the set of room IDs that have been cleared (no living enemies).
+     * Rooms that never had enemy spawns are considered cleared immediately.
+     * Only meaningful when a procedural dungeon layout is active.
+     */
+    private computeClearedRoomIds(): Set<number> {
+        if (!this.dungeonRooms || this.dungeonRooms.length === 0) return new Set();
+
+        const aliveEnemies = new Set(this.enemies ?? []);
+        const cleared = new Set<number>();
+
+        for (const room of this.dungeonRooms) {
+            const roomEnemies = this.roomEnemyMap?.get(room.id) ?? [];
+            if (roomEnemies.every(e => !aliveEnemies.has(e))) {
+                cleared.add(room.id);
+            }
+        }
+
+        return cleared;
     }
 
     isMinimapVisible(): boolean {

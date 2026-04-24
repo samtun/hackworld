@@ -634,6 +634,12 @@ export class UIManager {
             if (rect.kind === 'corridor') {
                 ctx.fillStyle = 'rgba(80, 130, 180, 0.55)';
                 ctx.fill();
+            } else if (rect.cleared) {
+                ctx.fillStyle = 'rgba(100, 110, 120, 0.55)';
+                ctx.fill();
+                ctx.strokeStyle = 'rgba(150, 160, 170, 0.6)';
+                ctx.lineWidth = 1;
+                ctx.stroke();
             } else {
                 ctx.fillStyle = 'rgba(95, 185, 230, 0.7)';
                 ctx.fill();

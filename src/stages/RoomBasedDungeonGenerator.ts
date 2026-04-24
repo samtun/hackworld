@@ -1558,6 +1558,7 @@ export class RoomBasedDungeonGenerator {
                 width: room.width,
                 depth: room.depth,
                 kind: 'room' as const,
+                roomId: room.id,
             })),
             ...corridors.map(corridor => ({
                 x: corridor.centerX,
