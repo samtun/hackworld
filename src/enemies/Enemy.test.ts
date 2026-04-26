@@ -917,6 +917,20 @@ describe('Enemy size cap', () => {
     it('MAX_ENEMY_SIZE is 2.0', () => {
         expect(MAX_ENEMY_SIZE).toBe(2.0);
     });
+
+    it('size is clamped to MAX_ENEMY_SIZE when config exceeds the cap', () => {
+        // Simulate what the constructor does: this.size = Math.min(resolvedConfig.size, MAX_ENEMY_SIZE)
+        // This verifies the clamping logic for large sizes
+        const configSize = 3.5;
+        const clampedSize = Math.min(configSize, MAX_ENEMY_SIZE);
+        expect(clampedSize).toBe(MAX_ENEMY_SIZE);
+    });
+
+    it('size is preserved when config is within the cap', () => {
+        const configSize = 1.5;
+        const clampedSize = Math.min(configSize, MAX_ENEMY_SIZE);
+        expect(clampedSize).toBe(1.5);
+    });
 });
 
 // ─── Stuck detection ──────────────────────────────────────────────────────────

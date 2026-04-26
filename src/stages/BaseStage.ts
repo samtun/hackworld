@@ -823,7 +823,6 @@ export abstract class BaseStage {
                 if (
                     this.bossForceFields.has(room.id) &&
                     !this.roomPendingSpawnData.has(room.id) &&
-                    roomEnemies.length > 0 &&
                     roomEnemies.every(e => !this.enemies.includes(e))
                 ) {
                     this.removeBossRoomForceField(room.id);

@@ -54,6 +54,8 @@ const STUCK_CHECK_INTERVAL = 0.5;
 const STUCK_MIN_PROGRESS = 0.15;
 /** Probability per second of performing a path-clearing attack while stuck. */
 const STUCK_ATTACK_CHANCE_PER_SECOND = 0.2;
+/** Extra buffer (metres) added to hitbox size when checking if the attack can reach a barrel. */
+const BARREL_BREAK_RANGE_BUFFER = 0.4;
 
 export const DEFAULT_ENEMY_ARCHETYPE: EnemyArchetypeConfig = {
     maxHp: 60,
@@ -470,7 +472,7 @@ export class Enemy extends BaseMesh {
         }
 
         // Check for barrels in attack range and break them
-        const barrelHitRadius = this.attackHitboxSize.x + this.attackHitboxSize.z + 0.4;
+        const barrelHitRadius = this.attackHitboxSize.x + this.attackHitboxSize.z + BARREL_BREAK_RANGE_BUFFER;
         for (const barrel of this.breakableBarrels) {
             if (barrel.isDestroyed) continue;
             const bx = hitboxPos.x - barrel.body.position.x;
