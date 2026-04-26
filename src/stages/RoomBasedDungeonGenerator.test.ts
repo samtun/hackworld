@@ -614,6 +614,24 @@ describe('RoomBasedDungeonGenerator', () => {
             const layout = gen(42);
             expect(layout.minimapLayout.bounds).toEqual(layout.floorBounds);
         });
+
+        it('room rects carry the matching roomId', () => {
+            const layout = gen(42);
+            const roomRects = layout.minimapLayout.rects.filter(r => r.kind === 'room');
+            const roomIds = new Set(layout.rooms.map(r => r.id));
+            for (const rect of roomRects) {
+                expect(rect.roomId).toBeDefined();
+                expect(roomIds.has(rect.roomId!)).toBe(true);
+            }
+        });
+
+        it('corridor rects have no roomId', () => {
+            const layout = gen(42);
+            const corridorRects = layout.minimapLayout.rects.filter(r => r.kind === 'corridor');
+            for (const rect of corridorRects) {
+                expect(rect.roomId).toBeUndefined();
+            }
+        });
     });
 
     describe('room elevation', () => {
