@@ -1,3 +1,16 @@
+# [3.13.0](https://github.com/samtun/hackworld/compare/v3.12.0...v3.13.0) (2026-04-26)
+
+
+### Bug Fixes
+
+* update album banner per review feedback ([a9b6dce](https://github.com/samtun/hackworld/commit/a9b6dce4ffb0c43d08f98aa9a8be7fae433b8980))
+
+
+### Features
+
+* show album complete banner from DebugValueEditor ([2e88447](https://github.com/samtun/hackworld/commit/2e88447d66cabfa5bc90aebc67d83ba17c51c2f0))
+* show cinematic album complete banner on album completion ([d295f1e](https://github.com/samtun/hackworld/commit/d295f1e186f8b4d7692e3871b512f96baf407458))
+
 # [3.12.0](https://github.com/samtun/hackworld/compare/v3.11.0...v3.12.0) (2026-04-26)
 
 
