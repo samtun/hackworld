@@ -40,6 +40,21 @@ export class WeaponItem extends EquippableItem {
         return WeaponItem.WEAPON_LEVELS[lvl - 1];
     }
 
+    /**
+     * Returns the highest weapon level (1-based) the player can equip for the given tech value.
+     */
+    public static getLevelForTech(tech: number): number {
+        let level = 1;
+        for (let i = 0; i < WeaponItem.WEAPON_LEVELS.length; i++) {
+            if (tech >= WeaponItem.WEAPON_LEVELS[i].requiredTech) {
+                level = i + 1;
+            } else {
+                break;
+            }
+        }
+        return level;
+    }
+
     getType(): string {
         return 'weapon';
     }
