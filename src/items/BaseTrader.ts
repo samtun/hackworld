@@ -307,7 +307,18 @@ export abstract class BaseTrader {
         const playerItems = this.filterPlayerInventory(player);
         this.renderItemList(this.playerList, playerItems as Item[], this.activePanel === TraderPanel.PLAYER, TradeMode.SELL, player);
         const selectedItem = this.activePanel === TraderPanel.TRADER ? this.traderInventory[this.selectedIndex] : (playerItems[this.selectedIndex] as Item | undefined);
-        if (this.itemDetailsPanel) this.itemDetailsPanel.innerHTML = ItemDetailsPanel.generateHTML(selectedItem as Item | undefined);
+
+        // Find the currently equipped item of the same type for stat comparison.
+        // If the selected item IS the equipped item, no comparison is needed.
+        let equippedItem: Item | undefined;
+        if (selectedItem instanceof EquippableItem && !selectedItem.isEquipped) {
+            equippedItem = player.inventory.find((item: Item) =>
+                item instanceof EquippableItem &&
+                item.isEquipped &&
+                item.constructor === selectedItem!.constructor
+            );
+        }
+        if (this.itemDetailsPanel) this.itemDetailsPanel.innerHTML = ItemDetailsPanel.generateHTML(selectedItem as Item | undefined, equippedItem);
     }
 
     protected renderItemList(container: HTMLDivElement, items: Item[], isActive: boolean, mode: TradeMode, player: Player) {
