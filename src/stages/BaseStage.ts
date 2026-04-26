@@ -27,6 +27,27 @@ import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
 const NS_WALL_Y_OFFSET = 0.01;
 
 /**
+ * Minimum distance (in metres) between a freshly spawned enemy and the
+ * player.  Spawn points closer than this are pushed radially outward.
+ */
+const ENEMY_SAFE_SPAWN_RADIUS = 3;
+
+/**
+ * Tolerance used when comparing distances to zero.  Spawn points that are
+ * effectively at the same position as the player (dist < this value) are
+ * relocated to the room centre instead of being pushed in a degenerate
+ * direction.
+ */
+const SPAWN_DEGENERATE_DISTANCE_THRESHOLD = 0.001;
+
+/**
+ * Duration (seconds) for which freshly spawned enemies stay inactive after
+ * a lazy room-entry spawn.  Gives the physics engine time to position them
+ * before their AI begins chasing the player.
+ */
+const ENEMY_SPAWN_INACTIVE_DURATION = 0.5;
+
+/**
  * Base class for all dungeon stages
  * Each dungeon stage should extend this and implement the load() method
  */
@@ -66,16 +87,22 @@ export abstract class BaseStage {
 
     /**
      * Maps room id → enemies that belong to that room.
-     * Populated by {@link spawnEnemiesFromLayout}.
+     * Populated lazily as the player enters each room.
      */
     protected roomEnemyMap: Map<number, Enemy[]> = new Map();
 
     /**
-     * Total number of enemies spawned for this stage load.
-     * Used by {@link checkTeleporterActivation} to detect the moment all
-     * enemies have been killed and cleaned up (enemies array becomes empty).
+     * Maps room id → pending spawn points for rooms the player has not yet entered.
+     * Entries are removed as rooms are visited and their enemies are spawned.
      */
-    private totalEnemiesSpawned = 0;
+    private roomPendingSpawnData: Map<number, EnemySpawnPoint[]> = new Map();
+
+    /**
+     * Total number of enemies expected across all rooms, counted upfront from
+     * the layout.  Used by {@link checkTeleporterActivation} to guard against
+     * activating the teleporter on stages with no enemies.
+     */
+    private totalExpectedEnemies = 0;
 
     /**
      * Navigation grid built from the dungeon layout.
@@ -139,7 +166,8 @@ export abstract class BaseStage {
         // Reset room-tracking state
         this.dungeonRooms = [];
         this.roomEnemyMap.clear();
-        this.totalEnemiesSpawned = 0;
+        this.roomPendingSpawnData.clear();
+        this.totalExpectedEnemies = 0;
         this.navGrid = null;
         this.minimapLayout = null;
         this.minimapVisible = false;
@@ -439,10 +467,11 @@ export abstract class BaseStage {
     }
 
     /**
-     * Spawn all enemies defined by a procedural dungeon layout and register
-     * them with their corresponding room so that room-based aggro can be applied.
-     * Enemies start with {@link Enemy.aggroEnabled} = false and are enabled
-     * individually when the player enters their room.
+     * Register all enemy spawn points defined by a procedural dungeon layout.
+     * Enemies are NOT spawned immediately; each room's spawn data is stored and
+     * enemies are created lazily the first time the player enters that room.
+     * This keeps initial load time low and prevents enemies in adjacent rooms
+     * from attacking before an encounter starts.
      *
      * A {@link DungeonNavGrid} is built from the layout so enemies can pathfind
      * around walls and obstacles instead of walking in a straight line.
@@ -452,29 +481,13 @@ export abstract class BaseStage {
         this.navGrid = new DungeonNavGrid(layout);
 
         for (const roomSpawns of layout.roomSpawns) {
-            const roomEnemies: Enemy[] = [];
+            // Initialise an empty enemy list for every room; populated on entry
+            this.roomEnemyMap.set(roomSpawns.roomId, []);
 
-            for (const spawn of roomSpawns.spawns) {
-                const pos = new CANNON.Vec3(spawn.x, spawn.y, spawn.z);
-                const countBefore = this.enemies.length;
-
-                if (spawn.type === EnemySpawnType.Regular || spawn.type === EnemySpawnType.Elite) {
-                    this.spawnEnemy(pos, spawn.type, spawn);
-                } else if (spawn.type === EnemySpawnType.Boss) {
-                    this.spawnBoss(pos, spawn);
-                }
-
-                // Verify the spawn added an enemy before accessing it
-                if (this.enemies.length > countBefore) {
-                    const enemy = this.enemies[this.enemies.length - 1];
-                    enemy.aggroEnabled = false;
-                    enemy.navGrid = this.navGrid;
-                    roomEnemies.push(enemy);
-                    this.totalEnemiesSpawned++;
-                }
+            if (roomSpawns.spawns.length > 0) {
+                this.roomPendingSpawnData.set(roomSpawns.roomId, roomSpawns.spawns);
+                this.totalExpectedEnemies += roomSpawns.spawns.length;
             }
-
-            this.roomEnemyMap.set(roomSpawns.roomId, roomEnemies);
         }
     }
 
@@ -609,6 +622,8 @@ export abstract class BaseStage {
     /**
      * Compute the set of room IDs that have been cleared (no living enemies).
      * Rooms that never had enemy spawns are considered cleared immediately.
+     * Rooms whose enemies have not yet been spawned (player never entered) are
+     * never considered cleared.
      * Only meaningful when a procedural dungeon layout is active.
      */
     private computeClearedRoomIds(): Set<number> {
@@ -618,6 +633,9 @@ export abstract class BaseStage {
         const cleared = new Set<number>();
 
         for (const room of this.dungeonRooms) {
+            // Rooms with pending spawns have not been visited yet – not cleared
+            if (this.roomPendingSpawnData.has(room.id)) continue;
+
             const roomEnemies = this.roomEnemyMap?.get(room.id) ?? [];
             if (roomEnemies.every(e => !aliveEnemies.has(e))) {
                 cleared.add(room.id);
@@ -654,7 +672,7 @@ export abstract class BaseStage {
         for (const barrel of this.breakableBarrels) {
             barrel.update(dt);
         }
-      
+
         // Update electric traps (damage, particles, activation)
         for (const trap of this.electricTraps) {
             trap.update(dt, player, this.enemies);
@@ -673,9 +691,63 @@ export abstract class BaseStage {
     }
 
     /**
-     * Enable aggro for every enemy in the room that the player is currently
-     * standing in.  Once enabled, aggro is never revoked so enemies continue
-     * chasing even if the player retreats.
+     * Spawn enemies for a room the first time the player enters it.
+     * Any spawn point within {@link ENEMY_SAFE_SPAWN_RADIUS} of the player is
+     * pushed radially outward to that distance, preventing instant attacks while
+     * preserving all precomputed obstacle/trap avoidance from the generator.
+     */
+    private spawnPendingEnemiesForRoom(room: DungeonRoom, spawns: EnemySpawnPoint[], playerPos: CANNON.Vec3): void {
+        const roomEnemies: Enemy[] = [];
+
+        for (const spawn of spawns) {
+            let sx = spawn.x;
+            let sz = spawn.z;
+
+            // Push spawn point away from player if it falls within the safe radius
+            const dx = sx - playerPos.x;
+            const dz = sz - playerPos.z;
+            const dist = Math.sqrt(dx * dx + dz * dz);
+
+            if (dist < ENEMY_SAFE_SPAWN_RADIUS) {
+                if (dist < SPAWN_DEGENERATE_DISTANCE_THRESHOLD) {
+                    // Degenerate case: enemy would spawn on top of player – offset to room centre
+                    sx = room.centerX;
+                    sz = room.centerZ + ENEMY_SAFE_SPAWN_RADIUS;
+                } else {
+                    const scale = ENEMY_SAFE_SPAWN_RADIUS / dist;
+                    sx = playerPos.x + dx * scale;
+                    sz = playerPos.z + dz * scale;
+                }
+            }
+
+            const pos = new CANNON.Vec3(sx, spawn.y, sz);
+            const countBefore = this.enemies.length;
+
+            if (spawn.type === EnemySpawnType.Regular || spawn.type === EnemySpawnType.Elite) {
+                this.spawnEnemy(pos, spawn.type, spawn);
+            } else if (spawn.type === EnemySpawnType.Boss) {
+                this.spawnBoss(pos, spawn);
+            }
+
+            if (this.enemies.length > countBefore) {
+                const enemy = this.enemies[this.enemies.length - 1];
+                // Enable aggro so the enemy tracks the player, but hold it
+                // inactive for a brief period so it is positioned before engaging.
+                enemy.aggroEnabled = true;
+                enemy.spawnInactiveTimer = ENEMY_SPAWN_INACTIVE_DURATION;
+                enemy.navGrid = this.navGrid;
+                roomEnemies.push(enemy);
+            }
+        }
+
+        this.roomEnemyMap.set(room.id, roomEnemies);
+    }
+
+    /**
+     * Spawn enemies for any room the player has just entered (if not already
+     * spawned) and enable aggro for all enemies in the current room.
+     * Once aggro is enabled it is never revoked, so enemies continue chasing
+     * even if the player retreats.
      */
     private updateRoomAggro(player: Player): void {
         const px = player.body.position.x;
@@ -687,6 +759,13 @@ export abstract class BaseStage {
                 Math.abs(pz - room.centerZ) <= room.depth / 2;
 
             if (!inRoom) continue;
+
+            // Lazily spawn enemies the first time the player enters this room
+            const pendingSpawns = this.roomPendingSpawnData.get(room.id);
+            if (pendingSpawns) {
+                this.spawnPendingEnemiesForRoom(room, pendingSpawns, player.body.position);
+                this.roomPendingSpawnData.delete(room.id);
+            }
 
             const roomEnemies = this.roomEnemyMap.get(room.id) ?? [];
             for (const enemy of roomEnemies) {
@@ -700,14 +779,17 @@ export abstract class BaseStage {
     /**
      * Activate the teleporter once every enemy in the stage has been defeated.
      *
-     * World.ts removes dead enemies from `stage.enemies` after cleanup, so the
-     * correct signal is `enemies.length === 0` combined with a guard that
-     * confirms at least one enemy was spawned (to avoid activating on empty stages).
+     * With lazy enemy spawning the teleporter must not activate while unvisited
+     * rooms still have pending spawns.  World.ts removes dead enemies from
+     * `stage.enemies` after cleanup, so the correct signal is:
+     * - no rooms with pending spawns remain (all rooms have been visited), AND
+     * - `enemies.length === 0` (all spawned enemies have been killed).
+     * A guard on `totalExpectedEnemies > 0` prevents activation on empty stages.
      */
     private checkTeleporterActivation(): void {
         if (!this.teleporter || this.teleporter.isActive) return;
-        if (this.totalEnemiesSpawned === 0) return;
-        if (this.enemies.length === 0) {
+        if (this.totalExpectedEnemies === 0) return;
+        if (this.roomPendingSpawnData.size === 0 && this.enemies.length === 0) {
             this.teleporter.activate();
         }
     }

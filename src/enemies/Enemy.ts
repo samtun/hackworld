@@ -87,6 +87,14 @@ export class Enemy extends BaseMesh {
     aggroEnabled: boolean = true;
 
     /**
+     * Countdown in seconds after a lazy room-entry spawn during which the
+     * enemy stays inactive (idles in place).  Prevents enemies from immediately
+     * chasing the player before they are fully placed in the world.
+     * Counts down to zero and then normal AI resumes.
+     */
+    spawnInactiveTimer: number = 0;
+
+    /**
      * When true this enemy is immune to electric trap damage and knockback.
      * Subclasses can set this to `true` to create trap-resistant enemy types.
      */
@@ -531,6 +539,16 @@ export class Enemy extends BaseMesh {
             this.body.velocity.z *= 0.9;
             this.updateAnimations(false);
             return; // Skip AI movement and attack
+        }
+
+        // Spawn-inactive window: newly placed enemies stay idle for a brief
+        // period so they are fully positioned before engaging.
+        if (this.spawnInactiveTimer > 0) {
+            this.spawnInactiveTimer -= dt;
+            this.body.velocity.x *= 0.9;
+            this.body.velocity.z *= 0.9;
+            this.updateAnimations(false);
+            return;
         }
 
         // AI Logic
