@@ -148,4 +148,25 @@ describe('WeaponItem', () => {
             expect(cloned.level).toBe(weapon.level);
         });
     });
+
+    describe('getLevelForTech', () => {
+        it('returns level 1 for tech below β threshold', () => {
+            expect(WeaponItem.getLevelForTech(0)).toBe(1);
+            expect(WeaponItem.getLevelForTech(119)).toBe(1);
+        });
+
+        it('returns level 2 at the β threshold (120)', () => {
+            expect(WeaponItem.getLevelForTech(120)).toBe(2);
+            expect(WeaponItem.getLevelForTech(459)).toBe(2);
+        });
+
+        it('returns level 3 at the γ threshold (460)', () => {
+            expect(WeaponItem.getLevelForTech(460)).toBe(3);
+        });
+
+        it('returns max level for tech at or above ω threshold (2500)', () => {
+            expect(WeaponItem.getLevelForTech(2500)).toBe(WeaponItem.WEAPON_LEVELS.length);
+            expect(WeaponItem.getLevelForTech(9999)).toBe(WeaponItem.WEAPON_LEVELS.length);
+        });
+    });
 });

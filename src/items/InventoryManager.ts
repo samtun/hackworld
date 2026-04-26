@@ -546,17 +546,8 @@ export class InventoryManager {
         const sep = `<div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%; margin: 4px 0;"></div>`;
 
         // Returns the Greek-letter label for the highest weapon level the player has unlocked
-        const weaponLevelChar = (tech: number): string => {
-            let level = 1;
-            for (let i = 0; i < WeaponItem.WEAPON_LEVELS.length; i++) {
-                if (tech >= WeaponItem.WEAPON_LEVELS[i].requiredTech) {
-                    level = i + 1;
-                } else {
-                    break;
-                }
-            }
-            return ItemLevelHelper.getLevelChar(level);
-        };
+        const weaponLevelChar = (tech: number): string =>
+            ItemLevelHelper.getLevelChar(WeaponItem.getLevelForTech(tech));
 
         // Helper to create a stat cell with optional + button
         const statCell = (icon: string, label: string, value: number, statType?: StatType) => {

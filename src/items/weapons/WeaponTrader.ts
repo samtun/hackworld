@@ -127,15 +127,7 @@ export class WeaponTrader extends BaseTrader {
      * Returns the highest weapon level the player can equip for the given tech value.
      */
     private getBaseWeaponLevel(playerTech: number): number {
-        let baseLevel = 1;
-        for (let i = 0; i < WeaponItem.WEAPON_LEVELS.length; i++) {
-            if (playerTech >= WeaponItem.WEAPON_LEVELS[i].requiredTech) {
-                baseLevel = i + 1;
-            } else {
-                break;
-            }
-        }
-        return baseLevel;
+        return WeaponItem.getLevelForTech(playerTech);
     }
 
     protected filterPlayerInventory(player: Player): Item[] {
