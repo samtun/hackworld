@@ -1,3 +1,15 @@
+# [3.10.0](https://github.com/samtun/hackworld/compare/v3.9.0...v3.10.0) (2026-04-26)
+
+
+### Bug Fixes
+
+* update tech level display format in inventory ([1361afb](https://github.com/samtun/hackworld/commit/1361afb199ee0d80a5ecc85b632c12b2679468d9))
+
+
+### Features
+
+* show tech level in inventory on tech points ([926ec4c](https://github.com/samtun/hackworld/commit/926ec4c2742fa2ab083faf3c94353f9068f84ef5))
+
 # [3.9.0](https://github.com/samtun/hackworld/compare/v3.8.0...v3.9.0) (2026-04-26)
 
 
