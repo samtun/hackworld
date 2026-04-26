@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Required so UIManager's module-level import of Player doesn't fail in the test environment.
 vi.mock('../Player', () => ({ Player: class {} }));
@@ -54,6 +54,9 @@ function makeUIManager(overrides: Record<string, unknown> = {}) {
         lastNavigateRightState: false,
         lastSelectState: false,
         skillsWrapper: document.createElement('div'),
+        albumBanner: null,
+        albumBannerTimeoutId: null,
+        albumBannerFadeOutId: null,
         ...overrides,
     });
     return ui;
@@ -621,5 +624,83 @@ describe('triggerStartTransition', () => {
 
         expect(fadeOverlay.classList.contains('active')).toBe(true);
         vi.useRealTimers();
+    });
+});
+
+// ─── showAlbumCompleteBanner ─────────────────────────────────────────────────
+
+describe('showAlbumCompleteBanner', () => {
+    beforeEach(() => {
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+        // Clean up any album-complete banners appended to body during tests
+        document.querySelectorAll('[data-album-complete-banner]').forEach(el => el.parentElement?.removeChild(el));
+    });
+
+    it('appends a banner element to document.body', () => {
+        const ui = makeUIManager();
+        const bodyChildrenBefore = document.body.children.length;
+
+        ui.showAlbumCompleteBanner('A.001', 'Improve buy/sell prices of chips by 5%');
+
+        expect(document.body.children.length).toBe(bodyChildrenBefore + 1);
+    });
+
+    it('banner contains the album name in the title', () => {
+        const ui = makeUIManager();
+        ui.showAlbumCompleteBanner('B.003', 'Raise item drop chance by 5%');
+
+        const banner = (ui as any).albumBanner as HTMLDivElement;
+        expect(banner).not.toBeNull();
+        expect(banner.textContent).toContain('B.003');
+    });
+
+    it('banner contains the reward text', () => {
+        const ui = makeUIManager();
+        const reward = 'Reduce all skill cooldowns by 10%';
+        ui.showAlbumCompleteBanner('C.002', reward);
+
+        const banner = (ui as any).albumBanner as HTMLDivElement;
+        expect(banner.textContent).toContain(reward);
+    });
+
+    it('starts with opacity 0', () => {
+        const ui = makeUIManager();
+        ui.showAlbumCompleteBanner('A.001', 'bonus');
+
+        const banner = (ui as any).albumBanner as HTMLDivElement;
+        expect(banner.style.opacity).toBe('0');
+    });
+
+    it('removes banner from DOM after full display duration', () => {
+        const ui = makeUIManager();
+        const bodyChildrenBefore = document.body.children.length;
+
+        ui.showAlbumCompleteBanner('A.001', 'bonus');
+        expect(document.body.children.length).toBe(bodyChildrenBefore + 1);
+
+        // Advance past total display time (7000 ms)
+        vi.advanceTimersByTime(7500);
+
+        expect(document.body.children.length).toBe(bodyChildrenBefore);
+        expect((ui as any).albumBanner).toBeNull();
+    });
+
+    it('replaces an existing banner when called again before expiry', () => {
+        const ui = makeUIManager();
+        const bodyChildrenBefore = document.body.children.length;
+
+        ui.showAlbumCompleteBanner('A.001', 'first');
+        const firstBanner = (ui as any).albumBanner as HTMLDivElement;
+        ui.showAlbumCompleteBanner('B.001', 'second');
+        const secondBanner = (ui as any).albumBanner as HTMLDivElement;
+
+        // Only one extra element in the body
+        expect(document.body.children.length).toBe(bodyChildrenBefore + 1);
+        expect(secondBanner).not.toBe(firstBanner);
+        expect(secondBanner.textContent).toContain('second');
     });
 });

@@ -636,10 +636,22 @@ export class CardManager {
         this.flippingInProgress = true;
         this.render(player);
 
+        // Record which albums were already complete before adding new cards
+        const albums = CardDefinitions.getAlbums();
+        const alreadyComplete = new Set(albums.filter(a => this.cardCollection.isAlbumComplete(a)));
+
         // Add cards to collection before flipping
         this.revealedCards.forEach(card => {
             this.cardCollection.addCard(card);
         });
+
+        // Show a banner for each album that just became complete
+        for (const album of albums) {
+            if (!alreadyComplete.has(album) && this.cardCollection.isAlbumComplete(album)) {
+                const reward = CardManager.ALBUM_REWARDS[album] ?? '';
+                this.uiManager.showAlbumCompleteBanner(album, reward);
+            }
+        }
 
         // Flip cards one by one with a delay
         for (let i = 0; i < this.revealedCards.length; i++) {
