@@ -47,6 +47,7 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         // Timers
         flashTimer: 0,
         stunTimer: 0,
+        spawnInactiveTimer: 0,
         attackAnimTimer: 0,
         deathTimer: 0,
         deathFadeDuration: 0.5,

@@ -41,6 +41,13 @@ const ENEMY_SAFE_SPAWN_RADIUS = 3;
 const SPAWN_DEGENERATE_DISTANCE_THRESHOLD = 0.001;
 
 /**
+ * Duration (seconds) for which freshly spawned enemies stay inactive after
+ * a lazy room-entry spawn.  Gives the physics engine time to position them
+ * before their AI begins chasing the player.
+ */
+const ENEMY_SPAWN_INACTIVE_DURATION = 1;
+
+/**
  * Base class for all dungeon stages
  * Each dungeon stage should extend this and implement the load() method
  */
@@ -724,8 +731,10 @@ export abstract class BaseStage {
 
             if (this.enemies.length > countBefore) {
                 const enemy = this.enemies[this.enemies.length - 1];
-                // Player is already in the room – enable aggro immediately
+                // Enable aggro so the enemy tracks the player, but hold it
+                // inactive for a brief period so it is positioned before engaging.
                 enemy.aggroEnabled = true;
+                enemy.spawnInactiveTimer = ENEMY_SPAWN_INACTIVE_DURATION;
                 enemy.navGrid = this.navGrid;
                 roomEnemies.push(enemy);
             }

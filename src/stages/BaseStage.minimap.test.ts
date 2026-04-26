@@ -35,9 +35,9 @@ function makeSpawningStage() {
         { id: 1, centerX: 0, centerZ: 0, width: 10, depth: 10 },
     ];
 
-    // Stub spawnEnemy so it pushes a fake enemy object
+    // Stub spawnEnemy so it pushes a fake enemy object with the same fields Enemy has
     stage.spawnEnemy = vi.fn((pos: Vec3Like) => {
-        stage.enemies.push({ aggroEnabled: false, navGrid: null, spawnedAt: pos });
+        stage.enemies.push({ aggroEnabled: false, spawnInactiveTimer: 0, navGrid: null, spawnedAt: pos });
     });
     stage.spawnBoss = vi.fn();
     stage.getEnemyConfig = vi.fn().mockReturnValue({});
@@ -162,6 +162,7 @@ describe('BaseStage lazy enemy spawning', () => {
         expect(stage.spawnEnemy).toHaveBeenCalledTimes(1);
         expect(stage.enemies).toHaveLength(1);
         expect(stage.enemies[0].aggroEnabled).toBe(true);
+        expect(stage.enemies[0].spawnInactiveTimer).toBe(1);
         expect(stage.roomPendingSpawnData.size).toBe(0);
     });
 
