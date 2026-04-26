@@ -38,6 +38,8 @@ vi.mock('./ItemDetailsPanel', () => ({ ItemDetailsPanel: { generateHTML: vi.fn()
 vi.mock('../Player', () => ({ Player: class {} }));
 
 import { InventoryManager } from './InventoryManager';
+import { WeaponType } from './weapons/WeaponType';
+import { SkillTechType } from '../skills/SkillTechType';
 
 // jsdom does not implement scrollIntoView
 HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -69,7 +71,20 @@ function makeInventoryManager() {
     return mgr;
 }
 
-function makePlayer(inventory: any[] = []) {
+function makePlayer(inventory: any[] = [], techOverrides: Partial<Record<WeaponType, number>> = {}, skillTechOverrides: Partial<Record<SkillTechType, number>> = {}) {
+    const tech = {
+        [WeaponType.SWORD]: 0,
+        [WeaponType.DUAL_BLADE]: 0,
+        [WeaponType.LANCE]: 0,
+        [WeaponType.HAMMER]: 0,
+        ...techOverrides,
+    };
+    const skillTech = {
+        [SkillTechType.RECOVERY]: 0,
+        [SkillTechType.BLAST]: 0,
+        [SkillTechType.RANGED]: 0,
+        ...skillTechOverrides,
+    };
     return {
         id: 'p1',
         level: 5,
@@ -82,7 +97,7 @@ function makePlayer(inventory: any[] = []) {
         strengthPoints: 0, defensePoints: 0, agilityPoints: 0, luckPoints: 0,
         strengthUpgrades: 0, defenseUpgrades: 0, agilityUpgrades: 0, luckUpgrades: 0,
         hpUpgrades: 0, tpUpgrades: 0,
-        tech: {}, skillTech: {},
+        tech, skillTech,
         inventory,
         skills: [],
         getWeaponTier: vi.fn(),
@@ -304,6 +319,57 @@ describe('InventoryManager', () => {
             mgr.lastCancelState = false;
             mgr.update(makePlayer(), makeInput({ cancel: true }));
             expect(mgr.isVisible).toBe(false);
+        });
+    });
+
+    // generateStatsHTML() tech level display tests
+    describe('generateStatsHTML() tech level labels', () => {
+        it('shows α for weapon tech at 0 (below β threshold)', () => {
+            const player = makePlayer([], { [WeaponType.SWORD]: 0 });
+            const html = (mgr as any).generateStatsHTML(player);
+            expect(html).toContain('0 - α');
+        });
+
+        it('shows β for weapon tech at 120 (β threshold)', () => {
+            const player = makePlayer([], { [WeaponType.SWORD]: 120 });
+            const html = (mgr as any).generateStatsHTML(player);
+            expect(html).toContain('120 - β');
+        });
+
+        it('shows γ for weapon tech at 460 (γ threshold)', () => {
+            const player = makePlayer([], { [WeaponType.DUAL_BLADE]: 460 });
+            const html = (mgr as any).generateStatsHTML(player);
+            expect(html).toContain('460 - γ');
+        });
+
+        it('shows ω for weapon tech at max level threshold', () => {
+            const player = makePlayer([], { [WeaponType.HAMMER]: 2500 });
+            const html = (mgr as any).generateStatsHTML(player);
+            expect(html).toContain('2500 - ω');
+        });
+
+        it('shows Stable for skill tech below 120', () => {
+            const player = makePlayer([], {}, { [SkillTechType.RECOVERY]: 0 });
+            const html = (mgr as any).generateStatsHTML(player);
+            expect(html).toContain('0 - Stable');
+        });
+
+        it('shows Maintained for skill tech at 121', () => {
+            const player = makePlayer([], {}, { [SkillTechType.BLAST]: 121 });
+            const html = (mgr as any).generateStatsHTML(player);
+            expect(html).toContain('121 - Maintained');
+        });
+
+        it('shows ZeroDay for skill tech at 520', () => {
+            const player = makePlayer([], {}, { [SkillTechType.RANGED]: 520 });
+            const html = (mgr as any).generateStatsHTML(player);
+            expect(html).toContain('520 - ZeroDay');
+        });
+
+        it('shows Leet for skill tech at 1200', () => {
+            const player = makePlayer([], {}, { [SkillTechType.RANGED]: 1200 });
+            const html = (mgr as any).generateStatsHTML(player);
+            expect(html).toContain('1200 - Leet');
         });
     });
 });

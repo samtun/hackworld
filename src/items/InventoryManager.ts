@@ -11,7 +11,10 @@ import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';
 import { sortInventory } from './ItemSorter';
 import { WeaponType } from './weapons/WeaponType';
+import { WeaponItem } from './weapons/WeaponItem';
 import { SkillTechType } from '../skills/SkillTechType';
+import { TierManager } from './TierManager';
+import { ItemLevelHelper } from './ItemLevelHelper';
 import { MobileControlsManager } from '../MobileControlsManager';
 import {
     ICON_HP, ICON_TP, ICON_STRENGTH, ICON_DEFENSE, ICON_AGILITY, ICON_LUCK,
@@ -542,6 +545,19 @@ export class InventoryManager {
         const hasStatPoints = player.statPointsAvailable > 0;
         const sep = `<div style="height: 1px; background-color: ${MENU_COLORS.SEPARATOR}; width: 100%; margin: 4px 0;"></div>`;
 
+        // Returns the Greek-letter label for the highest weapon level the player has unlocked
+        const weaponLevelChar = (tech: number): string => {
+            let level = 1;
+            for (let i = 0; i < WeaponItem.WEAPON_LEVELS.length; i++) {
+                if (tech >= WeaponItem.WEAPON_LEVELS[i].requiredTech) {
+                    level = i + 1;
+                } else {
+                    break;
+                }
+            }
+            return ItemLevelHelper.getLevelChar(level);
+        };
+
         // Helper to create a stat cell with optional + button
         const statCell = (icon: string, label: string, value: number, statType?: StatType) => {
             const buttonHTML = hasStatPoints && statType && statType !== StatType.HP && statType !== StatType.TP && value < player.MAX_STAT_VALUE
@@ -582,13 +598,13 @@ export class InventoryManager {
         const techHTML = `${sep}
             <div style="font-weight: bold;">Tech</div>${sep}
             <div style="display:grid; grid-template-columns:1fr 1fr; gap: 4px">
-                <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.SWORD)}<div><div style="font-size:13px; color:#aaa;">Sword</div><div>${player.tech[WeaponType.SWORD]}</div></div></div>
-                <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.DUAL_BLADE)}<div><div style="font-size:13px; color:#aaa;">Double Sword</div><div>${player.tech[WeaponType.DUAL_BLADE]}</div></div></div>
-                <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.LANCE)}<div><div style="font-size:13px; color:#aaa;">Lance</div><div>${player.tech[WeaponType.LANCE]}</div></div></div>
-                <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.HAMMER)}<div><div style="font-size:13px; color:#aaa;">Hammer</div><div>${player.tech[WeaponType.HAMMER]}</div></div></div>
-                <div style="display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.RECOVERY)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.RECOVERY}</div><div>${player.skillTech[SkillTechType.RECOVERY]}</div></div></div>
-                <div style="display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.BLAST)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.BLAST}</div><div>${player.skillTech[SkillTechType.BLAST]}</div></div></div>
-                <div style="grid-column:1/-1; display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.RANGED)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.RANGED}</div><div>${player.skillTech[SkillTechType.RANGED]}</div></div></div>
+                <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.SWORD)}<div><div style="font-size:13px; color:#aaa;">Sword</div><div>${player.tech[WeaponType.SWORD]} - ${weaponLevelChar(player.tech[WeaponType.SWORD])}</div></div></div>
+                <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.DUAL_BLADE)}<div><div style="font-size:13px; color:#aaa;">Double Sword</div><div>${player.tech[WeaponType.DUAL_BLADE]} - ${weaponLevelChar(player.tech[WeaponType.DUAL_BLADE])}</div></div></div>
+                <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.LANCE)}<div><div style="font-size:13px; color:#aaa;">Lance</div><div>${player.tech[WeaponType.LANCE]} - ${weaponLevelChar(player.tech[WeaponType.LANCE])}</div></div></div>
+                <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.HAMMER)}<div><div style="font-size:13px; color:#aaa;">Hammer</div><div>${player.tech[WeaponType.HAMMER]} - ${weaponLevelChar(player.tech[WeaponType.HAMMER])}</div></div></div>
+                <div style="display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.RECOVERY)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.RECOVERY}</div><div>${player.skillTech[SkillTechType.RECOVERY]} - ${TierManager.Instance.getSkillTierForTech(player.skillTech[SkillTechType.RECOVERY])}</div></div></div>
+                <div style="display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.BLAST)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.BLAST}</div><div>${player.skillTech[SkillTechType.BLAST]} - ${TierManager.Instance.getSkillTierForTech(player.skillTech[SkillTechType.BLAST])}</div></div></div>
+                <div style="grid-column:1/-1; display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.RANGED)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.RANGED}</div><div>${player.skillTech[SkillTechType.RANGED]} - ${TierManager.Instance.getSkillTierForTech(player.skillTech[SkillTechType.RANGED])}</div></div></div>
             </div>`;
 
         return miscHTML + statsHTML + techHTML;
