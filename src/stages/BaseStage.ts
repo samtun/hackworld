@@ -45,7 +45,7 @@ const SPAWN_DEGENERATE_DISTANCE_THRESHOLD = 0.001;
  * a lazy room-entry spawn.  Gives the physics engine time to position them
  * before their AI begins chasing the player.
  */
-const ENEMY_SPAWN_INACTIVE_DURATION = 1;
+const ENEMY_SPAWN_INACTIVE_DURATION = 0.5;
 
 /**
  * Base class for all dungeon stages
@@ -672,7 +672,7 @@ export abstract class BaseStage {
         for (const barrel of this.breakableBarrels) {
             barrel.update(dt);
         }
-      
+
         // Update electric traps (damage, particles, activation)
         for (const trap of this.electricTraps) {
             trap.update(dt, player, this.enemies);
