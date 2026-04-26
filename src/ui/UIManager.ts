@@ -982,8 +982,8 @@ export class UIManager {
     }
 
     /**
-     * Show a cinematic album-complete banner at the top centre of the screen.
-     * Fades in over 0.25 s, stays for 7 s total, then fades out over 0.25 s.
+     * Show a cinematic album-complete banner at the bottom centre of the screen.
+     * Fades in over 0.25 s, stays for 12 s total, then fades out over 0.25 s.
      * If called while a previous banner is still showing, the old one is dismissed
      * immediately and replaced.
      *
@@ -1006,13 +1006,13 @@ export class UIManager {
         }
 
         const FADE_MS = 250;
-        const TOTAL_MS = 7000;
+        const TOTAL_MS = 12000;
         const HOLD_MS = TOTAL_MS - FADE_MS * 2;
 
         const banner = document.createElement('div');
         banner.dataset.albumCompleteBanner = '';
         banner.style.position = 'fixed';
-        banner.style.top = '40px';
+        banner.style.bottom = '48px';
         banner.style.left = '50%';
         banner.style.transform = 'translateX(-50%)';
         banner.style.zIndex = '2000';
@@ -1024,13 +1024,15 @@ export class UIManager {
         banner.style.opacity = '0';
         banner.style.transition = `opacity ${FADE_MS}ms ease-in-out`;
         banner.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        banner.style.backgroundColor = 'rgba(0,0,0,0.6)';
+        banner.style.padding = '12px 20px';
+        banner.style.borderRadius = '4px';
 
         const titleEl = document.createElement('div');
         titleEl.textContent = `Album ${albumName} Complete`;
         titleEl.style.fontSize = '28px';
         titleEl.style.fontWeight = 'bold';
         titleEl.style.color = '#ffd700';
-        titleEl.style.textShadow = '2px 2px 6px rgba(0,0,0,0.9)';
         titleEl.style.textAlign = 'center';
         titleEl.style.letterSpacing = '2px';
         titleEl.style.textTransform = 'uppercase';
@@ -1040,11 +1042,7 @@ export class UIManager {
         rewardEl.textContent = reward;
         rewardEl.style.fontSize = '16px';
         rewardEl.style.color = '#ffffff';
-        rewardEl.style.textShadow = '1px 1px 4px rgba(0,0,0,0.9)';
         rewardEl.style.textAlign = 'center';
-        rewardEl.style.backgroundColor = 'rgba(0,0,0,0.6)';
-        rewardEl.style.padding = '4px 16px';
-        rewardEl.style.borderRadius = '4px';
         banner.appendChild(rewardEl);
 
         document.body.appendChild(banner);

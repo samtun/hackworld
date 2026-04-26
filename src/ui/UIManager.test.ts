@@ -682,8 +682,8 @@ describe('showAlbumCompleteBanner', () => {
         ui.showAlbumCompleteBanner('A.001', 'bonus');
         expect(document.body.children.length).toBe(bodyChildrenBefore + 1);
 
-        // Advance past total display time (7000 ms)
-        vi.advanceTimersByTime(7500);
+        // Advance past total display time (12000 ms)
+        vi.advanceTimersByTime(12500);
 
         expect(document.body.children.length).toBe(bodyChildrenBefore);
         expect((ui as any).albumBanner).toBeNull();
