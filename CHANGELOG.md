@@ -1,3 +1,10 @@
+# [3.11.0](https://github.com/samtun/hackworld/compare/v3.10.0...v3.11.0) (2026-04-26)
+
+
+### Features
+
+* item comparison — show stat delta when hovering/selecting equippable items ([c62bfd7](https://github.com/samtun/hackworld/commit/c62bfd7897a6b70acc5321e491e63de265bc9800))
+
 # [3.10.0](https://github.com/samtun/hackworld/compare/v3.9.0...v3.10.0) (2026-04-26)
 
 
