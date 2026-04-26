@@ -1,3 +1,16 @@
+# [3.12.0](https://github.com/samtun/hackworld/compare/v3.11.0...v3.12.0) (2026-04-26)
+
+
+### Bug Fixes
+
+* decrease enemy inactive duration at spawn ([e6aabbc](https://github.com/samtun/hackworld/commit/e6aabbc208a6d5a59544076879dbc4bf5c326c5d))
+* newly spawned enemies stay inactive for 1 second after room entry ([80aae2d](https://github.com/samtun/hackworld/commit/80aae2d041a42b304bca1b19cc0ec1f453199a94))
+
+
+### Features
+
+* spawn enemies lazily when player enters their room ([6590445](https://github.com/samtun/hackworld/commit/65904459f476f0834aa1b89243970c17db1a6b0b))
+
 # [3.11.0](https://github.com/samtun/hackworld/compare/v3.10.0...v3.11.0) (2026-04-26)
 
 
