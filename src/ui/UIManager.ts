@@ -12,8 +12,8 @@ const MINIMAP_WORLD_RADIUS = 40;
 /** Vertical squash ratio used to simulate camera tilt in the isometric minimap. */
 const MINIMAP_TILT_FACTOR = 0.58;
 const MINIMAP_MARKER_RADIUS = 4;
-const MINIMAP_TELEPORTER_INACTIVE_COLOR = '#8f96a0';
-const MINIMAP_TELEPORTER_ACTIVE_COLOR = '#29bfd3';
+const MINIMAP_TELEPORTER_INACTIVE_COLOR = '#ffedd0';
+const MINIMAP_TELEPORTER_ACTIVE_COLOR = '#df961f';
 const MINIMAP_BACKGROUND_ALPHA = 0.5;
 const MINIMAP_EDGE_FADE_SIZE = 24;
 
