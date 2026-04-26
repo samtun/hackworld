@@ -442,6 +442,14 @@ export class CardManager {
         [Album.C003]: 'Raise maximum dropped weapon damage bonus ceiling by 10%',
     };
 
+    /**
+     * Returns the plain-text reward description for a completed album.
+     * @param album - the album identifier
+     */
+    public static getAlbumReward(album: Album): string {
+        return CardManager.ALBUM_REWARDS[album] ?? '';
+    }
+
     /** Characters used for obfuscation */
     private static readonly GLITCH_CHARS = '!@#$%^&*<>?/|\\{}[]~`';
 

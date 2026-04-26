@@ -8,6 +8,8 @@ import { GameProgressManager } from './GameProgressManager';
 import { SkillTechType } from './skills/SkillTechType';
 import { Album, CardDefinitions } from './items/cards/Card';
 import { CardCollection } from './items/cards/CardCollection';
+import { CardManager } from './items/cards/CardManager';
+import { UIManager } from './ui/UIManager';
 
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
@@ -588,6 +590,7 @@ export class DebugValueEditor {
             if (!selected) return;
             const cards = CardDefinitions.getAlbumCards(selected);
             cards.forEach(card => CardCollection.Instance.addCard(card));
+            UIManager.Instance.showAlbumCompleteBanner(selected, CardManager.getAlbumReward(selected));
             console.log(`Completed album ${selected}`);
             albumSelect.value = '';
         });
