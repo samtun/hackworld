@@ -1,3 +1,12 @@
+# [3.9.0](https://github.com/samtun/hackworld/compare/v3.8.0...v3.9.0) (2026-04-26)
+
+
+### Features
+
+* add teleporter direction arrow to minimap with fade in/out ([b20a24f](https://github.com/samtun/hackworld/commit/b20a24f7aa14776369f1cb3f0f3031d5bf55ecad))
+* improve minimap teleporter marker color ([213516e](https://github.com/samtun/hackworld/commit/213516eaae7c8cce6377f7b72459bf5e59572d19))
+* mark cleared rooms in gray on the minimap ([5ed8b8f](https://github.com/samtun/hackworld/commit/5ed8b8f8ef153877fae1b8e124ad06e1aa1d668a))
+
 # [3.8.0](https://github.com/samtun/hackworld/compare/v3.7.0...v3.8.0) (2026-04-24)
 
 
