@@ -22,7 +22,7 @@ import { getHint, HintConfigs } from './ui/InputHints';
 import { Teleporter } from './Teleporter';
 import { LoreIntroduction } from './LoreIntroduction';
 import { StartMenuOption } from './StartMenu';
-import { PauseMenu, PERFORMANCE_MODE_STORAGE_KEY } from './PauseMenu';
+import { PauseMenu, PERFORMANCE_MODE_STORAGE_KEY, CONTROL_HINTS_STORAGE_KEY } from './PauseMenu';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
@@ -141,6 +141,12 @@ export class Game {
         if (savedPerfMode === 'true') {
             ssaoPass.enabled = false;
             bloomPass.enabled = false;
+        }
+
+        // Restore Control Hints setting from localStorage (default: shown)
+        const savedControlHints = localStorage.getItem(CONTROL_HINTS_STORAGE_KEY);
+        if (savedControlHints === 'false') {
+            this.ui.controlHintsEnabled = false;
         }
 
         const floatingIndicatorRenderPass = new RenderPass( this.scene, this.floatingIndicatorCamera );
@@ -284,7 +290,7 @@ export class Game {
         this.ui.registerPlayer(this.player);
 
         // Create pause menu
-        this.pauseMenu = new PauseMenu(this.input, !this.ssaoPass.enabled, {
+        this.pauseMenu = new PauseMenu(this.input, !this.ssaoPass.enabled, this.ui.controlHintsEnabled, {
             onContinue: () => {},
             onTogglePerformanceMode: () => {
                 this.ssaoPass.enabled = !this.ssaoPass.enabled;
@@ -293,6 +299,14 @@ export class Game {
                 localStorage.setItem(PERFORMANCE_MODE_STORAGE_KEY, String(perfMode));
 
                 return perfMode;
+            },
+            onToggleControlHints: () => {
+                this.ui.controlHintsEnabled = !this.ui.controlHintsEnabled;
+                if (!this.ui.controlHintsEnabled) {
+                    this.ui.hideControlHints();
+                }
+                localStorage.setItem(CONTROL_HINTS_STORAGE_KEY, String(this.ui.controlHintsEnabled));
+                return this.ui.controlHintsEnabled;
             },
             onRestartArea: () => this.respawnPlayer(),
         });

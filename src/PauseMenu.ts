@@ -5,9 +5,13 @@ const PAUSE_FADE_MS = 300;
 /** localStorage key used to persist Performance Mode across sessions */
 export const PERFORMANCE_MODE_STORAGE_KEY = 'hackworld_performance_mode';
 
+/** localStorage key used to persist Control Hints visibility across sessions */
+export const CONTROL_HINTS_STORAGE_KEY = 'hackworld_control_hints';
+
 export interface PauseMenuCallbacks {
     onContinue: () => void;
     onTogglePerformanceMode: () => boolean;
+    onToggleControlHints: () => boolean;
     onRestartArea: () => void;
 }
 
@@ -20,7 +24,7 @@ interface PauseMenuItem {
 /**
  * Full-screen pause menu shown when the player presses ESC / Start.
  * Backdrop mirrors the death screen; text style mirrors the start-screen main menu.
- * Options: Continue, Performance Mode on/off, Restart Area.
+ * Options: Continue, Performance Mode on/off, Show Control Hints yes/no, Restart Area.
  */
 export class PauseMenu {
     private readonly overlay: HTMLDivElement;
@@ -29,6 +33,8 @@ export class PauseMenu {
     private readonly items: PauseMenuItem[];
     private performanceModeEnabled: boolean;
     private performanceStatusEl!: HTMLSpanElement;
+    private controlHintsEnabled: boolean;
+    private controlHintsStatusEl!: HTMLSpanElement;
     private restartEnabled: boolean = true;
     private selectedIndex: number = 0;
 
@@ -49,15 +55,18 @@ export class PauseMenu {
     constructor(
         input: InputManager,
         performanceModeEnabled: boolean,
+        controlHintsEnabled: boolean,
         callbacks: PauseMenuCallbacks,
     ) {
         this.input = input;
         this.performanceModeEnabled = performanceModeEnabled;
+        this.controlHintsEnabled = controlHintsEnabled;
         this.callbacks = callbacks;
 
         this.items = [
             { id: 'continue', label: 'Continue', buildEl: (item) => this.buildSimpleItem(item) },
             { id: 'performance', label: '', buildEl: (item) => this.buildPerformanceItem(item) },
+            { id: 'controlhints', label: '', buildEl: (item) => this.buildControlHintsItem(item) },
             { id: 'restart', label: 'Restart Area', buildEl: (item) => this.buildSimpleItem(item) },
         ];
 
@@ -206,6 +215,25 @@ export class PauseMenu {
         }
     }
 
+    private buildControlHintsItem(_item: PauseMenuItem): HTMLDivElement {
+        const el = document.createElement('div');
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = 'Show Control Hints: ';
+        el.appendChild(labelSpan);
+
+        this.controlHintsStatusEl = document.createElement('span');
+        this.controlHintsStatusEl.style.color = '#33DDFF';
+        this.updateControlHintsLabel();
+        el.appendChild(this.controlHintsStatusEl);
+        return el;
+    }
+
+    private updateControlHintsLabel(): void {
+        if (this.controlHintsStatusEl) {
+            this.controlHintsStatusEl.textContent = this.controlHintsEnabled ? 'yes' : 'no';
+        }
+    }
+
     private itemStyle(selected: boolean, enabled: boolean = true): string {
         const color = !enabled ? '#555555' : selected ? '#ffffff' : '#cccccc';
         const fontWeight = selected ? 'bold' : 'normal';
@@ -229,9 +257,12 @@ export class PauseMenu {
             el.style.cssText = this.itemStyle(i === this.selectedIndex, enabled);
             el.style.cursor = enabled ? 'pointer' : 'default';
         });
-        // Restore the Performance Mode status colour after cssText overwrite
+        // Restore status span colours after cssText overwrite
         if (this.performanceStatusEl) {
             this.performanceStatusEl.style.color = '#33DDFF';
+        }
+        if (this.controlHintsStatusEl) {
+            this.controlHintsStatusEl.style.color = '#33DDFF';
         }
     }
 
@@ -271,6 +302,10 @@ export class PauseMenu {
             case 'performance':
                 this.performanceModeEnabled = this.callbacks.onTogglePerformanceMode();
                 this.updatePerformanceLabel();
+                break;
+            case 'controlhints':
+                this.controlHintsEnabled = this.callbacks.onToggleControlHints();
+                this.updateControlHintsLabel();
                 break;
             case 'restart':
                 this.hide();
