@@ -20,6 +20,12 @@ const MINIMAP_EDGE_FADE_SIZE = 24;
 const MINIMAP_TELEPORTER_ARROW_RADIUS = 52;
 /** Duration (seconds) for the teleporter arrow to fade in or out. */
 const MINIMAP_TELEPORTER_ARROW_FADE_DURATION = 0.2;
+/** How far the tip of the direction arrow extends from its centre point (px). */
+const MINIMAP_ARROW_TIP_LENGTH = 9;
+/** Half-length of the arrow's base (back edge) in pixels. */
+const MINIMAP_ARROW_BASE_HALF_LEN = 5;
+/** Half-width of the arrow's base (perpendicular spread) in pixels. */
+const MINIMAP_ARROW_HALF_WIDTH = 7;
 
 class PlayerUI {
     id: string;
@@ -676,13 +682,11 @@ export class UIManager {
             // The teleporter is "in view" when its projected canvas position is
             // inside the non-faded area (accounting for the marker radius so
             // the dot is fully visible before the arrow starts fading).
-            const innerLeft = MINIMAP_EDGE_FADE_SIZE + MINIMAP_MARKER_RADIUS;
-            const innerRight = width - MINIMAP_EDGE_FADE_SIZE - MINIMAP_MARKER_RADIUS;
-            const innerTop = MINIMAP_EDGE_FADE_SIZE + MINIMAP_MARKER_RADIUS;
-            const innerBottom = height - MINIMAP_EDGE_FADE_SIZE - MINIMAP_MARKER_RADIUS;
             const teleporterInView =
-                tp.x >= innerLeft && tp.x <= innerRight &&
-                tp.y >= innerTop && tp.y <= innerBottom;
+                tp.x >= MINIMAP_EDGE_FADE_SIZE + MINIMAP_MARKER_RADIUS &&
+                tp.x <= width - MINIMAP_EDGE_FADE_SIZE - MINIMAP_MARKER_RADIUS &&
+                tp.y >= MINIMAP_EDGE_FADE_SIZE + MINIMAP_MARKER_RADIUS &&
+                tp.y <= height - MINIMAP_EDGE_FADE_SIZE - MINIMAP_MARKER_RADIUS;
 
             const fadeRate = deltaTime / MINIMAP_TELEPORTER_ARROW_FADE_DURATION;
             if (teleporterInView) {
@@ -702,9 +706,9 @@ export class UIManager {
                 ctx.translate(arrowX, arrowY);
                 ctx.rotate(angle);
                 ctx.beginPath();
-                ctx.moveTo(9, 0);
-                ctx.lineTo(-5, -7);
-                ctx.lineTo(-5, 7);
+                ctx.moveTo(MINIMAP_ARROW_TIP_LENGTH, 0);
+                ctx.lineTo(-MINIMAP_ARROW_BASE_HALF_LEN, -MINIMAP_ARROW_HALF_WIDTH);
+                ctx.lineTo(-MINIMAP_ARROW_BASE_HALF_LEN, MINIMAP_ARROW_HALF_WIDTH);
                 ctx.closePath();
                 ctx.fill();
                 ctx.restore();
