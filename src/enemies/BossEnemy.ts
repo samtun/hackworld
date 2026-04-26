@@ -37,7 +37,7 @@ export class BossEnemy extends Enemy {
             criticalChance: 0.07,
             criticalHitMultiplier: 1.5,
             blockChance: 0.2,
-            size: 3.5,
+            size: 2.0,
             color: 0x000000,
             ...config,
         });

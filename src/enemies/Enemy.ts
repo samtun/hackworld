@@ -8,6 +8,7 @@ import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { BlockShield } from '../BlockShield';
 import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
 import { BlobShadow } from '../BlobShadow';
+import type { BreakableBarrel } from '../items/BreakableBarrel';
 
 /** Maximum downward distance (metres) for the shadow floor raycast. */
 const SHADOW_CAST_DIST = 4.0;
@@ -41,6 +42,18 @@ const ENEMY_RADIUS_FACTOR = 0.326;
 const ENEMY_ATTACK_RANGE_FACTOR = 0.792;
 const BASE_ATTACK_HITBOX_SIZE = new CANNON.Vec3(0.5, 0.5, 0.8);
 const BASE_ATTACK_HITBOX_OFFSET = 1.0;
+
+/** Maximum allowed enemy size (metres). Keeps enemies passable through corridors. */
+export const MAX_ENEMY_SIZE = 2.0;
+
+/** How long (seconds) an enemy must be stuck before it attempts a path-clearing attack. */
+const STUCK_TRIGGER_TIME = 2.0;
+/** Interval (seconds) at which stuck progress is sampled. */
+const STUCK_CHECK_INTERVAL = 0.5;
+/** Minimum distance (metres) the enemy must travel per check period to be considered moving. */
+const STUCK_MIN_PROGRESS = 0.15;
+/** Probability per second of performing a path-clearing attack while stuck. */
+const STUCK_ATTACK_CHANCE_PER_SECOND = 0.2;
 
 export const DEFAULT_ENEMY_ARCHETYPE: EnemyArchetypeConfig = {
     maxHp: 60,
@@ -124,6 +137,21 @@ export class Enemy extends BaseMesh {
     protected returnWaitTime: number = 2.0; // Wait 2 seconds before returning to base
     protected baseArrivalThreshold: number = 0.5; // Distance to consider arrived at base
 
+    // Stuck detection: track if enemy is making progress while chasing the player
+    /** Accumulated time (seconds) the enemy has been stuck while chasing. */
+    private stuckTimer: number = 0;
+    /** Countdown to next stuck-progress sample. */
+    private stuckCheckCountdown: number = STUCK_CHECK_INTERVAL;
+    /** World-XZ position recorded at the last stuck-progress sample. */
+    private stuckLastX: number = 0;
+    private stuckLastZ: number = 0;
+
+    /**
+     * Breakable barrels in the current room/stage.
+     * Set by {@link BaseStage} so enemies can break barrels blocking their path.
+     */
+    breakableBarrels: BreakableBarrel[] = [];
+
     // Animation
     isAttacking: boolean = false;
     protected attackAnimTimer: number = 0;
@@ -202,7 +230,7 @@ export class Enemy extends BaseMesh {
         this.criticalChance = resolvedConfig.criticalChance;
         this.criticalHitMultiplier = resolvedConfig.criticalHitMultiplier;
         this.blockChance = resolvedConfig.blockChance;
-        this.size = resolvedConfig.size;
+        this.size = Math.min(resolvedConfig.size, MAX_ENEMY_SIZE);
         this.radius = this.size * ENEMY_RADIUS_FACTOR;
         this.attackRange = this.size * ENEMY_ATTACK_RANGE_FACTOR;
         const sizeScale = this.size / BASE_ENEMY_SIZE;
@@ -440,6 +468,17 @@ export class Enemy extends BaseMesh {
             this.player.takeDamage(damage, this.body.position, isCriticalHit);
             this.hasDealtDamageThisAttack = true;
         }
+
+        // Check for barrels in attack range and break them
+        const barrelHitRadius = this.attackHitboxSize.x + this.attackHitboxSize.z + 0.4;
+        for (const barrel of this.breakableBarrels) {
+            if (barrel.isDestroyed) continue;
+            const bx = hitboxPos.x - barrel.body.position.x;
+            const bz = hitboxPos.z - barrel.body.position.z;
+            if (Math.sqrt(bx * bx + bz * bz) < barrelHitRadius) {
+                barrel.onHit();
+            }
+        }
     }
 
     update(dt: number) {
@@ -589,6 +628,33 @@ export class Enemy extends BaseMesh {
                 this.isReturningToBase = false;
                 this.returnToBaseTimer = 0;
 
+                // Stuck detection: sample progress toward the player periodically
+                this.stuckCheckCountdown -= dt;
+                if (this.stuckCheckCountdown <= 0) {
+                    const progressX = myPos.x - this.stuckLastX;
+                    const progressZ = myPos.z - this.stuckLastZ;
+                    const progress = Math.sqrt(progressX * progressX + progressZ * progressZ);
+                    if (progress < STUCK_MIN_PROGRESS) {
+                        this.stuckTimer += STUCK_CHECK_INTERVAL;
+                    } else {
+                        this.stuckTimer = 0;
+                    }
+                    this.stuckLastX = myPos.x;
+                    this.stuckLastZ = myPos.z;
+                    this.stuckCheckCountdown = STUCK_CHECK_INTERVAL;
+                }
+
+                // If stuck long enough and not already at attack range, try clearing path
+                if (
+                    this.stuckTimer >= STUCK_TRIGGER_TIME &&
+                    distToPlayer > this.attackRange &&
+                    this.attackTimer <= 0 &&
+                    Math.random() < STUCK_ATTACK_CHANCE_PER_SECOND * dt
+                ) {
+                    this.stuckTimer = 0;
+                    this.attack();
+                }
+
                 const moveResult = this.computeMovement(playerPos, myPos, dt);
                 if (moveResult) {
                     this.body.velocity.x = moveResult.dirX * this.speed;
@@ -601,7 +667,9 @@ export class Enemy extends BaseMesh {
                     this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
                 }
             } else {
-                // Player out of range - return to base after delay
+                // Player out of range - reset stuck state and return to base after delay
+                this.stuckTimer = 0;
+                this.stuckCheckCountdown = STUCK_CHECK_INTERVAL;
                 if (!this.isReturningToBase) {
                     // Start the wait timer
                     this.returnToBaseTimer += dt;
