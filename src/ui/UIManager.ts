@@ -327,6 +327,10 @@ export class UIManager {
     // Skill cooldown indicator elements (three skills)
     skillsWrapper?: HTMLDivElement;
 
+    private albumBanner: HTMLDivElement | null = null;
+    private albumBannerTimeoutId: ReturnType<typeof setTimeout> | null = null;
+    private albumBannerFadeOutId: ReturnType<typeof setTimeout> | null = null;
+
     playerUIs: Map<string, PlayerUI> = new Map();
     private retryCallback?: () => void;
     private lobbyCallback?: () => void;
@@ -975,5 +979,93 @@ export class UIManager {
      */
     isDeathOverlayVisible(): boolean {
         return this.deathOverlay?.style.display !== 'none';
+    }
+
+    /**
+     * Show a cinematic album-complete banner at the bottom centre of the screen.
+     * Fades in over 0.25 s, stays for 12 s total, then fades out over 0.25 s.
+     * If called while a previous banner is still showing, the old one is dismissed
+     * immediately and replaced.
+     *
+     * @param albumName - e.g. "A.001"
+     * @param reward    - the plain-text bonus description
+     */
+    showAlbumCompleteBanner(albumName: string, reward: string): void {
+        // Dismiss any existing banner immediately
+        if (this.albumBanner) {
+            if (this.albumBannerTimeoutId !== null) {
+                clearTimeout(this.albumBannerTimeoutId);
+                this.albumBannerTimeoutId = null;
+            }
+            if (this.albumBannerFadeOutId !== null) {
+                clearTimeout(this.albumBannerFadeOutId);
+                this.albumBannerFadeOutId = null;
+            }
+            this.albumBanner.parentElement?.removeChild(this.albumBanner);
+            this.albumBanner = null;
+        }
+
+        const FADE_MS = 250;
+        const TOTAL_MS = 12000;
+        const HOLD_MS = TOTAL_MS - FADE_MS * 2;
+
+        const banner = document.createElement('div');
+        banner.dataset.albumCompleteBanner = '';
+        banner.style.position = 'fixed';
+        banner.style.bottom = '48px';
+        banner.style.left = '50%';
+        banner.style.transform = 'translateX(-50%)';
+        banner.style.zIndex = '2000';
+        banner.style.pointerEvents = 'none';
+        banner.style.display = 'flex';
+        banner.style.flexDirection = 'column';
+        banner.style.alignItems = 'center';
+        banner.style.gap = '6px';
+        banner.style.opacity = '0';
+        banner.style.transition = `opacity ${FADE_MS}ms ease-in-out`;
+        banner.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        banner.style.backgroundColor = 'rgba(0,0,0,0.6)';
+        banner.style.padding = '12px 20px';
+        banner.style.borderRadius = '4px';
+
+        const titleEl = document.createElement('div');
+        titleEl.textContent = `Album ${albumName} Complete`;
+        titleEl.style.fontSize = '28px';
+        titleEl.style.fontWeight = 'bold';
+        titleEl.style.color = '#ffd700';
+        titleEl.style.textAlign = 'center';
+        titleEl.style.letterSpacing = '2px';
+        titleEl.style.textTransform = 'uppercase';
+        banner.appendChild(titleEl);
+
+        const rewardEl = document.createElement('div');
+        rewardEl.textContent = reward;
+        rewardEl.style.fontSize = '16px';
+        rewardEl.style.color = '#ffffff';
+        rewardEl.style.textAlign = 'center';
+        banner.appendChild(rewardEl);
+
+        document.body.appendChild(banner);
+        this.albumBanner = banner;
+
+        // Fade in
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                banner.style.opacity = '1';
+            });
+        });
+
+        // After hold period begin fade-out, then remove
+        this.albumBannerTimeoutId = setTimeout(() => {
+            this.albumBannerTimeoutId = null;
+            banner.style.opacity = '0';
+            this.albumBannerFadeOutId = setTimeout(() => {
+                banner.parentElement?.removeChild(banner);
+                if (this.albumBanner === banner) {
+                    this.albumBanner = null;
+                }
+                this.albumBannerFadeOutId = null;
+            }, FADE_MS);
+        }, FADE_MS + HOLD_MS);
     }
 }
