@@ -405,7 +405,18 @@ export class InventoryManager {
 
         // Update Item Details for selected item
         const selectedItem = player.inventory[this.selectedIndex];
-        this.itemDetailsPanel.innerHTML = ItemDetailsPanel.generateHTML(selectedItem);
+
+        // Find the currently equipped item of the same type for stat comparison.
+        // If the selected item IS the equipped item, no comparison is needed.
+        let equippedItem: Item | undefined;
+        if (selectedItem instanceof EquippableItem && !selectedItem.isEquipped) {
+            equippedItem = player.inventory.find(item =>
+                item instanceof EquippableItem &&
+                item.isEquipped &&
+                item.constructor === selectedItem.constructor
+            );
+        }
+        this.itemDetailsPanel.innerHTML = ItemDetailsPanel.generateHTML(selectedItem, equippedItem);
 
         // Update Loot List
         this.lootList.innerHTML = '';
