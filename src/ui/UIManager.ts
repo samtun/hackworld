@@ -16,6 +16,10 @@ const MINIMAP_TELEPORTER_INACTIVE_COLOR = '#8f96a0';
 const MINIMAP_TELEPORTER_ACTIVE_COLOR = '#29bfd3';
 const MINIMAP_BACKGROUND_ALPHA = 0.5;
 const MINIMAP_EDGE_FADE_SIZE = 24;
+/** Distance (px) from the minimap centre at which the teleporter arrow is drawn. */
+const MINIMAP_TELEPORTER_ARROW_RADIUS = 52;
+/** Duration (seconds) for the teleporter arrow to fade in or out. */
+const MINIMAP_TELEPORTER_ARROW_FADE_DURATION = 0.2;
 
 class PlayerUI {
     id: string;
@@ -330,6 +334,8 @@ export class UIManager {
     private minimapCanvas: HTMLCanvasElement;
     private minimapLayout: StageMinimapLayout | null = null;
     private minimapVisible = false;
+    /** Current opacity of the teleporter direction arrow (0 = hidden, 1 = fully visible). */
+    private teleporterArrowAlpha = 0;
 
     public startScreenTapped: boolean = false;
 
@@ -557,7 +563,7 @@ export class UIManager {
     }
 
     update(player: Player, deltaTime: number): void {
-        this.renderMinimap(player);
+        this.renderMinimap(player, deltaTime);
 
         // If no registered player UIs exist, skip
         if (this.playerUIs.size === 0) return;
@@ -574,7 +580,7 @@ export class UIManager {
         this.minimapVisible = visible;
     }
 
-    private renderMinimap(player: Player): void {
+    private renderMinimap(player: Player, deltaTime: number): void {
         if (!this.minimapCanvas || !this.minimapWrapper || !this.minimapLayout || !this.minimapVisible) {
             if (this.minimapWrapper) this.minimapWrapper.style.display = 'none';
             return;
@@ -663,6 +669,49 @@ export class UIManager {
         ctx.beginPath();
         ctx.arc(centerX, centerY, MINIMAP_MARKER_RADIUS, 0, Math.PI * 2);
         ctx.fill();
+
+        if (this.minimapLayout.teleporter?.active) {
+            const tp = project(this.minimapLayout.teleporter.x, this.minimapLayout.teleporter.z);
+
+            // The teleporter is "in view" when its projected canvas position is
+            // inside the non-faded area (accounting for the marker radius so
+            // the dot is fully visible before the arrow starts fading).
+            const innerLeft = MINIMAP_EDGE_FADE_SIZE + MINIMAP_MARKER_RADIUS;
+            const innerRight = width - MINIMAP_EDGE_FADE_SIZE - MINIMAP_MARKER_RADIUS;
+            const innerTop = MINIMAP_EDGE_FADE_SIZE + MINIMAP_MARKER_RADIUS;
+            const innerBottom = height - MINIMAP_EDGE_FADE_SIZE - MINIMAP_MARKER_RADIUS;
+            const teleporterInView =
+                tp.x >= innerLeft && tp.x <= innerRight &&
+                tp.y >= innerTop && tp.y <= innerBottom;
+
+            const fadeRate = deltaTime / MINIMAP_TELEPORTER_ARROW_FADE_DURATION;
+            if (teleporterInView) {
+                this.teleporterArrowAlpha = Math.max(0, this.teleporterArrowAlpha - fadeRate);
+            } else {
+                this.teleporterArrowAlpha = Math.min(1, this.teleporterArrowAlpha + fadeRate);
+            }
+
+            if (this.teleporterArrowAlpha > 0) {
+                const angle = Math.atan2(tp.y - centerY, tp.x - centerX);
+                const arrowX = centerX + Math.cos(angle) * MINIMAP_TELEPORTER_ARROW_RADIUS;
+                const arrowY = centerY + Math.sin(angle) * MINIMAP_TELEPORTER_ARROW_RADIUS;
+
+                ctx.save();
+                ctx.globalAlpha = this.teleporterArrowAlpha;
+                ctx.fillStyle = MINIMAP_TELEPORTER_ACTIVE_COLOR;
+                ctx.translate(arrowX, arrowY);
+                ctx.rotate(angle);
+                ctx.beginPath();
+                ctx.moveTo(9, 0);
+                ctx.lineTo(-5, -7);
+                ctx.lineTo(-5, 7);
+                ctx.closePath();
+                ctx.fill();
+                ctx.restore();
+            }
+        } else {
+            this.teleporterArrowAlpha = 0;
+        }
 
         ctx.save();
         ctx.globalCompositeOperation = 'destination-out';
