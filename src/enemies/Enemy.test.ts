@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Enemy, MAX_ENEMY_SIZE } from './Enemy';
+import { Enemy, MAX_ENEMY_RADIUS, ENEMY_RADIUS_FACTOR } from './Enemy';
 
 function mockAction() {
     const action: any = {
@@ -911,25 +911,29 @@ describe('Enemy.update – attack timer', () => {
     });
 });
 
-// ─── MAX_ENEMY_SIZE cap ───────────────────────────────────────────────────────
+// ─── Enemy radius corridor cap ────────────────────────────────────────────────
 
-describe('Enemy size cap', () => {
-    it('MAX_ENEMY_SIZE is 2.0', () => {
-        expect(MAX_ENEMY_SIZE).toBe(2.0);
+describe('Enemy radius corridor cap', () => {
+    it('MAX_ENEMY_RADIUS is corridor half-width minus buffer (1.4 m)', () => {
+        expect(MAX_ENEMY_RADIUS).toBe(1.4);
     });
 
-    it('size is clamped to MAX_ENEMY_SIZE when config exceeds the cap', () => {
-        // Simulate what the constructor does: this.size = Math.min(resolvedConfig.size, MAX_ENEMY_SIZE)
-        // This verifies the clamping logic for large sizes
-        const configSize = 3.5;
-        const clampedSize = Math.min(configSize, MAX_ENEMY_SIZE);
-        expect(clampedSize).toBe(MAX_ENEMY_SIZE);
+    it('radius is clamped to MAX_ENEMY_RADIUS when enemy size would exceed it', () => {
+        // Large size → uncapped radius would be 3.5 * 0.326 ≈ 1.141, still under 1.4
+        // Use an extreme size to confirm capping: 5.0 * 0.326 = 1.63 > 1.4
+        const largeSize = 5.0;
+        const uncappedRadius = largeSize * ENEMY_RADIUS_FACTOR;
+        const cappedRadius = Math.min(uncappedRadius, MAX_ENEMY_RADIUS);
+        expect(uncappedRadius).toBeGreaterThan(MAX_ENEMY_RADIUS);
+        expect(cappedRadius).toBe(MAX_ENEMY_RADIUS);
     });
 
-    it('size is preserved when config is within the cap', () => {
-        const configSize = 1.5;
-        const clampedSize = Math.min(configSize, MAX_ENEMY_SIZE);
-        expect(clampedSize).toBe(1.5);
+    it('radius is NOT clamped when enemy size is within the limit', () => {
+        const smallSize = 1.75;
+        const uncappedRadius = smallSize * ENEMY_RADIUS_FACTOR;
+        const cappedRadius = Math.min(uncappedRadius, MAX_ENEMY_RADIUS);
+        expect(uncappedRadius).toBeLessThan(MAX_ENEMY_RADIUS);
+        expect(cappedRadius).toBeCloseTo(uncappedRadius, 5);
     });
 });
 

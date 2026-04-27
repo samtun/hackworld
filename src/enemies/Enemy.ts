@@ -38,13 +38,20 @@ export interface EnemyArchetypeConfig {
 
 const BASE_ENEMY_SIZE = 1.75;
 const BASE_ENEMY_MASS = 5;
-const ENEMY_RADIUS_FACTOR = 0.326;
+export const ENEMY_RADIUS_FACTOR = 0.326;
 const ENEMY_ATTACK_RANGE_FACTOR = 0.792;
 const BASE_ATTACK_HITBOX_SIZE = new CANNON.Vec3(0.5, 0.5, 0.8);
 const BASE_ATTACK_HITBOX_OFFSET = 1.0;
 
 /** Maximum allowed enemy size (metres). Keeps enemies passable through corridors. */
 export const MAX_ENEMY_SIZE = 2.0;
+
+/**
+ * Maximum physics collision radius for non-boss enemies (metres).
+ * Derived from CORRIDOR_WIDTH (3 m): half-width (1.5 m) minus a 0.1 m buffer
+ * so enemies can traverse corridors without getting stuck.
+ */
+export const MAX_ENEMY_RADIUS = 1.4;
 
 /** How long (seconds) an enemy must be stuck before it attempts a path-clearing attack. */
 const STUCK_TRIGGER_TIME = 2.0;
@@ -232,8 +239,8 @@ export class Enemy extends BaseMesh {
         this.criticalChance = resolvedConfig.criticalChance;
         this.criticalHitMultiplier = resolvedConfig.criticalHitMultiplier;
         this.blockChance = resolvedConfig.blockChance;
-        this.size = Math.min(resolvedConfig.size, MAX_ENEMY_SIZE);
-        this.radius = this.size * ENEMY_RADIUS_FACTOR;
+        this.size = resolvedConfig.size;
+        this.radius = this.computeRadius(this.size);
         this.attackRange = this.size * ENEMY_ATTACK_RANGE_FACTOR;
         const sizeScale = this.size / BASE_ENEMY_SIZE;
         this.attackHitboxSize.set(
@@ -450,6 +457,17 @@ export class Enemy extends BaseMesh {
      */
     protected getDistanceToPlayer(): number {
         return this.body.position.distanceTo(this.player.body.position);
+    }
+
+    /**
+     * Compute the physics collision radius for this enemy.
+     *
+     * Regular enemies are capped at {@link MAX_ENEMY_RADIUS} so they can
+     * always traverse the dungeon corridors.  Override in subclasses to allow
+     * a larger radius (e.g. bosses that never leave their room).
+     */
+    protected computeRadius(size: number): number {
+        return Math.min(size * ENEMY_RADIUS_FACTOR, MAX_ENEMY_RADIUS);
     }
 
     protected checkAttackHitboxCollision() {

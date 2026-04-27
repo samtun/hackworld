@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Enemy } from './Enemy';
+import { Enemy, ENEMY_RADIUS_FACTOR } from './Enemy';
 import type { EnemyArchetypeConfig } from './Enemy';
 
 enum BossAttackType {
@@ -37,7 +37,7 @@ export class BossEnemy extends Enemy {
             criticalChance: 0.07,
             criticalHitMultiplier: 1.5,
             blockChance: 0.2,
-            size: 2.0,
+            size: 3.5,
             color: 0x000000,
             ...config,
         });
@@ -118,6 +118,14 @@ export class BossEnemy extends Enemy {
 
         const healthPercent = Math.max(0, (this.hp / this.maxHp) * 100);
         this.healthBarFill.style.width = healthPercent + '%';
+    }
+
+    /**
+     * Bosses are not required to traverse corridors, so their physics radius is
+     * not capped to the corridor passthrough limit.
+     */
+    protected computeRadius(size: number): number {
+        return size * ENEMY_RADIUS_FACTOR;
     }
 
     /**
