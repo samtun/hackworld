@@ -1,3 +1,19 @@
+# [3.15.0](https://github.com/samtun/hackworld/compare/v3.14.0...v3.15.0) (2026-04-27)
+
+
+### Bug Fixes
+
+* address code review feedback on enemy stuck fix and boss force field ([6fd5d47](https://github.com/samtun/hackworld/commit/6fd5d4714f4359dc5097bec973425bfee4a7c7a1))
+* cap enemy radius (not size) to corridor half-width minus buffer; bosses uncapped ([fe4de4b](https://github.com/samtun/hackworld/commit/fe4de4b57aa3cc52c6e2f1f11bc899613385bfc5))
+* floor critical skill damage ([01bf481](https://github.com/samtun/hackworld/commit/01bf481cf1f6a52b7321b41b6bda9c23e5cab479))
+* reduce max enemy radius to ensure corridor passage ([8f081ea](https://github.com/samtun/hackworld/commit/8f081ea1559ac76c11fc707a5dd9d3579d08a57e))
+* refine weapon drop bonus calculation for better balance and consistency ([ad816c7](https://github.com/samtun/hackworld/commit/ad816c7276c777ca87170a75db206f5cfd30e8f7))
+
+
+### Features
+
+* enemy size cap, stuck detection with barrel breaking, and boss room force field ([d8c2c63](https://github.com/samtun/hackworld/commit/d8c2c6397a131c45c4044d077374dc76dab320b2))
+
 # [3.14.0](https://github.com/samtun/hackworld/compare/v3.13.0...v3.14.0) (2026-04-27)
 
 
