@@ -92,8 +92,8 @@ export class Game {
 
         const bgGeometry = new THREE.PlaneGeometry(9999, 9999);
         bgGeometry.rotateX(-Math.PI / 2);
-        const bgMaterial = new THREE.MeshBasicMaterial({ 
-            color: 0x121212, 
+        const bgMaterial = new THREE.MeshBasicMaterial({
+            color: 0x121212,
             depthWrite: false // Wichtig, damit es wirklich im Hintergrund bleibt
         });
         const bgMesh = new THREE.Mesh(bgGeometry, bgMaterial);
@@ -112,15 +112,15 @@ export class Game {
         this.scene.add(bgMesh);
 
         this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-        this.renderer.setSize( window.innerWidth, window.innerHeight );
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
 
-        this.composer = new EffectComposer( this.renderer );
+        this.composer = new EffectComposer(this.renderer);
 
-        const mainRenderPass = new RenderPass( this.scene, this.camera );
-        this.composer.addPass( mainRenderPass );
+        const mainRenderPass = new RenderPass(this.scene, this.camera);
+        this.composer.addPass(mainRenderPass);
 
-        const ssaoPass = new SSAOPass( this.scene, this.camera, window.innerWidth, window.innerHeight );
-        this.composer.addPass( ssaoPass );
+        const ssaoPass = new SSAOPass(this.scene, this.camera, window.innerWidth, window.innerHeight);
+        this.composer.addPass(ssaoPass);
         this.ssaoPass = ssaoPass;
         ssaoPass.kernelRadius = 0.2;
         ssaoPass.minDistance = 0.005;
@@ -128,12 +128,12 @@ export class Game {
 
         // Bloom – selective via luminance threshold; only bright emissive objects (skills, level-up, teleporter) bloom
         const bloomPass = new UnrealBloomPass(
-            new THREE.Vector2( window.innerWidth, window.innerHeight ),
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
             0.15,   // strength
             0.1,   // radius
             1   // threshold – only pixels brighter than this bloom
         );
-        this.composer.addPass( bloomPass );
+        this.composer.addPass(bloomPass);
         this.bloomPass = bloomPass;
 
         // Restore Performance Mode setting from localStorage (Performance Mode on = all post-processing off)
@@ -143,18 +143,12 @@ export class Game {
             bloomPass.enabled = false;
         }
 
-        // Restore Control Hints setting from localStorage (default: shown)
-        const savedControlHints = localStorage.getItem(CONTROL_HINTS_STORAGE_KEY);
-        if (savedControlHints === 'false') {
-            this.ui.controlHintsEnabled = false;
-        }
-
-        const floatingIndicatorRenderPass = new RenderPass( this.scene, this.floatingIndicatorCamera );
+        const floatingIndicatorRenderPass = new RenderPass(this.scene, this.floatingIndicatorCamera);
         floatingIndicatorRenderPass.clear = false; // Don't clear the depth buffer so it renders on top of the main scene
-        this.composer.addPass( floatingIndicatorRenderPass );
+        this.composer.addPass(floatingIndicatorRenderPass);
 
         const outputPass = new OutputPass();
-        this.composer.addPass( outputPass );
+        this.composer.addPass(outputPass);
 
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.shadowMap.enabled = false;
@@ -185,7 +179,14 @@ export class Game {
         // Setup Game Objects
         this.input = InputManager.Instance;
         this.ui = UIManager.Instance;
-        this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial, 
+
+        // Restore Control Hints setting from localStorage (default: shown)
+        const savedControlHints = localStorage.getItem(CONTROL_HINTS_STORAGE_KEY);
+        if (savedControlHints === 'false') {
+            this.ui.controlHintsEnabled = false;
+        }
+
+        this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial,
             () => this.onInitialLoadComplete(),
             (loaded, total) => this.onInitialLoadProgress(loaded, total),
             // onStageLoadStartCallback
@@ -291,7 +292,7 @@ export class Game {
 
         // Create pause menu
         this.pauseMenu = new PauseMenu(this.input, !this.ssaoPass.enabled, this.ui.controlHintsEnabled, {
-            onContinue: () => {},
+            onContinue: () => { },
             onTogglePerformanceMode: () => {
                 this.ssaoPass.enabled = !this.ssaoPass.enabled;
                 const perfMode = !this.ssaoPass.enabled;
@@ -423,7 +424,7 @@ export class Game {
         this.floatingIndicatorCamera.aspect = width / height;
         this.floatingIndicatorCamera.updateProjectionMatrix();// Enable only the floating indicators layer
         this.renderer.setSize(width, height);
-		this.composer.setSize(width, height);
+        this.composer.setSize(width, height);
 
         // Update particle scale factors for screen-independent sizing
         if (this.world.currentStage) {
