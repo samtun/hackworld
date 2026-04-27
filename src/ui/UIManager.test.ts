@@ -57,6 +57,7 @@ function makeUIManager(overrides: Record<string, unknown> = {}) {
         albumBanner: null,
         albumBannerTimeoutId: null,
         albumBannerFadeOutId: null,
+        controlHintsEnabled: true,
         ...overrides,
     });
     return ui;

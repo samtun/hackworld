@@ -327,6 +327,9 @@ export class UIManager {
     // Skill cooldown indicator elements (three skills)
     skillsWrapper?: HTMLDivElement;
 
+    /** Whether control hints are visible. Can be toggled via the pause menu. */
+    controlHintsEnabled: boolean = true;
+
     private albumBanner: HTMLDivElement | null = null;
     private albumBannerTimeoutId: ReturnType<typeof setTimeout> | null = null;
     private albumBannerFadeOutId: ReturnType<typeof setTimeout> | null = null;
@@ -950,6 +953,7 @@ export class UIManager {
      * @param html - HTML content for the control hints
      */
     showControlHints(html: string) {
+        if (!this.controlHintsEnabled) return;
         this.controlHints.innerHTML = html;
         this.controlHints.style.display = 'block';
     }
