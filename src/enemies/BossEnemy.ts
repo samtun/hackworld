@@ -123,6 +123,11 @@ export class BossEnemy extends Enemy {
     /**
      * Bosses are not required to traverse corridors, so their physics radius is
      * not capped to the corridor passthrough limit.
+     *
+     * The default boss size (3.5 m → radius ≈ 1.14 m) is below MAX_ENEMY_RADIUS,
+     * but stage-specific configs supply larger values (e.g. SecurityCore: 4.4 m →
+     * radius ≈ 1.43 m; KernelTerminus: 5.1 m → 1.66 m) where the cap would
+     * otherwise apply and shrink the physics body.
      */
     protected computeRadius(size: number): number {
         return size * ENEMY_RADIUS_FACTOR;
