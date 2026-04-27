@@ -30,21 +30,21 @@ export class AreaAttackSkill extends Skill {
 
     private getWavesForTier(tier: Tier): number {
         switch (tier) {
-            case Tier.MAINTAINED:  return 2;
+            case Tier.MAINTAINED: return 2;
             case Tier.OVERCLOCKED: return 3;
-            case Tier.ZERODAY:     return 3;
-            case Tier.LEET:        return 4;
-            default:               return 1;
+            case Tier.ZERODAY: return 3;
+            case Tier.LEET: return 4;
+            default: return 1;
         }
     }
 
     private getDamageMultiplier(tier: Tier): number {
         switch (tier) {
-            case Tier.MAINTAINED:  return 2;
+            case Tier.MAINTAINED: return 2;
             case Tier.OVERCLOCKED: return 4;
-            case Tier.ZERODAY:     return 8;
-            case Tier.LEET:        return 16;
-            default:               return 1;
+            case Tier.ZERODAY: return 8;
+            case Tier.LEET: return 16;
+            default: return 1;
         }
     }
 
@@ -58,11 +58,11 @@ export class AreaAttackSkill extends Skill {
 
     private getTpMultiplier(tier: Tier): number {
         switch (tier) {
-            case Tier.MAINTAINED:  return 2;
+            case Tier.MAINTAINED: return 2;
             case Tier.OVERCLOCKED: return 3;
-            case Tier.ZERODAY:     return 5;
-            case Tier.LEET:        return 8;
-            default:               return 1;
+            case Tier.ZERODAY: return 5;
+            case Tier.LEET: return 8;
+            default: return 1;
         }
     }
 
@@ -119,7 +119,7 @@ export class AreaAttackSkill extends Skill {
 
                     if (distance <= scale) {
                         const isCriticalHit = Math.random() < this.player.getCriticalChance();
-                        const damage = isCriticalHit ? this.effectiveDamage * this.player.getCriticalHitMultiplier() : this.effectiveDamage;
+                        const damage = isCriticalHit ? Math.floor(this.effectiveDamage * this.player.getCriticalHitMultiplier()) : this.effectiveDamage;
                         entity.takeDamage(damage, isCriticalHit, this.player.body.position, 0.2);
                         this.hitEnemies.set(entity, 0);
                         this.player.tryIncrementSkillTech(SkillTechType.BLAST);
