@@ -48,10 +48,10 @@ export const MAX_ENEMY_SIZE = 2.0;
 
 /**
  * Maximum physics collision radius for non-boss enemies (metres).
- * Derived from CORRIDOR_WIDTH (3 m): half-width (1.5 m) minus a 0.1 m buffer
+ * Derived from CORRIDOR_WIDTH (3 m) - WALL_THICKNESS (1 m): half-width (1 m) minus a 0.1 m buffer
  * so enemies can traverse corridors without getting stuck.
  */
-export const MAX_ENEMY_RADIUS = 1.4;
+export const MAX_ENEMY_RADIUS = 0.9;
 
 /** How long (seconds) an enemy must be stuck before it attempts a path-clearing attack. */
 const STUCK_TRIGGER_TIME = 2.0;
@@ -693,7 +693,7 @@ export class Enemy extends BaseMesh {
                 if (!this.isReturningToBase) {
                     // Start the wait timer
                     this.returnToBaseTimer += dt;
-                    
+
                     // After wait time, start returning
                     if (this.returnToBaseTimer >= this.returnWaitTime) {
                         this.isReturningToBase = true;
@@ -857,9 +857,9 @@ export class Enemy extends BaseMesh {
      */
     private canAttackPlayer(distToPlayer: number): boolean {
         const attackRangeVariance = Math.random() * this.attackRange * 0.3;
-        return distToPlayer < this.attackRange + attackRangeVariance && 
-               this.attackTimer <= 0 && 
-               !this.isAttacking;
+        return distToPlayer < this.attackRange + attackRangeVariance &&
+            this.attackTimer <= 0 &&
+            !this.isAttacking;
     }
 
     attack() {
