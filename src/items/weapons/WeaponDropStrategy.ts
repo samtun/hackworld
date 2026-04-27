@@ -29,9 +29,12 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         // Scale the bonus spread by the player's level factor (1.0 at level 1, 1.5 at max level)
         // plus any collection bonus from completed B.002/B.003 albums
         const effectiveDropFactor = player.weaponDropBonusFactor + player.collectionBonusWeaponDropFactor;
-        let bonusValue = Math.sign(raw) * Math.pow(Math.abs(raw), 3.4) * effectiveDropFactor;
-
+        // Use a curve to keep values close to 1 more common, but allow up to ~1.5x for high rolls with high effective drop factors
+        const baseBonus = Math.sign(raw) * Math.pow(Math.abs(raw), 3.4);
+        let bonusValue = Math.min(baseBonus * effectiveDropFactor, 1.5);
         const bonusMultiplier = 1 + bonusValue;
+        console.log(`Dropping weapon with raw bonus: ${baseBonus.toFixed(3)}, effective drop bonus factor: ${effectiveDropFactor.toFixed(2)}, final bonus multiplier: ${bonusMultiplier.toFixed(3)}`);
+
         const finalDamage = Math.floor(weaponItem.damage * bonusMultiplier);
         const damageFactor = finalDamage / weaponItem.damage;
         const finalBuyPrice = Math.floor(weaponItem.buyPrice * damageFactor);

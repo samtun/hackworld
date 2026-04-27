@@ -11,7 +11,8 @@ import { BossEnemy } from '../enemies/BossEnemy';
 import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
 import { createWallMaterial, createObstacleMaterial, createFloorMaterial, updateWallUniforms } from '../WallShaderUtils';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
-import type { DungeonRoom, DungeonLayout } from './RoomBasedDungeonGenerator';
+import type { DungeonRoom, DungeonLayout, Corridor } from './RoomBasedDungeonGenerator';
+import { WALL_HEIGHT, WALL_THICKNESS, CORRIDOR_WIDTH } from './RoomBasedDungeonGenerator';
 import { LootChest } from '../items/LootChest';
 import { BreakableBarrel } from '../items/BreakableBarrel';
 import { ElectricTrap } from '../items/ElectricTrap';
@@ -121,6 +122,24 @@ export abstract class BaseStage {
     /** Accumulated wall/obstacle shader time (seconds). */
     private shaderTime = 0;
 
+    /**
+     * Corridors of the current dungeon layout.
+     * Needed for boss room force field placement.
+     */
+    private dungeonCorridors: Corridor[] = [];
+
+    /**
+     * Maps boss room id → force field data (mesh + physics body) for each
+     * corridor entrance into that room.
+     */
+    private bossForceFields: Map<number, { mesh: THREE.Mesh; body: CANNON.Body }[]> = new Map();
+
+    /**
+     * Set of boss room ids whose force field has already been spawned.
+     * Prevents re-spawning when the player re-enters an active boss room.
+     */
+    private bossForceFieldSpawned: Set<number> = new Set();
+
     constructor(
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
@@ -171,6 +190,19 @@ export abstract class BaseStage {
         this.navGrid = null;
         this.minimapLayout = null;
         this.minimapVisible = false;
+
+        // Remove all boss room force fields
+        for (const fields of this.bossForceFields.values()) {
+            for (const ff of fields) {
+                this.scene.remove(ff.mesh);
+                ff.mesh.geometry.dispose();
+                (ff.mesh.material as THREE.Material).dispose();
+                this.physicsWorld.removeBody(ff.body);
+            }
+        }
+        this.bossForceFields.clear();
+        this.bossForceFieldSpawned.clear();
+        this.dungeonCorridors = [];
 
         // Dispose wall shader materials before clearing the array
         for (const mat of this.wallMaterials) {
@@ -480,6 +512,9 @@ export abstract class BaseStage {
         // Build the navigation grid once for the entire stage
         this.navGrid = new DungeonNavGrid(layout);
 
+        // Store corridors for boss room force field placement
+        this.dungeonCorridors = layout.corridors;
+
         for (const roomSpawns of layout.roomSpawns) {
             // Initialise an empty enemy list for every room; populated on entry
             this.roomEnemyMap.set(roomSpawns.roomId, []);
@@ -736,6 +771,7 @@ export abstract class BaseStage {
                 enemy.aggroEnabled = true;
                 enemy.spawnInactiveTimer = ENEMY_SPAWN_INACTIVE_DURATION;
                 enemy.navGrid = this.navGrid;
+                enemy.breakableBarrels = this.breakableBarrels;
                 roomEnemies.push(enemy);
             }
         }
@@ -748,6 +784,8 @@ export abstract class BaseStage {
      * spawned) and enable aggro for all enemies in the current room.
      * Once aggro is enabled it is never revoked, so enemies continue chasing
      * even if the player retreats.
+     * Boss rooms additionally spawn a blocking force field on entry and remove
+     * it once all boss room enemies are defeated.
      */
     private updateRoomAggro(player: Player): void {
         const px = player.body.position.x;
@@ -773,7 +811,109 @@ export abstract class BaseStage {
                     enemy.aggroEnabled = true;
                 }
             }
+
+            // Boss rooms: spawn a force field on first entry, remove when cleared
+            if (room.isFinal) {
+                if (!this.bossForceFieldSpawned.has(room.id)) {
+                    this.spawnBossRoomForceField(room);
+                    this.bossForceFieldSpawned.add(room.id);
+                }
+
+                // Remove force field once all boss room enemies are defeated
+                if (
+                    this.bossForceFields.has(room.id) &&
+                    !this.roomPendingSpawnData.has(room.id) &&
+                    roomEnemies.every(e => !this.enemies.includes(e))
+                ) {
+                    this.removeBossRoomForceField(room.id);
+                }
+            }
         }
+    }
+
+    /**
+     * Spawn semi-transparent red force field barriers at every corridor entrance
+     * of the given boss room, preventing the player from leaving until the boss
+     * is defeated.
+     */
+    private spawnBossRoomForceField(room: DungeonRoom): void {
+        const fields: { mesh: THREE.Mesh; body: CANNON.Body }[] = [];
+        const ffHeight = WALL_HEIGHT * 2; // tall enough to block jumping
+        const ffThickness = WALL_THICKNESS;
+
+        const corridors = this.dungeonCorridors.filter(
+            c => c.fromRoomId === room.id || c.toRoomId === room.id,
+        );
+
+        for (const cor of corridors) {
+            const isHorizontal = cor.width > cor.depth;
+            let ffW: number, ffH: number, ffD: number;
+            let ffX: number, ffY: number, ffZ: number;
+
+            if (isHorizontal) {
+                // Corridor runs east-west – barrier blocks in X
+                ffW = ffThickness;
+                ffH = ffHeight;
+                ffD = CORRIDOR_WIDTH;
+                ffZ = cor.centerZ;
+                // Place at the room wall boundary
+                ffX = cor.centerX < room.centerX
+                    ? room.centerX - room.width / 2  // corridor is to the west
+                    : room.centerX + room.width / 2; // corridor is to the east
+                ffY = room.elevation + ffH / 2;
+            } else {
+                // Corridor runs north-south – barrier blocks in Z
+                ffW = CORRIDOR_WIDTH;
+                ffH = ffHeight;
+                ffD = ffThickness;
+                ffX = cor.centerX;
+                // Place at the room wall boundary
+                ffZ = cor.centerZ < room.centerZ
+                    ? room.centerZ - room.depth / 2  // corridor is to the north
+                    : room.centerZ + room.depth / 2; // corridor is to the south
+                ffY = room.elevation + ffH / 2;
+            }
+
+            // Visual mesh – semi-transparent red
+            const geo = new THREE.BoxGeometry(ffW, ffH, ffD);
+            const mat = new THREE.MeshStandardMaterial({
+                color: 0xff2222,
+                transparent: true,
+                opacity: 0.45,
+                depthWrite: false,
+            });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(ffX, ffY, ffZ);
+            this.scene.add(mesh);
+
+            // Physics body
+            const shape = new CANNON.Box(new CANNON.Vec3(ffW / 2, ffH / 2, ffD / 2));
+            const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+            body.addShape(shape);
+            body.position.set(ffX, ffY, ffZ);
+            this.physicsWorld.addBody(body);
+
+            fields.push({ mesh, body });
+        }
+
+        this.bossForceFields.set(room.id, fields);
+    }
+
+    /**
+     * Remove the force field barriers for the given boss room and dispose their
+     * resources.
+     */
+    private removeBossRoomForceField(roomId: number): void {
+        const fields = this.bossForceFields.get(roomId);
+        if (!fields) return;
+
+        for (const ff of fields) {
+            this.scene.remove(ff.mesh);
+            ff.mesh.geometry.dispose();
+            (ff.mesh.material as THREE.Material).dispose();
+            this.physicsWorld.removeBody(ff.body);
+        }
+        this.bossForceFields.delete(roomId);
     }
 
     /**

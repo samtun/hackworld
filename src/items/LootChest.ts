@@ -387,8 +387,10 @@ export class LootChest {
     private generateQualityBoostedMultiplier(qualityFactor: number): number {
         // Base random in [-0.55, +0.61]  (same spread as WeaponDropStrategy)
         const raw = 1.16 * Math.random() - 0.55;
-        // Apply quality factor to boost the positive end
-        const boosted = raw * qualityFactor;
-        return 1 + Math.sign(boosted) * Math.pow(Math.abs(boosted), 3.4);
+        // Use a curve to keep values close to 1 more common, but allow up to ~1.5x for high rolls with high quality factors
+        const baseBonus = Math.sign(raw) * Math.pow(Math.abs(raw), 3.4);
+        const bonus = Math.min(1 + baseBonus * qualityFactor, 1.5);
+        console.log(`Dropping weapon with raw bonus: ${baseBonus.toFixed(3)}, quality factor: ${qualityFactor.toFixed(2)}, final bonus: ${bonus.toFixed(3)}`);
+        return bonus;
     }
 }

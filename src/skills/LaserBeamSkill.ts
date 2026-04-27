@@ -45,11 +45,11 @@ export class LaserBeamSkill extends Skill {
 
     private getTpMultiplier(tier: Tier): number {
         switch (tier) {
-            case Tier.MAINTAINED:  return 2;
+            case Tier.MAINTAINED: return 2;
             case Tier.OVERCLOCKED: return 3;
-            case Tier.ZERODAY:     return 5;
-            case Tier.LEET:        return 8;
-            default:               return 1;
+            case Tier.ZERODAY: return 5;
+            case Tier.LEET: return 8;
+            default: return 1;
         }
     }
 
@@ -86,11 +86,11 @@ export class LaserBeamSkill extends Skill {
 
     private getDamageMultiplier(tier: Tier): number {
         switch (tier) {
-            case Tier.MAINTAINED:  return 3;
+            case Tier.MAINTAINED: return 3;
             case Tier.OVERCLOCKED: return 6;
-            case Tier.ZERODAY:     return 12;
-            case Tier.LEET:        return 20;
-            default:               return 1;
+            case Tier.ZERODAY: return 12;
+            case Tier.LEET: return 20;
+            default: return 1;
         }
     }
 
@@ -190,7 +190,7 @@ export class LaserBeamSkill extends Skill {
 
                     if (distanceToBeam <= this.effectiveRadius && Math.abs(dy) <= 2) {
                         const isCriticalHit = Math.random() < this.player.getCriticalChance();
-                        const damage = isCriticalHit ? this.effectiveDamage * this.player.getCriticalHitMultiplier() : this.effectiveDamage;
+                        const damage = Math.floor(isCriticalHit ? this.effectiveDamage * this.player.getCriticalHitMultiplier() : this.effectiveDamage);
                         entity.takeDamage(damage, isCriticalHit, this.player.body.position);
                         hitEnemies.add(entity);
                         this.player.tryIncrementSkillTech(SkillTechType.RANGED);

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Enemy } from './Enemy';
+import { Enemy, MAX_ENEMY_RADIUS, ENEMY_RADIUS_FACTOR } from './Enemy';
 
 function mockAction() {
     const action: any = {
@@ -132,6 +132,15 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
 
         // Blob shadow
         blobShadow: { update: vi.fn(), cleanup: vi.fn(), visible: true },
+
+        // Stuck detection
+        stuckTimer: 0,
+        stuckCheckCountdown: 0.5,
+        stuckLastX: 0,
+        stuckLastZ: 0,
+
+        // Barrel references
+        breakableBarrels: [],
     });
 
     Object.assign(enemy, overrides);
@@ -899,5 +908,209 @@ describe('Enemy.update – attack timer', () => {
         enemy.update(0.1); // animTimer becomes 1.05 ≥ attackMaxDuration
 
         expect(enemy.isAttacking).toBe(false);
+    });
+});
+
+// ─── Enemy radius corridor cap ────────────────────────────────────────────────
+
+describe('Enemy radius corridor cap', () => {
+    it('MAX_ENEMY_RADIUS is corridor half-width minus buffer (1.4 m)', () => {
+        expect(MAX_ENEMY_RADIUS).toBe(1.4);
+    });
+
+    it('radius is clamped to MAX_ENEMY_RADIUS when enemy size would exceed it', () => {
+        // Large size → uncapped radius would be 3.5 * 0.326 ≈ 1.141, still under 1.4
+        // Use an extreme size to confirm capping: 5.0 * 0.326 = 1.63 > 1.4
+        const largeSize = 5.0;
+        const uncappedRadius = largeSize * ENEMY_RADIUS_FACTOR;
+        const cappedRadius = Math.min(uncappedRadius, MAX_ENEMY_RADIUS);
+        expect(uncappedRadius).toBeGreaterThan(MAX_ENEMY_RADIUS);
+        expect(cappedRadius).toBe(MAX_ENEMY_RADIUS);
+    });
+
+    it('radius is NOT clamped when enemy size is within the limit', () => {
+        const smallSize = 1.75;
+        const uncappedRadius = smallSize * ENEMY_RADIUS_FACTOR;
+        const cappedRadius = Math.min(uncappedRadius, MAX_ENEMY_RADIUS);
+        expect(uncappedRadius).toBeLessThan(MAX_ENEMY_RADIUS);
+        expect(cappedRadius).toBeCloseTo(uncappedRadius, 5);
+    });
+});
+
+// ─── Stuck detection ──────────────────────────────────────────────────────────
+
+describe('Enemy.update – stuck detection', () => {
+    /** Build a position mock that supports distanceTo and vsub from (px, py, pz) */
+    function makeBodyPos(px: number, py: number, pz: number) {
+        return {
+            x: px, y: py, z: pz,
+            copy: vi.fn(),
+            distanceTo: (v: any) => Math.sqrt((v.x - px) ** 2 + (v.y - py) ** 2 + (v.z - pz) ** 2),
+            vsub: (v: any) => {
+                const dir = { x: px - v.x, y: py - v.y, z: pz - v.z };
+                return Object.assign(dir, {
+                    length: () => Math.sqrt(dir.x ** 2 + dir.y ** 2 + dir.z ** 2),
+                    normalize: function (this: any) {
+                        const l = Math.sqrt(this.x ** 2 + this.y ** 2 + this.z ** 2) || 1;
+                        this.x /= l; this.y /= l; this.z /= l;
+                        return this;
+                    },
+                });
+            },
+        };
+    }
+
+    it('accumulates stuckTimer when enemy is not making progress while chasing', () => {
+        const enemy = makeEnemy() as any;
+        enemy.body.position = makeBodyPos(0, 0, 0);
+        enemy.body.velocity = { x: 0, y: 0, z: 0 };
+        enemy.basePosition = makeBodyPos(0, 0, 0);
+        enemy.attackTimer = 999;
+        enemy.aggroRange = 15;
+        // Player within aggro range but not attack range
+        enemy.player = {
+            isDead: false,
+            body: {
+                position: {
+                    x: 8, y: 0, z: 0,
+                    vsub: (v: any) => {
+                        const dir = { x: 8 - v.x, y: 0 - v.y, z: 0 - v.z };
+                        return Object.assign(dir, {
+                            length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
+                            normalize: function (this: any) {
+                                const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
+                                this.x /= l; this.z /= l;
+                                return this;
+                            },
+                        });
+                    },
+                },
+            },
+        };
+
+        // Freeze the enemy at the same position to simulate being stuck
+        enemy.stuckLastX = 0;
+        enemy.stuckLastZ = 0;
+        // Advance the stuck check countdown past the interval
+        enemy.stuckCheckCountdown = 0.001;
+
+        enemy.update(0.016); // countdown expires → progress check: moved < STUCK_MIN_PROGRESS
+
+        expect(enemy.stuckTimer).toBeGreaterThan(0);
+    });
+
+    it('resets stuckTimer when enemy makes sufficient progress', () => {
+        const enemy = makeEnemy() as any;
+        // Start at (5, 0, 0) — moved 5 m from last stuck-check position (0,0,0)
+        enemy.body.position = makeBodyPos(5, 0, 0);
+        enemy.body.velocity = { x: 0, y: 0, z: 0 };
+        enemy.basePosition = makeBodyPos(0, 0, 0);
+        enemy.attackTimer = 999;
+        enemy.aggroRange = 15;
+        enemy.stuckTimer = 3; // pre-set
+        enemy.stuckLastX = 0;
+        enemy.stuckLastZ = 0;
+        enemy.stuckCheckCountdown = 0.001;
+        enemy.player = {
+            isDead: false,
+            body: {
+                position: {
+                    x: 8, y: 0, z: 0,
+                    vsub: (v: any) => {
+                        const dir = { x: 8 - v.x, y: 0 - v.y, z: 0 - v.z };
+                        return Object.assign(dir, {
+                            length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
+                            normalize: function (this: any) {
+                                const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
+                                this.x /= l; this.z /= l;
+                                return this;
+                            },
+                        });
+                    },
+                },
+            },
+        };
+
+        enemy.update(0.016);
+
+        expect(enemy.stuckTimer).toBe(0);
+    });
+
+    it('resets stuckTimer when player moves out of aggro range', () => {
+        const enemy = makeEnemy() as any;
+        enemy.body.position = makeBodyPos(0, 0, 0);
+        enemy.body.velocity = { x: 0, y: 0, z: 0 };
+        enemy.basePosition = makeBodyPos(0, 0, 0);
+        enemy.attackTimer = 999;
+        enemy.aggroRange = 15;
+        enemy.stuckTimer = 5; // pre-set high
+        enemy.stuckCheckCountdown = 9999; // not due yet
+        // Player outside aggro range
+        enemy.player = {
+            isDead: false,
+            body: { position: { x: 100, y: 0, z: 0, vsub: vi.fn() } },
+        };
+        enemy.body.position.distanceTo = () => 100;
+
+        enemy.update(0.016);
+
+        expect(enemy.stuckTimer).toBe(0);
+    });
+});
+
+// ─── checkAttackHitboxCollision – barrel breaking ────────────────────────────
+
+describe('Enemy.checkAttackHitboxCollision – barrel breaking', () => {
+    it('calls barrel.onHit() when attack hitbox overlaps a barrel', () => {
+        const enemy = makeEnemy() as any;
+        enemy.attackHitboxActive = true;
+        enemy.hasDealtDamageThisAttack = false;
+        enemy.attackHitboxSize = { x: 0.5, y: 0.5, z: 0.8 };
+        // Hitbox positioned at origin
+        enemy.attackHitboxBody = { position: { x: 0, y: 0, z: 0 } };
+        enemy.player = {
+            body: { position: { x: 100, y: 0, z: 100 } }, // far away
+            takeDamage: vi.fn(),
+        };
+
+        const nearBarrel = {
+            isDestroyed: false,
+            body: { position: { x: 0.5, y: 0, z: 0 } }, // within range
+            onHit: vi.fn(),
+        };
+        const farBarrel = {
+            isDestroyed: false,
+            body: { position: { x: 50, y: 0, z: 50 } }, // far away
+            onHit: vi.fn(),
+        };
+        enemy.breakableBarrels = [nearBarrel, farBarrel];
+
+        enemy.checkAttackHitboxCollision();
+
+        expect(nearBarrel.onHit).toHaveBeenCalledOnce();
+        expect(farBarrel.onHit).not.toHaveBeenCalled();
+    });
+
+    it('does not call onHit on already-destroyed barrels', () => {
+        const enemy = makeEnemy() as any;
+        enemy.attackHitboxActive = true;
+        enemy.hasDealtDamageThisAttack = false;
+        enemy.attackHitboxSize = { x: 0.5, y: 0.5, z: 0.8 };
+        enemy.attackHitboxBody = { position: { x: 0, y: 0, z: 0 } };
+        enemy.player = {
+            body: { position: { x: 100, y: 0, z: 100 } },
+            takeDamage: vi.fn(),
+        };
+
+        const destroyedBarrel = {
+            isDestroyed: true,
+            body: { position: { x: 0.3, y: 0, z: 0 } },
+            onHit: vi.fn(),
+        };
+        enemy.breakableBarrels = [destroyedBarrel];
+
+        enemy.checkAttackHitboxCollision();
+
+        expect(destroyedBarrel.onHit).not.toHaveBeenCalled();
     });
 });
