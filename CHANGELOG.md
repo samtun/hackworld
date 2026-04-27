@@ -1,3 +1,15 @@
+# [3.14.0](https://github.com/samtun/hackworld/compare/v3.13.0...v3.14.0) (2026-04-27)
+
+
+### Bug Fixes
+
+* clean up formatting and restore control hints setting in Game class ([e43044a](https://github.com/samtun/hackworld/commit/e43044a0c1a81730e4073cc491e75833124441e8))
+
+
+### Features
+
+* add option to toggle control hints in pause menu ([8916012](https://github.com/samtun/hackworld/commit/8916012a267e00b84468870de75f710af711ffe9))
+
 # [3.13.0](https://github.com/samtun/hackworld/compare/v3.12.0...v3.13.0) (2026-04-26)
 
 
