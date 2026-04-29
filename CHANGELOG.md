@@ -1,3 +1,10 @@
+# [3.16.0](https://github.com/samtun/hackworld/compare/v3.15.0...v3.16.0) (2026-04-29)
+
+
+### Features
+
+* reduce rendering calls on card manager UI by adding needsRender dirty flag ([d89c36c](https://github.com/samtun/hackworld/commit/d89c36c1879e7af36a34d65a2aa83a48b621f883))
+
 # [3.15.0](https://github.com/samtun/hackworld/compare/v3.14.0...v3.15.0) (2026-04-27)
 
 
