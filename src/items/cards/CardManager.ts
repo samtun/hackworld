@@ -32,6 +32,8 @@ export class CardManager {
     private lightboxVisible: boolean = false;
     private lightboxCards: Card[] = [];
     private lightboxIndex: number = 0;
+    // Render dirty flag
+    needsRender: boolean = false;
 
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
@@ -620,6 +622,7 @@ export class CardManager {
         this.container.style.display = 'flex';
         this.viewMode = ViewMode.MENU;
         this.selectedMenuIndex = 0;
+        this.needsRender = true;
         resetInputDebounce(this as any);
     }
 
@@ -693,26 +696,33 @@ export class CardManager {
         // Debounced navigation
         if (navigateUp && !this.lastNavigateUpState) {
             this.handleNavigateUp();
+            this.needsRender = true;
         }
         this.lastNavigateUpState = navigateUp;
 
         if (navigateDown && !this.lastNavigateDownState) {
             this.handleNavigateDown();
+            this.needsRender = true;
         }
         this.lastNavigateDownState = navigateDown;
 
         if (select && !this.lastSelectState) {
             this.handleSelect(player);
+            this.needsRender = true;
         }
         this.lastSelectState = select;
 
         if (cancel && !this.lastCancelState) {
             this.handleCancel();
+            this.needsRender = true;
         }
         this.lastCancelState = cancel;
 
-        // Always render
-        this.render(player);
+        // Only re-render if needed
+        if (this.needsRender) {
+            this.render(player);
+            this.needsRender = false;
+        }
     }
 
     private handleNavigateUp() {
