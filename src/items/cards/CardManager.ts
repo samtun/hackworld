@@ -97,6 +97,31 @@ export class CardManager {
         }
     }
 
+    /** Text-shadow applied to card labels rendered over a background image. */
+    private static readonly CARD_TEXT_SHADOW = '0 1px 3px rgba(0,0,0,0.9)';
+
+    /**
+     * Returns the expected image path for a card.
+     * Convention: images/cards/{album}/{album}.{slot}.png
+     * The image may or may not exist; the browser will silently ignore a missing background-image.
+     * Inputs are derived from controlled enum values and integer slot numbers, so no sanitization is required.
+     */
+    public static getCardImagePath(card: Card): string {
+        return `images/cards/${card.album}/${card.album}.${card.slot}.png`;
+    }
+
+    /**
+     * Returns CSS properties that apply the card's image as a cover background.
+     * Used consistently across both the pack-opening view and the album detail view.
+     */
+    private static getCardImageStyles(card: Card): Partial<CSSStyleDeclaration> {
+        return {
+            backgroundImage: `url(${CardManager.getCardImagePath(card)})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+        };
+    }
+
     private renderMenu(player: Player) {
         this.mainContent.innerHTML = '';
 
@@ -222,12 +247,13 @@ export class CardManager {
                     height: '100%',
                     padding: '20px',
                     backgroundColor: MENU_COLORS.CARD_BG,
+                    ...CardManager.getCardImageStyles(card),
                     border: `3px solid ${this.getRarityColor(card.rarity)}`,
                     borderRadius: '10px',
                     textAlign: 'center',
                     display: 'flex',
                     flexDirection: 'column',
-                    justifyContent: 'center',
+                    justifyContent: 'flex-end',
                     backfaceVisibility: 'hidden',
                     transform: 'rotateY(180deg)',
                     boxSizing: 'border-box'
@@ -241,7 +267,8 @@ export class CardManager {
                     fontSize: '24px',
                     fontWeight: 'bold',
                     color: this.getRarityColor(card.rarity),
-                    marginBottom: '8px'
+                    marginBottom: '8px',
+                    textShadow: CardManager.CARD_TEXT_SHADOW
                 });
                 cardFront.appendChild(albumText);
 
@@ -250,7 +277,8 @@ export class CardManager {
                 Object.assign(slotText.style, {
                     fontSize: '18px',
                     color: MENU_COLORS.TEXT,
-                    marginBottom: '8px'
+                    marginBottom: '8px',
+                    textShadow: CardManager.CARD_TEXT_SHADOW
                 });
                 cardFront.appendChild(slotText);
 
@@ -259,7 +287,8 @@ export class CardManager {
                 Object.assign(rarityText.style, {
                     fontSize: '14px',
                     color: this.getRarityColor(card.rarity),
-                    marginBottom: '8px'
+                    marginBottom: '8px',
+                    textShadow: CardManager.CARD_TEXT_SHADOW
                 });
                 cardFront.appendChild(rarityText);
                 // Reserve space for status to keep consistent card layout
@@ -278,7 +307,8 @@ export class CardManager {
                     Object.assign(statusText.style, {
                         fontSize: '16px',
                         fontWeight: 'bold',
-                        color: '#888'
+                        color: '#fff',
+                        textShadow: CardManager.CARD_TEXT_SHADOW
                     });
                     statusContainer.appendChild(statusText);
                 }
@@ -377,6 +407,7 @@ export class CardManager {
             Object.assign(cardDiv.style, {
                 padding: '15px',
                 backgroundColor: collected ? MENU_COLORS.PANEL_BG : MENU_COLORS.MISSING,
+                ...(collected && CardManager.getCardImageStyles(card)),
                 border: `2px solid ${this.getRarityColor(card.rarity)}`,
                 borderRadius: '5px',
                 textAlign: 'center',
@@ -384,7 +415,7 @@ export class CardManager {
                 display: 'flex',
                 flexDirection: 'column',
                 minHeight: '100px',
-                justifyContent: 'center'
+                justifyContent: 'flex-end'
             });
 
             const slotText = document.createElement('div');
@@ -392,7 +423,8 @@ export class CardManager {
             Object.assign(slotText.style, {
                 fontSize: '20px',
                 fontWeight: 'bold',
-                color: this.getRarityColor(card.rarity)
+                color: this.getRarityColor(card.rarity),
+                textShadow: collected ? CardManager.CARD_TEXT_SHADOW : 'none'
             });
             cardDiv.appendChild(slotText);
 
@@ -401,7 +433,8 @@ export class CardManager {
             Object.assign(rarityText.style, {
                 fontSize: '14px',
                 color: MENU_COLORS.TEXT,
-                marginTop: '5px'
+                marginTop: '5px',
+                textShadow: collected ? CardManager.CARD_TEXT_SHADOW : 'none'
             });
             cardDiv.appendChild(rarityText);
 
@@ -412,7 +445,8 @@ export class CardManager {
                 fontSize: '24px',
                 color: MENU_COLORS.COLLECTED,
                 marginTop: '5px',
-                height: '29px' // Reserve space for checkmark
+                height: '29px', // Reserve space for checkmark
+                textShadow: collected ? CardManager.CARD_TEXT_SHADOW : 'none'
             });
             cardDiv.appendChild(checkmark);
 
