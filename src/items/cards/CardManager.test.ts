@@ -160,8 +160,12 @@ describe('CardManager', () => {
         it('is a no-op when already visible', () => {
             mgr.isVisible = true;
             mgr.needsRender = false;
+            mgr.viewMode = ViewMode.VIEW_ALBUMS;
+            mgr.container.style.display = 'flex';
             mgr.show();
             expect(mgr.needsRender).toBe(false);
+            expect(mgr.viewMode).toBe(ViewMode.VIEW_ALBUMS); // viewMode not reset
+            expect(mgr.container.style.display).toBe('flex'); // display not changed
         });
     });
 
@@ -205,6 +209,7 @@ describe('CardManager', () => {
             const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => {});
             const input = makeInput({ isNavigateUpPressed: vi.fn().mockReturnValue(true) });
             mgr.update(makePlayer(), input);
+            expect(mgr.selectedMenuIndex).toBe(0);
             expect(renderSpy).toHaveBeenCalledOnce();
             expect(mgr.needsRender).toBe(false);
         });
@@ -212,9 +217,11 @@ describe('CardManager', () => {
         it('sets needsRender=true and calls render when navigateDown fires', () => {
             mgr.isVisible = true;
             mgr.needsRender = false;
+            mgr.selectedMenuIndex = 0;
             const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => {});
             const input = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
             mgr.update(makePlayer(), input);
+            expect(mgr.selectedMenuIndex).toBe(1);
             expect(renderSpy).toHaveBeenCalledOnce();
         });
 
