@@ -139,9 +139,6 @@ export class CardManager {
         }
     }
 
-    /** Text-shadow applied to card labels rendered over a background image. */
-    private static readonly CARD_TEXT_SHADOW = '0 1px 3px rgba(0,0,0,0.9)';
-
     /**
      * Returns the expected image path for a card.
      * Convention: images/cards/{album}/{album}.{slot}.png
@@ -288,81 +285,20 @@ export class CardManager {
                 });
                 cardBack.appendChild(backText);
 
-                // Card front (face up)
+                // Card front (face up) — image only, no text labels
                 const cardFront = document.createElement('div');
                 Object.assign(cardFront.style, {
                     position: 'absolute',
                     width: '100%',
                     height: '100%',
-                    padding: '20px',
                     backgroundColor: MENU_COLORS.CARD_BG,
                     ...CardManager.getCardImageStyles(card),
                     border: `3px solid ${this.getRarityColor(card.rarity)}`,
                     borderRadius: '10px',
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'flex-end',
                     backfaceVisibility: 'hidden',
                     transform: 'rotateY(180deg)',
                     boxSizing: 'border-box'
                 });
-
-                const isNew = !this.cardCollection.hasCard(card);
-
-                const albumText = document.createElement('div');
-                albumText.innerText = card.album;
-                Object.assign(albumText.style, {
-                    fontSize: '24px',
-                    fontWeight: 'bold',
-                    color: this.getRarityColor(card.rarity),
-                    marginBottom: '8px',
-                    textShadow: CardManager.CARD_TEXT_SHADOW
-                });
-                cardFront.appendChild(albumText);
-
-                const slotText = document.createElement('div');
-                slotText.innerText = `#${card.slot}`;
-                Object.assign(slotText.style, {
-                    fontSize: '18px',
-                    color: MENU_COLORS.TEXT,
-                    marginBottom: '8px',
-                    textShadow: CardManager.CARD_TEXT_SHADOW
-                });
-                cardFront.appendChild(slotText);
-
-                const rarityText = document.createElement('div');
-                rarityText.innerText = card.rarity.toUpperCase();
-                Object.assign(rarityText.style, {
-                    fontSize: '14px',
-                    color: this.getRarityColor(card.rarity),
-                    marginBottom: '8px',
-                    textShadow: CardManager.CARD_TEXT_SHADOW
-                });
-                cardFront.appendChild(rarityText);
-                // Reserve space for status to keep consistent card layout
-                const statusContainer = document.createElement('div');
-                Object.assign(statusContainer.style, {
-                    height: '30px',
-                    marginTop: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                });
-
-                if (isNew) {
-                    const statusText = document.createElement('div');
-                    statusText.innerText = '✨ NEW';
-                    Object.assign(statusText.style, {
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        color: '#fff',
-                        textShadow: CardManager.CARD_TEXT_SHADOW
-                    });
-                    statusContainer.appendChild(statusText);
-                }
-
-                cardFront.appendChild(statusContainer);
 
                 // Assemble the card structure
                 cardFlipper.appendChild(cardBack);
@@ -472,51 +408,29 @@ export class CardManager {
                 });
             }
             Object.assign(cardDiv.style, {
-                padding: '10px',
                 boxSizing: 'border-box',
                 aspectRatio: '360 / 539',
-                backgroundColor: collected ? MENU_COLORS.PANEL_BG : MENU_COLORS.MISSING,
+                backgroundColor: MENU_COLORS.MISSING,
                 ...(collected && CardManager.getCardImageStyles(card)),
                 border: `2px solid ${this.getRarityColor(card.rarity)}`,
                 borderRadius: '5px',
-                textAlign: 'center',
-                opacity: collected ? '1' : '0.4',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'flex-end'
+                justifyContent: 'center',
+                alignItems: 'center',
             });
 
-            const slotText = document.createElement('div');
-            slotText.innerText = `#${card.slot}`;
-            Object.assign(slotText.style, {
-                fontSize: '20px',
-                fontWeight: 'bold',
-                color: this.getRarityColor(card.rarity),
-                textShadow: collected ? CardManager.CARD_TEXT_SHADOW : 'none'
-            });
-            cardDiv.appendChild(slotText);
-
-            const rarityText = document.createElement('div');
-            rarityText.innerText = card.rarity.toUpperCase();
-            Object.assign(rarityText.style, {
-                fontSize: '14px',
-                color: MENU_COLORS.TEXT,
-                marginTop: '5px',
-                textShadow: collected ? CardManager.CARD_TEXT_SHADOW : 'none'
-            });
-            cardDiv.appendChild(rarityText);
-
-            // Always create checkmark container to maintain consistent height
-            const checkmark = document.createElement('div');
-            checkmark.innerText = collected ? '✓' : '';
-            Object.assign(checkmark.style, {
-                fontSize: '24px',
-                color: MENU_COLORS.COLLECTED,
-                marginTop: '5px',
-                height: '29px', // Reserve space for checkmark
-                textShadow: collected ? CardManager.CARD_TEXT_SHADOW : 'none'
-            });
-            cardDiv.appendChild(checkmark);
+            if (!collected) {
+                // Show "?" in the center of uncollected cards
+                const questionMark = document.createElement('div');
+                questionMark.innerText = '?';
+                Object.assign(questionMark.style, {
+                    fontSize: '48px',
+                    fontWeight: 'bold',
+                    color: '#666',
+                });
+                cardDiv.appendChild(questionMark);
+            }
 
             gridDiv.appendChild(cardDiv);
         });
@@ -552,13 +466,11 @@ export class CardManager {
         return CardManager.ALBUM_REWARDS[album] ?? '';
     }
 
-    /** Characters used for obfuscation */
-    private static readonly GLITCH_CHARS = '!@#$%^&*<>?/|\\{}[]~`';
-
     /**
      * Builds a partially-revealed reward description div.
      * The fraction of characters revealed equals (collected / total).
      * When the album is complete the description is shown in full.
+     * Hidden characters are replaced with ▓ to avoid flickering from randomisation.
      */
     private createRewardDescriptionDiv(album: Album): HTMLDivElement {
         const rewardDiv = document.createElement('div');
@@ -603,9 +515,7 @@ export class CardManager {
                 } else if (plainText[i] === ' ') {
                     obfuscated += ' ';
                 } else {
-                    obfuscated += CardManager.GLITCH_CHARS[
-                        Math.floor(Math.random() * CardManager.GLITCH_CHARS.length)
-                    ];
+                    obfuscated += '▓';
                 }
             }
             textSpan.innerText = obfuscated;
@@ -636,7 +546,12 @@ export class CardManager {
     }
 
     private render(player: Player) {
-        this.packCountDisplay.innerText = `Booster Packs: ${player.boosterPacks}`;
+        // Show pack count only on the main menu and pack reveal views
+        const showPackCount = this.viewMode === ViewMode.MENU || this.viewMode === ViewMode.OPEN_PACK;
+        this.packCountDisplay.style.display = showPackCount ? '' : 'none';
+        if (showPackCount) {
+            this.packCountDisplay.innerText = `Booster Packs: ${player.boosterPacks}`;
+        }
 
         switch (this.viewMode) {
             case ViewMode.MENU:
