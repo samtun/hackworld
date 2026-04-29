@@ -17,6 +17,7 @@ export class CardManager {
     // UI Elements
     private mainContent!: HTMLDivElement;
     private packCountDisplay!: HTMLDivElement;
+    private lightboxOverlay!: HTMLDivElement;
 
     // Navigation state
     private viewMode: ViewMode = ViewMode.MENU;
@@ -27,9 +28,16 @@ export class CardManager {
     private flippedCardIndices: Set<number> = new Set(); // Track which cards have been flipped
     private flippingInProgress: boolean = false; // Track if flip animation is in progress
 
+    // Lightbox state
+    private lightboxVisible: boolean = false;
+    private lightboxCards: Card[] = [];
+    private lightboxIndex: number = 0;
+
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
     private lastNavigateDownState: boolean = false;
+    private lastNavigateLeftState: boolean = false;
+    private lastNavigateRightState: boolean = false;
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
 
@@ -84,6 +92,38 @@ export class CardManager {
             fontFamily: MENU_STYLES.FONT_FAMILY
         });
         windowDiv.appendChild(this.mainContent);
+
+        // CSS for card hover scale effect
+        const cardHoverStyle = document.createElement('style');
+        cardHoverStyle.textContent = `
+            .card-hoverable {
+                cursor: pointer;
+                transition: transform 0.2s ease;
+            }
+            .card-hoverable:hover {
+                transform: scale(1.1);
+                z-index: 10;
+                position: relative;
+            }
+        `;
+        document.head.appendChild(cardHoverStyle);
+
+        // Lightbox overlay — rendered above the card manager (z-index 1200)
+        this.lightboxOverlay = document.createElement('div');
+        Object.assign(this.lightboxOverlay.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            display: 'none',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: '1200',
+            flexDirection: 'column',
+        });
+        document.body.appendChild(this.lightboxOverlay);
     }
 
     private getRarityColor(rarity: CardRarity): string {
@@ -111,12 +151,13 @@ export class CardManager {
     }
 
     /**
-     * Returns CSS properties that apply the card's image as a cover background.
+     * Returns CSS properties that apply the card's image as a cover background
+     * with a semi-transparent dark overlay for text readability.
      * Used consistently across both the pack-opening view and the album detail view.
      */
     private static getCardImageStyles(card: Card): Partial<CSSStyleDeclaration> {
         return {
-            backgroundImage: `url(${CardManager.getCardImagePath(card)})`,
+            backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${CardManager.getCardImagePath(card)})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
         };
@@ -191,13 +232,19 @@ export class CardManager {
             });
 
             // Display all 4 cards
-            this.revealedCards.forEach((card) => {
+            this.revealedCards.forEach((card, cardIndex) => {
                 // Outer container for 3D perspective
                 const cardContainer = document.createElement('div');
                 Object.assign(cardContainer.style, {
                     perspective: '1000px',
-                    minWidth: '150px',
-                    minHeight: '200px'
+                    width: '150px',
+                    aspectRatio: '360 / 539',
+                    flexShrink: '0',
+                });
+                cardContainer.addEventListener('click', () => {
+                    if (this.flippedCardIndices.has(cardIndex)) {
+                        this.openLightbox(this.revealedCards, cardIndex);
+                    }
                 });
 
                 // Inner flipper element
@@ -336,11 +383,19 @@ export class CardManager {
             this.mainContent.appendChild(instructionsText);
         }
 
-        // Update transforms for existing cards
+        // Update transforms for existing cards and hover class (only on revealed cards)
         const flippers = cardsContainer.querySelectorAll('.card-flipper');
         flippers.forEach((flipper, index) => {
             const isFlipped = this.flippedCardIndices.has(index);
             (flipper as HTMLElement).style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+            const container = flipper.parentElement;
+            if (container) {
+                if (isFlipped) {
+                    container.classList.add('card-hoverable');
+                } else {
+                    container.classList.remove('card-hoverable');
+                }
+            }
         });
 
         // Update instructions text
@@ -394,6 +449,9 @@ export class CardManager {
         this.mainContent.appendChild(titleDiv);
 
         const cards = CardDefinitions.getAlbumCards(this.currentAlbum);
+        const collectedCards = cards.filter(c => this.cardCollection.hasCard(c));
+        // Pre-compute lightbox index for each collected card to avoid O(n²) indexOf in the loop
+        const collectedIndexMap = new Map<Card, number>(collectedCards.map((c, i) => [c, i]));
         const gridDiv = document.createElement('div');
         Object.assign(gridDiv.style, {
             display: 'grid',
@@ -404,8 +462,17 @@ export class CardManager {
         cards.forEach(card => {
             const collected = this.cardCollection.hasCard(card);
             const cardDiv = document.createElement('div');
+            if (collected) {
+                cardDiv.className = 'card-hoverable';
+                const lightboxIdx = collectedIndexMap.get(card) ?? 0;
+                cardDiv.addEventListener('click', () => {
+                    this.openLightbox(collectedCards, lightboxIdx);
+                });
+            }
             Object.assign(cardDiv.style, {
-                padding: '15px',
+                padding: '10px',
+                boxSizing: 'border-box',
+                aspectRatio: '360 / 539',
                 backgroundColor: collected ? MENU_COLORS.PANEL_BG : MENU_COLORS.MISSING,
                 ...(collected && CardManager.getCardImageStyles(card)),
                 border: `2px solid ${this.getRarityColor(card.rarity)}`,
@@ -414,7 +481,6 @@ export class CardManager {
                 opacity: collected ? '1' : '0.4',
                 display: 'flex',
                 flexDirection: 'column',
-                minHeight: '100px',
                 justifyContent: 'flex-end'
             });
 
@@ -561,6 +627,7 @@ export class CardManager {
         if (!this.isVisible) return;
         this.isVisible = false;
         this.container.style.display = 'none';
+        this.closeLightbox();
         this.uiManager.hideControlHints();
         resetInputDebounce(this as any);
     }
@@ -589,6 +656,31 @@ export class CardManager {
 
         // Store input manager for dynamic hints
         this.currentInputManager = input;
+
+        // Lightbox input handling takes priority over all other navigation
+        if (this.lightboxVisible) {
+            const navLeft = input.isNavigateLeftPressed();
+            const navRight = input.isNavigateRightPressed();
+            const cancel = input.isCancelPressed();
+
+            if (navLeft && !this.lastNavigateLeftState) {
+                this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxCards.length) % this.lightboxCards.length;
+                this.renderLightbox();
+            }
+            this.lastNavigateLeftState = navLeft;
+
+            if (navRight && !this.lastNavigateRightState) {
+                this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxCards.length;
+                this.renderLightbox();
+            }
+            this.lastNavigateRightState = navRight;
+
+            if (cancel && !this.lastCancelState) {
+                this.closeLightbox();
+            }
+            this.lastCancelState = cancel;
+            return;
+        }
 
         // Update centralized control hints based on input method
         this.uiManager.showControlHints(getHint(HintConfigs.menuNavigate, input));
@@ -722,5 +814,86 @@ export class CardManager {
         } else if (this.viewMode === ViewMode.VIEW_ALBUM) {
             this.viewMode = ViewMode.VIEW_ALBUMS;
         }
+    }
+
+    private openLightbox(cards: Card[], index: number): void {
+        this.lightboxCards = cards;
+        this.lightboxIndex = index;
+        this.lightboxVisible = true;
+        this.lightboxOverlay.style.display = 'flex';
+        resetInputDebounce(this as any);
+        this.renderLightbox();
+    }
+
+    private closeLightbox(): void {
+        this.lightboxVisible = false;
+        this.lightboxOverlay.style.display = 'none';
+        resetInputDebounce(this as any);
+    }
+
+    private renderLightbox(): void {
+        this.lightboxOverlay.innerHTML = '';
+        const card = this.lightboxCards[this.lightboxIndex];
+        if (!card) return;
+
+        // Full card image without the dark overlay used in thumbnails — the lightbox is
+        // the focus view so the image should be shown at full fidelity.
+        const imgDiv = document.createElement('div');
+        Object.assign(imgDiv.style, {
+            width: '300px',
+            aspectRatio: '360 / 539',
+            backgroundImage: `url(${CardManager.getCardImagePath(card)})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderRadius: '12px',
+            border: `3px solid ${this.getRarityColor(card.rarity)}`,
+            boxShadow: '0 0 40px rgba(0,0,0,0.8)',
+        });
+        this.lightboxOverlay.appendChild(imgDiv);
+
+        // Card info below the image
+        const infoDiv = document.createElement('div');
+        Object.assign(infoDiv.style, {
+            marginTop: '16px',
+            textAlign: 'center',
+            fontFamily: MENU_STYLES.FONT_FAMILY,
+        });
+        const albumLabel = document.createElement('div');
+        albumLabel.innerText = `${card.album} #${card.slot}`;
+        Object.assign(albumLabel.style, {
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: this.getRarityColor(card.rarity),
+        });
+        const rarityLabel = document.createElement('div');
+        rarityLabel.innerText = card.rarity.toUpperCase();
+        Object.assign(rarityLabel.style, {
+            fontSize: '14px',
+            color: this.getRarityColor(card.rarity),
+            marginTop: '4px',
+        });
+        infoDiv.appendChild(albumLabel);
+        infoDiv.appendChild(rarityLabel);
+        this.lightboxOverlay.appendChild(infoDiv);
+
+        // Navigation hint
+        const hintDiv = document.createElement('div');
+        Object.assign(hintDiv.style, {
+            marginTop: '16px',
+            fontSize: '14px',
+            color: MENU_COLORS.SEPARATOR,
+            fontFamily: MENU_STYLES.FONT_FAMILY,
+            textAlign: 'center',
+        });
+        const posInfo = this.lightboxCards.length > 1
+            ? `${this.lightboxIndex + 1} / ${this.lightboxCards.length} &nbsp;&nbsp;`
+            : '';
+        if (this.currentInputManager) {
+            hintDiv.innerHTML = posInfo + getHint({
+                keyboard: '<span class="key-icon">←</span> <span class="key-icon">→</span> Navigate &nbsp; <span class="key-icon">ESC</span> Close',
+                controller: '<span class="btn-icon">◄</span> <span class="btn-icon">►</span> Navigate &nbsp; <span class="btn-icon xbox-b">B</span> Close',
+            }, this.currentInputManager);
+        }
+        this.lightboxOverlay.appendChild(hintDiv);
     }
 }
