@@ -420,39 +420,19 @@ export class Game {
 
         const indicatorManager = FloatingIndicatorManager.getInstance(this.scene);
 
-        if (penalty.bitsLost > 0) {
+        const spawnIndicator = (amount: number, color: string, suffix: string, delay: number): void => {
             setTimeout(() => {
                 const pos = new CANNON.Vec3(
                     this.player.body.position.x,
                     this.player.body.position.y + 1,
                     this.player.body.position.z,
                 );
-                indicatorManager.spawn(pos, {
-                    text: `-${penalty.bitsLost}`,
-                    color: '#FFD700',
-                    suffix: ' Bits',
-                    fontSize: 60,
-                    priority: true,
-                });
-            }, 500);
-        }
+                indicatorManager.spawn(pos, { text: `-${amount}`, color, suffix, fontSize: 60, priority: true });
+            }, delay);
+        };
 
-        if (penalty.expLost > 0) {
-            setTimeout(() => {
-                const pos = new CANNON.Vec3(
-                    this.player.body.position.x,
-                    this.player.body.position.y + 1,
-                    this.player.body.position.z,
-                );
-                indicatorManager.spawn(pos, {
-                    text: `-${penalty.expLost}`,
-                    color: '#ffffff',
-                    suffix: ' EXP',
-                    fontSize: 60,
-                    priority: true,
-                });
-            }, 800); // 500ms initial delay + 300ms between indicators
-        }
+        if (penalty.bitsLost > 0) spawnIndicator(penalty.bitsLost, '#FFD700', ' Bits', 500);
+        if (penalty.expLost > 0) spawnIndicator(penalty.expLost, '#ffffff', ' EXP', 800); // 500ms + 300ms gap
     }
 
     private resetCameraPosition() {
