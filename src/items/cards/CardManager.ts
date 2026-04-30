@@ -17,6 +17,7 @@ export class CardManager {
     // UI Elements
     private mainContent!: HTMLDivElement;
     private packCountDisplay!: HTMLDivElement;
+    private lightboxOverlay!: HTMLDivElement;
 
     // Navigation state
     private viewMode: ViewMode = ViewMode.MENU;
@@ -27,12 +28,18 @@ export class CardManager {
     private flippedCardIndices: Set<number> = new Set(); // Track which cards have been flipped
     private flippingInProgress: boolean = false; // Track if flip animation is in progress
 
+    // Lightbox state
+    private lightboxVisible: boolean = false;
+    private lightboxCards: Card[] = [];
+    private lightboxIndex: number = 0;
     // Render dirty flag
     needsRender: boolean = false;
 
     // Input tracking for debouncing
     private lastNavigateUpState: boolean = false;
     private lastNavigateDownState: boolean = false;
+    private lastNavigateLeftState: boolean = false;
+    private lastNavigateRightState: boolean = false;
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
 
@@ -84,9 +91,42 @@ export class CardManager {
         Object.assign(this.mainContent.style, {
             flex: '1',
             overflowY: 'auto',
+            overflowX: 'hidden', // prevent horizontal scrollbar from hover scale at right edge
             fontFamily: MENU_STYLES.FONT_FAMILY
         });
         windowDiv.appendChild(this.mainContent);
+
+        // CSS for card hover scale effect
+        const cardHoverStyle = document.createElement('style');
+        cardHoverStyle.textContent = `
+            .card-hoverable {
+                cursor: pointer;
+                transition: transform 0.2s ease;
+            }
+            .card-hoverable:hover {
+                transform: scale(1.1);
+                z-index: 10;
+                position: relative;
+            }
+        `;
+        document.head.appendChild(cardHoverStyle);
+
+        // Lightbox overlay — rendered above the card manager (z-index 1200)
+        this.lightboxOverlay = document.createElement('div');
+        Object.assign(this.lightboxOverlay.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            backgroundColor: 'rgba(0,0,0,0.85)',
+            display: 'none',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: '1200',
+            flexDirection: 'column',
+        });
+        document.body.appendChild(this.lightboxOverlay);
     }
 
     private getRarityColor(rarity: CardRarity): string {
@@ -98,6 +138,28 @@ export class CardManager {
             case CardRarity.SPECIAL:
                 return MENU_COLORS.SPECIAL;
         }
+    }
+
+    /**
+     * Returns the expected image path for a card.
+     * Convention: images/cards/{album}/{album}.{slot}.png
+     * The image may or may not exist; the browser will silently ignore a missing background-image.
+     * Inputs are derived from controlled enum values and integer slot numbers, so no sanitization is required.
+     */
+    public static getCardImagePath(card: Card): string {
+        return `images/cards/${card.album}/${card.album}.${card.slot}.png`;
+    }
+
+    /**
+     * Returns CSS properties that apply the card's image as a cover background.
+     * Used consistently across both the pack-opening view and the album detail view.
+     */
+    private static getCardImageStyles(card: Card): Partial<CSSStyleDeclaration> {
+        return {
+            backgroundImage: `url(${CardManager.getCardImagePath(card)})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+        };
     }
 
     private renderMenu(player: Player) {
@@ -169,13 +231,19 @@ export class CardManager {
             });
 
             // Display all 4 cards
-            this.revealedCards.forEach((card) => {
+            this.revealedCards.forEach((card, cardIndex) => {
                 // Outer container for 3D perspective
                 const cardContainer = document.createElement('div');
                 Object.assign(cardContainer.style, {
                     perspective: '1000px',
-                    minWidth: '150px',
-                    minHeight: '200px'
+                    width: '150px',
+                    aspectRatio: '360 / 539',
+                    flexShrink: '0',
+                });
+                cardContainer.addEventListener('click', () => {
+                    if (this.flippedCardIndices.has(cardIndex)) {
+                        this.openLightbox(this.revealedCards, cardIndex);
+                    }
                 });
 
                 // Inner flipper element
@@ -217,76 +285,20 @@ export class CardManager {
                 });
                 cardBack.appendChild(backText);
 
-                // Card front (face up)
+                // Card front (face up) — image only, no text labels
                 const cardFront = document.createElement('div');
                 Object.assign(cardFront.style, {
                     position: 'absolute',
                     width: '100%',
                     height: '100%',
-                    padding: '20px',
                     backgroundColor: MENU_COLORS.CARD_BG,
+                    ...CardManager.getCardImageStyles(card),
                     border: `3px solid ${this.getRarityColor(card.rarity)}`,
                     borderRadius: '10px',
-                    textAlign: 'center',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'center',
                     backfaceVisibility: 'hidden',
                     transform: 'rotateY(180deg)',
                     boxSizing: 'border-box'
                 });
-
-                const isNew = !this.cardCollection.hasCard(card);
-
-                const albumText = document.createElement('div');
-                albumText.innerText = card.album;
-                Object.assign(albumText.style, {
-                    fontSize: '24px',
-                    fontWeight: 'bold',
-                    color: this.getRarityColor(card.rarity),
-                    marginBottom: '8px'
-                });
-                cardFront.appendChild(albumText);
-
-                const slotText = document.createElement('div');
-                slotText.innerText = `#${card.slot}`;
-                Object.assign(slotText.style, {
-                    fontSize: '18px',
-                    color: MENU_COLORS.TEXT,
-                    marginBottom: '8px'
-                });
-                cardFront.appendChild(slotText);
-
-                const rarityText = document.createElement('div');
-                rarityText.innerText = card.rarity.toUpperCase();
-                Object.assign(rarityText.style, {
-                    fontSize: '14px',
-                    color: this.getRarityColor(card.rarity),
-                    marginBottom: '8px'
-                });
-                cardFront.appendChild(rarityText);
-                // Reserve space for status to keep consistent card layout
-                const statusContainer = document.createElement('div');
-                Object.assign(statusContainer.style, {
-                    height: '30px',
-                    marginTop: '8px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                });
-
-                if (isNew) {
-                    const statusText = document.createElement('div');
-                    statusText.innerText = '✨ NEW';
-                    Object.assign(statusText.style, {
-                        fontSize: '16px',
-                        fontWeight: 'bold',
-                        color: '#888'
-                    });
-                    statusContainer.appendChild(statusText);
-                }
-
-                cardFront.appendChild(statusContainer);
 
                 // Assemble the card structure
                 cardFlipper.appendChild(cardBack);
@@ -309,11 +321,19 @@ export class CardManager {
             this.mainContent.appendChild(instructionsText);
         }
 
-        // Update transforms for existing cards
+        // Update transforms for existing cards and hover class (only on revealed cards)
         const flippers = cardsContainer.querySelectorAll('.card-flipper');
         flippers.forEach((flipper, index) => {
             const isFlipped = this.flippedCardIndices.has(index);
             (flipper as HTMLElement).style.transform = isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)';
+            const container = flipper.parentElement;
+            if (container) {
+                if (isFlipped) {
+                    container.classList.add('card-hoverable');
+                } else {
+                    container.classList.remove('card-hoverable');
+                }
+            }
         });
 
         // Update instructions text
@@ -367,57 +387,51 @@ export class CardManager {
         this.mainContent.appendChild(titleDiv);
 
         const cards = CardDefinitions.getAlbumCards(this.currentAlbum);
+        const collectedCards = cards.filter(c => this.cardCollection.hasCard(c));
+        // Pre-compute lightbox index for each collected card to avoid O(n²) indexOf in the loop
+        const collectedIndexMap = new Map<Card, number>(collectedCards.map((c, i) => [c, i]));
         const gridDiv = document.createElement('div');
         Object.assign(gridDiv.style, {
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '10px'
+            gap: '10px',
+            padding: '12px', // buffer so right-edge cards scaled 10% stay within the clipping boundary
         });
 
         cards.forEach(card => {
             const collected = this.cardCollection.hasCard(card);
             const cardDiv = document.createElement('div');
+            if (collected) {
+                cardDiv.className = 'card-hoverable';
+                const lightboxIdx = collectedIndexMap.get(card) ?? 0;
+                cardDiv.addEventListener('click', () => {
+                    this.openLightbox(collectedCards, lightboxIdx);
+                });
+            }
             Object.assign(cardDiv.style, {
-                padding: '15px',
-                backgroundColor: collected ? MENU_COLORS.PANEL_BG : MENU_COLORS.MISSING,
+                boxSizing: 'border-box',
+                aspectRatio: '360 / 539',
+                backgroundColor: MENU_COLORS.MISSING,
+                ...(collected && CardManager.getCardImageStyles(card)),
                 border: `2px solid ${this.getRarityColor(card.rarity)}`,
                 borderRadius: '5px',
-                textAlign: 'center',
-                opacity: collected ? '1' : '0.4',
                 display: 'flex',
                 flexDirection: 'column',
-                minHeight: '100px',
-                justifyContent: 'center'
+                justifyContent: 'center',
+                alignItems: 'center',
             });
 
-            const slotText = document.createElement('div');
-            slotText.innerText = `#${card.slot}`;
-            Object.assign(slotText.style, {
-                fontSize: '20px',
-                fontWeight: 'bold',
-                color: this.getRarityColor(card.rarity)
-            });
-            cardDiv.appendChild(slotText);
-
-            const rarityText = document.createElement('div');
-            rarityText.innerText = card.rarity.toUpperCase();
-            Object.assign(rarityText.style, {
-                fontSize: '14px',
-                color: MENU_COLORS.TEXT,
-                marginTop: '5px'
-            });
-            cardDiv.appendChild(rarityText);
-
-            // Always create checkmark container to maintain consistent height
-            const checkmark = document.createElement('div');
-            checkmark.innerText = collected ? '✓' : '';
-            Object.assign(checkmark.style, {
-                fontSize: '24px',
-                color: MENU_COLORS.COLLECTED,
-                marginTop: '5px',
-                height: '29px' // Reserve space for checkmark
-            });
-            cardDiv.appendChild(checkmark);
+            if (!collected) {
+                // Show "?" in the center of uncollected cards
+                const questionMark = document.createElement('div');
+                questionMark.innerText = '?';
+                Object.assign(questionMark.style, {
+                    fontSize: '48px',
+                    fontWeight: 'bold',
+                    color: '#666',
+                });
+                cardDiv.appendChild(questionMark);
+            }
 
             gridDiv.appendChild(cardDiv);
         });
@@ -453,13 +467,11 @@ export class CardManager {
         return CardManager.ALBUM_REWARDS[album] ?? '';
     }
 
-    /** Characters used for obfuscation */
-    private static readonly GLITCH_CHARS = '!@#$%^&*<>?/|\\{}[]~`';
-
     /**
      * Builds a partially-revealed reward description div.
      * The fraction of characters revealed equals (collected / total).
      * When the album is complete the description is shown in full.
+     * Hidden characters are replaced with ▓ to avoid flickering from randomisation.
      */
     private createRewardDescriptionDiv(album: Album): HTMLDivElement {
         const rewardDiv = document.createElement('div');
@@ -504,9 +516,7 @@ export class CardManager {
                 } else if (plainText[i] === ' ') {
                     obfuscated += ' ';
                 } else {
-                    obfuscated += CardManager.GLITCH_CHARS[
-                        Math.floor(Math.random() * CardManager.GLITCH_CHARS.length)
-                    ];
+                    obfuscated += '▓';
                 }
             }
             textSpan.innerText = obfuscated;
@@ -531,12 +541,18 @@ export class CardManager {
         if (!this.isVisible) return;
         this.isVisible = false;
         this.container.style.display = 'none';
+        this.closeLightbox();
         this.uiManager.hideControlHints();
         resetInputDebounce(this as any);
     }
 
     private render(player: Player) {
-        this.packCountDisplay.innerText = `Booster Packs: ${player.boosterPacks}`;
+        // Show pack count only on the main menu and pack reveal views
+        const showPackCount = this.viewMode === ViewMode.MENU || this.viewMode === ViewMode.OPEN_PACK;
+        this.packCountDisplay.style.display = showPackCount ? '' : 'none';
+        if (showPackCount) {
+            this.packCountDisplay.innerText = `Booster Packs: ${player.boosterPacks}`;
+        }
 
         switch (this.viewMode) {
             case ViewMode.MENU:
@@ -559,6 +575,31 @@ export class CardManager {
 
         // Store input manager for dynamic hints
         this.currentInputManager = input;
+
+        // Lightbox input handling takes priority over all other navigation
+        if (this.lightboxVisible) {
+            const navLeft = input.isNavigateLeftPressed();
+            const navRight = input.isNavigateRightPressed();
+            const cancel = input.isCancelPressed();
+
+            if (navLeft && !this.lastNavigateLeftState) {
+                this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxCards.length) % this.lightboxCards.length;
+                this.renderLightbox();
+            }
+            this.lastNavigateLeftState = navLeft;
+
+            if (navRight && !this.lastNavigateRightState) {
+                this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxCards.length;
+                this.renderLightbox();
+            }
+            this.lastNavigateRightState = navRight;
+
+            if (cancel && !this.lastCancelState) {
+                this.closeLightbox();
+            }
+            this.lastCancelState = cancel;
+            return;
+        }
 
         // Update centralized control hints based on input method
         this.uiManager.showControlHints(getHint(HintConfigs.menuNavigate, input));
@@ -699,5 +740,86 @@ export class CardManager {
         } else if (this.viewMode === ViewMode.VIEW_ALBUM) {
             this.viewMode = ViewMode.VIEW_ALBUMS;
         }
+    }
+
+    private openLightbox(cards: Card[], index: number): void {
+        this.lightboxCards = cards;
+        this.lightboxIndex = index;
+        this.lightboxVisible = true;
+        this.lightboxOverlay.style.display = 'flex';
+        resetInputDebounce(this as any);
+        this.renderLightbox();
+    }
+
+    private closeLightbox(): void {
+        this.lightboxVisible = false;
+        this.lightboxOverlay.style.display = 'none';
+        resetInputDebounce(this as any);
+    }
+
+    private renderLightbox(): void {
+        this.lightboxOverlay.innerHTML = '';
+        const card = this.lightboxCards[this.lightboxIndex];
+        if (!card) return;
+
+        // Full card image without the dark overlay used in thumbnails — the lightbox is
+        // the focus view so the image should be shown at full fidelity.
+        const imgDiv = document.createElement('div');
+        Object.assign(imgDiv.style, {
+            width: '300px',
+            aspectRatio: '360 / 539',
+            backgroundImage: `url(${CardManager.getCardImagePath(card)})`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            borderRadius: '12px',
+            border: `3px solid ${this.getRarityColor(card.rarity)}`,
+            boxShadow: '0 0 40px rgba(0,0,0,0.8)',
+        });
+        this.lightboxOverlay.appendChild(imgDiv);
+
+        // Card info below the image
+        const infoDiv = document.createElement('div');
+        Object.assign(infoDiv.style, {
+            marginTop: '16px',
+            textAlign: 'center',
+            fontFamily: MENU_STYLES.FONT_FAMILY,
+        });
+        const albumLabel = document.createElement('div');
+        albumLabel.innerText = `${card.album} #${card.slot}`;
+        Object.assign(albumLabel.style, {
+            fontSize: '20px',
+            fontWeight: 'bold',
+            color: this.getRarityColor(card.rarity),
+        });
+        const rarityLabel = document.createElement('div');
+        rarityLabel.innerText = card.rarity.toUpperCase();
+        Object.assign(rarityLabel.style, {
+            fontSize: '14px',
+            color: this.getRarityColor(card.rarity),
+            marginTop: '4px',
+        });
+        infoDiv.appendChild(albumLabel);
+        infoDiv.appendChild(rarityLabel);
+        this.lightboxOverlay.appendChild(infoDiv);
+
+        // Navigation hint
+        const hintDiv = document.createElement('div');
+        Object.assign(hintDiv.style, {
+            marginTop: '16px',
+            fontSize: '14px',
+            color: MENU_COLORS.SEPARATOR,
+            fontFamily: MENU_STYLES.FONT_FAMILY,
+            textAlign: 'center',
+        });
+        const posInfo = this.lightboxCards.length > 1
+            ? `${this.lightboxIndex + 1} / ${this.lightboxCards.length} &nbsp;&nbsp;`
+            : '';
+        if (this.currentInputManager) {
+            hintDiv.innerHTML = posInfo + getHint({
+                keyboard: '<span class="key-icon">←</span> <span class="key-icon">→</span> Navigate &nbsp; <span class="key-icon">ESC</span> Close',
+                controller: '<span class="btn-icon">◄</span> <span class="btn-icon">►</span> Navigate &nbsp; <span class="btn-icon xbox-b">B</span> Close',
+            }, this.currentInputManager);
+        }
+        this.lightboxOverlay.appendChild(hintDiv);
     }
 }
