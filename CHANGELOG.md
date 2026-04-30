@@ -1,3 +1,20 @@
+# [3.17.0](https://github.com/samtun/hackworld/compare/v3.16.0...v3.17.0) (2026-04-30)
+
+
+### Bug Fixes
+
+* add corrected A.001 card images ([ce1e0f9](https://github.com/samtun/hackworld/commit/ce1e0f9897780ea3255a57364546d6bc59d1e052))
+* remove card image overlay, fix hover scrollbar ([e5d3cc2](https://github.com/samtun/hackworld/commit/e5d3cc250056cc67352fe6d5852cbbded6774a07))
+
+
+### Features
+
+* add A.002 images ([008a811](https://github.com/samtun/hackworld/commit/008a811e32b4e9dc2524c5c884f992109e01f733))
+* add card images for A.001 ([4ca5dac](https://github.com/samtun/hackworld/commit/4ca5dac3fd2f5fddfd6533cead1690bbc6202826))
+* card overlay, aspect ratio, hover scale, lightbox ([71fad8b](https://github.com/samtun/hackworld/commit/71fad8baf0724645636886045c1c6c35c36c735e))
+* clean card thumbnails, locked ?, pack count visibility, block obfuscation ([be139fe](https://github.com/samtun/hackworld/commit/be139fedc67d74f96a59723ff44871682745c516))
+* show card images as backgrounds in card manager UI ([2c12773](https://github.com/samtun/hackworld/commit/2c127734fabc1f724695d6b4b98b54b64501a4dd))
+
 # [3.16.0](https://github.com/samtun/hackworld/compare/v3.15.0...v3.16.0) (2026-04-29)
 
 
