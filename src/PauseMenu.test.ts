@@ -37,16 +37,14 @@ function makeInputManager(): InputManager {
     return im;
 }
 
-function makeCallbacks(): PauseMenuCallbacks & { continueCalled: boolean; restartCalled: boolean; performanceMode: boolean; controlHints: boolean } {
+function makeCallbacks(): PauseMenuCallbacks & { continueCalled: boolean; performanceMode: boolean; controlHints: boolean } {
     const cbs = {
         continueCalled: false,
-        restartCalled: false,
         performanceMode: false,
         controlHints: true,
         onContinue: () => { cbs.continueCalled = true; },
         onTogglePerformanceMode: () => { cbs.performanceMode = !cbs.performanceMode; return cbs.performanceMode; },
         onToggleControlHints: () => { cbs.controlHints = !cbs.controlHints; return cbs.controlHints; },
-        onRestartArea: () => { cbs.restartCalled = true; },
     };
     return cbs;
 }
@@ -103,13 +101,13 @@ describe('PauseMenu', () => {
         expect(overlay?.textContent).toContain('Execution Paused');
     });
 
-    it('renders Continue, Performance Mode, Show Control Hints, and Restart Area options', () => {
+    it('renders Continue, Performance Mode, and Show Control Hints options', () => {
         const overlay = document.querySelector('[data-pause-menu]');
         const text = overlay?.textContent ?? '';
         expect(text).toContain('Continue');
         expect(text).toContain('Performance Mode');
         expect(text).toContain('Show Control Hints');
-        expect(text).toContain('Restart Area');
+        expect(text).not.toContain('Restart Area');
     });
 
     it('shows Performance Mode status as "off" when performanceModeEnabled is false', () => {
@@ -158,30 +156,6 @@ describe('PauseMenu', () => {
         menu.destroy();
         const afterCount = document.querySelectorAll('[data-pause-menu]').length;
         expect(afterCount).toBe(beforeCount - 1);
-    });
-
-    describe('Restart Area availability', () => {
-        it('shows Restart Area as enabled by default', () => {
-            menu.show();
-            const items = document.querySelectorAll('[data-pause-menu] [data-index]');
-            const restartEl = items[3] as HTMLElement;
-            expect(restartEl.style.cursor).toBe('pointer');
-        });
-
-        it('shows Restart Area as disabled when restartEnabled is false', () => {
-            menu.show(false);
-            const items = document.querySelectorAll('[data-pause-menu] [data-index]');
-            const restartEl = items[3] as HTMLElement;
-            expect(restartEl.style.cursor).toBe('default');
-            expect(restartEl.style.color).toContain('85, 85, 85');
-        });
-
-        it('shows Restart Area as enabled when restartEnabled is true', () => {
-            menu.show(true);
-            const items = document.querySelectorAll('[data-pause-menu] [data-index]');
-            const restartEl = items[3] as HTMLElement;
-            expect(restartEl.style.cursor).toBe('pointer');
-        });
     });
 
     describe('PERFORMANCE_MODE_STORAGE_KEY export', () => {

@@ -23,6 +23,7 @@ import { Teleporter } from './Teleporter';
 import { LoreIntroduction } from './LoreIntroduction';
 import { StartMenuOption } from './StartMenu';
 import { PauseMenu, PERFORMANCE_MODE_STORAGE_KEY, CONTROL_HINTS_STORAGE_KEY } from './PauseMenu';
+import { FloatingIndicatorManager } from './FloatingIndicatorManager';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
@@ -81,6 +82,9 @@ export class Game {
 
     // Last teleporter position for respawn (starts at lobby spawn)
     lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
+
+    // Pending death penalty to display as floating indicators after respawn
+    private pendingDeathPenalty?: { bitsLost: number; expLost: number };
 
     // Camera follow offset
     cameraOffset: THREE.Vector3 = new THREE.Vector3(7, 9, 7);
@@ -309,7 +313,6 @@ export class Game {
                 localStorage.setItem(CONTROL_HINTS_STORAGE_KEY, String(this.ui.controlHintsEnabled));
                 return this.ui.controlHintsEnabled;
             },
-            onRestartArea: () => this.respawnPlayer(),
         });
 
         // Set up teleporter callback for handling teleporter interactions
@@ -352,6 +355,11 @@ export class Game {
      */
     handlePlayerDeath() {
         console.log('Game: Handling player death');
+
+        // Apply death penalty immediately at the moment of death so players
+        // cannot quit the game on the death screen to avoid the punishment.
+        this.pendingDeathPenalty = this.player.applyDeathPenalty();
+
         this.ui.showDeathOverlay(
             () => this.respawnPlayer(),
             () => this.returnToLobby()
@@ -373,6 +381,9 @@ export class Game {
 
         // Respawn player at last teleporter position
         this.player.respawn(this.lastTeleporterPosition);
+
+        // Show death penalty floating indicators 0.5s after respawn
+        this.showDeathPenaltyIndicators();
     }
 
     /**
@@ -393,6 +404,55 @@ export class Game {
 
         // Reset camera
         this.resetCameraPosition();
+
+        // Show death penalty floating indicators 0.5s after respawn
+        this.showDeathPenaltyIndicators();
+    }
+
+    /**
+     * Show floating indicators for the death penalty after a short delay.
+     * Bits penalty appears 0.5s after respawn; EXP penalty appears 0.3s later.
+     */
+    private showDeathPenaltyIndicators(): void {
+        const penalty = this.pendingDeathPenalty;
+        if (!penalty) return;
+        this.pendingDeathPenalty = undefined;
+
+        const indicatorManager = FloatingIndicatorManager.getInstance(this.scene);
+
+        if (penalty.bitsLost > 0) {
+            setTimeout(() => {
+                const pos = new CANNON.Vec3(
+                    this.player.body.position.x,
+                    this.player.body.position.y + 1,
+                    this.player.body.position.z,
+                );
+                indicatorManager.spawn(pos, {
+                    text: `-${penalty.bitsLost}`,
+                    color: '#FFD700',
+                    suffix: ' Bits',
+                    fontSize: 60,
+                    priority: true,
+                });
+            }, 500);
+        }
+
+        if (penalty.expLost > 0) {
+            setTimeout(() => {
+                const pos = new CANNON.Vec3(
+                    this.player.body.position.x,
+                    this.player.body.position.y + 1,
+                    this.player.body.position.z,
+                );
+                indicatorManager.spawn(pos, {
+                    text: `-${penalty.expLost}`,
+                    color: '#ffffff',
+                    suffix: ' EXP',
+                    fontSize: 60,
+                    priority: true,
+                });
+            }, 800); // 500ms initial delay + 300ms between indicators
+        }
     }
 
     private resetCameraPosition() {
@@ -569,8 +629,7 @@ export class Game {
         const isPausePressed = this.input.isPausePressed();
         if (isPausePressed && !this.wasPausePressed) {
             if (!this.pauseMenu.visible && !this.isAnyMenuOpen() && !this.ui.isDeathOverlayVisible()) {
-                const isInLobby = this.currentScene === Lobby.getMetadata().id;
-                this.pauseMenu.show(!isInLobby);
+                this.pauseMenu.show();
             }
         }
         this.wasPausePressed = isPausePressed;
