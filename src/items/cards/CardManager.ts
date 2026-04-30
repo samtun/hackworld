@@ -91,6 +91,7 @@ export class CardManager {
         Object.assign(this.mainContent.style, {
             flex: '1',
             overflowY: 'auto',
+            overflowX: 'hidden', // prevent horizontal scrollbar from hover scale at right edge
             fontFamily: MENU_STYLES.FONT_FAMILY
         });
         windowDiv.appendChild(this.mainContent);
@@ -150,13 +151,12 @@ export class CardManager {
     }
 
     /**
-     * Returns CSS properties that apply the card's image as a cover background
-     * with a semi-transparent dark overlay for text readability.
+     * Returns CSS properties that apply the card's image as a cover background.
      * Used consistently across both the pack-opening view and the album detail view.
      */
     private static getCardImageStyles(card: Card): Partial<CSSStyleDeclaration> {
         return {
-            backgroundImage: `linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)), url(${CardManager.getCardImagePath(card)})`,
+            backgroundImage: `url(${CardManager.getCardImagePath(card)})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
         };
@@ -394,7 +394,8 @@ export class CardManager {
         Object.assign(gridDiv.style, {
             display: 'grid',
             gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: '10px'
+            gap: '10px',
+            padding: '12px', // buffer so right-edge cards scaled 10% stay within the clipping boundary
         });
 
         cards.forEach(card => {
