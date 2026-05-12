@@ -339,6 +339,7 @@ export class UIManager {
     private lobbyCallback?: () => void;
     private retryButton?: HTMLButtonElement;
     private lobbyButton?: HTMLButtonElement;
+    private deathPenaltyText?: HTMLDivElement;
     private deathOverlaySelectedIndex: number = 0; // 0 = Retry, 1 = Return to Lobby
     private startScreenTapHandler?: (e: TouchEvent) => void;
     private startMenu?: StartMenu;
@@ -471,6 +472,15 @@ export class UIManager {
         deathText.style.textShadow = '4px 4px 8px rgba(0, 0, 0, 0.8)';
         deathText.textContent = 'Compilation failed';
         this.deathOverlay.appendChild(deathText);
+
+        // Death penalty text (shown between title and buttons when a penalty was applied)
+        this.deathPenaltyText = document.createElement('div');
+        this.deathPenaltyText.style.fontSize = '20px';
+        this.deathPenaltyText.style.color = '#ffffff';
+        this.deathPenaltyText.style.textAlign = 'center';
+        this.deathPenaltyText.style.marginBottom = '30px';
+        this.deathPenaltyText.style.display = 'none';
+        this.deathOverlay.appendChild(this.deathPenaltyText);
 
         // Button container
         const buttonContainer = document.createElement('div');
@@ -865,11 +875,24 @@ export class UIManager {
 
     /**
      * Show the death overlay with fade-in animation
+     * @param onRetry - Callback when the player chooses to retry
+     * @param onReturnToLobby - Callback when the player chooses to return to lobby
+     * @param penalty - Optional death penalty to display (bits and EXP lost)
      */
-    showDeathOverlay(onRetry: () => void, onReturnToLobby: () => void) {
+    showDeathOverlay(onRetry: () => void, onReturnToLobby: () => void, penalty?: { bitsLost: number; expLost: number }) {
         this.retryCallback = onRetry;
         this.lobbyCallback = onReturnToLobby;
         this.deathOverlaySelectedIndex = 0; // Reset to first button
+
+        // Show penalty text if a penalty was applied
+        if (this.deathPenaltyText) {
+            if (penalty && (penalty.bitsLost > 0 || penalty.expLost > 0)) {
+                this.deathPenaltyText.textContent = `You lost: ${penalty.expLost} EXP, ${penalty.bitsLost} Bits`;
+                this.deathPenaltyText.style.display = 'block';
+            } else {
+                this.deathPenaltyText.style.display = 'none';
+            }
+        }
 
         if (this.deathOverlay) {
             this.deathOverlay.style.display = 'flex';

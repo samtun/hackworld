@@ -29,8 +29,11 @@ function makeUIManager(overrides: Record<string, unknown> = {}) {
     deathOverlay.style.opacity = '0';
     const retryButton = document.createElement('button');
     const lobbyButton = document.createElement('button');
+    const deathPenaltyText = document.createElement('div');
+    deathPenaltyText.style.display = 'none';
     deathOverlay.appendChild(retryButton);
     deathOverlay.appendChild(lobbyButton);
+    deathOverlay.appendChild(deathPenaltyText);
 
     Object.assign(ui, {
         playerUIs: new Map(),
@@ -44,6 +47,7 @@ function makeUIManager(overrides: Record<string, unknown> = {}) {
         deathOverlay,
         retryButton,
         lobbyButton,
+        deathPenaltyText,
         retryCallback: undefined,
         lobbyCallback: undefined,
         deathOverlaySelectedIndex: 0,
@@ -444,6 +448,28 @@ describe('showDeathOverlay', () => {
         (ui as any).deathOverlaySelectedIndex = 1;
         ui.showDeathOverlay(vi.fn(), vi.fn());
         expect((ui as any).deathOverlaySelectedIndex).toBe(0);
+    });
+
+    it('shows penalty text when penalty is provided', () => {
+        const ui = makeUIManager();
+        ui.showDeathOverlay(vi.fn(), vi.fn(), { bitsLost: 123, expLost: 456 });
+        const penaltyEl = (ui as any).deathPenaltyText as HTMLDivElement;
+        expect(penaltyEl.style.display).toBe('block');
+        expect(penaltyEl.textContent).toBe('You lost: 456 EXP, 123 Bits');
+    });
+
+    it('hides penalty text when no penalty is provided', () => {
+        const ui = makeUIManager();
+        ui.showDeathOverlay(vi.fn(), vi.fn());
+        const penaltyEl = (ui as any).deathPenaltyText as HTMLDivElement;
+        expect(penaltyEl.style.display).toBe('none');
+    });
+
+    it('hides penalty text when both penalty amounts are zero', () => {
+        const ui = makeUIManager();
+        ui.showDeathOverlay(vi.fn(), vi.fn(), { bitsLost: 0, expLost: 0 });
+        const penaltyEl = (ui as any).deathPenaltyText as HTMLDivElement;
+        expect(penaltyEl.style.display).toBe('none');
     });
 });
 
