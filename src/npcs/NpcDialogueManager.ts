@@ -4,6 +4,7 @@ import { resetInputDebounce } from '../ui/UiUtils';
 import { getHint, getKeyboardHint, HintConfigs } from '../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
 import { UIManager } from '../ui/UIManager';
+import { AudioManager } from '../AudioManager';
 
 export class NpcDialogueManager {
     private static instance: NpcDialogueManager; // Singleton
@@ -109,6 +110,7 @@ export class NpcDialogueManager {
 
         this.nameBox.innerText = this.currentNpc.name;
         this.dialogueText.innerText = this.currentNpc.dialogue[this.currentLineIndex];
+        AudioManager.Instance.playDialogueTick();
 
         // Update centralized control hints based on input method if InputManager is available
         if (input) {

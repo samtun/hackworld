@@ -1,5 +1,18 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+vi.mock('../AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playFootstep: vi.fn(),
+            playAttack: vi.fn(),
+            playDamage: vi.fn(),
+            playDeath: vi.fn(),
+        },
+    },
+}));
+
 import { Enemy, MAX_ENEMY_RADIUS, ENEMY_RADIUS_FACTOR } from './Enemy';
+import { AudioManager } from '../AudioManager';
 
 function mockAction() {
     const action: any = {
@@ -211,6 +224,11 @@ describe('Enemy.takeDamage', () => {
         expect((enemy as any).floatingIndicatorManager.spawnDamage).toHaveBeenCalledOnce();
     });
 
+    it('plays the enemy damage sound when hit', () => {
+        enemy.takeDamage(15, false);
+        expect(AudioManager.Instance.playDamage).toHaveBeenCalledWith('enemy');
+    });
+
     it('spawns indicator in critical-hit colour when isCriticalHit is true', () => {
         enemy.takeDamage(15, true);
         const call = (enemy as any).floatingIndicatorManager.spawnDamage.mock.calls[0];
@@ -265,6 +283,11 @@ describe('Enemy.die', () => {
         (enemy as any).isAttacking = true;
         enemy.die();
         expect((enemy as any).isAttacking).toBe(false);
+    });
+
+    it('plays the enemy death sound', () => {
+        enemy.die();
+        expect(AudioManager.Instance.playDeath).toHaveBeenCalledWith('enemy');
     });
 
     it('invokes onDeathFadeStart callback when fade starts', () => {
@@ -397,6 +420,12 @@ describe('Enemy.attack', () => {
         enemy.hasDealtDamageThisAttack = true;
         enemy.attack();
         expect(enemy.hasDealtDamageThisAttack).toBe(false);
+    });
+
+    it('plays the enemy attack sound', () => {
+        const enemy = makeEnemy();
+        enemy.attack();
+        expect(AudioManager.Instance.playAttack).toHaveBeenCalledWith('enemy');
     });
 });
 

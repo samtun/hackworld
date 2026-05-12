@@ -24,6 +24,7 @@ import { BlockShield } from './BlockShield';
 import { CardCollection } from './items/cards/CardCollection';
 import { Album } from './items/cards/Card';
 import { BlobShadow } from './BlobShadow';
+import { AudioManager } from './AudioManager';
 
 enum ActionType {
     Idle = 'Idle',
@@ -205,6 +206,7 @@ export class Player extends BaseMesh {
     private isGrounded: boolean = false;
     private stunTimer: number = 0;
     private jumpCooldownTimer: number = 0;
+    private footstepTimer: number = 0;
 
     // Death state
     isDead: boolean = false;
@@ -862,17 +864,20 @@ export class Player extends BaseMesh {
 
         // Block movement during level-up animation
         if (this.isLevelingUp) {
+            this.footstepTimer = 0;
             this.haltMovement();
             return;
         }
 
         // Block movement during skill usage
         if (this.isUsingSkill) {
+            this.footstepTimer = 0;
             this.haltMovement();
             return;
         }
 
         if (this.stunTimer > 0) {
+            this.footstepTimer = 0;
             this.stunTimer -= dt;
             this.body.velocity.x *= 0.9;
             this.body.velocity.z *= 0.9;
@@ -959,8 +964,13 @@ export class Player extends BaseMesh {
             if (this.input.isJumpPressed() && this.isGrounded && !isNearInteractive && this.jumpCooldownTimer <= 0) {
                 this.body.velocity.y = this.JUMP_FORCE;
                 this.jumpCooldownTimer = 1.0;
+                this.footstepTimer = 0;
+                AudioManager.Instance.playJump();
             }
+
+            this.updateFootstepAudio(dt, inputVector.length() > 0.1);
         } else {
+            this.footstepTimer = 0;
             this.haltMovement();
         }
     }
@@ -974,6 +984,7 @@ export class Player extends BaseMesh {
         // Immediate attack (requires fresh press and not charging)
         if (this.input.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
             this.weapon.attack(this.getWeaponRangeMultiplier());
+            AudioManager.Instance.playAttack('player');
         }
 
         // Charging
@@ -1168,6 +1179,21 @@ export class Player extends BaseMesh {
         this.body.velocity.z = 0;
     }
 
+    private updateFootstepAudio(dt: number, isMoving: boolean): void {
+        if (!isMoving || !this.isGrounded) {
+            this.footstepTimer = 0;
+            return;
+        }
+
+        if (this.footstepTimer <= 0) {
+            AudioManager.Instance.playFootstep('player');
+            this.footstepTimer = 0.34;
+            return;
+        }
+
+        this.footstepTimer -= dt;
+    }
+
     move(position: CANNON.Vec3): void {
         console.log('Moving player to', position);
         this.body.type = CANNON.Body.DYNAMIC;
@@ -1263,6 +1289,7 @@ export class Player extends BaseMesh {
 
         this.hp -= reducedDamage;
         this.floatingIndicatorManager.spawnDamage(this.body.position, reducedDamage, isCriticalHit ? 'rgb(213, 0, 181)' : '#ff2424ff');
+        AudioManager.Instance.playDamage('player');
 
         if (this.hp <= 0) {
             this.hp = 0;
@@ -1287,7 +1314,9 @@ export class Player extends BaseMesh {
      */
     private die(): void {
         this.isDead = true;
+        this.footstepTimer = 0;
         console.log('Player died');
+        AudioManager.Instance.playDeath('player');
 
         this.fadeToAction(ActionType.Death, 0.1);
 
@@ -1366,6 +1395,7 @@ export class Player extends BaseMesh {
         this.isDashing = true;
         this.dashTimer = 0;
         this.dashHitEnemies.clear();
+        AudioManager.Instance.playAttack('player', true);
 
         // Set dash direction to player's facing direction
         const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);

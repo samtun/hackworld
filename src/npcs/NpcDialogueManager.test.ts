@@ -28,10 +28,18 @@ vi.mock('../ui/InputHints', () => ({
 vi.mock('../ui/UiUtils', () => ({
     resetInputDebounce: vi.fn(),
 }));
+vi.mock('../AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playDialogueTick: vi.fn(),
+        },
+    },
+}));
 
 import { NpcDialogueManager } from './NpcDialogueManager';
 import { UIManager } from '../ui/UIManager';
 import { resetInputDebounce } from '../ui/UiUtils';
+import { AudioManager } from '../AudioManager';
 
 function makeDialogueManager(overrides: Record<string, unknown> = {}) {
     const mgr = Object.create((NpcDialogueManager as any).prototype) as any;
@@ -123,6 +131,21 @@ describe('NpcDialogueManager', () => {
             const mgr = makeDialogueManager();
             mgr.show(makeNpc());
             expect(resetInputDebounce).toHaveBeenCalledWith(mgr);
+        });
+
+        it('plays the dialogue tick when a line is shown', () => {
+            const mgr = Object.create((NpcDialogueManager as any).prototype) as NpcDialogueManager;
+            Object.assign(mgr, {
+                currentNpc: makeNpc(['Hello']),
+                currentLineIndex: 0,
+                nameBox: document.createElement('div'),
+                dialogueText: document.createElement('div'),
+                uiManager: UIManager.Instance,
+            });
+
+            (mgr as any).updateDialogue();
+
+            expect(AudioManager.Instance.playDialogueTick).toHaveBeenCalled();
         });
     });
 

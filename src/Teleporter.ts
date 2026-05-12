@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { createParticleShaderMaterial, updateParticleScaleFactor } from './ParticleShaderUtils';
 import { Npc } from './npcs/Npc';
+import { AudioManager } from './AudioManager';
 
 /**
  * Callback type for teleporter interactions
@@ -70,6 +71,7 @@ export class Teleporter extends Npc {
             () => {
                 // Use the static callback when interacted with
                 if (Teleporter.teleporterCallback) {
+                    AudioManager.Instance.playTeleport();
                     Teleporter.teleporterCallback(destination);
                 }
             }

@@ -15,6 +15,7 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 - **Five-stage campaign progression** - Clear increasingly difficult sectors: Network Matrix → Packet Forge → Cipher Null → Security Core → Kernel Terminus
 - **Procedurally generated dungeons** - Obstacle layouts and enemy placements are randomised every time a dungeon stage is entered, keeping exploration fresh
 - **Stage minimap system** - A 240x180 minimap appears in the top-right corner; in dungeon stages it unlocks after picking up the **Grid Tracer** item from one loot room, while the Lobby minimap is always visible
+- **Procedural audio feedback** - Synthesized sound effects cover movement, combat, dialogue, teleporting, boss spawns, stage clears, and each stage has its own background music loop
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
 - **Tech Points** - Gain tech points by using a specific weapon or skill to unlock higher level items and skill variants
 - **Loot Mechanics** - Inventory system with randomized looting mechanics

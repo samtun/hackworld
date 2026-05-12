@@ -9,6 +9,7 @@ import { BlockShield } from '../BlockShield';
 import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
 import { BlobShadow } from '../BlobShadow';
 import type { BreakableBarrel } from '../items/BreakableBarrel';
+import { AudioManager } from '../AudioManager';
 
 /** Maximum downward distance (metres) for the shadow floor raycast. */
 const SHADOW_CAST_DIST = 4.0;
@@ -166,6 +167,7 @@ export class Enemy extends BaseMesh {
     protected attackAnimTimer: number = 0;
     techDropRateFactor: number = DEFAULT_ENEMY_ARCHETYPE.techDropRateFactor;
     protected bodyHalfExtentY: number;
+    private footstepTimer: number = 0;
 
     // Animation system
     protected mixer!: THREE.AnimationMixer;
@@ -528,6 +530,7 @@ export class Enemy extends BaseMesh {
         this.blobShadow.update(this.body.position.x, shadowY, this.body.position.z, shadowNormal);
 
         if (this.isDying || this.isDead || this.isDeathFading) {
+            this.footstepTimer = 0;
             // Keep at death height to prevent falling through floor
             this.body.velocity.y = 0;
             this.body.position.y = this.deathYPosition;
@@ -535,6 +538,7 @@ export class Enemy extends BaseMesh {
 
         // Handle death fade after death animation completes
         if (this.isDeathFading) {
+            this.footstepTimer = 0;
             this.deathFadeTimer += dt;
             const progress = this.deathFadeTimer / this.deathFadeDuration;
 
@@ -565,6 +569,7 @@ export class Enemy extends BaseMesh {
         }
 
         if (this.isDying) {
+            this.footstepTimer = 0;
             this.deathTimer += dt;
 
             // Friction for dying body
@@ -592,6 +597,7 @@ export class Enemy extends BaseMesh {
 
         // Stun Logic
         if (this.stunTimer > 0) {
+            this.footstepTimer = 0;
             this.stunTimer -= dt;
             // Apply friction while stunned so they don't slide forever
             this.body.velocity.x *= 0.9;
@@ -603,6 +609,7 @@ export class Enemy extends BaseMesh {
         // Spawn-inactive window: newly placed enemies stay idle for a brief
         // period so they are fully positioned before engaging.
         if (this.spawnInactiveTimer > 0) {
+            this.footstepTimer = 0;
             this.spawnInactiveTimer -= dt;
             this.body.velocity.x *= 0.9;
             this.body.velocity.z *= 0.9;
@@ -612,6 +619,7 @@ export class Enemy extends BaseMesh {
 
         // AI Logic
         if (this.player.isDead) {
+            this.footstepTimer = 0;
             // Idle friction
             this.body.velocity.x *= 0.9;
             this.body.velocity.z *= 0.9;
@@ -781,6 +789,7 @@ export class Enemy extends BaseMesh {
         }
 
         // Update animations
+        this.updateFootstepAudio(dt, isMoving);
         this.updateAnimations(isMoving);
     }
 
@@ -869,6 +878,7 @@ export class Enemy extends BaseMesh {
         this.hasDealtDamageThisAttack = false;
 
         console.log("Enemy attacks!");
+        AudioManager.Instance.playAttack('enemy');
         this.fadeToAction(EnemyActionType.Attack, 0.1);
     }
 
@@ -932,6 +942,7 @@ export class Enemy extends BaseMesh {
         this.isReturningToBase = false;
         this.returnToBaseTimer = 0;
         this.floatingIndicatorManager.spawnDamage(this.body.position, amount, isCriticalHit ? '#bf860c' : '#fdc650ff');
+        AudioManager.Instance.playDamage('enemy');
 
         // Flash white
         this.setFlashColor(0xffffff);
@@ -956,6 +967,7 @@ export class Enemy extends BaseMesh {
 
     die() {
         this.isDying = true;
+        this.footstepTimer = 0;
         this.deathTimer = 0;
         this.deathYPosition = this.body.position.y;
 
@@ -970,9 +982,25 @@ export class Enemy extends BaseMesh {
         this.body.collisionResponse = false;
         this.body.velocity.x = 0;
         this.body.velocity.z = 0;
+        AudioManager.Instance.playDeath('enemy');
 
         // Play death animation
         this.fadeToAction(EnemyActionType.Death, 0.1);
+    }
+
+    private updateFootstepAudio(dt: number, isMoving: boolean): void {
+        if (!isMoving || this.isAttacking || this.isBlocking) {
+            this.footstepTimer = 0;
+            return;
+        }
+
+        if (this.footstepTimer <= 0) {
+            AudioManager.Instance.playFootstep('enemy');
+            this.footstepTimer = 0.4;
+            return;
+        }
+
+        this.footstepTimer -= dt;
     }
 
     /**

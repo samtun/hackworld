@@ -1,4 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+
+vi.mock('./AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playFootstep: vi.fn(),
+            playJump: vi.fn(),
+            playAttack: vi.fn(),
+            playDamage: vi.fn(),
+            playDeath: vi.fn(),
+        },
+    },
+}));
+
 import { Player } from './Player';
 import { StatType } from './StatType';
 import { CoreItem } from './items/cores/CoreItem';
@@ -9,6 +22,7 @@ import { Tier, TierManager } from './items/TierManager';
 import { CardCollection } from './items/cards/CardCollection';
 import { Album } from './items/cards/Card';
 import { Enemy } from './enemies/Enemy';
+import { AudioManager } from './AudioManager';
 
 /**
  * Create a minimal Player instance for unit testing without instantiating
@@ -445,6 +459,11 @@ describe('Player.takeDamage', () => {
         player.takeDamage(10);
         expect(player.invulnerableTimer).toBe(1.0);
     });
+
+    it('plays the player damage sound when damage is applied', () => {
+        player.takeDamage(10);
+        expect(AudioManager.Instance.playDamage).toHaveBeenCalledWith('player');
+    });
 });
 
 // ─── die / respawn ─────────────────────────────────────────────────────────────
@@ -470,6 +489,12 @@ describe('Player.die', () => {
         // Should not throw
         expect(() => player.takeDamage(9999)).not.toThrow();
         expect(player.isDead).toBe(true);
+    });
+
+    it('plays the player death sound on lethal damage', () => {
+        const player = makePlayer();
+        player.takeDamage(9999);
+        expect(AudioManager.Instance.playDeath).toHaveBeenCalledWith('player');
     });
 });
 
@@ -1462,4 +1487,3 @@ describe('Player.executeLevelUpShockwave', () => {
         expect((dyingBody.entity as any).takeDamage).not.toHaveBeenCalled();
     });
 });
-
