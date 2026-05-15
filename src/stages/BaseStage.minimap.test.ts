@@ -162,7 +162,7 @@ describe('BaseStage lazy enemy spawning', () => {
         expect(stage.spawnEnemy).toHaveBeenCalledTimes(1);
         expect(stage.enemies).toHaveLength(1);
         expect(stage.enemies[0].aggroEnabled).toBe(true);
-        expect(stage.enemies[0].spawnInactiveTimer).toBe(1);
+        expect(stage.enemies[0].spawnInactiveTimer).toBe(0.5);
         expect(stage.roomPendingSpawnData.size).toBe(0);
     });
 

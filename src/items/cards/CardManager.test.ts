@@ -102,6 +102,8 @@ function makeManager(overrides: Record<string, any> = {}): any {
         lastSelectState: false,
         lastCancelState: false,
         currentInputManager: undefined,
+        lightboxVisible: false,
+        lightboxOverlay: document.createElement('div'),
         cardCollection: {
             getTotalCollected: vi.fn().mockReturnValue(0),
             getTotalCards: vi.fn().mockReturnValue(72),

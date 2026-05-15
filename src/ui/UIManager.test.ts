@@ -217,7 +217,7 @@ describe('minimap teleporter marker', () => {
         ).toBe(true);
     });
 
-    it('renders inactive teleporter marker as gray', () => {
+    it('renders inactive teleporter marker in inactive color', () => {
         const { ctx, arcCalls } = makeMockMinimapContext();
         const canvas = document.createElement('canvas');
         (canvas as any).getContext = vi.fn().mockReturnValue(ctx);
@@ -235,11 +235,11 @@ describe('minimap teleporter marker', () => {
 
         ui.update({ id: 'p1', position: { x: 0, z: 0 } } as any, 0.016);
 
-        expect(arcCalls.some(call => call.color === '#8f96a0')).toBe(true);
+        expect(arcCalls.some(call => call.color === '#ffedd0')).toBe(true);
         expect(arcCalls.some(call => call.color === '#ffea00')).toBe(true);
     });
 
-    it('renders active teleporter marker as teal', () => {
+    it('renders active teleporter marker in active color', () => {
         const { ctx, arcCalls } = makeMockMinimapContext();
         const canvas = document.createElement('canvas');
         (canvas as any).getContext = vi.fn().mockReturnValue(ctx);
@@ -257,7 +257,7 @@ describe('minimap teleporter marker', () => {
 
         ui.update({ id: 'p1', position: { x: 0, z: 0 } } as any, 0.016);
 
-        expect(arcCalls.some(call => call.color === '#29bfd3')).toBe(true);
+        expect(arcCalls.some(call => call.color === '#df961f')).toBe(true);
         expect(arcCalls.some(call => call.color === '#ffea00')).toBe(true);
     });
 });
