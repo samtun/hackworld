@@ -34,13 +34,15 @@ import { HealingStation } from './HealingStation';
 
 function makeStation(): any {
     const station = Object.create(HealingStation.prototype) as any;
+    const disposeMesh = vi.fn();
     station.isHealing = false;
     station.mesh = {};
     station.particles = {
         geometry: { dispose: vi.fn() },
         material: { dispose: vi.fn() },
     };
-    station.disposeMesh = vi.fn();
+    station.disposeMesh = disposeMesh;
+    station.disposeMeshMock = disposeMesh;
     return station;
 }
 
@@ -87,7 +89,7 @@ describe('HealingStation audio hooks', () => {
         expect(healingSystemMock.unregister).toHaveBeenCalledWith(station);
         expect(audioManagerMock.stopHealingStationLoop).toHaveBeenCalledOnce();
         expect(scene.remove).toHaveBeenCalledTimes(2);
-        expect((station as any).disposeMesh).toHaveBeenCalledOnce();
+        expect(station.disposeMeshMock).toHaveBeenCalledOnce();
         expect(station.particles.geometry.dispose).toHaveBeenCalledOnce();
         expect((station.particles.material as any).dispose).toHaveBeenCalledOnce();
     });
