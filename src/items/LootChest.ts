@@ -20,6 +20,7 @@ import { PotionDrop } from './potions/PotionDrop';
 import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
 import { MoneyDrop } from './bits/MoneyDrop';
 import { Tier } from './TierManager';
+import { AudioManager } from '../AudioManager';
 
 /** Intermediate descriptor for a chest loot entry. */
 export type ChestLootEntry =
@@ -166,6 +167,7 @@ export class LootChest {
         this.isOpened = true;
         this.prepareLoot(player);
         this.showOpenedLid();
+        AudioManager.Instance.playChestOpen();
         this.spawnDrops(this.lootEntries!);
     }
 

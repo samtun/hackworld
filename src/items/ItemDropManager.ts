@@ -14,6 +14,7 @@ import { MoneyDropStrategy } from './bits/MoneyDropStrategy';
 import { HPPotionDropStrategy, TPPotionDropStrategy } from './potions/PotionDropStrategies';
 import { PotionDrop } from './potions/PotionDrop';
 import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
+import { AudioManager } from '../AudioManager';
 
 export interface ItemDropStrategy {
     // unique identifier for this strategy type
@@ -142,6 +143,7 @@ export class ItemDropManager {
         if (!strategy) return;
 
         strategy.pickup(drop, player);
+        AudioManager.Instance.playItemPickup();
 
         // cleanup visuals and physics body
         drop.cleanup(scene);

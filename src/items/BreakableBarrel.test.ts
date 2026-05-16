@@ -1,5 +1,15 @@
 import { describe, it, expect, vi } from 'vitest';
 
+const audioManagerMock = vi.hoisted(() => ({
+    playBarrelBreak: vi.fn(),
+}));
+
+vi.mock('../AudioManager', () => ({
+    AudioManager: {
+        Instance: audioManagerMock,
+    },
+}));
+
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 vi.mock('three', () => {
@@ -89,17 +99,21 @@ describe('BreakableBarrel', () => {
 
     it('onHit sets isDestroyed to true and removes mesh + body', () => {
         const { barrel, scene, world } = makeBarrel();
+        audioManagerMock.playBarrelBreak.mockClear();
         barrel.onHit();
         expect(barrel.isDestroyed).toBe(true);
+        expect(audioManagerMock.playBarrelBreak).toHaveBeenCalledOnce();
         expect(scene.remove).toHaveBeenCalled();
         expect(world.removeBody).toHaveBeenCalled();
     });
 
     it('onHit is idempotent (second call is ignored)', () => {
         const { barrel, scene } = makeBarrel();
+        audioManagerMock.playBarrelBreak.mockClear();
         barrel.onHit();
         const removeCalls = scene.remove.mock.calls.length;
         barrel.onHit();
+        expect(audioManagerMock.playBarrelBreak).toHaveBeenCalledOnce();
         // Second onHit should not add more scene.remove calls (only fragment cleanup later)
         expect(scene.remove.mock.calls.length).toBe(removeCalls);
     });

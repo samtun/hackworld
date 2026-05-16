@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
+const audioManagerMock = vi.hoisted(() => ({
+    playChestOpen: vi.fn(),
+}));
+
+vi.mock('../AudioManager', () => ({
+    AudioManager: {
+        Instance: audioManagerMock,
+    },
+}));
+
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 vi.mock('three', () => {
@@ -173,6 +183,7 @@ function makePlayer(overrides: Record<string, any> = {}): any {
 describe('LootChest', () => {
     beforeEach(() => {
         addDropMock.mockClear();
+        audioManagerMock.playChestOpen.mockClear();
     });
 
     it('starts not opened', () => {
@@ -200,6 +211,7 @@ describe('LootChest', () => {
         const { chest } = makeChest();
         chest.open(makePlayer());
         expect(chest.isOpened).toBe(true);
+        expect(audioManagerMock.playChestOpen).toHaveBeenCalledOnce();
     });
 
     it('open is idempotent — second call does nothing', () => {
@@ -208,6 +220,7 @@ describe('LootChest', () => {
         chest.open(player);
         const callCount = addDropMock.mock.calls.length;
         chest.open(player);
+        expect(audioManagerMock.playChestOpen).toHaveBeenCalledOnce();
         expect(addDropMock.mock.calls.length).toBe(callCount);
     });
 

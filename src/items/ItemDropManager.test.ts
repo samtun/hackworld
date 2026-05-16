@@ -11,6 +11,16 @@ import { HPPotionDropStrategy, TPPotionDropStrategy } from './potions/PotionDrop
 import { CardCollection } from './cards/CardCollection';
 import { Album } from './cards/Card';
 
+const audioManagerMock = vi.hoisted(() => ({
+    playItemPickup: vi.fn(),
+}));
+
+vi.mock('../AudioManager', () => ({
+    AudioManager: {
+        Instance: audioManagerMock,
+    },
+}));
+
 /** Minimal Enemy stub for strategy tests */
 function makeEnemyStub(overrides: Record<string, unknown> = {}) {
     return {
@@ -293,6 +303,7 @@ describe('WeaponDropStrategy.pickup', () => {
 describe('ItemDropManager.pickup', () => {
     beforeEach(() => {
         (ItemDropManager as any).instance = undefined;
+        audioManagerMock.playItemPickup.mockClear();
     });
 
     it('delegates to strategy.pickup and removes the drop from storage', () => {
@@ -310,6 +321,7 @@ describe('ItemDropManager.pickup', () => {
         mgr.pickup(ItemDropType.MONEY, {} as any, mockDrop as any, player);
 
         // Cleanup should have been called
+        expect(audioManagerMock.playItemPickup).toHaveBeenCalledOnce();
         expect(mockDrop.cleanup).toHaveBeenCalled();
         // Drop should be removed
         expect((mgr as any).drops.get(ItemDropType.MONEY)).toHaveLength(0);
