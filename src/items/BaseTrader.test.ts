@@ -48,6 +48,8 @@ import { EquippableItem } from './EquippableItem';
 import { TraderPanel } from './TraderPanel';
 import { AudioManager } from '../AudioManager';
 
+// Every suite in this file shares the same singleton-style mocks, so reset
+// them for each test case before assertions run.
 beforeEach(() => {
     vi.clearAllMocks();
 });

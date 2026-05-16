@@ -28,9 +28,10 @@ interface StageMusicProfile {
 
 /**
  * Transpose a frequency by a semitone offset using equal temperament tuning.
- * Rounding keeps the generated loop values stable and readable.
+ * Rounding prevents floating-point drift from accumulating across repeated
+ * loop generation and keeps the resulting values deterministic for tests.
  */
-function transposeFrequency(frequency: number, semitones: number): number {
+export function transposeFrequency(frequency: number, semitones: number): number {
     if (semitones === 0) return frequency;
     return Number((frequency * Math.pow(SEMITONE_RATIO, semitones)).toFixed(2));
 }
@@ -39,7 +40,7 @@ function transposeFrequency(frequency: number, semitones: number): number {
  * Turn one short motif into a longer phrase by transposing it for the current
  * cycle and mirroring the notes into a palindrome-style variation.
  */
-function buildMusicVariation(basePhrase: MusicPhrase, cycle: number): number[] {
+export function buildMusicVariation(basePhrase: MusicPhrase, cycle: number): number[] {
     const semitones = MUSIC_VARIATION_PATTERN[cycle % MUSIC_VARIATION_PATTERN.length];
     const forward = basePhrase.map((frequency) => transposeFrequency(frequency, semitones));
     // Alternating which edge note gets dropped avoids a duplicated turnaround
@@ -55,7 +56,7 @@ function buildMusicVariation(basePhrase: MusicPhrase, cycle: number): number[] {
  * Expand a compact motif into a loop that lasts at least one minute before
  * repeating by chaining successive phrase variations together.
  */
-function buildLongMusicLoop(basePhrase: MusicPhrase, pulseIntervalMs: number): number[] {
+export function buildLongMusicLoop(basePhrase: MusicPhrase, pulseIntervalMs: number): number[] {
     const requiredNotes = Math.ceil(MIN_STAGE_MUSIC_LOOP_DURATION_MS / pulseIntervalMs);
     const sequence: number[] = [];
     let cycle = 0;
