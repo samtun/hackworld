@@ -23,6 +23,23 @@ describe('STAGE_MUSIC', () => {
             });
         });
     });
+
+    it('gives each dungeon stage a distinct opening motif', () => {
+        const stageIds = ['networkMatrix', 'packetForge', 'cipherNull', 'securityCore', 'kernelTerminus'] as const;
+        const motifs = stageIds.map((stageId) => STAGE_MUSIC[stageId].pulseFrequencies.slice(0, 5).join(','));
+
+        expect(new Set(motifs).size).toBe(stageIds.length);
+    });
+
+    it('ramps up the saw-like synth character from early to late stages', () => {
+        expect(STAGE_MUSIC.networkMatrix).toMatchObject({ pulseType: 'square', harmonyType: 'triangle' });
+        expect(STAGE_MUSIC.packetForge).toMatchObject({ pulseType: 'square', harmonyType: 'sawtooth' });
+        expect(STAGE_MUSIC.cipherNull).toMatchObject({ pulseType: 'sawtooth', harmonyType: 'triangle' });
+        expect(STAGE_MUSIC.securityCore).toMatchObject({ pulseType: 'sawtooth', harmonyType: 'sawtooth' });
+        expect(STAGE_MUSIC.kernelTerminus).toMatchObject({ pulseType: 'sawtooth', harmonyType: 'sawtooth' });
+        expect(STAGE_MUSIC.kernelTerminus.pulseGain).toBeGreaterThan(STAGE_MUSIC.networkMatrix.pulseGain);
+        expect(STAGE_MUSIC.kernelTerminus.harmonyGain).toBeGreaterThan(STAGE_MUSIC.packetForge.harmonyGain);
+    });
 });
 
 describe('music loop helpers', () => {
