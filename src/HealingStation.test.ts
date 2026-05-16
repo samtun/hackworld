@@ -79,6 +79,15 @@ describe('HealingStation audio hooks', () => {
         expect(station.isHealing).toBe(false);
     });
 
+    it('does not call audio methods when healing is already inactive', () => {
+        const station = makeStation();
+
+        station.setHealing(false);
+
+        expect(audioManagerMock.startHealingStationLoop).not.toHaveBeenCalled();
+        expect(audioManagerMock.stopHealingStationLoop).not.toHaveBeenCalled();
+    });
+
     it('stops the healing loop during cleanup when the station is active', () => {
         const station = makeStation();
         station.isHealing = true;

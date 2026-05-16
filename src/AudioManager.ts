@@ -436,9 +436,10 @@ export class AudioManager {
 
     private startHealingStationLoopIfPossible(): void {
         const context = this.ensureAudioContext();
-        if (!context || context.state !== 'running' || this.activeHealingStationCount <= 0 || this.healingStationLoopInterval !== null) {
-            return;
-        }
+        if (!context) return;
+        if (context.state !== 'running') return;
+        if (this.activeHealingStationCount <= 0) return;
+        if (this.healingStationLoopInterval !== null) return;
 
         let pulseIndex = 0;
         const playPulse = () => {
