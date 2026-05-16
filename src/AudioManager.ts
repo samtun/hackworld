@@ -2,10 +2,77 @@ import * as Tone from 'tone';
 
 type FootstepSource = 'player' | 'enemy';
 type CombatSource = 'player' | 'enemy';
+type TriggerDuration = string | number;
+type TriggerNote = string | number;
 
 type TriggerableSynth = {
-    triggerAttackRelease: (...args: any[]) => unknown;
+    triggerAttackRelease: (note: TriggerNote, duration: TriggerDuration, time?: number, velocity?: number) => void;
 };
+
+const MUSIC_HARMONY_DELAY_SECONDS = 0.08;
+
+const AUDIO_VELOCITY = {
+    footsteps: {
+        playerNoise: 0.18,
+        enemyNoise: 0.12,
+        playerTone: 0.38,
+        enemyTone: 0.34,
+    },
+    jump: {
+        primary: 0.72,
+        accent: 0.38,
+    },
+    attack: {
+        chargedNoise: 0.34,
+        chargedPrimary: 0.82,
+        chargedAccent: 0.58,
+        playerNoise: 0.2,
+        playerPrimary: 0.78,
+        playerAccent: 0.42,
+        enemyNoise: 0.22,
+        enemyPrimary: 0.74,
+        enemyAccent: 0.4,
+    },
+    damage: {
+        playerNoise: 0.26,
+        enemyNoise: 0.18,
+        playerTone: 0.52,
+        enemyTone: 0.5,
+    },
+    death: {
+        playerNoise: 0.32,
+        enemyNoise: 0.28,
+        playerPrimary: 0.6,
+        playerAccent: 0.5,
+        enemyPrimary: 0.56,
+        enemyAccent: 0.44,
+    },
+    ui: {
+        dialogue: 0.35,
+        teleportPrimary: 0.46,
+        teleportAccent: 0.4,
+        teleportPad: 0.24,
+        stageClearPrimary: 0.4,
+        stageClearSecondary: 0.38,
+        stageClearTertiary: 0.36,
+        stageClearPad: 0.26,
+    },
+    bossSpawn: {
+        noise: 0.3,
+        primary: 0.76,
+        accent: 0.5,
+    },
+    breakables: {
+        barrelNoise: 0.26,
+        barrelPrimary: 0.72,
+        barrelAccent: 0.42,
+        pickupPrimary: 0.65,
+        pickupAccent: 0.24,
+        chestPrimary: 0.56,
+        chestSecondary: 0.48,
+        chestAccent: 0.42,
+    },
+} as const;
 
 interface StageMusicProfile {
     leadNotes: string[];
@@ -154,100 +221,104 @@ export class AudioManager {
         const time = this.getAudioTime();
         if (time === null) return;
 
-        this.impactNoiseSynth?.triggerAttackRelease('32n', time, source === 'player' ? 0.18 : 0.12);
+        this.impactNoiseSynth?.triggerAttackRelease(
+            '32n',
+            time,
+            source === 'player' ? AUDIO_VELOCITY.footsteps.playerNoise : AUDIO_VELOCITY.footsteps.enemyNoise,
+        );
         if (source === 'player') {
-            this.playerSynth?.triggerAttackRelease('G2', '32n', time, 0.38);
+            this.playerSynth?.triggerAttackRelease('G2', '32n', time, AUDIO_VELOCITY.footsteps.playerTone);
             return;
         }
 
-        this.enemySynth?.triggerAttackRelease('D2', '32n', time, 0.34);
+        this.enemySynth?.triggerAttackRelease('D2', '32n', time, AUDIO_VELOCITY.footsteps.enemyTone);
     }
 
     playJump(): void {
-        this.triggerSynth(this.playerSynth, 'C4', '8n', 0, 0.72);
-        this.triggerSynth(this.playerImpactSynth, 'G4', '16n', 0.05, 0.38);
+        this.triggerSynth(this.playerSynth, 'C4', '8n', 0, AUDIO_VELOCITY.jump.primary);
+        this.triggerSynth(this.playerImpactSynth, 'G4', '16n', 0.05, AUDIO_VELOCITY.jump.accent);
     }
 
     playAttack(source: CombatSource, charged: boolean = false): void {
         if (charged) {
-            this.triggerNoise('16n', 0, 0.34);
-            this.triggerSynth(this.playerImpactSynth, 'C3', '8n', 0, 0.82);
-            this.triggerSynth(this.playerSynth, 'G4', '8n', 0.04, 0.58);
+            this.triggerNoise('16n', 0, AUDIO_VELOCITY.attack.chargedNoise);
+            this.triggerSynth(this.playerImpactSynth, 'C3', '8n', 0, AUDIO_VELOCITY.attack.chargedPrimary);
+            this.triggerSynth(this.playerSynth, 'G4', '8n', 0.04, AUDIO_VELOCITY.attack.chargedAccent);
             return;
         }
 
         if (source === 'player') {
-            this.triggerNoise('32n', 0, 0.2);
-            this.triggerSynth(this.playerSynth, 'E5', '16n', 0, 0.78);
-            this.triggerSynth(this.playerImpactSynth, 'B4', '32n', 0.03, 0.42);
+            this.triggerNoise('32n', 0, AUDIO_VELOCITY.attack.playerNoise);
+            this.triggerSynth(this.playerSynth, 'E5', '16n', 0, AUDIO_VELOCITY.attack.playerPrimary);
+            this.triggerSynth(this.playerImpactSynth, 'B4', '32n', 0.03, AUDIO_VELOCITY.attack.playerAccent);
             return;
         }
 
-        this.triggerNoise('16n', 0, 0.22);
-        this.triggerSynth(this.enemySynth, 'G2', '8n', 0, 0.74);
-        this.triggerSynth(this.enemyImpactSynth, 'C2', '16n', 0.02, 0.4);
+        this.triggerNoise('16n', 0, AUDIO_VELOCITY.attack.enemyNoise);
+        this.triggerSynth(this.enemySynth, 'G2', '8n', 0, AUDIO_VELOCITY.attack.enemyPrimary);
+        this.triggerSynth(this.enemyImpactSynth, 'C2', '16n', 0.02, AUDIO_VELOCITY.attack.enemyAccent);
     }
 
     playDamage(source: CombatSource): void {
-        this.triggerNoise('16n', 0, source === 'player' ? 0.26 : 0.18);
+        this.triggerNoise('16n', 0, source === 'player' ? AUDIO_VELOCITY.damage.playerNoise : AUDIO_VELOCITY.damage.enemyNoise);
         if (source === 'player') {
-            this.triggerSynth(this.playerImpactSynth, 'A4', '16n', 0, 0.52);
+            this.triggerSynth(this.playerImpactSynth, 'A4', '16n', 0, AUDIO_VELOCITY.damage.playerTone);
             return;
         }
 
-        this.triggerSynth(this.enemyImpactSynth, 'E2', '8n', 0, 0.5);
+        this.triggerSynth(this.enemyImpactSynth, 'E2', '8n', 0, AUDIO_VELOCITY.damage.enemyTone);
     }
 
     playDeath(source: CombatSource): void {
-        this.triggerNoise('8n', 0, source === 'player' ? 0.32 : 0.28);
+        this.triggerNoise('8n', 0, source === 'player' ? AUDIO_VELOCITY.death.playerNoise : AUDIO_VELOCITY.death.enemyNoise);
         if (source === 'player') {
-            this.triggerSynth(this.playerImpactSynth, 'C4', '4n', 0, 0.6);
-            this.triggerSynth(this.playerSynth, 'A2', '4n', 0.06, 0.5);
+            this.triggerSynth(this.playerImpactSynth, 'C4', '4n', 0, AUDIO_VELOCITY.death.playerPrimary);
+            this.triggerSynth(this.playerSynth, 'A2', '4n', 0.06, AUDIO_VELOCITY.death.playerAccent);
             return;
         }
 
-        this.triggerSynth(this.enemyImpactSynth, 'C2', '4n', 0, 0.56);
-        this.triggerSynth(this.enemySynth, 'F1', '4n', 0.04, 0.44);
+        this.triggerSynth(this.enemyImpactSynth, 'C2', '4n', 0, AUDIO_VELOCITY.death.enemyPrimary);
+        this.triggerSynth(this.enemySynth, 'F1', '4n', 0.04, AUDIO_VELOCITY.death.enemyAccent);
     }
 
     playDialogueTick(): void {
-        this.triggerSynth(this.uiSynth, 'E6', '32n', 0, 0.35);
+        this.triggerSynth(this.uiSynth, 'E6', '32n', 0, AUDIO_VELOCITY.ui.dialogue);
     }
 
     playTeleport(): void {
-        this.triggerSynth(this.uiSynth, 'C5', '16n', 0, 0.46);
-        this.triggerSynth(this.uiSynth, 'G5', '16n', 0.06, 0.4);
-        this.triggerSynth(this.musicPadSynth, 'C6', '8n', 0.12, 0.24);
+        this.triggerSynth(this.uiSynth, 'C5', '16n', 0, AUDIO_VELOCITY.ui.teleportPrimary);
+        this.triggerSynth(this.uiSynth, 'G5', '16n', 0.06, AUDIO_VELOCITY.ui.teleportAccent);
+        this.triggerSynth(this.musicPadSynth, 'C6', '8n', 0.12, AUDIO_VELOCITY.ui.teleportPad);
     }
 
     playBossSpawn(): void {
-        this.triggerNoise('8n', 0, 0.3);
-        this.triggerSynth(this.enemySynth, 'D2', '2n', 0, 0.76);
-        this.triggerSynth(this.enemyImpactSynth, 'A1', '4n', 0.08, 0.5);
+        this.triggerNoise('8n', 0, AUDIO_VELOCITY.bossSpawn.noise);
+        this.triggerSynth(this.enemySynth, 'D2', '2n', 0, AUDIO_VELOCITY.bossSpawn.primary);
+        this.triggerSynth(this.enemyImpactSynth, 'A1', '4n', 0.08, AUDIO_VELOCITY.bossSpawn.accent);
     }
 
     playStageCleared(): void {
-        this.triggerSynth(this.uiSynth, 'C5', '16n', 0, 0.4);
-        this.triggerSynth(this.uiSynth, 'E5', '16n', 0.08, 0.38);
-        this.triggerSynth(this.uiSynth, 'G5', '16n', 0.16, 0.36);
-        this.triggerSynth(this.musicPadSynth, 'C6', '8n', 0.24, 0.26);
+        this.triggerSynth(this.uiSynth, 'C5', '16n', 0, AUDIO_VELOCITY.ui.stageClearPrimary);
+        this.triggerSynth(this.uiSynth, 'E5', '16n', 0.08, AUDIO_VELOCITY.ui.stageClearSecondary);
+        this.triggerSynth(this.uiSynth, 'G5', '16n', 0.16, AUDIO_VELOCITY.ui.stageClearTertiary);
+        this.triggerSynth(this.musicPadSynth, 'C6', '8n', 0.24, AUDIO_VELOCITY.ui.stageClearPad);
     }
 
     playBarrelBreak(): void {
-        this.triggerNoise('16n', 0, 0.26);
-        this.triggerSynth(this.barrelSynth, 'C2', '8n', 0, 0.72);
-        this.triggerSynth(this.barrelSynth, 'G1', '16n', 0.04, 0.42);
+        this.triggerNoise('16n', 0, AUDIO_VELOCITY.breakables.barrelNoise);
+        this.triggerSynth(this.barrelSynth, 'C2', '8n', 0, AUDIO_VELOCITY.breakables.barrelPrimary);
+        this.triggerSynth(this.barrelSynth, 'G1', '16n', 0.04, AUDIO_VELOCITY.breakables.barrelAccent);
     }
 
     playItemPickup(): void {
-        this.triggerSynth(this.pickupSynth, 'C5', '16n', 0, 0.65);
-        this.triggerSynth(this.uiSynth, 'G5', '32n', 0.05, 0.24);
+        this.triggerSynth(this.pickupSynth, 'C5', '16n', 0, AUDIO_VELOCITY.breakables.pickupPrimary);
+        this.triggerSynth(this.uiSynth, 'G5', '32n', 0.05, AUDIO_VELOCITY.breakables.pickupAccent);
     }
 
     playChestOpen(): void {
-        this.triggerSynth(this.chestSynth, 'C4', '16n', 0, 0.56);
-        this.triggerSynth(this.chestSynth, 'E4', '16n', 0.06, 0.48);
-        this.triggerSynth(this.chestSynth, 'A4', '8n', 0.12, 0.42);
+        this.triggerSynth(this.chestSynth, 'C4', '16n', 0, AUDIO_VELOCITY.breakables.chestPrimary);
+        this.triggerSynth(this.chestSynth, 'E4', '16n', 0.06, AUDIO_VELOCITY.breakables.chestSecondary);
+        this.triggerSynth(this.chestSynth, 'A4', '8n', 0.12, AUDIO_VELOCITY.breakables.chestAccent);
     }
 
     private registerUnlockHandlers(): void {
@@ -442,7 +513,12 @@ export class AudioManager {
 
             this.musicLeadSynth?.triggerAttackRelease(note, profile.leadDuration, now, profile.leadVelocity);
             if (harmonyNote !== undefined) {
-                this.musicPadSynth?.triggerAttackRelease(harmonyNote, profile.harmonyDuration, now + 0.08, profile.harmonyVelocity);
+                this.musicPadSynth?.triggerAttackRelease(
+                    harmonyNote,
+                    profile.harmonyDuration,
+                    now + MUSIC_HARMONY_DELAY_SECONDS,
+                    profile.harmonyVelocity,
+                );
             }
 
             pulseIndex++;
@@ -473,8 +549,8 @@ export class AudioManager {
 
     private triggerSynth(
         synth: TriggerableSynth | null,
-        note: string,
-        duration: string,
+        note: TriggerNote,
+        duration: TriggerDuration,
         delay: number,
         velocity: number,
     ): void {
@@ -484,7 +560,7 @@ export class AudioManager {
         synth.triggerAttackRelease(note, duration, time, velocity);
     }
 
-    private triggerNoise(duration: string, delay: number, velocity: number): void {
+    private triggerNoise(duration: TriggerDuration, delay: number, velocity: number): void {
         const time = this.getAudioTime(delay);
         if (time === null || this.impactNoiseSynth === null) return;
 
