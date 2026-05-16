@@ -473,6 +473,50 @@ describe('Player.die', () => {
     });
 });
 
+// ─── applyDeathPenalty ────────────────────────────────────────────────────────
+
+describe('Player.applyDeathPenalty', () => {
+    it('deducts 10% of current bits', () => {
+        const player = makePlayer({ bits: 1000 } as any);
+        player.applyDeathPenalty();
+        expect(player.bits).toBe(900);
+    });
+
+    it('deducts 10% of expRequired from exp', () => {
+        // expRequired=350, so penalty = floor(350 * 0.1) = 35
+        const player = makePlayer({ exp: 200, expRequired: 350 } as any);
+        player.applyDeathPenalty();
+        expect(player.exp).toBe(165);
+    });
+
+    it('returns the actual amounts deducted', () => {
+        const player = makePlayer({ bits: 500, expRequired: 400, exp: 100 } as any);
+        const { bitsLost, expLost } = player.applyDeathPenalty();
+        expect(bitsLost).toBe(50);
+        expect(expLost).toBe(40);
+    });
+
+    it('returns zero bitsLost when bits is less than 10', () => {
+        // floor(9 * 0.1) = floor(0.9) = 0, so no bits are deducted
+        const player = makePlayer({ bits: 9 } as any);
+        const { bitsLost } = player.applyDeathPenalty();
+        expect(bitsLost).toBe(0);
+        expect(player.bits).toBe(9);
+    });
+
+    it('clamps exp to 0 when penalty exceeds current exp', () => {
+        const player = makePlayer({ exp: 5, expRequired: 350 } as any);
+        player.applyDeathPenalty();
+        expect(player.exp).toBe(0);
+    });
+
+    it('returns zero bitsLost when bits is 0', () => {
+        const player = makePlayer({ bits: 0 } as any);
+        const { bitsLost } = player.applyDeathPenalty();
+        expect(bitsLost).toBe(0);
+    });
+});
+
 describe('Player.respawn', () => {
     it('revives the player', () => {
         const player = makePlayer({ isDead: true, hp: 0 } as any);

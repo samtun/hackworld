@@ -55,7 +55,8 @@ export class Teleporter extends Npc {
         physicsMaterial: CANNON.Material,
         position: CANNON.Vec3,
         destination: string,
-        startActive: boolean = true
+        startActive: boolean = true,
+        hint: string = 'Enter'
     ) {
         // Call Npc constructor with teleporter-specific settings
         super(
@@ -64,7 +65,7 @@ export class Teleporter extends Npc {
             physicsMaterial,
             'models/teleporter.glb',
             `Teleporter_${destination}`,
-            'Enter',
+            hint,
             position,
             [], // No dialogue for teleporters
             () => {

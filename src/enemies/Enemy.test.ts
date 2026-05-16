@@ -914,13 +914,13 @@ describe('Enemy.update – attack timer', () => {
 // ─── Enemy radius corridor cap ────────────────────────────────────────────────
 
 describe('Enemy radius corridor cap', () => {
-    it('MAX_ENEMY_RADIUS is corridor half-width minus buffer (1.4 m)', () => {
-        expect(MAX_ENEMY_RADIUS).toBe(1.4);
+    it('MAX_ENEMY_RADIUS is inner corridor half-width minus buffer (0.9 m)', () => {
+        expect(MAX_ENEMY_RADIUS).toBe(0.9);
     });
 
     it('radius is clamped to MAX_ENEMY_RADIUS when enemy size would exceed it', () => {
-        // Large size → uncapped radius would be 3.5 * 0.326 ≈ 1.141, still under 1.4
-        // Use an extreme size to confirm capping: 5.0 * 0.326 = 1.63 > 1.4
+        // Large size → uncapped radius would be 3.5 * 0.326 ≈ 1.141, still over 0.9
+        // Use an extreme size to confirm capping: 5.0 * 0.326 = 1.63 > 0.9
         const largeSize = 5.0;
         const uncappedRadius = largeSize * ENEMY_RADIUS_FACTOR;
         const cappedRadius = Math.min(uncappedRadius, MAX_ENEMY_RADIUS);

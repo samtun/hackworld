@@ -1305,6 +1305,23 @@ export class Player extends BaseMesh {
     }
 
     /**
+     * Apply death penalty: subtract 10% of current bits and 10% of expRequired from exp.
+     * Returns the actual amounts deducted so the caller can display floating indicators.
+     * Should be called at the moment of death (before the death screen is shown) so
+     * players cannot quit to avoid the punishment.
+     */
+    applyDeathPenalty(): { bitsLost: number; expLost: number } {
+        const bitsLost = Math.floor(this.bits * 0.1);
+        const expLost = Math.floor(this.expRequired * 0.1);
+
+        this.bits = Math.max(0, this.bits - bitsLost);
+        this.exp = Math.max(0, this.exp - expLost);
+
+        console.log(`Death penalty applied: -${bitsLost} Bits, -${expLost} EXP`);
+        return { bitsLost, expLost };
+    }
+
+    /**
      * Respawn the player at specified position
      */
     respawn(position: CANNON.Vec3): void {

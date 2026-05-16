@@ -327,49 +327,49 @@ describe('InventoryManager', () => {
         it('shows α for weapon tech at 0 (below β threshold)', () => {
             const player = makePlayer([], { [WeaponType.SWORD]: 0 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('0 - α');
+            expect(html).toContain('0 | <span style="font-style:italic;color:#BBB;">α</span>');
         });
 
         it('shows β for weapon tech at 120 (β threshold)', () => {
             const player = makePlayer([], { [WeaponType.SWORD]: 120 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('120 - β');
+            expect(html).toContain('120 | <span style="font-style:italic;color:#BBB;">β</span>');
         });
 
         it('shows γ for weapon tech at 460 (γ threshold)', () => {
             const player = makePlayer([], { [WeaponType.DUAL_BLADE]: 460 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('460 - γ');
+            expect(html).toContain('460 | <span style="font-style:italic;color:#BBB;">γ</span>');
         });
 
         it('shows ω for weapon tech at max level threshold', () => {
             const player = makePlayer([], { [WeaponType.HAMMER]: 2500 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('2500 - ω');
+            expect(html).toContain('2500 | <span style="font-style:italic;color:#BBB;">ω</span>');
         });
 
         it('shows Stable for skill tech below 120', () => {
             const player = makePlayer([], {}, { [SkillTechType.RECOVERY]: 0 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('0 - Stable');
+            expect(html).toContain('0 | <span style="font-style:italic;color:#BBB;">Stable</span>');
         });
 
         it('shows Maintained for skill tech at 121', () => {
             const player = makePlayer([], {}, { [SkillTechType.BLAST]: 121 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('121 - Maintained');
+            expect(html).toContain('121 | <span style="font-style:italic;color:#BBB;">Maintained</span>');
         });
 
         it('shows ZeroDay for skill tech at 520', () => {
             const player = makePlayer([], {}, { [SkillTechType.RANGED]: 520 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('520 - ZeroDay');
+            expect(html).toContain('520 | <span style="font-style:italic;color:#BBB;">ZeroDay</span>');
         });
 
         it('shows Leet for skill tech at 1200', () => {
             const player = makePlayer([], {}, { [SkillTechType.RANGED]: 1200 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('1200 - Leet');
+            expect(html).toContain('1200 | <span style="font-style:italic;color:#BBB;">Leet</span>');
         });
     });
 });
