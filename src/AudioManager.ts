@@ -3,78 +3,96 @@ type FootstepSource = 'player' | 'enemy';
 type CombatSource = 'player' | 'enemy';
 
 interface StageMusicProfile {
-    bassFrequency: number;
-    padFrequency: number;
     pulseFrequencies: number[];
+    harmonyFrequencies?: number[];
     pulseIntervalMs: number;
-    bassType: OscillatorType;
-    padType: OscillatorType;
     pulseType: OscillatorType;
+    harmonyType: OscillatorType;
+    pulseDuration: number;
+    pulseGain: number;
+    harmonyGain: number;
 }
 
 const STAGE_MUSIC: Record<string, StageMusicProfile> = {
-    lobby: {
-        bassFrequency: 110,
-        padFrequency: 220,
-        pulseFrequencies: [220, 277.18, 329.63, 440],
-        pulseIntervalMs: 340,
-        bassType: 'sine',
-        padType: 'triangle',
+    startScreen: {
+        pulseFrequencies: [174.61, 220, 261.63, 293.66],
+        harmonyFrequencies: [261.63, 329.63, 349.23, 392],
+        pulseIntervalMs: 420,
         pulseType: 'triangle',
+        harmonyType: 'sine',
+        pulseDuration: 0.34,
+        pulseGain: 0.065,
+        harmonyGain: 0.03,
+    },
+    lobby: {
+        pulseFrequencies: [220, 277.18, 329.63, 440],
+        harmonyFrequencies: [329.63, 369.99, 440, 554.37],
+        pulseIntervalMs: 340,
+        pulseType: 'triangle',
+        harmonyType: 'sine',
+        pulseDuration: 0.22,
+        pulseGain: 0.07,
+        harmonyGain: 0.028,
     },
     networkMatrix: {
-        bassFrequency: 98,
-        padFrequency: 196,
         pulseFrequencies: [196, 220, 261.63, 293.66],
+        harmonyFrequencies: [293.66, 329.63, 392, 440],
         pulseIntervalMs: 300,
-        bassType: 'triangle',
-        padType: 'sine',
         pulseType: 'square',
+        harmonyType: 'triangle',
+        pulseDuration: 0.18,
+        pulseGain: 0.072,
+        harmonyGain: 0.024,
     },
     packetForge: {
-        bassFrequency: 123.47,
-        padFrequency: 246.94,
         pulseFrequencies: [246.94, 311.13, 369.99, 311.13],
+        harmonyFrequencies: [369.99, 415.3, 466.16, 415.3],
         pulseIntervalMs: 280,
-        bassType: 'sawtooth',
-        padType: 'triangle',
         pulseType: 'square',
+        harmonyType: 'triangle',
+        pulseDuration: 0.16,
+        pulseGain: 0.075,
+        harmonyGain: 0.022,
     },
     cipherNull: {
-        bassFrequency: 82.41,
-        padFrequency: 164.81,
         pulseFrequencies: [164.81, 196, 233.08, 174.61],
+        harmonyFrequencies: [246.94, 261.63, 311.13, 261.63],
         pulseIntervalMs: 320,
-        bassType: 'triangle',
-        padType: 'sine',
         pulseType: 'triangle',
+        harmonyType: 'sine',
+        pulseDuration: 0.2,
+        pulseGain: 0.068,
+        harmonyGain: 0.024,
     },
     securityCore: {
-        bassFrequency: 73.42,
-        padFrequency: 146.83,
         pulseFrequencies: [146.83, 196, 220, 293.66],
+        harmonyFrequencies: [220, 293.66, 329.63, 392],
         pulseIntervalMs: 260,
-        bassType: 'sawtooth',
-        padType: 'triangle',
         pulseType: 'square',
+        harmonyType: 'triangle',
+        pulseDuration: 0.17,
+        pulseGain: 0.078,
+        harmonyGain: 0.022,
     },
     kernelTerminus: {
-        bassFrequency: 65.41,
-        padFrequency: 130.81,
         pulseFrequencies: [130.81, 174.61, 196, 261.63],
+        harmonyFrequencies: [196, 233.08, 261.63, 349.23],
         pulseIntervalMs: 240,
-        bassType: 'square',
-        padType: 'triangle',
         pulseType: 'sawtooth',
+        harmonyType: 'triangle',
+        pulseDuration: 0.16,
+        pulseGain: 0.082,
+        harmonyGain: 0.022,
     },
     gameTest: {
-        bassFrequency: 110,
-        padFrequency: 220,
         pulseFrequencies: [220, 246.94, 293.66, 369.99],
+        harmonyFrequencies: [293.66, 329.63, 392, 466.16],
         pulseIntervalMs: 260,
-        bassType: 'triangle',
-        padType: 'triangle',
         pulseType: 'square',
+        harmonyType: 'triangle',
+        pulseDuration: 0.18,
+        pulseGain: 0.076,
+        harmonyGain: 0.025,
     },
 };
 
@@ -90,7 +108,6 @@ export class AudioManager {
     private currentStageId: string | null = null;
     private playingStageId: string | null = null;
     private musicPulseInterval: number | null = null;
-    private musicOscillators: OscillatorNode[] = [];
 
     public static get Instance(): AudioManager {
         return this.instance || (this.instance = new this());
@@ -123,59 +140,76 @@ export class AudioManager {
     }
 
     playFootstep(source: FootstepSource): void {
-        const gain = source === 'player' ? 0.03 : 0.02;
-        const frequency = source === 'player' ? 72 : 58;
-        this.playNoise(0.07, gain, 1200, 140, 0);
-        this.playTone(frequency, 0.05, 'triangle', gain, 0.0001);
+        const gain = source === 'player' ? 0.055 : 0.042;
+        const frequency = source === 'player' ? 92 : 64;
+        this.playNoise(0.07, gain, source === 'player' ? 1500 : 900, source === 'player' ? 180 : 110, 0);
+        this.playTone(frequency, 0.06, source === 'player' ? 'triangle' : 'sine', gain, 0.0001);
     }
 
     playJump(): void {
-        this.playTone(220, 0.18, 'triangle', 0.035, 0.0001, 0, 660);
+        this.playTone(260, 0.2, 'triangle', 0.07, 0.0001, 0, 720);
+        this.playTone(520, 0.08, 'sine', 0.03, 0.0001, 0.03, 780);
     }
 
     playAttack(source: CombatSource, charged: boolean = false): void {
-        const baseGain = source === 'player' ? 0.05 : 0.035;
-        const startFrequency = charged ? 140 : source === 'player' ? 210 : 160;
-        const endFrequency = charged ? 420 : source === 'player' ? 120 : 90;
-        this.playNoise(charged ? 0.16 : 0.1, baseGain, 3000, 250, 0);
-        this.playTone(startFrequency, charged ? 0.18 : 0.12, charged ? 'sawtooth' : 'square', baseGain, 0.0001, 0, endFrequency);
+        if (charged) {
+            this.playNoise(0.18, 0.11, 3600, 260, 0);
+            this.playTone(180, 0.22, 'sawtooth', 0.12, 0.0001, 0, 520);
+            this.playTone(540, 0.14, 'triangle', 0.055, 0.0001, 0.03, 860);
+            return;
+        }
+
+        if (source === 'player') {
+            this.playNoise(0.07, 0.07, 4200, 420, 0);
+            this.playTone(540, 0.09, 'square', 0.1, 0.0001, 0, 260);
+            this.playTone(880, 0.05, 'triangle', 0.038, 0.0001, 0.02, 660);
+            return;
+        }
+
+        this.playNoise(0.12, 0.08, 1000, 90, 0);
+        this.playTone(150, 0.16, 'sawtooth', 0.09, 0.0001, 0, 96);
+        this.playTone(90, 0.12, 'square', 0.045, 0.0001, 0.02, 70);
     }
 
     playDamage(source: CombatSource): void {
-        const frequency = source === 'player' ? 170 : 130;
-        const gain = source === 'player' ? 0.05 : 0.035;
-        this.playNoise(0.12, gain, 1800, 180, 0);
-        this.playTone(frequency, 0.14, 'square', gain, 0.0001, 0, frequency * 0.55);
+        if (source === 'player') {
+            this.playNoise(0.11, 0.085, 3600, 500, 0);
+            this.playTone(760, 0.11, 'square', 0.06, 0.0001, 0, 280);
+            return;
+        }
+
+        this.playNoise(0.09, 0.07, 1600, 140, 0);
+        this.playTone(210, 0.11, 'triangle', 0.055, 0.0001, 0, 120);
     }
 
     playDeath(source: CombatSource): void {
         const frequency = source === 'player' ? 180 : 120;
-        const gain = source === 'player' ? 0.06 : 0.04;
+        const gain = source === 'player' ? 0.09 : 0.065;
         this.playNoise(0.2, gain, 1200, 120, 0);
-        this.playTone(frequency, 0.45, 'sawtooth', gain, 0.0001, 0, frequency * 0.2);
+        this.playTone(frequency, 0.45, source === 'player' ? 'sawtooth' : 'triangle', gain, 0.0001, 0, frequency * 0.2);
     }
 
     playDialogueTick(): void {
-        this.playNoise(0.025, 0.018, 4000, 1200, 0);
-        this.playTone(1400, 0.03, 'square', 0.01, 0.0001);
+        this.playNoise(0.025, 0.03, 4500, 1200, 0);
+        this.playTone(1400, 0.03, 'square', 0.018, 0.0001);
     }
 
     playTeleport(): void {
         [261.63, 392, 523.25].forEach((frequency, index) => {
             const delay = index * 0.08;
-            this.playTone(frequency, 0.16, 'triangle', 0.04, 0.0001, delay, frequency * 1.12);
+            this.playTone(frequency, 0.16, 'triangle', 0.07, 0.0001, delay, frequency * 1.12);
         });
     }
 
     playBossSpawn(): void {
-        this.playNoise(0.28, 0.04, 1400, 90, 0);
-        this.playTone(98, 0.5, 'sawtooth', 0.06, 0.0001, 0, 49);
-        this.playTone(146.83, 0.35, 'square', 0.03, 0.0001, 0.12, 110);
+        this.playNoise(0.28, 0.075, 1400, 90, 0);
+        this.playTone(98, 0.5, 'sawtooth', 0.1, 0.0001, 0, 49);
+        this.playTone(146.83, 0.35, 'square', 0.055, 0.0001, 0.12, 110);
     }
 
     playStageCleared(): void {
         [261.63, 329.63, 392, 523.25].forEach((frequency, index) => {
-            this.playTone(frequency, 0.22, 'triangle', 0.05, 0.0001, index * 0.07);
+            this.playTone(frequency, 0.22, 'triangle', 0.085, 0.0001, index * 0.07);
         });
     }
 
@@ -203,9 +237,9 @@ export class AudioManager {
         this.musicGain = this.audioContext.createGain();
         this.sfxGain = this.audioContext.createGain();
 
-        this.masterGain.gain.value = 0.8;
-        this.musicGain.gain.value = 0.22;
-        this.sfxGain.gain.value = 0.7;
+        this.masterGain.gain.value = 1.0;
+        this.musicGain.gain.value = 0.45;
+        this.sfxGain.gain.value = 1.2;
 
         this.musicGain.connect(this.masterGain);
         this.sfxGain.connect(this.masterGain);
@@ -221,35 +255,27 @@ export class AudioManager {
         }
 
         const profile = STAGE_MUSIC[this.currentStageId] ?? STAGE_MUSIC.lobby;
-        const bass = context.createOscillator();
-        const bassGain = context.createGain();
-        bass.type = profile.bassType;
-        bass.frequency.value = profile.bassFrequency;
-        bassGain.gain.value = 0.04;
-        bass.connect(bassGain);
-        bassGain.connect(this.getBus('music'));
-        bass.start();
-
-        const pad = context.createOscillator();
-        const padGain = context.createGain();
-        pad.type = profile.padType;
-        pad.frequency.value = profile.padFrequency;
-        pad.detune.value = 6;
-        padGain.gain.value = 0.025;
-        pad.connect(padGain);
-        padGain.connect(this.getBus('music'));
-        pad.start();
-
-        this.musicOscillators.push(bass, pad);
-        this.playingStageId = this.currentStageId;
-
         let pulseIndex = 0;
         const playPulse = () => {
             const frequency = profile.pulseFrequencies[pulseIndex % profile.pulseFrequencies.length];
+            const harmonyFrequency = profile.harmonyFrequencies?.[pulseIndex % (profile.harmonyFrequencies?.length ?? 1)];
             pulseIndex++;
-            this.playTone(frequency, 0.18, profile.pulseType, 0.03, 0.0001, 0, undefined, 'music');
+            this.playTone(frequency, profile.pulseDuration, profile.pulseType, profile.pulseGain, 0.0001, 0, undefined, 'music');
+            if (harmonyFrequency !== undefined) {
+                this.playTone(
+                    harmonyFrequency,
+                    Math.max(0.08, profile.pulseDuration * 0.9),
+                    profile.harmonyType,
+                    profile.harmonyGain,
+                    0.0001,
+                    0.04,
+                    undefined,
+                    'music',
+                );
+            }
         };
 
+        this.playingStageId = this.currentStageId;
         playPulse();
         this.musicPulseInterval = window.setInterval(playPulse, profile.pulseIntervalMs);
     }
@@ -260,15 +286,6 @@ export class AudioManager {
             this.musicPulseInterval = null;
         }
 
-        for (const oscillator of this.musicOscillators) {
-            try {
-                oscillator.stop();
-            } catch {
-                // noop
-            }
-        }
-
-        this.musicOscillators = [];
         this.playingStageId = null;
     }
 
