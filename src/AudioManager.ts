@@ -26,11 +26,19 @@ interface StageMusicProfile {
     harmonyGain: number;
 }
 
+/**
+ * Transpose a frequency by a semitone offset using equal temperament tuning.
+ * Rounding keeps the generated loop values stable and readable.
+ */
 function transposeFrequency(frequency: number, semitones: number): number {
     if (semitones === 0) return frequency;
     return Number((frequency * Math.pow(SEMITONE_RATIO, semitones)).toFixed(2));
 }
 
+/**
+ * Turn one short motif into a longer phrase by transposing it for the current
+ * cycle and mirroring the notes into a palindrome-style variation.
+ */
 function buildMusicVariation(basePhrase: MusicPhrase, cycle: number): number[] {
     const semitones = MUSIC_VARIATION_PATTERN[cycle % MUSIC_VARIATION_PATTERN.length];
     const forward = basePhrase.map((frequency) => transposeFrequency(frequency, semitones));
@@ -43,6 +51,10 @@ function buildMusicVariation(basePhrase: MusicPhrase, cycle: number): number[] {
     return [...forward, ...mirrored];
 }
 
+/**
+ * Expand a compact motif into a loop that lasts at least one minute before
+ * repeating by chaining successive phrase variations together.
+ */
 function buildLongMusicLoop(basePhrase: MusicPhrase, pulseIntervalMs: number): number[] {
     const requiredNotes = Math.ceil(MIN_STAGE_MUSIC_LOOP_DURATION_MS / pulseIntervalMs);
     const sequence: number[] = [];
@@ -56,6 +68,10 @@ function buildLongMusicLoop(basePhrase: MusicPhrase, pulseIntervalMs: number): n
     return sequence.slice(0, requiredNotes);
 }
 
+/**
+ * Build a stage music profile by stretching short pulse and harmony motifs
+ * into minute-long note sequences while preserving the stage's timing/timbre.
+ */
 function createStageMusicProfile(
     pulsePhrase: MusicPhrase,
     harmonyPhrase: MusicPhrase | undefined,
