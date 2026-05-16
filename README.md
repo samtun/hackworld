@@ -26,7 +26,6 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 - **Language**: TypeScript
 - **Rendering**: Three.js
 - **Physics**: Cannon-es
-- **Audio**: Tone.js
 - **Build Tool**: Vite
 - **Hosting**: GitHub Pages
 

@@ -1,197 +1,113 @@
-import * as Tone from 'tone';
-
+type AudioBus = 'music' | 'sfx';
 type FootstepSource = 'player' | 'enemy';
 type CombatSource = 'player' | 'enemy';
-type ToneJSDuration = string | number;
-type ToneJSNote = string | number;
-
-type TriggerableSynth = {
-    triggerAttackRelease: (note: ToneJSNote, duration: ToneJSDuration, time?: number, velocity?: number) => void;
-};
-
-// A slight 80ms offset keeps the harmony behind the lead note so the music
-// feels layered without turning back into the constant drone the earlier
-// implementation had.
-const MUSIC_HARMONY_DELAY_SECONDS = 0.08;
-
-// Tone.js trigger velocities are normalized note intensities (0-1), used here
-// to keep related sounds grouped and easy to rebalance without retuning synth
-// settings in every method.
-const AUDIO_VELOCITY = {
-    footsteps: {
-        playerNoise: 0.18,
-        enemyNoise: 0.12,
-        playerTone: 0.38,
-        enemyTone: 0.34,
-    },
-    jump: {
-        primary: 0.72,
-        accent: 0.38,
-    },
-    attack: {
-        chargedNoise: 0.34,
-        chargedPrimary: 0.82,
-        chargedAccent: 0.58,
-        playerNoise: 0.2,
-        playerPrimary: 0.78,
-        playerAccent: 0.42,
-        enemyNoise: 0.22,
-        enemyPrimary: 0.74,
-        enemyAccent: 0.4,
-    },
-    damage: {
-        playerNoise: 0.26,
-        enemyNoise: 0.18,
-        playerTone: 0.52,
-        enemyTone: 0.5,
-    },
-    death: {
-        playerNoise: 0.32,
-        enemyNoise: 0.28,
-        playerPrimary: 0.6,
-        playerAccent: 0.5,
-        enemyPrimary: 0.56,
-        enemyAccent: 0.44,
-    },
-    ui: {
-        dialogue: 0.35,
-        teleportPrimary: 0.46,
-        teleportAccent: 0.4,
-        teleportPad: 0.24,
-        stageClearPrimary: 0.4,
-        stageClearSecondary: 0.38,
-        stageClearTertiary: 0.36,
-        stageClearPad: 0.26,
-    },
-    bossSpawn: {
-        noise: 0.3,
-        primary: 0.76,
-        accent: 0.5,
-    },
-    breakables: {
-        barrelNoise: 0.26,
-        barrelPrimary: 0.72,
-        barrelAccent: 0.42,
-        pickupPrimary: 0.65,
-        pickupAccent: 0.24,
-        chestPrimary: 0.56,
-        chestSecondary: 0.48,
-        chestAccent: 0.42,
-    },
-} as const;
 
 interface StageMusicProfile {
-    leadNotes: string[];
-    harmonyNotes?: string[];
-    pulseIntervalSeconds: number;
-    leadDuration: string;
-    harmonyDuration: string;
-    leadVelocity: number;
-    harmonyVelocity: number;
+    pulseFrequencies: number[];
+    harmonyFrequencies?: number[];
+    pulseIntervalMs: number;
+    pulseType: OscillatorType;
+    harmonyType: OscillatorType;
+    pulseDuration: number;
+    pulseGain: number;
+    harmonyGain: number;
 }
 
 const STAGE_MUSIC: Record<string, StageMusicProfile> = {
     startScreen: {
-        leadNotes: ['F3', 'A3', 'C4', 'D4'],
-        harmonyNotes: ['A4', 'C5', 'E5', 'F5'],
-        pulseIntervalSeconds: 0.72,
-        leadDuration: '4n',
-        harmonyDuration: '2n',
-        leadVelocity: 0.7,
-        harmonyVelocity: 0.38,
+        pulseFrequencies: [174.61, 220, 261.63, 293.66],
+        harmonyFrequencies: [261.63, 329.63, 349.23, 392],
+        pulseIntervalMs: 420,
+        pulseType: 'triangle',
+        harmonyType: 'sine',
+        pulseDuration: 0.34,
+        pulseGain: 0.065,
+        harmonyGain: 0.03,
     },
     lobby: {
-        leadNotes: ['A3', 'C#4', 'E4', 'A4'],
-        harmonyNotes: ['E4', 'A4', 'C#5', 'E5'],
-        pulseIntervalSeconds: 0.56,
-        leadDuration: '8n',
-        harmonyDuration: '4n',
-        leadVelocity: 0.75,
-        harmonyVelocity: 0.34,
+        pulseFrequencies: [220, 277.18, 329.63, 440],
+        harmonyFrequencies: [329.63, 369.99, 440, 554.37],
+        pulseIntervalMs: 340,
+        pulseType: 'triangle',
+        harmonyType: 'sine',
+        pulseDuration: 0.22,
+        pulseGain: 0.07,
+        harmonyGain: 0.028,
     },
     networkMatrix: {
-        leadNotes: ['G3', 'A3', 'C4', 'D4'],
-        harmonyNotes: ['D4', 'E4', 'G4', 'A4'],
-        pulseIntervalSeconds: 0.48,
-        leadDuration: '8n',
-        harmonyDuration: '8n',
-        leadVelocity: 0.78,
-        harmonyVelocity: 0.28,
+        pulseFrequencies: [196, 220, 261.63, 293.66],
+        harmonyFrequencies: [293.66, 329.63, 392, 440],
+        pulseIntervalMs: 300,
+        pulseType: 'square',
+        harmonyType: 'triangle',
+        pulseDuration: 0.18,
+        pulseGain: 0.072,
+        harmonyGain: 0.024,
     },
     packetForge: {
-        leadNotes: ['B3', 'D#4', 'F#4', 'D#4'],
-        harmonyNotes: ['F#4', 'A4', 'B4', 'A4'],
-        pulseIntervalSeconds: 0.44,
-        leadDuration: '8n',
-        harmonyDuration: '8n',
-        leadVelocity: 0.82,
-        harmonyVelocity: 0.26,
+        pulseFrequencies: [246.94, 311.13, 369.99, 311.13],
+        harmonyFrequencies: [369.99, 415.3, 466.16, 415.3],
+        pulseIntervalMs: 280,
+        pulseType: 'square',
+        harmonyType: 'triangle',
+        pulseDuration: 0.16,
+        pulseGain: 0.075,
+        harmonyGain: 0.022,
     },
     cipherNull: {
-        leadNotes: ['E3', 'G3', 'A#3', 'F3'],
-        harmonyNotes: ['G4', 'A#4', 'D5', 'C5'],
-        pulseIntervalSeconds: 0.52,
-        leadDuration: '8n',
-        harmonyDuration: '4n',
-        leadVelocity: 0.74,
-        harmonyVelocity: 0.3,
+        pulseFrequencies: [164.81, 196, 233.08, 174.61],
+        harmonyFrequencies: [246.94, 261.63, 311.13, 261.63],
+        pulseIntervalMs: 320,
+        pulseType: 'triangle',
+        harmonyType: 'sine',
+        pulseDuration: 0.2,
+        pulseGain: 0.068,
+        harmonyGain: 0.024,
     },
     securityCore: {
-        leadNotes: ['D3', 'G3', 'A3', 'D4'],
-        harmonyNotes: ['A3', 'D4', 'F4', 'A4'],
-        pulseIntervalSeconds: 0.42,
-        leadDuration: '8n',
-        harmonyDuration: '8n',
-        leadVelocity: 0.84,
-        harmonyVelocity: 0.24,
+        pulseFrequencies: [146.83, 196, 220, 293.66],
+        harmonyFrequencies: [220, 293.66, 329.63, 392],
+        pulseIntervalMs: 260,
+        pulseType: 'square',
+        harmonyType: 'triangle',
+        pulseDuration: 0.17,
+        pulseGain: 0.078,
+        harmonyGain: 0.022,
     },
     kernelTerminus: {
-        leadNotes: ['C3', 'F3', 'G3', 'C4'],
-        harmonyNotes: ['G3', 'C4', 'D#4', 'G4'],
-        pulseIntervalSeconds: 0.4,
-        leadDuration: '8n',
-        harmonyDuration: '8n',
-        leadVelocity: 0.86,
-        harmonyVelocity: 0.24,
+        pulseFrequencies: [130.81, 174.61, 196, 261.63],
+        harmonyFrequencies: [196, 233.08, 261.63, 349.23],
+        pulseIntervalMs: 240,
+        pulseType: 'sawtooth',
+        harmonyType: 'triangle',
+        pulseDuration: 0.16,
+        pulseGain: 0.082,
+        harmonyGain: 0.022,
     },
     gameTest: {
-        leadNotes: ['A3', 'B3', 'D4', 'F#4'],
-        harmonyNotes: ['D4', 'F#4', 'A4', 'C#5'],
-        pulseIntervalSeconds: 0.46,
-        leadDuration: '8n',
-        harmonyDuration: '8n',
-        leadVelocity: 0.8,
-        harmonyVelocity: 0.28,
+        pulseFrequencies: [220, 246.94, 293.66, 369.99],
+        harmonyFrequencies: [293.66, 329.63, 392, 466.16],
+        pulseIntervalMs: 260,
+        pulseType: 'square',
+        harmonyType: 'triangle',
+        pulseDuration: 0.18,
+        pulseGain: 0.076,
+        harmonyGain: 0.025,
     },
 };
 
 export class AudioManager {
     private static instance: AudioManager;
 
+    private audioContext: AudioContext | null = null;
+    private masterGain: GainNode | null = null;
+    private musicGain: GainNode | null = null;
+    private sfxGain: GainNode | null = null;
+    private noiseBuffer: AudioBuffer | null = null;
     private unlockHandlersRegistered = false;
     private currentStageId: string | null = null;
     private playingStageId: string | null = null;
     private musicPulseInterval: number | null = null;
-
-    private masterBus: Tone.Gain | null = null;
-    private musicBus: Tone.Gain | null = null;
-    private sfxBus: Tone.Gain | null = null;
-    private musicChorus: Tone.Chorus | null = null;
-    private musicReverb: Tone.Freeverb | null = null;
-    private sfxDelay: Tone.FeedbackDelay | null = null;
-    private sfxReverb: Tone.Freeverb | null = null;
-
-    private musicLeadSynth: Tone.PolySynth | null = null;
-    private musicPadSynth: Tone.PolySynth | null = null;
-    private playerSynth: Tone.Synth | null = null;
-    private enemySynth: Tone.MonoSynth | null = null;
-    private playerImpactSynth: Tone.FMSynth | null = null;
-    private enemyImpactSynth: Tone.MembraneSynth | null = null;
-    private impactNoiseSynth: Tone.NoiseSynth | null = null;
-    private uiSynth: Tone.Synth | null = null;
-    private pickupSynth: Tone.PluckSynth | null = null;
-    private barrelSynth: Tone.MembraneSynth | null = null;
-    private chestSynth: Tone.FMSynth | null = null;
 
     public static get Instance(): AudioManager {
         return this.instance || (this.instance = new this());
@@ -202,17 +118,17 @@ export class AudioManager {
     }
 
     unlock(): void {
-        if (!this.ensureAudioGraph()) return;
+        const context = this.ensureAudioContext();
+        if (!context) return;
 
-        const contextState = Tone.getContext().rawContext.state;
-        if (contextState === 'running') {
-            this.startStageMusicIfPossible();
+        if (context.state === 'suspended') {
+            void context.resume().then(() => {
+                this.startStageMusicIfPossible();
+            }).catch(() => undefined);
             return;
         }
 
-        void Tone.start().then(() => {
-            this.startStageMusicIfPossible();
-        }).catch(() => undefined);
+        this.startStageMusicIfPossible();
     }
 
     setStageMusic(stageId: string): void {
@@ -224,107 +140,94 @@ export class AudioManager {
     }
 
     playFootstep(source: FootstepSource): void {
-        const time = this.getAudioTime();
-        if (time === null) return;
-
-        this.impactNoiseSynth?.triggerAttackRelease(
-            '32n',
-            time,
-            source === 'player' ? AUDIO_VELOCITY.footsteps.playerNoise : AUDIO_VELOCITY.footsteps.enemyNoise,
-        );
-        if (source === 'player') {
-            this.playerSynth?.triggerAttackRelease('G2', '32n', time, AUDIO_VELOCITY.footsteps.playerTone);
-            return;
-        }
-
-        this.enemySynth?.triggerAttackRelease('D2', '32n', time, AUDIO_VELOCITY.footsteps.enemyTone);
+        const gain = source === 'player' ? 0.055 : 0.042;
+        const frequency = source === 'player' ? 92 : 64;
+        this.playNoise(0.07, gain, source === 'player' ? 1500 : 900, source === 'player' ? 180 : 110, 0);
+        this.playTone(frequency, 0.06, source === 'player' ? 'triangle' : 'sine', gain, 0.0001);
     }
 
     playJump(): void {
-        this.triggerSynth(this.playerSynth, 'C4', '8n', 0, AUDIO_VELOCITY.jump.primary);
-        this.triggerSynth(this.playerImpactSynth, 'G4', '16n', 0.05, AUDIO_VELOCITY.jump.accent);
+        this.playTone(260, 0.2, 'triangle', 0.07, 0.0001, 0, 720);
+        this.playTone(520, 0.08, 'sine', 0.03, 0.0001, 0.03, 780);
     }
 
     playAttack(source: CombatSource, charged: boolean = false): void {
         if (charged) {
-            this.triggerNoise('16n', 0, AUDIO_VELOCITY.attack.chargedNoise);
-            this.triggerSynth(this.playerImpactSynth, 'C3', '8n', 0, AUDIO_VELOCITY.attack.chargedPrimary);
-            this.triggerSynth(this.playerSynth, 'G4', '8n', 0.04, AUDIO_VELOCITY.attack.chargedAccent);
+            this.playNoise(0.18, 0.11, 3600, 260, 0);
+            this.playTone(180, 0.22, 'sawtooth', 0.12, 0.0001, 0, 520);
+            this.playTone(540, 0.14, 'triangle', 0.055, 0.0001, 0.03, 860);
             return;
         }
 
         if (source === 'player') {
-            this.triggerNoise('32n', 0, AUDIO_VELOCITY.attack.playerNoise);
-            this.triggerSynth(this.playerSynth, 'E5', '16n', 0, AUDIO_VELOCITY.attack.playerPrimary);
-            this.triggerSynth(this.playerImpactSynth, 'B4', '32n', 0.03, AUDIO_VELOCITY.attack.playerAccent);
+            this.playNoise(0.07, 0.07, 4200, 420, 0);
+            this.playTone(540, 0.09, 'square', 0.1, 0.0001, 0, 260);
+            this.playTone(880, 0.05, 'triangle', 0.038, 0.0001, 0.02, 660);
             return;
         }
 
-        this.triggerNoise('16n', 0, AUDIO_VELOCITY.attack.enemyNoise);
-        this.triggerSynth(this.enemySynth, 'G2', '8n', 0, AUDIO_VELOCITY.attack.enemyPrimary);
-        this.triggerSynth(this.enemyImpactSynth, 'C2', '16n', 0.02, AUDIO_VELOCITY.attack.enemyAccent);
+        this.playNoise(0.12, 0.08, 1000, 90, 0);
+        this.playTone(150, 0.16, 'sawtooth', 0.09, 0.0001, 0, 96);
+        this.playTone(90, 0.12, 'square', 0.045, 0.0001, 0.02, 70);
     }
 
     playDamage(source: CombatSource): void {
-        this.triggerNoise('16n', 0, source === 'player' ? AUDIO_VELOCITY.damage.playerNoise : AUDIO_VELOCITY.damage.enemyNoise);
         if (source === 'player') {
-            this.triggerSynth(this.playerImpactSynth, 'A4', '16n', 0, AUDIO_VELOCITY.damage.playerTone);
+            this.playNoise(0.11, 0.085, 3600, 500, 0);
+            this.playTone(760, 0.11, 'square', 0.06, 0.0001, 0, 280);
             return;
         }
 
-        this.triggerSynth(this.enemyImpactSynth, 'E2', '8n', 0, AUDIO_VELOCITY.damage.enemyTone);
+        this.playNoise(0.09, 0.07, 1600, 140, 0);
+        this.playTone(210, 0.11, 'triangle', 0.055, 0.0001, 0, 120);
     }
 
     playDeath(source: CombatSource): void {
-        this.triggerNoise('8n', 0, source === 'player' ? AUDIO_VELOCITY.death.playerNoise : AUDIO_VELOCITY.death.enemyNoise);
-        if (source === 'player') {
-            this.triggerSynth(this.playerImpactSynth, 'C4', '4n', 0, AUDIO_VELOCITY.death.playerPrimary);
-            this.triggerSynth(this.playerSynth, 'A2', '4n', 0.06, AUDIO_VELOCITY.death.playerAccent);
-            return;
-        }
-
-        this.triggerSynth(this.enemyImpactSynth, 'C2', '4n', 0, AUDIO_VELOCITY.death.enemyPrimary);
-        this.triggerSynth(this.enemySynth, 'F1', '4n', 0.04, AUDIO_VELOCITY.death.enemyAccent);
+        const frequency = source === 'player' ? 180 : 120;
+        const gain = source === 'player' ? 0.09 : 0.065;
+        this.playNoise(0.2, gain, 1200, 120, 0);
+        this.playTone(frequency, 0.45, source === 'player' ? 'sawtooth' : 'triangle', gain, 0.0001, 0, frequency * 0.2);
     }
 
     playDialogueTick(): void {
-        this.triggerSynth(this.uiSynth, 'E6', '32n', 0, AUDIO_VELOCITY.ui.dialogue);
+        this.playNoise(0.025, 0.03, 4500, 1200, 0);
+        this.playTone(1400, 0.03, 'square', 0.018, 0.0001);
     }
 
     playTeleport(): void {
-        this.triggerSynth(this.uiSynth, 'C5', '16n', 0, AUDIO_VELOCITY.ui.teleportPrimary);
-        this.triggerSynth(this.uiSynth, 'G5', '16n', 0.06, AUDIO_VELOCITY.ui.teleportAccent);
-        this.triggerSynth(this.musicPadSynth, 'C6', '8n', 0.12, AUDIO_VELOCITY.ui.teleportPad);
+        [261.63, 392, 523.25].forEach((frequency, index) => {
+            const delay = index * 0.08;
+            this.playTone(frequency, 0.16, 'triangle', 0.07, 0.0001, delay, frequency * 1.12);
+        });
     }
 
     playBossSpawn(): void {
-        this.triggerNoise('8n', 0, AUDIO_VELOCITY.bossSpawn.noise);
-        this.triggerSynth(this.enemySynth, 'D2', '2n', 0, AUDIO_VELOCITY.bossSpawn.primary);
-        this.triggerSynth(this.enemyImpactSynth, 'A1', '4n', 0.08, AUDIO_VELOCITY.bossSpawn.accent);
+        this.playNoise(0.28, 0.075, 1400, 90, 0);
+        this.playTone(98, 0.5, 'sawtooth', 0.1, 0.0001, 0, 49);
+        this.playTone(146.83, 0.35, 'square', 0.055, 0.0001, 0.12, 110);
     }
 
     playStageCleared(): void {
-        this.triggerSynth(this.uiSynth, 'C5', '16n', 0, AUDIO_VELOCITY.ui.stageClearPrimary);
-        this.triggerSynth(this.uiSynth, 'E5', '16n', 0.08, AUDIO_VELOCITY.ui.stageClearSecondary);
-        this.triggerSynth(this.uiSynth, 'G5', '16n', 0.16, AUDIO_VELOCITY.ui.stageClearTertiary);
-        this.triggerSynth(this.musicPadSynth, 'C6', '8n', 0.24, AUDIO_VELOCITY.ui.stageClearPad);
+        [261.63, 329.63, 392, 523.25].forEach((frequency, index) => {
+            this.playTone(frequency, 0.22, 'triangle', 0.085, 0.0001, index * 0.07);
+        });
     }
 
     playBarrelBreak(): void {
-        this.triggerNoise('16n', 0, AUDIO_VELOCITY.breakables.barrelNoise);
-        this.triggerSynth(this.barrelSynth, 'C2', '8n', 0, AUDIO_VELOCITY.breakables.barrelPrimary);
-        this.triggerSynth(this.barrelSynth, 'G1', '16n', 0.04, AUDIO_VELOCITY.breakables.barrelAccent);
+        this.playNoise(0.12, 0.08, 2200, 180, 0);
+        this.playTone(110, 0.18, 'square', 0.075, 0.0001, 0, 72);
+        this.playTone(180, 0.08, 'triangle', 0.035, 0.0001, 0.03, 120);
     }
 
     playItemPickup(): void {
-        this.triggerSynth(this.pickupSynth, 'C5', '16n', 0, AUDIO_VELOCITY.breakables.pickupPrimary);
-        this.triggerSynth(this.uiSynth, 'G5', '32n', 0.05, AUDIO_VELOCITY.breakables.pickupAccent);
+        this.playTone(659.25, 0.08, 'triangle', 0.06, 0.0001);
+        this.playTone(987.77, 0.1, 'sine', 0.045, 0.0001, 0.05);
     }
 
     playChestOpen(): void {
-        this.triggerSynth(this.chestSynth, 'C4', '16n', 0, AUDIO_VELOCITY.breakables.chestPrimary);
-        this.triggerSynth(this.chestSynth, 'E4', '16n', 0.06, AUDIO_VELOCITY.breakables.chestSecondary);
-        this.triggerSynth(this.chestSynth, 'A4', '8n', 0.12, AUDIO_VELOCITY.breakables.chestAccent);
+        [196, 246.94, 329.63].forEach((frequency, index) => {
+            this.playTone(frequency, 0.16, 'triangle', 0.07, 0.0001, index * 0.05, frequency * 1.08);
+        });
     }
 
     private registerUnlockHandlers(): void {
@@ -337,202 +240,61 @@ export class AudioManager {
         window.addEventListener('touchstart', unlock, { passive: true });
     }
 
-    private ensureAudioGraph(): boolean {
-        if (typeof window === 'undefined') return false;
-        if (this.masterBus) return true;
+    private ensureAudioContext(): AudioContext | null {
+        if (typeof window === 'undefined') return null;
+        if (this.audioContext) return this.audioContext;
 
-        this.masterBus = new Tone.Gain(0.92).toDestination();
-        this.musicBus = new Tone.Gain(0.62);
-        this.sfxBus = new Tone.Gain(1.18);
+        const AudioContextConstructor = window.AudioContext
+            ?? (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
 
-        this.musicChorus = new Tone.Chorus({
-            frequency: 0.18,
-            delayTime: 2.8,
-            depth: 0.2,
-            wet: 0.16,
-        }).start();
-        this.musicReverb = new Tone.Freeverb({
-            roomSize: 0.82,
-            dampening: 2600,
-            wet: 0.2,
-        });
-        this.musicBus.connect(this.masterBus);
-        this.musicBus.connect(this.musicChorus);
-        this.musicChorus.connect(this.musicReverb);
-        this.musicReverb.connect(this.masterBus);
+        if (!AudioContextConstructor) return null;
 
-        this.sfxDelay = new Tone.FeedbackDelay({
-            delayTime: 0.12,
-            feedback: 0.16,
-            wet: 0.08,
-        });
-        this.sfxReverb = new Tone.Freeverb({
-            roomSize: 0.5,
-            dampening: 3200,
-            wet: 0.12,
-        });
-        this.sfxBus.connect(this.masterBus);
-        this.sfxBus.connect(this.sfxDelay);
-        this.sfxDelay.connect(this.sfxReverb);
-        this.sfxReverb.connect(this.masterBus);
+        this.audioContext = new AudioContextConstructor();
+        this.masterGain = this.audioContext.createGain();
+        this.musicGain = this.audioContext.createGain();
+        this.sfxGain = this.audioContext.createGain();
 
-        this.musicLeadSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'triangle' },
-            envelope: {
-                attack: 0.02,
-                decay: 0.16,
-                sustain: 0.25,
-                release: 0.6,
-            },
-        }).connect(this.musicBus);
-        this.musicPadSynth = new Tone.PolySynth(Tone.Synth, {
-            oscillator: { type: 'sine' },
-            envelope: {
-                attack: 0.05,
-                decay: 0.2,
-                sustain: 0.35,
-                release: 1.1,
-            },
-        }).connect(this.musicBus);
+        this.masterGain.gain.value = 1.0;
+        this.musicGain.gain.value = 0.45;
+        this.sfxGain.gain.value = 1.2;
 
-        this.playerSynth = new Tone.Synth({
-            oscillator: { type: 'triangle' },
-            envelope: {
-                attack: 0.001,
-                decay: 0.08,
-                sustain: 0.08,
-                release: 0.12,
-            },
-        }).connect(this.sfxBus);
-        this.enemySynth = new Tone.MonoSynth({
-            oscillator: { type: 'square' },
-            envelope: {
-                attack: 0.001,
-                decay: 0.12,
-                sustain: 0.1,
-                release: 0.14,
-            },
-            filterEnvelope: {
-                attack: 0.001,
-                decay: 0.1,
-                sustain: 0.1,
-                release: 0.12,
-                baseFrequency: 180,
-                octaves: 3.2,
-            },
-        }).connect(this.sfxBus);
-        this.playerImpactSynth = new Tone.FMSynth({
-            harmonicity: 1.5,
-            modulationIndex: 4,
-            oscillator: { type: 'triangle' },
-            envelope: {
-                attack: 0.001,
-                decay: 0.12,
-                sustain: 0,
-                release: 0.14,
-            },
-            modulation: { type: 'square' },
-            modulationEnvelope: {
-                attack: 0.001,
-                decay: 0.08,
-                sustain: 0,
-                release: 0.1,
-            },
-        }).connect(this.sfxBus);
-        this.enemyImpactSynth = new Tone.MembraneSynth({
-            pitchDecay: 0.02,
-            octaves: 6,
-            oscillator: { type: 'triangle' },
-            envelope: {
-                attack: 0.001,
-                decay: 0.24,
-                sustain: 0,
-                release: 0.14,
-            },
-        }).connect(this.sfxBus);
-        this.impactNoiseSynth = new Tone.NoiseSynth({
-            noise: { type: 'pink' },
-            envelope: {
-                attack: 0.001,
-                decay: 0.08,
-                sustain: 0,
-            },
-        }).connect(this.sfxBus);
-        this.uiSynth = new Tone.Synth({
-            oscillator: { type: 'sine' },
-            envelope: {
-                attack: 0.001,
-                decay: 0.05,
-                sustain: 0,
-                release: 0.08,
-            },
-        }).connect(this.sfxBus);
-        this.pickupSynth = new Tone.PluckSynth({
-            attackNoise: 1.2,
-            dampening: 3000,
-            resonance: 0.82,
-        }).connect(this.sfxBus);
-        this.barrelSynth = new Tone.MembraneSynth({
-            pitchDecay: 0.01,
-            octaves: 8,
-            oscillator: { type: 'sawtooth' },
-            envelope: {
-                attack: 0.001,
-                decay: 0.18,
-                sustain: 0,
-                release: 0.1,
-            },
-        }).connect(this.sfxBus);
-        this.chestSynth = new Tone.FMSynth({
-            harmonicity: 2,
-            modulationIndex: 6,
-            oscillator: { type: 'triangle' },
-            envelope: {
-                attack: 0.002,
-                decay: 0.14,
-                sustain: 0.12,
-                release: 0.2,
-            },
-            modulation: { type: 'sine' },
-            modulationEnvelope: {
-                attack: 0.001,
-                decay: 0.1,
-                sustain: 0,
-                release: 0.12,
-            },
-        }).connect(this.sfxBus);
+        this.musicGain.connect(this.masterGain);
+        this.sfxGain.connect(this.masterGain);
+        this.masterGain.connect(this.audioContext.destination);
 
-        return true;
+        return this.audioContext;
     }
 
     private startStageMusicIfPossible(): void {
-        if (!this.ensureAudioGraph() || Tone.getContext().rawContext.state !== 'running' || !this.currentStageId || this.playingStageId === this.currentStageId) {
+        const context = this.ensureAudioContext();
+        if (!context || context.state !== 'running' || !this.currentStageId || this.playingStageId === this.currentStageId) {
             return;
         }
 
         const profile = STAGE_MUSIC[this.currentStageId] ?? STAGE_MUSIC.lobby;
         let pulseIndex = 0;
         const playPulse = () => {
-            const note = profile.leadNotes[pulseIndex % profile.leadNotes.length];
-            const harmonyNote = profile.harmonyNotes?.[pulseIndex % (profile.harmonyNotes?.length ?? 1)];
-            const now = Tone.now();
-
-            this.musicLeadSynth?.triggerAttackRelease(note, profile.leadDuration, now, profile.leadVelocity);
-            if (harmonyNote !== undefined) {
-                this.musicPadSynth?.triggerAttackRelease(
-                    harmonyNote,
-                    profile.harmonyDuration,
-                    now + MUSIC_HARMONY_DELAY_SECONDS,
-                    profile.harmonyVelocity,
+            const frequency = profile.pulseFrequencies[pulseIndex % profile.pulseFrequencies.length];
+            const harmonyFrequency = profile.harmonyFrequencies?.[pulseIndex % (profile.harmonyFrequencies?.length ?? 1)];
+            pulseIndex++;
+            this.playTone(frequency, profile.pulseDuration, profile.pulseType, profile.pulseGain, 0.0001, 0, undefined, 'music');
+            if (harmonyFrequency !== undefined) {
+                this.playTone(
+                    harmonyFrequency,
+                    Math.max(0.08, profile.pulseDuration * 0.9),
+                    profile.harmonyType,
+                    profile.harmonyGain,
+                    0.0001,
+                    0.04,
+                    undefined,
+                    'music',
                 );
             }
-
-            pulseIndex++;
         };
 
         this.playingStageId = this.currentStageId;
         playPulse();
-        this.musicPulseInterval = window.setInterval(playPulse, profile.pulseIntervalSeconds * 1000);
+        this.musicPulseInterval = window.setInterval(playPulse, profile.pulseIntervalMs);
     }
 
     private stopStageMusic(): void {
@@ -541,35 +303,100 @@ export class AudioManager {
             this.musicPulseInterval = null;
         }
 
-        this.musicLeadSynth?.releaseAll();
-        this.musicPadSynth?.releaseAll();
         this.playingStageId = null;
     }
 
-    private getAudioTime(delay: number = 0): number | null {
-        if (!this.ensureAudioGraph()) return null;
-        if (Tone.getContext().rawContext.state !== 'running') return null;
-
-        return Tone.now() + delay;
-    }
-
-    private triggerSynth(
-        synth: TriggerableSynth | null,
-        note: ToneJSNote,
-        duration: ToneJSDuration,
-        delay: number,
-        velocity: number,
+    private playTone(
+        frequency: number,
+        duration: number,
+        type: OscillatorType,
+        peakGain: number,
+        endGain: number,
+        delay: number = 0,
+        glideToFrequency?: number,
+        bus: AudioBus = 'sfx',
     ): void {
-        const time = this.getAudioTime(delay);
-        if (time === null || synth === null) return;
+        const context = this.ensureAudioContext();
+        if (!context || context.state !== 'running') return;
 
-        synth.triggerAttackRelease(note, duration, time, velocity);
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        const startTime = context.currentTime + delay;
+        const stopTime = startTime + duration;
+
+        oscillator.type = type;
+        oscillator.frequency.setValueAtTime(frequency, startTime);
+        if (glideToFrequency !== undefined) {
+            oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, glideToFrequency), stopTime);
+        }
+
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, peakGain), startTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, endGain), stopTime);
+
+        oscillator.connect(gain);
+        gain.connect(this.getBus(bus));
+        oscillator.start(startTime);
+        oscillator.stop(stopTime);
     }
 
-    private triggerNoise(duration: ToneJSDuration, delay: number, velocity: number): void {
-        const time = this.getAudioTime(delay);
-        if (time === null || this.impactNoiseSynth === null) return;
+    private playNoise(
+        duration: number,
+        peakGain: number,
+        lowpassFrequency: number,
+        highpassFrequency: number,
+        delay: number,
+    ): void {
+        const context = this.ensureAudioContext();
+        if (!context || context.state !== 'running') return;
 
-        this.impactNoiseSynth.triggerAttackRelease(duration, time, velocity);
+        const source = context.createBufferSource();
+        source.buffer = this.getNoiseBuffer(context);
+
+        const highpass = context.createBiquadFilter();
+        highpass.type = 'highpass';
+        highpass.frequency.value = highpassFrequency;
+
+        const lowpass = context.createBiquadFilter();
+        lowpass.type = 'lowpass';
+        lowpass.frequency.value = lowpassFrequency;
+
+        const gain = context.createGain();
+        const startTime = context.currentTime + delay;
+        const stopTime = startTime + duration;
+
+        gain.gain.setValueAtTime(0.0001, startTime);
+        gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, peakGain), startTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.0001, stopTime);
+
+        source.connect(highpass);
+        highpass.connect(lowpass);
+        lowpass.connect(gain);
+        gain.connect(this.getBus('sfx'));
+        source.start(startTime);
+        source.stop(stopTime);
+    }
+
+    private getBus(bus: AudioBus): GainNode {
+        const context = this.ensureAudioContext();
+        if (!context || !this.masterGain || !this.musicGain || !this.sfxGain) {
+            throw new Error('Audio bus requested before audio context initialization');
+        }
+
+        return bus === 'music' ? this.musicGain : this.sfxGain;
+    }
+
+    private getNoiseBuffer(context: AudioContext): AudioBuffer {
+        if (this.noiseBuffer) return this.noiseBuffer;
+
+        const length = Math.max(1, Math.floor(context.sampleRate * 0.5));
+        const buffer = context.createBuffer(1, length, context.sampleRate);
+        const channel = buffer.getChannelData(0);
+        for (let i = 0; i < channel.length; i++) {
+            channel[i] = Math.random() * 2 - 1;
+        }
+
+        this.noiseBuffer = buffer;
+        return buffer;
     }
 }
