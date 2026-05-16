@@ -1,3 +1,16 @@
+# [3.18.0](https://github.com/samtun/hackworld/compare/v3.17.0...v3.18.0) (2026-05-16)
+
+
+### Bug Fixes
+
+* correct 13 stale test expectations to unblock CI deployment ([1921e32](https://github.com/samtun/hackworld/commit/1921e327274d670dc5b13c5946f16c9e5ab1c944))
+
+
+### Features
+
+* add lobby teleporter to dungeon stages and apply death penalty ([76a7cb6](https://github.com/samtun/hackworld/commit/76a7cb67a1ad6173538ea4d57fa2b8095fe07ac7))
+* show death penalty on death screen instead of floating indicators ([7e4a2b5](https://github.com/samtun/hackworld/commit/7e4a2b55b67ffb1378fd57ffdbb0abc2d700564e))
+
 # [3.17.0](https://github.com/samtun/hackworld/compare/v3.16.0...v3.17.0) (2026-04-30)
 
 
