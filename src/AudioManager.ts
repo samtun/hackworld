@@ -2,6 +2,8 @@ type AudioBus = 'music' | 'sfx';
 type FootstepSource = 'player' | 'enemy';
 type CombatSource = 'player' | 'enemy';
 
+const ENVELOPE_MIN_GAIN = 0.0001;
+
 interface StageMusicProfile {
     pulseFrequencies: number[];
     harmonyFrequencies?: number[];
@@ -143,90 +145,90 @@ export class AudioManager {
         const gain = source === 'player' ? 0.055 : 0.042;
         const frequency = source === 'player' ? 92 : 64;
         this.playNoise(0.07, gain, source === 'player' ? 1500 : 900, source === 'player' ? 180 : 110, 0);
-        this.playTone(frequency, 0.06, source === 'player' ? 'triangle' : 'sine', gain, 0.0001);
+        this.playTone(frequency, 0.06, source === 'player' ? 'triangle' : 'sine', gain, ENVELOPE_MIN_GAIN);
     }
 
     playJump(): void {
-        this.playTone(260, 0.2, 'triangle', 0.07, 0.0001, 0, 720);
-        this.playTone(520, 0.08, 'sine', 0.03, 0.0001, 0.03, 780);
+        this.playTone(260, 0.2, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0, 720);
+        this.playTone(520, 0.08, 'sine', 0.03, ENVELOPE_MIN_GAIN, 0.03, 780);
     }
 
     playAttack(source: CombatSource, charged: boolean = false): void {
         if (charged) {
             this.playNoise(0.18, 0.11, 3600, 260, 0);
-            this.playTone(180, 0.22, 'sawtooth', 0.12, 0.0001, 0, 520);
-            this.playTone(540, 0.14, 'triangle', 0.055, 0.0001, 0.03, 860);
+            this.playTone(180, 0.22, 'sawtooth', 0.12, ENVELOPE_MIN_GAIN, 0, 520);
+            this.playTone(540, 0.14, 'triangle', 0.055, ENVELOPE_MIN_GAIN, 0.03, 860);
             return;
         }
 
         if (source === 'player') {
             this.playNoise(0.07, 0.07, 4200, 420, 0);
-            this.playTone(540, 0.09, 'square', 0.1, 0.0001, 0, 260);
-            this.playTone(880, 0.05, 'triangle', 0.038, 0.0001, 0.02, 660);
+            this.playTone(540, 0.09, 'square', 0.1, ENVELOPE_MIN_GAIN, 0, 260);
+            this.playTone(880, 0.05, 'triangle', 0.038, ENVELOPE_MIN_GAIN, 0.02, 660);
             return;
         }
 
         this.playNoise(0.12, 0.08, 1000, 90, 0);
-        this.playTone(150, 0.16, 'sawtooth', 0.09, 0.0001, 0, 96);
-        this.playTone(90, 0.12, 'square', 0.045, 0.0001, 0.02, 70);
+        this.playTone(150, 0.16, 'sawtooth', 0.09, ENVELOPE_MIN_GAIN, 0, 96);
+        this.playTone(90, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0.02, 70);
     }
 
     playDamage(source: CombatSource): void {
         if (source === 'player') {
             this.playNoise(0.11, 0.085, 3600, 500, 0);
-            this.playTone(760, 0.11, 'square', 0.06, 0.0001, 0, 280);
+            this.playTone(760, 0.11, 'square', 0.06, ENVELOPE_MIN_GAIN, 0, 280);
             return;
         }
 
         this.playNoise(0.09, 0.07, 1600, 140, 0);
-        this.playTone(210, 0.11, 'triangle', 0.055, 0.0001, 0, 120);
+        this.playTone(210, 0.11, 'triangle', 0.055, ENVELOPE_MIN_GAIN, 0, 120);
     }
 
     playDeath(source: CombatSource): void {
         const frequency = source === 'player' ? 180 : 120;
         const gain = source === 'player' ? 0.09 : 0.065;
         this.playNoise(0.2, gain, 1200, 120, 0);
-        this.playTone(frequency, 0.45, source === 'player' ? 'sawtooth' : 'triangle', gain, 0.0001, 0, frequency * 0.2);
+        this.playTone(frequency, 0.45, source === 'player' ? 'sawtooth' : 'triangle', gain, ENVELOPE_MIN_GAIN, 0, frequency * 0.2);
     }
 
     playDialogueTick(): void {
         this.playNoise(0.025, 0.03, 4500, 1200, 0);
-        this.playTone(1400, 0.03, 'square', 0.018, 0.0001);
+        this.playTone(1400, 0.03, 'square', 0.018, ENVELOPE_MIN_GAIN);
     }
 
     playTeleport(): void {
         [261.63, 392, 523.25].forEach((frequency, index) => {
             const delay = index * 0.08;
-            this.playTone(frequency, 0.16, 'triangle', 0.07, 0.0001, delay, frequency * 1.12);
+            this.playTone(frequency, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, delay, frequency * 1.12);
         });
     }
 
     playBossSpawn(): void {
         this.playNoise(0.28, 0.075, 1400, 90, 0);
-        this.playTone(98, 0.5, 'sawtooth', 0.1, 0.0001, 0, 49);
-        this.playTone(146.83, 0.35, 'square', 0.055, 0.0001, 0.12, 110);
+        this.playTone(98, 0.5, 'sawtooth', 0.1, ENVELOPE_MIN_GAIN, 0, 49);
+        this.playTone(146.83, 0.35, 'square', 0.055, ENVELOPE_MIN_GAIN, 0.12, 110);
     }
 
     playStageCleared(): void {
         [261.63, 329.63, 392, 523.25].forEach((frequency, index) => {
-            this.playTone(frequency, 0.22, 'triangle', 0.085, 0.0001, index * 0.07);
+            this.playTone(frequency, 0.22, 'triangle', 0.085, ENVELOPE_MIN_GAIN, index * 0.07);
         });
     }
 
     playBarrelBreak(): void {
         this.playNoise(0.12, 0.08, 2200, 180, 0);
-        this.playTone(110, 0.18, 'square', 0.075, 0.0001, 0, 72);
-        this.playTone(180, 0.08, 'triangle', 0.035, 0.0001, 0.03, 120);
+        this.playTone(110, 0.18, 'square', 0.075, ENVELOPE_MIN_GAIN, 0, 72);
+        this.playTone(180, 0.08, 'triangle', 0.035, ENVELOPE_MIN_GAIN, 0.03, 120);
     }
 
     playItemPickup(): void {
-        this.playTone(659.25, 0.08, 'triangle', 0.06, 0.0001);
-        this.playTone(987.77, 0.1, 'sine', 0.045, 0.0001, 0.05);
+        this.playTone(659.25, 0.08, 'triangle', 0.06, ENVELOPE_MIN_GAIN);
+        this.playTone(987.77, 0.1, 'sine', 0.045, ENVELOPE_MIN_GAIN, 0.05);
     }
 
     playChestOpen(): void {
         [196, 246.94, 329.63].forEach((frequency, index) => {
-            this.playTone(frequency, 0.16, 'triangle', 0.07, 0.0001, index * 0.05, frequency * 1.08);
+            this.playTone(frequency, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, index * 0.05, frequency * 1.08);
         });
     }
 
@@ -277,14 +279,14 @@ export class AudioManager {
             const frequency = profile.pulseFrequencies[pulseIndex % profile.pulseFrequencies.length];
             const harmonyFrequency = profile.harmonyFrequencies?.[pulseIndex % (profile.harmonyFrequencies?.length ?? 1)];
             pulseIndex++;
-            this.playTone(frequency, profile.pulseDuration, profile.pulseType, profile.pulseGain, 0.0001, 0, undefined, 'music');
+            this.playTone(frequency, profile.pulseDuration, profile.pulseType, profile.pulseGain, ENVELOPE_MIN_GAIN, 0, undefined, 'music');
             if (harmonyFrequency !== undefined) {
                 this.playTone(
                     harmonyFrequency,
                     Math.max(0.08, profile.pulseDuration * 0.9),
                     profile.harmonyType,
                     profile.harmonyGain,
-                    0.0001,
+                    ENVELOPE_MIN_GAIN,
                     0.04,
                     undefined,
                     'music',
@@ -330,9 +332,9 @@ export class AudioManager {
             oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, glideToFrequency), stopTime);
         }
 
-        gain.gain.setValueAtTime(0.0001, startTime);
-        gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, peakGain), startTime + 0.02);
-        gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, endGain), stopTime);
+        gain.gain.setValueAtTime(ENVELOPE_MIN_GAIN, startTime);
+        gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, peakGain), startTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, endGain), stopTime);
 
         oscillator.connect(gain);
         gain.connect(this.getBus(bus));
@@ -365,9 +367,9 @@ export class AudioManager {
         const startTime = context.currentTime + delay;
         const stopTime = startTime + duration;
 
-        gain.gain.setValueAtTime(0.0001, startTime);
-        gain.gain.exponentialRampToValueAtTime(Math.max(0.0001, peakGain), startTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(0.0001, stopTime);
+        gain.gain.setValueAtTime(ENVELOPE_MIN_GAIN, startTime);
+        gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, peakGain), startTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(ENVELOPE_MIN_GAIN, stopTime);
 
         source.connect(highpass);
         highpass.connect(lowpass);
@@ -380,7 +382,7 @@ export class AudioManager {
     private getBus(bus: AudioBus): GainNode {
         const context = this.ensureAudioContext();
         if (!context || !this.masterGain || !this.musicGain || !this.sfxGain) {
-            throw new Error('Audio bus requested before audio context initialization');
+            throw new Error(`Audio bus '${bus}' requested before audio context initialization`);
         }
 
         return bus === 'music' ? this.musicGain : this.sfxGain;
