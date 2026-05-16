@@ -11,6 +11,7 @@ import { getHint, HintConfigs } from '../ui/InputHints';
 import { sortInventory } from './ItemSorter';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
 import { UIManager } from '../ui/UIManager';
+import { AudioManager } from '../AudioManager';
 
 export { TradeMode } from './TradeMode';
 
@@ -355,6 +356,8 @@ export abstract class BaseTrader {
         const navigateRight = input.isNavigateRightPressed();
         const select = input.isSelectPressed();
         const cancel = (input as any).isCancelPressed ? (input as any).isCancelPressed() : false;
+        const previousIndex = this.selectedIndex;
+        const previousPanel = this.activePanel;
         if (cancel) { this.hide(); return; }
 
         if (navigateUp && !this.lastNavigateUpState) {
@@ -381,6 +384,10 @@ export abstract class BaseTrader {
 
         if (select && !this.lastSelectState) this.handleTransaction(player);
 
+        if (this.selectedIndex !== previousIndex || this.activePanel !== previousPanel) {
+            AudioManager.Instance.playMenuNavigate();
+        }
+
         this.lastNavigateUpState = navigateUp;
         this.lastNavigateDownState = navigateDown;
         this.lastNavigateLeftState = navigateLeft;
@@ -404,6 +411,7 @@ export abstract class BaseTrader {
                     this.traderInventory.splice(this.selectedIndex, 1);
                     if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) this.selectedIndex--;
                     this.needsRender = true;
+                    AudioManager.Instance.playBuy();
                 } else {
                     // Player doesn't have enough money - shake the item
                     this.shakeItem(this.selectedIndex);
@@ -425,6 +433,7 @@ export abstract class BaseTrader {
                 if (idx !== -1) player.inventory.splice(idx, 1);
                 if (this.selectedIndex >= playerItems.length - 1 && this.selectedIndex > 0) this.selectedIndex--;
                 this.needsRender = true;
+                AudioManager.Instance.playSell();
             }
         }
     }

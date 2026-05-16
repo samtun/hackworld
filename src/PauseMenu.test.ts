@@ -1,6 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+vi.mock('./AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playMenuNavigate: vi.fn(),
+        },
+    },
+}));
+
 import { PauseMenu, PauseMenuCallbacks, PERFORMANCE_MODE_STORAGE_KEY, CONTROL_HINTS_STORAGE_KEY } from './PauseMenu';
 import { InputManager } from './InputManager';
+import { AudioManager } from './AudioManager';
 
 vi.mock('./MobileControlsManager', () => ({
     MobileControlsManager: {
@@ -168,5 +177,10 @@ describe('PauseMenu', () => {
         it('exports the correct localStorage key', () => {
             expect(CONTROL_HINTS_STORAGE_KEY).toBe('hackworld_control_hints');
         });
+    });
+
+    it('plays the navigation sound when moving between pause menu options', () => {
+        (menu as any).navigate(1);
+        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
     });
 });

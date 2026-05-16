@@ -1,12 +1,16 @@
 type AudioBus = 'music' | 'sfx';
 type FootstepSource = 'player' | 'enemy';
 type CombatSource = 'player' | 'enemy';
+type MusicPhrase = readonly number[];
 
 const ENVELOPE_MIN_GAIN = 0.0001;
 const DEFAULT_ATTACK_SECONDS = 0.02;
 const MAX_ATTACK_PORTION_OF_DURATION = 0.35;
 const MIN_GLIDE_FREQUENCY = 1;
 const NOISE_BUFFER_DURATION_SECONDS = 0.5;
+const MIN_STAGE_MUSIC_LOOP_DURATION_MS = 60_000;
+const SEMITONE_RATIO = Math.pow(2, 1 / 12);
+const MUSIC_VARIATION_PATTERN = [0, 2, 0, -2, 3, 0, -3, 5] as const;
 
 interface StageMusicProfile {
     pulseFrequencies: number[];
@@ -19,87 +23,137 @@ interface StageMusicProfile {
     harmonyGain: number;
 }
 
-const STAGE_MUSIC: Record<string, StageMusicProfile> = {
-    startScreen: {
-        pulseFrequencies: [174.61, 220, 261.63, 293.66],
-        harmonyFrequencies: [261.63, 329.63, 349.23, 392],
-        pulseIntervalMs: 420,
-        pulseType: 'triangle',
-        harmonyType: 'sine',
-        pulseDuration: 0.34,
-        pulseGain: 0.065,
-        harmonyGain: 0.03,
-    },
-    lobby: {
-        pulseFrequencies: [220, 277.18, 329.63, 440],
-        harmonyFrequencies: [329.63, 369.99, 440, 554.37],
-        pulseIntervalMs: 340,
-        pulseType: 'triangle',
-        harmonyType: 'sine',
-        pulseDuration: 0.22,
-        pulseGain: 0.07,
-        harmonyGain: 0.028,
-    },
-    networkMatrix: {
-        pulseFrequencies: [196, 220, 261.63, 293.66],
-        harmonyFrequencies: [293.66, 329.63, 392, 440],
-        pulseIntervalMs: 300,
-        pulseType: 'square',
-        harmonyType: 'triangle',
-        pulseDuration: 0.18,
-        pulseGain: 0.072,
-        harmonyGain: 0.024,
-    },
-    packetForge: {
-        pulseFrequencies: [246.94, 311.13, 369.99, 311.13],
-        harmonyFrequencies: [369.99, 415.3, 466.16, 415.3],
-        pulseIntervalMs: 280,
-        pulseType: 'square',
-        harmonyType: 'triangle',
-        pulseDuration: 0.16,
-        pulseGain: 0.075,
-        harmonyGain: 0.022,
-    },
-    cipherNull: {
-        pulseFrequencies: [164.81, 196, 233.08, 174.61],
-        harmonyFrequencies: [246.94, 261.63, 311.13, 261.63],
-        pulseIntervalMs: 320,
-        pulseType: 'triangle',
-        harmonyType: 'sine',
-        pulseDuration: 0.2,
-        pulseGain: 0.068,
-        harmonyGain: 0.024,
-    },
-    securityCore: {
-        pulseFrequencies: [146.83, 196, 220, 293.66],
-        harmonyFrequencies: [220, 293.66, 329.63, 392],
-        pulseIntervalMs: 260,
-        pulseType: 'square',
-        harmonyType: 'triangle',
-        pulseDuration: 0.17,
-        pulseGain: 0.078,
-        harmonyGain: 0.022,
-    },
-    kernelTerminus: {
-        pulseFrequencies: [130.81, 174.61, 196, 261.63],
-        harmonyFrequencies: [196, 233.08, 261.63, 349.23],
-        pulseIntervalMs: 240,
-        pulseType: 'sawtooth',
-        harmonyType: 'triangle',
-        pulseDuration: 0.16,
-        pulseGain: 0.082,
-        harmonyGain: 0.022,
-    },
-    gameTest: {
-        pulseFrequencies: [220, 246.94, 293.66, 369.99],
-        harmonyFrequencies: [293.66, 329.63, 392, 466.16],
-        pulseIntervalMs: 260,
-        pulseType: 'square',
-        harmonyType: 'triangle',
-        pulseDuration: 0.18,
-        pulseGain: 0.076,
-        harmonyGain: 0.025,
-    },
+function transposeFrequency(frequency: number, semitones: number): number {
+    if (semitones === 0) return frequency;
+    return Number((frequency * Math.pow(SEMITONE_RATIO, semitones)).toFixed(2));
+}
+
+function buildMusicVariation(basePhrase: MusicPhrase, cycle: number): number[] {
+    const semitones = MUSIC_VARIATION_PATTERN[cycle % MUSIC_VARIATION_PATTERN.length];
+    const forward = basePhrase.map((frequency) => transposeFrequency(frequency, semitones));
+    const mirrored = cycle % 2 === 0
+        ? forward.slice(0, -1).reverse()
+        : forward.slice(1).reverse();
+
+    return [...forward, ...mirrored];
+}
+
+function buildLongMusicLoop(basePhrase: MusicPhrase, pulseIntervalMs: number): number[] {
+    const requiredNotes = Math.ceil(MIN_STAGE_MUSIC_LOOP_DURATION_MS / pulseIntervalMs);
+    const sequence: number[] = [];
+    let cycle = 0;
+
+    while (sequence.length < requiredNotes) {
+        sequence.push(...buildMusicVariation(basePhrase, cycle));
+        cycle++;
+    }
+
+    return sequence.slice(0, requiredNotes);
+}
+
+function createStageMusicProfile(
+    pulsePhrase: MusicPhrase,
+    harmonyPhrase: MusicPhrase | undefined,
+    pulseIntervalMs: number,
+    pulseType: OscillatorType,
+    harmonyType: OscillatorType,
+    pulseDuration: number,
+    pulseGain: number,
+    harmonyGain: number,
+): StageMusicProfile {
+    return {
+        pulseFrequencies: buildLongMusicLoop(pulsePhrase, pulseIntervalMs),
+        harmonyFrequencies: harmonyPhrase ? buildLongMusicLoop(harmonyPhrase, pulseIntervalMs) : undefined,
+        pulseIntervalMs,
+        pulseType,
+        harmonyType,
+        pulseDuration,
+        pulseGain,
+        harmonyGain,
+    };
+}
+
+export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
+    startScreen: createStageMusicProfile(
+        [174.61, 220, 261.63, 293.66],
+        [261.63, 329.63, 349.23, 392],
+        420,
+        'triangle',
+        'sine',
+        0.34,
+        0.065,
+        0.03,
+    ),
+    lobby: createStageMusicProfile(
+        [220, 277.18, 329.63, 440],
+        [329.63, 369.99, 440, 554.37],
+        340,
+        'triangle',
+        'sine',
+        0.22,
+        0.07,
+        0.028,
+    ),
+    networkMatrix: createStageMusicProfile(
+        [196, 220, 261.63, 293.66],
+        [293.66, 329.63, 392, 440],
+        300,
+        'square',
+        'triangle',
+        0.18,
+        0.072,
+        0.024,
+    ),
+    packetForge: createStageMusicProfile(
+        [246.94, 311.13, 369.99, 311.13],
+        [369.99, 415.3, 466.16, 415.3],
+        280,
+        'square',
+        'triangle',
+        0.16,
+        0.075,
+        0.022,
+    ),
+    cipherNull: createStageMusicProfile(
+        [164.81, 196, 233.08, 174.61],
+        [246.94, 261.63, 311.13, 261.63],
+        320,
+        'triangle',
+        'sine',
+        0.2,
+        0.068,
+        0.024,
+    ),
+    securityCore: createStageMusicProfile(
+        [146.83, 196, 220, 293.66],
+        [220, 293.66, 329.63, 392],
+        260,
+        'square',
+        'triangle',
+        0.17,
+        0.078,
+        0.022,
+    ),
+    kernelTerminus: createStageMusicProfile(
+        [130.81, 174.61, 196, 261.63],
+        [196, 233.08, 261.63, 349.23],
+        240,
+        'sawtooth',
+        'triangle',
+        0.16,
+        0.082,
+        0.022,
+    ),
+    gameTest: createStageMusicProfile(
+        [220, 246.94, 293.66, 369.99],
+        [293.66, 329.63, 392, 466.16],
+        260,
+        'square',
+        'triangle',
+        0.18,
+        0.076,
+        0.025,
+    ),
 };
 
 export class AudioManager {
@@ -198,6 +252,30 @@ export class AudioManager {
     playDialogueTick(): void {
         this.playNoise(0.025, 0.03, 4500, 1200, 0);
         this.playTone(1400, 0.03, 'square', 0.018, ENVELOPE_MIN_GAIN);
+    }
+
+    playMenuNavigate(): void {
+        this.playTone(1046.5, 0.05, 'triangle', 0.035, ENVELOPE_MIN_GAIN);
+        this.playTone(1318.51, 0.05, 'sine', 0.022, ENVELOPE_MIN_GAIN, 0.02);
+    }
+
+    playBuy(): void {
+        [523.25, 659.25, 783.99].forEach((frequency, index) => {
+            this.playTone(frequency, 0.12, 'triangle', 0.06, ENVELOPE_MIN_GAIN, index * 0.04, frequency * 1.03);
+        });
+    }
+
+    playSell(): void {
+        [659.25, 523.25, 392].forEach((frequency, index) => {
+            this.playTone(frequency, 0.1, 'sine', 0.05, ENVELOPE_MIN_GAIN, index * 0.035, frequency * 0.96);
+        });
+    }
+
+    playUpgrade(): void {
+        this.playNoise(0.04, 0.025, 5200, 800, 0.02);
+        [392, 523.25, 659.25, 783.99].forEach((frequency, index) => {
+            this.playTone(frequency, 0.14, 'triangle', 0.06, ENVELOPE_MIN_GAIN, index * 0.045, frequency * 1.05);
+        });
     }
 
     playTeleport(): void {

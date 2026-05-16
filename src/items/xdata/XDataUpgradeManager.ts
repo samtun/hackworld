@@ -5,6 +5,7 @@ import { StatType } from '../../StatType';
 import { getHint, HintConfigs } from '../../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../../ui/MenuManager';
 import { UIManager } from '../../ui/UIManager';
+import { AudioManager } from '../../AudioManager';
 
 interface StatInfo {
     type: StatType;
@@ -262,6 +263,7 @@ export class XDataUpgradeManager {
         const navigateDown = input.isNavigateDownPressed();
         const select = input.isSelectPressed();
         const cancel = input.isCancelPressed();
+        const previousIndex = this.selectedIndex;
 
         // Close on cancel (with debouncing)
         if (cancel && !this.lastCancelState) {
@@ -284,6 +286,10 @@ export class XDataUpgradeManager {
             }
         }
 
+        if (this.selectedIndex !== previousIndex) {
+            AudioManager.Instance.playMenuNavigate();
+        }
+
         // Select/Upgrade stat (with debouncing)
         if (select && !this.lastSelectState) {
             const selectedStat = this.stats[this.selectedIndex];
@@ -292,6 +298,7 @@ export class XDataUpgradeManager {
             if (success) {
                 // Trigger re-render to update display
                 this.needsRender = true;
+                AudioManager.Instance.playUpgrade();
             } else {
                 // Shake animation for failed upgrade
                 this.shakeItem(this.selectedIndex);

@@ -36,6 +36,14 @@ vi.mock('../../ui/UIManager', () => ({
         hideControlHints: vi.fn(),
     }}
 }));
+vi.mock('../../AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playMenuNavigate: vi.fn(),
+            playUpgrade: vi.fn(),
+        },
+    },
+}));
 vi.mock('../../ui/StatIcons', () => ({
     ICON_HP: '<svg>hp</svg>', ICON_TP: '<svg>tp</svg>',
     ICON_STRENGTH: '<svg>strength</svg>', ICON_DEFENSE: '<svg>defense</svg>',
@@ -47,6 +55,7 @@ vi.mock('../../Player', () => ({ Player: class {} }));
 
 import { XDataUpgradeManager } from './XDataUpgradeManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
+import { AudioManager } from '../../AudioManager';
 
 // jsdom does not implement scrollIntoView
 HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -281,6 +290,7 @@ describe('XDataUpgradeManager', () => {
             } as any;
             mgr.update(makePlayer(), input);
             expect(mgr.selectedIndex).toBe(1);
+            expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
         });
 
         it('decrements selectedIndex on navigateUp press', () => {
@@ -342,6 +352,7 @@ describe('XDataUpgradeManager', () => {
             mgr.lastSelectState = false;
             mgr.update(player, input);
             expect(player.upgradeWithXData).toHaveBeenCalledWith(mgr.stats[0].type);
+            expect(AudioManager.Instance.playUpgrade).toHaveBeenCalledOnce();
         });
     });
 });

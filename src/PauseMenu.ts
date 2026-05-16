@@ -1,4 +1,5 @@
 import { InputManager } from './InputManager';
+import { AudioManager } from './AudioManager';
 
 const PAUSE_FADE_MS = 300;
 
@@ -266,6 +267,7 @@ export class PauseMenu {
         if (next >= this.items.length) next = 0;
         this.selectedIndex = next;
         this.updateStyles();
+        AudioManager.Instance.playMenuNavigate();
     }
 
     private selectAndConfirm(index: number): void {
