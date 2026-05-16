@@ -309,7 +309,6 @@ export class Game {
                 localStorage.setItem(CONTROL_HINTS_STORAGE_KEY, String(this.ui.controlHintsEnabled));
                 return this.ui.controlHintsEnabled;
             },
-            onRestartArea: () => this.respawnPlayer(),
         });
 
         // Set up teleporter callback for handling teleporter interactions
@@ -352,9 +351,15 @@ export class Game {
      */
     handlePlayerDeath() {
         console.log('Game: Handling player death');
+
+        // Apply death penalty immediately at the moment of death so players
+        // cannot quit the game on the death screen to avoid the punishment.
+        const penalty = this.player.applyDeathPenalty();
+
         this.ui.showDeathOverlay(
             () => this.respawnPlayer(),
-            () => this.returnToLobby()
+            () => this.returnToLobby(),
+            penalty
         );
     }
 
@@ -569,8 +574,7 @@ export class Game {
         const isPausePressed = this.input.isPausePressed();
         if (isPausePressed && !this.wasPausePressed) {
             if (!this.pauseMenu.visible && !this.isAnyMenuOpen() && !this.ui.isDeathOverlayVisible()) {
-                const isInLobby = this.currentScene === Lobby.getMetadata().id;
-                this.pauseMenu.show(!isInLobby);
+                this.pauseMenu.show();
             }
         }
         this.wasPausePressed = isPausePressed;

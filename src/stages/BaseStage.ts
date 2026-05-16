@@ -71,6 +71,7 @@ export abstract class BaseStage {
     protected assetManager: AssetManager;
 
     teleporter?: Teleporter;
+    lobbyReturnTeleporter?: Teleporter;
     bodies: CANNON.Body[] = [];
     meshes: (THREE.Mesh | THREE.Group | THREE.Object3D)[] = [];
     enemies: Enemy[] = [];
@@ -268,8 +269,9 @@ export abstract class BaseStage {
         }
         this.electricTraps = [];
 
-        // Clear teleporter reference
+        // Clear teleporter references
         this.teleporter = undefined;
+        this.lobbyReturnTeleporter = undefined;
     }
 
     /**
@@ -330,6 +332,23 @@ export abstract class BaseStage {
         );
         // Add teleporter to npcs set so it's handled like any other NPC
         this.npcs.add(this.teleporter);
+    }
+
+    /**
+     * Create a lobby return teleporter at the spawn point.
+     * Always active – allows players to return to the lobby at any time.
+     */
+    protected createLobbyReturnTeleporter(position: CANNON.Vec3, lobbyId: string): void {
+        this.lobbyReturnTeleporter = new Teleporter(
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            position,
+            lobbyId,
+            true,
+            'Return to Lobby'
+        );
+        this.npcs.add(this.lobbyReturnTeleporter);
     }
 
     /**
