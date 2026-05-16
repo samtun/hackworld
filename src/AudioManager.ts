@@ -342,8 +342,11 @@ export class AudioManager {
         gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, peakGain), startTime + attackTime);
         gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, endGain), stopTime);
 
+        const targetBus = this.getBus(bus);
+        if (!targetBus) return;
+
         oscillator.connect(gain);
-        gain.connect(this.getBus(bus));
+        gain.connect(targetBus);
         oscillator.start(startTime);
         oscillator.stop(stopTime);
     }
@@ -377,18 +380,20 @@ export class AudioManager {
         gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, peakGain), startTime + 0.01);
         gain.gain.exponentialRampToValueAtTime(ENVELOPE_MIN_GAIN, stopTime);
 
+        const targetBus = this.getBus('sfx');
+        if (!targetBus) return;
+
         source.connect(highpass);
         highpass.connect(lowpass);
         lowpass.connect(gain);
-        gain.connect(this.getBus('sfx'));
+        gain.connect(targetBus);
         source.start(startTime);
         source.stop(stopTime);
     }
 
-    private getBus(bus: AudioBus): GainNode {
-        const context = this.ensureAudioContext();
-        if (!context || !this.masterGain || !this.musicGain || !this.sfxGain) {
-            throw new Error(`Audio bus '${bus}' requested before audio context initialization`);
+    private getBus(bus: AudioBus): GainNode | null {
+        if (!this.audioContext || !this.masterGain || !this.musicGain || !this.sfxGain) {
+            return null;
         }
 
         return bus === 'music' ? this.musicGain : this.sfxGain;
@@ -400,6 +405,8 @@ export class AudioManager {
         const length = Math.max(1, Math.floor(context.sampleRate * NOISE_BUFFER_DURATION_SECONDS));
         const buffer = context.createBuffer(1, length, context.sampleRate);
         const channel = buffer.getChannelData(0);
+        // Math.random() is sufficient here because this buffer only needs cheap
+        // white-noise variation for synthetic SFX, not statistically secure data.
         for (let i = 0; i < channel.length; i++) {
             channel[i] = Math.random() * 2 - 1;
         }
