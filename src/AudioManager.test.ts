@@ -35,7 +35,11 @@ describe('music loop helpers', () => {
     });
 
     it('mirrors odd cycles without repeating the opening note', () => {
-        expect(buildMusicVariation([100, 200, 300, 400], 1)).toEqual([112.25, 224.49, 336.74, 448.98, 448.98, 336.74, 224.49]);
+        const transposedPhrase = [100, 200, 300, 400].map((frequency) => transposeFrequency(frequency, 2));
+        expect(buildMusicVariation([100, 200, 300, 400], 1)).toEqual([
+            ...transposedPhrase,
+            ...transposedPhrase.slice(1).reverse(),
+        ]);
     });
 
     it('builds loops to the exact required note count across multiple cycles', () => {

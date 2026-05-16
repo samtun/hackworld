@@ -85,13 +85,13 @@ function createStageMusicProfile(
 ): StageMusicProfile {
     return {
         pulseFrequencies: buildLongMusicLoop(pulsePhrase, pulseIntervalMs),
-        harmonyFrequencies: harmonyPhrase ? buildLongMusicLoop(harmonyPhrase, pulseIntervalMs) : undefined,
         pulseIntervalMs,
         pulseType,
         harmonyType,
         pulseDuration,
         pulseGain,
         harmonyGain,
+        ...(harmonyPhrase ? { harmonyFrequencies: buildLongMusicLoop(harmonyPhrase, pulseIntervalMs) } : {}),
     };
 }
 
