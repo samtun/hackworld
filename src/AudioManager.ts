@@ -5,6 +5,8 @@ type CombatSource = 'player' | 'enemy';
 const ENVELOPE_MIN_GAIN = 0.0001;
 const DEFAULT_ATTACK_SECONDS = 0.02;
 const MAX_ATTACK_PORTION_OF_DURATION = 0.35;
+const MIN_GLIDE_FREQUENCY = 1;
+const NOISE_BUFFER_DURATION_SECONDS = 0.5;
 
 interface StageMusicProfile {
     pulseFrequencies: number[];
@@ -331,7 +333,7 @@ export class AudioManager {
 
         oscillator.type = type;
         oscillator.frequency.setValueAtTime(frequency, startTime);
-        if (glideToFrequency !== undefined && glideToFrequency > 1) {
+        if (glideToFrequency !== undefined && glideToFrequency > MIN_GLIDE_FREQUENCY) {
             oscillator.frequency.exponentialRampToValueAtTime(glideToFrequency, stopTime);
         }
 
@@ -395,7 +397,7 @@ export class AudioManager {
     private getNoiseBuffer(context: AudioContext): AudioBuffer {
         if (this.noiseBuffer) return this.noiseBuffer;
 
-        const length = Math.max(1, Math.floor(context.sampleRate * 0.5));
+        const length = Math.max(1, Math.floor(context.sampleRate * NOISE_BUFFER_DURATION_SECONDS));
         const buffer = context.createBuffer(1, length, context.sampleRate);
         const channel = buffer.getChannelData(0);
         for (let i = 0; i < channel.length; i++) {
