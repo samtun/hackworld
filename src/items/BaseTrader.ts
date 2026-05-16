@@ -382,11 +382,11 @@ export abstract class BaseTrader {
             this.selectedIndex = this.playerSelectedIndex;
         }
 
-        if (select && !this.lastSelectState) this.handleTransaction(player);
-
         if (this.selectedIndex !== previousIndex || this.activePanel !== previousPanel) {
             AudioManager.Instance.playMenuNavigate();
         }
+
+        if (select && !this.lastSelectState) this.handleTransaction(player);
 
         this.lastNavigateUpState = navigateUp;
         this.lastNavigateDownState = navigateDown;

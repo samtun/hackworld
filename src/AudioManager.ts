@@ -10,6 +10,9 @@ const MIN_GLIDE_FREQUENCY = 1;
 const NOISE_BUFFER_DURATION_SECONDS = 0.5;
 const MIN_STAGE_MUSIC_LOOP_DURATION_MS = 60_000;
 const SEMITONE_RATIO = Math.pow(2, 1 / 12);
+// These intervals keep the loop moving between the root phrase, brighter major
+// lifts, and a few darker dips so the minute-long sequence evolves without
+// drifting into a different musical identity than the original short motif.
 const MUSIC_VARIATION_PATTERN = [0, 2, 0, -2, 3, 0, -3, 5] as const;
 
 interface StageMusicProfile {
@@ -31,6 +34,8 @@ function transposeFrequency(frequency: number, semitones: number): number {
 function buildMusicVariation(basePhrase: MusicPhrase, cycle: number): number[] {
     const semitones = MUSIC_VARIATION_PATTERN[cycle % MUSIC_VARIATION_PATTERN.length];
     const forward = basePhrase.map((frequency) => transposeFrequency(frequency, semitones));
+    // Alternating which edge note gets dropped avoids a duplicated turnaround
+    // pitch every phrase, which keeps the long loop feeling less mechanical.
     const mirrored = cycle % 2 === 0
         ? forward.slice(0, -1).reverse()
         : forward.slice(1).reverse();
