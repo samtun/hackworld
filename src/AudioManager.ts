@@ -3,6 +3,8 @@ type FootstepSource = 'player' | 'enemy';
 type CombatSource = 'player' | 'enemy';
 
 const ENVELOPE_MIN_GAIN = 0.0001;
+const DEFAULT_ATTACK_SECONDS = 0.02;
+const MAX_ATTACK_PORTION_OF_DURATION = 0.35;
 
 interface StageMusicProfile {
     pulseFrequencies: number[];
@@ -263,6 +265,7 @@ export class AudioManager {
         this.musicGain.connect(this.masterGain);
         this.sfxGain.connect(this.masterGain);
         this.masterGain.connect(this.audioContext.destination);
+        this.noiseBuffer = this.getNoiseBuffer(this.audioContext);
 
         return this.audioContext;
     }
@@ -328,12 +331,13 @@ export class AudioManager {
 
         oscillator.type = type;
         oscillator.frequency.setValueAtTime(frequency, startTime);
-        if (glideToFrequency !== undefined) {
-            oscillator.frequency.exponentialRampToValueAtTime(Math.max(1, glideToFrequency), stopTime);
+        if (glideToFrequency !== undefined && glideToFrequency > 1) {
+            oscillator.frequency.exponentialRampToValueAtTime(glideToFrequency, stopTime);
         }
 
+        const attackTime = Math.min(DEFAULT_ATTACK_SECONDS, duration * MAX_ATTACK_PORTION_OF_DURATION);
         gain.gain.setValueAtTime(ENVELOPE_MIN_GAIN, startTime);
-        gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, peakGain), startTime + 0.02);
+        gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, peakGain), startTime + attackTime);
         gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, endGain), stopTime);
 
         oscillator.connect(gain);
