@@ -199,10 +199,11 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     setHealing(isHealing: boolean): void {
         if (this.isHealing === isHealing) return;
 
-        this.isHealing = isHealing;
         if (isHealing) {
+            this.isHealing = true;
             AudioManager.Instance.startHealingStationLoop();
         } else {
+            this.isHealing = false;
             AudioManager.Instance.stopHealingStationLoop();
         }
     }

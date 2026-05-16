@@ -315,7 +315,7 @@ export class AudioManager {
     stopHealingStationLoop(): void {
         if (this.activeHealingStationCount <= 0) return;
 
-        this.activeHealingStationCount--;
+        this.activeHealingStationCount = Math.max(0, this.activeHealingStationCount - 1);
         if (this.activeHealingStationCount === 0) {
             this.stopHealingStationLoopIfPlaying();
         }
