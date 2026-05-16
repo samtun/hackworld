@@ -2,15 +2,21 @@ import * as Tone from 'tone';
 
 type FootstepSource = 'player' | 'enemy';
 type CombatSource = 'player' | 'enemy';
-type TriggerDuration = string | number;
-type TriggerNote = string | number;
+type ToneJSDuration = string | number;
+type ToneJSNote = string | number;
 
 type TriggerableSynth = {
-    triggerAttackRelease: (note: TriggerNote, duration: TriggerDuration, time?: number, velocity?: number) => void;
+    triggerAttackRelease: (note: ToneJSNote, duration: ToneJSDuration, time?: number, velocity?: number) => void;
 };
 
+// A slight 80ms offset keeps the harmony behind the lead note so the music
+// feels layered without turning back into the constant drone the earlier
+// implementation had.
 const MUSIC_HARMONY_DELAY_SECONDS = 0.08;
 
+// Tone.js trigger velocities are normalized note intensities (0-1), used here
+// to keep related sounds grouped and easy to rebalance without retuning synth
+// settings in every method.
 const AUDIO_VELOCITY = {
     footsteps: {
         playerNoise: 0.18,
@@ -549,8 +555,8 @@ export class AudioManager {
 
     private triggerSynth(
         synth: TriggerableSynth | null,
-        note: TriggerNote,
-        duration: TriggerDuration,
+        note: ToneJSNote,
+        duration: ToneJSDuration,
         delay: number,
         velocity: number,
     ): void {
@@ -560,7 +566,7 @@ export class AudioManager {
         synth.triggerAttackRelease(note, duration, time, velocity);
     }
 
-    private triggerNoise(duration: TriggerDuration, delay: number, velocity: number): void {
+    private triggerNoise(duration: ToneJSDuration, delay: number, velocity: number): void {
         const time = this.getAudioTime(delay);
         if (time === null || this.impactNoiseSynth === null) return;
 
