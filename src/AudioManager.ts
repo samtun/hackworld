@@ -10,10 +10,13 @@ const MIN_GLIDE_FREQUENCY = 1;
 const NOISE_BUFFER_DURATION_SECONDS = 0.5;
 const MIN_STAGE_MUSIC_LOOP_DURATION_MS = 60_000;
 const SEMITONE_RATIO = Math.pow(2, 1 / 12);
+const HEALING_STATION_LOOP_INTERVAL_MS = 220;
 // These intervals keep the loop moving between the root phrase, brighter major
 // lifts, and a few darker dips so the minute-long sequence evolves without
 // drifting into a different musical identity than the original short motif.
 const MUSIC_VARIATION_PATTERN = [0, 2, 0, -2, 3, 0, -3, 5] as const;
+const HEALING_STATION_PRIMARY_FREQUENCIES = [523.25, 659.25, 783.99, 987.77] as const;
+const HEALING_STATION_SWIRL_FREQUENCIES = [659.25, 783.99, 880, 1046.5] as const;
 
 interface StageMusicProfile {
     pulseFrequencies: number[];
@@ -190,6 +193,8 @@ export class AudioManager {
     private currentStageId: string | null = null;
     private playingStageId: string | null = null;
     private musicPulseInterval: number | null = null;
+    private healingStationLoopInterval: number | null = null;
+    private activeHealingStationCount = 0;
 
     public static get Instance(): AudioManager {
         return this.instance || (this.instance = new this());
@@ -206,11 +211,13 @@ export class AudioManager {
         if (context.state === 'suspended') {
             void context.resume().then(() => {
                 this.startStageMusicIfPossible();
+                this.startHealingStationLoopIfPossible();
             }).catch(() => undefined);
             return;
         }
 
         this.startStageMusicIfPossible();
+        this.startHealingStationLoopIfPossible();
     }
 
     setStageMusic(stageId: string): void {
@@ -298,6 +305,20 @@ export class AudioManager {
         [392, 523.25, 659.25, 783.99].forEach((frequency, index) => {
             this.playTone(frequency, 0.14, 'triangle', 0.06, ENVELOPE_MIN_GAIN, index * 0.045, frequency * 1.05);
         });
+    }
+
+    startHealingStationLoop(): void {
+        this.activeHealingStationCount++;
+        this.startHealingStationLoopIfPossible();
+    }
+
+    stopHealingStationLoop(): void {
+        if (this.activeHealingStationCount <= 0) return;
+
+        this.activeHealingStationCount--;
+        if (this.activeHealingStationCount === 0) {
+            this.stopHealingStationLoopIfPlaying();
+        }
     }
 
     playTeleport(): void {
@@ -411,6 +432,34 @@ export class AudioManager {
         }
 
         this.playingStageId = null;
+    }
+
+    private startHealingStationLoopIfPossible(): void {
+        const context = this.ensureAudioContext();
+        if (!context || context.state !== 'running' || this.activeHealingStationCount <= 0 || this.healingStationLoopInterval !== null) {
+            return;
+        }
+
+        let pulseIndex = 0;
+        const playPulse = () => {
+            const primary = HEALING_STATION_PRIMARY_FREQUENCIES[pulseIndex % HEALING_STATION_PRIMARY_FREQUENCIES.length];
+            const swirl = HEALING_STATION_SWIRL_FREQUENCIES[pulseIndex % HEALING_STATION_SWIRL_FREQUENCIES.length];
+            pulseIndex++;
+
+            this.playNoise(0.14, 0.018, 4200, 900, 0);
+            this.playTone(primary, 0.26, 'triangle', 0.04, ENVELOPE_MIN_GAIN, 0, primary * 1.08);
+            this.playTone(swirl, 0.18, 'sine', 0.025, ENVELOPE_MIN_GAIN, 0.05, swirl * 1.04);
+        };
+
+        playPulse();
+        this.healingStationLoopInterval = window.setInterval(playPulse, HEALING_STATION_LOOP_INTERVAL_MS);
+    }
+
+    private stopHealingStationLoopIfPlaying(): void {
+        if (this.healingStationLoopInterval !== null) {
+            window.clearInterval(this.healingStationLoopInterval);
+            this.healingStationLoopInterval = null;
+        }
     }
 
     private playTone(
