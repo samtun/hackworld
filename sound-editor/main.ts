@@ -17,7 +17,6 @@ interface ToneEvent {
     duration: number;
     type: OscType;
     gain: number;
-    delay: number;      // additional audio start offset in seconds
     glideTo: number | null; // target noteIdx, or null
 }
 
@@ -26,7 +25,6 @@ interface NoiseEvent {
     startTime: number;
     duration: number;
     gain: number;
-    delay: number;
     lowpass: number;
     highpass: number;
 }
@@ -64,6 +62,9 @@ const BEAT_FRACTIONS: { label: string; value: number }[] = [
     { label: '1/4',   value: 1/4   },
     { label: '1/2',   value: 1/2   },
     { label: '1/1',   value: 1     },
+    { label: '2',     value: 2     },
+    { label: '4',     value: 4     },
+    { label: '8',     value: 8     },
 ];
 
 // ── Layout constants ──────────────────────────────────────────────────────────
@@ -88,7 +89,6 @@ let audioCtx: AudioContext | null = null;
 let cfgDur    = 1;      // beat multiplier: 1 = 1 full beat (1/1)
 let cfgType: OscType = 'triangle';
 let cfgGain   = 0.06;
-let cfgDelay  = 0.0;
 let cfgGlide: number | null = null;
 let cfgBpm    = 120;    // beats per minute
 
@@ -110,8 +110,6 @@ const cfgBpmEl    = document.getElementById('cfg-bpm')      as HTMLInputElement;
 const cfgTypeEl   = document.getElementById('cfg-type')     as HTMLSelectElement;
 const cfgGainEl   = document.getElementById('cfg-gain')     as HTMLInputElement;
 const cfgGainV    = document.getElementById('cfg-gain-v')   as HTMLSpanElement;
-const cfgDelayEl  = document.getElementById('cfg-delay')    as HTMLInputElement;
-const cfgDelayV   = document.getElementById('cfg-delay-v')  as HTMLSpanElement;
 const cfgGlideEl  = document.getElementById('cfg-glide')    as HTMLSelectElement;
 const popup       = document.getElementById('popup')        as HTMLDivElement;
 const popupTitle  = document.getElementById('popup-title')  as HTMLHeadingElement;
@@ -120,8 +118,6 @@ const ppType      = document.getElementById('pp-type')      as HTMLSelectElement
 const ppTypeRow   = document.getElementById('pp-type-row')  as HTMLDivElement;
 const ppGain      = document.getElementById('pp-gain')      as HTMLInputElement;
 const ppGainV     = document.getElementById('pp-gain-v')    as HTMLSpanElement;
-const ppDelay     = document.getElementById('pp-delay')     as HTMLInputElement;
-const ppDelayV    = document.getElementById('pp-delay-v')   as HTMLSpanElement;
 const ppGlide     = document.getElementById('pp-glide')     as HTMLSelectElement;
 const ppGlideRow  = document.getElementById('pp-glide-row') as HTMLDivElement;
 const ppLpRow     = document.getElementById('pp-lp-row')    as HTMLDivElement;
@@ -152,8 +148,8 @@ function virtualW(): number {
     const bd = beatDur();
     const maxT = Math.max(
         MIN_SECS,
-        ...tones.map(e  => e.startTime + e.delay + e.duration * bd + 2),
-        ...noises.map(e => e.startTime + e.delay + e.duration * bd + 2),
+        ...tones.map(e  => e.startTime + e.duration * bd + 2),
+        ...noises.map(e => e.startTime + e.duration * bd + 2),
     );
     return maxT * PPS;
 }
@@ -377,8 +373,8 @@ function roundRect(cx: CanvasRenderingContext2D, x: number, y: number, w: number
 let ignoreHscrollEvent = false;
 
 function syncScrollbar(): void {
-    hscrollInner.style.width = `${virtualW()}px`;
     ignoreHscrollEvent = true;
+    hscrollInner.style.width = `${virtualW()}px`;
     hscrollBar.scrollLeft = scrollX;
     ignoreHscrollEvent = false;
 }
@@ -482,12 +478,12 @@ function snapToGrid(t: number): number {
 
 // ── Add events ─────────────────────────────────────────────────────────────────
 function addTone(noteIdx: number, startTime: number): void {
-    tones.push({ id: uid(), noteIdx, startTime: snapToGrid(startTime), duration: cfgDur, type: cfgType, gain: cfgGain, delay: cfgDelay, glideTo: cfgGlide });
+    tones.push({ id: uid(), noteIdx, startTime: snapToGrid(startTime), duration: cfgDur, type: cfgType, gain: cfgGain, glideTo: cfgGlide });
     render();
 }
 
 function addNoise(startTime: number): void {
-    noises.push({ id: uid(), startTime: snapToGrid(startTime), duration: cfgDur, gain: cfgGain, delay: cfgDelay, lowpass: 2200, highpass: 100 });
+    noises.push({ id: uid(), startTime: snapToGrid(startTime), duration: cfgDur, gain: cfgGain, lowpass: 2200, highpass: 100 });
     render();
 }
 
@@ -503,7 +499,6 @@ function openPopup(id: string, kind: 'tone' | 'noise', mx: number, my: number): 
         ppDur.value   = String(ev.duration);
         ppType.value  = ev.type;
         ppGain.value  = String(ev.gain);  ppGainV.textContent  = ev.gain.toFixed(2);
-        ppDelay.value = String(ev.delay); ppDelayV.textContent = ev.delay.toFixed(1) + 's';
         ppGlide.value = ev.glideTo !== null ? String(ev.glideTo) : '';
     } else {
         const ev = noises.find(n => n.id === id)!;
@@ -512,7 +507,6 @@ function openPopup(id: string, kind: 'tone' | 'noise', mx: number, my: number): 
         ppLpRow.style.display = ''; ppHpRow.style.display = '';
         ppDur.value   = String(ev.duration);
         ppGain.value  = String(ev.gain);  ppGainV.textContent  = ev.gain.toFixed(2);
-        ppDelay.value = String(ev.delay); ppDelayV.textContent = ev.delay.toFixed(1) + 's';
         ppLp.value    = String(ev.lowpass);
         ppHp.value    = String(ev.highpass);
     }
@@ -533,21 +527,20 @@ function closePopup(): void {
 
 function savePopup(): void {
     if (!editingId) return;
-    const dur   = parseFloat(ppDur.value) || 1;
-    const gain  = parseFloat(ppGain.value);
-    const delay = parseFloat(ppDelay.value);
+    const dur  = parseFloat(ppDur.value) || 1;
+    const gain = parseFloat(ppGain.value);
 
     if (editingKind === 'tone') {
         const ev = tones.find(t => t.id === editingId);
         if (ev) {
             ev.duration = dur; ev.type = ppType.value as OscType;
-            ev.gain = gain; ev.delay = delay;
+            ev.gain = gain;
             ev.glideTo = ppGlide.value ? parseInt(ppGlide.value) : null;
         }
     } else {
         const ev = noises.find(n => n.id === editingId);
         if (ev) {
-            ev.duration = dur; ev.gain = gain; ev.delay = delay;
+            ev.duration = dur; ev.gain = gain;
             ev.lowpass  = parseFloat(ppLp.value) || 2200;
             ev.highpass = parseFloat(ppHp.value) || 100;
         }
@@ -612,17 +605,17 @@ function startPlayback(): void {
     tones.forEach(ev => {
         const freq  = NOTES[ev.noteIdx].freq;
         const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
-        schedTone(ctx, freq, ev.duration * beatDur(), ev.type, ev.gain, now + ev.startTime + ev.delay, glide);
+        schedTone(ctx, freq, ev.duration * beatDur(), ev.type, ev.gain, now + ev.startTime, glide);
     });
     noises.forEach(ev => {
-        schedNoise(ctx, ev.duration * beatDur(), ev.gain, ev.lowpass, ev.highpass, now + ev.startTime + ev.delay);
+        schedNoise(ctx, ev.duration * beatDur(), ev.gain, ev.lowpass, ev.highpass, now + ev.startTime);
     });
 
     const bd = beatDur();
     const maxT = Math.max(
         0,
-        ...tones.map(e  => e.startTime + e.delay + e.duration * bd),
-        ...noises.map(e => e.startTime + e.delay + e.duration * bd),
+        ...tones.map(e  => e.startTime + e.duration * bd),
+        ...noises.map(e => e.startTime + e.duration * bd),
     );
 
     isPlaying = true;
@@ -649,6 +642,12 @@ function stopPlayback(): void {
     if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
     playhead = 0;
     playBtn.disabled = false; stopBtn.disabled = true;
+    // Close the audio context to immediately silence all scheduled nodes
+    if (audioCtx) {
+        void audioCtx.close();
+        audioCtx = null;
+        cachedNoiseBuffer = null; // buffer belongs to the closed context
+    }
     render();
 }
 
@@ -663,7 +662,7 @@ function generateCode(): string {
         const freq  = NOTES[ev.noteIdx].freq;
         const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
         const dur   = ev.duration * bd;
-        const at    = fmt(ev.startTime + ev.delay);
+        const at    = fmt(ev.startTime);
         const glideArg = glide !== null ? `, ${fmt(glide)}` : '';
         events.push({ t: ev.startTime,
             line: `this.playTone(${fmt(freq)}, ${fmt(dur)}, '${ev.type}', ${fmt(ev.gain)}, ENVELOPE_MIN_GAIN, ${at}${glideArg}); // ${NOTES[ev.noteIdx].name}` });
@@ -671,7 +670,7 @@ function generateCode(): string {
 
     noises.forEach(ev => {
         const dur = ev.duration * bd;
-        const at  = fmt(ev.startTime + ev.delay);
+        const at  = fmt(ev.startTime);
         events.push({ t: ev.startTime,
             line: `this.playNoise(${fmt(dur)}, ${fmt(ev.gain)}, ${fmt(ev.lowpass)}, ${fmt(ev.highpass)}, ${at});` });
     });
@@ -701,12 +700,10 @@ function init(): void {
     cfgBpmEl.addEventListener('change',  () => { cfgBpm   = Math.max(40, Math.min(300, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
     cfgTypeEl.addEventListener('change', () => { cfgType  = cfgTypeEl.value as OscType; });
     cfgGainEl.addEventListener('input',  () => { cfgGain  = parseFloat(cfgGainEl.value); cfgGainV.textContent  = cfgGain.toFixed(2); });
-    cfgDelayEl.addEventListener('input', () => { cfgDelay = parseFloat(cfgDelayEl.value); cfgDelayV.textContent = cfgDelay.toFixed(1) + 's'; });
     cfgGlideEl.addEventListener('change',() => { cfgGlide = cfgGlideEl.value ? parseInt(cfgGlideEl.value) : null; });
 
     // Popup live preview
     ppGain.addEventListener('input',  () => { ppGainV.textContent  = parseFloat(ppGain.value).toFixed(2); });
-    ppDelay.addEventListener('input', () => { ppDelayV.textContent = parseFloat(ppDelay.value).toFixed(1) + 's'; });
 
     // Popup actions
     ppSave.addEventListener('click', savePopup);
