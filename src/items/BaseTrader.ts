@@ -11,6 +11,7 @@ import { getHint, HintConfigs } from '../ui/InputHints';
 import { sortInventory } from './ItemSorter';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
 import { UIManager } from '../ui/UIManager';
+import { AudioManager } from '../AudioManager';
 
 export { TradeMode } from './TradeMode';
 
@@ -260,6 +261,7 @@ export abstract class BaseTrader {
     }
 
     show() {
+        const wasVisible = this.isVisible;
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.selectedIndex = 0;
@@ -270,12 +272,19 @@ export abstract class BaseTrader {
         this.pendingSort = true;
         sortInventory(this.traderInventory);
         resetInputDebounce(this as any);
+        if (!wasVisible) {
+            AudioManager.Instance.playUiOpen();
+        }
     }
 
     hide() {
+        const wasVisible = this.isVisible;
         this.isVisible = false;
         this.container.style.display = 'none';
         this.uiManager.hideControlHints();
+        if (wasVisible) {
+            AudioManager.Instance.playUiClose();
+        }
     }
 
     toggle() { if (this.isVisible) this.hide(); else this.show(); }
@@ -355,6 +364,8 @@ export abstract class BaseTrader {
         const navigateRight = input.isNavigateRightPressed();
         const select = input.isSelectPressed();
         const cancel = (input as any).isCancelPressed ? (input as any).isCancelPressed() : false;
+        const previousIndex = this.selectedIndex;
+        const previousPanel = this.activePanel;
         if (cancel) { this.hide(); return; }
 
         if (navigateUp && !this.lastNavigateUpState) {
@@ -377,6 +388,10 @@ export abstract class BaseTrader {
             this.traderSelectedIndex = this.selectedIndex;
             this.activePanel = TraderPanel.PLAYER;
             this.selectedIndex = this.playerSelectedIndex;
+        }
+
+        if (this.selectedIndex !== previousIndex || this.activePanel !== previousPanel) {
+            AudioManager.Instance.playMenuNavigate();
         }
 
         if (select && !this.lastSelectState) this.handleTransaction(player);
@@ -404,9 +419,11 @@ export abstract class BaseTrader {
                     this.traderInventory.splice(this.selectedIndex, 1);
                     if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) this.selectedIndex--;
                     this.needsRender = true;
+                    AudioManager.Instance.playBuy();
                 } else {
                     // Player doesn't have enough money - shake the item
                     this.shakeItem(this.selectedIndex);
+                    AudioManager.Instance.playInsufficient();
                 }
             }
         } else {
@@ -415,6 +432,7 @@ export abstract class BaseTrader {
             if (item && item.sellPrice !== undefined) {
                 if (item instanceof EquippableItem && item.isEquipped) {
                     this.shakeItem(this.selectedIndex);
+                    AudioManager.Instance.playInsufficient();
                     return;
                 }
                 player.bits += this.getEffectiveSellPrice(item, player);
@@ -425,6 +443,7 @@ export abstract class BaseTrader {
                 if (idx !== -1) player.inventory.splice(idx, 1);
                 if (this.selectedIndex >= playerItems.length - 1 && this.selectedIndex > 0) this.selectedIndex--;
                 this.needsRender = true;
+                AudioManager.Instance.playSell();
             }
         }
     }

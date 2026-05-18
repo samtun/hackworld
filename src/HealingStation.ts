@@ -4,6 +4,7 @@ import { BaseMesh } from './BaseMesh';
 import { HealingSystem } from './systems/HealingSystem';
 import { IHealingStation } from './systems/IHealingStation';
 import { createParticleShaderMaterial, updateParticleScaleFactor } from './ParticleShaderUtils';
+import { AudioManager } from './AudioManager';
 
 /**
  * HealingStation entity with upward-moving particle effects
@@ -169,6 +170,11 @@ export class HealingStation extends BaseMesh implements IHealingStation {
         // Unregister from healing system
         HealingSystem.Instance.unregister(this);
 
+        if (this.isHealing) {
+            AudioManager.Instance.stopHealingStationLoop();
+            this.isHealing = false;
+        }
+
         scene.remove(this.mesh);
         scene.remove(this.particles);
 
@@ -191,6 +197,14 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     }
 
     setHealing(isHealing: boolean): void {
-        this.isHealing = isHealing;
+        if (this.isHealing === isHealing) return;
+
+        if (isHealing) {
+            this.isHealing = true;
+            AudioManager.Instance.startHealingStationLoop();
+        } else {
+            this.isHealing = false;
+            AudioManager.Instance.stopHealingStationLoop();
+        }
     }
 }

@@ -26,6 +26,18 @@ vi.mock('../ui/MenuManager', () => ({
 vi.mock('../ui/UIManager', () => ({
     UIManager: { Instance: { showControlHints: vi.fn(), hideControlHints: vi.fn() } },
 }));
+vi.mock('../AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playMenuNavigate: vi.fn(),
+            playBuy: vi.fn(),
+            playSell: vi.fn(),
+            playInsufficient: vi.fn(),
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
+        },
+    },
+}));
 vi.mock('./ItemDetailsPanel', () => ({
     ItemDetailsPanel: { generateHTML: vi.fn().mockReturnValue('<div>details</div>') },
 }));
@@ -37,6 +49,13 @@ import { BaseTrader } from './BaseTrader';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { TraderPanel } from './TraderPanel';
+import { AudioManager } from '../AudioManager';
+
+// Every suite in this file shares the same singleton-style mocks, so reset
+// them for each test case before assertions run.
+beforeEach(() => {
+    vi.clearAllMocks();
+});
 
 // ─── Minimal concrete Trader for testing (no DOM createUI) ─────────────────
 
@@ -169,6 +188,7 @@ describe('BaseTrader – buy transaction', () => {
         expect(player.bits).toBe(200); // unchanged
         expect(player.inventory.length).toBe(0);
         expect(trader.traderInventory.length).toBe(1);
+        expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
     });
 
     it('marks bought equippable item as not equipped', () => {
@@ -189,6 +209,15 @@ describe('BaseTrader – buy transaction', () => {
         (trader as any).handleTransaction(player);
 
         expect(trader.selectedIndex).toBe(0); // clamped down
+    });
+
+    it('plays the buy sound after a successful purchase', () => {
+        const item = makeSellableItem('i1', 100, 50);
+        trader.traderInventory = [item];
+
+        (trader as any).handleTransaction(player);
+
+        expect(AudioManager.Instance.playBuy).toHaveBeenCalledOnce();
     });
 });
 
@@ -239,6 +268,7 @@ describe('BaseTrader – sell transaction', () => {
 
         expect(player.bits).toBe(100); // unchanged
         expect(player.inventory.length).toBe(1);
+        expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
     });
 
     it('can sell an un-equipped equippable item', () => {
@@ -249,6 +279,15 @@ describe('BaseTrader – sell transaction', () => {
 
         expect(player.bits).toBe(180);
         expect(player.inventory.length).toBe(0);
+    });
+
+    it('plays the sell sound after a successful sale', () => {
+        const item = makeSellableItem('s1', 100, 40);
+        player.inventory = [item];
+
+        (trader as any).handleTransaction(player);
+
+        expect(AudioManager.Instance.playSell).toHaveBeenCalledOnce();
     });
 });
 
@@ -332,6 +371,13 @@ describe('BaseTrader.show', () => {
         expect((trader as any).traderSelectedIndex).toBe(0);
         expect((trader as any).playerSelectedIndex).toBe(0);
     });
+
+    it('plays the UI open sound when shown from hidden', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = false;
+        (trader as any).show();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+    });
 });
 
 describe('BaseTrader.hide', () => {
@@ -353,6 +399,13 @@ describe('BaseTrader.hide', () => {
         const trader = makeTraderWithDOM();
         (trader as any).hide();
         expect((trader as any).uiManager.hideControlHints).toHaveBeenCalledOnce();
+    });
+
+    it('plays the UI close sound when hidden from visible', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = true;
+        (trader as any).hide();
+        expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
     });
 });
 
@@ -444,6 +497,7 @@ describe('BaseTrader.handleNavigation – up/down', () => {
         const input = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
         (trader as any).handleNavigation(makeNavPlayer(), input);
         expect(trader.selectedIndex).toBe(1);
+        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
     });
 
     it('does not exceed last item index on navigate down', () => {
@@ -485,6 +539,7 @@ describe('BaseTrader.handleNavigation – panel switching', () => {
         const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
         (trader as any).handleNavigation(makeNavPlayer(), input);
         expect(trader.activePanel).toBe(TraderPanel.PLAYER);
+        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
     });
 
     it('restores saved playerSelectedIndex when switching to PLAYER panel', () => {

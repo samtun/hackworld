@@ -25,6 +25,10 @@ vi.mock('../ui/UIManager', () => ({
     UIManager: { Instance: { displayInsufficientTPWarning: vi.fn() } }
 }));
 
+vi.mock('../AudioManager', () => ({
+    AudioManager: { Instance: { playAreaAttackSkill: vi.fn(), playInsufficient: vi.fn() } }
+}));
+
 vi.mock('../BaseMesh', () => ({
     BaseMesh: class {
         mesh = { traverse: vi.fn(), scale: { copy: vi.fn() }, position: { set: vi.fn() }, parent: null, rotation: {}, quaternion: {} };
@@ -37,6 +41,7 @@ vi.mock('../Player', () => ({ Player: class {} }));
 vi.mock('../enemies/Enemy', () => ({ Enemy: class {} }));
 
 import { AreaAttackSkill } from './AreaAttackSkill';
+import { AudioManager } from '../AudioManager';
 import { Enemy } from '../enemies/Enemy';
 import { Tier } from '../items/TierManager';
 import { SkillTechType } from './SkillTechType';
@@ -68,6 +73,7 @@ describe('AreaAttackSkill', () => {
     let skill: AreaAttackSkill;
 
     beforeEach(() => {
+        vi.clearAllMocks();
         skill = new AreaAttackSkill(vi.fn());
     });
 
@@ -77,6 +83,14 @@ describe('AreaAttackSkill', () => {
             expect(skill.cooldown).toBe(10);
             expect(skill.tpCost).toBe(30);
         });
+    });
+
+    it('plays the area attack skill sound when executed', () => {
+        const player = makePlayer(Tier.STABLE);
+        const scene = { add: vi.fn(), remove: vi.fn() } as any;
+        const world = { bodies: [] } as any;
+        (skill as any).execute(player, scene, world);
+        expect(AudioManager.Instance.playAreaAttackSkill).toHaveBeenCalledOnce();
     });
 
     describe('getEffectiveTpCost()', () => {

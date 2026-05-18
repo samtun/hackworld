@@ -1,4 +1,5 @@
 import { InputManager } from './InputManager';
+import { AudioManager } from './AudioManager';
 
 const MENU_FADE_MS = 600;
 
@@ -165,6 +166,7 @@ export class StartMenu {
             if (this.items[next].enabled) {
                 this.selectedIndex = next;
                 this.updateStyles();
+                AudioManager.Instance.playMenuNavigate();
                 return;
             }
             next += direction;

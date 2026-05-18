@@ -3,6 +3,7 @@ import { resetInputDebounce } from './ui/UiUtils';
 import { getHint } from './ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from './ui/MenuManager';
 import { UIManager } from './ui/UIManager';
+import { AudioManager } from './AudioManager';
 
 /**
  * UI Manager for the save system
@@ -171,6 +172,7 @@ export class SaveManagerUI {
      * @param onReset - Callback to execute when reset is confirmed
      */
     show(playtime: string, onSave: () => void, onLoad: (file: File) => Promise<void>, onReset: () => void): void {
+        const wasVisible = this.isVisible;
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.saveCallback = onSave;
@@ -183,12 +185,16 @@ export class SaveManagerUI {
 
         // Reset input states to prevent immediate action on open
         resetInputDebounce(this as any);
+        if (!wasVisible) {
+            AudioManager.Instance.playUiOpen();
+        }
     }
 
     /**
      * Hide the save manager UI
      */
     hide(): void {
+        const wasVisible = this.isVisible;
         this.isVisible = false;
         this.container.style.display = 'none';
         this.saveCallback = undefined;
@@ -202,6 +208,10 @@ export class SaveManagerUI {
         if (this.autoCloseTimer !== undefined) {
             clearTimeout(this.autoCloseTimer);
             this.autoCloseTimer = undefined;
+        }
+
+        if (wasVisible) {
+            AudioManager.Instance.playUiClose();
         }
     }
 
@@ -256,9 +266,11 @@ export class SaveManagerUI {
             if (this.selectedButton === 'load') {
                 this.selectedButton = 'save';
                 this.updateButtonHighlight();
+                AudioManager.Instance.playMenuNavigate();
             } else if (this.selectedButton === 'reset') {
                 this.selectedButton = 'load';
                 this.updateButtonHighlight();
+                AudioManager.Instance.playMenuNavigate();
             }
         }
 
@@ -266,9 +278,11 @@ export class SaveManagerUI {
             if (this.selectedButton === 'save') {
                 this.selectedButton = 'load';
                 this.updateButtonHighlight();
+                AudioManager.Instance.playMenuNavigate();
             } else if (this.selectedButton === 'load') {
                 this.selectedButton = 'reset';
                 this.updateButtonHighlight();
+                AudioManager.Instance.playMenuNavigate();
             }
         }
 
@@ -276,6 +290,7 @@ export class SaveManagerUI {
         const isSelectPressed = input.isSelectPressed();
         if (isSelectPressed && !this.lastSelectState) {
             if (this.selectedButton === 'save' && this.saveCallback) {
+                AudioManager.Instance.playUiOpen();
                 this.saveCallback();
                 this.showSaveSuccess();
                 // Auto-close after showing success message
@@ -283,9 +298,11 @@ export class SaveManagerUI {
                     this.hide();
                 }, 1500);
             } else if (this.selectedButton === 'load') {
+                AudioManager.Instance.playUiOpen();
                 // Trigger file input
                 this.fileInput.click();
             } else if (this.selectedButton === 'reset' && this.resetCallback) {
+                AudioManager.Instance.playUiOpen();
                 this.resetCallback();
             }
         }

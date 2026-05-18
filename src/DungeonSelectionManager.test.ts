@@ -29,6 +29,15 @@ vi.mock('./ui/InputHints', () => ({
 vi.mock('./GameProgressManager', () => ({
     GameProgressManager: { Instance: { progress: 5 } }
 }));
+vi.mock('./AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playMenuNavigate: vi.fn(),
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
+        },
+    },
+}));
 vi.mock('./stages', () => ({
     AVAILABLE_DUNGEONS: [],
     BaseStage: class {
@@ -39,6 +48,7 @@ vi.mock('./stages', () => ({
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { GameProgressManager } from './GameProgressManager';
 import { UIManager } from './ui/UIManager';
+import { AudioManager } from './AudioManager';
 
 function makeDungeonManager(overrides: Record<string, unknown> = {}) {
     const mgr = Object.create((DungeonSelectionManager as any).prototype) as any;
@@ -121,6 +131,12 @@ describe('DungeonSelectionManager', () => {
             mgr.show(vi.fn());
             expect(mgr.waitForRelease).toBe(true);
         });
+
+        it('plays the UI open sound when shown from hidden', () => {
+            const mgr = makeDungeonManager();
+            mgr.show(vi.fn());
+            expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        });
     });
 
     describe('hide()', () => {
@@ -136,6 +152,12 @@ describe('DungeonSelectionManager', () => {
             const mgr = makeDungeonManager({ isVisible: true });
             mgr.hide();
             expect(UIManager.Instance.hideControlHints).toHaveBeenCalled();
+        });
+
+        it('plays the UI close sound when hidden from visible', () => {
+            const mgr = makeDungeonManager({ isVisible: true });
+            mgr.hide();
+            expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
         });
     });
 
@@ -229,6 +251,7 @@ describe('DungeonSelectionManager', () => {
             const input = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
             (mgr as any).handleNavigation(input);
             expect(mgr.selectedIndex).toBe(1);
+            expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
         });
 
         it('does not go below 0 when navigating up at index 0', () => {

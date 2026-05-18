@@ -1,4 +1,5 @@
 import { InputManager } from './InputManager';
+import { AudioManager } from './AudioManager';
 
 const PAUSE_FADE_MS = 300;
 
@@ -23,7 +24,8 @@ interface PauseMenuItem {
 /**
  * Full-screen pause menu shown when the player presses ESC / Start.
  * Backdrop mirrors the death screen; text style mirrors the start-screen main menu.
- * Options: Continue, Performance Mode on/off, Show Control Hints yes/no.
+ * Options: Continue, Performance Mode on/off, Show Control Hints yes/no,
+ * Music on/off, and Sound Effects on/off.
  */
 export class PauseMenu {
     private readonly overlay: HTMLDivElement;
@@ -34,6 +36,10 @@ export class PauseMenu {
     private performanceStatusEl!: HTMLSpanElement;
     private controlHintsEnabled: boolean;
     private controlHintsStatusEl!: HTMLSpanElement;
+    private musicEnabled = AudioManager.Instance.isMusicEnabled();
+    private musicStatusEl!: HTMLSpanElement;
+    private sfxEnabled = AudioManager.Instance.isSfxEnabled();
+    private sfxStatusEl!: HTMLSpanElement;
     private selectedIndex: number = 0;
 
     private readonly callbacks: PauseMenuCallbacks;
@@ -65,6 +71,8 @@ export class PauseMenu {
             { id: 'continue', label: 'Continue', buildEl: (item) => this.buildSimpleItem(item) },
             { id: 'performance', label: '', buildEl: (item) => this.buildPerformanceItem(item) },
             { id: 'controlhints', label: '', buildEl: (item) => this.buildControlHintsItem(item) },
+            { id: 'music', label: '', buildEl: (item) => this.buildMusicItem(item) },
+            { id: 'sfx', label: '', buildEl: (item) => this.buildSfxItem(item) },
         ];
 
         // Dark backdrop (same as death screen)
@@ -141,6 +149,8 @@ export class PauseMenu {
         if (this._visible) return;
         this._visible = true;
         this.selectedIndex = 0;
+        this.refreshAudioSettingsState();
+        AudioManager.Instance.playUiOpen();
 
         // Reset edge-detection states so the key that opened the menu
         // must be released before it can trigger an action
@@ -156,6 +166,8 @@ export class PauseMenu {
             });
         });
         this.updateStyles();
+        this.updateMusicLabel();
+        this.updateSfxLabel();
 
         this.animFrameId = requestAnimationFrame(() => this.inputLoop());
     }
@@ -166,6 +178,7 @@ export class PauseMenu {
     hide(): void {
         if (!this._visible) return;
         this._visible = false;
+        AudioManager.Instance.playUiClose();
         this.stopLoop();
         this.overlay.style.opacity = '0';
         setTimeout(() => {
@@ -229,6 +242,44 @@ export class PauseMenu {
         }
     }
 
+    private buildMusicItem(_item: PauseMenuItem): HTMLDivElement {
+        const el = document.createElement('div');
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = 'Music ';
+        el.appendChild(labelSpan);
+
+        this.musicStatusEl = document.createElement('span');
+        this.musicStatusEl.style.color = '#33DDFF';
+        this.updateMusicLabel();
+        el.appendChild(this.musicStatusEl);
+        return el;
+    }
+
+    private updateMusicLabel(): void {
+        if (this.musicStatusEl) {
+            this.musicStatusEl.textContent = this.musicEnabled ? 'on' : 'off';
+        }
+    }
+
+    private buildSfxItem(_item: PauseMenuItem): HTMLDivElement {
+        const el = document.createElement('div');
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = 'Sound Effects ';
+        el.appendChild(labelSpan);
+
+        this.sfxStatusEl = document.createElement('span');
+        this.sfxStatusEl.style.color = '#33DDFF';
+        this.updateSfxLabel();
+        el.appendChild(this.sfxStatusEl);
+        return el;
+    }
+
+    private updateSfxLabel(): void {
+        if (this.sfxStatusEl) {
+            this.sfxStatusEl.textContent = this.sfxEnabled ? 'on' : 'off';
+        }
+    }
+
     private itemStyle(selected: boolean): string {
         const color = selected ? '#ffffff' : '#cccccc';
         const fontWeight = selected ? 'bold' : 'normal';
@@ -258,6 +309,12 @@ export class PauseMenu {
         if (this.controlHintsStatusEl) {
             this.controlHintsStatusEl.style.color = '#33DDFF';
         }
+        if (this.musicStatusEl) {
+            this.musicStatusEl.style.color = '#33DDFF';
+        }
+        if (this.sfxStatusEl) {
+            this.sfxStatusEl.style.color = '#33DDFF';
+        }
     }
 
     private navigate(direction: 1 | -1): void {
@@ -266,6 +323,7 @@ export class PauseMenu {
         if (next >= this.items.length) next = 0;
         this.selectedIndex = next;
         this.updateStyles();
+        AudioManager.Instance.playMenuNavigate();
     }
 
     private selectAndConfirm(index: number): void {
@@ -290,7 +348,38 @@ export class PauseMenu {
                 this.controlHintsEnabled = this.callbacks.onToggleControlHints();
                 this.updateControlHintsLabel();
                 break;
+            case 'music':
+                this.musicEnabled = AudioManager.Instance.toggleMusicEnabled();
+                if (AudioManager.Instance.isSfxEnabled()) {
+                    AudioManager.Instance.playUiOpen();
+                }
+                this.updateMusicLabel();
+                break;
+            case 'sfx':
+                this.sfxEnabled = this.toggleSfxWithFeedback();
+                this.updateSfxLabel();
+                break;
         }
+    }
+
+    private toggleSfxWithFeedback(): boolean {
+        const sfxWasEnabled = this.sfxEnabled;
+        if (sfxWasEnabled) {
+            AudioManager.Instance.playUiOpen();
+        }
+
+        AudioManager.Instance.toggleSfxEnabled();
+        const nextSfxEnabled = AudioManager.Instance.isSfxEnabled();
+        if (!sfxWasEnabled) {
+            AudioManager.Instance.playUiOpen();
+        }
+
+        return nextSfxEnabled;
+    }
+
+    private refreshAudioSettingsState(): void {
+        this.musicEnabled = AudioManager.Instance.isMusicEnabled();
+        this.sfxEnabled = AudioManager.Instance.isSfxEnabled();
     }
 
     private inputLoop(): void {

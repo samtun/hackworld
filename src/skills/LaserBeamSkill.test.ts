@@ -40,6 +40,10 @@ vi.mock('../ui/UIManager', () => ({
     UIManager: { Instance: { displayInsufficientTPWarning: vi.fn() } }
 }));
 
+vi.mock('../AudioManager', () => ({
+    AudioManager: { Instance: { playLaserBeamSkill: vi.fn(), playInsufficient: vi.fn() } }
+}));
+
 vi.mock('../BaseMesh', () => ({
     BaseMesh: class {
         mesh = {
@@ -59,6 +63,7 @@ vi.mock('../Player', () => ({ Player: class {} }));
 vi.mock('../enemies/Enemy', () => ({ Enemy: class {} }));
 
 import { LaserBeamSkill } from './LaserBeamSkill';
+import { AudioManager } from '../AudioManager';
 import { Enemy } from '../enemies/Enemy';
 import { Tier } from '../items/TierManager';
 import { SkillTechType } from './SkillTechType';
@@ -100,6 +105,7 @@ describe('LaserBeamSkill', () => {
     let skill: LaserBeamSkill;
 
     beforeEach(() => {
+        vi.clearAllMocks();
         skill = new LaserBeamSkill(vi.fn());
     });
 
@@ -182,6 +188,14 @@ describe('LaserBeamSkill', () => {
             const world = { bodies: [], addBody: vi.fn(), removeBody: vi.fn() } as any;
             (skill as any).execute(player, scene, world);
             expect(player.getForwardDirection).toHaveBeenCalled();
+        });
+
+        it('plays the laser beam skill sound when executed', () => {
+            const player = makePlayer(Tier.STABLE);
+            const scene = { add: vi.fn(), remove: vi.fn() } as any;
+            const world = { bodies: [], addBody: vi.fn(), removeBody: vi.fn() } as any;
+            (skill as any).execute(player, scene, world);
+            expect(AudioManager.Instance.playLaserBeamSkill).toHaveBeenCalledOnce();
         });
     });
 

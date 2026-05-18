@@ -20,6 +20,7 @@ import type { StageMinimapLayout } from './StageMinimapLayout';
 import { ItemDropManager } from '../items/ItemDropManager';
 import { MinimapDrop } from '../items/minimap/MinimapDrop';
 import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
+import { AudioManager } from '../AudioManager';
 
 /**
  * Tiny Y offset applied to north/south walls (those running along X) to
@@ -575,6 +576,7 @@ export abstract class BaseStage {
             this.getBossConfig(spawn),
         );
         this.enemies.push(boss);
+        AudioManager.Instance.playBossSpawn();
     }
 
     protected getEnemyConfig(
@@ -949,6 +951,7 @@ export abstract class BaseStage {
         if (!this.teleporter || this.teleporter.isActive) return;
         if (this.totalExpectedEnemies === 0) return;
         if (this.roomPendingSpawnData.size === 0 && this.enemies.length === 0) {
+            AudioManager.Instance.playStageCleared();
             this.teleporter.activate();
         }
     }

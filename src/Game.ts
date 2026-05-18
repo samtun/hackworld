@@ -28,6 +28,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
+import { AudioManager } from './AudioManager';
 
 export class Game {
     scene: THREE.Scene;
@@ -250,6 +251,7 @@ export class Game {
         this.ui.hideLoadingScreen();
         this.ui.showStartScreen();
         this.initializeEntities();
+        AudioManager.Instance.setStageMusic('startScreen');
 
         // Start Loop
         this.animate();
@@ -475,6 +477,7 @@ export class Game {
 
     private continueAfterIntro() {
         this.currentScene = Lobby.getMetadata().id;
+        AudioManager.Instance.setStageMusic(Lobby.getMetadata().id);
         this.input.initializeMobileControls();
         this.input.consumeJump();
         this.clock.getDelta(); // Reset clock

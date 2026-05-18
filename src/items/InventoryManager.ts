@@ -16,6 +16,7 @@ import { SkillTechType } from '../skills/SkillTechType';
 import { TierManager } from './TierManager';
 import { ItemLevelHelper } from './ItemLevelHelper';
 import { MobileControlsManager } from '../MobileControlsManager';
+import { AudioManager } from '../AudioManager';
 import {
     ICON_HP, ICON_TP, ICON_STRENGTH, ICON_DEFENSE, ICON_AGILITY, ICON_LUCK,
     ICON_BITS, ICON_NEXTLVL, ICON_XDATA, ICON_BOOSTER,
@@ -352,10 +353,12 @@ export class InventoryManager {
 
         // Reset selection when opening inventory
         if (this.isVisible) {
+            AudioManager.Instance.playUiOpen();
             this.selectedIndex = 0;
             this.needsRender = true;
             this.pendingSort = true;
         } else {
+            AudioManager.Instance.playUiClose();
             // Hide centralized control hints when menu closes
             this.uiManager.hideControlHints();
         }
@@ -379,6 +382,7 @@ export class InventoryManager {
 
             // Mark for re-render if selection changed
             if (oldIndex !== this.selectedIndex) {
+                AudioManager.Instance.playMenuNavigate();
                 this.needsRender = true;
             }
         }
@@ -535,10 +539,12 @@ export class InventoryManager {
                 // Check if item can be equipped
                 if (item.canEquip(player)) {
                     item.equip(player);
+                    AudioManager.Instance.playEquip();
                     console.log(`Equipped item: ${item.name}`);
                     // Trigger re-render to update equipped indicator immediately
                     this.needsRender = true;
                 } else {
+                    AudioManager.Instance.playInsufficient();
                     // Item cannot be equipped - shake it
                     this.shakeItem(this.selectedIndex);
                 }

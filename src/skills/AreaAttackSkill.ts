@@ -7,6 +7,7 @@ import { BaseMesh } from '../BaseMesh';
 import { SkillTechType } from './SkillTechType';
 import { Tier } from '../items/TierManager';
 import { isBreakable } from '../items/Breakable';
+import { AudioManager } from '../AudioManager';
 
 /**
  * Area Attack Skill
@@ -68,6 +69,7 @@ export class AreaAttackSkill extends Skill {
 
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
         console.log('Executing Area Attack skill');
+        AudioManager.Instance.playAreaAttackSkill();
 
         const tier = player.getSkillTier(SkillTechType.BLAST);
         this.effectiveDamage = this.BASE_DAMAGE * this.getDamageMultiplier(tier);

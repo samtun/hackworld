@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Player } from '../Player';
 import { UIManager } from '../ui/UIManager';
+import { AudioManager } from '../AudioManager';
 
 /**
  * Base class for all player skills
@@ -61,6 +62,7 @@ export abstract class Skill {
 
         if (!this.canUse(player)) {
             UIManager.Instance.displayInsufficientTPWarning();
+            AudioManager.Instance.playInsufficient();
             return false;
         }
 

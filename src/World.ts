@@ -14,6 +14,7 @@ import { ItemDrop } from './items/ItemDrop';
 import { LootChest } from './items/LootChest';
 import { BreakableBarrel } from './items/BreakableBarrel';
 import type { StageMinimapLayout } from './stages/StageMinimapLayout';
+import { AudioManager } from './AudioManager';
 
 export class World {
     scene: THREE.Scene;
@@ -283,6 +284,7 @@ export class World {
             // Load the stage
             this.currentStage = newStage;
             await this.currentStage.load();
+            AudioManager.Instance.setStageMusic(stageId);
         } catch (error) {
             console.error(`Error loading stage ${stageId}:`, error);
             throw error; // Re-throw to allow caller to handle

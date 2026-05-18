@@ -24,6 +24,7 @@ import { LootChest } from '../items/LootChest';
 import { Enemy } from '../enemies/Enemy';
 import { BossEnemy } from '../enemies/BossEnemy';
 import { ElectricTrap } from '../items/ElectricTrap';
+import { AudioManager } from '../AudioManager';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -231,6 +232,7 @@ export class GameTest extends BaseStage {
         const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
         boss.update(0);
         this.enemies.push(boss);
+        AudioManager.Instance.playBossSpawn();
     }
 
     // ───────────────────────────────────────────────────────────────────────────

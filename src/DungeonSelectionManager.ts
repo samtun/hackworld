@@ -4,6 +4,7 @@ import { GameProgressManager } from './GameProgressManager';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from './ui/MenuManager';
 import { UIManager } from './ui/UIManager';
 import { getHint, HintConfigs } from './ui/InputHints';
+import { AudioManager } from './AudioManager';
 
 export class DungeonSelectionManager {
     static _instance: DungeonSelectionManager; // Singleton
@@ -76,6 +77,7 @@ export class DungeonSelectionManager {
     }
 
     show(onDungeonSelected: (dungeonId: string) => void) {
+        const wasVisible = this.isVisible;
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.onDungeonSelected = onDungeonSelected;
@@ -83,12 +85,19 @@ export class DungeonSelectionManager {
         this.needsRender = true;
         this.waitForRelease = true;
         this.render();
+        if (!wasVisible) {
+            AudioManager.Instance.playUiOpen();
+        }
     }
 
     hide() {
+        const wasVisible = this.isVisible;
         this.isVisible = false;
         this.container.style.display = 'none';
         this.uiManager.hideControlHints();
+        if (wasVisible) {
+            AudioManager.Instance.playUiClose();
+        }
     }
 
     update(input: InputManager) {
@@ -184,6 +193,7 @@ export class DungeonSelectionManager {
         const isDownPressed = input.isNavigateDownPressed();
         const isSelectPressed = input.isSelectPressed();
         const isCancelPressed = input.isCancelPressed();
+        const previousIndex = this.selectedIndex;
 
         // Get unlocked dungeons count using requiredProgress from metadata
         const progressManager = GameProgressManager.Instance;
@@ -221,6 +231,10 @@ export class DungeonSelectionManager {
             this.selectedIndex = Math.min(unlockedDungeons.length - 1, this.selectedIndex + 1);
         }
         this.lastNavigateDownState = isDownPressed;
+
+        if (this.selectedIndex !== previousIndex) {
+            AudioManager.Instance.playMenuNavigate();
+        }
 
         // Select
         if (isSelectPressed && !this.lastSelectState && !this.waitForRelease) {

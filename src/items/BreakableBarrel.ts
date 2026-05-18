@@ -16,6 +16,7 @@ import { Tier, TierManager } from './TierManager';
 import { WeaponItem } from './weapons/WeaponItem';
 import { PotionDrop } from './potions/PotionDrop';
 import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
+import { AudioManager } from '../AudioManager';
 
 /** Configuration for a single breakable barrel placement. */
 export interface BreakableBarrelConfig {
@@ -142,6 +143,7 @@ export class BreakableBarrel implements Breakable {
     onHit(): void {
         if (this.isDestroyed) return;
         this.isDestroyed = true;
+        AudioManager.Instance.playBarrelBreak();
 
         // Remove original mesh and physics body immediately
         this.scene.remove(this.mesh);

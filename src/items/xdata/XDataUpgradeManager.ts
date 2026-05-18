@@ -5,6 +5,7 @@ import { StatType } from '../../StatType';
 import { getHint, HintConfigs } from '../../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../../ui/MenuManager';
 import { UIManager } from '../../ui/UIManager';
+import { AudioManager } from '../../AudioManager';
 
 interface StatInfo {
     type: StatType;
@@ -106,19 +107,27 @@ export class XDataUpgradeManager {
     }
 
     show() {
+        const wasVisible = this.isVisible;
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.selectedIndex = 0;
         this.needsRender = true;
         // Reset input debounce state to ignore lingering button presses
         resetInputDebounce(this as any);
+        if (!wasVisible) {
+            AudioManager.Instance.playUiOpen();
+        }
     }
 
     hide() {
+        const wasVisible = this.isVisible;
         this.isVisible = false;
         this.container.style.display = 'none';
         // Hide centralized control hints when menu closes
         this.uiManager.hideControlHints();
+        if (wasVisible) {
+            AudioManager.Instance.playUiClose();
+        }
     }
 
     toggle() {
@@ -262,6 +271,7 @@ export class XDataUpgradeManager {
         const navigateDown = input.isNavigateDownPressed();
         const select = input.isSelectPressed();
         const cancel = input.isCancelPressed();
+        const previousIndex = this.selectedIndex;
 
         // Close on cancel (with debouncing)
         if (cancel && !this.lastCancelState) {
@@ -284,6 +294,10 @@ export class XDataUpgradeManager {
             }
         }
 
+        if (this.selectedIndex !== previousIndex) {
+            AudioManager.Instance.playMenuNavigate();
+        }
+
         // Select/Upgrade stat (with debouncing)
         if (select && !this.lastSelectState) {
             const selectedStat = this.stats[this.selectedIndex];
@@ -292,9 +306,15 @@ export class XDataUpgradeManager {
             if (success) {
                 // Trigger re-render to update display
                 this.needsRender = true;
+                AudioManager.Instance.playUpgrade();
             } else {
                 // Shake animation for failed upgrade
                 this.shakeItem(this.selectedIndex);
+                const currentLevel = this.getCurrentUpgradeLevel(player, selectedStat.type);
+                const cost = player.getUpgradeCost(currentLevel);
+                if (player.xData < cost) {
+                    AudioManager.Instance.playInsufficient();
+                }
             }
         }
 
@@ -303,6 +323,25 @@ export class XDataUpgradeManager {
         this.lastNavigateDownState = navigateDown;
         this.lastSelectState = select;
         this.lastCancelState = cancel;
+    }
+
+    private getCurrentUpgradeLevel(player: Player, statType: StatType): number {
+        switch (statType) {
+            case StatType.STRENGTH:
+                return player.strengthUpgrades;
+            case StatType.DEFENSE:
+                return player.defenseUpgrades;
+            case StatType.AGILITY:
+                return player.agilityUpgrades;
+            case StatType.LUCK:
+                return player.luckUpgrades;
+            case StatType.HP:
+                return player.hpUpgrades;
+            case StatType.TP:
+                return player.tpUpgrades;
+            default:
+                throw new Error(`Unsupported stat type: ${String(statType)}`);
+        }
     }
 
     private shakeItem(index: number) {

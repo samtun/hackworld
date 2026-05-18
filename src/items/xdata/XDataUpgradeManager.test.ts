@@ -36,6 +36,17 @@ vi.mock('../../ui/UIManager', () => ({
         hideControlHints: vi.fn(),
     }}
 }));
+vi.mock('../../AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playMenuNavigate: vi.fn(),
+            playUpgrade: vi.fn(),
+            playInsufficient: vi.fn(),
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
+        },
+    },
+}));
 vi.mock('../../ui/StatIcons', () => ({
     ICON_HP: '<svg>hp</svg>', ICON_TP: '<svg>tp</svg>',
     ICON_STRENGTH: '<svg>strength</svg>', ICON_DEFENSE: '<svg>defense</svg>',
@@ -47,6 +58,7 @@ vi.mock('../../Player', () => ({ Player: class {} }));
 
 import { XDataUpgradeManager } from './XDataUpgradeManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
+import { AudioManager } from '../../AudioManager';
 
 // jsdom does not implement scrollIntoView
 HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -130,6 +142,11 @@ describe('XDataUpgradeManager', () => {
             mgr.show();
             expect(resetInputDebounce).toHaveBeenCalledWith(mgr);
         });
+
+        it('plays the UI open sound when shown from hidden', () => {
+            mgr.show();
+            expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        });
     });
 
     // hide() tests
@@ -149,6 +166,12 @@ describe('XDataUpgradeManager', () => {
         it('calls uiManager.hideControlHints', () => {
             mgr.hide();
             expect(mgr.uiManager.hideControlHints).toHaveBeenCalled();
+        });
+
+        it('plays the UI close sound when hidden from visible', () => {
+            mgr.isVisible = true;
+            mgr.hide();
+            expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
         });
     });
 
@@ -281,6 +304,7 @@ describe('XDataUpgradeManager', () => {
             } as any;
             mgr.update(makePlayer(), input);
             expect(mgr.selectedIndex).toBe(1);
+            expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
         });
 
         it('decrements selectedIndex on navigateUp press', () => {
@@ -342,6 +366,95 @@ describe('XDataUpgradeManager', () => {
             mgr.lastSelectState = false;
             mgr.update(player, input);
             expect(player.upgradeWithXData).toHaveBeenCalledWith(mgr.stats[0].type);
+            expect(AudioManager.Instance.playUpgrade).toHaveBeenCalledOnce();
+        });
+
+        it('plays the insufficient sound when upgrade fails due to low X-Data', () => {
+            mgr.isVisible = true;
+            mgr.needsRender = true;
+            mgr.selectedIndex = 0;
+            const player = makePlayer({
+                xData: 5,
+                getUpgradeCost: vi.fn().mockReturnValue(10),
+                upgradeWithXData: vi.fn().mockReturnValue(false),
+            });
+            mgr.update(player);
+            mgr.needsRender = false;
+            mgr.shakeItem = vi.fn();
+            const input = {
+                isNavigateUpPressed: vi.fn().mockReturnValue(false),
+                isNavigateDownPressed: vi.fn().mockReturnValue(false),
+                isSelectPressed: vi.fn().mockReturnValue(true),
+                isCancelPressed: vi.fn().mockReturnValue(false),
+            } as any;
+            mgr.lastSelectState = false;
+            mgr.update(player, input);
+            expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
+        });
+
+        it('uses the correct current upgrade level for each stat type in the insufficient-audio path', () => {
+            mgr.isVisible = true;
+            mgr.stats = [
+                { type: 'strength', label: 'Strength', description: '', upgradeEffect: '' },
+                { type: 'defense', label: 'Defense', description: '', upgradeEffect: '' },
+                { type: 'agility', label: 'Agility', description: '', upgradeEffect: '' },
+                { type: 'luck', label: 'Luck', description: '', upgradeEffect: '' },
+                { type: 'hp', label: 'HP', description: '', upgradeEffect: '' },
+                { type: 'tp', label: 'TP', description: '', upgradeEffect: '' },
+            ];
+            const player = makePlayer({
+                xData: 0,
+                strengthUpgrades: 1,
+                defenseUpgrades: 2,
+                agilityUpgrades: 3,
+                luckUpgrades: 4,
+                hpUpgrades: 5,
+                tpUpgrades: 6,
+                getUpgradeCost: vi.fn().mockImplementation((level: number) => level + 10),
+                upgradeWithXData: vi.fn().mockReturnValue(false),
+            });
+            mgr.shakeItem = vi.fn();
+            const input = {
+                isNavigateUpPressed: vi.fn().mockReturnValue(false),
+                isNavigateDownPressed: vi.fn().mockReturnValue(false),
+                isSelectPressed: vi.fn().mockReturnValue(true),
+                isCancelPressed: vi.fn().mockReturnValue(false),
+            } as any;
+
+            mgr.needsRender = true;
+            mgr.update(player);
+
+            [1, 2, 3, 4, 5, 6].forEach((expectedLevel, index) => {
+                mgr.selectedIndex = index;
+                mgr.lastSelectState = false;
+                mgr.update(player, input);
+                expect(player.getUpgradeCost).toHaveBeenCalledWith(expectedLevel);
+            });
+        });
+
+        it('throws for an unsupported stat type through the public update flow', () => {
+            mgr.isVisible = true;
+            mgr.stats = [
+                { type: 'invalid', label: 'Invalid', description: '', upgradeEffect: '' },
+            ];
+            const player = makePlayer({
+                xData: 0,
+                getUpgradeCost: vi.fn().mockReturnValue(10),
+                upgradeWithXData: vi.fn().mockReturnValue(false),
+            });
+            mgr.shakeItem = vi.fn();
+            mgr.needsRender = true;
+            mgr.update(player);
+            mgr.lastSelectState = false;
+
+            const input = {
+                isNavigateUpPressed: vi.fn().mockReturnValue(false),
+                isNavigateDownPressed: vi.fn().mockReturnValue(false),
+                isSelectPressed: vi.fn().mockReturnValue(true),
+                isCancelPressed: vi.fn().mockReturnValue(false),
+            } as any;
+
+            expect(() => mgr.update(player, input)).toThrow('Unsupported stat type: invalid');
         });
     });
 });
