@@ -97,7 +97,7 @@
             flex: 1; min-height: 0;
             overflow-y: auto; overflow-x: hidden;
         }
-        #editor-inner { display: flex; align-items: flex-start; }
+        #editor-inner { display: flex; }
 
         /* ── Key labels ─────────────────────────────────────────────────── */
         #key-col {
@@ -120,7 +120,7 @@
 
         /* ── Noise strip ─────────────────────────────────────────────────── */
         #noise-row {
-            display: flex; flex-shrink: 0; height: 46px;
+            display: flex; flex-shrink: 0; height: 23px;
             border-top: 2px solid var(--border);
         }
         #noise-lbl {
@@ -200,6 +200,8 @@
 
 <!-- Toolbar -->
 <div id="toolbar">
+    <div class="tg"><label>Grid</label><input type="number" id="cfg-grid" min="0.05" max="2" step="0.05" value="0.2" /><span style="font-size:9px;color:var(--dim)">s</span></div>
+    <div class="tg" style="width:1px;height:18px;background:var(--border);padding:0;flex-shrink:0;"></div>
     <div class="tg"><label>Duration</label><input type="number" id="cfg-dur" min="0.05" max="5" step="0.05" value="0.25" /><span style="font-size:9px;color:var(--dim)">s</span></div>
     <div class="tg"><label>Type</label>
         <select id="cfg-type">
@@ -247,10 +249,10 @@
 <!-- Hints -->
 <div id="hints">
     <span class="hi">Space + drag: scroll timeline</span>
-    <span class="hi">Click empty row: add tone</span>
+    <span class="hi">Click empty row: add tone (snaps to grid)</span>
     <span class="hi">Click tone: edit</span>
     <span class="hi">Right-click tone: delete</span>
-    <span class="hi">Click noise strip: add noise</span>
+    <span class="hi">Click noise strip: add noise (snaps to grid)</span>
     <span class="hi">Right-click noise: delete</span>
 </div>
 

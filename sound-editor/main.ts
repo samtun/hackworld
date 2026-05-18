@@ -54,13 +54,13 @@ const NOTES: { name: string; freq: number }[] = [
 ];
 
 // ── Layout constants ──────────────────────────────────────────────────────────
-const PPS              = 120;    // pixels per second
-const ROW_H            = 22;    // row height px
-const NOISE_H          = 46;    // noise strip height px
-const RULER_H          = 18;    // ruler height px
-const MIN_SECS         = 10;    // minimum timeline width in seconds
+const PPS              = 120;   // pixels per second
+const ROW_H            = 22;   // row height px
+const NOISE_H          = 23;   // noise strip height px (half the original 46px)
+const RULER_H          = 18;   // ruler height px
+const MIN_SECS         = 10;   // minimum timeline width in seconds
 const ENV_MIN          = 0.0001;
-const AUTOSCROLL_MARGIN = 80;   // px from right edge before auto-scroll kicks in
+const AUTOSCROLL_MARGIN = 80;  // px from right edge before auto-scroll kicks in
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let tones: ToneEvent[]   = [];
@@ -81,6 +81,7 @@ let cfgType: OscType = 'triangle';
 let cfgGain   = 0.06;
 let cfgDelay  = 0.0;
 let cfgGlide: number | null = null;
+let cfgGrid   = 0.2;  // grid snap width in seconds
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const tlCanvas    = document.getElementById('tl-canvas')    as HTMLCanvasElement;
@@ -96,6 +97,7 @@ const stopBtn     = document.getElementById('stop-btn')     as HTMLButtonElement
 const clearBtn    = document.getElementById('clear-btn')    as HTMLButtonElement;
 const exportBtn   = document.getElementById('export-btn')   as HTMLButtonElement;
 const cfgDurEl    = document.getElementById('cfg-dur')      as HTMLInputElement;
+const cfgGridEl   = document.getElementById('cfg-grid')     as HTMLInputElement;
 const cfgTypeEl   = document.getElementById('cfg-type')     as HTMLSelectElement;
 const cfgGainEl   = document.getElementById('cfg-gain')     as HTMLInputElement;
 const cfgGainV    = document.getElementById('cfg-gain-v')   as HTMLSpanElement;
@@ -199,18 +201,15 @@ function resizeAll(): void {
 }
 
 // ── Grid helpers ───────────────────────────────────────────────────────────────
-function drawGrid(
-    cx: CanvasRenderingContext2D,
-    w: number, h: number,
-    quarterColor: string, secColor: string,
-): void {
+function drawGrid(cx: CanvasRenderingContext2D, w: number, h: number): void {
+    const step   = cfgGrid > 0 ? cfgGrid : 0.25;
     const startS = scrollX / PPS;
     const endS   = startS + w / PPS;
-    for (let s = Math.floor(startS * 4) / 4; s <= endS + 0.01; s += 0.25) {
-        const x   = Math.round(s * PPS - scrollX) + 0.5;
-        const sec = Math.abs(s - Math.round(s)) < 0.01;
-        cx.strokeStyle = sec ? secColor : quarterColor;
-        cx.lineWidth   = sec ? 1 : 0.5;
+    for (let s = Math.floor(startS / step) * step; s <= endS + 0.001; s += step) {
+        const x      = Math.round(s * PPS - scrollX) + 0.5;
+        const isSec  = Math.abs(s - Math.round(s)) < step * 0.01;
+        cx.strokeStyle = isSec ? '#2e4870' : '#1e3050';
+        cx.lineWidth   = isSec ? 1 : 0.5;
         cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, h); cx.stroke();
     }
 }
@@ -223,20 +222,20 @@ function renderRuler(): void {
     cx.fillStyle = '#09090e';
     cx.fillRect(0, 0, w, RULER_H);
 
+    const step   = cfgGrid > 0 ? cfgGrid : 0.25;
     const startS = scrollX / PPS;
     const endS   = startS + w / PPS;
     cx.font = '8px monospace'; cx.textAlign = 'left';
 
-    for (let s = Math.floor(startS * 4) / 4; s <= endS + 0.01; s += 0.25) {
-        const x   = Math.round(s * PPS - scrollX) + 0.5;
-        const sec = Math.abs(s - Math.round(s)) < 0.01;
-        const half = !sec && Math.abs(s * 2 - Math.round(s * 2)) < 0.01;
-        cx.strokeStyle = sec ? '#303858' : '#1a2030';
-        cx.lineWidth   = sec ? 1 : 0.5;
+    for (let s = Math.floor(startS / step) * step; s <= endS + 0.001; s += step) {
+        const x     = Math.round(s * PPS - scrollX) + 0.5;
+        const isSec = Math.abs(s - Math.round(s)) < step * 0.01;
+        cx.strokeStyle = isSec ? '#303858' : '#1a2030';
+        cx.lineWidth   = isSec ? 1 : 0.5;
         cx.beginPath();
-        cx.moveTo(x, sec ? 0 : half ? 8 : 13);
+        cx.moveTo(x, isSec ? 0 : 10);
         cx.lineTo(x, RULER_H); cx.stroke();
-        if (sec) {
+        if (isSec) {
             cx.fillStyle = '#7080a0';
             cx.fillText(s.toFixed(1) + 's', x + 3, 11);
         }
@@ -268,7 +267,7 @@ function renderTimeline(): void {
     });
 
     // Grid
-    drawGrid(cx, w, h, '#10182a', '#1c2436');
+    drawGrid(cx, w, h);
 
     // Tone blocks
     for (const ev of tones) {
@@ -314,14 +313,14 @@ function renderNoise(): void {
     cx.fillStyle = '#080812'; cx.fillRect(0, 0, w, NOISE_H);
 
     // Centre guide line
-    cx.fillStyle = '#14101e'; cx.fillRect(0, NOISE_H / 2 - 1, w, 2);
+    cx.fillStyle = '#14101e'; cx.fillRect(0, NOISE_H / 2 - 1, w, 1);
 
-    drawGrid(cx, w, NOISE_H, '#10182a', '#1c2436');
+    drawGrid(cx, w, NOISE_H);
 
     for (const ev of noises) {
         const x   = ev.startTime * PPS - scrollX;
         const bw  = Math.max(6, ev.duration * PPS);
-        const y   = 4; const bh = NOISE_H - 8;
+        const y   = 2; const bh = NOISE_H - 4;
         if (x + bw < 0 || x > w) continue;
 
         const sel = ev.id === editingId;
@@ -446,14 +445,21 @@ function onMouseUp(): void {
     document.body.style.cursor = '';
 }
 
+// ── Grid snap ─────────────────────────────────────────────────────────────────
+/** Snap a time value to the nearest grid line. */
+function snapToGrid(t: number): number {
+    if (cfgGrid <= 0) return t;
+    return Math.round(t / cfgGrid) * cfgGrid;
+}
+
 // ── Add events ─────────────────────────────────────────────────────────────────
 function addTone(noteIdx: number, startTime: number): void {
-    tones.push({ id: uid(), noteIdx, startTime, duration: cfgDur, type: cfgType, gain: cfgGain, delay: cfgDelay, glideTo: cfgGlide });
+    tones.push({ id: uid(), noteIdx, startTime: snapToGrid(startTime), duration: cfgDur, type: cfgType, gain: cfgGain, delay: cfgDelay, glideTo: cfgGlide });
     render();
 }
 
 function addNoise(startTime: number): void {
-    noises.push({ id: uid(), startTime, duration: cfgDur, gain: cfgGain, delay: cfgDelay, lowpass: 2200, highpass: 100 });
+    noises.push({ id: uid(), startTime: snapToGrid(startTime), duration: cfgDur, gain: cfgGain, delay: cfgDelay, lowpass: 2200, highpass: 100 });
     render();
 }
 
@@ -658,6 +664,7 @@ function init(): void {
 
     // Toolbar
     cfgDurEl.addEventListener('change',  () => { cfgDur   = parseFloat(cfgDurEl.value)  || 0.25; });
+    cfgGridEl.addEventListener('change', () => { cfgGrid  = Math.max(0.05, parseFloat(cfgGridEl.value) || 0.2); render(); });
     cfgTypeEl.addEventListener('change', () => { cfgType  = cfgTypeEl.value as OscType; });
     cfgGainEl.addEventListener('input',  () => { cfgGain  = parseFloat(cfgGainEl.value); cfgGainV.textContent  = cfgGain.toFixed(2); });
     cfgDelayEl.addEventListener('input', () => { cfgDelay = parseFloat(cfgDelayEl.value); cfgDelayV.textContent = cfgDelay.toFixed(1) + 's'; });
