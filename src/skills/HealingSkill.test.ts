@@ -55,9 +55,14 @@ vi.mock('../ui/UIManager', () => ({
     UIManager: { Instance: { displayInsufficientTPWarning: vi.fn() } }
 }));
 
+vi.mock('../AudioManager', () => ({
+    AudioManager: { Instance: { playHealingSkill: vi.fn(), playInsufficient: vi.fn() } }
+}));
+
 vi.mock('../Player', () => ({ Player: class {} }));
 
 import { HealingSkill } from './HealingSkill';
+import { AudioManager } from '../AudioManager';
 import { Tier } from '../items/TierManager';
 import { SkillTechType } from './SkillTechType';
 import type { Player } from '../Player';
@@ -80,6 +85,7 @@ describe('HealingSkill', () => {
     let skill: HealingSkill;
 
     beforeEach(() => {
+        vi.clearAllMocks();
         skill = new HealingSkill(vi.fn());
     });
 
@@ -89,6 +95,14 @@ describe('HealingSkill', () => {
             expect(skill.cooldown).toBe(5);
             expect(skill.tpCost).toBe(20);
         });
+    });
+
+    it('plays the healing skill sound when executed', () => {
+        const player = makePlayer(Tier.STABLE);
+        const scene = { add: vi.fn(), remove: vi.fn() } as any;
+        const world = {} as any;
+        (skill as any).execute(player, scene, world);
+        expect(AudioManager.Instance.playHealingSkill).toHaveBeenCalledOnce();
     });
 
     describe('getEffectiveTpCost()', () => {

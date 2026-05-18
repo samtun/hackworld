@@ -5,6 +5,7 @@ import { Skill } from './Skill';
 import { BaseMesh } from '../BaseMesh';
 import { SkillTechType } from './SkillTechType';
 import { Tier } from '../items/TierManager';
+import { AudioManager } from '../AudioManager';
 
 /**
  * Healing Skill
@@ -53,6 +54,7 @@ export class HealingSkill extends Skill {
 
     protected execute(player: Player, scene: THREE.Scene, _world: CANNON.World): void {
         console.log('Executing Healing skill');
+        AudioManager.Instance.playHealingSkill();
 
         const tier = player.getSkillTier(SkillTechType.RECOVERY);
         const healAmount = this.getEffectiveHealAmount(tier);
@@ -271,4 +273,3 @@ class HealEffect extends BaseMesh {
         this.mesh.parent?.remove(this.mesh);
     }
 }
-

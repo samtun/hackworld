@@ -306,6 +306,24 @@ export class AudioManager {
         });
     }
 
+    playLaserBeamSkill(): void {
+        this.playNoise(0.06, 0.025, 5200, 900, 0);
+        this.playTone(720, 0.14, 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, 0, 1440);
+        this.playTone(1440, 0.08, 'triangle', 0.035, ENVELOPE_MIN_GAIN, 0.03, 1960);
+    }
+
+    playHealingSkill(): void {
+        [523.25, 659.25, 783.99].forEach((frequency, index) => {
+            this.playTone(frequency, 0.16, 'triangle', 0.05, ENVELOPE_MIN_GAIN, index * 0.04, frequency * 1.04);
+        });
+    }
+
+    playAreaAttackSkill(): void {
+        this.playNoise(0.08, 0.035, 1800, 140, 0);
+        this.playTone(164.81, 0.16, 'sawtooth', 0.08, ENVELOPE_MIN_GAIN, 0, 110);
+        this.playTone(246.94, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0.04, 196);
+    }
+
     playUiOpen(): void {
         [392, 523.25].forEach((frequency, index) => {
             this.playTone(frequency, 0.1, 'triangle', 0.04, ENVELOPE_MIN_GAIN, index * 0.035, frequency * 1.04);

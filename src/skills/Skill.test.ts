@@ -21,8 +21,15 @@ vi.mock('../ui/UIManager', () => ({
     }
 }));
 
+vi.mock('../AudioManager', () => ({
+    AudioManager: {
+        Instance: { playInsufficient: vi.fn() }
+    }
+}));
+
 import { Skill } from './Skill';
 import { UIManager } from '../ui/UIManager';
+import { AudioManager } from '../AudioManager';
 import type { Player } from '../Player';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
@@ -106,6 +113,7 @@ describe('Skill', () => {
             const result = skill.use(player, scene, world);
             expect(result).toBe(false);
             expect(UIManager.Instance.displayInsufficientTPWarning).toHaveBeenCalledOnce();
+            expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
         });
 
         it('returns true on success, deducts TP, starts cooldown, and calls execute', () => {

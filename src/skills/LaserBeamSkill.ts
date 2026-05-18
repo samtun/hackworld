@@ -7,6 +7,7 @@ import { BaseMesh } from '../BaseMesh';
 import { SkillTechType } from './SkillTechType';
 import { Tier } from '../items/TierManager';
 import { Breakable, isBreakable } from '../items/Breakable';
+import { AudioManager } from '../AudioManager';
 
 /**
  * Laser Beam Skill
@@ -55,6 +56,7 @@ export class LaserBeamSkill extends Skill {
 
     protected execute(player: Player, scene: THREE.Scene, world: CANNON.World): void {
         console.log('Executing Laser Beam skill');
+        AudioManager.Instance.playLaserBeamSkill();
 
         const tier = player.getSkillTier(SkillTechType.RANGED);
         this.effectiveDamage = this.BASE_DAMAGE * this.getDamageMultiplier(tier);
