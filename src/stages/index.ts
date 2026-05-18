@@ -14,7 +14,7 @@ export { BaseStage, Lobby, NetworkMatrix, PacketForge, CipherNull, SecurityCore,
 
 // Registry of all available dungeons for selection UI
 // GameTest is only included in dev builds
-export const AVAILABLE_DUNGEONS = import.meta.env.DEV 
+export const AVAILABLE_DUNGEONS = import.meta.env.DEV
     ? [NetworkMatrix, PacketForge, CipherNull, SecurityCore, KernelTerminus, GameTest]
     : [NetworkMatrix, PacketForge, CipherNull, SecurityCore, KernelTerminus];
 
@@ -51,13 +51,13 @@ function toRegistryEntries(
 
 // Stage registry mapping stage IDs to their constructors
 const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstructor>([
-    [Lobby.getMetadata().id, Lobby],
-    [NetworkMatrix.getMetadata().id, NetworkMatrix],
-    [PacketForge.getMetadata().id, PacketForge],
+    ...toRegistryEntries(Lobby),
+    ...toRegistryEntries(NetworkMatrix),
+    ...toRegistryEntries(PacketForge),
     ...toRegistryEntries(CipherNull),
     ...toRegistryEntries(SecurityCore),
     ...toRegistryEntries(KernelTerminus),
-    ...(import.meta.env.DEV ? [[GameTest.getMetadata().id, GameTest] as [string, StageConstructor]] : [])
+    ...(import.meta.env.DEV ? toRegistryEntries(GameTest) : [])
 ]);
 
 /**
