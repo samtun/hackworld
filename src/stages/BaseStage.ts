@@ -162,6 +162,15 @@ export abstract class BaseStage {
     }
 
     /**
+     * Get the progress value that should be marked as completed when this stage
+     * instance is fully cleared.
+     */
+    getRequiredProgress(): number {
+        const stageClass = this.constructor as typeof BaseStage;
+        return stageClass.getMetadata().requiredProgress;
+    }
+
+    /**
      * Load the stage - to be implemented by each stage
      */
     abstract load(): Promise<void>;

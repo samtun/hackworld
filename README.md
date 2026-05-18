@@ -12,7 +12,7 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 
 - Hack and slash gameplay with quest progression
 - **Hub-based game world** - Multiple stages progressively unlocked through gameplay
-- **Five-stage campaign progression** - Clear increasingly difficult sectors: Network Matrix → Packet Forge → Cipher Null → Security Core → Kernel Terminus
+- **Five-stage campaign progression** - Clear increasingly difficult sectors: Network Matrix → Packet Forge → Cipher Null (2 layers) → Security Core (3 layers) → Kernel Terminus (3 layers), with deeper layers featuring harder enemies, darker layouts, and faster variants of each stage theme
 - **Procedurally generated dungeons** - Obstacle layouts and enemy placements are randomised every time a dungeon stage is entered, keeping exploration fresh
 - **Stage minimap system** - A 240x180 minimap appears in the top-right corner; in dungeon stages it unlocks after picking up the **Grid Tracer** item from one loot room, while the Lobby minimap is always visible
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats
@@ -70,9 +70,9 @@ The game is fully playable with keyboard, controller (tested with XBox controlle
 - **Space / A**: Jump
 - **K / X**: Attack (tap for normal attack, hold for 1s then release for charged dash attack)
 - **L / B**: Block (absorbs incoming damage for 0.5s, immobilises the player briefly)
-- **Q + Space / L1 + A**: Laser Beam skill (ranged attack, 30m range, 20 damage, 10s cooldown)
-- **Q + Escape / L1 + B**: Healing skill (heal 40 HP, 5s cooldown)
-- **Q + K / L1 + X**: Area Attack skill (5m circular area, 18 damage, 10s cooldown)
+- **Q + Space / L1 + A**: Laser Beam skill (unlocks at level 10)
+- **Q + Escape / L1 + B**: Healing skill (unlocks at level 20)
+- **Q + K / L1 + X**: Area Attack skill (unlocks at level 38)
 - **I / Select**: Toggle inventory
 - **Enter / A**: Interact and select in menus
 - **ESC / B**: Close menus / Block (B)

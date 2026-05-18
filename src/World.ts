@@ -377,10 +377,7 @@ export class World {
         if (this.enemies.length === 0) {
             this.hasNotifiedStageCompletion = true;
 
-            // Get required progress from metadata
-            const stageClass = this.currentStage.constructor as typeof BaseStage;
-            const metadata = stageClass.getMetadata();
-            const requiredProgress = metadata.requiredProgress;
+            const requiredProgress = this.currentStage.getRequiredProgress();
 
             if (requiredProgress > 0) {
                 const progressManager = GameProgressManager.Instance;

@@ -1,19 +1,52 @@
+import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { BaseStage } from './BaseStage';
+import { StageWithLevels } from './StageWithLevels';
+import type { StageLevelConfig } from './StageWithLevels';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
-export class SecurityCore extends BaseStage {
-    private static id: string = "securityCore";
-    private static name: string = "Security Core";
-    private static description: string = "The heart of the security system";
+export class SecurityCore extends StageWithLevels {
+    private static id: string = 'securityCore';
+    private static name: string = 'Security Core';
+    private static description: string = 'The heart of the security system';
+    private static readonly depth2Id: string = 'securityCoreDepth2';
+    private static readonly depth3Id: string = 'securityCoreDepth3';
+    private static readonly levelConfigs: Record<string, StageLevelConfig> = {
+        [SecurityCore.id]: {
+            id: SecurityCore.id,
+            name: SecurityCore.name,
+            description: 'Security Core / Layer 1',
+            floorColor: 0x100a28,
+            hasBoss: false,
+            enemyDifficultyMultiplier: 1,
+            teleporterDestination: SecurityCore.depth2Id,
+            requiredProgress: 0,
+        },
+        [SecurityCore.depth2Id]: {
+            id: SecurityCore.depth2Id,
+            name: `${SecurityCore.name} // Lockstream`,
+            description: 'Security Core / Layer 2',
+            floorColor: 0x0b071c,
+            hasBoss: false,
+            enemyDifficultyMultiplier: 1.18,
+            teleporterDestination: SecurityCore.depth3Id,
+            requiredProgress: 0,
+        },
+        [SecurityCore.depth3Id]: {
+            id: SecurityCore.depth3Id,
+            name: `${SecurityCore.name} // Root Citadel`,
+            description: 'Security Core / Layer 3',
+            floorColor: 0x060412,
+            hasBoss: true,
+            enemyDifficultyMultiplier: 1.35,
+            teleporterDestination: Lobby.getMetadata().id,
+            requiredProgress: 7,
+        },
+    };
 
-    id = SecurityCore.id;
-    name = SecurityCore.name;
-    description = SecurityCore.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
@@ -88,6 +121,19 @@ export class SecurityCore extends BaseStage {
         },
     };
 
+    constructor(
+        scene: THREE.Scene,
+        physicsWorld: CANNON.World,
+        physicsMaterial: CANNON.Material,
+        stageId?: string,
+    ) {
+        super(scene, physicsWorld, physicsMaterial, stageId, SecurityCore.id, SecurityCore.levelConfigs);
+    }
+
+    static getLevelStageIds(): readonly string[] {
+        return [SecurityCore.id, SecurityCore.depth2Id, SecurityCore.depth3Id] as const;
+    }
+
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
             id: SecurityCore.id,
@@ -109,13 +155,14 @@ export class SecurityCore extends BaseStage {
     protected override getEnemyConfig(
         spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite,
     ): Partial<EnemyArchetypeConfig> {
-        return spawnType === EnemySpawnType.Elite
+        const baseConfig = spawnType === EnemySpawnType.Elite
             ? SecurityCore.eliteEnemyConfig
             : SecurityCore.regularEnemyConfig;
+        return this.scaleEnemyConfig(baseConfig);
     }
 
     protected override getBossConfig(): Partial<EnemyArchetypeConfig> {
-        return SecurityCore.bossConfig;
+        return this.scaleEnemyConfig(SecurityCore.bossConfig);
     }
 
     async load(): Promise<void> {
@@ -125,7 +172,15 @@ export class SecurityCore extends BaseStage {
 
         // Generate room-based procedural layout
         const generator = new RoomBasedDungeonGenerator();
-        const layout = generator.generate(SecurityCore.generationConfig);
+        const layout = generator.generate(
+            this.buildGenerationConfig(SecurityCore.generationConfig, {
+                eliteFractionCap: 0.85,
+                eliteFractionGain: 0.25,
+                areaPerEnemyMin: 30,
+                areaPerEnemyDifficultyGain: 0.35,
+                trapDamageGain: 0.85,
+            }),
+        );
         this.setMinimapLayout(layout.minimapLayout, false);
 
         // Update spawn position from generated layout
@@ -135,7 +190,7 @@ export class SecurityCore extends BaseStage {
         this.dungeonRooms = layout.rooms;
 
         // Floor segments for each room and corridor
-        this.buildFloorFromLayout(layout, 0x100a28);
+        this.buildFloorFromLayout(layout, this.levelConfig.floorColor);
 
         // Build walls (with transparency shader) and obstacles
         this.buildWallsFromLayout(layout);
@@ -143,7 +198,7 @@ export class SecurityCore extends BaseStage {
 
         // Teleporter in the final room – starts inactive until all enemies are defeated
         const tp = layout.teleporterPosition;
-        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getMetadata().id, false);
+        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), this.levelConfig.teleporterDestination, false);
 
         // Lobby return teleporter at spawn – always active so players can leave at any time
         this.createLobbyReturnTeleporter(
@@ -159,5 +214,9 @@ export class SecurityCore extends BaseStage {
         this.buildBarrelsFromLayout(layout);
         this.buildMinimapDropFromLayout(layout);
         this.buildTrapsFromLayout(layout);
+    }
+
+    protected override scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {
+        return super.scaleEnemyConfig(config, { speedDifficultyGain: 0.14, expDifficultyGain: 0.75 });
     }
 }

@@ -1,3 +1,38 @@
+# [3.21.0](https://github.com/samtun/hackworld/compare/v3.20.0...v3.21.0) (2026-05-18)
+
+
+### Features
+
+* add multi-level progression for final dungeon stages ([df57806](https://github.com/samtun/hackworld/commit/df57806ba8eaaee62dab5c70da5a132a3de55f6b))
+* use new register method on all stages ([647f5fe](https://github.com/samtun/hackworld/commit/647f5fef8ad1286ee9177a31282d085b7ab36d1a))
+
+# [3.20.0](https://github.com/samtun/hackworld/compare/v3.19.0...v3.20.0) (2026-05-18)
+
+
+### Features
+
+* add level-based skill unlock progression ([dca22a7](https://github.com/samtun/hackworld/commit/dca22a7d2c132dfa53e6fe5935019c22d9d46ead))
+
+# [3.19.0](https://github.com/samtun/hackworld/compare/v3.18.0...v3.19.0) (2026-05-18)
+
+
+### Bug Fixes
+
+* refine procedural audio feedback ([548896a](https://github.com/samtun/hackworld/commit/548896ac5610ab32db2903c53c78fa7986906778))
+* restore stable web audio engine ([54e30dd](https://github.com/samtun/hackworld/commit/54e30dd353beaf2ad0ee50be4b9f231fc4f0bcc1))
+
+
+### Features
+
+* add healing station loop audio ([68e8660](https://github.com/samtun/hackworld/commit/68e86608c9460ac24ce12c2891c89167410b8787))
+* add procedural action audio hooks ([3b00df7](https://github.com/samtun/hackworld/commit/3b00df72ad5e915215e83032af441a077ca0c7fe))
+* add skill audio cues ([937d7c3](https://github.com/samtun/hackworld/commit/937d7c3f7aea33cf855c5c0f592f36d14827d57c))
+* add ui open close and failure audio ([589c682](https://github.com/samtun/hackworld/commit/589c682b80bb567ae6778b771bcb57dfb2a16597))
+* add UI sounds and longer music loops ([1060bdd](https://github.com/samtun/hackworld/commit/1060bdd5e10f50364fa55802c0d6f2755ad75b4a))
+* expand inventory and level audio ([7a29bd9](https://github.com/samtun/hackworld/commit/7a29bd9e4e3c4d9b4bd3906a2fdcdd3f6c0dab18))
+* expand menu and card audio feedback ([261ee01](https://github.com/samtun/hackworld/commit/261ee01a8121a16298bb493ff9aa4ccf6852c094))
+* upgrade game audio with tonejs ([deabe06](https://github.com/samtun/hackworld/commit/deabe06b49fced009da56447792cdf89625d5ddf))
+
 # [3.18.0](https://github.com/samtun/hackworld/compare/v3.17.0...v3.18.0) (2026-05-16)
 
 

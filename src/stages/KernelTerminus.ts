@@ -1,19 +1,54 @@
+import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { BaseStage } from './BaseStage';
+import { StageWithLevels } from './StageWithLevels';
+import type { StageLevelConfig } from './StageWithLevels';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
-export class KernelTerminus extends BaseStage {
-    private static id: string = "kernelTerminus";
-    private static name: string = "Kernel Terminus";
-    private static description: string = "The terminal breach where VIRUS-ZERO hardens into core predators";
+export class KernelTerminus extends StageWithLevels {
+    private static id: string = 'kernelTerminus';
+    private static name: string = 'Kernel Terminus';
+    private static description: string = 'The terminal breach where VIRUS-ZERO hardens into core predators';
+    private static readonly depth2Id: string = 'kernelTerminusDepth2';
+    private static readonly depth3Id: string = 'kernelTerminusDepth3';
+    private static readonly levelConfigs: Record<string, StageLevelConfig> = {
+        [KernelTerminus.id]: {
+            id: KernelTerminus.id,
+            name: KernelTerminus.name,
+            description: 'Kernel Terminus / Layer 1',
+            floorColor: 0x2e1118,
+            hasBoss: false,
+            enemyDifficultyMultiplier: 1,
+            teleporterDestination: KernelTerminus.depth2Id,
+            requiredProgress: 0,
+        },
+        [KernelTerminus.depth2Id]: {
+            id: KernelTerminus.depth2Id,
+            name: `${KernelTerminus.name} // Predator Ring`,
+            description: 'Kernel Terminus / Layer 2',
+            floorColor: 0x210c12,
+            hasBoss: true,
+            bossRoomCount: 1,
+            enemyDifficultyMultiplier: 1.22,
+            teleporterDestination: KernelTerminus.depth3Id,
+            requiredProgress: 0,
+        },
+        [KernelTerminus.depth3Id]: {
+            id: KernelTerminus.depth3Id,
+            name: `${KernelTerminus.name} // Core Apex`,
+            description: 'Kernel Terminus / Layer 3',
+            floorColor: 0x15070b,
+            hasBoss: true,
+            bossRoomCount: 2,
+            enemyDifficultyMultiplier: 1.45,
+            teleporterDestination: Lobby.getMetadata().id,
+            requiredProgress: 9,
+        },
+    };
 
-    id = KernelTerminus.id;
-    name = KernelTerminus.name;
-    description = KernelTerminus.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
@@ -89,6 +124,19 @@ export class KernelTerminus extends BaseStage {
         },
     };
 
+    constructor(
+        scene: THREE.Scene,
+        physicsWorld: CANNON.World,
+        physicsMaterial: CANNON.Material,
+        stageId?: string,
+    ) {
+        super(scene, physicsWorld, physicsMaterial, stageId, KernelTerminus.id, KernelTerminus.levelConfigs);
+    }
+
+    static getLevelStageIds(): readonly string[] {
+        return [KernelTerminus.id, KernelTerminus.depth2Id, KernelTerminus.depth3Id] as const;
+    }
+
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
             id: KernelTerminus.id,
@@ -107,13 +155,14 @@ export class KernelTerminus extends BaseStage {
     protected override getEnemyConfig(
         spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite,
     ): Partial<EnemyArchetypeConfig> {
-        return spawnType === EnemySpawnType.Elite
+        const baseConfig = spawnType === EnemySpawnType.Elite
             ? KernelTerminus.eliteEnemyConfig
             : KernelTerminus.regularEnemyConfig;
+        return this.scaleEnemyConfig(baseConfig);
     }
 
     protected override getBossConfig(): Partial<EnemyArchetypeConfig> {
-        return KernelTerminus.bossConfig;
+        return this.scaleEnemyConfig(KernelTerminus.bossConfig);
     }
 
     async load(): Promise<void> {
@@ -122,18 +171,26 @@ export class KernelTerminus extends BaseStage {
         this.createFloorCollider();
 
         const generator = new RoomBasedDungeonGenerator();
-        const layout = generator.generate(KernelTerminus.generationConfig);
+        const layout = generator.generate(
+            this.buildGenerationConfig(KernelTerminus.generationConfig, {
+                eliteFractionCap: 0.9,
+                eliteFractionGain: 0.22,
+                areaPerEnemyMin: 24,
+                areaPerEnemyDifficultyGain: 0.4,
+                trapDamageGain: 0.9,
+            }),
+        );
         this.setMinimapLayout(layout.minimapLayout, false);
 
         this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
         this.dungeonRooms = layout.rooms;
 
-        this.buildFloorFromLayout(layout, 0x2e1118);
+        this.buildFloorFromLayout(layout, this.levelConfig.floorColor);
         this.buildWallsFromLayout(layout);
         this.buildObstaclesFromLayout(layout);
 
         const tp = layout.teleporterPosition;
-        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getMetadata().id, false);
+        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), this.levelConfig.teleporterDestination, false);
 
         // Lobby return teleporter at spawn – always active so players can leave at any time
         this.createLobbyReturnTeleporter(
@@ -146,5 +203,9 @@ export class KernelTerminus extends BaseStage {
         this.buildBarrelsFromLayout(layout);
         this.buildMinimapDropFromLayout(layout);
         this.buildTrapsFromLayout(layout);
+    }
+
+    protected override scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {
+        return super.scaleEnemyConfig(config, { speedDifficultyGain: 0.15, expDifficultyGain: 0.8 });
     }
 }

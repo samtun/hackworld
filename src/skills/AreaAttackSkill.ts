@@ -13,7 +13,7 @@ import { AudioManager } from '../AudioManager';
  * Area Attack Skill
  */
 export class AreaAttackSkill extends Skill {
-    private readonly BASE_DAMAGE = 18;
+    private readonly BASE_DAMAGE = 42;
     private readonly RANGE = 5;
     private readonly DURATION = 0.8;
     private effectTimer: number = 0;
