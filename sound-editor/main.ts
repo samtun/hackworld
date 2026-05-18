@@ -444,7 +444,7 @@ function onWheel(e: WheelEvent): void {
 }
 
 // ── Grid snap ─────────────────────────────────────────────────────────────────
-/** Snap a time value to the closest beat BEFORE the given time (floor snap). */
+/** Snap a time value to the beat at or before the given time (floor snap). */
 function snapToGrid(t: number): number {
     const bd = beatDur();
     return Math.floor(t / bd) * bd;
@@ -699,16 +699,9 @@ function init(): void {
     noiseCanvas.addEventListener('mousedown', onNoiseDown);
     noiseCanvas.addEventListener('contextmenu', onNoiseCtx);
 
-    // Horizontal scroll via wheel
-    const EDITABLE = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
-    const isEditable = (t: EventTarget | null): boolean =>
-        t instanceof Element && EDITABLE.has(t.tagName);
-
+    // Horizontal scroll via wheel — tlClip and noiseClip each cover their canvas area
     tlClip.addEventListener('wheel',    onWheel, { passive: false });
     noiseClip.addEventListener('wheel', onWheel, { passive: false });
-    editorOuter.addEventListener('wheel', (e: WheelEvent) => {
-        if (!isEditable(e.target)) { onWheel(e); }
-    }, { passive: false });
 
     // Horizontal scrollbar
     hscrollBar.addEventListener('scroll', () => {
@@ -718,6 +711,10 @@ function init(): void {
     });
 
     // Space = Play / Stop
+    const EDITABLE = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
+    const isEditable = (t: EventTarget | null): boolean =>
+        t instanceof Element && EDITABLE.has(t.tagName);
+
     window.addEventListener('keydown', e => {
         if (e.code === 'Space' && !isEditable(e.target)) {
             e.preventDefault();
