@@ -1,3 +1,10 @@
+# [3.20.0](https://github.com/samtun/hackworld/compare/v3.19.0...v3.20.0) (2026-05-18)
+
+
+### Features
+
+* add level-based skill unlock progression ([dca22a7](https://github.com/samtun/hackworld/commit/dca22a7d2c132dfa53e6fe5935019c22d9d46ead))
+
 # [3.19.0](https://github.com/samtun/hackworld/compare/v3.18.0...v3.19.0) (2026-05-18)
 
 
