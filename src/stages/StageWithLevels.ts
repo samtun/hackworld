@@ -59,6 +59,7 @@ export abstract class StageWithLevels extends BaseStage {
         tuning: GenerationDifficultyTuning,
     ): RoomGenerationConfig {
         const difficulty = this.levelConfig.enemyDifficultyMultiplier;
+        const areaPerEnemy = base.enemyCount.areaPerEnemy;
         const nextConfig: RoomGenerationConfig = {
             ...base,
             hasBoss: this.levelConfig.hasBoss,
@@ -68,11 +69,11 @@ export abstract class StageWithLevels extends BaseStage {
                 min: Math.floor(base.enemyCount.min * difficulty),
                 max: Math.floor(base.enemyCount.max * difficulty),
                 eliteFraction: Math.min(tuning.eliteFractionCap, base.enemyCount.eliteFraction + (difficulty - 1) * tuning.eliteFractionGain),
-                ...(tuning.areaPerEnemyMin !== undefined && tuning.areaPerEnemyDifficultyGain !== undefined
+                ...(areaPerEnemy !== undefined && tuning.areaPerEnemyMin !== undefined && tuning.areaPerEnemyDifficultyGain !== undefined
                     ? {
                         areaPerEnemy: Math.max(
                             tuning.areaPerEnemyMin,
-                            Math.floor(base.enemyCount.areaPerEnemy / (1 + (difficulty - 1) * tuning.areaPerEnemyDifficultyGain)),
+                            Math.floor(areaPerEnemy / (1 + (difficulty - 1) * tuning.areaPerEnemyDifficultyGain)),
                         ),
                     }
                     : {}),

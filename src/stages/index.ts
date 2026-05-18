@@ -26,10 +26,20 @@ type StageConstructor = new (
     stageId?: string,
 ) => BaseStage;
 
+interface RegisteredStageConstructor extends StageConstructor {
+    getMetadata(): { id: string };
+}
+
+interface MultiLevelStageConstructor extends RegisteredStageConstructor {
+    getLevelStageIds(): readonly string[];
+}
+
 function toRegistryEntries(
-    StageClass: StageConstructor & { getLevelStageIds?: () => readonly string[]; getMetadata: () => { id: string } },
+    StageClass: RegisteredStageConstructor,
 ): [string, StageConstructor][] {
-    const ids = StageClass.getLevelStageIds?.() ?? [StageClass.getMetadata().id];
+    const ids = 'getLevelStageIds' in StageClass
+        ? (StageClass as MultiLevelStageConstructor).getLevelStageIds()
+        : [StageClass.getMetadata().id];
     return ids.map((stageId) => [stageId, StageClass]);
 }
 
