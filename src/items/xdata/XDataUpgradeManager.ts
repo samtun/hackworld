@@ -107,19 +107,27 @@ export class XDataUpgradeManager {
     }
 
     show() {
+        const wasVisible = this.isVisible;
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.selectedIndex = 0;
         this.needsRender = true;
         // Reset input debounce state to ignore lingering button presses
         resetInputDebounce(this as any);
+        if (!wasVisible) {
+            AudioManager.Instance.playUiOpen();
+        }
     }
 
     hide() {
+        const wasVisible = this.isVisible;
         this.isVisible = false;
         this.container.style.display = 'none';
         // Hide centralized control hints when menu closes
         this.uiManager.hideControlHints();
+        if (wasVisible) {
+            AudioManager.Instance.playUiClose();
+        }
     }
 
     toggle() {
@@ -293,6 +301,28 @@ export class XDataUpgradeManager {
         // Select/Upgrade stat (with debouncing)
         if (select && !this.lastSelectState) {
             const selectedStat = this.stats[this.selectedIndex];
+            let currentLevel = 0;
+            switch (selectedStat.type) {
+                case StatType.STRENGTH:
+                    currentLevel = player.strengthUpgrades;
+                    break;
+                case StatType.DEFENSE:
+                    currentLevel = player.defenseUpgrades;
+                    break;
+                case StatType.AGILITY:
+                    currentLevel = player.agilityUpgrades;
+                    break;
+                case StatType.LUCK:
+                    currentLevel = player.luckUpgrades;
+                    break;
+                case StatType.HP:
+                    currentLevel = player.hpUpgrades;
+                    break;
+                case StatType.TP:
+                    currentLevel = player.tpUpgrades;
+                    break;
+            }
+            const cost = player.getUpgradeCost(currentLevel);
             const success = player.upgradeWithXData(selectedStat.type);
 
             if (success) {
@@ -302,6 +332,9 @@ export class XDataUpgradeManager {
             } else {
                 // Shake animation for failed upgrade
                 this.shakeItem(this.selectedIndex);
+                if (player.xData < cost) {
+                    AudioManager.Instance.playInsufficient();
+                }
             }
         }
 

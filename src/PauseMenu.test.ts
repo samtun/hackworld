@@ -3,6 +3,8 @@ vi.mock('./AudioManager', () => ({
     AudioManager: {
         Instance: {
             playMenuNavigate: vi.fn(),
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
         },
     },
 }));
@@ -64,6 +66,7 @@ describe('PauseMenu', () => {
     let menu: PauseMenu;
 
     beforeEach(() => {
+        vi.clearAllMocks();
         input = makeInputManager();
         callbacks = makeCallbacks();
         menu = new PauseMenu(input, false, true, callbacks);
@@ -82,10 +85,21 @@ describe('PauseMenu', () => {
         expect(menu.visible).toBe(true);
     });
 
+    it('plays the UI open sound when shown', () => {
+        menu.show();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+    });
+
     it('becomes hidden after hide()', () => {
         menu.show();
         menu.hide();
         expect(menu.visible).toBe(false);
+    });
+
+    it('plays the UI close sound when hidden', () => {
+        menu.show();
+        menu.hide();
+        expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
     });
 
     it('show() is idempotent when already visible', () => {

@@ -261,6 +261,7 @@ export abstract class BaseTrader {
     }
 
     show() {
+        const wasVisible = this.isVisible;
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.selectedIndex = 0;
@@ -271,12 +272,19 @@ export abstract class BaseTrader {
         this.pendingSort = true;
         sortInventory(this.traderInventory);
         resetInputDebounce(this as any);
+        if (!wasVisible) {
+            AudioManager.Instance.playUiOpen();
+        }
     }
 
     hide() {
+        const wasVisible = this.isVisible;
         this.isVisible = false;
         this.container.style.display = 'none';
         this.uiManager.hideControlHints();
+        if (wasVisible) {
+            AudioManager.Instance.playUiClose();
+        }
     }
 
     toggle() { if (this.isVisible) this.hide(); else this.show(); }
@@ -415,6 +423,7 @@ export abstract class BaseTrader {
                 } else {
                     // Player doesn't have enough money - shake the item
                     this.shakeItem(this.selectedIndex);
+                    AudioManager.Instance.playInsufficient();
                 }
             }
         } else {

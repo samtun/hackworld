@@ -32,6 +32,9 @@ vi.mock('../AudioManager', () => ({
             playMenuNavigate: vi.fn(),
             playBuy: vi.fn(),
             playSell: vi.fn(),
+            playInsufficient: vi.fn(),
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
         },
     },
 }));
@@ -185,6 +188,7 @@ describe('BaseTrader – buy transaction', () => {
         expect(player.bits).toBe(200); // unchanged
         expect(player.inventory.length).toBe(0);
         expect(trader.traderInventory.length).toBe(1);
+        expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
     });
 
     it('marks bought equippable item as not equipped', () => {
@@ -366,6 +370,13 @@ describe('BaseTrader.show', () => {
         expect((trader as any).traderSelectedIndex).toBe(0);
         expect((trader as any).playerSelectedIndex).toBe(0);
     });
+
+    it('plays the UI open sound when shown from hidden', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = false;
+        (trader as any).show();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+    });
 });
 
 describe('BaseTrader.hide', () => {
@@ -387,6 +398,13 @@ describe('BaseTrader.hide', () => {
         const trader = makeTraderWithDOM();
         (trader as any).hide();
         expect((trader as any).uiManager.hideControlHints).toHaveBeenCalledOnce();
+    });
+
+    it('plays the UI close sound when hidden from visible', () => {
+        const trader = makeTraderWithDOM();
+        trader.isVisible = true;
+        (trader as any).hide();
+        expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
     });
 });
 

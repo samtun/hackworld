@@ -307,6 +307,25 @@ export class AudioManager {
         });
     }
 
+    playInsufficient(): void {
+        this.playNoise(0.035, 0.018, 2800, 500, 0);
+        [311.13, 246.94].forEach((frequency, index) => {
+            this.playTone(frequency, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, index * 0.05, frequency * 0.94);
+        });
+    }
+
+    playUiOpen(): void {
+        [392, 523.25].forEach((frequency, index) => {
+            this.playTone(frequency, 0.1, 'triangle', 0.04, ENVELOPE_MIN_GAIN, index * 0.035, frequency * 1.04);
+        });
+    }
+
+    playUiClose(): void {
+        [523.25, 392].forEach((frequency, index) => {
+            this.playTone(frequency, 0.09, 'sine', 0.032, ENVELOPE_MIN_GAIN, index * 0.03, frequency * 0.96);
+        });
+    }
+
     startHealingStationLoop(): void {
         this.activeHealingStationCount++;
         this.startHealingStationLoopIfPossible();

@@ -33,6 +33,8 @@ vi.mock('./AudioManager', () => ({
     AudioManager: {
         Instance: {
             playMenuNavigate: vi.fn(),
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
         },
     },
 }));
@@ -129,6 +131,12 @@ describe('DungeonSelectionManager', () => {
             mgr.show(vi.fn());
             expect(mgr.waitForRelease).toBe(true);
         });
+
+        it('plays the UI open sound when shown from hidden', () => {
+            const mgr = makeDungeonManager();
+            mgr.show(vi.fn());
+            expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        });
     });
 
     describe('hide()', () => {
@@ -144,6 +152,12 @@ describe('DungeonSelectionManager', () => {
             const mgr = makeDungeonManager({ isVisible: true });
             mgr.hide();
             expect(UIManager.Instance.hideControlHints).toHaveBeenCalled();
+        });
+
+        it('plays the UI close sound when hidden from visible', () => {
+            const mgr = makeDungeonManager({ isVisible: true });
+            mgr.hide();
+            expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
         });
     });
 

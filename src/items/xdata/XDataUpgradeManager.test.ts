@@ -41,6 +41,9 @@ vi.mock('../../AudioManager', () => ({
         Instance: {
             playMenuNavigate: vi.fn(),
             playUpgrade: vi.fn(),
+            playInsufficient: vi.fn(),
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
         },
     },
 }));
@@ -139,6 +142,11 @@ describe('XDataUpgradeManager', () => {
             mgr.show();
             expect(resetInputDebounce).toHaveBeenCalledWith(mgr);
         });
+
+        it('plays the UI open sound when shown from hidden', () => {
+            mgr.show();
+            expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        });
     });
 
     // hide() tests
@@ -158,6 +166,12 @@ describe('XDataUpgradeManager', () => {
         it('calls uiManager.hideControlHints', () => {
             mgr.hide();
             expect(mgr.uiManager.hideControlHints).toHaveBeenCalled();
+        });
+
+        it('plays the UI close sound when hidden from visible', () => {
+            mgr.isVisible = true;
+            mgr.hide();
+            expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
         });
     });
 
@@ -353,6 +367,29 @@ describe('XDataUpgradeManager', () => {
             mgr.update(player, input);
             expect(player.upgradeWithXData).toHaveBeenCalledWith(mgr.stats[0].type);
             expect(AudioManager.Instance.playUpgrade).toHaveBeenCalledOnce();
+        });
+
+        it('plays the insufficient sound when upgrade fails due to low X-Data', () => {
+            mgr.isVisible = true;
+            mgr.needsRender = true;
+            mgr.selectedIndex = 0;
+            const player = makePlayer({
+                xData: 5,
+                getUpgradeCost: vi.fn().mockReturnValue(10),
+                upgradeWithXData: vi.fn().mockReturnValue(false),
+            });
+            mgr.update(player);
+            mgr.needsRender = false;
+            mgr.shakeItem = vi.fn();
+            const input = {
+                isNavigateUpPressed: vi.fn().mockReturnValue(false),
+                isNavigateDownPressed: vi.fn().mockReturnValue(false),
+                isSelectPressed: vi.fn().mockReturnValue(true),
+                isCancelPressed: vi.fn().mockReturnValue(false),
+            } as any;
+            mgr.lastSelectState = false;
+            mgr.update(player, input);
+            expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
         });
     });
 });

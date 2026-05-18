@@ -142,6 +142,7 @@ export class PauseMenu {
         if (this._visible) return;
         this._visible = true;
         this.selectedIndex = 0;
+        AudioManager.Instance.playUiOpen();
 
         // Reset edge-detection states so the key that opened the menu
         // must be released before it can trigger an action
@@ -167,6 +168,7 @@ export class PauseMenu {
     hide(): void {
         if (!this._visible) return;
         this._visible = false;
+        AudioManager.Instance.playUiClose();
         this.stopLoop();
         this.overlay.style.opacity = '0';
         setTimeout(() => {

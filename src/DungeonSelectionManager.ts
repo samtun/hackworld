@@ -77,6 +77,7 @@ export class DungeonSelectionManager {
     }
 
     show(onDungeonSelected: (dungeonId: string) => void) {
+        const wasVisible = this.isVisible;
         this.isVisible = true;
         this.container.style.display = 'flex';
         this.onDungeonSelected = onDungeonSelected;
@@ -84,12 +85,19 @@ export class DungeonSelectionManager {
         this.needsRender = true;
         this.waitForRelease = true;
         this.render();
+        if (!wasVisible) {
+            AudioManager.Instance.playUiOpen();
+        }
     }
 
     hide() {
+        const wasVisible = this.isVisible;
         this.isVisible = false;
         this.container.style.display = 'none';
         this.uiManager.hideControlHints();
+        if (wasVisible) {
+            AudioManager.Instance.playUiClose();
+        }
     }
 
     update(input: InputManager) {
