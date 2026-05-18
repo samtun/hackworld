@@ -184,6 +184,14 @@
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
         input[type="number"]:focus, select:focus { outline: 1px solid var(--accent); }
+
+        /* ── Loop checkbox ───────────────────────────────────────────────── */
+        .loop-lbl {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 12px; letter-spacing: 1px; color: var(--text);
+            cursor: pointer; user-select: none;
+        }
+        .loop-lbl input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; width: 14px; height: 14px; }
     </style>
 </head>
 <body>
@@ -192,10 +200,12 @@
 <div id="hdr">
     <h1 aria-label="HackWorld DAW Sound Editor">⬡ HackWorld DAW</h1>
     <div class="sep"></div>
+    <label class="loop-lbl"><input type="checkbox" id="cfg-loop" checked> Loop</label>
     <button class="btn pri" id="play-btn">▶ PLAY</button>
     <button class="btn" id="stop-btn" disabled>■ STOP</button>
     <button class="btn" id="clear-btn">✕ CLEAR</button>
     <button class="btn" id="export-btn">⎘ EXPORT</button>
+    <button class="btn" id="json-btn">⎘ JSON</button>
 </div>
 
 <!-- Toolbar -->
@@ -260,6 +270,7 @@
     <span class="hi">Right-click tone: delete</span>
     <span class="hi">Click noise strip: add noise</span>
     <span class="hi">Right-click noise: delete</span>
+    <span class="hi">Drag &amp; drop .json: load timeline</span>
 </div>
 
 <!-- Popup (tone / noise editor) -->

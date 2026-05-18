@@ -91,6 +91,7 @@ let cfgType: OscType = 'triangle';
 let cfgGain   = 0.06;
 let cfgGlide: number | null = null;
 let cfgBpm    = 120;    // beats per minute
+let cfgLoop   = true;   // loop playback (on by default)
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const tlCanvas    = document.getElementById('tl-canvas')    as HTMLCanvasElement;
@@ -105,6 +106,8 @@ const playBtn     = document.getElementById('play-btn')     as HTMLButtonElement
 const stopBtn     = document.getElementById('stop-btn')     as HTMLButtonElement;
 const clearBtn    = document.getElementById('clear-btn')    as HTMLButtonElement;
 const exportBtn   = document.getElementById('export-btn')   as HTMLButtonElement;
+const jsonBtn     = document.getElementById('json-btn')     as HTMLButtonElement;
+const cfgLoopEl   = document.getElementById('cfg-loop')     as HTMLInputElement;
 const cfgDurEl    = document.getElementById('cfg-dur')      as HTMLSelectElement;
 const cfgBpmEl    = document.getElementById('cfg-bpm')      as HTMLInputElement;
 const cfgTypeEl   = document.getElementById('cfg-type')     as HTMLSelectElement;
@@ -598,32 +601,59 @@ function schedNoise(ctx: AudioContext, dur: number, gain: number, lp: number, hp
 
 function startPlayback(): void {
     if (isPlaying) stopPlayback();
-    const ctx  = getCtx();
-    const now  = ctx.currentTime;
-    playhead   = 0;
+    if (tones.length === 0 && noises.length === 0) return;
 
-    tones.forEach(ev => {
-        const freq  = NOTES[ev.noteIdx].freq;
-        const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
-        schedTone(ctx, freq, ev.duration * beatDur(), ev.type, ev.gain, now + ev.startTime, glide);
-    });
-    noises.forEach(ev => {
-        schedNoise(ctx, ev.duration * beatDur(), ev.gain, ev.lowpass, ev.highpass, now + ev.startTime);
-    });
+    const ctx = getCtx();
+    const bd  = beatDur();
 
-    const bd = beatDur();
     const maxT = Math.max(
-        0,
+        0.001,
         ...tones.map(e  => e.startTime + e.duration * bd),
         ...noises.map(e => e.startTime + e.duration * bd),
     );
 
+    /** Schedule all events offset by `offset` seconds on the AudioContext. */
+    function schedulePass(offset: number): void {
+        tones.forEach(ev => {
+            const freq  = NOTES[ev.noteIdx].freq;
+            const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
+            schedTone(ctx, freq, ev.duration * bd, ev.type, ev.gain, offset + ev.startTime, glide);
+        });
+        noises.forEach(ev => {
+            schedNoise(ctx, ev.duration * bd, ev.gain, ev.lowpass, ev.highpass, offset + ev.startTime);
+        });
+    }
+
+    const absStart = ctx.currentTime;
+    schedulePass(absStart);
+
+    // Pre-schedule the first looped pass so there is no gap at the loop point
+    let nextPassAbs = absStart + maxT;
+    if (cfgLoop) schedulePass(nextPassAbs);
+
     isPlaying = true;
-    playBtn.disabled = true; stopBtn.disabled = false;
+    playBtn.disabled = true; stopBtn.disabled = true;
+
+    const LOOKAHEAD = 0.3; // seconds — schedule next pass this far ahead
 
     function tick(): void {
         if (!isPlaying) return;
-        playhead = ctx.currentTime - now;
+        const elapsed = ctx.currentTime - absStart;
+
+        if (cfgLoop) {
+            const prev = playhead;
+            playhead = elapsed % maxT;
+            // When the playhead wraps, reset horizontal scroll to the start
+            if (playhead < prev - maxT * 0.5) scrollX = 0;
+            // Schedule the next pass when we're within LOOKAHEAD of it
+            if (ctx.currentTime >= nextPassAbs - LOOKAHEAD) {
+                nextPassAbs += maxT;
+                schedulePass(nextPassAbs);
+            }
+        } else {
+            playhead = elapsed;
+            if (elapsed > maxT + 0.4) { stopPlayback(); return; }
+        }
 
         // Auto-scroll to follow playhead
         const pxPos = playhead * PPS;
@@ -631,7 +661,6 @@ function startPlayback(): void {
         if (pxPos - scrollX > vw - AUTOSCROLL_MARGIN) scrollX = Math.max(0, pxPos - AUTOSCROLL_MARGIN);
 
         render();
-        if (playhead > maxT + 0.4) { stopPlayback(); return; }
         rafId = requestAnimationFrame(tick);
     }
     rafId = requestAnimationFrame(tick);
@@ -683,7 +712,36 @@ function generateCode(): string {
     ].join('\n');
 }
 
-// ── Init ───────────────────────────────────────────────────────────────────────
+// ── JSON export & import ───────────────────────────────────────────────────────
+function downloadJson(): void {
+    const payload = JSON.stringify({ version: 1, bpm: cfgBpm, tones, noises }, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'hackworld-sound.json'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function loadFromJson(raw: string): void {
+    let data: { version?: number; bpm?: number; tones?: unknown[]; noises?: unknown[] };
+    try { data = JSON.parse(raw); } catch { alert('Could not parse JSON file.'); return; }
+    if (!Array.isArray(data.tones) || !Array.isArray(data.noises)) {
+        alert('Not a valid HackWorld DAW file (missing tones/noises arrays).');
+        return;
+    }
+    stopPlayback();
+    tones  = data.tones  as ToneEvent[];
+    noises = data.noises as NoiseEvent[];
+    scrollX = 0;
+    if (typeof data.bpm === 'number') {
+        cfgBpm = Math.max(40, Math.min(300, data.bpm));
+        cfgBpmEl.value = String(cfgBpm);
+    }
+    closePopup();
+    render();
+}
+
+
 function init(): void {
     buildKeyCol();
     buildDurationOptions(cfgDurEl, 1);   // default 1/1 beat
@@ -718,12 +776,14 @@ function init(): void {
     // Header buttons
     playBtn.addEventListener('click',   startPlayback);
     stopBtn.addEventListener('click',   stopPlayback);
+    cfgLoopEl.addEventListener('change', () => { cfgLoop = cfgLoopEl.checked; });
     clearBtn.addEventListener('click',  () => {
         stopPlayback(); tones = []; noises = []; scrollX = 0; closePopup(); render();
     });
     exportBtn.addEventListener('click', () => {
         codeTa.value = generateCode(); codeTa.select();
     });
+    jsonBtn.addEventListener('click', downloadJson);
     copyBtn.addEventListener('click', () => navigator.clipboard.writeText(codeTa.value));
 
     // Timeline interaction
@@ -759,6 +819,17 @@ function init(): void {
     window.addEventListener('mousedown', e => {
         if (editingId && !popup.contains(e.target as Node)) closePopup();
     }, true);
+
+    // JSON drag-and-drop import
+    document.addEventListener('dragover', e => { e.preventDefault(); });
+    document.addEventListener('drop', e => {
+        e.preventDefault();
+        const file = e.dataTransfer?.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => loadFromJson(reader.result as string);
+        reader.readAsText(file);
+    });
 }
 
 init();
