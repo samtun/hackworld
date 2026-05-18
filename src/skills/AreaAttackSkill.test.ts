@@ -110,11 +110,11 @@ describe('AreaAttackSkill', () => {
 
     describe('execute()', () => {
         it.each([
-            [Tier.STABLE,      18,   1],
-            [Tier.MAINTAINED,  36,   2],
-            [Tier.OVERCLOCKED, 72,   3],
-            [Tier.ZERODAY,     144,  3],
-            [Tier.LEET,        288,  4],
+            [Tier.STABLE,      42,   1],
+            [Tier.MAINTAINED,  84,   2],
+            [Tier.OVERCLOCKED, 168,  3],
+            [Tier.ZERODAY,     336,  3],
+            [Tier.LEET,        672,  4],
         ])('sets effectiveDamage=%i and effectiveWaves=%i at tier %s', (tier, damage, waves) => {
             const player = makePlayer(tier);
             const scene = { add: vi.fn(), remove: vi.fn() } as any;

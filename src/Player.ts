@@ -81,6 +81,9 @@ export class Player extends BaseMesh {
     private readonly EXP_BASE = 350;
     private readonly EXP_LINEAR_FACTOR = 30;
     private readonly EXP_QUADRATIC_FACTOR = 0.07;
+    private readonly LASER_UNLOCK_LEVEL = 10;
+    private readonly HEAL_UNLOCK_LEVEL = 20;
+    private readonly AREA_UNLOCK_LEVEL = 38;
 
     // Tech point cap
     private readonly TECH_POINT_CAP = 2500;
@@ -228,6 +231,7 @@ export class Player extends BaseMesh {
     public skills: Skill[] = [];
     private isUsingSkill: boolean = false;
     private skillAnimationTimer: number = 0;
+    public onSkillUnlocked?: (skillIndex: number) => void;
 
     // A bonus on drop chances in percentage points (e.g. 0.05 for +5% drop chances)
     get luckDropChanceBonus(): number {
@@ -375,8 +379,8 @@ export class Player extends BaseMesh {
 
         // Initialize skills
         this.skills = [
-            new HealingSkill(this.resetSkillUsage),
             new LaserBeamSkill(this.resetSkillUsage),
+            new HealingSkill(this.resetSkillUsage),
             new AreaAttackSkill(this.resetSkillUsage)
         ];
 
@@ -1086,16 +1090,20 @@ export class Player extends BaseMesh {
 
     private handleSkills(): void {
         // Check for skill inputs
-        if (this.input.isSkill1JustPressed()) {
+        if (this.input.isSkill1JustPressed() && this.isSkillUnlocked(0)) {
             this.useSkill(0); // Laser Beam
-        } else if (this.input.isSkill2JustPressed()) {
+        } else if (this.input.isSkill2JustPressed() && this.isSkillUnlocked(1)) {
             this.useSkill(1); // Healing
-        } else if (this.input.isSkill3JustPressed()) {
+        } else if (this.input.isSkill3JustPressed() && this.isSkillUnlocked(2)) {
             this.useSkill(2); // Area Attack
         }
     }
 
     private useSkill(skillIndex: number): void {
+        if (!this.isSkillUnlocked(skillIndex)) {
+            return;
+        }
+
         if (this.isUsingSkill || this.weapon.isAttacking || this.isChargingAttack || this.isDashing) {
             console.log('Cannot use skill - busy with another action');
             return;
@@ -1633,8 +1641,10 @@ export class Player extends BaseMesh {
      * Level up the player
      */
     private levelUp(): void {
+        const previousLevel = this.level;
         this.exp -= this.expRequired;
         this.level++;
+        this.emitSkillUnlockEvents(previousLevel, this.level);
 
         // Award 4 stat points
         this.statPointsAvailable += 4;
@@ -1660,6 +1670,30 @@ export class Player extends BaseMesh {
         AudioManager.Instance.playLevelUp();
 
         console.log(`Level Up! Now level ${this.level}. Next level requires ${this.expRequired} EXP. ${this.statPointsAvailable} stat points available.`);
+    }
+
+    private getSkillUnlockLevel(skillIndex: number): number {
+        switch (skillIndex) {
+            case 0: return this.LASER_UNLOCK_LEVEL;
+            case 1: return this.HEAL_UNLOCK_LEVEL;
+            case 2: return this.AREA_UNLOCK_LEVEL;
+            default: return Number.MAX_SAFE_INTEGER;
+        }
+    }
+
+    public isSkillUnlocked(skillIndex: number): boolean {
+        return this.level >= this.getSkillUnlockLevel(skillIndex);
+    }
+
+    private emitSkillUnlockEvents(previousLevel: number, currentLevel: number): void {
+        if (!this.onSkillUnlocked) return;
+
+        for (let i = 0; i < this.skills.length; i++) {
+            const unlockLevel = this.getSkillUnlockLevel(i);
+            if (previousLevel < unlockLevel && currentLevel >= unlockLevel) {
+                this.onSkillUnlocked(i);
+            }
+        }
     }
 
     /**
