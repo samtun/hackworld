@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HackWorld Sound Editor</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:        #0a0a0f;
+            --surface:   #111118;
+            --border:    #2a2a3a;
+            --accent:    #00e5ff;
+            --accent2:   #ff4081;
+            --text:      #c8d6e0;
+            --text-dim:  #606880;
+            --noise-bg:  #120a1a;
+            --tone-bg:   #0a1220;
+            --radius:    6px;
+            --font:      'Share Tech Mono', 'Courier New', monospace;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 13px;
+            min-height: 100vh;
+            padding: 0;
+        }
+
+        /* ── Header ── */
+        header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        header h1 {
+            font-size: 18px;
+            color: var(--accent);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        header span {
+            color: var(--text-dim);
+            font-size: 11px;
+        }
+
+        /* ── Tabs ── */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+        .tab-btn {
+            padding: 10px 24px;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-dim);
+            font-family: var(--font);
+            font-size: 12px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: color .15s, border-color .15s;
+        }
+        .tab-btn:hover { color: var(--text); }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+        /* ── Panels ── */
+        .panel { display: none; padding: 16px 20px; }
+        .panel.active { display: block; }
+
+        /* ── Section headers ── */
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .section-header h2 {
+            font-size: 11px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+        }
+        .section-header .badge {
+            background: var(--border);
+            color: var(--text-dim);
+            padding: 1px 7px;
+            border-radius: 10px;
+            font-size: 10px;
+        }
+
+        /* ── Add buttons ── */
+        .btn {
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: border-color .15s, color .15s;
+        }
+        .btn:hover { border-color: var(--accent); color: var(--accent); }
+        .btn.primary { border-color: var(--accent); color: var(--accent); }
+        .btn.primary:hover { background: var(--accent); color: var(--bg); }
+        .btn.danger { border-color: var(--accent2); color: var(--accent2); }
+        .btn.danger:hover { background: var(--accent2); color: var(--bg); }
+        .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        /* ── Layer cards ── */
+        .layers { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+
+        .layer-card {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+        }
+        .layer-card.tone-card  { background: var(--tone-bg);  border-left: 3px solid var(--accent); }
+        .layer-card.noise-card { background: var(--noise-bg); border-left: 3px solid var(--accent2); }
+
+        .layer-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+        .layer-label {
+            font-size: 11px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .tone-card  .layer-label { color: var(--accent); }
+        .noise-card .layer-label { color: var(--accent2); }
+
+        /* ── Fields grid ── */
+        .fields {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 8px 12px;
+        }
+        .field { display: flex; flex-direction: column; gap: 3px; }
+        .field label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; }
+        .field input, .field select {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            outline: none;
+            width: 100%;
+        }
+        .field input:focus, .field select:focus { border-color: var(--accent); }
+
+        /* ── Action bar ── */
+        .action-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+        }
+        .action-bar .spacer { flex: 1; }
+
+        /* ── Code output ── */
+        .code-section { margin-top: 18px; }
+        .code-section h3 {
+            font-size: 10px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+        .code-tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+        .code-tab-btn {
+            background: none;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            color: var(--text-dim);
+            font-family: var(--font);
+            font-size: 10px;
+            padding: 3px 10px;
+            cursor: pointer;
+            letter-spacing: 1px;
+        }
+        .code-tab-btn.active { border-color: var(--accent); color: var(--accent); }
+
+        textarea.code-out {
+            width: 100%;
+            min-height: 180px;
+            background: #000;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: #a8e6cf;
+            font-family: var(--font);
+            font-size: 12px;
+            padding: 12px;
+            resize: vertical;
+            outline: none;
+            tab-size: 4;
+        }
+
+        /* ── Music profile fields ── */
+        .music-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+            gap: 10px 16px;
+            margin-bottom: 14px;
+        }
+        .music-field { display: flex; flex-direction: column; gap: 4px; }
+        .music-field label { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; text-transform: uppercase; }
+        .music-field input, .music-field select {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            font-family: var(--font);
+            font-size: 12px;
+            padding: 5px 9px;
+            border-radius: 4px;
+            outline: none;
+        }
+        .music-field input:focus, .music-field select:focus { border-color: var(--accent); }
+
+        /* ── Info tip ── */
+        .tip {
+            background: #0d1117;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text-dim);
+            font-size: 11px;
+            padding: 8px 12px;
+            margin-bottom: 14px;
+            line-height: 1.6;
+        }
+        .tip code { color: var(--accent); font-family: var(--font); }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>&#9654; HackWorld Sound Editor</h1>
+        <span>Compose sounds &amp; generate AudioManager code snippets</span>
+    </header>
+
+    <nav class="tabs">
+        <button class="tab-btn active" data-tab="sfx">SFX Composer</button>
+        <button class="tab-btn" data-tab="music">Music Profile</button>
+    </nav>
+
+    <!-- ── SFX COMPOSER ── -->
+    <div id="panel-sfx" class="panel active">
+        <div class="tip">
+            Add <strong>Tone</strong> and <strong>Noise</strong> layers, hit <strong>▶ PLAY</strong> to preview,
+            then copy a snippet into <code>SFX_PARAMS</code> or a <code>play*()</code> method in
+            <code>src/AudioManager.ts</code>.
+        </div>
+
+        <div class="section-header">
+            <h2>Tone Layers</h2>
+            <span class="badge" id="tone-count">0</span>
+            <button class="btn" id="add-tone-btn">+ Add Tone</button>
+        </div>
+        <div class="layers" id="tone-layers"></div>
+
+        <div class="section-header">
+            <h2>Noise Layer</h2>
+            <button class="btn" id="add-noise-btn">+ Add Noise</button>
+        </div>
+        <div class="layers" id="noise-layers"></div>
+
+        <div class="action-bar">
+            <button class="btn primary" id="play-sfx-btn">&#9654; PLAY</button>
+            <button class="btn" id="stop-sfx-btn" disabled>&#9632; STOP</button>
+            <div class="spacer"></div>
+            <button class="btn" id="clear-sfx-btn">&#x2715; CLEAR ALL</button>
+        </div>
+
+        <div class="code-section">
+            <h3>Generated Code</h3>
+            <div class="code-tabs">
+                <button class="code-tab-btn active" data-codetab="raw">Raw Calls</button>
+                <button class="code-tab-btn" data-codetab="params">SFX_PARAMS Entry</button>
+            </div>
+            <textarea class="code-out" id="sfx-code" readonly spellcheck="false"></textarea>
+            <div class="action-bar" style="padding-top:8px;border-top:none;margin-top:4px;">
+                <button class="btn" id="copy-sfx-btn">&#x2398; Copy Code</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── MUSIC PROFILE ── -->
+    <div id="panel-music" class="panel">
+        <div class="tip">
+            Fill in frequencies (Hz) as comma-separated values. Hit <strong>▶ PLAY</strong> to preview the looping phrase,
+            then copy the snippet into <code>STAGE_MUSIC</code> in <code>src/AudioManager.ts</code>.
+        </div>
+
+        <div class="music-grid">
+            <div class="music-field">
+                <label>Stage Name (key)</label>
+                <input id="m-name" type="text" value="myStage" spellcheck="false" />
+            </div>
+            <div class="music-field">
+                <label>Pulse Phrase (Hz, comma-sep)</label>
+                <input id="m-pulse" type="text" value="220, 277.18, 329.63, 440" />
+            </div>
+            <div class="music-field">
+                <label>Harmony Phrase (blank = none)</label>
+                <input id="m-harmony" type="text" value="329.63, 369.99, 440, 554.37" />
+            </div>
+            <div class="music-field">
+                <label>Pulse Interval (ms)</label>
+                <input id="m-interval" type="number" min="50" max="2000" step="10" value="340" />
+            </div>
+            <div class="music-field">
+                <label>Pulse Type</label>
+                <select id="m-pulse-type">
+                    <option value="sine">sine</option>
+                    <option value="triangle" selected>triangle</option>
+                    <option value="square">square</option>
+                    <option value="sawtooth">sawtooth</option>
+                </select>
+            </div>
+            <div class="music-field">
+                <label>Harmony Type</label>
+                <select id="m-harmony-type">
+                    <option value="sine" selected>sine</option>
+                    <option value="triangle">triangle</option>
+                    <option value="square">square</option>
+                    <option value="sawtooth">sawtooth</option>
+                </select>
+            </div>
+            <div class="music-field">
+                <label>Pulse Duration (s)</label>
+                <input id="m-dur" type="number" min="0.05" max="2" step="0.01" value="0.22" />
+            </div>
+            <div class="music-field">
+                <label>Pulse Gain</label>
+                <input id="m-pgain" type="number" min="0" max="1" step="0.005" value="0.07" />
+            </div>
+            <div class="music-field">
+                <label>Harmony Gain</label>
+                <input id="m-hgain" type="number" min="0" max="1" step="0.005" value="0.028" />
+            </div>
+        </div>
+
+        <div class="action-bar">
+            <button class="btn primary" id="play-music-btn">&#9654; PLAY LOOP</button>
+            <button class="btn danger" id="stop-music-btn" disabled>&#9632; STOP</button>
+        </div>
+
+        <div class="code-section">
+            <h3>Generated Code</h3>
+            <textarea class="code-out" id="music-code" readonly spellcheck="false"></textarea>
+            <div class="action-bar" style="padding-top:8px;border-top:none;margin-top:4px;">
+                <button class="btn" id="copy-music-btn">&#x2398; Copy Code</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="./main.ts"></script>
+</body>
+</html>

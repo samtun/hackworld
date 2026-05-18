@@ -3,6 +3,7 @@ node_modules/
 
 # Production
 dist/
+dist-sound-editor/
 build/
 
 # Test coverage

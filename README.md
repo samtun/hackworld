@@ -82,6 +82,26 @@ Mobile devices (phones and tablets) automatically display on-screen touch contro
 
 ## Development
 
+### Sound Editor
+
+The project includes a standalone sound effect and music editor that lets you compose synthetic audio visually using the Web Audio API.
+
+```bash
+npm run dev:sound-editor
+```
+
+This starts the editor on **http://localhost:5174** (separate from the main game server).
+
+#### Features
+- **SFX Composer tab**: Add any number of Tone and Noise layers, tune every parameter (frequency, duration, waveform type, gain, delay, glide-to), preview the sound live in your browser, then copy the generated snippet.
+  - *Raw Calls* mode outputs `this.playTone(...)` / `this.playNoise(...)` calls ready to drop into a `play*()` method in `src/AudioManager.ts`.
+  - *SFX_PARAMS Entry* mode outputs a typed object suitable for insertion into the `SFX_PARAMS` constant block in `src/AudioManager.ts`.
+- **Music Profile tab**: Enter pulse and harmony phrases (comma-separated Hz values), preview the looping phrase, then copy the `createStageMusicProfile(...)` call to insert into `STAGE_MUSIC` in `src/AudioManager.ts`.
+
+#### Tuning sounds without the editor
+
+All sound-effect parameters live in the exported `SFX_PARAMS` constant near the top of `src/AudioManager.ts`, grouped by sound name.  Each entry is a plain object with clearly-named numeric fields (`freq`, `dur`, `gain`, `lowpass`, `highpass`, etc.).  Edit any number there and the corresponding `play*()` method will pick up the changes automatically — no rebuild needed in `npm run dev`.
+
 ### Testing fresh or saved game
 
 By default the latest saved game state will be restored automatically on game start.
