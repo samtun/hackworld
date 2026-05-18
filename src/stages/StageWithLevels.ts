@@ -59,7 +59,6 @@ export abstract class StageWithLevels extends BaseStage {
         tuning: GenerationDifficultyTuning,
     ): RoomGenerationConfig {
         const difficulty = this.levelConfig.enemyDifficultyMultiplier;
-        const areaPerEnemy = base.enemyCount.areaPerEnemy;
         const nextConfig: RoomGenerationConfig = {
             ...base,
             hasBoss: this.levelConfig.hasBoss,
@@ -69,14 +68,7 @@ export abstract class StageWithLevels extends BaseStage {
                 min: Math.floor(base.enemyCount.min * difficulty),
                 max: Math.floor(base.enemyCount.max * difficulty),
                 eliteFraction: Math.min(tuning.eliteFractionCap, base.enemyCount.eliteFraction + (difficulty - 1) * tuning.eliteFractionGain),
-                ...(areaPerEnemy !== undefined && tuning.areaPerEnemyMin !== undefined && tuning.areaPerEnemyDifficultyGain !== undefined
-                    ? {
-                        areaPerEnemy: Math.max(
-                            tuning.areaPerEnemyMin,
-                            Math.floor(areaPerEnemy / (1 + (difficulty - 1) * tuning.areaPerEnemyDifficultyGain)),
-                        ),
-                    }
-                    : {}),
+                ...this.getAreaPerEnemyOverride(base.enemyCount.areaPerEnemy, tuning, difficulty),
             },
         };
 
@@ -97,11 +89,35 @@ export abstract class StageWithLevels extends BaseStage {
         const multiplier = this.levelConfig.enemyDifficultyMultiplier;
         return {
             ...config,
-            maxHp: config.maxHp === undefined ? undefined : Math.floor(config.maxHp * multiplier),
-            damage: config.damage === undefined ? undefined : Math.floor(config.damage * multiplier),
-            speed: config.speed === undefined ? undefined : config.speed * (1 + (multiplier - 1) * tuning.speedDifficultyGain),
-            baseExp: config.baseExp === undefined ? undefined : Math.floor(config.baseExp * (1 + (multiplier - 1) * tuning.expDifficultyGain)),
+            maxHp: this.scaleDefined(config.maxHp, (value) => Math.floor(value * multiplier)),
+            damage: this.scaleDefined(config.damage, (value) => Math.floor(value * multiplier)),
+            speed: this.scaleDefined(config.speed, (value) => value * (1 + (multiplier - 1) * tuning.speedDifficultyGain)),
+            baseExp: this.scaleDefined(config.baseExp, (value) => Math.floor(value * (1 + (multiplier - 1) * tuning.expDifficultyGain))),
         };
+    }
+
+    private getAreaPerEnemyOverride(
+        areaPerEnemy: number | undefined,
+        tuning: GenerationDifficultyTuning,
+        difficulty: number,
+    ): { areaPerEnemy: number } | {} {
+        if (areaPerEnemy === undefined || tuning.areaPerEnemyMin === undefined || tuning.areaPerEnemyDifficultyGain === undefined) {
+            return {};
+        }
+        return {
+            areaPerEnemy: Math.max(
+                tuning.areaPerEnemyMin,
+                Math.floor(areaPerEnemy / (1 + (difficulty - 1) * tuning.areaPerEnemyDifficultyGain)),
+            ),
+        };
+    }
+
+    private scaleDefined(
+        value: number | undefined,
+        scale: (value: number) => number,
+    ): number | undefined {
+        if (value === undefined) return undefined;
+        return scale(value);
     }
 
     private static resolveLevelConfig(
