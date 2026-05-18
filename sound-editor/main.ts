@@ -78,7 +78,6 @@ const AUTOSCROLL_MARGIN = 80;  // px from right edge before auto-scroll kicks in
 const LOOP_LOOKAHEAD   = 0.3;  // seconds — schedule next loop pass this far ahead
 const STOP_GRACE       = 0.4;  // seconds past maxT before auto-stopping non-looped play
 const MIN_LOOP_PERIOD  = 0.001; // minimum loop period to prevent division by zero
-const WRAP_DETECT_THRESHOLD = 0.5; // fraction of maxT — detects playhead wrap-around
 const MIN_BPM = 40;
 const MAX_BPM = 300;
 
@@ -610,16 +609,20 @@ function startPlayback(): void {
     if (tones.length === 0 && noises.length === 0) return; // Nothing to play
 
     const ctx = getCtx();
-    const bd  = beatDur();
 
-    const maxT = Math.max(
-        MIN_LOOP_PERIOD,
-        ...tones.map(e  => e.startTime + e.duration * bd),
-        ...noises.map(e => e.startTime + e.duration * bd),
-    );
-
-    /** Schedule all events offset by `offset` seconds on the AudioContext. */
-    function schedulePass(offset: number): void {
+    /**
+     * Schedule all CURRENT tones and noises at the given absolute offset.
+     * Reads tones/noises/BPM fresh each call so that edits made while playing
+     * are automatically picked up on the next scheduled loop pass.
+     * Returns the total duration of the scheduled pass.
+     */
+    function schedulePassFresh(offset: number): number {
+        const bd   = beatDur();
+        const passDur = Math.max(
+            MIN_LOOP_PERIOD,
+            ...tones.map(e  => e.startTime + e.duration * bd),
+            ...noises.map(e => e.startTime + e.duration * bd),
+        );
         tones.forEach(ev => {
             const freq  = NOTES[ev.noteIdx].freq;
             const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
@@ -628,35 +631,51 @@ function startPlayback(): void {
         noises.forEach(ev => {
             schedNoise(ctx, ev.duration * bd, ev.gain, ev.lowpass, ev.highpass, offset + ev.startTime);
         });
+        return passDur;
     }
 
-    const absStart = ctx.currentTime;
-    schedulePass(absStart);
+    // Schedule pass 1 immediately.
+    const absStart   = ctx.currentTime;
+    const pass1Dur   = schedulePassFresh(absStart);
 
-    // Pre-schedule the first looped pass so there is no gap at the loop point
-    let nextPassAbs = absStart + maxT;
-    if (cfgLoop) schedulePass(nextPassAbs);
+    // nextPassAbs: absolute time when the next pre-scheduled pass starts.
+    // nextPassDur: duration of that pass (so we know when it ends / next-next starts).
+    let nextPassAbs = absStart + pass1Dur;
+    let nextPassDur = cfgLoop ? schedulePassFresh(nextPassAbs) : pass1Dur;
+
+    // Track the start and duration of the pass the playhead is currently in.
+    // Updated when the playhead crosses a pass boundary, independently of the
+    // audio lookahead scheduling above.
+    let currentPassStart = absStart;
+    let currentPassDur   = pass1Dur;
 
     isPlaying = true;
     playBtn.disabled = true; stopBtn.disabled = false;
 
     function tick(): void {
         if (!isPlaying) return;
-        const elapsed = ctx.currentTime - absStart;
+        const now = ctx.currentTime;
 
         if (cfgLoop) {
-            const prev = playhead;
-            playhead = elapsed % maxT;
-            // When the playhead wraps, reset horizontal scroll to the start
-            if (playhead < prev - maxT * WRAP_DETECT_THRESHOLD) scrollX = 0;
-            // Schedule the next pass when we're within LOOP_LOOKAHEAD of it
-            if (ctx.currentTime >= nextPassAbs - LOOP_LOOKAHEAD) {
-                nextPassAbs += maxT;
-                schedulePass(nextPassAbs);
+            // Advance pass tracking when the current pass has fully elapsed.
+            if (now >= currentPassStart + currentPassDur) {
+                currentPassStart += currentPassDur;
+                currentPassDur    = nextPassDur;
+                scrollX = 0; // reset horizontal view on each loop wrap
+            }
+            playhead = now - currentPassStart;
+
+            // Pre-schedule the pass-after-next when we are within LOOP_LOOKAHEAD
+            // of the end of the already-scheduled next pass. Uses fresh timeline
+            // data so any edits made while playing appear on the upcoming pass.
+            if (now >= nextPassAbs - LOOP_LOOKAHEAD) {
+                const newStart = nextPassAbs + nextPassDur;
+                nextPassDur    = schedulePassFresh(newStart);
+                nextPassAbs    = newStart;
             }
         } else {
-            playhead = elapsed;
-            if (elapsed > maxT + STOP_GRACE) { stopPlayback(); return; }
+            playhead = now - absStart;
+            if (playhead > pass1Dur + STOP_GRACE) { stopPlayback(); return; }
         }
 
         // Auto-scroll to follow playhead
