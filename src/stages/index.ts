@@ -34,11 +34,17 @@ interface MultiLevelStageConstructor extends RegisteredStageConstructor {
     getLevelStageIds(): readonly string[];
 }
 
+function isMultiLevelStageConstructor(
+    StageClass: RegisteredStageConstructor,
+): StageClass is MultiLevelStageConstructor {
+    return typeof (StageClass as MultiLevelStageConstructor).getLevelStageIds === 'function';
+}
+
 function toRegistryEntries(
     StageClass: RegisteredStageConstructor,
 ): [string, StageConstructor][] {
-    const ids = 'getLevelStageIds' in StageClass
-        ? (StageClass as MultiLevelStageConstructor).getLevelStageIds()
+    const ids = isMultiLevelStageConstructor(StageClass)
+        ? StageClass.getLevelStageIds()
         : [StageClass.getMetadata().id];
     return ids.map((stageId) => [stageId, StageClass]);
 }

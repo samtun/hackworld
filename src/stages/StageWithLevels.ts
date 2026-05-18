@@ -109,6 +109,10 @@ export abstract class StageWithLevels extends BaseStage {
         defaultStageId: string,
         levelConfigs: Record<string, StageLevelConfig>,
     ): StageLevelConfig {
-        return levelConfigs[stageId ?? defaultStageId] ?? levelConfigs[defaultStageId];
+        const resolved = levelConfigs[stageId ?? defaultStageId];
+        if (!resolved) {
+            throw new Error(`Missing level config for stage "${stageId ?? defaultStageId}"`);
+        }
+        return resolved;
     }
 }
