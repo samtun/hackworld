@@ -219,10 +219,7 @@ describe('PauseMenu', () => {
     });
 
     it('toggles music from the pause menu and updates the label', () => {
-        (AudioManager.Instance.toggleMusicEnabled as any).mockImplementation(() => {
-            (AudioManager.Instance.isMusicEnabled as any).mockReturnValue(false);
-            return false;
-        });
+        (AudioManager.Instance.toggleMusicEnabled as any).mockReturnValue(false);
         (menu as any).selectedIndex = 3;
 
         (menu as any).confirm();
@@ -233,10 +230,7 @@ describe('PauseMenu', () => {
     });
 
     it('toggles sound effects from the pause menu and updates the label', () => {
-        (AudioManager.Instance.toggleSfxEnabled as any).mockImplementation(() => {
-            (AudioManager.Instance.isSfxEnabled as any).mockReturnValue(false);
-            return false;
-        });
+        (AudioManager.Instance.toggleSfxEnabled as any).mockReturnValue(false);
         (menu as any).selectedIndex = 4;
 
         (menu as any).confirm();

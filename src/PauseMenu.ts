@@ -36,9 +36,9 @@ export class PauseMenu {
     private performanceStatusEl!: HTMLSpanElement;
     private controlHintsEnabled: boolean;
     private controlHintsStatusEl!: HTMLSpanElement;
-    private musicEnabled: boolean;
+    private musicEnabled = AudioManager.Instance.isMusicEnabled();
     private musicStatusEl!: HTMLSpanElement;
-    private sfxEnabled: boolean;
+    private sfxEnabled = AudioManager.Instance.isSfxEnabled();
     private sfxStatusEl!: HTMLSpanElement;
     private selectedIndex: number = 0;
 
@@ -65,8 +65,6 @@ export class PauseMenu {
         this.input = input;
         this.performanceModeEnabled = performanceModeEnabled;
         this.controlHintsEnabled = controlHintsEnabled;
-        this.musicEnabled = true;
-        this.sfxEnabled = true;
         this.callbacks = callbacks;
 
         this.items = [
@@ -151,8 +149,7 @@ export class PauseMenu {
         if (this._visible) return;
         this._visible = true;
         this.selectedIndex = 0;
-        this.musicEnabled = AudioManager.Instance.isMusicEnabled();
-        this.sfxEnabled = AudioManager.Instance.isSfxEnabled();
+        this.refreshAudioSettingsState();
         AudioManager.Instance.playUiOpen();
 
         // Reset edge-detection states so the key that opened the menu
@@ -377,6 +374,11 @@ export class PauseMenu {
         }
 
         return nextSfxEnabled;
+    }
+
+    private refreshAudioSettingsState(): void {
+        this.musicEnabled = AudioManager.Instance.isMusicEnabled();
+        this.sfxEnabled = AudioManager.Instance.isSfxEnabled();
     }
 
     private inputLoop(): void {

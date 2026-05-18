@@ -19,8 +19,8 @@ export const MUSIC_ENABLED_STORAGE_KEY = 'hackworld_music_enabled';
 export const SFX_ENABLED_STORAGE_KEY = 'hackworld_sfx_enabled';
 
 interface StageMusicProfile {
-    pulseFrequencies: number[];
-    harmonyFrequencies?: number[];
+    pulseFrequencies: MusicPhrase;
+    harmonyFrequencies?: MusicPhrase;
     pulseIntervalMs: number;
     pulseType: OscillatorType;
     harmonyType: OscillatorType;
@@ -44,14 +44,14 @@ function createStageMusicProfile(
     harmonyGain: number,
 ): StageMusicProfile {
     return {
-        pulseFrequencies: [...pulsePhrase],
+        pulseFrequencies: pulsePhrase,
         pulseIntervalMs,
         pulseType,
         harmonyType,
         pulseDuration,
         pulseGain,
         harmonyGain,
-        ...(harmonyPhrase ? { harmonyFrequencies: [...harmonyPhrase] } : {}),
+        ...(harmonyPhrase ? { harmonyFrequencies: harmonyPhrase } : {}),
     };
 }
 
