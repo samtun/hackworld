@@ -1,31 +1,20 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { BaseStage } from './BaseStage';
+import { StageWithLevels } from './StageWithLevels';
+import type { StageLevelConfig } from './StageWithLevels';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
-interface KernelTerminusLevelConfig {
-    id: string;
-    name: string;
-    description: string;
-    floorColor: number;
-    hasBoss: boolean;
-    bossRoomCount?: number;
-    enemyDifficultyMultiplier: number;
-    teleporterDestination: string;
-    requiredProgress: number;
-}
-
-export class KernelTerminus extends BaseStage {
+export class KernelTerminus extends StageWithLevels {
     private static id: string = 'kernelTerminus';
     private static name: string = 'Kernel Terminus';
     private static description: string = 'The terminal breach where VIRUS-ZERO hardens into core predators';
     private static readonly depth2Id: string = 'kernelTerminusDepth2';
     private static readonly depth3Id: string = 'kernelTerminusDepth3';
-    private static readonly levelConfigs: Record<string, KernelTerminusLevelConfig> = {
+    private static readonly levelConfigs: Record<string, StageLevelConfig> = {
         [KernelTerminus.id]: {
             id: KernelTerminus.id,
             name: KernelTerminus.name,
@@ -60,12 +49,8 @@ export class KernelTerminus extends BaseStage {
         },
     };
 
-    id = KernelTerminus.id;
-    name = KernelTerminus.name;
-    description = KernelTerminus.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
-    private readonly levelConfig: KernelTerminusLevelConfig;
 
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 240,
@@ -145,11 +130,7 @@ export class KernelTerminus extends BaseStage {
         physicsMaterial: CANNON.Material,
         stageId?: string,
     ) {
-        super(scene, physicsWorld, physicsMaterial);
-        this.levelConfig = KernelTerminus.resolveLevelConfig(stageId);
-        this.id = this.levelConfig.id;
-        this.name = this.levelConfig.name;
-        this.description = this.levelConfig.description;
+        super(scene, physicsWorld, physicsMaterial, stageId, KernelTerminus.id, KernelTerminus.levelConfigs);
     }
 
     static getLevelStageIds(): readonly string[] {
@@ -184,17 +165,21 @@ export class KernelTerminus extends BaseStage {
         return this.scaleEnemyConfig(KernelTerminus.bossConfig);
     }
 
-    override getRequiredProgress(): number {
-        return this.levelConfig.requiredProgress;
-    }
-
     async load(): Promise<void> {
         this.clear();
         await this.loadEnvironmentMap();
         this.createFloorCollider();
 
         const generator = new RoomBasedDungeonGenerator();
-        const layout = generator.generate(this.buildGenerationConfig());
+        const layout = generator.generate(
+            this.buildGenerationConfig(KernelTerminus.generationConfig, {
+                eliteFractionCap: 0.9,
+                eliteFractionGain: 0.22,
+                areaPerEnemyMin: 24,
+                areaPerEnemyDifficultyGain: 0.4,
+                trapDamageGain: 0.9,
+            }),
+        );
         this.setMinimapLayout(layout.minimapLayout, false);
 
         this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
@@ -220,43 +205,7 @@ export class KernelTerminus extends BaseStage {
         this.buildTrapsFromLayout(layout);
     }
 
-    private static resolveLevelConfig(stageId?: string): KernelTerminusLevelConfig {
-        return KernelTerminus.levelConfigs[stageId ?? KernelTerminus.id] ?? KernelTerminus.levelConfigs[KernelTerminus.id];
-    }
-
-    private buildGenerationConfig(): RoomGenerationConfig {
-        const difficulty = this.levelConfig.enemyDifficultyMultiplier;
-        const base = KernelTerminus.generationConfig;
-        return {
-            ...base,
-            hasBoss: this.levelConfig.hasBoss,
-            bossRoomCount: this.levelConfig.bossRoomCount,
-            enemyCount: {
-                ...base.enemyCount,
-                min: Math.floor(base.enemyCount.min * difficulty),
-                max: Math.floor(base.enemyCount.max * difficulty),
-                eliteFraction: Math.min(0.9, base.enemyCount.eliteFraction + (difficulty - 1) * 0.22),
-                areaPerEnemy: Math.max(24, Math.floor(base.enemyCount.areaPerEnemy / (1 + (difficulty - 1) * 0.4))),
-            },
-            ...(base.trapConfig
-                ? {
-                    trapConfig: {
-                        ...base.trapConfig,
-                        damage: Math.floor(base.trapConfig.damage * (1 + (difficulty - 1) * 0.9)),
-                    },
-                }
-                : {}),
-        };
-    }
-
-    private scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {
-        const multiplier = this.levelConfig.enemyDifficultyMultiplier;
-        return {
-            ...config,
-            maxHp: config.maxHp === undefined ? undefined : Math.floor(config.maxHp * multiplier),
-            damage: config.damage === undefined ? undefined : Math.floor(config.damage * multiplier),
-            speed: config.speed === undefined ? undefined : config.speed * (1 + (multiplier - 1) * 0.15),
-            baseExp: config.baseExp === undefined ? undefined : Math.floor(config.baseExp * (1 + (multiplier - 1) * 0.8)),
-        };
+    protected override scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {
+        return super.scaleEnemyConfig(config, { speedDifficultyGain: 0.15, expDifficultyGain: 0.8 });
     }
 }

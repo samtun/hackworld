@@ -1,29 +1,19 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { BaseStage } from './BaseStage';
+import { StageWithLevels } from './StageWithLevels';
+import type { StageLevelConfig } from './StageWithLevels';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
-interface CipherNullLevelConfig {
-    id: string;
-    name: string;
-    description: string;
-    floorColor: number;
-    hasBoss: boolean;
-    enemyDifficultyMultiplier: number;
-    teleporterDestination: string;
-    requiredProgress: number;
-}
-
-export class CipherNull extends BaseStage {
+export class CipherNull extends StageWithLevels {
     private static id: string = 'cipherNull';
     private static name: string = 'Cipher Null';
     private static description: string = 'Failover archives where encrypted sectors collapse into void';
     private static readonly depth2Id: string = 'cipherNullDepth2';
-    private static readonly levelConfigs: Record<string, CipherNullLevelConfig> = {
+    private static readonly levelConfigs: Record<string, StageLevelConfig> = {
         [CipherNull.id]: {
             id: CipherNull.id,
             name: CipherNull.name,
@@ -46,12 +36,8 @@ export class CipherNull extends BaseStage {
         },
     };
 
-    id = CipherNull.id;
-    name = CipherNull.name;
-    description = CipherNull.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
-    private readonly levelConfig: CipherNullLevelConfig;
 
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 130,
@@ -130,11 +116,7 @@ export class CipherNull extends BaseStage {
         physicsMaterial: CANNON.Material,
         stageId?: string,
     ) {
-        super(scene, physicsWorld, physicsMaterial);
-        this.levelConfig = CipherNull.resolveLevelConfig(stageId);
-        this.id = this.levelConfig.id;
-        this.name = this.levelConfig.name;
-        this.description = this.levelConfig.description;
+        super(scene, physicsWorld, physicsMaterial, stageId, CipherNull.id, CipherNull.levelConfigs);
     }
 
     static getLevelStageIds(): readonly string[] {
@@ -179,7 +161,13 @@ export class CipherNull extends BaseStage {
         this.createFloorCollider();
 
         const generator = new RoomBasedDungeonGenerator();
-        const layout = generator.generate(this.buildGenerationConfig());
+        const layout = generator.generate(
+            this.buildGenerationConfig(CipherNull.generationConfig, {
+                eliteFractionCap: 0.8,
+                eliteFractionGain: 0.2,
+                trapDamageGain: 0.8,
+            }),
+        );
         this.setMinimapLayout(layout.minimapLayout, false);
 
         this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
@@ -199,41 +187,7 @@ export class CipherNull extends BaseStage {
         this.buildTrapsFromLayout(layout);
     }
 
-    private static resolveLevelConfig(stageId?: string): CipherNullLevelConfig {
-        return CipherNull.levelConfigs[stageId ?? CipherNull.id] ?? CipherNull.levelConfigs[CipherNull.id];
-    }
-
-    private buildGenerationConfig(): RoomGenerationConfig {
-        const difficulty = this.levelConfig.enemyDifficultyMultiplier;
-        const base = CipherNull.generationConfig;
-        return {
-            ...base,
-            hasBoss: this.levelConfig.hasBoss,
-            enemyCount: {
-                ...base.enemyCount,
-                min: Math.floor(base.enemyCount.min * difficulty),
-                max: Math.floor(base.enemyCount.max * difficulty),
-                eliteFraction: Math.min(0.8, base.enemyCount.eliteFraction + (difficulty - 1) * 0.2),
-            },
-            ...(base.trapConfig
-                ? {
-                    trapConfig: {
-                        ...base.trapConfig,
-                        damage: Math.floor(base.trapConfig.damage * (1 + (difficulty - 1) * 0.8)),
-                    },
-                }
-                : {}),
-        };
-    }
-
-    private scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {
-        const multiplier = this.levelConfig.enemyDifficultyMultiplier;
-        return {
-            ...config,
-            maxHp: config.maxHp === undefined ? undefined : Math.floor(config.maxHp * multiplier),
-            damage: config.damage === undefined ? undefined : Math.floor(config.damage * multiplier),
-            speed: config.speed === undefined ? undefined : config.speed * (1 + (multiplier - 1) * 0.12),
-            baseExp: config.baseExp === undefined ? undefined : Math.floor(config.baseExp * (1 + (multiplier - 1) * 0.7)),
-        };
+    protected override scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {
+        return super.scaleEnemyConfig(config, { speedDifficultyGain: 0.12, expDifficultyGain: 0.7 });
     }
 }

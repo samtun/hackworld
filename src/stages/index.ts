@@ -26,19 +26,21 @@ type StageConstructor = new (
     stageId?: string,
 ) => BaseStage;
 
+function toRegistryEntries(
+    StageClass: StageConstructor & { getLevelStageIds?: () => readonly string[]; getMetadata: () => { id: string } },
+): [string, StageConstructor][] {
+    const ids = StageClass.getLevelStageIds?.() ?? [StageClass.getMetadata().id];
+    return ids.map((stageId) => [stageId, StageClass]);
+}
+
 // Stage registry mapping stage IDs to their constructors
 const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstructor>([
     [Lobby.getMetadata().id, Lobby],
     [NetworkMatrix.getMetadata().id, NetworkMatrix],
     [PacketForge.getMetadata().id, PacketForge],
-    [CipherNull.getMetadata().id, CipherNull],
-    ['cipherNullDepth2', CipherNull],
-    [SecurityCore.getMetadata().id, SecurityCore],
-    ['securityCoreDepth2', SecurityCore],
-    ['securityCoreDepth3', SecurityCore],
-    [KernelTerminus.getMetadata().id, KernelTerminus],
-    ['kernelTerminusDepth2', KernelTerminus],
-    ['kernelTerminusDepth3', KernelTerminus],
+    ...toRegistryEntries(CipherNull),
+    ...toRegistryEntries(SecurityCore),
+    ...toRegistryEntries(KernelTerminus),
     ...(import.meta.env.DEV ? [[GameTest.getMetadata().id, GameTest] as [string, StageConstructor]] : [])
 ]);
 

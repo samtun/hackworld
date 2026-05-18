@@ -1,30 +1,20 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { BaseStage } from './BaseStage';
+import { StageWithLevels } from './StageWithLevels';
+import type { StageLevelConfig } from './StageWithLevels';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
-interface SecurityCoreLevelConfig {
-    id: string;
-    name: string;
-    description: string;
-    floorColor: number;
-    hasBoss: boolean;
-    enemyDifficultyMultiplier: number;
-    teleporterDestination: string;
-    requiredProgress: number;
-}
-
-export class SecurityCore extends BaseStage {
+export class SecurityCore extends StageWithLevels {
     private static id: string = 'securityCore';
     private static name: string = 'Security Core';
     private static description: string = 'The heart of the security system';
     private static readonly depth2Id: string = 'securityCoreDepth2';
     private static readonly depth3Id: string = 'securityCoreDepth3';
-    private static readonly levelConfigs: Record<string, SecurityCoreLevelConfig> = {
+    private static readonly levelConfigs: Record<string, StageLevelConfig> = {
         [SecurityCore.id]: {
             id: SecurityCore.id,
             name: SecurityCore.name,
@@ -57,12 +47,8 @@ export class SecurityCore extends BaseStage {
         },
     };
 
-    id = SecurityCore.id;
-    name = SecurityCore.name;
-    description = SecurityCore.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
-    private readonly levelConfig: SecurityCoreLevelConfig;
 
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 190,
@@ -141,11 +127,7 @@ export class SecurityCore extends BaseStage {
         physicsMaterial: CANNON.Material,
         stageId?: string,
     ) {
-        super(scene, physicsWorld, physicsMaterial);
-        this.levelConfig = SecurityCore.resolveLevelConfig(stageId);
-        this.id = this.levelConfig.id;
-        this.name = this.levelConfig.name;
-        this.description = this.levelConfig.description;
+        super(scene, physicsWorld, physicsMaterial, stageId, SecurityCore.id, SecurityCore.levelConfigs);
     }
 
     static getLevelStageIds(): readonly string[] {
@@ -183,10 +165,6 @@ export class SecurityCore extends BaseStage {
         return this.scaleEnemyConfig(SecurityCore.bossConfig);
     }
 
-    override getRequiredProgress(): number {
-        return this.levelConfig.requiredProgress;
-    }
-
     async load(): Promise<void> {
         this.clear();
         await this.loadEnvironmentMap();
@@ -194,7 +172,15 @@ export class SecurityCore extends BaseStage {
 
         // Generate room-based procedural layout
         const generator = new RoomBasedDungeonGenerator();
-        const layout = generator.generate(this.buildGenerationConfig());
+        const layout = generator.generate(
+            this.buildGenerationConfig(SecurityCore.generationConfig, {
+                eliteFractionCap: 0.85,
+                eliteFractionGain: 0.25,
+                areaPerEnemyMin: 30,
+                areaPerEnemyDifficultyGain: 0.35,
+                trapDamageGain: 0.85,
+            }),
+        );
         this.setMinimapLayout(layout.minimapLayout, false);
 
         // Update spawn position from generated layout
@@ -230,42 +216,7 @@ export class SecurityCore extends BaseStage {
         this.buildTrapsFromLayout(layout);
     }
 
-    private static resolveLevelConfig(stageId?: string): SecurityCoreLevelConfig {
-        return SecurityCore.levelConfigs[stageId ?? SecurityCore.id] ?? SecurityCore.levelConfigs[SecurityCore.id];
-    }
-
-    private buildGenerationConfig(): RoomGenerationConfig {
-        const difficulty = this.levelConfig.enemyDifficultyMultiplier;
-        const base = SecurityCore.generationConfig;
-        return {
-            ...base,
-            hasBoss: this.levelConfig.hasBoss,
-            enemyCount: {
-                ...base.enemyCount,
-                min: Math.floor(base.enemyCount.min * difficulty),
-                max: Math.floor(base.enemyCount.max * difficulty),
-                eliteFraction: Math.min(0.85, base.enemyCount.eliteFraction + (difficulty - 1) * 0.25),
-                areaPerEnemy: Math.max(30, Math.floor(base.enemyCount.areaPerEnemy / (1 + (difficulty - 1) * 0.35))),
-            },
-            ...(base.trapConfig
-                ? {
-                    trapConfig: {
-                        ...base.trapConfig,
-                        damage: Math.floor(base.trapConfig.damage * (1 + (difficulty - 1) * 0.85)),
-                    },
-                }
-                : {}),
-        };
-    }
-
-    private scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {
-        const multiplier = this.levelConfig.enemyDifficultyMultiplier;
-        return {
-            ...config,
-            maxHp: config.maxHp === undefined ? undefined : Math.floor(config.maxHp * multiplier),
-            damage: config.damage === undefined ? undefined : Math.floor(config.damage * multiplier),
-            speed: config.speed === undefined ? undefined : config.speed * (1 + (multiplier - 1) * 0.14),
-            baseExp: config.baseExp === undefined ? undefined : Math.floor(config.baseExp * (1 + (multiplier - 1) * 0.75)),
-        };
+    protected override scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {
+        return super.scaleEnemyConfig(config, { speedDifficultyGain: 0.14, expDifficultyGain: 0.75 });
     }
 }
