@@ -54,12 +54,13 @@ const NOTES: { name: string; freq: number }[] = [
 ];
 
 // ── Layout constants ──────────────────────────────────────────────────────────
-const PPS       = 120;  // pixels per second
-const ROW_H     = 22;   // row height px
-const NOISE_H   = 46;   // noise strip height px
-const RULER_H   = 18;   // ruler height px
-const MIN_SECS  = 10;   // minimum timeline width in seconds
-const ENV_MIN   = 0.0001;
+const PPS              = 120;    // pixels per second
+const ROW_H            = 22;    // row height px
+const NOISE_H          = 46;    // noise strip height px
+const RULER_H          = 18;    // ruler height px
+const MIN_SECS         = 10;    // minimum timeline width in seconds
+const ENV_MIN          = 0.0001;
+const AUTOSCROLL_MARGIN = 80;   // px from right edge before auto-scroll kicks in
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let tones: ToneEvent[]   = [];
@@ -527,12 +528,18 @@ function getCtx(): AudioContext {
     return audioCtx;
 }
 
+/** Cached noise buffer — reused across all scheduled noise events. */
+let cachedNoiseBuffer: AudioBuffer | null = null;
+
 function noiseBuffer(ctx: AudioContext): AudioBuffer {
-    const len = Math.floor(ctx.sampleRate * 0.5);
-    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-    const ch  = buf.getChannelData(0);
-    for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
-    return buf;
+    if (!cachedNoiseBuffer || cachedNoiseBuffer.sampleRate !== ctx.sampleRate) {
+        const len = Math.floor(ctx.sampleRate * 0.5);
+        const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+        const ch  = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+        cachedNoiseBuffer = buf;
+    }
+    return cachedNoiseBuffer;
 }
 
 function schedTone(ctx: AudioContext, freq: number, dur: number, type: OscType, gain: number, startAt: number, glidedFreq: number | null): void {
@@ -541,7 +548,7 @@ function schedTone(ctx: AudioContext, freq: number, dur: number, type: OscType, 
     const att = Math.min(0.02, dur * 0.35);
     osc.type = type;
     osc.frequency.setValueAtTime(freq, startAt);
-    if (glidedFreq !== null && glidedFreq > 1)
+    if (glidedFreq !== null && glidedFreq > 0)
         osc.frequency.exponentialRampToValueAtTime(glidedFreq, startAt + dur);
     g.gain.setValueAtTime(ENV_MIN, startAt);
     g.gain.exponentialRampToValueAtTime(Math.max(ENV_MIN, gain), startAt + att);
@@ -551,14 +558,14 @@ function schedTone(ctx: AudioContext, freq: number, dur: number, type: OscType, 
 }
 
 function schedNoise(ctx: AudioContext, dur: number, gain: number, lp: number, hp: number, startAt: number): void {
-    const src = ctx.createBufferSource(); src.buffer = noiseBuffer(ctx); src.loop = true;
-    const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass';  lpf.frequency.value = lp;
+    const src = ctx.createBufferSource(); src.buffer = noiseBuffer(ctx);
     const hpf = ctx.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = hp;
+    const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass';  lpf.frequency.value = lp;
     const g   = ctx.createGain();
     g.gain.setValueAtTime(ENV_MIN, startAt);
     g.gain.exponentialRampToValueAtTime(Math.max(ENV_MIN, gain), startAt + 0.01);
     g.gain.exponentialRampToValueAtTime(ENV_MIN, startAt + dur);
-    src.connect(lpf); lpf.connect(hpf); hpf.connect(g); g.connect(ctx.destination);
+    src.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(ctx.destination);
     src.start(startAt); src.stop(startAt + dur);
 }
 
@@ -593,7 +600,7 @@ function startPlayback(): void {
         // Auto-scroll to follow playhead
         const pxPos = playhead * PPS;
         const vw    = visibleW();
-        if (pxPos - scrollX > vw - 80) scrollX = Math.max(0, pxPos - 80);
+        if (pxPos - scrollX > vw - AUTOSCROLL_MARGIN) scrollX = Math.max(0, pxPos - AUTOSCROLL_MARGIN);
 
         render();
         if (playhead > maxT + 0.4) { stopPlayback(); return; }
@@ -622,7 +629,7 @@ function generateCode(): string {
         const at    = fmt(ev.startTime + ev.delay);
         const glideArg = glide !== null ? `, ${fmt(glide)}` : '';
         events.push({ t: ev.startTime,
-            line: `this.playTone(${fmt(freq)}, ${fmt(ev.duration)}, '${ev.type}', ${fmt(ev.gain)}, ENVELOPE_MIN_GAIN, ${at}${glideArg});` });
+            line: `this.playTone(${fmt(freq)}, ${fmt(ev.duration)}, '${ev.type}', ${fmt(ev.gain)}, ENVELOPE_MIN_GAIN, ${at}${glideArg}); // ${NOTES[ev.noteIdx].name}` });
     });
 
     noises.forEach(ev => {
@@ -632,8 +639,11 @@ function generateCode(): string {
     });
 
     events.sort((a, b) => a.t - b.t);
-    return ['// ── Paste into your AudioManager play*() method ──────────────',
-        ...events.map(e => e.line)].join('\n');
+    return [
+        '// ── Paste into your AudioManager play*() method ──────────────',
+        '// ENVELOPE_MIN_GAIN is exported from src/AudioManager.ts',
+        ...events.map(e => e.line),
+    ].join('\n');
 }
 
 // ── Init ───────────────────────────────────────────────────────────────────────
@@ -685,8 +695,12 @@ function init(): void {
     noiseCanvas.addEventListener('contextmenu', onNoiseCtx);
 
     // Space key + drag
+    const EDITABLE = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
+    const isEditable = (t: EventTarget | null): boolean =>
+        t instanceof Element && EDITABLE.has(t.tagName);
+
     window.addEventListener('keydown', e => {
-        if (e.code === 'Space' && (e.target as Element).tagName !== 'INPUT' && (e.target as Element).tagName !== 'SELECT' && (e.target as Element).tagName !== 'TEXTAREA') {
+        if (e.code === 'Space' && !isEditable(e.target)) {
             e.preventDefault(); isSpace = true;
             tlClip.style.cursor = 'grab'; noiseClip.style.cursor = 'grab';
         }
