@@ -301,8 +301,6 @@ export class XDataUpgradeManager {
         // Select/Upgrade stat (with debouncing)
         if (select && !this.lastSelectState) {
             const selectedStat = this.stats[this.selectedIndex];
-            const currentLevel = this.getCurrentUpgradeLevel(player, selectedStat.type);
-            const cost = player.getUpgradeCost(currentLevel);
             const success = player.upgradeWithXData(selectedStat.type);
 
             if (success) {
@@ -312,6 +310,8 @@ export class XDataUpgradeManager {
             } else {
                 // Shake animation for failed upgrade
                 this.shakeItem(this.selectedIndex);
+                const currentLevel = this.getCurrentUpgradeLevel(player, selectedStat.type);
+                const cost = player.getUpgradeCost(currentLevel);
                 if (player.xData < cost) {
                     AudioManager.Instance.playInsufficient();
                 }
@@ -339,6 +339,8 @@ export class XDataUpgradeManager {
                 return player.hpUpgrades;
             case StatType.TP:
                 return player.tpUpgrades;
+            default:
+                throw new Error(`Unsupported stat type: ${String(statType)}`);
         }
     }
 
