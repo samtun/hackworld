@@ -70,7 +70,6 @@ The game is fully playable with keyboard, controller (tested with XBox controlle
 - **Space / A**: Jump
 - **K / X**: Attack (tap for normal attack, hold for 1s then release for charged dash attack)
 - **L / B**: Block (absorbs incoming damage for 0.5s, immobilises the player briefly)
-- **Skill unlock levels**: Laser at **Lv10**, Heal at **Lv20**, Area Attack at **Lv38**
 - **Q + Space / L1 + A**: Laser Beam skill (unlocks at level 10)
 - **Q + Escape / L1 + B**: Healing skill (unlocks at level 20)
 - **Q + K / L1 + X**: Area Attack skill (unlocks at level 38)
