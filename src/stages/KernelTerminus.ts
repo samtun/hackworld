@@ -233,8 +233,8 @@ export class KernelTerminus extends BaseStage {
             bossRoomCount: this.levelConfig.bossRoomCount,
             enemyCount: {
                 ...base.enemyCount,
-                min: Math.max(base.enemyCount.min, Math.floor(base.enemyCount.min * difficulty)),
-                max: Math.max(base.enemyCount.max, Math.floor(base.enemyCount.max * difficulty)),
+                min: Math.floor(base.enemyCount.min * difficulty),
+                max: Math.floor(base.enemyCount.max * difficulty),
                 eliteFraction: Math.min(0.9, base.enemyCount.eliteFraction + (difficulty - 1) * 0.22),
                 areaPerEnemy: Math.max(24, Math.floor(base.enemyCount.areaPerEnemy / (1 + (difficulty - 1) * 0.4))),
             },
