@@ -4,9 +4,21 @@ import { AudioManager, MUSIC_ENABLED_STORAGE_KEY, SFX_ENABLED_STORAGE_KEY, STAGE
 describe('STAGE_MUSIC', () => {
     it('keeps every stage theme as a short hand-authored phrase', () => {
         Object.values(STAGE_MUSIC).forEach((profile) => {
+            expect(Array.isArray(profile.pulseFrequencies)).toBe(true);
             expect(profile.pulseFrequencies.length).toBeLessThanOrEqual(5);
+            profile.pulseFrequencies.forEach((frequency) => {
+                expect(typeof frequency).toBe('number');
+                expect(Number.isFinite(frequency)).toBe(true);
+                expect(frequency).toBeGreaterThan(0);
+            });
             if (profile.harmonyFrequencies) {
+                expect(Array.isArray(profile.harmonyFrequencies)).toBe(true);
                 expect(profile.harmonyFrequencies.length).toBeLessThanOrEqual(5);
+                profile.harmonyFrequencies.forEach((frequency) => {
+                    expect(typeof frequency).toBe('number');
+                    expect(Number.isFinite(frequency)).toBe(true);
+                    expect(frequency).toBeGreaterThan(0);
+                });
             }
         });
     });

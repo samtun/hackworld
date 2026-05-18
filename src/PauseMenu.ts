@@ -368,7 +368,8 @@ export class PauseMenu {
             AudioManager.Instance.playUiOpen();
         }
 
-        const nextSfxEnabled = AudioManager.Instance.toggleSfxEnabled();
+        AudioManager.Instance.toggleSfxEnabled();
+        const nextSfxEnabled = AudioManager.Instance.isSfxEnabled();
         if (!sfxWasEnabled) {
             AudioManager.Instance.playUiOpen();
         }

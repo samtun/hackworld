@@ -231,6 +231,7 @@ describe('PauseMenu', () => {
 
     it('toggles sound effects from the pause menu and updates the label', () => {
         (AudioManager.Instance.toggleSfxEnabled as any).mockReturnValue(false);
+        (AudioManager.Instance.isSfxEnabled as any).mockReturnValue(false);
         (menu as any).selectedIndex = 4;
 
         (menu as any).confirm();
