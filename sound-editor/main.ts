@@ -191,6 +191,18 @@ function buildKeyCol(): void {
     });
 }
 
+// ── Populate beat-fraction duration selectors ─────────────────────────────────
+function buildDurationOptions(sel: HTMLSelectElement, defaultValue: number): void {
+    sel.innerHTML = '';
+    BEAT_FRACTIONS.forEach(f => {
+        const o = document.createElement('option');
+        o.value = String(f.value);
+        o.textContent = f.label;
+        if (f.value === defaultValue) o.selected = true;
+        sel.appendChild(o);
+    });
+}
+
 // ── Populate glide selectors ───────────────────────────────────────────────────
 function buildGlideOptions(sel: HTMLSelectElement, includeNone: boolean): void {
     sel.innerHTML = '';
@@ -675,6 +687,8 @@ function generateCode(): string {
 // ── Init ───────────────────────────────────────────────────────────────────────
 function init(): void {
     buildKeyCol();
+    buildDurationOptions(cfgDurEl, 1);   // default 1/1 beat
+    buildDurationOptions(ppDur,    1);
     buildGlideOptions(cfgGlideEl, true);
     buildGlideOptions(ppGlide,    true);
     resizeAll();
