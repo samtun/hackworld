@@ -65,8 +65,8 @@ export class PauseMenu {
         this.input = input;
         this.performanceModeEnabled = performanceModeEnabled;
         this.controlHintsEnabled = controlHintsEnabled;
-        this.musicEnabled = AudioManager.Instance.isMusicEnabled();
-        this.sfxEnabled = AudioManager.Instance.isSfxEnabled();
+        this.musicEnabled = true;
+        this.sfxEnabled = true;
         this.callbacks = callbacks;
 
         this.items = [
@@ -358,19 +358,25 @@ export class PauseMenu {
                 }
                 this.updateMusicLabel();
                 break;
-            case 'sfx': {
-                const sfxWasEnabled = this.sfxEnabled;
-                if (sfxWasEnabled) {
-                    AudioManager.Instance.playUiOpen();
-                }
-                this.sfxEnabled = AudioManager.Instance.toggleSfxEnabled();
-                if (!sfxWasEnabled) {
-                    AudioManager.Instance.playUiOpen();
-                }
+            case 'sfx':
+                this.sfxEnabled = this.toggleSfxWithFeedback();
                 this.updateSfxLabel();
                 break;
-            }
         }
+    }
+
+    private toggleSfxWithFeedback(): boolean {
+        const sfxWasEnabled = this.sfxEnabled;
+        if (sfxWasEnabled) {
+            AudioManager.Instance.playUiOpen();
+        }
+
+        const nextSfxEnabled = AudioManager.Instance.toggleSfxEnabled();
+        if (!sfxWasEnabled) {
+            AudioManager.Instance.playUiOpen();
+        }
+
+        return nextSfxEnabled;
     }
 
     private inputLoop(): void {
