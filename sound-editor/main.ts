@@ -78,6 +78,9 @@ const AUTOSCROLL_MARGIN = 80;  // px from right edge before auto-scroll kicks in
 const LOOP_LOOKAHEAD   = 0.3;  // seconds — schedule next loop pass this far ahead
 const STOP_GRACE       = 0.4;  // seconds past maxT before auto-stopping non-looped play
 const MIN_LOOP_PERIOD  = 0.001; // minimum loop period to prevent division by zero
+const WRAP_DETECT_THRESHOLD = 0.5; // fraction of maxT — detects playhead wrap-around
+const MIN_BPM = 40;
+const MAX_BPM = 300;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let tones: ToneEvent[]   = [];
@@ -604,7 +607,7 @@ function schedNoise(ctx: AudioContext, dur: number, gain: number, lp: number, hp
 
 function startPlayback(): void {
     if (isPlaying) stopPlayback();
-    if (tones.length === 0 && noises.length === 0) return;
+    if (tones.length === 0 && noises.length === 0) return; // Nothing to play
 
     const ctx = getCtx();
     const bd  = beatDur();
@@ -645,7 +648,7 @@ function startPlayback(): void {
             const prev = playhead;
             playhead = elapsed % maxT;
             // When the playhead wraps, reset horizontal scroll to the start
-            if (playhead < prev - maxT * 0.5) scrollX = 0;
+            if (playhead < prev - maxT * WRAP_DETECT_THRESHOLD) scrollX = 0;
             // Schedule the next pass when we're within LOOP_LOOKAHEAD of it
             if (ctx.currentTime >= nextPassAbs - LOOP_LOOKAHEAD) {
                 nextPassAbs += maxT;
@@ -725,7 +728,7 @@ function downloadJson(): void {
 
 function loadFromJson(raw: string): void {
     let data: { version?: number; bpm?: number; tones?: unknown[]; noises?: unknown[] };
-    try { data = JSON.parse(raw); } catch { alert('Could not parse JSON file.'); return; }
+    try { data = JSON.parse(raw); } catch (e) { alert('Could not parse JSON file: ' + (e as Error).message); return; }
     if (!Array.isArray(data.tones) || !Array.isArray(data.noises)) {
         alert('Not a valid HackWorld DAW file (missing tones/noises arrays).');
         return;
@@ -769,7 +772,7 @@ function loadFromJson(raw: string): void {
     noises = validNoises;
     scrollX = 0;
     if (typeof data.bpm === 'number') {
-        cfgBpm = Math.max(40, Math.min(300, data.bpm));
+        cfgBpm = Math.max(MIN_BPM, Math.min(MAX_BPM, data.bpm));
         cfgBpmEl.value = String(cfgBpm);
     }
     closePopup();
@@ -790,7 +793,7 @@ function init(): void {
 
     // Toolbar
     cfgDurEl.addEventListener('change',  () => { cfgDur = parseFloat(cfgDurEl.value) || 1; });
-    cfgBpmEl.addEventListener('change',  () => { cfgBpm   = Math.max(40, Math.min(300, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
+    cfgBpmEl.addEventListener('change',  () => { cfgBpm   = Math.max(MIN_BPM, Math.min(MAX_BPM, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
     cfgTypeEl.addEventListener('change', () => { cfgType  = cfgTypeEl.value as OscType; });
     cfgGainEl.addEventListener('input',  () => { cfgGain  = parseFloat(cfgGainEl.value); cfgGainV.textContent  = cfgGain.toFixed(2); });
     cfgGlideEl.addEventListener('change',() => { cfgGlide = cfgGlideEl.value ? parseInt(cfgGlideEl.value) : null; });
