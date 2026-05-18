@@ -1,3 +1,11 @@
+# [3.21.0](https://github.com/samtun/hackworld/compare/v3.20.0...v3.21.0) (2026-05-18)
+
+
+### Features
+
+* add multi-level progression for final dungeon stages ([df57806](https://github.com/samtun/hackworld/commit/df57806ba8eaaee62dab5c70da5a132a3de55f6b))
+* use new register method on all stages ([647f5fe](https://github.com/samtun/hackworld/commit/647f5fef8ad1286ee9177a31282d085b7ab36d1a))
+
 # [3.20.0](https://github.com/samtun/hackworld/compare/v3.19.0...v3.20.0) (2026-05-18)
 
 
