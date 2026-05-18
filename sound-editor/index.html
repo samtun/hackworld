@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HackWorld DAW</title>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg:       #09090f;
+            --surface:  #10111a;
+            --surface2: #0d0e16;
+            --border:   #252535;
+            --accent:   #00e5ff;
+            --accent2:  #ff4081;
+            --tone-fill: #1c6e8e;
+            --tone-stroke: #30a8d0;
+            --tone-sel: #2da0cc;
+            --noise-fill: #7a3f6e;
+            --noise-stroke: #b060a0;
+            --playhead: #ffd600;
+            --text:     #c4d4e0;
+            --dim:      #50607a;
+            --row-nat:  #0d1420;
+            --row-sharp:#0a0f18;
+            --row-c:    #0f1828;
+            --grid-sec: #1c2436;
+            --grid-beat:#12182a;
+            --radius:   4px;
+            --font:     'Share Tech Mono', 'Courier New', monospace;
+        }
+
+        html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
+
+        body { display: flex; flex-direction: column; }
+
+        /* ── Header ─────────────────────────────────────────────────────── */
+        #hdr {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 7px 14px;
+            display: flex; align-items: center; gap: 10px;
+            flex-shrink: 0;
+        }
+        #hdr h1 { font-size: 18px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; }
+        #hdr .sep { flex: 1; }
+
+        /* ── Buttons ────────────────────────────────────────────────────── */
+        .btn {
+            background: var(--surface2); border: 1px solid var(--border);
+            color: var(--text); font-family: var(--font); font-size: 13px;
+            padding: 5px 11px; border-radius: var(--radius); cursor: pointer;
+            letter-spacing: 1px; transition: border-color .12s, color .12s, background .12s;
+        }
+        .btn:hover { border-color: var(--accent); color: var(--accent); }
+        .btn.pri { border-color: var(--accent); color: var(--accent); }
+        .btn.pri:hover { background: var(--accent); color: var(--bg); }
+        .btn.dng { border-color: var(--accent2); color: var(--accent2); }
+        .btn.dng:hover { background: var(--accent2); color: var(--bg); }
+        .btn:disabled { opacity: .3; cursor: not-allowed; pointer-events: none; }
+
+        /* ── Toolbar ────────────────────────────────────────────────────── */
+        #toolbar {
+            background: #0b0c14;
+            border-bottom: 1px solid var(--border);
+            padding: 5px 12px 5px calc(52px + 12px);
+            display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+            flex-shrink: 0; min-height: 34px;
+        }
+        .tg { display: flex; align-items: center; gap: 5px; }
+        .tg label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+        .tg input[type="number"] {
+            background: var(--bg); border: 1px solid var(--border); color: var(--text);
+            font-family: var(--font); font-size: 13px; padding: 2px 5px;
+            border-radius: var(--radius); width: 54px;
+        }
+        .tg select {
+            background: var(--bg); border: 1px solid var(--border); color: var(--text);
+            font-family: var(--font); font-size: 13px; padding: 2px 4px;
+            border-radius: var(--radius);
+        }
+        .tg input[type="range"] { width: 76px; accent-color: var(--accent); cursor: pointer; }
+        .tv { font-size: 12px; color: var(--accent); min-width: 28px; }
+
+        /* ── Ruler ──────────────────────────────────────────────────────── */
+        #ruler-row {
+            display: flex; flex-shrink: 0; height: 22px;
+            border-bottom: 1px solid var(--border);
+        }
+        #ruler-key-pad { width: 52px; flex-shrink: 0; background: #0b0c14; border-right: 1px solid var(--border); }
+        #ruler-clip { flex: 1; overflow: hidden; position: relative; background: #09090e; }
+        #ruler-canvas { position: absolute; top: 0; left: 0; display: block; }
+
+        /* ── Editor area ────────────────────────────────────────────────── */
+        #editor-outer {
+            flex: 1; min-height: 0;
+            overflow-y: auto; overflow-x: hidden;
+        }
+        #editor-inner { display: flex; }
+
+        /* ── Key labels ─────────────────────────────────────────────────── */
+        #key-col {
+            width: 52px; flex-shrink: 0;
+            background: #0b0c14; border-right: 1px solid var(--border);
+        }
+        .key-lbl {
+            height: 22px; display: flex; align-items: center;
+            justify-content: flex-end; padding-right: 7px;
+            font-size: 12px; border-bottom: 1px solid #141a26;
+            user-select: none; letter-spacing: 0.5px;
+        }
+        .key-nat { color: var(--text); background: var(--row-nat); }
+        .key-sharp { color: var(--dim); background: var(--row-sharp); }
+        .key-c { color: var(--accent); background: var(--row-c); font-weight: bold; }
+
+        /* ── Timeline canvas ─────────────────────────────────────────────── */
+        #tl-clip { flex: 1; overflow: hidden; position: relative; cursor: crosshair; }
+        #tl-canvas { position: absolute; top: 0; left: 0; display: block; }
+
+        /* ── Noise strip ─────────────────────────────────────────────────── */
+        #noise-row {
+            display: flex; flex-shrink: 0; height: 23px;
+            border-top: 2px solid var(--border);
+        }
+        #noise-lbl {
+            width: 52px; flex-shrink: 0;
+            background: #0b0c14; border-right: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 11px; letter-spacing: 2px; color: var(--accent2);
+            text-transform: uppercase; user-select: none;
+        }
+        #noise-clip { flex: 1; overflow: hidden; position: relative; cursor: crosshair; background: #080812; }
+        #noise-canvas { position: absolute; top: 0; left: 0; display: block; }
+
+        /* ── Popup ───────────────────────────────────────────────────────── */
+        #popup {
+            position: fixed; display: none; z-index: 200;
+            background: #151828; border: 1px solid var(--accent);
+            border-radius: 6px; padding: 12px 14px 10px;
+            min-width: 216px; box-shadow: 0 6px 28px rgba(0,0,0,.85);
+        }
+        #popup h3 { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 9px; }
+        .pf { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+        .pf label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; width: 56px; flex-shrink: 0; }
+        .pf input, .pf select {
+            background: var(--bg); border: 1px solid var(--border); color: var(--text);
+            font-family: var(--font); font-size: 12px; padding: 2px 5px;
+            border-radius: var(--radius); flex: 1; min-width: 0;
+        }
+        .pf input[type="range"] { accent-color: var(--accent); cursor: pointer; }
+        .pv { font-size: 12px; color: var(--accent); min-width: 28px; }
+        .pa { display: flex; gap: 6px; margin-top: 8px; }
+        #popup-x { position: absolute; top: 5px; right: 8px; background: none; border: none; color: var(--dim); cursor: pointer; font-size: 17px; padding: 2px 4px; }
+        #popup-x:hover { color: var(--text); }
+
+        /* ── Code output ─────────────────────────────────────────────────── */
+        #code-section {
+            background: var(--surface); border-top: 1px solid var(--border);
+            flex-shrink: 0; display: flex; flex-direction: column; max-height: 130px;
+        }
+        #code-hdr {
+            display: flex; align-items: center; gap: 8px;
+            padding: 4px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+        }
+        #code-hdr span { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
+        #code-ta {
+            flex: 1; background: #000; border: none; color: #98dfc0;
+            font-family: var(--font); font-size: 12px; padding: 6px 10px;
+            resize: none; outline: none; overflow-y: auto;
+        }
+
+        /* ── Hints ───────────────────────────────────────────────────────── */
+        #hints {
+            background: #080910; border-top: 1px solid var(--border);
+            padding: 3px 12px 3px calc(52px + 12px);
+            font-size: 11px; color: var(--dim); letter-spacing: 0.5px;
+            flex-shrink: 0; display: flex; gap: 14px; flex-wrap: wrap; user-select: none;
+        }
+        .hi::before { content: '▸ '; color: var(--accent); }
+
+        /* ── Scrollbar ───────────────────────────────────────────────────── */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        input[type="number"]:focus, select:focus { outline: 1px solid var(--accent); }
+
+        /* ── Loop checkbox ───────────────────────────────────────────────── */
+        .loop-lbl {
+            display: flex; align-items: center; gap: 5px;
+            font-size: 12px; letter-spacing: 1px; color: var(--text);
+            cursor: pointer; user-select: none;
+        }
+        .loop-lbl input[type="checkbox"] { accent-color: var(--accent); cursor: pointer; width: 14px; height: 14px; }
+    </style>
+</head>
+<body>
+
+<!-- Header -->
+<div id="hdr">
+    <h1 aria-label="HackWorld DAW Sound Editor">⬡ HackWorld DAW</h1>
+    <div class="sep"></div>
+    <label class="loop-lbl"><input type="checkbox" id="cfg-loop" checked> Loop</label>
+    <button class="btn pri" id="play-btn">▶ PLAY</button>
+    <button class="btn" id="stop-btn" disabled>■ STOP</button>
+    <button class="btn" id="clear-btn">✕ CLEAR</button>
+    <button class="btn" id="export-btn">⎘ EXPORT</button>
+    <button class="btn" id="json-btn">⎘ JSON</button>
+</div>
+
+<!-- Toolbar -->
+<div id="toolbar">
+    <div class="tg"><label>BPM</label><input type="number" id="cfg-bpm" min="40" max="300" step="1" value="120" /></div>
+    <div class="tg" style="width:1px;height:18px;background:var(--border);padding:0;flex-shrink:0;"></div>
+    <div class="tg"><label>Duration</label>
+        <select id="cfg-dur"></select>
+    </div>
+    <div class="tg"><label>Type</label>
+        <select id="cfg-type">
+            <option value="sine">sine</option>
+            <option value="triangle" selected>triangle</option>
+            <option value="square">square</option>
+            <option value="sawtooth">sawtooth</option>
+        </select>
+    </div>
+    <div class="tg"><label>Gain</label><input type="range" id="cfg-gain" min="0" max="1" step="0.01" value="0.06" /><span class="tv" id="cfg-gain-v">0.06</span></div>
+    <div class="tg"><label>Glide→</label><select id="cfg-glide"><option value="">None</option></select></div>
+</div>
+
+<!-- Ruler -->
+<div id="ruler-row">
+    <div id="ruler-key-pad"></div>
+    <div id="ruler-clip"><canvas id="ruler-canvas"></canvas></div>
+</div>
+
+<!-- Main editor (scrolls vertically) -->
+<div id="editor-outer">
+    <div id="editor-inner">
+        <div id="key-col"></div>
+        <div id="tl-clip"><canvas id="tl-canvas"></canvas></div>
+    </div>
+</div>
+
+<!-- Noise strip -->
+<div id="noise-row">
+    <div id="noise-lbl">NOISE</div>
+    <div id="noise-clip"><canvas id="noise-canvas"></canvas></div>
+</div>
+
+<!-- Horizontal scrollbar -->
+<div id="hscroll-bar" style="overflow-x:auto;overflow-y:hidden;flex-shrink:0;height:10px;margin-left:52px;border-top:1px solid var(--border);"><div id="hscroll-inner" style="height:1px;"></div></div>
+
+<!-- Code output -->
+<div id="code-section">
+    <div id="code-hdr">
+        <span>Generated Code</span>
+        <div style="flex:1"></div>
+        <button class="btn" id="copy-btn">⎗ Copy</button>
+    </div>
+    <textarea id="code-ta" readonly spellcheck="false">// Add tones and noise to the timeline, then click EXPORT.</textarea>
+</div>
+
+<!-- Hints -->
+<div id="hints">
+    <span class="hi">Scroll horizontal: horizontal touchpad swipe or scrollbar</span>
+    <span class="hi">Scroll vertical: mouse wheel / touchpad</span>
+    <span class="hi">Space: play / stop</span>
+    <span class="hi">Click empty row: add tone</span>
+    <span class="hi">Click tone: edit</span>
+    <span class="hi">Right-click tone: delete</span>
+    <span class="hi">Click noise strip: add noise</span>
+    <span class="hi">Right-click noise: delete</span>
+    <span class="hi">Drag &amp; drop .json file anywhere: load timeline</span>
+</div>
+
+<!-- Popup (tone / noise editor) -->
+<div id="popup">
+    <button id="popup-x">✕</button>
+    <h3 id="popup-title">Edit Tone</h3>
+    <div class="pf"><label>Duration</label>
+        <select id="pp-dur"></select>
+    </div>
+    <div class="pf" id="pp-type-row"><label>Type</label>
+        <select id="pp-type">
+            <option value="sine">sine</option>
+            <option value="triangle">triangle</option>
+            <option value="square">square</option>
+            <option value="sawtooth">sawtooth</option>
+        </select>
+    </div>
+    <div class="pf"><label>Gain</label><input type="range" id="pp-gain" min="0" max="1" step="0.01" /><span class="pv" id="pp-gain-v"></span></div>
+    <div class="pf" id="pp-glide-row"><label>Glide→</label><select id="pp-glide"><option value="">None</option></select></div>
+    <div class="pf" id="pp-lp-row" style="display:none"><label>Lowpass</label><input type="number" id="pp-lp" min="200" max="20000" step="100" /></div>
+    <div class="pf" id="pp-hp-row" style="display:none"><label>Highpass</label><input type="number" id="pp-hp" min="20" max="4000" step="10" /></div>
+    <div class="pa">
+        <button class="btn pri" id="pp-save">✓ Save</button>
+        <button class="btn dng" id="pp-del">✕ Delete</button>
+    </div>
+</div>
+
+<script type="module" src="./main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,893 @@
+/**
+ * HackWorld Sound Editor — DAW Timeline (main.ts)
+ *
+ * Piano-roll style canvas editor. Beat grid on X axis, chromatic scale on Y axis.
+ * Scroll horizontally via mouse wheel or the scrollbar. Space = Play/Stop.
+ * Click to add tones/noise, click to edit, right-click to delete.
+ * Animated playhead during playback. Exports AudioManager snippets.
+ */
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+type OscType = 'sine' | 'triangle' | 'square' | 'sawtooth';
+
+interface ToneEvent {
+    id: string;
+    noteIdx: number;    // index into NOTES[]
+    startTime: number;  // seconds on timeline
+    duration: number;
+    type: OscType;
+    gain: number;
+    glideTo: number | null; // target noteIdx, or null
+}
+
+interface NoiseEvent {
+    id: string;
+    startTime: number;
+    duration: number;
+    gain: number;
+    lowpass: number;
+    highpass: number;
+}
+
+// ── Chromatic scale C6→C3 (top = high, bottom = low) ─────────────────────────
+const NOTES: { name: string; freq: number }[] = [
+    { name: 'C6',  freq: 1046.50 }, { name: 'B5',  freq: 987.77  },
+    { name: 'A#5', freq: 932.33  }, { name: 'A5',  freq: 880.00  },
+    { name: 'G#5', freq: 830.61  }, { name: 'G5',  freq: 783.99  },
+    { name: 'F#5', freq: 739.99  }, { name: 'F5',  freq: 698.46  },
+    { name: 'E5',  freq: 659.25  }, { name: 'D#5', freq: 622.25  },
+    { name: 'D5',  freq: 587.33  }, { name: 'C#5', freq: 554.37  },
+    { name: 'C5',  freq: 523.25  }, { name: 'B4',  freq: 493.88  },
+    { name: 'A#4', freq: 466.16  }, { name: 'A4',  freq: 440.00  },
+    { name: 'G#4', freq: 415.30  }, { name: 'G4',  freq: 392.00  },
+    { name: 'F#4', freq: 369.99  }, { name: 'F4',  freq: 349.23  },
+    { name: 'E4',  freq: 329.63  }, { name: 'D#4', freq: 311.13  },
+    { name: 'D4',  freq: 293.66  }, { name: 'C#4', freq: 277.18  },
+    { name: 'C4',  freq: 261.63  }, { name: 'B3',  freq: 246.94  },
+    { name: 'A#3', freq: 233.08  }, { name: 'A3',  freq: 220.00  },
+    { name: 'G#3', freq: 207.65  }, { name: 'G3',  freq: 196.00  },
+    { name: 'F#3', freq: 185.00  }, { name: 'F3',  freq: 174.61  },
+    { name: 'E3',  freq: 164.81  }, { name: 'D#3', freq: 155.56  },
+    { name: 'D3',  freq: 146.83  }, { name: 'C#3', freq: 138.59  },
+    { name: 'C3',  freq: 130.81  },
+];
+
+// ── Beat duration fractions (stored value = beat multiplier, e.g. 0.25 = 1/4 beat) ─
+const BEAT_FRACTIONS: { label: string; value: number }[] = [
+    { label: '1/128', value: 1/128 },
+    { label: '1/64',  value: 1/64  },
+    { label: '1/32',  value: 1/32  },
+    { label: '1/16',  value: 1/16  },
+    { label: '1/8',   value: 1/8   },
+    { label: '1/4',   value: 1/4   },
+    { label: '1/2',   value: 1/2   },
+    { label: '1/1',   value: 1     },
+    { label: '2',     value: 2     },
+    { label: '4',     value: 4     },
+    { label: '8',     value: 8     },
+];
+
+// ── Layout constants ──────────────────────────────────────────────────────────
+const PPS              = 120;   // pixels per second
+const ROW_H            = 22;   // row height px
+const NOISE_H          = 23;   // noise strip height px
+const RULER_H          = 22;   // ruler height px (larger for bigger font)
+const MIN_SECS         = 10;   // minimum timeline width in seconds
+const ENV_MIN          = 0.0001;
+const AUTOSCROLL_MARGIN = 80;  // px from right edge before auto-scroll kicks in
+const LOOP_LOOKAHEAD   = 0.3;  // seconds — schedule next loop pass this far ahead
+const STOP_GRACE       = 0.4;  // seconds past maxT before auto-stopping non-looped play
+const MIN_LOOP_PERIOD  = 0.001; // minimum loop period to prevent division by zero
+const MIN_BPM = 40;
+const MAX_BPM = 300;
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let tones: ToneEvent[]   = [];
+let noises: NoiseEvent[] = [];
+let scrollX    = 0;      // horizontal scroll in px
+let editingId: string | null = null;
+let editingKind: 'tone' | 'noise' = 'tone';
+let isPlaying  = false;
+let playhead   = 0;      // seconds
+let rafId: number | null = null;
+let audioCtx: AudioContext | null = null;
+let cfgDur    = 1;      // beat multiplier: 1 = 1 full beat (1/1)
+let cfgType: OscType = 'triangle';
+let cfgGain   = 0.06;
+let cfgGlide: number | null = null;
+let cfgBpm    = 120;    // beats per minute
+let cfgLoop   = true;   // loop playback (on by default)
+
+// ── DOM refs ──────────────────────────────────────────────────────────────────
+const tlCanvas    = document.getElementById('tl-canvas')    as HTMLCanvasElement;
+const noiseCanvas = document.getElementById('noise-canvas') as HTMLCanvasElement;
+const rulerCanvas = document.getElementById('ruler-canvas') as HTMLCanvasElement;
+const editorOuter = document.getElementById('editor-outer') as HTMLDivElement;
+const tlClip      = document.getElementById('tl-clip')      as HTMLDivElement;
+const noiseClip   = document.getElementById('noise-clip')   as HTMLDivElement;
+const rulerClip   = document.getElementById('ruler-clip')   as HTMLDivElement;
+const keyCol      = document.getElementById('key-col')      as HTMLDivElement;
+const playBtn     = document.getElementById('play-btn')     as HTMLButtonElement;
+const stopBtn     = document.getElementById('stop-btn')     as HTMLButtonElement;
+const clearBtn    = document.getElementById('clear-btn')    as HTMLButtonElement;
+const exportBtn   = document.getElementById('export-btn')   as HTMLButtonElement;
+const jsonBtn     = document.getElementById('json-btn')     as HTMLButtonElement;
+const cfgLoopEl   = document.getElementById('cfg-loop')     as HTMLInputElement;
+const cfgDurEl    = document.getElementById('cfg-dur')      as HTMLSelectElement;
+const cfgBpmEl    = document.getElementById('cfg-bpm')      as HTMLInputElement;
+const cfgTypeEl   = document.getElementById('cfg-type')     as HTMLSelectElement;
+const cfgGainEl   = document.getElementById('cfg-gain')     as HTMLInputElement;
+const cfgGainV    = document.getElementById('cfg-gain-v')   as HTMLSpanElement;
+const cfgGlideEl  = document.getElementById('cfg-glide')    as HTMLSelectElement;
+const popup       = document.getElementById('popup')        as HTMLDivElement;
+const popupTitle  = document.getElementById('popup-title')  as HTMLHeadingElement;
+const ppDur       = document.getElementById('pp-dur')       as HTMLSelectElement;
+const ppType      = document.getElementById('pp-type')      as HTMLSelectElement;
+const ppTypeRow   = document.getElementById('pp-type-row')  as HTMLDivElement;
+const ppGain      = document.getElementById('pp-gain')      as HTMLInputElement;
+const ppGainV     = document.getElementById('pp-gain-v')    as HTMLSpanElement;
+const ppGlide     = document.getElementById('pp-glide')     as HTMLSelectElement;
+const ppGlideRow  = document.getElementById('pp-glide-row') as HTMLDivElement;
+const ppLpRow     = document.getElementById('pp-lp-row')    as HTMLDivElement;
+const ppLp        = document.getElementById('pp-lp')        as HTMLInputElement;
+const ppHpRow     = document.getElementById('pp-hp-row')    as HTMLDivElement;
+const ppHp        = document.getElementById('pp-hp')        as HTMLInputElement;
+const ppSave      = document.getElementById('pp-save')      as HTMLButtonElement;
+const ppDel       = document.getElementById('pp-del')       as HTMLButtonElement;
+const ppX         = document.getElementById('popup-x')      as HTMLButtonElement;
+const codeTa      = document.getElementById('code-ta')      as HTMLTextAreaElement;
+const copyBtn     = document.getElementById('copy-btn')     as HTMLButtonElement;
+const hscrollBar  = document.getElementById('hscroll-bar')  as HTMLDivElement;
+const hscrollInner = document.getElementById('hscroll-inner') as HTMLDivElement;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function uid(): string { return Math.random().toString(36).slice(2, 9); }
+
+function fmt(n: number): string { return parseFloat(n.toFixed(5)).toString(); }
+
+/** Duration of one beat in seconds at the current BPM. */
+function beatDur(): number { return 60 / cfgBpm; }
+
+/** Return the CSS-pixel width of the visible timeline area. */
+function visibleW(): number { return tlClip.clientWidth || 800; }
+
+/** Total virtual timeline width in px (based on event extents). */
+function virtualW(): number {
+    const bd = beatDur();
+    const maxT = Math.max(
+        MIN_SECS,
+        ...tones.map(e  => e.startTime + e.duration * bd + 2),
+        ...noises.map(e => e.startTime + e.duration * bd + 2),
+    );
+    return maxT * PPS;
+}
+
+// ── Canvas scaling ────────────────────────────────────────────────────────────
+function setCanvas(c: HTMLCanvasElement, cssW: number, cssH: number): void {
+    const dpr = window.devicePixelRatio || 1;
+    c.width  = Math.round(cssW * dpr);
+    c.height = Math.round(cssH * dpr);
+    c.style.width  = `${cssW}px`;
+    c.style.height = `${cssH}px`;
+}
+
+function ctx2d(c: HTMLCanvasElement): CanvasRenderingContext2D {
+    const ctx = c.getContext('2d')!;
+    const dpr = window.devicePixelRatio || 1;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return ctx;
+}
+
+// ── Build key column labels ────────────────────────────────────────────────────
+function buildKeyCol(): void {
+    keyCol.innerHTML = '';
+    NOTES.forEach(n => {
+        const div = document.createElement('div');
+        div.className = 'key-lbl';
+        const sharp = n.name.includes('#');
+        const isC   = n.name.startsWith('C') && !sharp;
+        if (isC) div.classList.add('key-c');
+        else if (sharp) div.classList.add('key-sharp');
+        else div.classList.add('key-nat');
+        div.style.height = `${ROW_H}px`;
+        div.textContent = n.name;
+        keyCol.appendChild(div);
+    });
+}
+
+// ── Populate beat-fraction duration selectors ─────────────────────────────────
+function buildDurationOptions(sel: HTMLSelectElement, defaultValue: number): void {
+    sel.innerHTML = '';
+    BEAT_FRACTIONS.forEach(f => {
+        const o = document.createElement('option');
+        o.value = String(f.value);
+        o.textContent = f.label;
+        if (f.value === defaultValue) o.selected = true;
+        sel.appendChild(o);
+    });
+}
+
+// ── Populate glide selectors ───────────────────────────────────────────────────
+function buildGlideOptions(sel: HTMLSelectElement, includeNone: boolean): void {
+    sel.innerHTML = '';
+    if (includeNone) {
+        const o = document.createElement('option');
+        o.value = ''; o.textContent = 'None'; sel.appendChild(o);
+    }
+    NOTES.forEach((n, i) => {
+        const o = document.createElement('option');
+        o.value = String(i); o.textContent = n.name; sel.appendChild(o);
+    });
+}
+
+// ── Resize all canvases ────────────────────────────────────────────────────────
+function resizeAll(): void {
+    const tlH    = NOTES.length * ROW_H;
+    const tlW    = visibleW();
+    const nW     = noiseClip.clientWidth  || tlW;
+    const rW     = rulerClip.clientWidth  || tlW;
+    setCanvas(tlCanvas,    tlW, tlH);
+    setCanvas(noiseCanvas, nW,  NOISE_H);
+    setCanvas(rulerCanvas, rW,  RULER_H);
+}
+
+// ── Grid helpers ───────────────────────────────────────────────────────────────
+function drawGrid(cx: CanvasRenderingContext2D, w: number, h: number): void {
+    const bd = beatDur();
+    const startBeat = Math.floor(scrollX / PPS / bd);
+    const endBeat   = Math.ceil((scrollX + w) / PPS / bd) + 1;
+    for (let beat = startBeat; beat <= endBeat; beat++) {
+        const x     = Math.round(beat * bd * PPS - scrollX) + 0.5;
+        const isBar = beat % 4 === 0;
+        cx.strokeStyle = isBar ? '#2e4870' : '#1a3050';
+        cx.lineWidth   = isBar ? 1 : 0.5;
+        cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, h); cx.stroke();
+    }
+}
+
+// ── Render ruler ───────────────────────────────────────────────────────────────
+function renderRuler(): void {
+    const w  = rulerClip.clientWidth  || 800;
+    const cx = ctx2d(rulerCanvas);
+    cx.clearRect(0, 0, w, RULER_H);
+    cx.fillStyle = '#09090e';
+    cx.fillRect(0, 0, w, RULER_H);
+
+    const bd = beatDur();
+    const startBeat = Math.floor(scrollX / PPS / bd);
+    const endBeat   = Math.ceil((scrollX + w) / PPS / bd) + 1;
+    cx.font = '10px monospace'; cx.textAlign = 'left';
+
+    for (let beat = startBeat; beat <= endBeat; beat++) {
+        const x     = Math.round(beat * bd * PPS - scrollX) + 0.5;
+        const isBar = beat % 4 === 0;
+        cx.strokeStyle = isBar ? '#303858' : '#1a2030';
+        cx.lineWidth   = isBar ? 1 : 0.5;
+        cx.beginPath();
+        cx.moveTo(x, isBar ? 0 : RULER_H - 6);
+        cx.lineTo(x, RULER_H); cx.stroke();
+        if (isBar) {
+            cx.fillStyle = '#7080a0';
+            cx.fillText(`${Math.floor(beat / 4) + 1}`, x + 3, 13);
+        }
+    }
+    // Playhead on ruler
+    if (isPlaying) {
+        const px = Math.round(playhead * PPS - scrollX);
+        cx.fillStyle = '#ffd600cc';
+        cx.fillRect(px - 1, 0, 2, RULER_H);
+    }
+}
+
+// ── Render main timeline ───────────────────────────────────────────────────────
+function renderTimeline(): void {
+    const w  = visibleW();
+    const h  = NOTES.length * ROW_H;
+    const cx = ctx2d(tlCanvas);
+    cx.clearRect(0, 0, w, h);
+
+    // Row backgrounds
+    NOTES.forEach((n, i) => {
+        const y     = i * ROW_H;
+        const sharp = n.name.includes('#');
+        const isC   = n.name.startsWith('C') && !sharp;
+        cx.fillStyle = isC ? '#0f1828' : sharp ? '#0a0f18' : '#0d1420';
+        cx.fillRect(0, y, w, ROW_H);
+        cx.fillStyle = '#141a26';
+        cx.fillRect(0, y + ROW_H - 1, w, 1);
+    });
+
+    // Grid
+    drawGrid(cx, w, h);
+
+    // Tone blocks
+    for (const ev of tones) {
+        const x    = ev.startTime * PPS - scrollX;
+        const bw   = Math.max(6, ev.duration * beatDur() * PPS);
+        const y    = ev.noteIdx * ROW_H + 2;
+        const bh   = ROW_H - 4;
+        if (x + bw < 0 || x > w) continue;
+
+        const sel  = ev.id === editingId;
+        cx.fillStyle   = sel ? '#2da0cc' : '#1c6e8e';
+        cx.strokeStyle = sel ? '#60d8f8' : '#30a8d0';
+        cx.lineWidth   = sel ? 2 : 1;
+        roundRect(cx, x, y, bw, bh, 3);
+        cx.fill(); cx.stroke();
+
+        if (bw > 18) {
+            cx.fillStyle = '#a0d8f0'; cx.font = '10px monospace'; cx.textAlign = 'left';
+            cx.fillText(NOTES[ev.noteIdx].name, x + 4, y + bh / 2 + 3);
+        }
+        // Glide indicator
+        if (ev.glideTo !== null && ev.glideTo !== ev.noteIdx) {
+            const sy = y + bh / 2;
+            const ty = ev.glideTo * ROW_H + ROW_H / 2;
+            cx.strokeStyle = '#ffd60080'; cx.lineWidth = 1;
+            cx.beginPath(); cx.moveTo(x + bw, sy); cx.lineTo(x + bw, ty); cx.stroke();
+        }
+    }
+
+    // Playhead
+    if (isPlaying || playhead > 0) {
+        const px = Math.round(playhead * PPS - scrollX);
+        cx.fillStyle = '#ffd600bb';
+        cx.fillRect(px - 1, 0, 2, h);
+    }
+}
+
+// ── Render noise strip ─────────────────────────────────────────────────────────
+function renderNoise(): void {
+    const w  = noiseClip.clientWidth || 800;
+    const cx = ctx2d(noiseCanvas);
+    cx.clearRect(0, 0, w, NOISE_H);
+    cx.fillStyle = '#080812'; cx.fillRect(0, 0, w, NOISE_H);
+
+    drawGrid(cx, w, NOISE_H);
+
+    for (const ev of noises) {
+        const x   = ev.startTime * PPS - scrollX;
+        const bw  = Math.max(6, ev.duration * beatDur() * PPS);
+        const y   = 2; const bh = NOISE_H - 4;
+        if (x + bw < 0 || x > w) continue;
+
+        const sel = ev.id === editingId;
+        cx.fillStyle   = sel ? '#aa5099' : '#7a3f6e';
+        cx.strokeStyle = sel ? '#d080c8' : '#b060a0';
+        cx.lineWidth   = sel ? 2 : 1;
+        roundRect(cx, x, y, bw, bh, 3);
+        cx.fill(); cx.stroke();
+    }
+
+    if (isPlaying || playhead > 0) {
+        const px = Math.round(playhead * PPS - scrollX);
+        cx.fillStyle = '#ffd600bb';
+        cx.fillRect(px - 1, 0, 2, NOISE_H);
+    }
+}
+
+function roundRect(cx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number): void {
+    const rr = Math.min(r, w / 2, h / 2);
+    cx.beginPath();
+    cx.moveTo(x + rr, y);
+    cx.lineTo(x + w - rr, y);   cx.arcTo(x + w, y,     x + w, y + rr,     rr);
+    cx.lineTo(x + w, y + h - rr); cx.arcTo(x + w, y + h, x + w - rr, y + h, rr);
+    cx.lineTo(x + rr, y + h);   cx.arcTo(x,     y + h, x,     y + h - rr, rr);
+    cx.lineTo(x, y + rr);       cx.arcTo(x,     y,     x + rr, y,         rr);
+    cx.closePath();
+}
+
+// ── Scrollbar sync ─────────────────────────────────────────────────────────────
+let ignoreHscrollEvent = false;
+
+function syncScrollbar(): void {
+    ignoreHscrollEvent = true;
+    hscrollInner.style.width = `${virtualW()}px`;
+    hscrollBar.scrollLeft = scrollX;
+    ignoreHscrollEvent = false;
+}
+
+// ── Master render ──────────────────────────────────────────────────────────────
+function render(): void {
+    renderRuler();
+    renderTimeline();
+    renderNoise();
+    syncScrollbar();
+}
+
+// ── Hit-testing ────────────────────────────────────────────────────────────────
+function hitTone(cx: number, cy: number): ToneEvent | null {
+    const t   = (cx + scrollX) / PPS;
+    const bd  = beatDur();
+    const row = Math.floor(cy / ROW_H);
+    for (const ev of tones) {
+        if (ev.noteIdx === row && t >= ev.startTime && t <= ev.startTime + ev.duration * bd)
+            return ev;
+    }
+    return null;
+}
+
+function hitNoise(cx: number): NoiseEvent | null {
+    const t  = (cx + scrollX) / PPS;
+    const bd = beatDur();
+    for (const ev of noises) {
+        if (t >= ev.startTime && t <= ev.startTime + ev.duration * bd) return ev;
+    }
+    return null;
+}
+
+// ── Canvas coordinate helper ───────────────────────────────────────────────────
+function canvasXY(canvas: HTMLCanvasElement, e: MouseEvent): { x: number; y: number } {
+    const r = canvas.getBoundingClientRect();
+    return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+
+// ── Timeline mouse events ──────────────────────────────────────────────────────
+function onTlDown(e: MouseEvent): void {
+    if (e.button !== 0) return;
+    const { x, y } = canvasXY(tlCanvas, e);
+
+    const hit = hitTone(x, y);
+    if (hit) {
+        e.stopPropagation();
+        openPopup(hit.id, 'tone', e.clientX, e.clientY);
+    } else {
+        const row = Math.floor(y / ROW_H);
+        const t   = Math.max(0, (x + scrollX) / PPS);
+        if (row >= 0 && row < NOTES.length) addTone(row, t);
+    }
+}
+
+function onTlCtx(e: MouseEvent): void {
+    e.preventDefault();
+    const { x, y } = canvasXY(tlCanvas, e);
+    const hit = hitTone(x, y);
+    if (hit) { tones = tones.filter(t => t.id !== hit.id); closePopup(); render(); }
+}
+
+// ── Noise mouse events ─────────────────────────────────────────────────────────
+function onNoiseDown(e: MouseEvent): void {
+    if (e.button !== 0) return;
+    const { x } = canvasXY(noiseCanvas, e);
+
+    const hit = hitNoise(x);
+    if (hit) {
+        e.stopPropagation();
+        openPopup(hit.id, 'noise', e.clientX, e.clientY);
+    } else {
+        addNoise(Math.max(0, (x + scrollX) / PPS));
+    }
+}
+
+function onNoiseCtx(e: MouseEvent): void {
+    e.preventDefault();
+    const { x } = canvasXY(noiseCanvas, e);
+    const hit = hitNoise(x);
+    if (hit) { noises = noises.filter(n => n.id !== hit.id); closePopup(); render(); }
+}
+
+// ── Horizontal wheel scroll ────────────────────────────────────────────────────
+function onWheel(e: WheelEvent): void {
+    // Only intercept horizontal gestures (deltaX); let deltaY propagate naturally
+    // so editor-outer scrolls vertically as expected.
+    if (e.deltaX !== 0) {
+        e.preventDefault();
+        scrollX = Math.max(0, scrollX + e.deltaX);
+        render();
+    }
+}
+
+// ── Grid snap ─────────────────────────────────────────────────────────────────
+/** Snap a time value to the beat at or before the given time (floor snap). */
+function snapToGrid(t: number): number {
+    const bd = beatDur();
+    return Math.floor(t / bd) * bd;
+}
+
+// ── Add events ─────────────────────────────────────────────────────────────────
+function addTone(noteIdx: number, startTime: number): void {
+    tones.push({ id: uid(), noteIdx, startTime: snapToGrid(startTime), duration: cfgDur, type: cfgType, gain: cfgGain, glideTo: cfgGlide });
+    render();
+}
+
+function addNoise(startTime: number): void {
+    noises.push({ id: uid(), startTime: snapToGrid(startTime), duration: cfgDur, gain: cfgGain, lowpass: 2200, highpass: 100 });
+    render();
+}
+
+// ── Popup ──────────────────────────────────────────────────────────────────────
+function openPopup(id: string, kind: 'tone' | 'noise', mx: number, my: number): void {
+    editingId = id; editingKind = kind;
+
+    if (kind === 'tone') {
+        const ev = tones.find(t => t.id === id)!;
+        popupTitle.textContent = `Edit Tone — ${NOTES[ev.noteIdx].name}`;
+        ppTypeRow.style.display = ''; ppGlideRow.style.display = '';
+        ppLpRow.style.display = 'none'; ppHpRow.style.display = 'none';
+        ppDur.value   = String(ev.duration);
+        ppType.value  = ev.type;
+        ppGain.value  = String(ev.gain);  ppGainV.textContent  = ev.gain.toFixed(2);
+        ppGlide.value = ev.glideTo !== null ? String(ev.glideTo) : '';
+    } else {
+        const ev = noises.find(n => n.id === id)!;
+        popupTitle.textContent = 'Edit Noise';
+        ppTypeRow.style.display = 'none'; ppGlideRow.style.display = 'none';
+        ppLpRow.style.display = ''; ppHpRow.style.display = '';
+        ppDur.value   = String(ev.duration);
+        ppGain.value  = String(ev.gain);  ppGainV.textContent  = ev.gain.toFixed(2);
+        ppLp.value    = String(ev.lowpass);
+        ppHp.value    = String(ev.highpass);
+    }
+
+    popup.style.display = 'block';
+    const pw = 240; const ph = popup.scrollHeight + 20;
+    let px = mx + 10; let py = my - 20;
+    if (px + pw > window.innerWidth)  px = mx - pw - 10;
+    if (py + ph > window.innerHeight) py = window.innerHeight - ph - 8;
+    popup.style.left = `${Math.max(4, px)}px`;
+    popup.style.top  = `${Math.max(4, py)}px`;
+    render();
+}
+
+function closePopup(): void {
+    editingId = null; popup.style.display = 'none'; render();
+}
+
+function savePopup(): void {
+    if (!editingId) return;
+    const dur  = parseFloat(ppDur.value) || 1;
+    const gain = parseFloat(ppGain.value);
+
+    if (editingKind === 'tone') {
+        const ev = tones.find(t => t.id === editingId);
+        if (ev) {
+            ev.duration = dur; ev.type = ppType.value as OscType;
+            ev.gain = gain;
+            ev.glideTo = ppGlide.value ? parseInt(ppGlide.value) : null;
+        }
+    } else {
+        const ev = noises.find(n => n.id === editingId);
+        if (ev) {
+            ev.duration = dur; ev.gain = gain;
+            ev.lowpass  = parseFloat(ppLp.value) || 2200;
+            ev.highpass = parseFloat(ppHp.value) || 100;
+        }
+    }
+    closePopup();
+}
+
+// ── Audio ──────────────────────────────────────────────────────────────────────
+function getCtx(): AudioContext {
+    if (!audioCtx) audioCtx = new AudioContext();
+    if (audioCtx.state === 'suspended') void audioCtx.resume();
+    return audioCtx;
+}
+
+/** Cached noise buffer — reused across all scheduled noise events. */
+let cachedNoiseBuffer: AudioBuffer | null = null;
+
+function noiseBuffer(ctx: AudioContext): AudioBuffer {
+    if (!cachedNoiseBuffer || cachedNoiseBuffer.sampleRate !== ctx.sampleRate) {
+        const len = Math.floor(ctx.sampleRate * 0.5);
+        const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+        const ch  = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+        cachedNoiseBuffer = buf;
+    }
+    return cachedNoiseBuffer;
+}
+
+function schedTone(ctx: AudioContext, freq: number, dur: number, type: OscType, gain: number, startAt: number, glidedFreq: number | null): void {
+    const osc = ctx.createOscillator();
+    const g   = ctx.createGain();
+    const att = Math.min(0.02, dur * 0.35);
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, startAt);
+    if (glidedFreq !== null && glidedFreq > 0)
+        osc.frequency.exponentialRampToValueAtTime(glidedFreq, startAt + dur);
+    g.gain.setValueAtTime(ENV_MIN, startAt);
+    g.gain.exponentialRampToValueAtTime(Math.max(ENV_MIN, gain), startAt + att);
+    g.gain.exponentialRampToValueAtTime(ENV_MIN, startAt + dur);
+    osc.connect(g); g.connect(ctx.destination);
+    osc.start(startAt); osc.stop(startAt + dur);
+}
+
+function schedNoise(ctx: AudioContext, dur: number, gain: number, lp: number, hp: number, startAt: number): void {
+    const src = ctx.createBufferSource(); src.buffer = noiseBuffer(ctx);
+    const hpf = ctx.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = hp;
+    const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass';  lpf.frequency.value = lp;
+    const g   = ctx.createGain();
+    g.gain.setValueAtTime(ENV_MIN, startAt);
+    g.gain.exponentialRampToValueAtTime(Math.max(ENV_MIN, gain), startAt + 0.01);
+    g.gain.exponentialRampToValueAtTime(ENV_MIN, startAt + dur);
+    src.connect(hpf); hpf.connect(lpf); lpf.connect(g); g.connect(ctx.destination);
+    src.start(startAt); src.stop(startAt + dur);
+}
+
+function startPlayback(): void {
+    if (isPlaying) stopPlayback();
+    if (tones.length === 0 && noises.length === 0) return; // Nothing to play
+
+    const ctx = getCtx();
+
+    /**
+     * Schedule all CURRENT tones and noises at the given absolute offset.
+     * Reads tones/noises/BPM fresh each call so that edits made while playing
+     * are automatically picked up on the next scheduled loop pass.
+     * Returns the total duration of the scheduled pass.
+     */
+    function schedulePassFresh(offset: number): number {
+        const bd   = beatDur();
+        const passDur = Math.max(
+            MIN_LOOP_PERIOD,
+            ...tones.map(e  => e.startTime + e.duration * bd),
+            ...noises.map(e => e.startTime + e.duration * bd),
+        );
+        tones.forEach(ev => {
+            const freq  = NOTES[ev.noteIdx].freq;
+            const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
+            schedTone(ctx, freq, ev.duration * bd, ev.type, ev.gain, offset + ev.startTime, glide);
+        });
+        noises.forEach(ev => {
+            schedNoise(ctx, ev.duration * bd, ev.gain, ev.lowpass, ev.highpass, offset + ev.startTime);
+        });
+        return passDur;
+    }
+
+    // Schedule pass 1 immediately.
+    const absStart = ctx.currentTime;
+    const pass1Dur = schedulePassFresh(absStart);
+
+    // Queue of pre-scheduled audio passes.  Each record stores the absolute
+    // start time and duration of one scheduled pass, and is immutable once
+    // pushed.  scheduled[0] is always the pass currently playing (or the most
+    // recently started pass), so `playhead = now - scheduled[0].abs` is always
+    // accurate regardless of how many lookahead passes have been scheduled.
+    interface PassRecord { abs: number; dur: number; }
+    const scheduled: PassRecord[] = [{ abs: absStart, dur: pass1Dur }];
+
+    if (cfgLoop) {
+        // Pre-schedule a second pass immediately for a seamless first loop boundary.
+        const p2Abs = absStart + pass1Dur;
+        scheduled.push({ abs: p2Abs, dur: schedulePassFresh(p2Abs) });
+    }
+
+    isPlaying = true;
+    playBtn.disabled = true; stopBtn.disabled = false;
+
+    function tick(): void {
+        if (!isPlaying) return;
+        const now = ctx.currentTime;
+
+        if (cfgLoop) {
+            // Pop completed passes, always keeping at least one as the "current" pass.
+            while (scheduled.length > 1 && now >= scheduled[0].abs + scheduled[0].dur) {
+                scheduled.shift();
+                scrollX = 0; // reset horizontal view on each loop wrap
+            }
+            playhead = now - scheduled[0].abs;
+
+            // Extend the audio schedule when the last queued pass is about to end.
+            // Uses fresh timeline data so edits appear on the upcoming pass.
+            const last = scheduled[scheduled.length - 1];
+            if (now >= last.abs + last.dur - LOOP_LOOKAHEAD) {
+                const newAbs = last.abs + last.dur;
+                scheduled.push({ abs: newAbs, dur: schedulePassFresh(newAbs) });
+            }
+        } else {
+            playhead = now - absStart;
+            if (playhead > pass1Dur + STOP_GRACE) { stopPlayback(); return; }
+        }
+
+        // Auto-scroll to follow playhead
+        const pxPos = playhead * PPS;
+        const vw    = visibleW();
+        if (pxPos - scrollX > vw - AUTOSCROLL_MARGIN) scrollX = Math.max(0, pxPos - AUTOSCROLL_MARGIN);
+
+        render();
+        rafId = requestAnimationFrame(tick);
+    }
+    rafId = requestAnimationFrame(tick);
+}
+
+function stopPlayback(): void {
+    isPlaying = false;
+    if (rafId !== null) { cancelAnimationFrame(rafId); rafId = null; }
+    playhead = 0;
+    playBtn.disabled = false; stopBtn.disabled = true;
+    // Close the audio context to immediately silence all scheduled nodes
+    if (audioCtx) {
+        void audioCtx.close();
+        audioCtx = null;
+        cachedNoiseBuffer = null; // buffer belongs to the closed context
+    }
+    render();
+}
+
+// ── Code export ────────────────────────────────────────────────────────────────
+function generateCode(): string {
+    if (tones.length === 0 && noises.length === 0) return '// No events on the timeline yet.';
+
+    const events: { t: number; line: string }[] = [];
+    const bd = beatDur();
+
+    tones.forEach(ev => {
+        const freq  = NOTES[ev.noteIdx].freq;
+        const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
+        const dur   = ev.duration * bd;
+        const at    = fmt(ev.startTime);
+        const glideArg = glide !== null ? `, ${fmt(glide)}` : '';
+        events.push({ t: ev.startTime,
+            line: `this.playTone(${fmt(freq)}, ${fmt(dur)}, '${ev.type}', ${fmt(ev.gain)}, ENVELOPE_MIN_GAIN, ${at}${glideArg}); // ${NOTES[ev.noteIdx].name}` });
+    });
+
+    noises.forEach(ev => {
+        const dur = ev.duration * bd;
+        const at  = fmt(ev.startTime);
+        events.push({ t: ev.startTime,
+            line: `this.playNoise(${fmt(dur)}, ${fmt(ev.gain)}, ${fmt(ev.lowpass)}, ${fmt(ev.highpass)}, ${at});` });
+    });
+
+    events.sort((a, b) => a.t - b.t);
+    return [
+        '// ── Paste into your AudioManager play*() method ──────────────',
+        '// ENVELOPE_MIN_GAIN is exported from src/AudioManager.ts',
+        ...events.map(e => e.line),
+    ].join('\n');
+}
+
+// ── JSON export & import ───────────────────────────────────────────────────────
+function downloadJson(): void {
+    const payload = JSON.stringify({ version: 1, bpm: cfgBpm, tones, noises }, null, 2);
+    const blob = new Blob([payload], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = 'hackworld-sound.json'; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function loadFromJson(raw: string): void {
+    let data: { version?: number; bpm?: number; tones?: unknown[]; noises?: unknown[] };
+    try { data = JSON.parse(raw); } catch (e) { alert('Could not parse JSON file: ' + (e as Error).message); return; }
+    if (!Array.isArray(data.tones) || !Array.isArray(data.noises)) {
+        alert('Not a valid HackWorld DAW file (missing tones/noises arrays).');
+        return;
+    }
+
+    // Validate and filter tone events to ensure required fields are present
+    const validTones: ToneEvent[] = (data.tones as Record<string, unknown>[]).filter(t =>
+        typeof t.id === 'string' &&
+        typeof t.noteIdx === 'number' &&
+        typeof t.startTime === 'number' &&
+        typeof t.duration === 'number' &&
+        typeof t.type === 'string' &&
+        typeof t.gain === 'number'
+    ).map(t => ({
+        id:        t.id        as string,
+        noteIdx:   t.noteIdx   as number,
+        startTime: t.startTime as number,
+        duration:  t.duration  as number,
+        type:      t.type      as OscType,
+        gain:      t.gain      as number,
+        glideTo:   typeof t.glideTo === 'number' ? t.glideTo as number : null,
+    }));
+
+    // Validate and filter noise events
+    const validNoises: NoiseEvent[] = (data.noises as Record<string, unknown>[]).filter(n =>
+        typeof n.id === 'string' &&
+        typeof n.startTime === 'number' &&
+        typeof n.duration === 'number' &&
+        typeof n.gain === 'number'
+    ).map(n => ({
+        id:        n.id        as string,
+        startTime: n.startTime as number,
+        duration:  n.duration  as number,
+        gain:      n.gain      as number,
+        lowpass:   typeof n.lowpass  === 'number' ? n.lowpass  as number : 2200,
+        highpass:  typeof n.highpass === 'number' ? n.highpass as number : 100,
+    }));
+
+    stopPlayback();
+    tones  = validTones;
+    noises = validNoises;
+    scrollX = 0;
+    if (typeof data.bpm === 'number') {
+        cfgBpm = Math.max(MIN_BPM, Math.min(MAX_BPM, data.bpm));
+        cfgBpmEl.value = String(cfgBpm);
+    }
+    closePopup();
+    render();
+}
+
+
+function init(): void {
+    buildKeyCol();
+    buildDurationOptions(cfgDurEl, 1);   // default 1/1 beat
+    buildDurationOptions(ppDur,    1);
+    buildGlideOptions(cfgGlideEl, true);
+    buildGlideOptions(ppGlide,    true);
+    resizeAll();
+    render();
+
+    window.addEventListener('resize', () => { resizeAll(); render(); });
+
+    // Toolbar
+    cfgDurEl.addEventListener('change',  () => { cfgDur = parseFloat(cfgDurEl.value) || 1; });
+    cfgBpmEl.addEventListener('change',  () => { cfgBpm   = Math.max(MIN_BPM, Math.min(MAX_BPM, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
+    cfgTypeEl.addEventListener('change', () => { cfgType  = cfgTypeEl.value as OscType; });
+    cfgGainEl.addEventListener('input',  () => { cfgGain  = parseFloat(cfgGainEl.value); cfgGainV.textContent  = cfgGain.toFixed(2); });
+    cfgGlideEl.addEventListener('change',() => { cfgGlide = cfgGlideEl.value ? parseInt(cfgGlideEl.value) : null; });
+
+    // Popup live preview
+    ppGain.addEventListener('input',  () => { ppGainV.textContent  = parseFloat(ppGain.value).toFixed(2); });
+
+    // Popup actions
+    ppSave.addEventListener('click', savePopup);
+    ppDel.addEventListener('click',  () => {
+        if (!editingId) return;
+        tones  = tones.filter(t => t.id !== editingId);
+        noises = noises.filter(n => n.id !== editingId);
+        closePopup();
+    });
+    ppX.addEventListener('click', closePopup);
+
+    // Header buttons
+    playBtn.addEventListener('click',   startPlayback);
+    stopBtn.addEventListener('click',   stopPlayback);
+    cfgLoopEl.addEventListener('change', () => { cfgLoop = cfgLoopEl.checked; });
+    clearBtn.addEventListener('click',  () => {
+        stopPlayback(); tones = []; noises = []; scrollX = 0; closePopup(); render();
+    });
+    exportBtn.addEventListener('click', () => {
+        codeTa.value = generateCode(); codeTa.select();
+    });
+    jsonBtn.addEventListener('click', downloadJson);
+    copyBtn.addEventListener('click', () => navigator.clipboard.writeText(codeTa.value));
+
+    // Timeline interaction
+    tlCanvas.addEventListener('mousedown', onTlDown);
+    tlCanvas.addEventListener('contextmenu', onTlCtx);
+    noiseCanvas.addEventListener('mousedown', onNoiseDown);
+    noiseCanvas.addEventListener('contextmenu', onNoiseCtx);
+
+    // Horizontal scroll via wheel — tlClip and noiseClip each cover their canvas area
+    tlClip.addEventListener('wheel',    onWheel, { passive: false });
+    noiseClip.addEventListener('wheel', onWheel, { passive: false });
+
+    // Horizontal scrollbar
+    hscrollBar.addEventListener('scroll', () => {
+        if (ignoreHscrollEvent) return;
+        scrollX = hscrollBar.scrollLeft;
+        render();
+    });
+
+    // Space = Play / Stop
+    const EDITABLE = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
+    const isEditable = (t: EventTarget | null): boolean =>
+        t instanceof Element && EDITABLE.has(t.tagName);
+
+    window.addEventListener('keydown', e => {
+        if (e.code === 'Space' && !isEditable(e.target)) {
+            e.preventDefault();
+            if (isPlaying) stopPlayback(); else startPlayback();
+        }
+    });
+
+    // Close popup on outside click
+    window.addEventListener('mousedown', e => {
+        if (editingId && !popup.contains(e.target as Node)) closePopup();
+    }, true);
+
+    // JSON drag-and-drop import
+    document.addEventListener('dragover', e => { e.preventDefault(); });
+    document.addEventListener('drop', e => {
+        e.preventDefault();
+        const file = e.dataTransfer?.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => loadFromJson(reader.result as string);
+        reader.readAsText(file);
+    });
+}
+
+init();
