@@ -432,6 +432,7 @@ export abstract class BaseTrader {
             if (item && item.sellPrice !== undefined) {
                 if (item instanceof EquippableItem && item.isEquipped) {
                     this.shakeItem(this.selectedIndex);
+                    AudioManager.Instance.playInsufficient();
                     return;
                 }
                 player.bits += this.getEffectiveSellPrice(item, player);

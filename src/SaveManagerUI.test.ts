@@ -37,8 +37,18 @@ vi.mock('./ui/UIManager', () => ({
         },
     },
 }));
+vi.mock('./AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playMenuNavigate: vi.fn(),
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
+        },
+    },
+}));
 
 import { SaveManagerUI } from './SaveManagerUI';
+import { AudioManager } from './AudioManager';
 
 function makeSaveManagerUI(overrides: Record<string, unknown> = {}) {
     const ui = Object.create((SaveManagerUI as any).prototype) as any;
@@ -81,6 +91,10 @@ function makeInput(overrides: Partial<{
         ...overrides,
     };
 }
+
+beforeEach(() => {
+    vi.clearAllMocks();
+});
 
 // ─── show ────────────────────────────────────────────────────────────────────
 
@@ -126,6 +140,12 @@ describe('show', () => {
         ui.show('00:00:00', vi.fn(), vi.fn(), vi.fn());
         expect(ui.selectedButton).toBe('save');
     });
+
+    it('plays the UI open sound when shown from hidden', () => {
+        const ui = makeSaveManagerUI();
+        ui.show('00:00:00', vi.fn(), vi.fn(), vi.fn());
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+    });
 });
 
 // ─── hide ────────────────────────────────────────────────────────────────────
@@ -170,6 +190,12 @@ describe('hide', () => {
         expect(ui.autoCloseTimer).toBeUndefined();
         vi.useRealTimers();
     });
+
+    it('plays the UI close sound when hidden from visible', () => {
+        const ui = makeSaveManagerUI({ isVisible: true });
+        ui.hide();
+        expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
+    });
 });
 
 // ─── update – visibility guard ───────────────────────────────────────────────
@@ -195,6 +221,7 @@ describe('update navigation', () => {
         const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
         ui.update(input);
         expect(ui.selectedButton).toBe('load');
+        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
     });
 
     it('navigates right from load to reset', () => {
@@ -216,6 +243,7 @@ describe('update navigation', () => {
         const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
         ui.update(input);
         expect(ui.selectedButton).toBe('save');
+        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
     });
 
     it('navigates left from reset to load', () => {
@@ -265,6 +293,7 @@ describe('update select', () => {
         const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
         ui.update(input);
         expect(onSave).toHaveBeenCalledOnce();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
     });
 
     it('calls resetCallback when reset is selected and select pressed', () => {
@@ -278,6 +307,7 @@ describe('update select', () => {
         const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
         ui.update(input);
         expect(onReset).toHaveBeenCalledOnce();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
     });
 
     it('clicks fileInput when load is selected and select pressed', () => {
@@ -292,6 +322,7 @@ describe('update select', () => {
         const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
         ui.update(input);
         expect(clickSpy).toHaveBeenCalledOnce();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
     });
 
     it('debounces select (held = no action)', () => {

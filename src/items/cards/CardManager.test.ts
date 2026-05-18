@@ -44,6 +44,17 @@ vi.mock('../../ui/UIManager', () => ({
         }
     }
 }));
+vi.mock('../../AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playMenuNavigate: vi.fn(),
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
+            playCardReveal: vi.fn(),
+            playAlbumComplete: vi.fn(),
+        },
+    },
+}));
 vi.mock('./CardCollection', () => ({
     CardCollection: {
         Instance: {
@@ -75,6 +86,7 @@ vi.mock('./ViewMode', () => ({
 
 import { CardManager } from './CardManager';
 import { ViewMode } from './ViewMode';
+import { AudioManager } from '../../AudioManager';
 
 function makeManager(overrides: Record<string, any> = {}): any {
     const mgr = Object.create((CardManager as any).prototype) as any;
@@ -159,6 +171,11 @@ describe('CardManager', () => {
             expect(mgr.isVisible).toBe(true);
         });
 
+        it('plays the UI open sound when shown from hidden', () => {
+            mgr.show();
+            expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        });
+
         it('is a no-op when already visible', () => {
             mgr.isVisible = true;
             mgr.needsRender = false;
@@ -168,6 +185,14 @@ describe('CardManager', () => {
             expect(mgr.needsRender).toBe(false);
             expect(mgr.viewMode).toBe(ViewMode.VIEW_ALBUMS); // viewMode not reset
             expect(mgr.container.style.display).toBe('flex'); // display not changed
+        });
+    });
+
+    describe('hide()', () => {
+        it('plays the UI close sound when hidden from visible', () => {
+            mgr.isVisible = true;
+            mgr.hide();
+            expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
         });
     });
 
@@ -214,6 +239,7 @@ describe('CardManager', () => {
             expect(mgr.selectedMenuIndex).toBe(0);
             expect(renderSpy).toHaveBeenCalledOnce();
             expect(mgr.needsRender).toBe(false);
+            expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
         });
 
         it('sets needsRender=true and calls render when navigateDown fires', () => {
@@ -225,6 +251,7 @@ describe('CardManager', () => {
             mgr.update(makePlayer(), input);
             expect(mgr.selectedMenuIndex).toBe(1);
             expect(renderSpy).toHaveBeenCalledOnce();
+            expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
         });
 
         it('sets needsRender=true and calls render when select fires', () => {
@@ -265,6 +292,66 @@ describe('CardManager', () => {
             // Second frame: button still held
             mgr.update(makePlayer(), inputDown);
             expect(renderSpy).toHaveBeenCalledTimes(1);
+        });
+    });
+
+    describe('selection and reveal audio', () => {
+        it('plays the UI open sound when opening the album list', () => {
+            mgr.viewMode = ViewMode.MENU;
+            mgr.selectedMenuIndex = 1;
+
+            (mgr as any).handleSelect(makePlayer());
+
+            expect(mgr.viewMode).toBe(ViewMode.VIEW_ALBUMS);
+            expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        });
+
+        it('plays the UI close sound when backing out of an album list', () => {
+            mgr.viewMode = ViewMode.VIEW_ALBUMS;
+
+            (mgr as any).handleCancel();
+
+            expect(mgr.viewMode).toBe(ViewMode.MENU);
+            expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
+        });
+
+        it('plays rarity-specific reveal sounds for each flipped card', async () => {
+            vi.useFakeTimers();
+            mgr.revealedCards = [
+                { album: 'A.001', slot: 1, rarity: 'normal' },
+                { album: 'A.001', slot: 2, rarity: 'special' },
+            ];
+            mgr.render = vi.fn();
+            mgr.cardCollection.isAlbumComplete = vi.fn().mockReturnValue(false);
+
+            const promise = (mgr as any).startCardFlipAnimation(makePlayer());
+            await vi.runAllTimersAsync();
+            await promise;
+
+            expect(AudioManager.Instance.playCardReveal).toHaveBeenNthCalledWith(1, 'normal');
+            expect(AudioManager.Instance.playCardReveal).toHaveBeenNthCalledWith(2, 'special');
+            vi.useRealTimers();
+        });
+
+        it('plays the album completion sound when a pack finishes an album', async () => {
+            vi.useFakeTimers();
+            mgr.revealedCards = [
+                { album: 'A.001', slot: 1, rarity: 'normal' },
+            ];
+            mgr.render = vi.fn();
+            let completionChecks = 0;
+            mgr.cardCollection.isAlbumComplete = vi.fn().mockImplementation(() => {
+                completionChecks++;
+                return completionChecks > 1;
+            });
+
+            const promise = (mgr as any).startCardFlipAnimation(makePlayer());
+            await vi.runAllTimersAsync();
+            await promise;
+
+            expect(mgr.uiManager.showAlbumCompleteBanner).toHaveBeenCalledOnce();
+            expect(AudioManager.Instance.playAlbumComplete).toHaveBeenCalledOnce();
+            vi.useRealTimers();
         });
     });
 });

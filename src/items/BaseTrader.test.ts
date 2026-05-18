@@ -268,6 +268,7 @@ describe('BaseTrader – sell transaction', () => {
 
         expect(player.bits).toBe(100); // unchanged
         expect(player.inventory.length).toBe(1);
+        expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
     });
 
     it('can sell an un-equipped equippable item', () => {

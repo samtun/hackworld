@@ -7,6 +7,7 @@ import { ViewMode } from './ViewMode';
 import { getHint, HintConfigs } from '../../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../../ui/MenuManager';
 import { UIManager } from '../../ui/UIManager';
+import { AudioManager } from '../../AudioManager';
 
 export class CardManager {
     private static instance: CardManager;
@@ -535,15 +536,20 @@ export class CardManager {
         this.selectedMenuIndex = 0;
         this.needsRender = true;
         resetInputDebounce(this as any);
+        AudioManager.Instance.playUiOpen();
     }
 
     public hide() {
         if (!this.isVisible) return;
         this.isVisible = false;
         this.container.style.display = 'none';
+        const hadLightboxOpen = this.lightboxVisible;
         this.closeLightbox();
         this.uiManager.hideControlHints();
         resetInputDebounce(this as any);
+        if (!hadLightboxOpen) {
+            AudioManager.Instance.playUiClose();
+        }
     }
 
     private render(player: Player) {
@@ -584,12 +590,14 @@ export class CardManager {
 
             if (navLeft && !this.lastNavigateLeftState) {
                 this.lightboxIndex = (this.lightboxIndex - 1 + this.lightboxCards.length) % this.lightboxCards.length;
+                AudioManager.Instance.playMenuNavigate();
                 this.renderLightbox();
             }
             this.lastNavigateLeftState = navLeft;
 
             if (navRight && !this.lastNavigateRightState) {
                 this.lightboxIndex = (this.lightboxIndex + 1) % this.lightboxCards.length;
+                AudioManager.Instance.playMenuNavigate();
                 this.renderLightbox();
             }
             this.lastNavigateRightState = navRight;
@@ -643,24 +651,41 @@ export class CardManager {
 
     private handleNavigateUp() {
         if (this.viewMode === ViewMode.MENU) {
+            const previousIndex = this.selectedMenuIndex;
             this.selectedMenuIndex = Math.max(0, this.selectedMenuIndex - 1);
+            if (this.selectedMenuIndex !== previousIndex) {
+                AudioManager.Instance.playMenuNavigate();
+            }
         } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
+            const previousIndex = this.selectedAlbumIndex;
             this.selectedAlbumIndex = Math.max(0, this.selectedAlbumIndex - 1);
+            if (this.selectedAlbumIndex !== previousIndex) {
+                AudioManager.Instance.playMenuNavigate();
+            }
         }
     }
 
     private handleNavigateDown() {
         if (this.viewMode === ViewMode.MENU) {
+            const previousIndex = this.selectedMenuIndex;
             this.selectedMenuIndex = Math.min(1, this.selectedMenuIndex + 1);
+            if (this.selectedMenuIndex !== previousIndex) {
+                AudioManager.Instance.playMenuNavigate();
+            }
         } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
             const maxIndex = CardDefinitions.getAlbums().length - 1;
+            const previousIndex = this.selectedAlbumIndex;
             this.selectedAlbumIndex = Math.min(maxIndex, this.selectedAlbumIndex + 1);
+            if (this.selectedAlbumIndex !== previousIndex) {
+                AudioManager.Instance.playMenuNavigate();
+            }
         }
     }
 
     private handleSelect(player: Player) {
         if (this.viewMode === ViewMode.MENU) {
             if (this.selectedMenuIndex === 0 && player.boosterPacks > 0) {
+                AudioManager.Instance.playUiOpen();
                 // Open pack - generate 4 random cards
                 player.boosterPacks -= 1;
                 this.revealedCards = [];
@@ -674,6 +699,7 @@ export class CardManager {
                 // Start flipping immediately
                 this.startCardFlipAnimation(player);
             } else if (this.selectedMenuIndex === 1) {
+                AudioManager.Instance.playUiOpen();
                 // View albums
                 this.viewMode = ViewMode.VIEW_ALBUMS;
                 this.selectedAlbumIndex = 0;
@@ -681,10 +707,12 @@ export class CardManager {
         } else if (this.viewMode === ViewMode.OPEN_PACK) {
             const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
             if (allFlipped && !this.flippingInProgress) {
+                AudioManager.Instance.playUiClose();
                 // Return to menu after all cards are flipped
                 this.viewMode = ViewMode.MENU;
             }
         } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
+            AudioManager.Instance.playUiOpen();
             // Open specific album
             const albums = CardDefinitions.getAlbums();
             this.currentAlbum = albums[this.selectedAlbumIndex];
@@ -710,6 +738,7 @@ export class CardManager {
             if (!alreadyComplete.has(album) && this.cardCollection.isAlbumComplete(album)) {
                 const reward = CardManager.ALBUM_REWARDS[album] ?? '';
                 this.uiManager.showAlbumCompleteBanner(album, reward);
+                AudioManager.Instance.playAlbumComplete();
             }
         }
 
@@ -718,6 +747,7 @@ export class CardManager {
             // Wait 400ms between each card flip
             await new Promise(resolve => setTimeout(resolve, 400));
             this.flippedCardIndices.add(i);
+            AudioManager.Instance.playCardReveal(this.revealedCards[i].rarity);
             // Re-render to show the flipped state
             this.render(player);
         }
@@ -733,11 +763,14 @@ export class CardManager {
             // Allow canceling after all cards are flipped
             const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
             if (allFlipped && !this.flippingInProgress) {
+                AudioManager.Instance.playUiClose();
                 this.viewMode = ViewMode.MENU;
             }
         } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
+            AudioManager.Instance.playUiClose();
             this.viewMode = ViewMode.MENU;
         } else if (this.viewMode === ViewMode.VIEW_ALBUM) {
+            AudioManager.Instance.playUiClose();
             this.viewMode = ViewMode.VIEW_ALBUMS;
         }
     }
@@ -748,13 +781,16 @@ export class CardManager {
         this.lightboxVisible = true;
         this.lightboxOverlay.style.display = 'flex';
         resetInputDebounce(this as any);
+        AudioManager.Instance.playUiOpen();
         this.renderLightbox();
     }
 
     private closeLightbox(): void {
+        if (!this.lightboxVisible) return;
         this.lightboxVisible = false;
         this.lightboxOverlay.style.display = 'none';
         resetInputDebounce(this as any);
+        AudioManager.Instance.playUiClose();
     }
 
     private renderLightbox(): void {

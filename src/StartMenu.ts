@@ -4,10 +4,10 @@ import { AudioManager } from './AudioManager';
 const MENU_FADE_MS = 600;
 
 export type StartMenuOption = 'continue' | 'newgame' | 'loadgame';
+type StartMenuItemId = StartMenuOption | 'music' | 'sfx';
 
 interface MenuItem {
-    id: StartMenuOption;
-    label: string;
+    id: StartMenuItemId;
     enabled: boolean;
 }
 
@@ -47,9 +47,11 @@ export class StartMenu {
         this.onSelect = onSelect;
 
         this.items = [
-            { id: 'continue', label: 'Continue', enabled: hasSave },
-            { id: 'newgame',  label: 'New Game',  enabled: true },
-            { id: 'loadgame', label: 'Load Game', enabled: true },
+            { id: 'continue', enabled: hasSave },
+            { id: 'newgame', enabled: true },
+            { id: 'loadgame', enabled: true },
+            { id: 'music', enabled: true },
+            { id: 'sfx', enabled: true },
         ];
 
         // Default selection: "Continue" if save exists, otherwise "New Game"
@@ -84,7 +86,7 @@ export class StartMenu {
         this.items.forEach((item, i) => {
             const el = document.createElement('div');
             el.style.cssText = this.itemStyle(item.enabled, i === this.selectedIndex);
-            el.textContent = item.label;
+            el.textContent = this.getItemLabel(item.id);
             el.dataset.index = String(i);
 
             if (item.enabled) {
@@ -144,11 +146,27 @@ export class StartMenu {
     private updateStyles(): void {
         this.items.forEach((item, i) => {
             this.itemEls[i].style.cssText = this.itemStyle(item.enabled, i === this.selectedIndex);
+            this.itemEls[i].textContent = this.getItemLabel(item.id);
             if (item.enabled) {
                 this.itemEls[i].style.cursor = 'pointer';
                 this.itemEls[i].style.pointerEvents = 'auto';
             }
         });
+    }
+
+    private getItemLabel(id: StartMenuItemId): string {
+        switch (id) {
+            case 'continue':
+                return 'Continue';
+            case 'newgame':
+                return 'New Game';
+            case 'loadgame':
+                return 'Load Game';
+            case 'music':
+                return `Music ${AudioManager.Instance.isMusicEnabled() ? 'on' : 'off'}`;
+            case 'sfx':
+                return `Sound Effects ${AudioManager.Instance.isSfxEnabled() ? 'on' : 'off'}`;
+        }
     }
 
     private selectAndConfirm(index: number): void {
@@ -176,6 +194,28 @@ export class StartMenu {
     private confirm(): void {
         const item = this.items[this.selectedIndex];
         if (!item.enabled) return;
+
+        if (item.id === 'music') {
+            AudioManager.Instance.toggleMusicEnabled();
+            if (AudioManager.Instance.isSfxEnabled()) {
+                AudioManager.Instance.playUiOpen();
+            }
+            this.updateStyles();
+            return;
+        }
+
+        if (item.id === 'sfx') {
+            const sfxEnabled = AudioManager.Instance.isSfxEnabled();
+            if (sfxEnabled) {
+                AudioManager.Instance.playUiOpen();
+            }
+            AudioManager.Instance.setSfxEnabled(!sfxEnabled);
+            if (!sfxEnabled) {
+                AudioManager.Instance.playUiOpen();
+            }
+            this.updateStyles();
+            return;
+        }
 
         if (item.id === 'loadgame') {
             // Open file picker; fire callback when file is chosen

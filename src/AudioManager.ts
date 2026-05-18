@@ -1,6 +1,7 @@
 type AudioBus = 'music' | 'sfx';
 type FootstepSource = 'player' | 'enemy';
 type CombatSource = 'player' | 'enemy';
+type CardRevealRarity = 'normal' | 'uncommon' | 'special';
 type MusicPhrase = readonly number[];
 
 const ENVELOPE_MIN_GAIN = 0.0001;
@@ -11,12 +12,17 @@ const NOISE_BUFFER_DURATION_SECONDS = 0.5;
 const MIN_STAGE_MUSIC_LOOP_DURATION_MS = 60_000;
 const SEMITONE_RATIO = Math.pow(2, 1 / 12);
 const HEALING_STATION_LOOP_INTERVAL_MS = 220;
+const DEFAULT_MUSIC_GAIN = 0.45;
+const DEFAULT_SFX_GAIN = 1.2;
 // These intervals keep the loop moving between the root phrase, brighter major
 // lifts, and a few darker dips so the minute-long sequence evolves without
 // drifting into a different musical identity than the original short motif.
 const MUSIC_VARIATION_PATTERN = [0, 2, 0, -2, 3, 0, -3, 5] as const;
 const HEALING_STATION_PRIMARY_FREQUENCIES = [523.25, 659.25, 783.99, 987.77] as const;
 const HEALING_STATION_SWIRL_FREQUENCIES = [659.25, 783.99, 880, 1046.5] as const;
+
+export const MUSIC_ENABLED_STORAGE_KEY = 'hackworld_music_enabled';
+export const SFX_ENABLED_STORAGE_KEY = 'hackworld_sfx_enabled';
 
 interface StageMusicProfile {
     pulseFrequencies: number[];
@@ -195,13 +201,48 @@ export class AudioManager {
     private musicPulseInterval: number | null = null;
     private healingStationLoopInterval: number | null = null;
     private activeHealingStationCount = 0;
+    private musicEnabled = true;
+    private sfxEnabled = true;
 
     public static get Instance(): AudioManager {
         return this.instance || (this.instance = new this());
     }
 
     private constructor() {
+        this.restoreSettings();
         this.registerUnlockHandlers();
+    }
+
+    isMusicEnabled(): boolean {
+        return this.musicEnabled;
+    }
+
+    isSfxEnabled(): boolean {
+        return this.sfxEnabled;
+    }
+
+    setMusicEnabled(enabled: boolean): void {
+        this.musicEnabled = enabled;
+        this.persistSetting(MUSIC_ENABLED_STORAGE_KEY, enabled);
+        this.updateBusGains();
+    }
+
+    setSfxEnabled(enabled: boolean): void {
+        this.sfxEnabled = enabled;
+        this.persistSetting(SFX_ENABLED_STORAGE_KEY, enabled);
+        this.updateBusGains();
+    }
+
+    toggleMusicEnabled(): boolean {
+        const nextEnabled = !this.musicEnabled;
+        this.setMusicEnabled(nextEnabled);
+        return nextEnabled;
+    }
+
+    toggleSfxEnabled(): boolean {
+        const nextEnabled = !this.sfxEnabled;
+        this.setSfxEnabled(nextEnabled);
+        return nextEnabled;
     }
 
     unlock(): void {
@@ -326,6 +367,32 @@ export class AudioManager {
         });
     }
 
+    playCardReveal(rarity: CardRevealRarity): void {
+        switch (rarity) {
+            case 'normal':
+                this.playTone(440, 0.09, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0, 659.25);
+                break;
+            case 'uncommon':
+                [523.25, 659.25].forEach((frequency, index) => {
+                    this.playTone(frequency, 0.12, 'triangle', 0.055, ENVELOPE_MIN_GAIN, index * 0.04, frequency * 1.06);
+                });
+                break;
+            case 'special':
+                this.playNoise(0.05, 0.02, 4800, 900, 0);
+                [659.25, 783.99, 1046.5].forEach((frequency, index) => {
+                    this.playTone(frequency, 0.14, 'sawtooth', 0.065, ENVELOPE_MIN_GAIN, index * 0.045, frequency * 1.08);
+                });
+                break;
+        }
+    }
+
+    playAlbumComplete(): void {
+        this.playNoise(0.08, 0.018, 5400, 1000, 0);
+        [392, 523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+            this.playTone(frequency, 0.18, index < 3 ? 'triangle' : 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, index * 0.05, frequency * 1.04);
+        });
+    }
+
     startHealingStationLoop(): void {
         this.activeHealingStationCount++;
         this.startHealingStationLoopIfPossible();
@@ -401,8 +468,7 @@ export class AudioManager {
         this.sfxGain = this.audioContext.createGain();
 
         this.masterGain.gain.value = 1.0;
-        this.musicGain.gain.value = 0.45;
-        this.sfxGain.gain.value = 1.2;
+        this.updateBusGains();
 
         this.musicGain.connect(this.masterGain);
         this.sfxGain.connect(this.masterGain);
@@ -566,6 +632,29 @@ export class AudioManager {
         }
 
         return bus === 'music' ? this.musicGain : this.sfxGain;
+    }
+
+    private restoreSettings(): void {
+        if (typeof localStorage === 'undefined') return;
+
+        const savedMusicEnabled = localStorage.getItem(MUSIC_ENABLED_STORAGE_KEY);
+        const savedSfxEnabled = localStorage.getItem(SFX_ENABLED_STORAGE_KEY);
+        this.musicEnabled = savedMusicEnabled !== 'false';
+        this.sfxEnabled = savedSfxEnabled !== 'false';
+    }
+
+    private persistSetting(key: string, enabled: boolean): void {
+        if (typeof localStorage === 'undefined') return;
+        localStorage.setItem(key, String(enabled));
+    }
+
+    private updateBusGains(): void {
+        if (this.musicGain) {
+            this.musicGain.gain.value = this.musicEnabled ? DEFAULT_MUSIC_GAIN : 0;
+        }
+        if (this.sfxGain) {
+            this.sfxGain.gain.value = this.sfxEnabled ? DEFAULT_SFX_GAIN : 0;
+        }
     }
 
     private getNoiseBuffer(context: AudioContext): AudioBuffer {
