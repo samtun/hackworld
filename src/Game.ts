@@ -279,6 +279,7 @@ export class Game {
         this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, initialSpawn, this.input, this.defaultMaterial));
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
+        this.player.onSkillUnlocked = (skillIndex: number) => this.handleSkillUnlocked(skillIndex);
         this.player.onBreakableHit = (breakable) => {
             // Find the barrel that matches this breakable and destroy it
             for (const barrel of this.world.getBreakableBarrels()) {
@@ -420,7 +421,36 @@ export class Game {
             this.xDataUpgrade.isVisible ||
             this.saveManager.isVisible ||
             this.cardManager.isVisible ||
-            this.pauseMenu.visible;
+            this.pauseMenu.visible ||
+            this.ui.isSkillUnlockOverlayVisible();
+    }
+
+    private handleSkillUnlocked(skillIndex: number): void {
+        if (skillIndex === 0) {
+            this.ui.showSkillUnlockOverlay(
+                'Laser Skill Unlocked',
+                'Fires a focused ranged blast that pierces through enemies.',
+                '<span class="key-icon">Q</span> + <span class="key-icon">SPACE</span> / <span class="btn-icon xbox-lb">LB</span> + <span class="btn-icon xbox-a">A</span> / Mobile: Tap Laser HUD icon',
+            );
+            return;
+        }
+
+        if (skillIndex === 1) {
+            this.ui.showSkillUnlockOverlay(
+                'Heal Skill Unlocked',
+                'Restores HP instantly to keep you in the fight.',
+                '<span class="key-icon">Q</span> + <span class="key-icon">ESC</span> / <span class="btn-icon xbox-lb">LB</span> + <span class="btn-icon xbox-b">B</span> / Mobile: Tap Heal HUD icon',
+            );
+            return;
+        }
+
+        if (skillIndex === 2) {
+            this.ui.showSkillUnlockOverlay(
+                'Area Skill Unlocked',
+                'Releases a high-damage expanding shockwave around the player.',
+                '<span class="key-icon">Q</span> + <span class="key-icon">K</span> / <span class="btn-icon xbox-lb">LB</span> + <span class="btn-icon xbox-x">X</span> / Mobile: Tap Area HUD icon',
+            );
+        }
     }
 
     onWindowResize() {
@@ -754,6 +784,7 @@ export class Game {
 
         // Handle death overlay input
         this.ui.handleDeathOverlayInput(this.input);
+        this.ui.handleSkillUnlockOverlayInput(this.input);
 
         // Update debug value editor if visible
         if (this.debugMode && this.debugValueEditor) {

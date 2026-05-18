@@ -35,6 +35,13 @@ function makeUIManager(overrides: Record<string, unknown> = {}) {
     deathOverlay.appendChild(lobbyButton);
     deathOverlay.appendChild(deathPenaltyText);
 
+    const skillUnlockOverlay = document.createElement('div');
+    skillUnlockOverlay.style.display = 'none';
+    const skillUnlockTitle = document.createElement('div');
+    const skillUnlockDescription = document.createElement('div');
+    const skillUnlockHint = document.createElement('div');
+    const skillUnlockContinueHint = document.createElement('div');
+
     Object.assign(ui, {
         playerUIs: new Map(),
         container: document.createElement('div'),
@@ -45,6 +52,15 @@ function makeUIManager(overrides: Record<string, unknown> = {}) {
         loadingScreen: document.createElement('div'),
         progressBarFill: document.createElement('div'),
         deathOverlay,
+        skillUnlockOverlay,
+        skillUnlockTitle,
+        skillUnlockDescription,
+        skillUnlockHint,
+        skillUnlockContinueHint,
+        skillUnlockQueue: [],
+        currentSkillUnlock: null,
+        lastSkillUnlockSelectState: false,
+        lastSkillUnlockCancelState: false,
         retryButton,
         lobbyButton,
         deathPenaltyText,
@@ -79,11 +95,13 @@ function makeInput(overrides: Partial<{
     isNavigateLeftPressed: () => boolean;
     isNavigateRightPressed: () => boolean;
     isSelectPressed: () => boolean;
+    isCancelPressed: () => boolean;
 }> = {}) {
     return {
         isNavigateLeftPressed: vi.fn().mockReturnValue(false),
         isNavigateRightPressed: vi.fn().mockReturnValue(false),
         isSelectPressed: vi.fn().mockReturnValue(false),
+        isCancelPressed: vi.fn().mockReturnValue(false),
         ...overrides,
     };
 }
@@ -599,6 +617,41 @@ describe('handleDeathOverlayInput', () => {
         ui.handleDeathOverlayInput(input);
 
         expect(onRetry).not.toHaveBeenCalled();
+    });
+});
+
+describe('skill unlock overlay', () => {
+    it('shows queued unlock content and marks overlay visible', () => {
+        const ui = makeUIManager();
+
+        ui.showSkillUnlockOverlay('Laser Skill Unlocked', 'Laser description', '<span class="key-icon">Q</span>');
+
+        expect((ui as any).skillUnlockTitle.textContent).toBe('Laser Skill Unlocked');
+        expect((ui as any).skillUnlockDescription.textContent).toBe('Laser description');
+        expect((ui as any).skillUnlockHint.innerHTML).toContain('key-icon');
+        expect(ui.isSkillUnlockOverlayVisible()).toBe(true);
+    });
+
+    it('closes the current unlock and advances to the next on select', () => {
+        const ui = makeUIManager();
+        ui.showSkillUnlockOverlay('Laser Skill Unlocked', 'Laser description', 'laser');
+        ui.showSkillUnlockOverlay('Heal Skill Unlocked', 'Heal description', 'heal');
+        (ui as any).lastSkillUnlockSelectState = false;
+
+        ui.handleSkillUnlockOverlayInput(makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) }) as any);
+
+        expect((ui as any).skillUnlockTitle.textContent).toBe('Heal Skill Unlocked');
+        expect(ui.isSkillUnlockOverlayVisible()).toBe(true);
+    });
+
+    it('closes the overlay when cancel is pressed and queue is empty', () => {
+        const ui = makeUIManager();
+        ui.showSkillUnlockOverlay('Area Skill Unlocked', 'Area description', 'area');
+        (ui as any).lastSkillUnlockCancelState = false;
+
+        ui.handleSkillUnlockOverlayInput(makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) }) as any);
+
+        expect(ui.isSkillUnlockOverlayVisible()).toBe(false);
     });
 });
 

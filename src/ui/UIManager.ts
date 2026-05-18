@@ -285,6 +285,14 @@ class PlayerUI {
             const skill = player.skills && player.skills[i];
             if (!container || !fill || !skill) continue;
 
+            if (!player.isSkillUnlocked(i)) {
+                container.style.display = 'none';
+                fill.style.display = 'none';
+                continue;
+            }
+
+            container.style.display = 'block';
+
             const remaining = skill.getRemainingCooldown();
             const cd = skill.cooldown || 0;
             if (skill.isOnCooldown() && cd > 0) {
@@ -312,6 +320,12 @@ class PlayerUI {
     }
 }
 
+interface SkillUnlockOverlayData {
+    title: string;
+    description: string;
+    hintHtml: string;
+}
+
 export class UIManager {
     private static instance: UIManager; // Singleton
 
@@ -324,6 +338,15 @@ export class UIManager {
     loadingScreen: HTMLDivElement;
     progressBarFill: HTMLDivElement;
     deathOverlay: HTMLDivElement;
+    private skillUnlockOverlay: HTMLDivElement;
+    private skillUnlockTitle: HTMLDivElement;
+    private skillUnlockDescription: HTMLDivElement;
+    private skillUnlockHint: HTMLDivElement;
+    private skillUnlockContinueHint: HTMLDivElement;
+    private skillUnlockQueue: SkillUnlockOverlayData[] = [];
+    private currentSkillUnlock: SkillUnlockOverlayData | null = null;
+    private lastSkillUnlockSelectState: boolean = false;
+    private lastSkillUnlockCancelState: boolean = false;
     // Skill cooldown indicator elements (three skills)
     skillsWrapper?: HTMLDivElement;
 
@@ -537,6 +560,68 @@ export class UIManager {
 
         this.deathOverlay.appendChild(buttonContainer);
         document.body.appendChild(this.deathOverlay);
+
+        this.skillUnlockOverlay = document.createElement('div');
+        this.skillUnlockOverlay.style.position = 'fixed';
+        this.skillUnlockOverlay.style.top = '0';
+        this.skillUnlockOverlay.style.left = '0';
+        this.skillUnlockOverlay.style.width = '100%';
+        this.skillUnlockOverlay.style.height = '100%';
+        this.skillUnlockOverlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        this.skillUnlockOverlay.style.display = 'none';
+        this.skillUnlockOverlay.style.zIndex = '1450';
+        this.skillUnlockOverlay.style.flexDirection = 'column';
+        this.skillUnlockOverlay.style.justifyContent = 'center';
+        this.skillUnlockOverlay.style.alignItems = 'center';
+        this.skillUnlockOverlay.style.fontFamily = '"Share Tech", Arial, sans-serif';
+        this.skillUnlockOverlay.style.padding = '24px';
+        this.skillUnlockOverlay.style.boxSizing = 'border-box';
+
+        const skillUnlockPanel = document.createElement('div');
+        skillUnlockPanel.style.maxWidth = '760px';
+        skillUnlockPanel.style.width = 'min(92vw, 760px)';
+        skillUnlockPanel.style.backgroundColor = 'rgba(12, 12, 18, 0.94)';
+        skillUnlockPanel.style.border = '2px solid #6db7ff';
+        skillUnlockPanel.style.borderRadius = '10px';
+        skillUnlockPanel.style.padding = '24px';
+        skillUnlockPanel.style.boxShadow = '0 0 20px rgba(0,0,0,0.4)';
+        skillUnlockPanel.style.display = 'flex';
+        skillUnlockPanel.style.flexDirection = 'column';
+        skillUnlockPanel.style.gap = '14px';
+        skillUnlockPanel.style.pointerEvents = 'none';
+
+        this.skillUnlockTitle = document.createElement('div');
+        this.skillUnlockTitle.style.fontSize = 'min(44px, 7vw)';
+        this.skillUnlockTitle.style.fontWeight = 'bold';
+        this.skillUnlockTitle.style.color = '#7ec3ff';
+        this.skillUnlockTitle.style.textShadow = '3px 3px 0px #000';
+        this.skillUnlockTitle.style.textAlign = 'center';
+        skillUnlockPanel.appendChild(this.skillUnlockTitle);
+
+        this.skillUnlockDescription = document.createElement('div');
+        this.skillUnlockDescription.style.fontSize = '22px';
+        this.skillUnlockDescription.style.color = '#fff';
+        this.skillUnlockDescription.style.textShadow = '2px 2px 0px #000';
+        this.skillUnlockDescription.style.textAlign = 'center';
+        skillUnlockPanel.appendChild(this.skillUnlockDescription);
+
+        this.skillUnlockHint = document.createElement('div');
+        this.skillUnlockHint.style.fontSize = '20px';
+        this.skillUnlockHint.style.color = '#fff';
+        this.skillUnlockHint.style.textShadow = '2px 2px 0px #000';
+        this.skillUnlockHint.style.textAlign = 'center';
+        skillUnlockPanel.appendChild(this.skillUnlockHint);
+
+        this.skillUnlockContinueHint = document.createElement('div');
+        this.skillUnlockContinueHint.style.fontSize = '18px';
+        this.skillUnlockContinueHint.style.color = '#ddd';
+        this.skillUnlockContinueHint.style.textShadow = '2px 2px 0px #000';
+        this.skillUnlockContinueHint.style.textAlign = 'center';
+        this.skillUnlockContinueHint.innerHTML = '<span class="key-icon">ENTER</span> Continue / <span class="btn-icon xbox-a">A</span> Continue';
+        skillUnlockPanel.appendChild(this.skillUnlockContinueHint);
+
+        this.skillUnlockOverlay.appendChild(skillUnlockPanel);
+        document.body.appendChild(this.skillUnlockOverlay);
 
         this.minimapWrapper = document.createElement('div');
         this.minimapWrapper.style.position = 'fixed';
@@ -1006,6 +1091,53 @@ export class UIManager {
      */
     isDeathOverlayVisible(): boolean {
         return this.deathOverlay?.style.display !== 'none';
+    }
+
+    showSkillUnlockOverlay(title: string, description: string, hintHtml: string): void {
+        this.skillUnlockQueue.push({ title, description, hintHtml });
+        if (this.currentSkillUnlock || this.isSkillUnlockOverlayVisible()) {
+            return;
+        }
+        this.showNextSkillUnlockOverlay();
+    }
+
+    private showNextSkillUnlockOverlay(): void {
+        const next = this.skillUnlockQueue.shift();
+        if (!next) {
+            this.currentSkillUnlock = null;
+            this.skillUnlockOverlay.style.display = 'none';
+            return;
+        }
+
+        this.currentSkillUnlock = next;
+        this.skillUnlockTitle.textContent = next.title;
+        this.skillUnlockDescription.textContent = next.description;
+        this.skillUnlockHint.innerHTML = next.hintHtml;
+        this.skillUnlockOverlay.style.display = 'flex';
+
+        this.lastSkillUnlockSelectState = true;
+        this.lastSkillUnlockCancelState = true;
+    }
+
+    isSkillUnlockOverlayVisible(): boolean {
+        return this.skillUnlockOverlay?.style.display === 'flex';
+    }
+
+    handleSkillUnlockOverlayInput(input: InputManager): void {
+        if (!this.isSkillUnlockOverlayVisible()) return;
+
+        const select = input.isSelectPressed();
+        const cancel = input.isCancelPressed();
+        const shouldClose = (select && !this.lastSkillUnlockSelectState) || (cancel && !this.lastSkillUnlockCancelState);
+
+        this.lastSkillUnlockSelectState = select;
+        this.lastSkillUnlockCancelState = cancel;
+
+        if (!shouldClose) return;
+
+        this.skillUnlockOverlay.style.display = 'none';
+        this.currentSkillUnlock = null;
+        this.showNextSkillUnlockOverlay();
     }
 
     /**
