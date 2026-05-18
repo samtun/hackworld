@@ -54,6 +54,18 @@ const NOTES: { name: string; freq: number }[] = [
     { name: 'C3',  freq: 130.81  },
 ];
 
+// ── Beat duration fractions (stored value = beat multiplier, e.g. 0.25 = 1/4 beat) ─
+const BEAT_FRACTIONS: { label: string; value: number }[] = [
+    { label: '1/128', value: 1/128 },
+    { label: '1/64',  value: 1/64  },
+    { label: '1/32',  value: 1/32  },
+    { label: '1/16',  value: 1/16  },
+    { label: '1/8',   value: 1/8   },
+    { label: '1/4',   value: 1/4   },
+    { label: '1/2',   value: 1/2   },
+    { label: '1/1',   value: 1     },
+];
+
 // ── Layout constants ──────────────────────────────────────────────────────────
 const PPS              = 120;   // pixels per second
 const ROW_H            = 22;   // row height px
@@ -73,7 +85,7 @@ let isPlaying  = false;
 let playhead   = 0;      // seconds
 let rafId: number | null = null;
 let audioCtx: AudioContext | null = null;
-let cfgDur    = 0.25;
+let cfgDur    = 1;      // beat multiplier: 1 = 1 full beat (1/1)
 let cfgType: OscType = 'triangle';
 let cfgGain   = 0.06;
 let cfgDelay  = 0.0;
@@ -93,7 +105,7 @@ const playBtn     = document.getElementById('play-btn')     as HTMLButtonElement
 const stopBtn     = document.getElementById('stop-btn')     as HTMLButtonElement;
 const clearBtn    = document.getElementById('clear-btn')    as HTMLButtonElement;
 const exportBtn   = document.getElementById('export-btn')   as HTMLButtonElement;
-const cfgDurEl    = document.getElementById('cfg-dur')      as HTMLInputElement;
+const cfgDurEl    = document.getElementById('cfg-dur')      as HTMLSelectElement;
 const cfgBpmEl    = document.getElementById('cfg-bpm')      as HTMLInputElement;
 const cfgTypeEl   = document.getElementById('cfg-type')     as HTMLSelectElement;
 const cfgGainEl   = document.getElementById('cfg-gain')     as HTMLInputElement;
@@ -103,7 +115,7 @@ const cfgDelayV   = document.getElementById('cfg-delay-v')  as HTMLSpanElement;
 const cfgGlideEl  = document.getElementById('cfg-glide')    as HTMLSelectElement;
 const popup       = document.getElementById('popup')        as HTMLDivElement;
 const popupTitle  = document.getElementById('popup-title')  as HTMLHeadingElement;
-const ppDur       = document.getElementById('pp-dur')       as HTMLInputElement;
+const ppDur       = document.getElementById('pp-dur')       as HTMLSelectElement;
 const ppType      = document.getElementById('pp-type')      as HTMLSelectElement;
 const ppTypeRow   = document.getElementById('pp-type-row')  as HTMLDivElement;
 const ppGain      = document.getElementById('pp-gain')      as HTMLInputElement;
@@ -137,10 +149,11 @@ function visibleW(): number { return tlClip.clientWidth || 800; }
 
 /** Total virtual timeline width in px (based on event extents). */
 function virtualW(): number {
+    const bd = beatDur();
     const maxT = Math.max(
         MIN_SECS,
-        ...tones.map(e  => e.startTime + e.delay + e.duration + 2),
-        ...noises.map(e => e.startTime + e.delay + e.duration + 2),
+        ...tones.map(e  => e.startTime + e.delay + e.duration * bd + 2),
+        ...noises.map(e => e.startTime + e.delay + e.duration * bd + 2),
     );
     return maxT * PPS;
 }
@@ -274,7 +287,7 @@ function renderTimeline(): void {
     // Tone blocks
     for (const ev of tones) {
         const x    = ev.startTime * PPS - scrollX;
-        const bw   = Math.max(6, ev.duration * PPS);
+        const bw   = Math.max(6, ev.duration * beatDur() * PPS);
         const y    = ev.noteIdx * ROW_H + 2;
         const bh   = ROW_H - 4;
         if (x + bw < 0 || x > w) continue;
@@ -318,7 +331,7 @@ function renderNoise(): void {
 
     for (const ev of noises) {
         const x   = ev.startTime * PPS - scrollX;
-        const bw  = Math.max(6, ev.duration * PPS);
+        const bw  = Math.max(6, ev.duration * beatDur() * PPS);
         const y   = 2; const bh = NOISE_H - 4;
         if (x + bw < 0 || x > w) continue;
 
@@ -369,18 +382,20 @@ function render(): void {
 // ── Hit-testing ────────────────────────────────────────────────────────────────
 function hitTone(cx: number, cy: number): ToneEvent | null {
     const t   = (cx + scrollX) / PPS;
+    const bd  = beatDur();
     const row = Math.floor(cy / ROW_H);
     for (const ev of tones) {
-        if (ev.noteIdx === row && t >= ev.startTime && t <= ev.startTime + ev.duration)
+        if (ev.noteIdx === row && t >= ev.startTime && t <= ev.startTime + ev.duration * bd)
             return ev;
     }
     return null;
 }
 
 function hitNoise(cx: number): NoiseEvent | null {
-    const t = (cx + scrollX) / PPS;
+    const t  = (cx + scrollX) / PPS;
+    const bd = beatDur();
     for (const ev of noises) {
-        if (t >= ev.startTime && t <= ev.startTime + ev.duration) return ev;
+        if (t >= ev.startTime && t <= ev.startTime + ev.duration * bd) return ev;
     }
     return null;
 }
@@ -437,10 +452,13 @@ function onNoiseCtx(e: MouseEvent): void {
 
 // ── Horizontal wheel scroll ────────────────────────────────────────────────────
 function onWheel(e: WheelEvent): void {
-    e.preventDefault();
-    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
-    scrollX = Math.max(0, scrollX + delta);
-    render();
+    // Only intercept horizontal gestures (deltaX); let deltaY propagate naturally
+    // so editor-outer scrolls vertically as expected.
+    if (e.deltaX !== 0) {
+        e.preventDefault();
+        scrollX = Math.max(0, scrollX + e.deltaX);
+        render();
+    }
 }
 
 // ── Grid snap ─────────────────────────────────────────────────────────────────
@@ -503,7 +521,7 @@ function closePopup(): void {
 
 function savePopup(): void {
     if (!editingId) return;
-    const dur   = Math.max(0.05, parseFloat(ppDur.value) || 0.1);
+    const dur   = parseFloat(ppDur.value) || 1;
     const gain  = parseFloat(ppGain.value);
     const delay = parseFloat(ppDelay.value);
 
@@ -582,16 +600,17 @@ function startPlayback(): void {
     tones.forEach(ev => {
         const freq  = NOTES[ev.noteIdx].freq;
         const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
-        schedTone(ctx, freq, ev.duration, ev.type, ev.gain, now + ev.startTime + ev.delay, glide);
+        schedTone(ctx, freq, ev.duration * beatDur(), ev.type, ev.gain, now + ev.startTime + ev.delay, glide);
     });
     noises.forEach(ev => {
-        schedNoise(ctx, ev.duration, ev.gain, ev.lowpass, ev.highpass, now + ev.startTime + ev.delay);
+        schedNoise(ctx, ev.duration * beatDur(), ev.gain, ev.lowpass, ev.highpass, now + ev.startTime + ev.delay);
     });
 
+    const bd = beatDur();
     const maxT = Math.max(
         0,
-        ...tones.map(e  => e.startTime + e.delay + e.duration),
-        ...noises.map(e => e.startTime + e.delay + e.duration),
+        ...tones.map(e  => e.startTime + e.delay + e.duration * bd),
+        ...noises.map(e => e.startTime + e.delay + e.duration * bd),
     );
 
     isPlaying = true;
@@ -626,20 +645,23 @@ function generateCode(): string {
     if (tones.length === 0 && noises.length === 0) return '// No events on the timeline yet.';
 
     const events: { t: number; line: string }[] = [];
+    const bd = beatDur();
 
     tones.forEach(ev => {
         const freq  = NOTES[ev.noteIdx].freq;
         const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
+        const dur   = ev.duration * bd;
         const at    = fmt(ev.startTime + ev.delay);
         const glideArg = glide !== null ? `, ${fmt(glide)}` : '';
         events.push({ t: ev.startTime,
-            line: `this.playTone(${fmt(freq)}, ${fmt(ev.duration)}, '${ev.type}', ${fmt(ev.gain)}, ENVELOPE_MIN_GAIN, ${at}${glideArg}); // ${NOTES[ev.noteIdx].name}` });
+            line: `this.playTone(${fmt(freq)}, ${fmt(dur)}, '${ev.type}', ${fmt(ev.gain)}, ENVELOPE_MIN_GAIN, ${at}${glideArg}); // ${NOTES[ev.noteIdx].name}` });
     });
 
     noises.forEach(ev => {
-        const at = fmt(ev.startTime + ev.delay);
+        const dur = ev.duration * bd;
+        const at  = fmt(ev.startTime + ev.delay);
         events.push({ t: ev.startTime,
-            line: `this.playNoise(${fmt(ev.duration)}, ${fmt(ev.gain)}, ${fmt(ev.lowpass)}, ${fmt(ev.highpass)}, ${at});` });
+            line: `this.playNoise(${fmt(dur)}, ${fmt(ev.gain)}, ${fmt(ev.lowpass)}, ${fmt(ev.highpass)}, ${at});` });
     });
 
     events.sort((a, b) => a.t - b.t);
@@ -661,7 +683,7 @@ function init(): void {
     window.addEventListener('resize', () => { resizeAll(); render(); });
 
     // Toolbar
-    cfgDurEl.addEventListener('change',  () => { cfgDur   = parseFloat(cfgDurEl.value)  || 0.25; });
+    cfgDurEl.addEventListener('change',  () => { cfgDur = parseFloat(cfgDurEl.value) || 1; });
     cfgBpmEl.addEventListener('change',  () => { cfgBpm   = Math.max(40, Math.min(300, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
     cfgTypeEl.addEventListener('change', () => { cfgType  = cfgTypeEl.value as OscType; });
     cfgGainEl.addEventListener('input',  () => { cfgGain  = parseFloat(cfgGainEl.value); cfgGainV.textContent  = cfgGain.toFixed(2); });
