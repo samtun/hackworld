@@ -75,6 +75,9 @@ const RULER_H          = 22;   // ruler height px (larger for bigger font)
 const MIN_SECS         = 10;   // minimum timeline width in seconds
 const ENV_MIN          = 0.0001;
 const AUTOSCROLL_MARGIN = 80;  // px from right edge before auto-scroll kicks in
+const LOOP_LOOKAHEAD   = 0.3;  // seconds — schedule next loop pass this far ahead
+const STOP_GRACE       = 0.4;  // seconds past maxT before auto-stopping non-looped play
+const MIN_LOOP_PERIOD  = 0.001; // minimum loop period to prevent division by zero
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let tones: ToneEvent[]   = [];
@@ -607,7 +610,7 @@ function startPlayback(): void {
     const bd  = beatDur();
 
     const maxT = Math.max(
-        0.001,
+        MIN_LOOP_PERIOD,
         ...tones.map(e  => e.startTime + e.duration * bd),
         ...noises.map(e => e.startTime + e.duration * bd),
     );
@@ -632,9 +635,7 @@ function startPlayback(): void {
     if (cfgLoop) schedulePass(nextPassAbs);
 
     isPlaying = true;
-    playBtn.disabled = true; stopBtn.disabled = true;
-
-    const LOOKAHEAD = 0.3; // seconds — schedule next pass this far ahead
+    playBtn.disabled = true; stopBtn.disabled = false;
 
     function tick(): void {
         if (!isPlaying) return;
@@ -645,14 +646,14 @@ function startPlayback(): void {
             playhead = elapsed % maxT;
             // When the playhead wraps, reset horizontal scroll to the start
             if (playhead < prev - maxT * 0.5) scrollX = 0;
-            // Schedule the next pass when we're within LOOKAHEAD of it
-            if (ctx.currentTime >= nextPassAbs - LOOKAHEAD) {
+            // Schedule the next pass when we're within LOOP_LOOKAHEAD of it
+            if (ctx.currentTime >= nextPassAbs - LOOP_LOOKAHEAD) {
                 nextPassAbs += maxT;
                 schedulePass(nextPassAbs);
             }
         } else {
             playhead = elapsed;
-            if (elapsed > maxT + 0.4) { stopPlayback(); return; }
+            if (elapsed > maxT + STOP_GRACE) { stopPlayback(); return; }
         }
 
         // Auto-scroll to follow playhead
@@ -729,9 +730,43 @@ function loadFromJson(raw: string): void {
         alert('Not a valid HackWorld DAW file (missing tones/noises arrays).');
         return;
     }
+
+    // Validate and filter tone events to ensure required fields are present
+    const validTones: ToneEvent[] = (data.tones as Record<string, unknown>[]).filter(t =>
+        typeof t.id === 'string' &&
+        typeof t.noteIdx === 'number' &&
+        typeof t.startTime === 'number' &&
+        typeof t.duration === 'number' &&
+        typeof t.type === 'string' &&
+        typeof t.gain === 'number'
+    ).map(t => ({
+        id:        t.id        as string,
+        noteIdx:   t.noteIdx   as number,
+        startTime: t.startTime as number,
+        duration:  t.duration  as number,
+        type:      t.type      as OscType,
+        gain:      t.gain      as number,
+        glideTo:   typeof t.glideTo === 'number' ? t.glideTo as number : null,
+    }));
+
+    // Validate and filter noise events
+    const validNoises: NoiseEvent[] = (data.noises as Record<string, unknown>[]).filter(n =>
+        typeof n.id === 'string' &&
+        typeof n.startTime === 'number' &&
+        typeof n.duration === 'number' &&
+        typeof n.gain === 'number'
+    ).map(n => ({
+        id:        n.id        as string,
+        startTime: n.startTime as number,
+        duration:  n.duration  as number,
+        gain:      n.gain      as number,
+        lowpass:   typeof n.lowpass  === 'number' ? n.lowpass  as number : 2200,
+        highpass:  typeof n.highpass === 'number' ? n.highpass as number : 100,
+    }));
+
     stopPlayback();
-    tones  = data.tones  as ToneEvent[];
-    noises = data.noises as NoiseEvent[];
+    tones  = validTones;
+    noises = validNoises;
     scrollX = 0;
     if (typeof data.bpm === 'number') {
         cfgBpm = Math.max(40, Math.min(300, data.bpm));
