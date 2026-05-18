@@ -12,7 +12,7 @@ Ometec corporation's systems are self-destructing due to a catastrophic malware 
 
 - Hack and slash gameplay with quest progression
 - **Hub-based game world** - Multiple stages progressively unlocked through gameplay
-- **Five-stage campaign progression** - Clear increasingly difficult sectors: Network Matrix → Packet Forge → Cipher Null → Security Core → Kernel Terminus
+- **Five-stage campaign progression** - Clear increasingly difficult sectors: Network Matrix → Packet Forge → Cipher Null (2 layers) → Security Core (3 layers) → Kernel Terminus (3 layers), with deeper layers featuring harder enemies, darker layouts, and faster variants of each stage theme
 - **Procedurally generated dungeons** - Obstacle layouts and enemy placements are randomised every time a dungeon stage is entered, keeping exploration fresh
 - **Stage minimap system** - A 240x180 minimap appears in the top-right corner; in dungeon stages it unlocks after picking up the **Grid Tracer** item from one loot room, while the Lobby minimap is always visible
 - **Level system** - Gain EXP from defeating enemies to level up and increase your stats

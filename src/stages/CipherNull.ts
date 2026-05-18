@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { BaseStage } from './BaseStage';
 import { Lobby } from './Lobby';
@@ -6,16 +7,51 @@ import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 
+interface CipherNullLevelConfig {
+    id: string;
+    name: string;
+    description: string;
+    floorColor: number;
+    hasBoss: boolean;
+    enemyDifficultyMultiplier: number;
+    teleporterDestination: string;
+    requiredProgress: number;
+}
+
 export class CipherNull extends BaseStage {
-    private static id: string = "cipherNull";
-    private static name: string = "Cipher Null";
-    private static description: string = "Failover archives where encrypted sectors collapse into void";
+    private static id: string = 'cipherNull';
+    private static name: string = 'Cipher Null';
+    private static description: string = 'Failover archives where encrypted sectors collapse into void';
+    private static readonly depth2Id: string = 'cipherNullDepth2';
+    private static readonly levelConfigs: Record<string, CipherNullLevelConfig> = {
+        [CipherNull.id]: {
+            id: CipherNull.id,
+            name: CipherNull.name,
+            description: 'Cipher Null / Layer 1',
+            floorColor: 0x0d2630,
+            hasBoss: false,
+            enemyDifficultyMultiplier: 1,
+            teleporterDestination: CipherNull.depth2Id,
+            requiredProgress: 0,
+        },
+        [CipherNull.depth2Id]: {
+            id: CipherNull.depth2Id,
+            name: `${CipherNull.name} // Collapse Core`,
+            description: 'Cipher Null / Layer 2',
+            floorColor: 0x081720,
+            hasBoss: true,
+            enemyDifficultyMultiplier: 1.2,
+            teleporterDestination: Lobby.getMetadata().id,
+            requiredProgress: 5,
+        },
+    };
 
     id = CipherNull.id;
     name = CipherNull.name;
     description = CipherNull.description;
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
+    private readonly levelConfig: CipherNullLevelConfig;
 
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 130,
@@ -88,6 +124,23 @@ export class CipherNull extends BaseStage {
         },
     };
 
+    constructor(
+        scene: THREE.Scene,
+        physicsWorld: CANNON.World,
+        physicsMaterial: CANNON.Material,
+        stageId?: string,
+    ) {
+        super(scene, physicsWorld, physicsMaterial);
+        this.levelConfig = CipherNull.resolveLevelConfig(stageId);
+        this.id = this.levelConfig.id;
+        this.name = this.levelConfig.name;
+        this.description = this.levelConfig.description;
+    }
+
+    static getLevelStageIds(): readonly string[] {
+        return [CipherNull.id, CipherNull.depth2Id] as const;
+    }
+
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         return {
             id: CipherNull.id,
@@ -106,13 +159,18 @@ export class CipherNull extends BaseStage {
     protected override getEnemyConfig(
         spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite,
     ): Partial<EnemyArchetypeConfig> {
-        return spawnType === EnemySpawnType.Elite
+        const baseConfig = spawnType === EnemySpawnType.Elite
             ? CipherNull.eliteEnemyConfig
             : CipherNull.regularEnemyConfig;
+        return this.scaleEnemyConfig(baseConfig);
     }
 
     protected override getBossConfig(): Partial<EnemyArchetypeConfig> {
-        return CipherNull.bossConfig;
+        return this.scaleEnemyConfig(CipherNull.bossConfig);
+    }
+
+    override getRequiredProgress(): number {
+        return this.levelConfig.requiredProgress;
     }
 
     async load(): Promise<void> {
@@ -121,23 +179,61 @@ export class CipherNull extends BaseStage {
         this.createFloorCollider();
 
         const generator = new RoomBasedDungeonGenerator();
-        const layout = generator.generate(CipherNull.generationConfig);
+        const layout = generator.generate(this.buildGenerationConfig());
         this.setMinimapLayout(layout.minimapLayout, false);
 
         this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
         this.dungeonRooms = layout.rooms;
 
-        this.buildFloorFromLayout(layout, 0x0d2630);
+        this.buildFloorFromLayout(layout, this.levelConfig.floorColor);
         this.buildWallsFromLayout(layout);
         this.buildObstaclesFromLayout(layout);
 
         const tp = layout.teleporterPosition;
-        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getMetadata().id, false);
+        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), this.levelConfig.teleporterDestination, false);
 
         this.spawnEnemiesFromLayout(layout);
         this.buildChestsFromLayout(layout);
         this.buildBarrelsFromLayout(layout);
         this.buildMinimapDropFromLayout(layout);
         this.buildTrapsFromLayout(layout);
+    }
+
+    private static resolveLevelConfig(stageId?: string): CipherNullLevelConfig {
+        return CipherNull.levelConfigs[stageId ?? CipherNull.id] ?? CipherNull.levelConfigs[CipherNull.id];
+    }
+
+    private buildGenerationConfig(): RoomGenerationConfig {
+        const difficulty = this.levelConfig.enemyDifficultyMultiplier;
+        const base = CipherNull.generationConfig;
+        return {
+            ...base,
+            hasBoss: this.levelConfig.hasBoss,
+            enemyCount: {
+                ...base.enemyCount,
+                min: Math.max(base.enemyCount.min, Math.floor(base.enemyCount.min * difficulty)),
+                max: Math.max(base.enemyCount.max, Math.floor(base.enemyCount.max * difficulty)),
+                eliteFraction: Math.min(0.8, base.enemyCount.eliteFraction + (difficulty - 1) * 0.2),
+            },
+            ...(base.trapConfig
+                ? {
+                    trapConfig: {
+                        ...base.trapConfig,
+                        damage: Math.floor(base.trapConfig.damage * (1 + (difficulty - 1) * 0.8)),
+                    },
+                }
+                : {}),
+        };
+    }
+
+    private scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {
+        const multiplier = this.levelConfig.enemyDifficultyMultiplier;
+        return {
+            ...config,
+            maxHp: config.maxHp === undefined ? undefined : Math.floor(config.maxHp * multiplier),
+            damage: config.damage === undefined ? undefined : Math.floor(config.damage * multiplier),
+            speed: config.speed === undefined ? undefined : config.speed * (1 + (multiplier - 1) * 0.12),
+            baseExp: config.baseExp === undefined ? undefined : Math.floor(config.baseExp * (1 + (multiplier - 1) * 0.7)),
+        };
     }
 }

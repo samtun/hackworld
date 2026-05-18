@@ -22,7 +22,8 @@ export const AVAILABLE_DUNGEONS = import.meta.env.DEV
 type StageConstructor = new (
     scene: THREE.Scene,
     physicsWorld: CANNON.World,
-    physicsMaterial: CANNON.Material
+    physicsMaterial: CANNON.Material,
+    stageId?: string,
 ) => BaseStage;
 
 // Stage registry mapping stage IDs to their constructors
@@ -31,8 +32,13 @@ const stageRegistry: Map<string, StageConstructor> = new Map<string, StageConstr
     [NetworkMatrix.getMetadata().id, NetworkMatrix],
     [PacketForge.getMetadata().id, PacketForge],
     [CipherNull.getMetadata().id, CipherNull],
+    ['cipherNullDepth2', CipherNull],
     [SecurityCore.getMetadata().id, SecurityCore],
+    ['securityCoreDepth2', SecurityCore],
+    ['securityCoreDepth3', SecurityCore],
     [KernelTerminus.getMetadata().id, KernelTerminus],
+    ['kernelTerminusDepth2', KernelTerminus],
+    ['kernelTerminusDepth3', KernelTerminus],
     ...(import.meta.env.DEV ? [[GameTest.getMetadata().id, GameTest] as [string, StageConstructor]] : [])
 ]);
 
@@ -50,5 +56,5 @@ export function createStage(
         console.warn(`Unknown stage ID: ${stageId}`);
         return null;
     }
-    return new StageClass(scene, physicsWorld, physicsMaterial);
+    return new StageClass(scene, physicsWorld, physicsMaterial, stageId);
 }
