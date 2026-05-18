@@ -336,7 +336,7 @@ export const SFX_PARAMS = {
     // ──── ALBUM COMPLETE ──────────────────────────────────────────────────────
     albumComplete: {
         noise: { dur: 0.08, gain: 0.018, lowpass: 5400, highpass: 1000, delay: 0 } as NoiseLayer,
-        freqs: [392, 523.25, 659.25, 783.99, 1046.5] as readonly number[],
+        freqs: [392, 523.25, 659.25, 783.99, 1046.5],
         dur: 0.18, gain: 0.07, delayStep: 0.05, glideRatio: 1.04,
         /** First `typeThreshold` notes use `typeBelow`; the rest use `typeAtOrAbove`. */
         typeThreshold: 3, typeBelow: 'triangle' as OscillatorType, typeAtOrAbove: 'sawtooth' as OscillatorType,
@@ -344,7 +344,7 @@ export const SFX_PARAMS = {
     // ──── LEVEL UP ────────────────────────────────────────────────────────────
     levelUp: {
         noise: { dur: 0.06, gain: 0.022, lowpass: 5600, highpass: 1000, delay: 0 } as NoiseLayer,
-        freqs: [523.25, 659.25, 783.99, 1046.5] as readonly number[],
+        freqs: [523.25, 659.25, 783.99, 1046.5],
         dur: 0.16, gain: 0.07, delayStep: 0.045, glideRatio: 1.05,
         typeThreshold: 2, typeBelow: 'triangle' as OscillatorType, typeAtOrAbove: 'sawtooth' as OscillatorType,
     },
@@ -755,8 +755,10 @@ export class AudioManager {
             const hs = SFX_PARAMS.healingStation;
             const hn = hs.noise;
             this.playNoise(hn.dur, hn.gain, hn.lowpass, hn.highpass, hn.delay);
-            this.playTone(primary, hs.primary.dur, hs.primary.type, hs.primary.gain, ENVELOPE_MIN_GAIN, hs.primary.delay, primary * hs.primary.glideRatio);
-            this.playTone(swirl,   hs.swirl.dur,   hs.swirl.type,   hs.swirl.gain,   ENVELOPE_MIN_GAIN, hs.swirl.delay,   swirl   * hs.swirl.glideRatio);
+            const primaryGlideTo = primary * hs.primary.glideRatio;
+            const swirlGlideTo = swirl * hs.swirl.glideRatio;
+            this.playTone(primary, hs.primary.dur, hs.primary.type, hs.primary.gain, ENVELOPE_MIN_GAIN, hs.primary.delay, primaryGlideTo);
+            this.playTone(swirl,   hs.swirl.dur,   hs.swirl.type,   hs.swirl.gain,   ENVELOPE_MIN_GAIN, hs.swirl.delay,   swirlGlideTo);
         };
 
         playPulse();

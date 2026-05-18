@@ -221,7 +221,7 @@ function generateParamsEntry(): string {
         lines.push('    tones: [');
         toneLayers.forEach(t => {
             const glidePart = t.glideTo !== null ? `, glideTo: ${fmt(t.glideTo)}` : '';
-            const delayPart = `, delay: ${fmt(t.delay)}`;
+            const delayPart = (t.delay !== 0 || glidePart) ? `, delay: ${fmt(t.delay)}` : '';
             lines.push(
                 `        { freq: ${fmt(t.freq)}, dur: ${fmt(t.dur)}, type: '${t.type}' as OscillatorType, gain: ${fmt(t.gain)}${delayPart}${glidePart} },`,
             );
