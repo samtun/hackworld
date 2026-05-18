@@ -1,3 +1,23 @@
+# [3.22.0](https://github.com/samtun/hackworld/compare/v3.21.0...v3.22.0) (2026-05-18)
+
+
+### Bug Fixes
+
+* fix playhead desync after live-edit by using a pass queue for tracking ([2cd1a7b](https://github.com/samtun/hackworld/commit/2cd1a7b4ec3fbf13c6064449957566be0162d51e))
+* fix timeline click (align-items bug), add grid, halve noise strip height, snap to grid ([ab039ca](https://github.com/samtun/hackworld/commit/ab039ca52ea3453e7ff22aa1410a5da98ed1bcf6))
+* re-read timeline on each loop pass so edits apply immediately on the next loop ([760e0e2](https://github.com/samtun/hackworld/commit/760e0e2d9904a9eff07b833677327951380cd083))
+* stop button enabled during playback, named constants, validated JSON import ([b020a61](https://github.com/samtun/hackworld/commit/b020a614347c58fcd7301d282d57e5bf7c8794c5))
+
+
+### Features
+
+* beat grid, wheel scroll, Space=play/stop, floor snap, font +20%, clean noise strip ([dd4dd4c](https://github.com/samtun/hackworld/commit/dd4dd4cb0279dcdd54b80240d861bd4e90c53d30))
+* create sound effect editor and refactor AudioManager SFX_PARAMS ([fd41522](https://github.com/samtun/hackworld/commit/fd41522b54b19099c7e87fd0bb536f54d58dcf88))
+* fix scroll direction and add beat-fraction duration dropdown ([0249a04](https://github.com/samtun/hackworld/commit/0249a04016aa8713e0e2051ef37df6290b9e0a01))
+* loop option and JSON export/import via drag-and-drop ([7cf0c16](https://github.com/samtun/hackworld/commit/7cf0c16790df1da5de19b124cee10a281df7bc06))
+* rewrite sound editor as DAW timeline interface ([00509e5](https://github.com/samtun/hackworld/commit/00509e58fe0657213434b7c351f10ce857de4bc5))
+* stop audio on stop, fix scroll preserve, add 2/4/8 beat durations, remove delay ([52ba16d](https://github.com/samtun/hackworld/commit/52ba16d4b1739328e968c42dab1111f75e0f106d))
+
 # [3.21.0](https://github.com/samtun/hackworld/compare/v3.20.0...v3.21.0) (2026-05-18)
 
 
