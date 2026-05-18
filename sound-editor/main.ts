@@ -56,7 +56,7 @@ const NOTES: { name: string; freq: number }[] = [
 // ── Layout constants ──────────────────────────────────────────────────────────
 const PPS              = 120;   // pixels per second
 const ROW_H            = 22;   // row height px
-const NOISE_H          = 23;   // noise strip height px (half the original 46px)
+const NOISE_H          = 23;   // noise strip height px
 const RULER_H          = 18;   // ruler height px
 const MIN_SECS         = 10;   // minimum timeline width in seconds
 const ENV_MIN          = 0.0001;
@@ -207,7 +207,7 @@ function drawGrid(cx: CanvasRenderingContext2D, w: number, h: number): void {
     const endS   = startS + w / PPS;
     for (let s = Math.floor(startS / step) * step; s <= endS + 0.001; s += step) {
         const x      = Math.round(s * PPS - scrollX) + 0.5;
-        const isSec  = Math.abs(s - Math.round(s)) < step * 0.01;
+        const isSec  = Math.abs(s - Math.round(s)) < 0.001;
         cx.strokeStyle = isSec ? '#2e4870' : '#1e3050';
         cx.lineWidth   = isSec ? 1 : 0.5;
         cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, h); cx.stroke();
@@ -229,7 +229,7 @@ function renderRuler(): void {
 
     for (let s = Math.floor(startS / step) * step; s <= endS + 0.001; s += step) {
         const x     = Math.round(s * PPS - scrollX) + 0.5;
-        const isSec = Math.abs(s - Math.round(s)) < step * 0.01;
+        const isSec = Math.abs(s - Math.round(s)) < 0.001;
         cx.strokeStyle = isSec ? '#303858' : '#1a2030';
         cx.lineWidth   = isSec ? 1 : 0.5;
         cx.beginPath();
@@ -664,7 +664,7 @@ function init(): void {
 
     // Toolbar
     cfgDurEl.addEventListener('change',  () => { cfgDur   = parseFloat(cfgDurEl.value)  || 0.25; });
-    cfgGridEl.addEventListener('change', () => { cfgGrid  = Math.max(0.05, parseFloat(cfgGridEl.value) || 0.2); render(); });
+    cfgGridEl.addEventListener('change', () => { cfgGrid = Math.max(0.05, parseFloat(cfgGridEl.value)); render(); });
     cfgTypeEl.addEventListener('change', () => { cfgType  = cfgTypeEl.value as OscType; });
     cfgGainEl.addEventListener('input',  () => { cfgGain  = parseFloat(cfgGainEl.value); cfgGainV.textContent  = cfgGain.toFixed(2); });
     cfgDelayEl.addEventListener('input', () => { cfgDelay = parseFloat(cfgDelayEl.value); cfgDelayV.textContent = cfgDelay.toFixed(1) + 's'; });
