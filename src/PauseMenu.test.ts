@@ -106,11 +106,13 @@ describe('PauseMenu', () => {
         menu.show();
         menu.show();
         expect(menu.visible).toBe(true);
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
     });
 
     it('hide() is idempotent when already hidden', () => {
         menu.hide();
         expect(menu.visible).toBe(false);
+        expect(AudioManager.Instance.playUiClose).not.toHaveBeenCalled();
     });
 
     it('creates an overlay element in the DOM', () => {

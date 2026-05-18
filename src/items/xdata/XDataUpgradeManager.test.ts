@@ -204,6 +204,30 @@ describe('XDataUpgradeManager', () => {
         });
     });
 
+    describe('getCurrentUpgradeLevel()', () => {
+        it('returns the matching upgrade level for each supported stat type', () => {
+            const player = makePlayer({
+                strengthUpgrades: 1,
+                defenseUpgrades: 2,
+                agilityUpgrades: 3,
+                luckUpgrades: 4,
+                hpUpgrades: 5,
+                tpUpgrades: 6,
+            });
+
+            expect(mgr.getCurrentUpgradeLevel(player, 'strength')).toBe(1);
+            expect(mgr.getCurrentUpgradeLevel(player, 'defense')).toBe(2);
+            expect(mgr.getCurrentUpgradeLevel(player, 'agility')).toBe(3);
+            expect(mgr.getCurrentUpgradeLevel(player, 'luck')).toBe(4);
+            expect(mgr.getCurrentUpgradeLevel(player, 'hp')).toBe(5);
+            expect(mgr.getCurrentUpgradeLevel(player, 'tp')).toBe(6);
+        });
+
+        it('throws for an unsupported stat type', () => {
+            expect(() => mgr.getCurrentUpgradeLevel(makePlayer(), 'invalid')).toThrow('Unsupported stat type: invalid');
+        });
+    });
+
     // update() tests
     describe('update()', () => {
         it('returns immediately when not visible, needsRender stays false', () => {
