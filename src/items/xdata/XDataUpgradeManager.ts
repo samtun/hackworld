@@ -301,27 +301,7 @@ export class XDataUpgradeManager {
         // Select/Upgrade stat (with debouncing)
         if (select && !this.lastSelectState) {
             const selectedStat = this.stats[this.selectedIndex];
-            let currentLevel = 0;
-            switch (selectedStat.type) {
-                case StatType.STRENGTH:
-                    currentLevel = player.strengthUpgrades;
-                    break;
-                case StatType.DEFENSE:
-                    currentLevel = player.defenseUpgrades;
-                    break;
-                case StatType.AGILITY:
-                    currentLevel = player.agilityUpgrades;
-                    break;
-                case StatType.LUCK:
-                    currentLevel = player.luckUpgrades;
-                    break;
-                case StatType.HP:
-                    currentLevel = player.hpUpgrades;
-                    break;
-                case StatType.TP:
-                    currentLevel = player.tpUpgrades;
-                    break;
-            }
+            const currentLevel = this.getCurrentUpgradeLevel(player, selectedStat.type);
             const cost = player.getUpgradeCost(currentLevel);
             const success = player.upgradeWithXData(selectedStat.type);
 
@@ -343,6 +323,23 @@ export class XDataUpgradeManager {
         this.lastNavigateDownState = navigateDown;
         this.lastSelectState = select;
         this.lastCancelState = cancel;
+    }
+
+    private getCurrentUpgradeLevel(player: Player, statType: StatType): number {
+        switch (statType) {
+            case StatType.STRENGTH:
+                return player.strengthUpgrades;
+            case StatType.DEFENSE:
+                return player.defenseUpgrades;
+            case StatType.AGILITY:
+                return player.agilityUpgrades;
+            case StatType.LUCK:
+                return player.luckUpgrades;
+            case StatType.HP:
+                return player.hpUpgrades;
+            case StatType.TP:
+                return player.tpUpgrades;
+        }
     }
 
     private shakeItem(index: number) {
