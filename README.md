@@ -76,7 +76,6 @@ The game is fully playable with keyboard, controller (tested with XBox controlle
 - **I / Select**: Toggle inventory
 - **Enter / A**: Interact and select in menus
 - **ESC / B**: Close menus / Block (B)
-- The start menu includes persisted **Music on/off** and **Sound Effects on/off** options, and the pause menu persists its existing performance/control-hints options in browser storage.
 
 #### Mobile Touch Controls
 Mobile devices (phones and tablets) automatically display on-screen touch controls.

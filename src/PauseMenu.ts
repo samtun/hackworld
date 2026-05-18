@@ -24,7 +24,8 @@ interface PauseMenuItem {
 /**
  * Full-screen pause menu shown when the player presses ESC / Start.
  * Backdrop mirrors the death screen; text style mirrors the start-screen main menu.
- * Options: Continue, Performance Mode on/off, Show Control Hints yes/no.
+ * Options: Continue, Performance Mode on/off, Show Control Hints yes/no,
+ * Music on/off, and Sound Effects on/off.
  */
 export class PauseMenu {
     private readonly overlay: HTMLDivElement;
@@ -35,6 +36,10 @@ export class PauseMenu {
     private performanceStatusEl!: HTMLSpanElement;
     private controlHintsEnabled: boolean;
     private controlHintsStatusEl!: HTMLSpanElement;
+    private musicEnabled: boolean;
+    private musicStatusEl!: HTMLSpanElement;
+    private sfxEnabled: boolean;
+    private sfxStatusEl!: HTMLSpanElement;
     private selectedIndex: number = 0;
 
     private readonly callbacks: PauseMenuCallbacks;
@@ -60,12 +65,16 @@ export class PauseMenu {
         this.input = input;
         this.performanceModeEnabled = performanceModeEnabled;
         this.controlHintsEnabled = controlHintsEnabled;
+        this.musicEnabled = AudioManager.Instance.isMusicEnabled();
+        this.sfxEnabled = AudioManager.Instance.isSfxEnabled();
         this.callbacks = callbacks;
 
         this.items = [
             { id: 'continue', label: 'Continue', buildEl: (item) => this.buildSimpleItem(item) },
             { id: 'performance', label: '', buildEl: (item) => this.buildPerformanceItem(item) },
             { id: 'controlhints', label: '', buildEl: (item) => this.buildControlHintsItem(item) },
+            { id: 'music', label: '', buildEl: (item) => this.buildMusicItem(item) },
+            { id: 'sfx', label: '', buildEl: (item) => this.buildSfxItem(item) },
         ];
 
         // Dark backdrop (same as death screen)
@@ -142,6 +151,8 @@ export class PauseMenu {
         if (this._visible) return;
         this._visible = true;
         this.selectedIndex = 0;
+        this.musicEnabled = AudioManager.Instance.isMusicEnabled();
+        this.sfxEnabled = AudioManager.Instance.isSfxEnabled();
         AudioManager.Instance.playUiOpen();
 
         // Reset edge-detection states so the key that opened the menu
@@ -158,6 +169,8 @@ export class PauseMenu {
             });
         });
         this.updateStyles();
+        this.updateMusicLabel();
+        this.updateSfxLabel();
 
         this.animFrameId = requestAnimationFrame(() => this.inputLoop());
     }
@@ -232,6 +245,44 @@ export class PauseMenu {
         }
     }
 
+    private buildMusicItem(_item: PauseMenuItem): HTMLDivElement {
+        const el = document.createElement('div');
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = 'Music ';
+        el.appendChild(labelSpan);
+
+        this.musicStatusEl = document.createElement('span');
+        this.musicStatusEl.style.color = '#33DDFF';
+        this.updateMusicLabel();
+        el.appendChild(this.musicStatusEl);
+        return el;
+    }
+
+    private updateMusicLabel(): void {
+        if (this.musicStatusEl) {
+            this.musicStatusEl.textContent = this.musicEnabled ? 'on' : 'off';
+        }
+    }
+
+    private buildSfxItem(_item: PauseMenuItem): HTMLDivElement {
+        const el = document.createElement('div');
+        const labelSpan = document.createElement('span');
+        labelSpan.textContent = 'Sound Effects ';
+        el.appendChild(labelSpan);
+
+        this.sfxStatusEl = document.createElement('span');
+        this.sfxStatusEl.style.color = '#33DDFF';
+        this.updateSfxLabel();
+        el.appendChild(this.sfxStatusEl);
+        return el;
+    }
+
+    private updateSfxLabel(): void {
+        if (this.sfxStatusEl) {
+            this.sfxStatusEl.textContent = this.sfxEnabled ? 'on' : 'off';
+        }
+    }
+
     private itemStyle(selected: boolean): string {
         const color = selected ? '#ffffff' : '#cccccc';
         const fontWeight = selected ? 'bold' : 'normal';
@@ -260,6 +311,12 @@ export class PauseMenu {
         }
         if (this.controlHintsStatusEl) {
             this.controlHintsStatusEl.style.color = '#33DDFF';
+        }
+        if (this.musicStatusEl) {
+            this.musicStatusEl.style.color = '#33DDFF';
+        }
+        if (this.sfxStatusEl) {
+            this.sfxStatusEl.style.color = '#33DDFF';
         }
     }
 
@@ -294,6 +351,25 @@ export class PauseMenu {
                 this.controlHintsEnabled = this.callbacks.onToggleControlHints();
                 this.updateControlHintsLabel();
                 break;
+            case 'music':
+                this.musicEnabled = AudioManager.Instance.toggleMusicEnabled();
+                if (AudioManager.Instance.isSfxEnabled()) {
+                    AudioManager.Instance.playUiOpen();
+                }
+                this.updateMusicLabel();
+                break;
+            case 'sfx': {
+                const sfxWasEnabled = this.sfxEnabled;
+                if (sfxWasEnabled) {
+                    AudioManager.Instance.playUiOpen();
+                }
+                this.sfxEnabled = AudioManager.Instance.toggleSfxEnabled();
+                if (!sfxWasEnabled) {
+                    AudioManager.Instance.playUiOpen();
+                }
+                this.updateSfxLabel();
+                break;
+            }
         }
     }
 

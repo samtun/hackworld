@@ -9,15 +9,9 @@ const DEFAULT_ATTACK_SECONDS = 0.02;
 const MAX_ATTACK_PORTION_OF_DURATION = 0.35;
 const MIN_GLIDE_FREQUENCY = 1;
 const NOISE_BUFFER_DURATION_SECONDS = 0.5;
-const MIN_STAGE_MUSIC_LOOP_DURATION_MS = 60_000;
-const SEMITONE_RATIO = Math.pow(2, 1 / 12);
 const HEALING_STATION_LOOP_INTERVAL_MS = 220;
 const DEFAULT_MUSIC_GAIN = 0.45;
 const DEFAULT_SFX_GAIN = 1.2;
-// These intervals keep the loop moving between the root phrase, brighter major
-// lifts, and a few darker dips so the minute-long sequence evolves without
-// drifting into a different musical identity than the original short motif.
-const MUSIC_VARIATION_PATTERN = [0, 2, 0, -2, 3, 0, -3, 5] as const;
 const HEALING_STATION_PRIMARY_FREQUENCIES = [523.25, 659.25, 783.99, 987.77] as const;
 const HEALING_STATION_SWIRL_FREQUENCIES = [659.25, 783.99, 880, 1046.5] as const;
 
@@ -36,51 +30,8 @@ interface StageMusicProfile {
 }
 
 /**
- * Transpose a frequency by a semitone offset using equal temperament tuning.
- * Rounding prevents floating-point drift from accumulating across repeated
- * loop generation and keeps the resulting values deterministic for tests.
- */
-export function transposeFrequency(frequency: number, semitones: number): number {
-    if (semitones === 0) return frequency;
-    return Number((frequency * Math.pow(SEMITONE_RATIO, semitones)).toFixed(2));
-}
-
-/**
- * Turn one short motif into a longer phrase by transposing it for the current
- * cycle and mirroring the notes into a palindrome-style variation.
- */
-export function buildMusicVariation(basePhrase: MusicPhrase, cycle: number): number[] {
-    const semitones = MUSIC_VARIATION_PATTERN[cycle % MUSIC_VARIATION_PATTERN.length];
-    const forward = basePhrase.map((frequency) => transposeFrequency(frequency, semitones));
-    // Alternating which edge note gets dropped avoids a duplicated turnaround
-    // pitch every phrase, which keeps the long loop feeling less mechanical.
-    const mirrored = cycle % 2 === 0
-        ? forward.slice(0, -1).reverse()
-        : forward.slice(1).reverse();
-
-    return [...forward, ...mirrored];
-}
-
-/**
- * Expand a compact motif into a loop that lasts at least one minute before
- * repeating by chaining successive phrase variations together.
- */
-export function buildLongMusicLoop(basePhrase: MusicPhrase, pulseIntervalMs: number): number[] {
-    const requiredNotes = Math.ceil(MIN_STAGE_MUSIC_LOOP_DURATION_MS / pulseIntervalMs);
-    const sequence: number[] = [];
-    let cycle = 0;
-
-    while (sequence.length < requiredNotes) {
-        sequence.push(...buildMusicVariation(basePhrase, cycle));
-        cycle++;
-    }
-
-    return sequence.slice(0, requiredNotes);
-}
-
-/**
- * Build a stage music profile by stretching short pulse and harmony motifs
- * into minute-long note sequences while preserving the stage's timing/timbre.
+ * Build a stage music profile from a short, hand-authored phrase so it can be
+ * extended manually later without any automatic note generation.
  */
 function createStageMusicProfile(
     pulsePhrase: MusicPhrase,
@@ -93,14 +44,14 @@ function createStageMusicProfile(
     harmonyGain: number,
 ): StageMusicProfile {
     return {
-        pulseFrequencies: buildLongMusicLoop(pulsePhrase, pulseIntervalMs),
+        pulseFrequencies: [...pulsePhrase],
         pulseIntervalMs,
         pulseType,
         harmonyType,
         pulseDuration,
         pulseGain,
         harmonyGain,
-        ...(harmonyPhrase ? { harmonyFrequencies: buildLongMusicLoop(harmonyPhrase, pulseIntervalMs) } : {}),
+        ...(harmonyPhrase ? { harmonyFrequencies: [...harmonyPhrase] } : {}),
     };
 }
 

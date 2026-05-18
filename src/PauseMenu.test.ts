@@ -5,6 +5,10 @@ vi.mock('./AudioManager', () => ({
             playMenuNavigate: vi.fn(),
             playUiOpen: vi.fn(),
             playUiClose: vi.fn(),
+            isMusicEnabled: vi.fn().mockReturnValue(true),
+            isSfxEnabled: vi.fn().mockReturnValue(true),
+            toggleMusicEnabled: vi.fn().mockReturnValue(false),
+            toggleSfxEnabled: vi.fn().mockReturnValue(false),
         },
     },
 }));
@@ -126,12 +130,14 @@ describe('PauseMenu', () => {
         expect(overlay?.textContent).toContain('Execution Paused');
     });
 
-    it('renders Continue, Performance Mode, and Show Control Hints options', () => {
+    it('renders Continue, Performance Mode, Show Control Hints, Music, and Sound Effects options', () => {
         const overlay = document.querySelector('[data-pause-menu]');
         const text = overlay?.textContent ?? '';
         expect(text).toContain('Continue');
         expect(text).toContain('Performance Mode');
         expect(text).toContain('Show Control Hints');
+        expect(text).toContain('Music');
+        expect(text).toContain('Sound Effects');
         expect(text).not.toContain('Restart Area');
     });
 
@@ -169,6 +175,18 @@ describe('PauseMenu', () => {
         expect(text).toContain('Show Control Hints: no');
     });
 
+    it('shows Music status as "on" when musicEnabled is true', () => {
+        const overlay = document.querySelector('[data-pause-menu]');
+        const text = overlay?.textContent ?? '';
+        expect(text).toContain('Music on');
+    });
+
+    it('shows Sound Effects status as "on" when sound effects are enabled', () => {
+        const overlay = document.querySelector('[data-pause-menu]');
+        const text = overlay?.textContent ?? '';
+        expect(text).toContain('Sound Effects on');
+    });
+
     it('Control Hints status span has the correct colour', () => {
         const spans = document.querySelectorAll('[data-pause-menu] span[style*="color"]');
         // Second coloured span belongs to Control Hints
@@ -198,5 +216,33 @@ describe('PauseMenu', () => {
     it('plays the navigation sound when moving between pause menu options', () => {
         (menu as any).navigate(1);
         expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
+    });
+
+    it('toggles music from the pause menu and updates the label', () => {
+        (AudioManager.Instance.toggleMusicEnabled as any).mockImplementation(() => {
+            (AudioManager.Instance.isMusicEnabled as any).mockReturnValue(false);
+            return false;
+        });
+        (menu as any).selectedIndex = 3;
+
+        (menu as any).confirm();
+
+        expect(AudioManager.Instance.toggleMusicEnabled).toHaveBeenCalledOnce();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        expect(document.querySelector('[data-pause-menu]')?.textContent).toContain('Music off');
+    });
+
+    it('toggles sound effects from the pause menu and updates the label', () => {
+        (AudioManager.Instance.toggleSfxEnabled as any).mockImplementation(() => {
+            (AudioManager.Instance.isSfxEnabled as any).mockReturnValue(false);
+            return false;
+        });
+        (menu as any).selectedIndex = 4;
+
+        (menu as any).confirm();
+
+        expect(AudioManager.Instance.toggleSfxEnabled).toHaveBeenCalledOnce();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        expect(document.querySelector('[data-pause-menu]')?.textContent).toContain('Sound Effects off');
     });
 });
