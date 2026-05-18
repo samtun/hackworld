@@ -18,6 +18,16 @@ const HEALING_STATION_SWIRL_FREQUENCIES = [659.25, 783.99, 880, 1046.5] as const
 export const MUSIC_ENABLED_STORAGE_KEY = 'hackworld_music_enabled';
 export const SFX_ENABLED_STORAGE_KEY = 'hackworld_sfx_enabled';
 
+/** Parameters for arpeggio-style sounds: a sequence of frequencies played with shared timing and shape. */
+export interface ArpParams {
+    freqs: readonly number[];
+    dur: number;
+    type: OscillatorType;
+    gain: number;
+    delayStep: number;
+    glideRatio?: number;
+}
+
 /** A single oscillator layer used in a synthesised sound effect. */
 export interface ToneLayer {
     /** Starting frequency in Hz. */
@@ -253,26 +263,26 @@ export const SFX_PARAMS = {
     },
     // ──── BUY ─────────────────────────────────────────────────────────────────
     buy: {
-        freqs: [523.25, 659.25, 783.99] as number[],
-        dur: 0.12, type: 'triangle' as OscillatorType, gain: 0.06, delayStep: 0.04, glideRatio: 1.03 as number | undefined,
-    },
+        freqs: [523.25, 659.25, 783.99],
+        dur: 0.12, type: 'triangle' as OscillatorType, gain: 0.06, delayStep: 0.04, glideRatio: 1.03,
+    } as ArpParams,
     // ──── SELL ────────────────────────────────────────────────────────────────
     sell: {
-        freqs: [659.25, 523.25, 392] as number[],
-        dur: 0.1, type: 'sine' as OscillatorType, gain: 0.05, delayStep: 0.035, glideRatio: 0.96 as number | undefined,
-    },
+        freqs: [659.25, 523.25, 392],
+        dur: 0.1, type: 'sine' as OscillatorType, gain: 0.05, delayStep: 0.035, glideRatio: 0.96,
+    } as ArpParams,
     // ──── UPGRADE ─────────────────────────────────────────────────────────────
     upgrade: {
         noise: { dur: 0.04, gain: 0.025, lowpass: 5200, highpass: 800, delay: 0.02 } as NoiseLayer,
-        freqs: [392, 523.25, 659.25, 783.99] as number[],
-        dur: 0.14, type: 'triangle' as OscillatorType, gain: 0.06, delayStep: 0.045, glideRatio: 1.05 as number | undefined,
-    },
+        freqs: [392, 523.25, 659.25, 783.99],
+        dur: 0.14, type: 'triangle' as OscillatorType, gain: 0.06, delayStep: 0.045, glideRatio: 1.05,
+    } as ArpParams & { noise: NoiseLayer },
     // ──── INSUFFICIENT ────────────────────────────────────────────────────────
     insufficient: {
         noise: { dur: 0.035, gain: 0.018, lowpass: 2800, highpass: 500, delay: 0 } as NoiseLayer,
-        freqs: [311.13, 246.94] as number[],
-        dur: 0.12, type: 'square' as OscillatorType, gain: 0.045, delayStep: 0.05, glideRatio: 0.94 as number | undefined,
-    },
+        freqs: [311.13, 246.94],
+        dur: 0.12, type: 'square' as OscillatorType, gain: 0.045, delayStep: 0.05, glideRatio: 0.94,
+    } as ArpParams & { noise: NoiseLayer },
     // ──── LASER BEAM SKILL ────────────────────────────────────────────────────
     laserBeamSkill: {
         noise: { dur: 0.06, gain: 0.025, lowpass: 5200, highpass: 900, delay: 0 } as NoiseLayer,
@@ -283,9 +293,9 @@ export const SFX_PARAMS = {
     },
     // ──── HEALING SKILL ───────────────────────────────────────────────────────
     healingSkill: {
-        freqs: [523.25, 659.25, 783.99] as number[],
-        dur: 0.16, type: 'triangle' as OscillatorType, gain: 0.05, delayStep: 0.04, glideRatio: 1.04 as number | undefined,
-    },
+        freqs: [523.25, 659.25, 783.99],
+        dur: 0.16, type: 'triangle' as OscillatorType, gain: 0.05, delayStep: 0.04, glideRatio: 1.04,
+    } as ArpParams,
     // ──── AREA ATTACK SKILL ───────────────────────────────────────────────────
     areaAttackSkill: {
         noise: { dur: 0.08, gain: 0.035, lowpass: 1800, highpass: 140, delay: 0 } as NoiseLayer,
@@ -296,46 +306,46 @@ export const SFX_PARAMS = {
     },
     // ──── EQUIP ───────────────────────────────────────────────────────────────
     equip: {
-        freqs: [392, 587.33, 783.99] as number[],
-        dur: 0.1, type: 'triangle' as OscillatorType, gain: 0.05, delayStep: 0.03, glideRatio: 1.03 as number | undefined,
-    },
+        freqs: [392, 587.33, 783.99],
+        dur: 0.1, type: 'triangle' as OscillatorType, gain: 0.05, delayStep: 0.03, glideRatio: 1.03,
+    } as ArpParams,
     // ──── UI OPEN / CLOSE ─────────────────────────────────────────────────────
     uiOpen: {
-        freqs: [392, 523.25] as number[],
-        dur: 0.1, type: 'triangle' as OscillatorType, gain: 0.04, delayStep: 0.035, glideRatio: 1.04 as number | undefined,
-    },
+        freqs: [392, 523.25],
+        dur: 0.1, type: 'triangle' as OscillatorType, gain: 0.04, delayStep: 0.035, glideRatio: 1.04,
+    } as ArpParams,
     uiClose: {
-        freqs: [523.25, 392] as number[],
-        dur: 0.09, type: 'sine' as OscillatorType, gain: 0.032, delayStep: 0.03, glideRatio: 0.96 as number | undefined,
-    },
+        freqs: [523.25, 392],
+        dur: 0.09, type: 'sine' as OscillatorType, gain: 0.032, delayStep: 0.03, glideRatio: 0.96,
+    } as ArpParams,
     // ──── CARD REVEAL ─────────────────────────────────────────────────────────
     cardReveal: {
         normal: {
             tone: { freq: 440, dur: 0.09, type: 'triangle' as OscillatorType, gain: 0.05, glideTo: 659.25 } as ToneLayer,
         },
         uncommon: {
-            freqs: [523.25, 659.25] as number[],
-            dur: 0.12, type: 'triangle' as OscillatorType, gain: 0.055, delayStep: 0.04, glideRatio: 1.06 as number | undefined,
-        },
+            freqs: [523.25, 659.25],
+            dur: 0.12, type: 'triangle' as OscillatorType, gain: 0.055, delayStep: 0.04, glideRatio: 1.06,
+        } as ArpParams,
         special: {
             noise: { dur: 0.05, gain: 0.02, lowpass: 4800, highpass: 900, delay: 0 } as NoiseLayer,
-            freqs: [659.25, 783.99, 1046.5] as number[],
-            dur: 0.14, type: 'sawtooth' as OscillatorType, gain: 0.065, delayStep: 0.045, glideRatio: 1.08 as number | undefined,
-        },
+            freqs: [659.25, 783.99, 1046.5],
+            dur: 0.14, type: 'sawtooth' as OscillatorType, gain: 0.065, delayStep: 0.045, glideRatio: 1.08,
+        } as ArpParams & { noise: NoiseLayer },
     },
     // ──── ALBUM COMPLETE ──────────────────────────────────────────────────────
     albumComplete: {
         noise: { dur: 0.08, gain: 0.018, lowpass: 5400, highpass: 1000, delay: 0 } as NoiseLayer,
-        freqs: [392, 523.25, 659.25, 783.99, 1046.5] as number[],
-        dur: 0.18, gain: 0.07, delayStep: 0.05, glideRatio: 1.04 as number | undefined,
+        freqs: [392, 523.25, 659.25, 783.99, 1046.5] as readonly number[],
+        dur: 0.18, gain: 0.07, delayStep: 0.05, glideRatio: 1.04,
         /** First `typeThreshold` notes use `typeBelow`; the rest use `typeAtOrAbove`. */
         typeThreshold: 3, typeBelow: 'triangle' as OscillatorType, typeAtOrAbove: 'sawtooth' as OscillatorType,
     },
     // ──── LEVEL UP ────────────────────────────────────────────────────────────
     levelUp: {
         noise: { dur: 0.06, gain: 0.022, lowpass: 5600, highpass: 1000, delay: 0 } as NoiseLayer,
-        freqs: [523.25, 659.25, 783.99, 1046.5] as number[],
-        dur: 0.16, gain: 0.07, delayStep: 0.045, glideRatio: 1.05 as number | undefined,
+        freqs: [523.25, 659.25, 783.99, 1046.5] as readonly number[],
+        dur: 0.16, gain: 0.07, delayStep: 0.045, glideRatio: 1.05,
         typeThreshold: 2, typeBelow: 'triangle' as OscillatorType, typeAtOrAbove: 'sawtooth' as OscillatorType,
     },
     // ──── HEALING STATION ─────────────────────────────────────────────────────
@@ -346,9 +356,9 @@ export const SFX_PARAMS = {
     },
     // ──── TELEPORT ────────────────────────────────────────────────────────────
     teleport: {
-        freqs: [261.63, 392, 523.25] as number[],
-        dur: 0.16, type: 'triangle' as OscillatorType, gain: 0.07, delayStep: 0.08, glideRatio: 1.12 as number | undefined,
-    },
+        freqs: [261.63, 392, 523.25],
+        dur: 0.16, type: 'triangle' as OscillatorType, gain: 0.07, delayStep: 0.08, glideRatio: 1.12,
+    } as ArpParams,
     // ──── BOSS SPAWN ──────────────────────────────────────────────────────────
     bossSpawn: {
         noise: { dur: 0.28, gain: 0.075, lowpass: 1400, highpass: 90, delay: 0 } as NoiseLayer,
@@ -359,9 +369,9 @@ export const SFX_PARAMS = {
     },
     // ──── STAGE CLEARED ───────────────────────────────────────────────────────
     stageCleared: {
-        freqs: [261.63, 329.63, 392, 523.25] as number[],
-        dur: 0.22, type: 'triangle' as OscillatorType, gain: 0.085, delayStep: 0.07, glideRatio: undefined as number | undefined,
-    },
+        freqs: [261.63, 329.63, 392, 523.25],
+        dur: 0.22, type: 'triangle' as OscillatorType, gain: 0.085, delayStep: 0.07,
+    } as ArpParams,
     // ──── BARREL BREAK ────────────────────────────────────────────────────────
     barrelBreak: {
         noise: { dur: 0.12, gain: 0.08, lowpass: 2200, highpass: 180, delay: 0 } as NoiseLayer,
@@ -379,9 +389,9 @@ export const SFX_PARAMS = {
     },
     // ──── CHEST OPEN ──────────────────────────────────────────────────────────
     chestOpen: {
-        freqs: [196, 246.94, 329.63] as number[],
-        dur: 0.16, type: 'triangle' as OscillatorType, gain: 0.07, delayStep: 0.05, glideRatio: 1.08 as number | undefined,
-    },
+        freqs: [196, 246.94, 329.63],
+        dur: 0.16, type: 'triangle' as OscillatorType, gain: 0.07, delayStep: 0.05, glideRatio: 1.08,
+    } as ArpParams,
 };
 
 export class AudioManager {
@@ -466,6 +476,17 @@ export class AudioManager {
         this.startStageMusicIfPossible();
     }
 
+    /**
+     * Play an arpeggio-style effect: the same envelope shape applied to each
+     * frequency in `p.freqs`, staggered by `p.delayStep` seconds each.
+     */
+    private playArp(p: ArpParams): void {
+        p.freqs.forEach((f, i) =>
+            this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep,
+                p.glideRatio !== undefined ? f * p.glideRatio : undefined),
+        );
+    }
+
     playFootstep(source: FootstepSource): void {
         const { noise: n, tone: t } = SFX_PARAMS.footstep[source];
         this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
@@ -506,27 +527,23 @@ export class AudioManager {
     }
 
     playBuy(): void {
-        const p = SFX_PARAMS.buy;
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.buy);
     }
 
     playSell(): void {
-        const p = SFX_PARAMS.sell;
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.sell);
     }
 
     playUpgrade(): void {
-        const p = SFX_PARAMS.upgrade;
-        const n = p.noise;
+        const { noise: n } = SFX_PARAMS.upgrade;
         this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.upgrade);
     }
 
     playInsufficient(): void {
-        const p = SFX_PARAMS.insufficient;
-        const n = p.noise;
+        const { noise: n } = SFX_PARAMS.insufficient;
         this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.insufficient);
     }
 
     playLaserBeamSkill(): void {
@@ -537,8 +554,7 @@ export class AudioManager {
     }
 
     playHealingSkill(): void {
-        const p = SFX_PARAMS.healingSkill;
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.healingSkill);
     }
 
     playAreaAttackSkill(): void {
@@ -549,18 +565,15 @@ export class AudioManager {
     }
 
     playEquip(): void {
-        const p = SFX_PARAMS.equip;
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.equip);
     }
 
     playUiOpen(): void {
-        const p = SFX_PARAMS.uiOpen;
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.uiOpen);
     }
 
     playUiClose(): void {
-        const p = SFX_PARAMS.uiClose;
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.uiClose);
     }
 
     playCardReveal(rarity: CardRevealRarity): void {
@@ -571,15 +584,14 @@ export class AudioManager {
                 break;
             }
             case 'uncommon': {
-                const p = SFX_PARAMS.cardReveal.uncommon;
-                p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+                this.playArp(SFX_PARAMS.cardReveal.uncommon);
                 break;
             }
             case 'special': {
                 const p = SFX_PARAMS.cardReveal.special;
                 const n = p.noise;
                 this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-                p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+                this.playArp(p);
                 break;
             }
         }
@@ -591,7 +603,8 @@ export class AudioManager {
         this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
         p.freqs.forEach((f, i) => {
             const type = i < p.typeThreshold ? p.typeBelow : p.typeAtOrAbove;
-            this.playTone(f, p.dur, type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined);
+            const glideTo = f * p.glideRatio;
+            this.playTone(f, p.dur, type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, glideTo);
         });
     }
 
@@ -601,7 +614,8 @@ export class AudioManager {
         this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
         p.freqs.forEach((f, i) => {
             const type = i < p.typeThreshold ? p.typeBelow : p.typeAtOrAbove;
-            this.playTone(f, p.dur, type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined);
+            const glideTo = f * p.glideRatio;
+            this.playTone(f, p.dur, type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, glideTo);
         });
     }
 
@@ -620,8 +634,7 @@ export class AudioManager {
     }
 
     playTeleport(): void {
-        const p = SFX_PARAMS.teleport;
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.teleport);
     }
 
     playBossSpawn(): void {
@@ -632,8 +645,7 @@ export class AudioManager {
     }
 
     playStageCleared(): void {
-        const p = SFX_PARAMS.stageCleared;
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.stageCleared);
     }
 
     playBarrelBreak(): void {
@@ -648,8 +660,7 @@ export class AudioManager {
     }
 
     playChestOpen(): void {
-        const p = SFX_PARAMS.chestOpen;
-        p.freqs.forEach((f, i) => this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, p.glideRatio !== undefined ? f * p.glideRatio : undefined));
+        this.playArp(SFX_PARAMS.chestOpen);
     }
 
     private registerUnlockHandlers(): void {
