@@ -1,3 +1,23 @@
+# [3.19.0](https://github.com/samtun/hackworld/compare/v3.18.0...v3.19.0) (2026-05-18)
+
+
+### Bug Fixes
+
+* refine procedural audio feedback ([548896a](https://github.com/samtun/hackworld/commit/548896ac5610ab32db2903c53c78fa7986906778))
+* restore stable web audio engine ([54e30dd](https://github.com/samtun/hackworld/commit/54e30dd353beaf2ad0ee50be4b9f231fc4f0bcc1))
+
+
+### Features
+
+* add healing station loop audio ([68e8660](https://github.com/samtun/hackworld/commit/68e86608c9460ac24ce12c2891c89167410b8787))
+* add procedural action audio hooks ([3b00df7](https://github.com/samtun/hackworld/commit/3b00df72ad5e915215e83032af441a077ca0c7fe))
+* add skill audio cues ([937d7c3](https://github.com/samtun/hackworld/commit/937d7c3f7aea33cf855c5c0f592f36d14827d57c))
+* add ui open close and failure audio ([589c682](https://github.com/samtun/hackworld/commit/589c682b80bb567ae6778b771bcb57dfb2a16597))
+* add UI sounds and longer music loops ([1060bdd](https://github.com/samtun/hackworld/commit/1060bdd5e10f50364fa55802c0d6f2755ad75b4a))
+* expand inventory and level audio ([7a29bd9](https://github.com/samtun/hackworld/commit/7a29bd9e4e3c4d9b4bd3906a2fdcdd3f6c0dab18))
+* expand menu and card audio feedback ([261ee01](https://github.com/samtun/hackworld/commit/261ee01a8121a16298bb493ff9aa4ccf6852c094))
+* upgrade game audio with tonejs ([deabe06](https://github.com/samtun/hackworld/commit/deabe06b49fced009da56447792cdf89625d5ddf))
+
 # [3.18.0](https://github.com/samtun/hackworld/compare/v3.17.0...v3.18.0) (2026-05-16)
 
 
