@@ -31,7 +31,7 @@
             --font:     'Share Tech Mono', 'Courier New', monospace;
         }
 
-        html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 12px; }
+        html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); font-size: 14px; }
 
         body { display: flex; flex-direction: column; }
 
@@ -43,13 +43,13 @@
             display: flex; align-items: center; gap: 10px;
             flex-shrink: 0;
         }
-        #hdr h1 { font-size: 15px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; }
+        #hdr h1 { font-size: 18px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; }
         #hdr .sep { flex: 1; }
 
         /* ── Buttons ────────────────────────────────────────────────────── */
         .btn {
             background: var(--surface2); border: 1px solid var(--border);
-            color: var(--text); font-family: var(--font); font-size: 11px;
+            color: var(--text); font-family: var(--font); font-size: 13px;
             padding: 5px 11px; border-radius: var(--radius); cursor: pointer;
             letter-spacing: 1px; transition: border-color .12s, color .12s, background .12s;
         }
@@ -69,23 +69,23 @@
             flex-shrink: 0; min-height: 34px;
         }
         .tg { display: flex; align-items: center; gap: 5px; }
-        .tg label { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+        .tg label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
         .tg input[type="number"] {
             background: var(--bg); border: 1px solid var(--border); color: var(--text);
-            font-family: var(--font); font-size: 11px; padding: 2px 5px;
+            font-family: var(--font); font-size: 13px; padding: 2px 5px;
             border-radius: var(--radius); width: 54px;
         }
         .tg select {
             background: var(--bg); border: 1px solid var(--border); color: var(--text);
-            font-family: var(--font); font-size: 11px; padding: 2px 4px;
+            font-family: var(--font); font-size: 13px; padding: 2px 4px;
             border-radius: var(--radius);
         }
         .tg input[type="range"] { width: 76px; accent-color: var(--accent); cursor: pointer; }
-        .tv { font-size: 10px; color: var(--accent); min-width: 28px; }
+        .tv { font-size: 12px; color: var(--accent); min-width: 28px; }
 
         /* ── Ruler ──────────────────────────────────────────────────────── */
         #ruler-row {
-            display: flex; flex-shrink: 0; height: 18px;
+            display: flex; flex-shrink: 0; height: 22px;
             border-bottom: 1px solid var(--border);
         }
         #ruler-key-pad { width: 52px; flex-shrink: 0; background: #0b0c14; border-right: 1px solid var(--border); }
@@ -107,7 +107,7 @@
         .key-lbl {
             height: 22px; display: flex; align-items: center;
             justify-content: flex-end; padding-right: 7px;
-            font-size: 10px; border-bottom: 1px solid #141a26;
+            font-size: 12px; border-bottom: 1px solid #141a26;
             user-select: none; letter-spacing: 0.5px;
         }
         .key-nat { color: var(--text); background: var(--row-nat); }
@@ -127,7 +127,7 @@
             width: 52px; flex-shrink: 0;
             background: #0b0c14; border-right: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 9px; letter-spacing: 2px; color: var(--accent2);
+            font-size: 11px; letter-spacing: 2px; color: var(--accent2);
             text-transform: uppercase; user-select: none;
         }
         #noise-clip { flex: 1; overflow: hidden; position: relative; cursor: crosshair; background: #080812; }
@@ -140,18 +140,18 @@
             border-radius: 6px; padding: 12px 14px 10px;
             min-width: 216px; box-shadow: 0 6px 28px rgba(0,0,0,.85);
         }
-        #popup h3 { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 9px; }
+        #popup h3 { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--accent); margin-bottom: 9px; }
         .pf { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
-        .pf label { font-size: 9px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; width: 56px; flex-shrink: 0; }
+        .pf label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; width: 56px; flex-shrink: 0; }
         .pf input, .pf select {
             background: var(--bg); border: 1px solid var(--border); color: var(--text);
-            font-family: var(--font); font-size: 10px; padding: 2px 5px;
+            font-family: var(--font); font-size: 12px; padding: 2px 5px;
             border-radius: var(--radius); flex: 1; min-width: 0;
         }
         .pf input[type="range"] { accent-color: var(--accent); cursor: pointer; }
-        .pv { font-size: 10px; color: var(--accent); min-width: 28px; }
+        .pv { font-size: 12px; color: var(--accent); min-width: 28px; }
         .pa { display: flex; gap: 6px; margin-top: 8px; }
-        #popup-x { position: absolute; top: 5px; right: 8px; background: none; border: none; color: var(--dim); cursor: pointer; font-size: 14px; padding: 2px 4px; }
+        #popup-x { position: absolute; top: 5px; right: 8px; background: none; border: none; color: var(--dim); cursor: pointer; font-size: 17px; padding: 2px 4px; }
         #popup-x:hover { color: var(--text); }
 
         /* ── Code output ─────────────────────────────────────────────────── */
@@ -163,10 +163,10 @@
             display: flex; align-items: center; gap: 8px;
             padding: 4px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;
         }
-        #code-hdr span { font-size: 9px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
+        #code-hdr span { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
         #code-ta {
             flex: 1; background: #000; border: none; color: #98dfc0;
-            font-family: var(--font); font-size: 10px; padding: 6px 10px;
+            font-family: var(--font); font-size: 12px; padding: 6px 10px;
             resize: none; outline: none; overflow-y: auto;
         }
 
@@ -174,7 +174,7 @@
         #hints {
             background: #080910; border-top: 1px solid var(--border);
             padding: 3px 12px 3px calc(52px + 12px);
-            font-size: 9px; color: var(--dim); letter-spacing: 0.5px;
+            font-size: 11px; color: var(--dim); letter-spacing: 0.5px;
             flex-shrink: 0; display: flex; gap: 14px; flex-wrap: wrap; user-select: none;
         }
         .hi::before { content: '▸ '; color: var(--accent); }
@@ -200,9 +200,9 @@
 
 <!-- Toolbar -->
 <div id="toolbar">
-    <div class="tg"><label>Grid</label><input type="number" id="cfg-grid" min="0.05" max="2" step="0.05" value="0.2" /><span style="font-size:9px;color:var(--dim)">s</span></div>
+    <div class="tg"><label>BPM</label><input type="number" id="cfg-bpm" min="40" max="300" step="1" value="120" /></div>
     <div class="tg" style="width:1px;height:18px;background:var(--border);padding:0;flex-shrink:0;"></div>
-    <div class="tg"><label>Duration</label><input type="number" id="cfg-dur" min="0.05" max="5" step="0.05" value="0.25" /><span style="font-size:9px;color:var(--dim)">s</span></div>
+    <div class="tg"><label>Duration</label><input type="number" id="cfg-dur" min="0.05" max="5" step="0.05" value="0.25" /><span style="font-size:11px;color:var(--dim)">s</span></div>
     <div class="tg"><label>Type</label>
         <select id="cfg-type">
             <option value="sine">sine</option>
@@ -236,6 +236,9 @@
     <div id="noise-clip"><canvas id="noise-canvas"></canvas></div>
 </div>
 
+<!-- Horizontal scrollbar -->
+<div id="hscroll-bar" style="overflow-x:auto;overflow-y:hidden;flex-shrink:0;height:10px;margin-left:52px;border-top:1px solid var(--border);"><div id="hscroll-inner" style="height:1px;"></div></div>
+
 <!-- Code output -->
 <div id="code-section">
     <div id="code-hdr">
@@ -248,11 +251,12 @@
 
 <!-- Hints -->
 <div id="hints">
-    <span class="hi">Space + drag: scroll timeline</span>
-    <span class="hi">Click empty row: add tone (snaps to grid)</span>
+    <span class="hi">Scroll timeline: mouse wheel</span>
+    <span class="hi">Space: play / stop</span>
+    <span class="hi">Click empty row: add tone</span>
     <span class="hi">Click tone: edit</span>
     <span class="hi">Right-click tone: delete</span>
-    <span class="hi">Click noise strip: add noise (snaps to grid)</span>
+    <span class="hi">Click noise strip: add noise</span>
     <span class="hi">Right-click noise: delete</span>
 </div>
 

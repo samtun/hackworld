@@ -1,9 +1,10 @@
 /**
  * HackWorld Sound Editor — DAW Timeline (main.ts)
  *
- * Piano-roll style canvas editor. Time on X axis, chromatic scale on Y axis.
- * Space + drag to scroll. Click to add tones/noise, click to edit, right-click
- * to delete. Animated playhead during playback. Exports AudioManager snippets.
+ * Piano-roll style canvas editor. Beat grid on X axis, chromatic scale on Y axis.
+ * Scroll horizontally via mouse wheel or the scrollbar. Space = Play/Stop.
+ * Click to add tones/noise, click to edit, right-click to delete.
+ * Animated playhead during playback. Exports AudioManager snippets.
  */
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -57,7 +58,7 @@ const NOTES: { name: string; freq: number }[] = [
 const PPS              = 120;   // pixels per second
 const ROW_H            = 22;   // row height px
 const NOISE_H          = 23;   // noise strip height px
-const RULER_H          = 18;   // ruler height px
+const RULER_H          = 22;   // ruler height px (larger for bigger font)
 const MIN_SECS         = 10;   // minimum timeline width in seconds
 const ENV_MIN          = 0.0001;
 const AUTOSCROLL_MARGIN = 80;  // px from right edge before auto-scroll kicks in
@@ -66,10 +67,6 @@ const AUTOSCROLL_MARGIN = 80;  // px from right edge before auto-scroll kicks in
 let tones: ToneEvent[]   = [];
 let noises: NoiseEvent[] = [];
 let scrollX    = 0;      // horizontal scroll in px
-let isSpace    = false;
-let isDragging = false;
-let dragAnchorX   = 0;
-let dragAnchorScroll = 0;
 let editingId: string | null = null;
 let editingKind: 'tone' | 'noise' = 'tone';
 let isPlaying  = false;
@@ -81,7 +78,7 @@ let cfgType: OscType = 'triangle';
 let cfgGain   = 0.06;
 let cfgDelay  = 0.0;
 let cfgGlide: number | null = null;
-let cfgGrid   = 0.2;  // grid snap width in seconds
+let cfgBpm    = 120;    // beats per minute
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const tlCanvas    = document.getElementById('tl-canvas')    as HTMLCanvasElement;
@@ -97,7 +94,7 @@ const stopBtn     = document.getElementById('stop-btn')     as HTMLButtonElement
 const clearBtn    = document.getElementById('clear-btn')    as HTMLButtonElement;
 const exportBtn   = document.getElementById('export-btn')   as HTMLButtonElement;
 const cfgDurEl    = document.getElementById('cfg-dur')      as HTMLInputElement;
-const cfgGridEl   = document.getElementById('cfg-grid')     as HTMLInputElement;
+const cfgBpmEl    = document.getElementById('cfg-bpm')      as HTMLInputElement;
 const cfgTypeEl   = document.getElementById('cfg-type')     as HTMLSelectElement;
 const cfgGainEl   = document.getElementById('cfg-gain')     as HTMLInputElement;
 const cfgGainV    = document.getElementById('cfg-gain-v')   as HTMLSpanElement;
@@ -124,11 +121,16 @@ const ppDel       = document.getElementById('pp-del')       as HTMLButtonElement
 const ppX         = document.getElementById('popup-x')      as HTMLButtonElement;
 const codeTa      = document.getElementById('code-ta')      as HTMLTextAreaElement;
 const copyBtn     = document.getElementById('copy-btn')     as HTMLButtonElement;
+const hscrollBar  = document.getElementById('hscroll-bar')  as HTMLDivElement;
+const hscrollInner = document.getElementById('hscroll-inner') as HTMLDivElement;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function uid(): string { return Math.random().toString(36).slice(2, 9); }
 
 function fmt(n: number): string { return parseFloat(n.toFixed(5)).toString(); }
+
+/** Duration of one beat in seconds at the current BPM. */
+function beatDur(): number { return 60 / cfgBpm; }
 
 /** Return the CSS-pixel width of the visible timeline area. */
 function visibleW(): number { return tlClip.clientWidth || 800; }
@@ -202,14 +204,14 @@ function resizeAll(): void {
 
 // ── Grid helpers ───────────────────────────────────────────────────────────────
 function drawGrid(cx: CanvasRenderingContext2D, w: number, h: number): void {
-    const step   = cfgGrid > 0 ? cfgGrid : 0.25;
-    const startS = scrollX / PPS;
-    const endS   = startS + w / PPS;
-    for (let s = Math.floor(startS / step) * step; s <= endS + 0.001; s += step) {
-        const x      = Math.round(s * PPS - scrollX) + 0.5;
-        const isSec  = Math.abs(s - Math.round(s)) < 0.001;
-        cx.strokeStyle = isSec ? '#2e4870' : '#1e3050';
-        cx.lineWidth   = isSec ? 1 : 0.5;
+    const bd = beatDur();
+    const startBeat = Math.floor(scrollX / PPS / bd);
+    const endBeat   = Math.ceil((scrollX + w) / PPS / bd) + 1;
+    for (let beat = startBeat; beat <= endBeat; beat++) {
+        const x     = Math.round(beat * bd * PPS - scrollX) + 0.5;
+        const isBar = beat % 4 === 0;
+        cx.strokeStyle = isBar ? '#2e4870' : '#1a3050';
+        cx.lineWidth   = isBar ? 1 : 0.5;
         cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, h); cx.stroke();
     }
 }
@@ -222,22 +224,22 @@ function renderRuler(): void {
     cx.fillStyle = '#09090e';
     cx.fillRect(0, 0, w, RULER_H);
 
-    const step   = cfgGrid > 0 ? cfgGrid : 0.25;
-    const startS = scrollX / PPS;
-    const endS   = startS + w / PPS;
-    cx.font = '8px monospace'; cx.textAlign = 'left';
+    const bd = beatDur();
+    const startBeat = Math.floor(scrollX / PPS / bd);
+    const endBeat   = Math.ceil((scrollX + w) / PPS / bd) + 1;
+    cx.font = '10px monospace'; cx.textAlign = 'left';
 
-    for (let s = Math.floor(startS / step) * step; s <= endS + 0.001; s += step) {
-        const x     = Math.round(s * PPS - scrollX) + 0.5;
-        const isSec = Math.abs(s - Math.round(s)) < 0.001;
-        cx.strokeStyle = isSec ? '#303858' : '#1a2030';
-        cx.lineWidth   = isSec ? 1 : 0.5;
+    for (let beat = startBeat; beat <= endBeat; beat++) {
+        const x     = Math.round(beat * bd * PPS - scrollX) + 0.5;
+        const isBar = beat % 4 === 0;
+        cx.strokeStyle = isBar ? '#303858' : '#1a2030';
+        cx.lineWidth   = isBar ? 1 : 0.5;
         cx.beginPath();
-        cx.moveTo(x, isSec ? 0 : 10);
+        cx.moveTo(x, isBar ? 0 : RULER_H - 6);
         cx.lineTo(x, RULER_H); cx.stroke();
-        if (isSec) {
+        if (isBar) {
             cx.fillStyle = '#7080a0';
-            cx.fillText(s.toFixed(1) + 's', x + 3, 11);
+            cx.fillText(`${Math.floor(beat / 4) + 1}`, x + 3, 13);
         }
     }
     // Playhead on ruler
@@ -285,7 +287,7 @@ function renderTimeline(): void {
         cx.fill(); cx.stroke();
 
         if (bw > 18) {
-            cx.fillStyle = '#a0d8f0'; cx.font = '8px monospace'; cx.textAlign = 'left';
+            cx.fillStyle = '#a0d8f0'; cx.font = '10px monospace'; cx.textAlign = 'left';
             cx.fillText(NOTES[ev.noteIdx].name, x + 4, y + bh / 2 + 3);
         }
         // Glide indicator
@@ -311,9 +313,6 @@ function renderNoise(): void {
     const cx = ctx2d(noiseCanvas);
     cx.clearRect(0, 0, w, NOISE_H);
     cx.fillStyle = '#080812'; cx.fillRect(0, 0, w, NOISE_H);
-
-    // Centre guide line
-    cx.fillStyle = '#14101e'; cx.fillRect(0, NOISE_H / 2 - 1, w, 1);
 
     drawGrid(cx, w, NOISE_H);
 
@@ -349,11 +348,22 @@ function roundRect(cx: CanvasRenderingContext2D, x: number, y: number, w: number
     cx.closePath();
 }
 
+// ── Scrollbar sync ─────────────────────────────────────────────────────────────
+let ignoreHscrollEvent = false;
+
+function syncScrollbar(): void {
+    hscrollInner.style.width = `${virtualW()}px`;
+    ignoreHscrollEvent = true;
+    hscrollBar.scrollLeft = scrollX;
+    ignoreHscrollEvent = false;
+}
+
 // ── Master render ──────────────────────────────────────────────────────────────
 function render(): void {
     renderRuler();
     renderTimeline();
     renderNoise();
+    syncScrollbar();
 }
 
 // ── Hit-testing ────────────────────────────────────────────────────────────────
@@ -385,7 +395,6 @@ function canvasXY(canvas: HTMLCanvasElement, e: MouseEvent): { x: number; y: num
 function onTlDown(e: MouseEvent): void {
     if (e.button !== 0) return;
     const { x, y } = canvasXY(tlCanvas, e);
-    if (isSpace) { startDrag(e.clientX); return; }
 
     const hit = hitTone(x, y);
     if (hit) {
@@ -409,7 +418,6 @@ function onTlCtx(e: MouseEvent): void {
 function onNoiseDown(e: MouseEvent): void {
     if (e.button !== 0) return;
     const { x } = canvasXY(noiseCanvas, e);
-    if (isSpace) { startDrag(e.clientX); return; }
 
     const hit = hitNoise(x);
     if (hit) {
@@ -427,29 +435,19 @@ function onNoiseCtx(e: MouseEvent): void {
     if (hit) { noises = noises.filter(n => n.id !== hit.id); closePopup(); render(); }
 }
 
-// ── Drag (Space + drag to scroll) ─────────────────────────────────────────────
-function startDrag(clientX: number): void {
-    isDragging = true; dragAnchorX = clientX; dragAnchorScroll = scrollX;
-    document.body.style.cursor = 'grabbing';
-}
-
-function onMouseMove(e: MouseEvent): void {
-    if (!isDragging) return;
-    scrollX = Math.max(0, dragAnchorScroll + (dragAnchorX - e.clientX));
+// ── Horizontal wheel scroll ────────────────────────────────────────────────────
+function onWheel(e: WheelEvent): void {
+    e.preventDefault();
+    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    scrollX = Math.max(0, scrollX + delta);
     render();
 }
 
-function onMouseUp(): void {
-    if (!isDragging) return;
-    isDragging = false;
-    document.body.style.cursor = '';
-}
-
 // ── Grid snap ─────────────────────────────────────────────────────────────────
-/** Snap a time value to the nearest grid line. */
+/** Snap a time value to the closest beat BEFORE the given time (floor snap). */
 function snapToGrid(t: number): number {
-    if (cfgGrid <= 0) return t;
-    return Math.round(t / cfgGrid) * cfgGrid;
+    const bd = beatDur();
+    return Math.floor(t / bd) * bd;
 }
 
 // ── Add events ─────────────────────────────────────────────────────────────────
@@ -664,7 +662,7 @@ function init(): void {
 
     // Toolbar
     cfgDurEl.addEventListener('change',  () => { cfgDur   = parseFloat(cfgDurEl.value)  || 0.25; });
-    cfgGridEl.addEventListener('change', () => { cfgGrid = Math.max(0.05, parseFloat(cfgGridEl.value)); render(); });
+    cfgBpmEl.addEventListener('change',  () => { cfgBpm   = Math.max(40, Math.min(300, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
     cfgTypeEl.addEventListener('change', () => { cfgType  = cfgTypeEl.value as OscType; });
     cfgGainEl.addEventListener('input',  () => { cfgGain  = parseFloat(cfgGainEl.value); cfgGainV.textContent  = cfgGain.toFixed(2); });
     cfgDelayEl.addEventListener('input', () => { cfgDelay = parseFloat(cfgDelayEl.value); cfgDelayV.textContent = cfgDelay.toFixed(1) + 's'; });
@@ -701,25 +699,31 @@ function init(): void {
     noiseCanvas.addEventListener('mousedown', onNoiseDown);
     noiseCanvas.addEventListener('contextmenu', onNoiseCtx);
 
-    // Space key + drag
+    // Horizontal scroll via wheel
     const EDITABLE = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
     const isEditable = (t: EventTarget | null): boolean =>
         t instanceof Element && EDITABLE.has(t.tagName);
 
+    tlClip.addEventListener('wheel',    onWheel, { passive: false });
+    noiseClip.addEventListener('wheel', onWheel, { passive: false });
+    editorOuter.addEventListener('wheel', (e: WheelEvent) => {
+        if (!isEditable(e.target)) { onWheel(e); }
+    }, { passive: false });
+
+    // Horizontal scrollbar
+    hscrollBar.addEventListener('scroll', () => {
+        if (ignoreHscrollEvent) return;
+        scrollX = hscrollBar.scrollLeft;
+        render();
+    });
+
+    // Space = Play / Stop
     window.addEventListener('keydown', e => {
         if (e.code === 'Space' && !isEditable(e.target)) {
-            e.preventDefault(); isSpace = true;
-            tlClip.style.cursor = 'grab'; noiseClip.style.cursor = 'grab';
+            e.preventDefault();
+            if (isPlaying) stopPlayback(); else startPlayback();
         }
     });
-    window.addEventListener('keyup', e => {
-        if (e.code === 'Space') {
-            isSpace = false;
-            tlClip.style.cursor = 'crosshair'; noiseClip.style.cursor = 'crosshair';
-        }
-    });
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup',   onMouseUp);
 
     // Close popup on outside click
     window.addEventListener('mousedown', e => {
