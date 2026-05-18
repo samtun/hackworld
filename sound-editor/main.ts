@@ -635,19 +635,22 @@ function startPlayback(): void {
     }
 
     // Schedule pass 1 immediately.
-    const absStart   = ctx.currentTime;
-    const pass1Dur   = schedulePassFresh(absStart);
+    const absStart = ctx.currentTime;
+    const pass1Dur = schedulePassFresh(absStart);
 
-    // nextPassAbs: absolute time when the next pre-scheduled pass starts.
-    // nextPassDur: duration of that pass (so we know when it ends / next-next starts).
-    let nextPassAbs = absStart + pass1Dur;
-    let nextPassDur = cfgLoop ? schedulePassFresh(nextPassAbs) : pass1Dur;
+    // Queue of pre-scheduled audio passes.  Each record stores the absolute
+    // start time and duration of one scheduled pass, and is immutable once
+    // pushed.  scheduled[0] is always the pass currently playing (or the most
+    // recently started pass), so `playhead = now - scheduled[0].abs` is always
+    // accurate regardless of how many lookahead passes have been scheduled.
+    interface PassRecord { abs: number; dur: number; }
+    const scheduled: PassRecord[] = [{ abs: absStart, dur: pass1Dur }];
 
-    // Track the start and duration of the pass the playhead is currently in.
-    // Updated when the playhead crosses a pass boundary, independently of the
-    // audio lookahead scheduling above.
-    let currentPassStart = absStart;
-    let currentPassDur   = pass1Dur;
+    if (cfgLoop) {
+        // Pre-schedule a second pass immediately for a seamless first loop boundary.
+        const p2Abs = absStart + pass1Dur;
+        scheduled.push({ abs: p2Abs, dur: schedulePassFresh(p2Abs) });
+    }
 
     isPlaying = true;
     playBtn.disabled = true; stopBtn.disabled = false;
@@ -657,21 +660,19 @@ function startPlayback(): void {
         const now = ctx.currentTime;
 
         if (cfgLoop) {
-            // Advance pass tracking when the current pass has fully elapsed.
-            if (now >= currentPassStart + currentPassDur) {
-                currentPassStart += currentPassDur;
-                currentPassDur    = nextPassDur;
+            // Pop completed passes, always keeping at least one as the "current" pass.
+            while (scheduled.length > 1 && now >= scheduled[0].abs + scheduled[0].dur) {
+                scheduled.shift();
                 scrollX = 0; // reset horizontal view on each loop wrap
             }
-            playhead = now - currentPassStart;
+            playhead = now - scheduled[0].abs;
 
-            // Pre-schedule the pass-after-next when we are within LOOP_LOOKAHEAD
-            // of the end of the already-scheduled next pass. Uses fresh timeline
-            // data so any edits made while playing appear on the upcoming pass.
-            if (now >= nextPassAbs - LOOP_LOOKAHEAD) {
-                const newStart = nextPassAbs + nextPassDur;
-                nextPassDur    = schedulePassFresh(newStart);
-                nextPassAbs    = newStart;
+            // Extend the audio schedule when the last queued pass is about to end.
+            // Uses fresh timeline data so edits appear on the upcoming pass.
+            const last = scheduled[scheduled.length - 1];
+            if (now >= last.abs + last.dur - LOOP_LOOKAHEAD) {
+                const newAbs = last.abs + last.dur;
+                scheduled.push({ abs: newAbs, dur: schedulePassFresh(newAbs) });
             }
         } else {
             playhead = now - absStart;
