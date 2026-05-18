@@ -1657,6 +1657,7 @@ export class Player extends BaseMesh {
         // Start shockwave timer
         this.shockwavePending = true;
         this.levelUpShockwaveTimer = 0;
+        AudioManager.Instance.playLevelUp();
 
         console.log(`Level Up! Now level ${this.level}. Next level requires ${this.expRequired} EXP. ${this.statPointsAvailable} stat points available.`);
     }
@@ -1895,6 +1896,7 @@ export class Player extends BaseMesh {
         }
 
         this.recalculateStats();
+        AudioManager.Instance.playUpgrade();
         console.log(`Added 1 point to ${statType}. ${this.statPointsAvailable} points remaining.`);
         return true;
     }

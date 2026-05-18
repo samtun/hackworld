@@ -324,6 +324,12 @@ export class AudioManager {
         this.playTone(246.94, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0.04, 196);
     }
 
+    playEquip(): void {
+        [392, 587.33, 783.99].forEach((frequency, index) => {
+            this.playTone(frequency, 0.1, 'triangle', 0.05, ENVELOPE_MIN_GAIN, index * 0.03, frequency * 1.03);
+        });
+    }
+
     playUiOpen(): void {
         [392, 523.25].forEach((frequency, index) => {
             this.playTone(frequency, 0.1, 'triangle', 0.04, ENVELOPE_MIN_GAIN, index * 0.035, frequency * 1.04);
@@ -359,6 +365,13 @@ export class AudioManager {
         this.playNoise(0.08, 0.018, 5400, 1000, 0);
         [392, 523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
             this.playTone(frequency, 0.18, index < 3 ? 'triangle' : 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, index * 0.05, frequency * 1.04);
+        });
+    }
+
+    playLevelUp(): void {
+        this.playNoise(0.06, 0.022, 5600, 1000, 0);
+        [523.25, 659.25, 783.99, 1046.5].forEach((frequency, index) => {
+            this.playTone(frequency, 0.16, index < 2 ? 'triangle' : 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, index * 0.045, frequency * 1.05);
         });
     }
 

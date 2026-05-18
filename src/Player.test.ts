@@ -8,6 +8,8 @@ vi.mock('./AudioManager', () => ({
             playAttack: vi.fn(),
             playDamage: vi.fn(),
             playDeath: vi.fn(),
+            playUpgrade: vi.fn(),
+            playLevelUp: vi.fn(),
         },
     },
 }));
@@ -577,7 +579,10 @@ describe('Player.respawn', () => {
 describe('Player.gainExp', () => {
     let player: Player;
 
-    beforeEach(() => { player = makePlayer(); });
+    beforeEach(() => {
+        vi.clearAllMocks();
+        player = makePlayer();
+    });
 
     it('increases exp correctly (with luck bonus)', () => {
         // luck=1: adjustedAmount = floor(100 + 100 * 0.05 * log10(21)) = floor(106.611) = 106
@@ -602,6 +607,11 @@ describe('Player.gainExp', () => {
     it('awards 4 stat points on level up', () => {
         player.gainExp(330);
         expect(player.statPointsAvailable).toBe(4);
+    });
+
+    it('plays the level-up sound when leveling up', () => {
+        player.gainExp(330);
+        expect(AudioManager.Instance.playLevelUp).toHaveBeenCalledOnce();
     });
 
     it('updates expRequired after level up', () => {
@@ -807,12 +817,20 @@ describe('Player.calculateExpRequired (via expRequired)', () => {
 describe('Player.addStatPoint', () => {
     let player: Player;
 
-    beforeEach(() => { player = makePlayer({ statPointsAvailable: 5 } as any); });
+    beforeEach(() => {
+        vi.clearAllMocks();
+        player = makePlayer({ statPointsAvailable: 5 } as any);
+    });
 
     it('adds a strength point and decrements statPointsAvailable', () => {
         player.addStatPoint(StatType.STRENGTH);
         expect((player as any).strengthPoints).toBe(1);
         expect(player.statPointsAvailable).toBe(4);
+    });
+
+    it('plays the upgrade sound when a stat point is spent', () => {
+        player.addStatPoint(StatType.STRENGTH);
+        expect(AudioManager.Instance.playUpgrade).toHaveBeenCalledOnce();
     });
 
     it('returns false when no points available', () => {

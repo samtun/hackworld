@@ -28,6 +28,15 @@ vi.mock('../ui/MenuManager', () => ({
 vi.mock('../ui/UIManager', () => ({
     UIManager: { Instance: { showControlHints: vi.fn(), hideControlHints: vi.fn() } }
 }));
+vi.mock('../AudioManager', () => ({
+    AudioManager: { Instance: {
+        playUiOpen: vi.fn(),
+        playUiClose: vi.fn(),
+        playMenuNavigate: vi.fn(),
+        playEquip: vi.fn(),
+        playInsufficient: vi.fn(),
+    } }
+}));
 vi.mock('../ui/StatIcons', () => ({
     ICON_HP: '', ICON_TP: '', ICON_STRENGTH: '', ICON_DEFENSE: '', ICON_AGILITY: '', ICON_LUCK: '',
     ICON_BITS: '', ICON_NEXTLVL: '', ICON_XDATA: '', ICON_BOOSTER: '',
@@ -38,6 +47,8 @@ vi.mock('./ItemDetailsPanel', () => ({ ItemDetailsPanel: { generateHTML: vi.fn()
 vi.mock('../Player', () => ({ Player: class {} }));
 
 import { InventoryManager } from './InventoryManager';
+import { AudioManager } from '../AudioManager';
+import { EquippableItem } from './EquippableItem';
 import { WeaponType } from './weapons/WeaponType';
 import { SkillTechType } from '../skills/SkillTechType';
 
@@ -111,6 +122,23 @@ function makePlayer(inventory: any[] = [], techOverrides: Partial<Record<WeaponT
     } as any;
 }
 
+function makeEquippableItem(canEquip: boolean) {
+    const item = Object.create(EquippableItem.prototype) as EquippableItem & {
+        name: string;
+        equip: ReturnType<typeof vi.fn>;
+        unequip: ReturnType<typeof vi.fn>;
+        canEquip: ReturnType<typeof vi.fn>;
+    };
+    Object.assign(item, {
+        name: 'Test Item',
+        isEquipped: false,
+        equip: vi.fn(),
+        unequip: vi.fn(),
+        canEquip: vi.fn().mockReturnValue(canEquip),
+    });
+    return item;
+}
+
 describe('InventoryManager', () => {
     let mgr: any;
 
@@ -131,6 +159,11 @@ describe('InventoryManager', () => {
         it('sets container display to flex when opening', () => {
             mgr.toggle();
             expect(mgr.container.style.display).toBe('flex');
+        });
+
+        it('plays the shared open sound when opening', () => {
+            mgr.toggle();
+            expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
         });
 
         it('resets selectedIndex to 0 when opening', () => {
@@ -162,6 +195,13 @@ describe('InventoryManager', () => {
             mgr.isVisible = true;
             mgr.toggle();
             expect(mgr.uiManager.hideControlHints).toHaveBeenCalled();
+        });
+
+        it('plays the shared close sound when closing', () => {
+            mgr.isVisible = true;
+            mgr.container.style.display = 'flex';
+            mgr.toggle();
+            expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
         });
     });
 
@@ -293,6 +333,15 @@ describe('InventoryManager', () => {
             expect(mgr.selectedIndex).toBe(1);
         });
 
+        it('plays the shared navigate sound when focus changes', () => {
+            mgr.isVisible = true;
+            (mgr as any).generateStatsHTML = vi.fn().mockReturnValue('');
+            (mgr as any).attachStatButtonListeners = vi.fn();
+            const player = makePlayer([{ name: 'A' }, { name: 'B' }]);
+            mgr.update(player, makeInput({ down: true }));
+            expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
+        });
+
         it('decrements selectedIndex on navigateUp press', () => {
             mgr.isVisible = true;
             mgr.selectedIndex = 1;
@@ -319,6 +368,27 @@ describe('InventoryManager', () => {
             mgr.lastCancelState = false;
             mgr.update(makePlayer(), makeInput({ cancel: true }));
             expect(mgr.isVisible).toBe(false);
+        });
+
+        it('plays the equip sound when equipping a valid item', () => {
+            mgr.isVisible = true;
+            (mgr as any).generateStatsHTML = vi.fn().mockReturnValue('');
+            (mgr as any).attachStatButtonListeners = vi.fn();
+            const item = makeEquippableItem(true);
+            const player = makePlayer([item]);
+            mgr.update(player, makeInput({ select: true }));
+            expect(item.equip).toHaveBeenCalledWith(player);
+            expect(AudioManager.Instance.playEquip).toHaveBeenCalledOnce();
+        });
+
+        it('plays the failure sound when an item cannot be equipped', () => {
+            mgr.isVisible = true;
+            (mgr as any).generateStatsHTML = vi.fn().mockReturnValue('');
+            (mgr as any).attachStatButtonListeners = vi.fn();
+            const item = makeEquippableItem(false);
+            const player = makePlayer([item]);
+            mgr.update(player, makeInput({ select: true }));
+            expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
         });
     });
 
