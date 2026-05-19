@@ -468,8 +468,8 @@ function renderNoiseTrack(trackIdx: number): void {
         cx.fill(); cx.stroke();
     }
 
-    // Selection rectangle overlay (on this noise canvas)
-    if (selRectState && selRectState.active && selRectState.canvas === trackIdx) {
+    // Selection rectangle overlay — draw on all noise canvases when any noise track is being selected
+    if (selRectState && selRectState.active && typeof selRectState.canvas === 'number') {
         const rx0 = Math.min(selRectState.absX0, selRectState.absX1) - scrollX;
         const rx1 = Math.max(selRectState.absX0, selRectState.absX1) - scrollX;
         cx.fillStyle = 'rgba(0,229,255,0.08)';
