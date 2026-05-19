@@ -65,6 +65,7 @@ const BEAT_FRACTIONS: { label: string; value: number }[] = [
     { label: '4', value: 4 },
     { label: '8', value: 8 },
 ];
+const MIN_DURATION_BEATS = BEAT_FRACTIONS.reduce((min, frac) => Math.min(min, frac.value), Number.POSITIVE_INFINITY);
 
 // ── Noise track labels ────────────────────────────────────────────────────────
 const NOISE_TRACK_LABELS = ['A', 'B', 'C'] as const;
@@ -278,8 +279,7 @@ function shiftSelectNode(id: string, kind: 'tone' | 'noise'): void {
 
 /** Snap a beat duration to the nearest configured beat fraction. */
 function snapDurationToFraction(durationBeats: number): number {
-    const minDur = Math.min(...BEAT_FRACTIONS.map(f => f.value));
-    const clamped = Math.max(minDur, durationBeats);
+    const clamped = Math.max(MIN_DURATION_BEATS, durationBeats);
     let best = BEAT_FRACTIONS[0].value;
     let bestDist = Math.abs(clamped - best);
     for (const frac of BEAT_FRACTIONS) {
@@ -438,6 +438,36 @@ function renderRuler(): void {
     }
 }
 
+interface NodeGeometry {
+    x: number;
+    bw: number;
+    y: number;
+    bh: number;
+    handleSize: number;
+}
+
+function toneNodeGeometry(ev: ToneEvent, bd: number): NodeGeometry {
+    const bh = ROW_H - 4;
+    return {
+        x: ev.startTime * PPS - scrollX,
+        bw: Math.max(6, ev.duration * bd * PPS),
+        y: ev.noteIdx * ROW_H + 2,
+        bh,
+        handleSize: bh * HANDLE_HEIGHT_RATIO,
+    };
+}
+
+function noiseNodeGeometry(ev: NoiseEvent, bd: number): NodeGeometry {
+    const bh = NOISE_H - 4;
+    return {
+        x: ev.startTime * PPS - scrollX,
+        bw: Math.max(6, ev.duration * bd * PPS),
+        y: ev.row * NOISE_H + 2,
+        bh,
+        handleSize: bh * HANDLE_HEIGHT_RATIO,
+    };
+}
+
 // ── Render main timeline ───────────────────────────────────────────────────────
 function renderTimeline(): void {
     const w = visibleW();
@@ -460,11 +490,9 @@ function renderTimeline(): void {
     drawGrid(cx, w, h);
 
     // Tone blocks
+    const bd = beatDur();
     for (const ev of tones) {
-        const x = ev.startTime * PPS - scrollX;
-        const bw = Math.max(6, ev.duration * beatDur() * PPS);
-        const y = ev.noteIdx * ROW_H + 2;
-        const bh = ROW_H - 4;
+        const { x, bw, y, handleSize } = toneNodeGeometry(ev, bd);
         if (x + bw < 0 || x > w) continue;
 
         const isSel = selectedIds.has(ev.id);
@@ -474,7 +502,7 @@ function renderTimeline(): void {
         cx.lineWidth = isSel ? 2 : (isEd ? 2 : 1);
         roundRect(cx, x, y, bw, bh, 3);
         cx.fill(); cx.stroke();
-        drawDurationHandle(cx, x + bw, y + bh / 2, bh * HANDLE_HEIGHT_RATIO, isSel, '#1b2a3a');
+        drawDurationHandle(cx, x + bw, y + bh / 2, handleSize, isSel, '#1b2a3a');
 
         if (bw > 18) {
             cx.fillStyle = isSel ? '#ffd600' : '#a0d8f0'; cx.font = '10px monospace'; cx.textAlign = 'left';
@@ -527,11 +555,9 @@ function renderNoise(): void {
         cx.fillRect(0, i * NOISE_H - 1, w, 1);
     }
 
+    const bd = beatDur();
     for (const ev of noises) {
-        const x = ev.startTime * PPS - scrollX;
-        const bw = Math.max(6, ev.duration * beatDur() * PPS);
-        const y = ev.row * NOISE_H + 2;
-        const bh = NOISE_H - 4;
+        const { x, bw, y, handleSize } = noiseNodeGeometry(ev, bd);
         if (x + bw < 0 || x > w) continue;
 
         const isSel = selectedIds.has(ev.id);
@@ -541,7 +567,7 @@ function renderNoise(): void {
         cx.lineWidth = isSel ? 2 : (isEd ? 2 : 1);
         roundRect(cx, x, y, bw, bh, 3);
         cx.fill(); cx.stroke();
-        drawDurationHandle(cx, x + bw, y + bh / 2, bh * HANDLE_HEIGHT_RATIO, isSel, '#2a1630');
+        drawDurationHandle(cx, x + bw, y + bh / 2, handleSize, isSel, '#2a1630');
     }
 
     // Selection rectangle overlay
@@ -642,11 +668,8 @@ function hitTone(cx: number, cy: number): ToneEvent | null {
 function hitToneHandle(cx: number, cy: number): ToneEvent | null {
     const bd = beatDur();
     for (const ev of tones) {
-        const x = ev.startTime * PPS - scrollX;
-        const bw = Math.max(6, ev.duration * bd * PPS);
-        const y = ev.noteIdx * ROW_H + 2;
-        const bh = ROW_H - 4;
-        if (pointInDiamond(cx, cy, x + bw, y + bh / 2, bh * HANDLE_HEIGHT_RATIO)) return ev;
+        const { x, bw, y, bh, handleSize } = toneNodeGeometry(ev, bd);
+        if (pointInDiamond(cx, cy, x + bw, y + bh / 2, handleSize)) return ev;
     }
     return null;
 }
@@ -664,11 +687,8 @@ function hitNoise(cx: number, cy: number): NoiseEvent | null {
 function hitNoiseHandle(cx: number, cy: number): NoiseEvent | null {
     const bd = beatDur();
     for (const ev of noises) {
-        const x = ev.startTime * PPS - scrollX;
-        const bw = Math.max(6, ev.duration * bd * PPS);
-        const y = ev.row * NOISE_H + 2;
-        const bh = NOISE_H - 4;
-        if (pointInDiamond(cx, cy, x + bw, y + bh / 2, bh * HANDLE_HEIGHT_RATIO)) return ev;
+        const { x, bw, y, bh, handleSize } = noiseNodeGeometry(ev, bd);
+        if (pointInDiamond(cx, cy, x + bw, y + bh / 2, handleSize)) return ev;
     }
     return null;
 }
