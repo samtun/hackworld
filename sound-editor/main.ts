@@ -65,6 +65,7 @@ const BEAT_FRACTIONS: { label: string; value: number }[] = [
     { label: '4', value: 4 },
     { label: '8', value: 8 },
 ];
+// Computed once at startup for duration-resize clamping.
 const MIN_DURATION_BEATS = BEAT_FRACTIONS.reduce((min, frac) => Math.min(min, frac.value), Number.POSITIVE_INFINITY);
 
 // ── Noise track labels ────────────────────────────────────────────────────────
@@ -631,6 +632,7 @@ function pointInDiamond(
     size: number,
 ): boolean {
     const half = size / 2;
+    // Defensive guard against accidental zero-sized handles.
     if (half <= 0) return false;
     return (Math.abs(px - centerX) / half) + (Math.abs(py - centerY) / half) <= 1;
 }
@@ -710,6 +712,7 @@ function onTlDown(e: MouseEvent): void {
     if (e.button !== 0) return;
     const { x, y } = canvasXY(tlCanvas, e);
 
+    // Keep Shift+click semantics for selection toggle/additive flows; don't start resize with Shift held.
     const handleHit = !e.shiftKey ? hitToneHandle(x, y) : null;
     if (handleHit) {
         closePopup();
@@ -803,6 +806,7 @@ function onNoiseDown(e: MouseEvent): void {
     if (e.button !== 0) return;
     const { x, y } = canvasXY(noiseCanvas, e);
 
+    // Keep Shift+click semantics for selection toggle/additive flows; don't start resize with Shift held.
     const handleHit = !e.shiftKey ? hitNoiseHandle(x, y) : null;
     if (handleHit) {
         closePopup();
