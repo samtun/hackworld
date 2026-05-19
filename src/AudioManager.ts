@@ -2,9 +2,13 @@ type AudioBus = 'music' | 'sfx';
 type FootstepSource = 'player' | 'enemy';
 type CombatSource = 'player' | 'enemy';
 type CardRevealRarity = 'normal' | 'uncommon' | 'special';
-type MusicPhrase = readonly number[];
 
-const ENVELOPE_MIN_GAIN = 0.0001;
+/**
+ * Minimum gain used as the start/end value in amplitude envelopes to avoid
+ * audio clicks (exponential ramps cannot go to zero). Exported so that the
+ * Sound Editor tool can reference it in generated `playTone()` snippets.
+ */
+export const ENVELOPE_MIN_GAIN = 0.0001;
 const DEFAULT_ATTACK_SECONDS = 0.02;
 const MAX_ATTACK_PORTION_OF_DURATION = 0.35;
 const MIN_GLIDE_FREQUENCY = 1;
@@ -18,431 +22,6 @@ const HEALING_STATION_SWIRL_FREQUENCIES = [659.25, 783.99, 880, 1046.5] as const
 export const MUSIC_ENABLED_STORAGE_KEY = 'hackworld_music_enabled';
 export const SFX_ENABLED_STORAGE_KEY = 'hackworld_sfx_enabled';
 
-/** Parameters for arpeggio-style sounds: a sequence of frequencies played with shared timing and shape. */
-export interface ArpParams {
-    freqs: readonly number[];
-    dur: number;
-    type: OscillatorType;
-    gain: number;
-    delayStep: number;
-    glideRatio?: number;
-}
-
-/** A single oscillator layer used in a synthesised sound effect. */
-export interface ToneLayer {
-    /** Starting frequency in Hz. */
-    freq: number;
-    /** Duration in seconds. */
-    dur: number;
-    /** Oscillator waveform. */
-    type: OscillatorType;
-    /** Peak gain (volume) of the amplitude envelope. */
-    gain: number;
-    /** Delay before playback starts, in seconds (default 0). */
-    delay?: number;
-    /** Target frequency to glide to by the end of the duration. */
-    glideTo?: number;
-}
-
-/** A filtered white-noise layer used in a synthesised sound effect. */
-export interface NoiseLayer {
-    /** Duration in seconds. */
-    dur: number;
-    /** Peak gain of the noise amplitude envelope. */
-    gain: number;
-    /** Low-pass filter cut-off in Hz. */
-    lowpass: number;
-    /** High-pass filter cut-off in Hz. */
-    highpass: number;
-    /** Delay before playback starts, in seconds. */
-    delay: number;
-}
-
-interface StageMusicProfile {
-    pulseFrequencies: MusicPhrase;
-    harmonyFrequencies?: MusicPhrase;
-    pulseIntervalMs: number;
-    pulseType: OscillatorType;
-    harmonyType: OscillatorType;
-    pulseDuration: number;
-    pulseGain: number;
-    harmonyGain: number;
-}
-
-/**
- * Build a stage music profile from a short, hand-authored phrase so it can be
- * extended manually later without any automatic note generation.
- */
-function createStageMusicProfile(
-    pulsePhrase: MusicPhrase,
-    harmonyPhrase: MusicPhrase | undefined,
-    pulseIntervalMs: number,
-    pulseType: OscillatorType,
-    harmonyType: OscillatorType,
-    pulseDuration: number,
-    pulseGain: number,
-    harmonyGain: number,
-): StageMusicProfile {
-    return {
-        pulseFrequencies: pulsePhrase,
-        pulseIntervalMs,
-        pulseType,
-        harmonyType,
-        pulseDuration,
-        pulseGain,
-        harmonyGain,
-        ...(harmonyPhrase ? { harmonyFrequencies: harmonyPhrase } : {}),
-    };
-}
-
-export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
-    startScreen: createStageMusicProfile(
-        [174.61, 220, 261.63, 293.66],
-        [261.63, 329.63, 349.23, 392],
-        420,
-        'triangle',
-        'sine',
-        0.34,
-        0.065,
-        0.03,
-    ),
-    lobby: createStageMusicProfile(
-        [220, 277.18, 329.63, 440],
-        [329.63, 369.99, 440, 554.37],
-        340,
-        'triangle',
-        'sine',
-        0.22,
-        0.07,
-        0.028,
-    ),
-    networkMatrix: createStageMusicProfile(
-        [220, 277.18, 369.99, 466.16, 369.99],
-        [146.83, 174.61, 220, 277.18, 233.08],
-        290,
-        'square',
-        'triangle',
-        0.16,
-        0.074,
-        0.024,
-    ),
-    packetForge: createStageMusicProfile(
-        [196, 246.94, 293.66, 246.94, 392],
-        [130.81, 164.81, 196, 164.81, 220],
-        250,
-        'square',
-        'sawtooth',
-        0.17,
-        0.076,
-        0.024,
-    ),
-    cipherNull: createStageMusicProfile(
-        [155.56, 185, 233.08, 207.65, 138.59],
-        [233.08, 277.18, 311.13, 277.18, 207.65],
-        310,
-        'sawtooth',
-        'triangle',
-        0.19,
-        0.074,
-        0.023,
-    ),
-    cipherNullDepth2: createStageMusicProfile(
-        [155.56, 185, 233.08, 207.65, 138.59],
-        [233.08, 277.18, 311.13, 277.18, 207.65],
-        260,
-        'sawtooth',
-        'triangle',
-        0.17,
-        0.084,
-        0.026,
-    ),
-    securityCore: createStageMusicProfile(
-        [130.81, 164.81, 220, 261.63, 174.61],
-        [196, 246.94, 311.13, 369.99, 246.94],
-        260,
-        'sawtooth',
-        'sawtooth',
-        0.18,
-        0.08,
-        0.024,
-    ),
-    securityCoreDepth2: createStageMusicProfile(
-        [130.81, 164.81, 220, 261.63, 174.61],
-        [196, 246.94, 311.13, 369.99, 246.94],
-        220,
-        'sawtooth',
-        'sawtooth',
-        0.17,
-        0.087,
-        0.026,
-    ),
-    securityCoreDepth3: createStageMusicProfile(
-        [130.81, 164.81, 220, 261.63, 174.61],
-        [196, 246.94, 311.13, 369.99, 246.94],
-        195,
-        'sawtooth',
-        'square',
-        0.16,
-        0.095,
-        0.028,
-    ),
-    kernelTerminus: createStageMusicProfile(
-        [123.47, 164.81, 220, 293.66, 329.63],
-        [185, 246.94, 329.63, 392, 440],
-        240,
-        'sawtooth',
-        'sawtooth',
-        0.2,
-        0.086,
-        0.026,
-    ),
-    kernelTerminusDepth2: createStageMusicProfile(
-        [123.47, 164.81, 220, 293.66, 329.63],
-        [185, 246.94, 329.63, 392, 440],
-        205,
-        'sawtooth',
-        'sawtooth',
-        0.18,
-        0.096,
-        0.028,
-    ),
-    kernelTerminusDepth3: createStageMusicProfile(
-        [123.47, 164.81, 220, 293.66, 329.63],
-        [185, 246.94, 329.63, 392, 440],
-        180,
-        'square',
-        'sawtooth',
-        0.16,
-        0.105,
-        0.03,
-    ),
-    gameTest: createStageMusicProfile(
-        [220, 246.94, 293.66, 369.99],
-        [293.66, 329.63, 392, 466.16],
-        260,
-        'square',
-        'triangle',
-        0.18,
-        0.076,
-        0.025,
-    ),
-};
-
-// ══════════════════════════════════════════════════════════════════════════════
-// SOUND PARAMETERS — Edit these numbers to tune each sound effect.
-// Run `npm run dev:sound-editor` to compose and preview sounds visually,
-// then paste the generated snippet here.
-// ══════════════════════════════════════════════════════════════════════════════
-
-export const SFX_PARAMS = {
-    // ──── FOOTSTEP ────────────────────────────────────────────────────────────
-    footstep: {
-        player: {
-            noise: { dur: 0.07, gain: 0.055, lowpass: 1500, highpass: 180,  delay: 0 } as NoiseLayer,
-            tone:  { freq: 92,  dur: 0.06, type: 'triangle' as OscillatorType, gain: 0.055 } as ToneLayer,
-        },
-        enemy: {
-            noise: { dur: 0.07, gain: 0.042, lowpass: 900,  highpass: 110,  delay: 0 } as NoiseLayer,
-            tone:  { freq: 64,  dur: 0.06, type: 'sine'     as OscillatorType, gain: 0.042 } as ToneLayer,
-        },
-    },
-    // ──── JUMP ────────────────────────────────────────────────────────────────
-    jump: {
-        tones: [
-            { freq: 260, dur: 0.2,  type: 'triangle' as OscillatorType, gain: 0.07,  delay: 0,    glideTo: 720 },
-            { freq: 520, dur: 0.08, type: 'sine'     as OscillatorType, gain: 0.03,  delay: 0.03, glideTo: 780 },
-        ] as ToneLayer[],
-    },
-    // ──── ATTACK ──────────────────────────────────────────────────────────────
-    attack: {
-        player: {
-            noise: { dur: 0.07, gain: 0.07,  lowpass: 4200, highpass: 420, delay: 0 } as NoiseLayer,
-            tones: [
-                { freq: 540, dur: 0.09, type: 'square'   as OscillatorType, gain: 0.1,   delay: 0,    glideTo: 260 },
-                { freq: 880, dur: 0.05, type: 'triangle' as OscillatorType, gain: 0.038, delay: 0.02, glideTo: 660 },
-            ] as ToneLayer[],
-        },
-        enemy: {
-            noise: { dur: 0.12, gain: 0.08,  lowpass: 1000, highpass: 90,  delay: 0 } as NoiseLayer,
-            tones: [
-                { freq: 150, dur: 0.16, type: 'sawtooth' as OscillatorType, gain: 0.09,  delay: 0,    glideTo: 96 },
-                { freq: 90,  dur: 0.12, type: 'square'   as OscillatorType, gain: 0.045, delay: 0.02, glideTo: 70 },
-            ] as ToneLayer[],
-        },
-        charged: {
-            noise: { dur: 0.18, gain: 0.11,  lowpass: 3600, highpass: 260, delay: 0 } as NoiseLayer,
-            tones: [
-                { freq: 180, dur: 0.22, type: 'sawtooth' as OscillatorType, gain: 0.12,  delay: 0,    glideTo: 520 },
-                { freq: 540, dur: 0.14, type: 'triangle' as OscillatorType, gain: 0.055, delay: 0.03, glideTo: 860 },
-            ] as ToneLayer[],
-        },
-    },
-    // ──── DAMAGE ──────────────────────────────────────────────────────────────
-    damage: {
-        player: {
-            noise: { dur: 0.11, gain: 0.085, lowpass: 3600, highpass: 500, delay: 0 } as NoiseLayer,
-            tone:  { freq: 760, dur: 0.11, type: 'square'   as OscillatorType, gain: 0.06,  delay: 0, glideTo: 280 } as ToneLayer,
-        },
-        enemy: {
-            noise: { dur: 0.09, gain: 0.07,  lowpass: 1600, highpass: 140, delay: 0 } as NoiseLayer,
-            tone:  { freq: 210, dur: 0.11, type: 'triangle' as OscillatorType, gain: 0.055, delay: 0, glideTo: 120 } as ToneLayer,
-        },
-    },
-    // ──── DEATH ───────────────────────────────────────────────────────────────
-    death: {
-        player: {
-            noise: { dur: 0.2,  gain: 0.09,  lowpass: 1200, highpass: 120, delay: 0 } as NoiseLayer,
-            tone:  { freq: 180, dur: 0.45, type: 'sawtooth' as OscillatorType, gain: 0.09,  delay: 0, glideTo: 36 } as ToneLayer,
-        },
-        enemy: {
-            noise: { dur: 0.2,  gain: 0.065, lowpass: 1200, highpass: 120, delay: 0 } as NoiseLayer,
-            tone:  { freq: 120, dur: 0.45, type: 'triangle' as OscillatorType, gain: 0.065, delay: 0, glideTo: 24 } as ToneLayer,
-        },
-    },
-    // ──── DIALOGUE TICK ───────────────────────────────────────────────────────
-    dialogueTick: {
-        noise: { dur: 0.025, gain: 0.03,  lowpass: 4500, highpass: 1200, delay: 0 } as NoiseLayer,
-        tone:  { freq: 1400, dur: 0.03, type: 'square' as OscillatorType, gain: 0.018 } as ToneLayer,
-    },
-    // ──── MENU NAVIGATE ───────────────────────────────────────────────────────
-    menuNavigate: {
-        tones: [
-            { freq: 1046.5,  dur: 0.05, type: 'triangle' as OscillatorType, gain: 0.035, delay: 0    },
-            { freq: 1318.51, dur: 0.05, type: 'sine'     as OscillatorType, gain: 0.022, delay: 0.02 },
-        ] as ToneLayer[],
-    },
-    // ──── BUY ─────────────────────────────────────────────────────────────────
-    buy: {
-        freqs: [523.25, 659.25, 783.99],
-        dur: 0.12, type: 'triangle' as OscillatorType, gain: 0.06, delayStep: 0.04, glideRatio: 1.03,
-    } as ArpParams,
-    // ──── SELL ────────────────────────────────────────────────────────────────
-    sell: {
-        freqs: [659.25, 523.25, 392],
-        dur: 0.1, type: 'sine' as OscillatorType, gain: 0.05, delayStep: 0.035, glideRatio: 0.96,
-    } as ArpParams,
-    // ──── UPGRADE ─────────────────────────────────────────────────────────────
-    upgrade: {
-        noise: { dur: 0.04, gain: 0.025, lowpass: 5200, highpass: 800, delay: 0.02 } as NoiseLayer,
-        freqs: [392, 523.25, 659.25, 783.99],
-        dur: 0.14, type: 'triangle' as OscillatorType, gain: 0.06, delayStep: 0.045, glideRatio: 1.05,
-    } as ArpParams & { noise: NoiseLayer },
-    // ──── INSUFFICIENT ────────────────────────────────────────────────────────
-    insufficient: {
-        noise: { dur: 0.035, gain: 0.018, lowpass: 2800, highpass: 500, delay: 0 } as NoiseLayer,
-        freqs: [311.13, 246.94],
-        dur: 0.12, type: 'square' as OscillatorType, gain: 0.045, delayStep: 0.05, glideRatio: 0.94,
-    } as ArpParams & { noise: NoiseLayer },
-    // ──── LASER BEAM SKILL ────────────────────────────────────────────────────
-    laserBeamSkill: {
-        noise: { dur: 0.06, gain: 0.025, lowpass: 5200, highpass: 900, delay: 0 } as NoiseLayer,
-        tones: [
-            { freq: 720,  dur: 0.14, type: 'sawtooth' as OscillatorType, gain: 0.07,  delay: 0,    glideTo: 1440 },
-            { freq: 1440, dur: 0.08, type: 'triangle' as OscillatorType, gain: 0.035, delay: 0.03, glideTo: 1960 },
-        ] as ToneLayer[],
-    },
-    // ──── HEALING SKILL ───────────────────────────────────────────────────────
-    healingSkill: {
-        freqs: [523.25, 659.25, 783.99],
-        dur: 0.16, type: 'triangle' as OscillatorType, gain: 0.05, delayStep: 0.04, glideRatio: 1.04,
-    } as ArpParams,
-    // ──── AREA ATTACK SKILL ───────────────────────────────────────────────────
-    areaAttackSkill: {
-        noise: { dur: 0.08, gain: 0.035, lowpass: 1800, highpass: 140, delay: 0 } as NoiseLayer,
-        tones: [
-            { freq: 164.81, dur: 0.16, type: 'sawtooth' as OscillatorType, gain: 0.08,  delay: 0,    glideTo: 110 },
-            { freq: 246.94, dur: 0.12, type: 'square'   as OscillatorType, gain: 0.045, delay: 0.04, glideTo: 196 },
-        ] as ToneLayer[],
-    },
-    // ──── EQUIP ───────────────────────────────────────────────────────────────
-    equip: {
-        freqs: [392, 587.33, 783.99],
-        dur: 0.1, type: 'triangle' as OscillatorType, gain: 0.05, delayStep: 0.03, glideRatio: 1.03,
-    } as ArpParams,
-    // ──── UI OPEN / CLOSE ─────────────────────────────────────────────────────
-    uiOpen: {
-        freqs: [392, 523.25],
-        dur: 0.1, type: 'triangle' as OscillatorType, gain: 0.04, delayStep: 0.035, glideRatio: 1.04,
-    } as ArpParams,
-    uiClose: {
-        freqs: [523.25, 392],
-        dur: 0.09, type: 'sine' as OscillatorType, gain: 0.032, delayStep: 0.03, glideRatio: 0.96,
-    } as ArpParams,
-    // ──── CARD REVEAL ─────────────────────────────────────────────────────────
-    cardReveal: {
-        normal: {
-            tone: { freq: 440, dur: 0.09, type: 'triangle' as OscillatorType, gain: 0.05, glideTo: 659.25 } as ToneLayer,
-        },
-        uncommon: {
-            freqs: [523.25, 659.25],
-            dur: 0.12, type: 'triangle' as OscillatorType, gain: 0.055, delayStep: 0.04, glideRatio: 1.06,
-        } as ArpParams,
-        special: {
-            noise: { dur: 0.05, gain: 0.02, lowpass: 4800, highpass: 900, delay: 0 } as NoiseLayer,
-            freqs: [659.25, 783.99, 1046.5],
-            dur: 0.14, type: 'sawtooth' as OscillatorType, gain: 0.065, delayStep: 0.045, glideRatio: 1.08,
-        } as ArpParams & { noise: NoiseLayer },
-    },
-    // ──── ALBUM COMPLETE ──────────────────────────────────────────────────────
-    albumComplete: {
-        noise: { dur: 0.08, gain: 0.018, lowpass: 5400, highpass: 1000, delay: 0 } as NoiseLayer,
-        freqs: [392, 523.25, 659.25, 783.99, 1046.5],
-        dur: 0.18, gain: 0.07, delayStep: 0.05, glideRatio: 1.04,
-        /** First `typeThreshold` notes use `typeBelow`; the rest use `typeAtOrAbove`. */
-        typeThreshold: 3, typeBelow: 'triangle' as OscillatorType, typeAtOrAbove: 'sawtooth' as OscillatorType,
-    },
-    // ──── LEVEL UP ────────────────────────────────────────────────────────────
-    levelUp: {
-        noise: { dur: 0.06, gain: 0.022, lowpass: 5600, highpass: 1000, delay: 0 } as NoiseLayer,
-        freqs: [523.25, 659.25, 783.99, 1046.5],
-        dur: 0.16, gain: 0.07, delayStep: 0.045, glideRatio: 1.05,
-        typeThreshold: 2, typeBelow: 'triangle' as OscillatorType, typeAtOrAbove: 'sawtooth' as OscillatorType,
-    },
-    // ──── HEALING STATION ─────────────────────────────────────────────────────
-    healingStation: {
-        noise:   { dur: 0.14, gain: 0.018, lowpass: 4200, highpass: 900, delay: 0    } as NoiseLayer,
-        primary: { dur: 0.26, type: 'triangle' as OscillatorType, gain: 0.04,  delay: 0,    glideRatio: 1.08 },
-        swirl:   { dur: 0.18, type: 'sine'     as OscillatorType, gain: 0.025, delay: 0.05, glideRatio: 1.04 },
-    },
-    // ──── TELEPORT ────────────────────────────────────────────────────────────
-    teleport: {
-        freqs: [261.63, 392, 523.25],
-        dur: 0.16, type: 'triangle' as OscillatorType, gain: 0.07, delayStep: 0.08, glideRatio: 1.12,
-    } as ArpParams,
-    // ──── BOSS SPAWN ──────────────────────────────────────────────────────────
-    bossSpawn: {
-        noise: { dur: 0.28, gain: 0.075, lowpass: 1400, highpass: 90, delay: 0 } as NoiseLayer,
-        tones: [
-            { freq: 98,     dur: 0.5,  type: 'sawtooth' as OscillatorType, gain: 0.1,   delay: 0,    glideTo: 49  },
-            { freq: 146.83, dur: 0.35, type: 'square'   as OscillatorType, gain: 0.055, delay: 0.12, glideTo: 110 },
-        ] as ToneLayer[],
-    },
-    // ──── STAGE CLEARED ───────────────────────────────────────────────────────
-    stageCleared: {
-        freqs: [261.63, 329.63, 392, 523.25],
-        dur: 0.22, type: 'triangle' as OscillatorType, gain: 0.085, delayStep: 0.07,
-    } as ArpParams,
-    // ──── BARREL BREAK ────────────────────────────────────────────────────────
-    barrelBreak: {
-        noise: { dur: 0.12, gain: 0.08, lowpass: 2200, highpass: 180, delay: 0 } as NoiseLayer,
-        tones: [
-            { freq: 110, dur: 0.18, type: 'square'   as OscillatorType, gain: 0.075, delay: 0,    glideTo: 72  },
-            { freq: 180, dur: 0.08, type: 'triangle' as OscillatorType, gain: 0.035, delay: 0.03, glideTo: 120 },
-        ] as ToneLayer[],
-    },
-    // ──── ITEM PICKUP ─────────────────────────────────────────────────────────
-    itemPickup: {
-        tones: [
-            { freq: 659.25, dur: 0.08, type: 'triangle' as OscillatorType, gain: 0.06,  delay: 0    },
-            { freq: 987.77, dur: 0.1,  type: 'sine'     as OscillatorType, gain: 0.045, delay: 0.05 },
-        ] as ToneLayer[],
-    },
-    // ──── CHEST OPEN ──────────────────────────────────────────────────────────
-    chestOpen: {
-        freqs: [196, 246.94, 329.63],
-        dur: 0.16, type: 'triangle' as OscillatorType, gain: 0.07, delayStep: 0.05, glideRatio: 1.08,
-    } as ArpParams,
-};
 
 export class AudioManager {
     private static instance: AudioManager;
@@ -526,147 +105,177 @@ export class AudioManager {
         this.startStageMusicIfPossible();
     }
 
-    /**
-     * Play an arpeggio-style effect: the same envelope shape applied to each
-     * frequency in `p.freqs`, staggered by `p.delayStep` seconds each.
-     */
-    private playArp(p: ArpParams): void {
-        p.freqs.forEach((f, i) =>
-            this.playTone(f, p.dur, p.type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep,
-                p.glideRatio !== undefined ? f * p.glideRatio : undefined),
-        );
-    }
+    // ── To retune sounds: run `npm run dev:sound-editor`, compose there, then paste ──
+    // ── the generated playTone()/playNoise() calls directly into the methods below.  ──
+    // ── For arpeggio-style sounds the editor won't replicate the glide ratio; add a  ──
+    // ── comment like '// glide ratio 1.05' next to the last argument of each tone.   ──
 
     playFootstep(source: FootstepSource): void {
-        const { noise: n, tone: t } = SFX_PARAMS.footstep[source];
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN);
+        if (source === 'player') {
+            this.playNoise(0.07, 0.055, 1500, 180, 0);
+            this.playTone(92, 0.06, 'triangle', 0.055, ENVELOPE_MIN_GAIN, 0);
+        } else {
+            this.playNoise(0.07, 0.042, 900, 110, 0);
+            this.playTone(64, 0.06, 'sine', 0.042, ENVELOPE_MIN_GAIN, 0);
+        }
     }
 
     playJump(): void {
-        SFX_PARAMS.jump.tones.forEach(t => this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, t.delay, t.glideTo));
+        this.playTone(260, 0.2, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0, 720);
+        this.playTone(520, 0.08, 'sine', 0.03, ENVELOPE_MIN_GAIN, 0.03, 780);
     }
 
     playAttack(source: CombatSource, charged: boolean = false): void {
-        const variant = charged ? SFX_PARAMS.attack.charged : SFX_PARAMS.attack[source];
-        const n = variant.noise;
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        variant.tones.forEach(t => this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, t.delay, t.glideTo));
+        if (charged) {
+            this.playNoise(0.18, 0.11, 3600, 260, 0);
+            this.playTone(180, 0.22, 'sawtooth', 0.12, ENVELOPE_MIN_GAIN, 0, 520);
+            this.playTone(540, 0.14, 'triangle', 0.055, ENVELOPE_MIN_GAIN, 0.03, 860);
+        } else if (source === 'player') {
+            this.playNoise(0.07, 0.07, 4200, 420, 0);
+            this.playTone(540, 0.09, 'square', 0.1, ENVELOPE_MIN_GAIN, 0, 260);
+            this.playTone(880, 0.05, 'triangle', 0.038, ENVELOPE_MIN_GAIN, 0.02, 660);
+        } else {
+            this.playNoise(0.12, 0.08, 1000, 90, 0);
+            this.playTone(150, 0.16, 'sawtooth', 0.09, ENVELOPE_MIN_GAIN, 0, 96);
+            this.playTone(90, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0.02, 70);
+        }
     }
 
     playDamage(source: CombatSource): void {
-        const { noise: n, tone: t } = SFX_PARAMS.damage[source];
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, t.delay, t.glideTo);
+        if (source === 'player') {
+            this.playNoise(0.11, 0.085, 3600, 500, 0);
+            this.playTone(760, 0.11, 'square', 0.06, ENVELOPE_MIN_GAIN, 0, 280);
+        } else {
+            this.playNoise(0.09, 0.07, 1600, 140, 0);
+            this.playTone(210, 0.11, 'triangle', 0.055, ENVELOPE_MIN_GAIN, 0, 120);
+        }
     }
 
     playDeath(source: CombatSource): void {
-        const { noise: n, tone: t } = SFX_PARAMS.death[source];
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, t.delay, t.glideTo);
+        if (source === 'player') {
+            this.playNoise(0.2, 0.09, 1200, 120, 0);
+            this.playTone(180, 0.45, 'sawtooth', 0.09, ENVELOPE_MIN_GAIN, 0, 36);
+        } else {
+            this.playNoise(0.2, 0.065, 1200, 120, 0);
+            this.playTone(120, 0.45, 'triangle', 0.065, ENVELOPE_MIN_GAIN, 0, 24);
+        }
     }
 
     playDialogueTick(): void {
-        const { noise: n, tone: t } = SFX_PARAMS.dialogueTick;
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN);
+        this.playNoise(0.025, 0.03, 4500, 1200, 0);
+        this.playTone(1400, 0.03, 'square', 0.018, ENVELOPE_MIN_GAIN, 0);
     }
 
     playMenuNavigate(): void {
-        SFX_PARAMS.menuNavigate.tones.forEach(t => this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, t.delay));
+        this.playTone(1046.5, 0.05, 'triangle', 0.035, ENVELOPE_MIN_GAIN, 0);
+        this.playTone(1318.51, 0.05, 'sine', 0.022, ENVELOPE_MIN_GAIN, 0.02);
     }
 
     playBuy(): void {
-        this.playArp(SFX_PARAMS.buy);
+        // glide ratio 1.03 applied to each note
+        this.playTone(523.25, 0.12, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0, 539.0475);
+        this.playTone(659.25, 0.12, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0.04, 679.0275);
+        this.playTone(783.99, 0.12, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0.08, 807.5097);
     }
 
     playSell(): void {
-        this.playArp(SFX_PARAMS.sell);
+        // glide ratio 0.96 applied to each note (descending glide)
+        this.playTone(659.25, 0.1, 'sine', 0.05, ENVELOPE_MIN_GAIN, 0, 632.88);
+        this.playTone(523.25, 0.1, 'sine', 0.05, ENVELOPE_MIN_GAIN, 0.035, 502.32);
+        this.playTone(392, 0.1, 'sine', 0.05, ENVELOPE_MIN_GAIN, 0.07, 376.32);
     }
 
     playUpgrade(): void {
-        const { noise: n } = SFX_PARAMS.upgrade;
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        this.playArp(SFX_PARAMS.upgrade);
+        this.playNoise(0.04, 0.025, 5200, 800, 0.02);
+        // glide ratio 1.05 applied to each note
+        this.playTone(392, 0.14, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0, 411.6);
+        this.playTone(523.25, 0.14, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0.045, 549.4125);
+        this.playTone(659.25, 0.14, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0.09, 692.2125);
+        this.playTone(783.99, 0.14, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0.135, 823.1895);
     }
 
     playInsufficient(): void {
-        const { noise: n } = SFX_PARAMS.insufficient;
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        this.playArp(SFX_PARAMS.insufficient);
+        this.playNoise(0.035, 0.018, 2800, 500, 0);
+        // glide ratio 0.94 applied to each note (descending glide)
+        this.playTone(311.13, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0, 292.4622);
+        this.playTone(246.94, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0.05, 232.1236);
     }
 
     playLaserBeamSkill(): void {
-        const p = SFX_PARAMS.laserBeamSkill;
-        const n = p.noise;
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        p.tones.forEach(t => this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, t.delay, t.glideTo));
+        this.playNoise(0.06, 0.025, 5200, 900, 0);
+        this.playTone(720, 0.14, 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, 0, 1440);
+        this.playTone(1440, 0.08, 'triangle', 0.035, ENVELOPE_MIN_GAIN, 0.03, 1960);
     }
 
     playHealingSkill(): void {
-        this.playArp(SFX_PARAMS.healingSkill);
+        // glide ratio 1.04 applied to each note
+        this.playTone(523.25, 0.16, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0, 544.18);
+        this.playTone(659.25, 0.16, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0.04, 685.62);
+        this.playTone(783.99, 0.16, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0.08, 815.3496);
     }
 
     playAreaAttackSkill(): void {
-        const p = SFX_PARAMS.areaAttackSkill;
-        const n = p.noise;
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        p.tones.forEach(t => this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, t.delay, t.glideTo));
+        this.playNoise(0.08, 0.035, 1800, 140, 0);
+        this.playTone(164.81, 0.16, 'sawtooth', 0.08, ENVELOPE_MIN_GAIN, 0, 110);
+        this.playTone(246.94, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0.04, 196);
     }
 
     playEquip(): void {
-        this.playArp(SFX_PARAMS.equip);
+        // glide ratio 1.03 applied to each note
+        this.playTone(392, 0.1, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0, 403.76);
+        this.playTone(587.33, 0.1, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0.03, 604.9499);
+        this.playTone(783.99, 0.1, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0.06, 807.5097);
     }
 
     playUiOpen(): void {
-        this.playArp(SFX_PARAMS.uiOpen);
+        // glide ratio 1.04 applied to each note
+        this.playTone(392, 0.1, 'triangle', 0.04, ENVELOPE_MIN_GAIN, 0, 407.68);
+        this.playTone(523.25, 0.1, 'triangle', 0.04, ENVELOPE_MIN_GAIN, 0.035, 544.18);
     }
 
     playUiClose(): void {
-        this.playArp(SFX_PARAMS.uiClose);
+        // glide ratio 0.96 applied to each note (descending glide)
+        this.playTone(523.25, 0.09, 'sine', 0.032, ENVELOPE_MIN_GAIN, 0, 502.32);
+        this.playTone(392, 0.09, 'sine', 0.032, ENVELOPE_MIN_GAIN, 0.03, 376.32);
     }
 
     playCardReveal(rarity: CardRevealRarity): void {
         switch (rarity) {
-            case 'normal': {
-                const t = SFX_PARAMS.cardReveal.normal.tone;
-                this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, 0, t.glideTo);
+            case 'normal':
+                this.playTone(440, 0.09, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0, 659.25);
                 break;
-            }
-            case 'uncommon': {
-                this.playArp(SFX_PARAMS.cardReveal.uncommon);
+            case 'uncommon':
+                // glide ratio 1.06 applied to each note
+                this.playTone(523.25, 0.12, 'triangle', 0.055, ENVELOPE_MIN_GAIN, 0, 554.645);
+                this.playTone(659.25, 0.12, 'triangle', 0.055, ENVELOPE_MIN_GAIN, 0.04, 698.805);
                 break;
-            }
-            case 'special': {
-                const p = SFX_PARAMS.cardReveal.special;
-                const n = p.noise;
-                this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-                this.playArp(p);
+            case 'special':
+                this.playNoise(0.05, 0.02, 4800, 900, 0);
+                // glide ratio 1.08 applied to each note
+                this.playTone(659.25, 0.14, 'sawtooth', 0.065, ENVELOPE_MIN_GAIN, 0, 711.99);
+                this.playTone(783.99, 0.14, 'sawtooth', 0.065, ENVELOPE_MIN_GAIN, 0.045, 846.7092);
+                this.playTone(1046.5, 0.14, 'sawtooth', 0.065, ENVELOPE_MIN_GAIN, 0.09, 1130.22);
                 break;
-            }
         }
     }
 
     playAlbumComplete(): void {
-        const p = SFX_PARAMS.albumComplete;
-        const n = p.noise;
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        p.freqs.forEach((f, i) => {
-            const type = i < p.typeThreshold ? p.typeBelow : p.typeAtOrAbove;
-            const glideTo = f * p.glideRatio;
-            this.playTone(f, p.dur, type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, glideTo);
-        });
+        this.playNoise(0.08, 0.018, 5400, 1000, 0);
+        // glide ratio 1.04; first 3 notes triangle, last 2 sawtooth
+        this.playTone(392, 0.18, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0, 407.68);
+        this.playTone(523.25, 0.18, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.05, 544.18);
+        this.playTone(659.25, 0.18, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.1, 685.62);
+        this.playTone(783.99, 0.18, 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, 0.15, 815.3496);
+        this.playTone(1046.5, 0.18, 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, 0.2, 1088.36);
     }
 
     playLevelUp(): void {
-        const p = SFX_PARAMS.levelUp;
-        const n = p.noise;
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        p.freqs.forEach((f, i) => {
-            const type = i < p.typeThreshold ? p.typeBelow : p.typeAtOrAbove;
-            const glideTo = f * p.glideRatio;
-            this.playTone(f, p.dur, type, p.gain, ENVELOPE_MIN_GAIN, i * p.delayStep, glideTo);
-        });
+        this.playNoise(0.06, 0.022, 5600, 1000, 0);
+        // glide ratio 1.05; first 2 notes triangle, last 2 sawtooth
+        this.playTone(523.25, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0, 549.4125);
+        this.playTone(659.25, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.045, 692.2125);
+        this.playTone(783.99, 0.16, 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, 0.09, 823.1895);
+        this.playTone(1046.5, 0.16, 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, 0.135, 1098.825);
     }
 
     startHealingStationLoop(): void {
@@ -684,33 +293,41 @@ export class AudioManager {
     }
 
     playTeleport(): void {
-        this.playArp(SFX_PARAMS.teleport);
+        // glide ratio 1.12 applied to each note
+        this.playTone(261.63, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0, 292.0256);
+        this.playTone(392, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.08, 439.04);
+        this.playTone(523.25, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.16, 586.04);
     }
 
     playBossSpawn(): void {
-        const p = SFX_PARAMS.bossSpawn;
-        const n = p.noise;
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        p.tones.forEach(t => this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, t.delay, t.glideTo));
+        this.playNoise(0.28, 0.075, 1400, 90, 0);
+        this.playTone(98, 0.5, 'sawtooth', 0.1, ENVELOPE_MIN_GAIN, 0, 49);
+        this.playTone(146.83, 0.35, 'square', 0.055, ENVELOPE_MIN_GAIN, 0.12, 110);
     }
 
     playStageCleared(): void {
-        this.playArp(SFX_PARAMS.stageCleared);
+        this.playTone(261.63, 0.22, 'triangle', 0.085, ENVELOPE_MIN_GAIN, 0);
+        this.playTone(329.63, 0.22, 'triangle', 0.085, ENVELOPE_MIN_GAIN, 0.07);
+        this.playTone(392, 0.22, 'triangle', 0.085, ENVELOPE_MIN_GAIN, 0.14);
+        this.playTone(523.25, 0.22, 'triangle', 0.085, ENVELOPE_MIN_GAIN, 0.21);
     }
 
     playBarrelBreak(): void {
-        const p = SFX_PARAMS.barrelBreak;
-        const n = p.noise;
-        this.playNoise(n.dur, n.gain, n.lowpass, n.highpass, n.delay);
-        p.tones.forEach(t => this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, t.delay, t.glideTo));
+        this.playNoise(0.12, 0.08, 2200, 180, 0);
+        this.playTone(110, 0.18, 'square', 0.075, ENVELOPE_MIN_GAIN, 0, 72);
+        this.playTone(180, 0.08, 'triangle', 0.035, ENVELOPE_MIN_GAIN, 0.03, 120);
     }
 
     playItemPickup(): void {
-        SFX_PARAMS.itemPickup.tones.forEach(t => this.playTone(t.freq, t.dur, t.type, t.gain, ENVELOPE_MIN_GAIN, t.delay));
+        this.playTone(659.25, 0.08, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0);
+        this.playTone(987.77, 0.1, 'sine', 0.045, ENVELOPE_MIN_GAIN, 0.05);
     }
 
     playChestOpen(): void {
-        this.playArp(SFX_PARAMS.chestOpen);
+        // glide ratio 1.08 applied to each note
+        this.playTone(196, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0, 211.68);
+        this.playTone(246.94, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.05, 266.6952);
+        this.playTone(329.63, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.1, 356.0004);
     }
 
     private registerUnlockHandlers(): void {
@@ -748,36 +365,219 @@ export class AudioManager {
         return this.audioContext;
     }
 
+    private getStageMusicDispatch(stageId: string): { play: () => void; loopMs: number } {
+        switch (stageId) {
+            case 'startScreen':          return { play: () => this.playStartScreenMusic(),          loopMs: 1680 };
+            case 'lobby':                return { play: () => this.playLobbyMusic(),                loopMs: 1360 };
+            case 'networkMatrix':        return { play: () => this.playNetworkMatrixMusic(),        loopMs: 1450 };
+            case 'packetForge':          return { play: () => this.playPacketForgeMusic(),          loopMs: 1250 };
+            case 'cipherNull':           return { play: () => this.playCipherNullMusic(),           loopMs: 1550 };
+            case 'cipherNullDepth2':     return { play: () => this.playCipherNullDepth2Music(),     loopMs: 1300 };
+            case 'securityCore':         return { play: () => this.playSecurityCoreMusic(),         loopMs: 1300 };
+            case 'securityCoreDepth2':   return { play: () => this.playSecurityCoreDepth2Music(),   loopMs: 1100 };
+            case 'securityCoreDepth3':   return { play: () => this.playSecurityCoreDepth3Music(),   loopMs: 975  };
+            case 'kernelTerminus':       return { play: () => this.playKernelTerminusMusic(),       loopMs: 1200 };
+            case 'kernelTerminusDepth2': return { play: () => this.playKernelTerminusDepth2Music(), loopMs: 1025 };
+            case 'kernelTerminusDepth3': return { play: () => this.playKernelTerminusDepth3Music(), loopMs: 900  };
+            case 'gameTest':             return { play: () => this.playGameTestMusic(),             loopMs: 1040 };
+            default: {
+                console.warn(`[AudioManager] Unknown stageId "${stageId}", falling back to lobby music.`);
+                return { play: () => this.playLobbyMusic(), loopMs: 1360 };
+            }
+        }
+    }
+
     private startStageMusicIfPossible(): void {
         const context = this.ensureAudioContext();
         if (!context || context.state !== 'running' || !this.currentStageId || this.playingStageId === this.currentStageId) {
             return;
         }
 
-        const profile = STAGE_MUSIC[this.currentStageId] ?? STAGE_MUSIC.lobby;
-        let pulseIndex = 0;
-        const playPulse = () => {
-            const frequency = profile.pulseFrequencies[pulseIndex % profile.pulseFrequencies.length];
-            const harmonyFrequency = profile.harmonyFrequencies?.[pulseIndex % (profile.harmonyFrequencies?.length ?? 1)];
-            pulseIndex++;
-            this.playTone(frequency, profile.pulseDuration, profile.pulseType, profile.pulseGain, ENVELOPE_MIN_GAIN, 0, undefined, 'music');
-            if (harmonyFrequency !== undefined) {
-                this.playTone(
-                    harmonyFrequency,
-                    Math.max(0.08, profile.pulseDuration * 0.9),
-                    profile.harmonyType,
-                    profile.harmonyGain,
-                    ENVELOPE_MIN_GAIN,
-                    0.04,
-                    undefined,
-                    'music',
-                );
-            }
-        };
-
+        const { play, loopMs } = this.getStageMusicDispatch(this.currentStageId);
         this.playingStageId = this.currentStageId;
-        playPulse();
-        this.musicPulseInterval = window.setInterval(playPulse, profile.pulseIntervalMs);
+        play();
+        this.musicPulseInterval = window.setInterval(play, loopMs);
+    }
+
+    // ── Stage music phrases — each method schedules the full phrase via delays.        ──
+    // ── To retune: compose in `npm run dev:sound-editor` (port 5174), paste the       ──
+    // ── generated playTone() calls here, and append `, undefined, 'music'` to each   ──
+    // ── call so it is routed to the music bus rather than the SFX bus.                ──
+
+    private playStartScreenMusic(): void {
+        // 4 × 420 ms phrase (loop: 1680 ms)
+        this.playTone(174.61, 0.34,  'triangle', 0.065, ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(261.63, 0.306, 'sine',     0.03,  ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(220,    0.34,  'triangle', 0.065, ENVELOPE_MIN_GAIN, 0.42, undefined, 'music');
+        this.playTone(329.63, 0.306, 'sine',     0.03,  ENVELOPE_MIN_GAIN, 0.46, undefined, 'music');
+        this.playTone(261.63, 0.34,  'triangle', 0.065, ENVELOPE_MIN_GAIN, 0.84, undefined, 'music');
+        this.playTone(349.23, 0.306, 'sine',     0.03,  ENVELOPE_MIN_GAIN, 0.88, undefined, 'music');
+        this.playTone(293.66, 0.34,  'triangle', 0.065, ENVELOPE_MIN_GAIN, 1.26, undefined, 'music');
+        this.playTone(392,    0.306, 'sine',     0.03,  ENVELOPE_MIN_GAIN, 1.3,  undefined, 'music');
+    }
+
+    private playLobbyMusic(): void {
+        // 4 × 340 ms phrase (loop: 1360 ms)
+        this.playTone(220,    0.22,  'triangle', 0.07,  ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(329.63, 0.198, 'sine',     0.028, ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(277.18, 0.22,  'triangle', 0.07,  ENVELOPE_MIN_GAIN, 0.34, undefined, 'music');
+        this.playTone(369.99, 0.198, 'sine',     0.028, ENVELOPE_MIN_GAIN, 0.38, undefined, 'music');
+        this.playTone(329.63, 0.22,  'triangle', 0.07,  ENVELOPE_MIN_GAIN, 0.68, undefined, 'music');
+        this.playTone(440,    0.198, 'sine',     0.028, ENVELOPE_MIN_GAIN, 0.72, undefined, 'music');
+        this.playTone(440,    0.22,  'triangle', 0.07,  ENVELOPE_MIN_GAIN, 1.02, undefined, 'music');
+        this.playTone(554.37, 0.198, 'sine',     0.028, ENVELOPE_MIN_GAIN, 1.06, undefined, 'music');
+    }
+
+    private playNetworkMatrixMusic(): void {
+        // 5 × 290 ms phrase (loop: 1450 ms)
+        this.playTone(220,    0.16,  'square',   0.074, ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(146.83, 0.144, 'triangle', 0.024, ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(277.18, 0.16,  'square',   0.074, ENVELOPE_MIN_GAIN, 0.29, undefined, 'music');
+        this.playTone(174.61, 0.144, 'triangle', 0.024, ENVELOPE_MIN_GAIN, 0.33, undefined, 'music');
+        this.playTone(369.99, 0.16,  'square',   0.074, ENVELOPE_MIN_GAIN, 0.58, undefined, 'music');
+        this.playTone(220,    0.144, 'triangle', 0.024, ENVELOPE_MIN_GAIN, 0.62, undefined, 'music');
+        this.playTone(466.16, 0.16,  'square',   0.074, ENVELOPE_MIN_GAIN, 0.87, undefined, 'music');
+        this.playTone(277.18, 0.144, 'triangle', 0.024, ENVELOPE_MIN_GAIN, 0.91, undefined, 'music');
+        this.playTone(369.99, 0.16,  'square',   0.074, ENVELOPE_MIN_GAIN, 1.16, undefined, 'music');
+        this.playTone(233.08, 0.144, 'triangle', 0.024, ENVELOPE_MIN_GAIN, 1.2,  undefined, 'music');
+    }
+
+    private playPacketForgeMusic(): void {
+        // 5 × 250 ms phrase (loop: 1250 ms)
+        this.playTone(196,    0.17,  'square',   0.076, ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(130.81, 0.153, 'sawtooth', 0.024, ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(246.94, 0.17,  'square',   0.076, ENVELOPE_MIN_GAIN, 0.25, undefined, 'music');
+        this.playTone(164.81, 0.153, 'sawtooth', 0.024, ENVELOPE_MIN_GAIN, 0.29, undefined, 'music');
+        this.playTone(293.66, 0.17,  'square',   0.076, ENVELOPE_MIN_GAIN, 0.5,  undefined, 'music');
+        this.playTone(196,    0.153, 'sawtooth', 0.024, ENVELOPE_MIN_GAIN, 0.54, undefined, 'music');
+        this.playTone(246.94, 0.17,  'square',   0.076, ENVELOPE_MIN_GAIN, 0.75, undefined, 'music');
+        this.playTone(164.81, 0.153, 'sawtooth', 0.024, ENVELOPE_MIN_GAIN, 0.79, undefined, 'music');
+        this.playTone(392,    0.17,  'square',   0.076, ENVELOPE_MIN_GAIN, 1.0,  undefined, 'music');
+        this.playTone(220,    0.153, 'sawtooth', 0.024, ENVELOPE_MIN_GAIN, 1.04, undefined, 'music');
+    }
+
+    private playCipherNullMusic(): void {
+        // 5 × 310 ms phrase (loop: 1550 ms)
+        this.playTone(155.56, 0.19,  'sawtooth', 0.074, ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(233.08, 0.171, 'triangle', 0.023, ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(185,    0.19,  'sawtooth', 0.074, ENVELOPE_MIN_GAIN, 0.31, undefined, 'music');
+        this.playTone(277.18, 0.171, 'triangle', 0.023, ENVELOPE_MIN_GAIN, 0.35, undefined, 'music');
+        this.playTone(233.08, 0.19,  'sawtooth', 0.074, ENVELOPE_MIN_GAIN, 0.62, undefined, 'music');
+        this.playTone(311.13, 0.171, 'triangle', 0.023, ENVELOPE_MIN_GAIN, 0.66, undefined, 'music');
+        this.playTone(207.65, 0.19,  'sawtooth', 0.074, ENVELOPE_MIN_GAIN, 0.93, undefined, 'music');
+        this.playTone(277.18, 0.171, 'triangle', 0.023, ENVELOPE_MIN_GAIN, 0.97, undefined, 'music');
+        this.playTone(138.59, 0.19,  'sawtooth', 0.074, ENVELOPE_MIN_GAIN, 1.24, undefined, 'music');
+        this.playTone(207.65, 0.171, 'triangle', 0.023, ENVELOPE_MIN_GAIN, 1.28, undefined, 'music');
+    }
+
+    private playCipherNullDepth2Music(): void {
+        // 5 × 260 ms phrase (loop: 1300 ms)
+        this.playTone(155.56, 0.17,  'sawtooth', 0.084, ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(233.08, 0.153, 'triangle', 0.026, ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(185,    0.17,  'sawtooth', 0.084, ENVELOPE_MIN_GAIN, 0.26, undefined, 'music');
+        this.playTone(277.18, 0.153, 'triangle', 0.026, ENVELOPE_MIN_GAIN, 0.3,  undefined, 'music');
+        this.playTone(233.08, 0.17,  'sawtooth', 0.084, ENVELOPE_MIN_GAIN, 0.52, undefined, 'music');
+        this.playTone(311.13, 0.153, 'triangle', 0.026, ENVELOPE_MIN_GAIN, 0.56, undefined, 'music');
+        this.playTone(207.65, 0.17,  'sawtooth', 0.084, ENVELOPE_MIN_GAIN, 0.78, undefined, 'music');
+        this.playTone(277.18, 0.153, 'triangle', 0.026, ENVELOPE_MIN_GAIN, 0.82, undefined, 'music');
+        this.playTone(138.59, 0.17,  'sawtooth', 0.084, ENVELOPE_MIN_GAIN, 1.04, undefined, 'music');
+        this.playTone(207.65, 0.153, 'triangle', 0.026, ENVELOPE_MIN_GAIN, 1.08, undefined, 'music');
+    }
+
+    private playSecurityCoreMusic(): void {
+        // 5 × 260 ms phrase (loop: 1300 ms)
+        this.playTone(130.81, 0.18,  'sawtooth', 0.08,  ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(196,    0.162, 'sawtooth', 0.024, ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(164.81, 0.18,  'sawtooth', 0.08,  ENVELOPE_MIN_GAIN, 0.26, undefined, 'music');
+        this.playTone(246.94, 0.162, 'sawtooth', 0.024, ENVELOPE_MIN_GAIN, 0.3,  undefined, 'music');
+        this.playTone(220,    0.18,  'sawtooth', 0.08,  ENVELOPE_MIN_GAIN, 0.52, undefined, 'music');
+        this.playTone(311.13, 0.162, 'sawtooth', 0.024, ENVELOPE_MIN_GAIN, 0.56, undefined, 'music');
+        this.playTone(261.63, 0.18,  'sawtooth', 0.08,  ENVELOPE_MIN_GAIN, 0.78, undefined, 'music');
+        this.playTone(369.99, 0.162, 'sawtooth', 0.024, ENVELOPE_MIN_GAIN, 0.82, undefined, 'music');
+        this.playTone(174.61, 0.18,  'sawtooth', 0.08,  ENVELOPE_MIN_GAIN, 1.04, undefined, 'music');
+        this.playTone(246.94, 0.162, 'sawtooth', 0.024, ENVELOPE_MIN_GAIN, 1.08, undefined, 'music');
+    }
+
+    private playSecurityCoreDepth2Music(): void {
+        // 5 × 220 ms phrase (loop: 1100 ms)
+        this.playTone(130.81, 0.17,  'sawtooth', 0.087, ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(196,    0.153, 'sawtooth', 0.026, ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(164.81, 0.17,  'sawtooth', 0.087, ENVELOPE_MIN_GAIN, 0.22, undefined, 'music');
+        this.playTone(246.94, 0.153, 'sawtooth', 0.026, ENVELOPE_MIN_GAIN, 0.26, undefined, 'music');
+        this.playTone(220,    0.17,  'sawtooth', 0.087, ENVELOPE_MIN_GAIN, 0.44, undefined, 'music');
+        this.playTone(311.13, 0.153, 'sawtooth', 0.026, ENVELOPE_MIN_GAIN, 0.48, undefined, 'music');
+        this.playTone(261.63, 0.17,  'sawtooth', 0.087, ENVELOPE_MIN_GAIN, 0.66, undefined, 'music');
+        this.playTone(369.99, 0.153, 'sawtooth', 0.026, ENVELOPE_MIN_GAIN, 0.7,  undefined, 'music');
+        this.playTone(174.61, 0.17,  'sawtooth', 0.087, ENVELOPE_MIN_GAIN, 0.88, undefined, 'music');
+        this.playTone(246.94, 0.153, 'sawtooth', 0.026, ENVELOPE_MIN_GAIN, 0.92, undefined, 'music');
+    }
+
+    private playSecurityCoreDepth3Music(): void {
+        // 5 × 195 ms phrase (loop: 975 ms)
+        this.playTone(130.81, 0.16,  'sawtooth', 0.095, ENVELOPE_MIN_GAIN, 0,     undefined, 'music');
+        this.playTone(196,    0.144, 'square',   0.028, ENVELOPE_MIN_GAIN, 0.04,  undefined, 'music');
+        this.playTone(164.81, 0.16,  'sawtooth', 0.095, ENVELOPE_MIN_GAIN, 0.195, undefined, 'music');
+        this.playTone(246.94, 0.144, 'square',   0.028, ENVELOPE_MIN_GAIN, 0.235, undefined, 'music');
+        this.playTone(220,    0.16,  'sawtooth', 0.095, ENVELOPE_MIN_GAIN, 0.39,  undefined, 'music');
+        this.playTone(311.13, 0.144, 'square',   0.028, ENVELOPE_MIN_GAIN, 0.43,  undefined, 'music');
+        this.playTone(261.63, 0.16,  'sawtooth', 0.095, ENVELOPE_MIN_GAIN, 0.585, undefined, 'music');
+        this.playTone(369.99, 0.144, 'square',   0.028, ENVELOPE_MIN_GAIN, 0.625, undefined, 'music');
+        this.playTone(174.61, 0.16,  'sawtooth', 0.095, ENVELOPE_MIN_GAIN, 0.78,  undefined, 'music');
+        this.playTone(246.94, 0.144, 'square',   0.028, ENVELOPE_MIN_GAIN, 0.82,  undefined, 'music');
+    }
+
+    private playKernelTerminusMusic(): void {
+        // 5 × 240 ms phrase (loop: 1200 ms)
+        this.playTone(123.47, 0.2,   'sawtooth', 0.086, ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(185,    0.18,  'sawtooth', 0.026, ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(164.81, 0.2,   'sawtooth', 0.086, ENVELOPE_MIN_GAIN, 0.24, undefined, 'music');
+        this.playTone(246.94, 0.18,  'sawtooth', 0.026, ENVELOPE_MIN_GAIN, 0.28, undefined, 'music');
+        this.playTone(220,    0.2,   'sawtooth', 0.086, ENVELOPE_MIN_GAIN, 0.48, undefined, 'music');
+        this.playTone(329.63, 0.18,  'sawtooth', 0.026, ENVELOPE_MIN_GAIN, 0.52, undefined, 'music');
+        this.playTone(293.66, 0.2,   'sawtooth', 0.086, ENVELOPE_MIN_GAIN, 0.72, undefined, 'music');
+        this.playTone(392,    0.18,  'sawtooth', 0.026, ENVELOPE_MIN_GAIN, 0.76, undefined, 'music');
+        this.playTone(329.63, 0.2,   'sawtooth', 0.086, ENVELOPE_MIN_GAIN, 0.96, undefined, 'music');
+        this.playTone(440,    0.18,  'sawtooth', 0.026, ENVELOPE_MIN_GAIN, 1.0,  undefined, 'music');
+    }
+
+    private playKernelTerminusDepth2Music(): void {
+        // 5 × 205 ms phrase (loop: 1025 ms)
+        this.playTone(123.47, 0.18,  'sawtooth', 0.096, ENVELOPE_MIN_GAIN, 0,     undefined, 'music');
+        this.playTone(185,    0.162, 'sawtooth', 0.028, ENVELOPE_MIN_GAIN, 0.04,  undefined, 'music');
+        this.playTone(164.81, 0.18,  'sawtooth', 0.096, ENVELOPE_MIN_GAIN, 0.205, undefined, 'music');
+        this.playTone(246.94, 0.162, 'sawtooth', 0.028, ENVELOPE_MIN_GAIN, 0.245, undefined, 'music');
+        this.playTone(220,    0.18,  'sawtooth', 0.096, ENVELOPE_MIN_GAIN, 0.41,  undefined, 'music');
+        this.playTone(329.63, 0.162, 'sawtooth', 0.028, ENVELOPE_MIN_GAIN, 0.45,  undefined, 'music');
+        this.playTone(293.66, 0.18,  'sawtooth', 0.096, ENVELOPE_MIN_GAIN, 0.615, undefined, 'music');
+        this.playTone(392,    0.162, 'sawtooth', 0.028, ENVELOPE_MIN_GAIN, 0.655, undefined, 'music');
+        this.playTone(329.63, 0.18,  'sawtooth', 0.096, ENVELOPE_MIN_GAIN, 0.82,  undefined, 'music');
+        this.playTone(440,    0.162, 'sawtooth', 0.028, ENVELOPE_MIN_GAIN, 0.86,  undefined, 'music');
+    }
+
+    private playKernelTerminusDepth3Music(): void {
+        // 5 × 180 ms phrase (loop: 900 ms)
+        this.playTone(123.47, 0.16,  'square',   0.105, ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(185,    0.144, 'sawtooth', 0.03,  ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(164.81, 0.16,  'square',   0.105, ENVELOPE_MIN_GAIN, 0.18, undefined, 'music');
+        this.playTone(246.94, 0.144, 'sawtooth', 0.03,  ENVELOPE_MIN_GAIN, 0.22, undefined, 'music');
+        this.playTone(220,    0.16,  'square',   0.105, ENVELOPE_MIN_GAIN, 0.36, undefined, 'music');
+        this.playTone(329.63, 0.144, 'sawtooth', 0.03,  ENVELOPE_MIN_GAIN, 0.4,  undefined, 'music');
+        this.playTone(293.66, 0.16,  'square',   0.105, ENVELOPE_MIN_GAIN, 0.54, undefined, 'music');
+        this.playTone(392,    0.144, 'sawtooth', 0.03,  ENVELOPE_MIN_GAIN, 0.58, undefined, 'music');
+        this.playTone(329.63, 0.16,  'square',   0.105, ENVELOPE_MIN_GAIN, 0.72, undefined, 'music');
+        this.playTone(440,    0.144, 'sawtooth', 0.03,  ENVELOPE_MIN_GAIN, 0.76, undefined, 'music');
+    }
+
+    private playGameTestMusic(): void {
+        // 4 × 260 ms phrase (loop: 1040 ms)
+        this.playTone(220,    0.18,  'square',   0.076, ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
+        this.playTone(293.66, 0.162, 'triangle', 0.025, ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
+        this.playTone(246.94, 0.18,  'square',   0.076, ENVELOPE_MIN_GAIN, 0.26, undefined, 'music');
+        this.playTone(329.63, 0.162, 'triangle', 0.025, ENVELOPE_MIN_GAIN, 0.3,  undefined, 'music');
+        this.playTone(293.66, 0.18,  'square',   0.076, ENVELOPE_MIN_GAIN, 0.52, undefined, 'music');
+        this.playTone(392,    0.162, 'triangle', 0.025, ENVELOPE_MIN_GAIN, 0.56, undefined, 'music');
+        this.playTone(369.99, 0.18,  'square',   0.076, ENVELOPE_MIN_GAIN, 0.78, undefined, 'music');
+        this.playTone(466.16, 0.162, 'triangle', 0.025, ENVELOPE_MIN_GAIN, 0.82, undefined, 'music');
     }
 
     private stopStageMusic(): void {
@@ -802,13 +602,9 @@ export class AudioManager {
             const swirl = HEALING_STATION_SWIRL_FREQUENCIES[pulseIndex % HEALING_STATION_SWIRL_FREQUENCIES.length];
             pulseIndex++;
 
-            const hs = SFX_PARAMS.healingStation;
-            const hn = hs.noise;
-            this.playNoise(hn.dur, hn.gain, hn.lowpass, hn.highpass, hn.delay);
-            const primaryGlideTo = primary * hs.primary.glideRatio;
-            const swirlGlideTo = swirl * hs.swirl.glideRatio;
-            this.playTone(primary, hs.primary.dur, hs.primary.type, hs.primary.gain, ENVELOPE_MIN_GAIN, hs.primary.delay, primaryGlideTo);
-            this.playTone(swirl,   hs.swirl.dur,   hs.swirl.type,   hs.swirl.gain,   ENVELOPE_MIN_GAIN, hs.swirl.delay,   swirlGlideTo);
+            this.playNoise(0.14, 0.018, 4200, 900, 0);
+            this.playTone(primary, 0.26, 'triangle', 0.04, ENVELOPE_MIN_GAIN, 0, primary * 1.08);
+            this.playTone(swirl, 0.18, 'sine', 0.025, ENVELOPE_MIN_GAIN, 0.05, swirl * 1.04);
         };
 
         playPulse();
