@@ -119,20 +119,21 @@
         #tl-clip { flex: 1; overflow: hidden; position: relative; cursor: crosshair; }
         #tl-canvas { position: absolute; top: 0; left: 0; display: block; }
 
-        /* ── Noise strip ─────────────────────────────────────────────────── */
-        #noise-row {
+        /* ── Noise strips (A / B / C) ────────────────────────────────────────── */
+        .noise-row {
             display: flex; flex-shrink: 0; height: 23px;
-            border-top: 2px solid var(--border);
+            border-top: 1px solid var(--border);
         }
-        #noise-lbl {
+        .noise-row-first { border-top: 2px solid var(--border) !important; }
+        .noise-lbl {
             width: 52px; flex-shrink: 0;
             background: #0b0c14; border-right: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
             font-size: 11px; letter-spacing: 2px; color: var(--accent2);
             text-transform: uppercase; user-select: none;
         }
-        #noise-clip { flex: 1; overflow: hidden; position: relative; cursor: crosshair; background: #080812; }
-        #noise-canvas { position: absolute; top: 0; left: 0; display: block; }
+        .noise-clip { flex: 1; overflow: hidden; position: relative; cursor: crosshair; background: #080812; }
+        .noise-canvas { position: absolute; top: 0; left: 0; display: block; }
 
         /* ── Popup ───────────────────────────────────────────────────────── */
         #popup {
@@ -268,10 +269,18 @@
     </div>
 </div>
 
-<!-- Noise strip -->
-<div id="noise-row">
-    <div id="noise-lbl">NOISE</div>
-    <div id="noise-clip"><canvas id="noise-canvas"></canvas></div>
+<!-- Noise strips (A / B / C) -->
+<div class="noise-row noise-row-first" id="noise-row-a">
+    <div class="noise-lbl">NOISE A</div>
+    <div class="noise-clip" id="noise-clip-a"><canvas id="noise-canvas-a" class="noise-canvas"></canvas></div>
+</div>
+<div class="noise-row" id="noise-row-b">
+    <div class="noise-lbl">NOISE B</div>
+    <div class="noise-clip" id="noise-clip-b"><canvas id="noise-canvas-b" class="noise-canvas"></canvas></div>
+</div>
+<div class="noise-row" id="noise-row-c">
+    <div class="noise-lbl">NOISE C</div>
+    <div class="noise-clip" id="noise-clip-c"><canvas id="noise-canvas-c" class="noise-canvas"></canvas></div>
 </div>
 
 <!-- Horizontal scrollbar -->
@@ -297,7 +306,7 @@
     <span class="hi">Click+drag empty: selection rectangle</span>
     <span class="hi">Click tone: edit / drag: move</span>
     <span class="hi">Right-click tone: delete</span>
-    <span class="hi">Click noise strip: add noise / drag: move</span>
+    <span class="hi">Click noise strip (A/B/C): add noise / drag: move</span>
     <span class="hi">Right-click noise: delete</span>
     <span class="hi">Delete: remove selected</span>
     <span class="hi">Drag &amp; drop .json file anywhere: load timeline</span>

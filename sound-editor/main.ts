@@ -65,6 +65,9 @@ const BEAT_FRACTIONS: { label: string; value: number }[] = [
     { label: '8',     value: 8     },
 ];
 
+// ── Noise track labels ────────────────────────────────────────────────────────
+const NOISE_TRACK_LABELS = ['A', 'B', 'C'] as const;
+
 // ── Layout constants ──────────────────────────────────────────────────────────
 const PPS              = 120;   // pixels per second
 const ROW_H            = 22;   // row height px
@@ -81,7 +84,8 @@ const MAX_BPM = 300;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let tones: ToneEvent[]   = [];
-let noises: NoiseEvent[] = [];
+/** Three independent noise tracks: index 0 = NOISE A, 1 = NOISE B, 2 = NOISE C. */
+const noiseTracks: NoiseEvent[][] = [[], [], []];
 let scrollX    = 0;      // horizontal scroll in px
 let editingId: string | null = null;
 let editingKind: 'tone' | 'noise' = 'tone';
@@ -122,7 +126,8 @@ interface SelRectState {
     absX0: number; absX1: number;
     /** Absolute canvas Y (px from top of canvas), independent of scrollTop. */
     absY0: number; absY1: number;
-    canvas: 'tone' | 'noise';
+    /** 'tone' for the tone canvas; 0/1/2 for noise track A/B/C. */
+    canvas: 'tone' | number;
     /** Whether the rect has grown beyond the click-threshold (drag vs. click). */
     active: boolean;
     /** Snapped add target if user just clicks without dragging. */
@@ -133,11 +138,11 @@ let selRectState: SelRectState | null = null;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const tlCanvas    = document.getElementById('tl-canvas')    as HTMLCanvasElement;
-const noiseCanvas = document.getElementById('noise-canvas') as HTMLCanvasElement;
+const noiseCanvases = NOISE_TRACK_LABELS.map(l => document.getElementById(`noise-canvas-${l.toLowerCase()}`) as HTMLCanvasElement);
+const noiseClips    = NOISE_TRACK_LABELS.map(l => document.getElementById(`noise-clip-${l.toLowerCase()}`)   as HTMLDivElement);
 const rulerCanvas = document.getElementById('ruler-canvas') as HTMLCanvasElement;
 const editorOuter = document.getElementById('editor-outer') as HTMLDivElement;
 const tlClip      = document.getElementById('tl-clip')      as HTMLDivElement;
-const noiseClip   = document.getElementById('noise-clip')   as HTMLDivElement;
 const rulerClip   = document.getElementById('ruler-clip')   as HTMLDivElement;
 const keyCol      = document.getElementById('key-col')      as HTMLDivElement;
 const playBtn     = document.getElementById('play-btn')     as HTMLButtonElement;
@@ -204,6 +209,30 @@ function uid(): string { return Math.random().toString(36).slice(2, 9); }
 
 function fmt(n: number): string { return parseFloat(n.toFixed(5)).toString(); }
 
+/** Return all noise events across all three tracks (A, B, C). */
+function allNoises(): NoiseEvent[] { return noiseTracks.flatMap(t => t); }
+
+/** Find a noise event by id across all tracks. Returns event + track reference. */
+function findNoiseById(id: string): { event: NoiseEvent; track: NoiseEvent[] } | null {
+    for (const track of noiseTracks) {
+        const ev = track.find(n => n.id === id);
+        if (ev) return { event: ev, track };
+    }
+    return null;
+}
+
+/** Remove events with the given ids from every noise track in-place. */
+function removeNoisesById(ids: Set<string>): void {
+    for (let i = 0; i < noiseTracks.length; i++) {
+        noiseTracks[i] = noiseTracks[i].filter(n => !ids.has(n.id));
+    }
+}
+
+/** Clear all events from every noise track in-place. */
+function clearAllNoiseTracks(): void {
+    for (let i = 0; i < noiseTracks.length; i++) noiseTracks[i] = [];
+}
+
 /** Duration of one beat in seconds at the current BPM. */
 function beatDur(): number { return 60 / cfgBpm; }
 
@@ -216,7 +245,7 @@ function virtualW(): number {
     const maxT = Math.max(
         MIN_SECS,
         ...tones.map(e  => e.startTime + e.duration * bd + 2),
-        ...noises.map(e => e.startTime + e.duration * bd + 2),
+        ...allNoises().map(e => e.startTime + e.duration * bd + 2),
     );
     return maxT * PPS;
 }
@@ -283,11 +312,13 @@ function buildGlideOptions(sel: HTMLSelectElement, includeNone: boolean): void {
 function resizeAll(): void {
     const tlH    = NOTES.length * ROW_H;
     const tlW    = visibleW();
-    const nW     = noiseClip.clientWidth  || tlW;
     const rW     = rulerClip.clientWidth  || tlW;
     setCanvas(tlCanvas,    tlW, tlH);
-    setCanvas(noiseCanvas, nW,  NOISE_H);
     setCanvas(rulerCanvas, rW,  RULER_H);
+    noiseCanvases.forEach((canvas, i) => {
+        const nW = noiseClips[i].clientWidth || tlW;
+        setCanvas(canvas, nW, NOISE_H);
+    });
 }
 
 // ── Grid helpers ───────────────────────────────────────────────────────────────
@@ -411,15 +442,18 @@ function renderTimeline(): void {
 }
 
 // ── Render noise strip ─────────────────────────────────────────────────────────
-function renderNoise(): void {
-    const w  = noiseClip.clientWidth || 800;
-    const cx = ctx2d(noiseCanvas);
+function renderNoiseTrack(trackIdx: number): void {
+    const canvas = noiseCanvases[trackIdx];
+    const clip   = noiseClips[trackIdx];
+    const track  = noiseTracks[trackIdx];
+    const w  = clip.clientWidth || 800;
+    const cx = ctx2d(canvas);
     cx.clearRect(0, 0, w, NOISE_H);
     cx.fillStyle = '#080812'; cx.fillRect(0, 0, w, NOISE_H);
 
     drawGrid(cx, w, NOISE_H);
 
-    for (const ev of noises) {
+    for (const ev of track) {
         const x   = ev.startTime * PPS - scrollX;
         const bw  = Math.max(6, ev.duration * beatDur() * PPS);
         const y   = 2; const bh = NOISE_H - 4;
@@ -434,8 +468,8 @@ function renderNoise(): void {
         cx.fill(); cx.stroke();
     }
 
-    // Selection rectangle overlay (on noise canvas)
-    if (selRectState && selRectState.active && selRectState.canvas === 'noise') {
+    // Selection rectangle overlay (on this noise canvas)
+    if (selRectState && selRectState.active && selRectState.canvas === trackIdx) {
         const rx0 = Math.min(selRectState.absX0, selRectState.absX1) - scrollX;
         const rx1 = Math.max(selRectState.absX0, selRectState.absX1) - scrollX;
         cx.fillStyle = 'rgba(0,229,255,0.08)';
@@ -477,7 +511,7 @@ function syncScrollbar(): void {
 function render(): void {
     renderRuler();
     renderTimeline();
-    renderNoise();
+    noiseTracks.forEach((_, i) => renderNoiseTrack(i));
     syncScrollbar();
 }
 
@@ -493,10 +527,10 @@ function hitTone(cx: number, cy: number): ToneEvent | null {
     return null;
 }
 
-function hitNoise(cx: number): NoiseEvent | null {
+function hitNoiseTrack(trackIdx: number, cx: number): NoiseEvent | null {
     const t  = (cx + scrollX) / PPS;
     const bd = beatDur();
-    for (const ev of noises) {
+    for (const ev of noiseTracks[trackIdx]) {
         if (t >= ev.startTime && t <= ev.startTime + ev.duration * bd) return ev;
     }
     return null;
@@ -531,8 +565,8 @@ function onTlDown(e: MouseEvent): void {
         for (const id of selectedIds) {
             const t = tones.find(t => t.id === id);
             if (t) origPositions.set(id, { startTime: t.startTime, noteIdx: t.noteIdx });
-            const n = noises.find(n => n.id === id);
-            if (n) origPositions.set(id, { startTime: n.startTime, noteIdx: 0 });
+            const nf = findNoiseById(id);
+            if (nf) origPositions.set(id, { startTime: nf.event.startTime, noteIdx: 0 });
         }
 
         dragMoveState = {
@@ -574,61 +608,69 @@ function onTlCtx(e: MouseEvent): void {
 }
 
 // ── Noise mouse events ─────────────────────────────────────────────────────────
-function onNoiseDown(e: MouseEvent): void {
-    if (e.button !== 0) return;
-    const { x } = canvasXY(noiseCanvas, e);
+/**
+ * Returns mousedown and contextmenu handlers for a specific noise track.
+ * Captures trackIdx so each of the three strips behaves independently.
+ */
+function makeNoiseMouseHandlers(trackIdx: number): { down: (e: MouseEvent) => void; ctx: (e: MouseEvent) => void } {
+    function onNoiseDown(e: MouseEvent): void {
+        if (e.button !== 0) return;
+        const { x } = canvasXY(noiseCanvases[trackIdx], e);
 
-    const hit = hitNoise(x);
-    if (hit) {
-        e.stopPropagation();
-        closePopup();
+        const hit = hitNoiseTrack(trackIdx, x);
+        if (hit) {
+            e.stopPropagation();
+            closePopup();
 
-        if (!selectedIds.has(hit.id)) {
-            selectedIds = new Set([hit.id]);
+            if (!selectedIds.has(hit.id)) {
+                selectedIds = new Set([hit.id]);
+                updateSelPanel();
+            }
+
+            const origPositions = new Map<string, { startTime: number; noteIdx: number }>();
+            for (const id of selectedIds) {
+                const t = tones.find(t => t.id === id);
+                if (t) origPositions.set(id, { startTime: t.startTime, noteIdx: t.noteIdx });
+                const nf = findNoiseById(id);
+                if (nf) origPositions.set(id, { startTime: nf.event.startTime, noteIdx: 0 });
+            }
+
+            dragMoveState = {
+                origPositions,
+                singleId: hit.id, singleKind: 'noise',
+                startClientX: e.clientX, startClientY: e.clientY, moved: false,
+            };
+            render();
+        } else {
+            const absT = Math.max(0, (x + scrollX) / PPS);
+            selectedIds = new Set();
             updateSelPanel();
+            closePopup();
+
+            selRectState = {
+                absX0: x + scrollX, absX1: x + scrollX,
+                absY0: 0, absY1: NOISE_H,
+                canvas: trackIdx, active: false,
+                addRow: -1, addTime: snapToGridFloor(absT),
+            };
+            render();
         }
+    }
 
-        const origPositions = new Map<string, { startTime: number; noteIdx: number }>();
-        for (const id of selectedIds) {
-            const t = tones.find(t => t.id === id);
-            if (t) origPositions.set(id, { startTime: t.startTime, noteIdx: t.noteIdx });
-            const n = noises.find(n => n.id === id);
-            if (n) origPositions.set(id, { startTime: n.startTime, noteIdx: 0 });
+    function onNoiseCtx(e: MouseEvent): void {
+        e.preventDefault();
+        const { x } = canvasXY(noiseCanvases[trackIdx], e);
+        const hit = hitNoiseTrack(trackIdx, x);
+        if (hit) {
+            noiseTracks[trackIdx] = noiseTracks[trackIdx].filter(n => n.id !== hit.id);
+            selectedIds.delete(hit.id);
+            updateSelPanel();
+            closePopup();
+            render();
         }
-
-        dragMoveState = {
-            origPositions,
-            singleId: hit.id, singleKind: 'noise',
-            startClientX: e.clientX, startClientY: e.clientY, moved: false,
-        };
-        render();
-    } else {
-        const absT = Math.max(0, (x + scrollX) / PPS);
-        selectedIds = new Set();
-        updateSelPanel();
-        closePopup();
-
-        selRectState = {
-            absX0: x + scrollX, absX1: x + scrollX,
-            absY0: 0, absY1: NOISE_H,
-            canvas: 'noise', active: false,
-            addRow: -1, addTime: snapToGridFloor(absT),
-        };
-        render();
     }
-}
 
-function onNoiseCtx(e: MouseEvent): void {
-    e.preventDefault();
-    const { x } = canvasXY(noiseCanvas, e);
-    const hit = hitNoise(x);
-    if (hit) {
-        noises = noises.filter(n => n.id !== hit.id);
-        selectedIds.delete(hit.id);
-        updateSelPanel();
-        closePopup();
-        render();
-    }
+    return { down: onNoiseDown, ctx: onNoiseCtx };
 }
 
 // ── Global mouse move / up (drag & selection rect) ────────────────────────────
@@ -652,8 +694,8 @@ function onGlobalMove(e: MouseEvent): void {
                     tone.startTime = newT;
                     tone.noteIdx   = Math.max(0, Math.min(NOTES.length - 1, orig.noteIdx + dRow));
                 }
-                const noise = noises.find(n => n.id === id);
-                if (noise) noise.startTime = newT;
+                const noiseFound = findNoiseById(id);
+                if (noiseFound) noiseFound.event.startTime = newT;
             }
             render();
         }
@@ -667,7 +709,8 @@ function onGlobalMove(e: MouseEvent): void {
             // y from getBoundingClientRect is already canvas-relative; no scrollTop adjustment needed.
             selRectState.absY1 = y;
         } else {
-            const { x } = canvasXY(noiseCanvas, e);
+            const trackIdx = selRectState.canvas as number;
+            const { x } = canvasXY(noiseCanvases[trackIdx], e);
             selRectState.absX1 = x + scrollX;
         }
 
@@ -702,8 +745,8 @@ function onGlobalUp(e: MouseEvent): void {
             // Click (no drag): add tone or noise
             if (selRectState.canvas === 'tone' && selRectState.addRow >= 0 && selRectState.addRow < NOTES.length) {
                 addTone(selRectState.addRow, selRectState.addTime);
-            } else if (selRectState.canvas === 'noise') {
-                addNoise(selRectState.addTime);
+            } else if (typeof selRectState.canvas === 'number') {
+                addNoise(selRectState.canvas, selRectState.addTime);
             }
         }
         selRectState = null;
@@ -730,7 +773,8 @@ function finalizeSelection(rect: SelRectState): void {
             if (ex1 >= x0 && ex0 <= x1 && ey1 >= y0 && ey0 <= y1) selectedIds.add(ev.id);
         }
     } else {
-        for (const ev of noises) {
+        const trackIdx = rect.canvas as number;
+        for (const ev of noiseTracks[trackIdx]) {
             const ex0 = ev.startTime * PPS;
             const ex1 = ex0 + ev.duration * bd * PPS;
             if (ex1 >= x0 && ex0 <= x1) selectedIds.add(ev.id);
@@ -784,8 +828,8 @@ function addTone(noteIdx: number, startTime: number): void {
     render();
 }
 
-function addNoise(startTime: number): void {
-    noises.push({ id: uid(), startTime: snapToGridFloor(startTime), duration: cfgDur, gain: cfgGain, dropoff: cfgDropoff, lowpass: cfgLowpass, highpass: cfgHighpass });
+function addNoise(trackIdx: number, startTime: number): void {
+    noiseTracks[trackIdx].push({ id: uid(), startTime: snapToGridFloor(startTime), duration: cfgDur, gain: cfgGain, dropoff: cfgDropoff, lowpass: cfgLowpass, highpass: cfgHighpass });
     render();
 }
 
@@ -805,7 +849,7 @@ function openPopup(id: string, kind: 'tone' | 'noise', mx: number, my: number): 
         ppDropoff.value = String(ev.dropoff ?? 0.3); ppDropoffV.textContent = (ev.dropoff ?? 0.3).toFixed(2);
         ppGlide.value = ev.glideTo !== null ? String(ev.glideTo) : '';
     } else {
-        const ev = noises.find(n => n.id === id)!;
+        const ev = findNoiseById(id)!.event;
         popupTitle.textContent = 'Edit Noise';
         ppTypeRow.style.display = 'none'; ppGlideRow.style.display = 'none';
         ppLpRow.style.display = ''; ppHpRow.style.display = '';
@@ -845,7 +889,8 @@ function savePopup(): void {
             ev.glideTo = ppGlide.value ? parseInt(ppGlide.value) : null;
         }
     } else {
-        const ev = noises.find(n => n.id === editingId);
+        const found = editingId ? findNoiseById(editingId) : null;
+        const ev = found?.event;
         if (ev) {
             ev.duration = dur; ev.gain = gain; ev.dropoff = dropoff;
             ev.lowpass  = parseFloat(ppLp.value) || 2200;
@@ -907,7 +952,7 @@ function schedNoise(ctx: AudioContext, dur: number, gain: number, dropoff: numbe
 
 function startPlayback(): void {
     if (isPlaying) stopPlayback();
-    if (tones.length === 0 && noises.length === 0) return; // Nothing to play
+    if (tones.length === 0 && noiseTracks.every(t => t.length === 0)) return; // Nothing to play
 
     const ctx = getCtx();
 
@@ -922,16 +967,16 @@ function startPlayback(): void {
         const passDur = Math.max(
             MIN_LOOP_PERIOD,
             ...tones.map(e  => e.startTime + e.duration * bd),
-            ...noises.map(e => e.startTime + e.duration * bd),
+            ...allNoises().map(e => e.startTime + e.duration * bd),
         );
         tones.forEach(ev => {
             const freq  = NOTES[ev.noteIdx].freq;
             const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
             schedTone(ctx, freq, ev.duration * bd, ev.type, ev.gain, ev.dropoff ?? 0.3, offset + ev.startTime, glide);
         });
-        noises.forEach(ev => {
+        noiseTracks.forEach(track => track.forEach(ev => {
             schedNoise(ctx, ev.duration * bd, ev.gain, ev.dropoff ?? 0.3, ev.lowpass, ev.highpass, offset + ev.startTime);
-        });
+        }));
         return passDur;
     }
 
@@ -1007,7 +1052,8 @@ function stopPlayback(): void {
 
 // ── Code export ────────────────────────────────────────────────────────────────
 function generateCode(): string {
-    if (tones.length === 0 && noises.length === 0) return '// No events on the timeline yet.';
+    const totalNoises = allNoises().length;
+    if (tones.length === 0 && totalNoises === 0) return '// No events on the timeline yet.';
 
     const events: { t: number; line: string }[] = [];
     const bd = beatDur();
@@ -1015,7 +1061,7 @@ function generateCode(): string {
     // Compute loop period (max event end time)
     const passDur = Math.max(
         ...tones.map(e  => e.startTime + e.duration * bd),
-        ...noises.map(e => e.startTime + e.duration * bd),
+        ...allNoises().map(e => e.startTime + e.duration * bd),
     );
 
     tones.forEach(ev => {
@@ -1029,12 +1075,15 @@ function generateCode(): string {
             line: `this.playTone(${fmt(freq)}, ${fmt(dur)}, '${ev.type}', ${fmt(ev.gain)}, ${endGain}, ${at}${glideArg}); // ${NOTES[ev.noteIdx].name}` });
     });
 
-    noises.forEach(ev => {
-        const dur = ev.duration * bd;
-        const at  = fmt(ev.startTime);
-        const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? 0.3)));
-        events.push({ t: ev.startTime,
-            line: `this.playNoise(${fmt(dur)}, ${fmt(ev.gain)}, ${fmt(ev.lowpass)}, ${fmt(ev.highpass)}, ${at}, ${endGain});` });
+    noiseTracks.forEach((track, i) => {
+        const label = NOISE_TRACK_LABELS[i];
+        track.forEach(ev => {
+            const dur = ev.duration * bd;
+            const at  = fmt(ev.startTime);
+            const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? 0.3)));
+            events.push({ t: ev.startTime,
+                line: `this.playNoise(${fmt(dur)}, ${fmt(ev.gain)}, ${fmt(ev.lowpass)}, ${fmt(ev.highpass)}, ${at}, ${endGain}); // NOISE ${label}` });
+        });
     });
 
     events.sort((a, b) => a.t - b.t);
@@ -1049,7 +1098,7 @@ function generateCode(): string {
 
 // ── JSON export & import ───────────────────────────────────────────────────────
 function downloadJson(): void {
-    const payload = JSON.stringify({ version: 1, bpm: cfgBpm, tones, noises }, null, 2);
+    const payload = JSON.stringify({ version: 2, bpm: cfgBpm, tones, noiseTracks }, null, 2);
     const blob = new Blob([payload], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -1058,11 +1107,24 @@ function downloadJson(): void {
 }
 
 function loadFromJson(raw: string): void {
-    let data: { version?: number; bpm?: number; tones?: unknown[]; noises?: unknown[] };
+    let data: { version?: number; bpm?: number; tones?: unknown[]; noises?: unknown[]; noiseTracks?: unknown[][] };
     try { data = JSON.parse(raw); } catch (e) { alert('Could not parse JSON file: ' + (e as Error).message); return; }
-    if (!Array.isArray(data.tones) || !Array.isArray(data.noises)) {
-        alert('Not a valid HackWorld DAW file (missing tones/noises arrays).');
+    if (!Array.isArray(data.tones)) {
+        alert('Not a valid HackWorld DAW file (missing tones array).');
         return;
+    }
+
+    // Accept v2 (noiseTracks: array of 3 arrays) and v1 (noises: single array → track A).
+    let noiseArrays: unknown[][];
+    if (Array.isArray(data.noiseTracks)) {
+        noiseArrays = data.noiseTracks.slice(0, 3).map(t => (Array.isArray(t) ? t : []));
+        while (noiseArrays.length < 3) noiseArrays.push([]);
+    } else if (Array.isArray(data.noises)) {
+        // Legacy v1: single array → place into track A, leave B/C empty
+        noiseArrays = [data.noises, [], []];
+    } else {
+        // No noise data at all — three empty tracks
+        noiseArrays = [[], [], []];
     }
 
     // Validate and filter tone events to ensure required fields are present
@@ -1084,25 +1146,27 @@ function loadFromJson(raw: string): void {
         glideTo:   typeof t.glideTo === 'number' ? t.glideTo as number : null,
     }));
 
-    // Validate and filter noise events
-    const validNoises: NoiseEvent[] = (data.noises as Record<string, unknown>[]).filter(n =>
-        typeof n.id === 'string' &&
-        typeof n.startTime === 'number' &&
-        typeof n.duration === 'number' &&
-        typeof n.gain === 'number'
-    ).map(n => ({
-        id:        n.id        as string,
-        startTime: n.startTime as number,
-        duration:  n.duration  as number,
-        gain:      n.gain      as number,
-        dropoff:   typeof n.dropoff === 'number' ? n.dropoff as number : 0.3,
-        lowpass:   typeof n.lowpass  === 'number' ? n.lowpass  as number : 2200,
-        highpass:  typeof n.highpass === 'number' ? n.highpass as number : 100,
-    }));
+    /** Validate and normalise a raw noise array. */
+    function validateNoises(arr: unknown[]): NoiseEvent[] {
+        return (arr as Record<string, unknown>[]).filter(n =>
+            typeof n.id === 'string' &&
+            typeof n.startTime === 'number' &&
+            typeof n.duration === 'number' &&
+            typeof n.gain === 'number'
+        ).map(n => ({
+            id:        n.id        as string,
+            startTime: n.startTime as number,
+            duration:  n.duration  as number,
+            gain:      n.gain      as number,
+            dropoff:   typeof n.dropoff === 'number' ? n.dropoff as number : 0.3,
+            lowpass:   typeof n.lowpass  === 'number' ? n.lowpass  as number : 2200,
+            highpass:  typeof n.highpass === 'number' ? n.highpass as number : 100,
+        }));
+    }
 
     stopPlayback();
-    tones  = validTones;
-    noises = validNoises;
+    tones = validTones;
+    for (let i = 0; i < 3; i++) noiseTracks[i] = validateNoises(noiseArrays[i]);
     scrollX = 0;
     if (typeof data.bpm === 'number') {
         cfgBpm = Math.max(MIN_BPM, Math.min(MAX_BPM, data.bpm));
@@ -1128,7 +1192,7 @@ function updateSelPanel(): void {
     selCountEl.textContent = String(selectedIds.size);
 
     const selTones  = tones.filter(t => selectedIds.has(t.id));
-    const selNoises = noises.filter(n => selectedIds.has(n.id));
+    const selNoises = allNoises().filter(n => selectedIds.has(n.id));
     const allEvts   = [...selTones, ...selNoises];
     const onlyTones = selNoises.length === 0;
     const onlyNoise = selTones.length === 0;
@@ -1207,7 +1271,8 @@ function applySelection(): void {
                 tone.glideTo = selGlide.value !== '' ? parseInt(selGlide.value) : null;
             }
         }
-        const noise = noises.find(n => n.id === id);
+        const noiseFound = findNoiseById(id);
+        const noise = noiseFound?.event ?? null;
         if (noise) {
             if (dur   !== null && !isNaN(dur))     noise.duration = dur;
             if (gain  !== null && !isNaN(gain))    noise.gain     = gain;
@@ -1257,7 +1322,7 @@ function init(): void {
     ppDel.addEventListener('click',  () => {
         if (!editingId) return;
         tones  = tones.filter(t => t.id !== editingId);
-        noises = noises.filter(n => n.id !== editingId);
+        removeNoisesById(new Set([editingId]));
         selectedIds.delete(editingId);
         updateSelPanel();
         closePopup();
@@ -1269,7 +1334,7 @@ function init(): void {
     selApplyBtn.addEventListener('click', applySelection);
     selDelBtn.addEventListener('click', () => {
         tones  = tones.filter(t => !selectedIds.has(t.id));
-        noises = noises.filter(n => !selectedIds.has(n.id));
+        removeNoisesById(selectedIds);
         clearSelection();
     });
     selPanelX.addEventListener('click', clearSelection);
@@ -1279,7 +1344,7 @@ function init(): void {
     stopBtn.addEventListener('click',   stopPlayback);
     cfgLoopEl.addEventListener('change', () => { cfgLoop = cfgLoopEl.checked; });
     clearBtn.addEventListener('click',  () => {
-        stopPlayback(); tones = []; noises = []; scrollX = 0; closePopup(); clearSelection(); render();
+        stopPlayback(); tones = []; clearAllNoiseTracks(); scrollX = 0; closePopup(); clearSelection(); render();
     });
     exportBtn.addEventListener('click', () => {
         codeTa.value = generateCode(); codeTa.select();
@@ -1290,16 +1355,20 @@ function init(): void {
     // Timeline interaction
     tlCanvas.addEventListener('mousedown', onTlDown);
     tlCanvas.addEventListener('contextmenu', onTlCtx);
-    noiseCanvas.addEventListener('mousedown', onNoiseDown);
-    noiseCanvas.addEventListener('contextmenu', onNoiseCtx);
+    noiseCanvases.forEach((canvas, i) => {
+        const { down, ctx } = makeNoiseMouseHandlers(i);
+        canvas.addEventListener('mousedown', down);
+        canvas.addEventListener('contextmenu', ctx);
+        noiseClips[i].addEventListener('wheel', onWheel, { passive: false });
+    });
 
     // Global mouse move / up for drag and selection rect
     window.addEventListener('mousemove', onGlobalMove);
     window.addEventListener('mouseup',   onGlobalUp);
 
     // Horizontal scroll via wheel
-    tlClip.addEventListener('wheel',    onWheel, { passive: false });
-    noiseClip.addEventListener('wheel', onWheel, { passive: false });
+    tlClip.addEventListener('wheel', onWheel, { passive: false });
+    // Note: noise clip wheel listeners are registered per-track inside makeNoiseMouseHandlers loop above
 
     // Horizontal scrollbar
     hscrollBar.addEventListener('scroll', () => {
@@ -1321,7 +1390,7 @@ function init(): void {
         if (e.code === 'Delete' && !isEditable(e.target) && selectedIds.size > 0) {
             e.preventDefault();
             tones  = tones.filter(t => !selectedIds.has(t.id));
-            noises = noises.filter(n => !selectedIds.has(n.id));
+            removeNoisesById(selectedIds);
             clearSelection();
         }
         if (e.code === 'Escape' && !isEditable(e.target)) {
