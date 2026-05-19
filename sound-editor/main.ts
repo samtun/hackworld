@@ -225,12 +225,14 @@ function removeNoisesById(ids: Set<string>): void {
 
 /** Determine the current selected event kind. */
 function getSelectionKind(): SelectionKind {
+    const toneIds = new Set(tones.map(t => t.id));
+    const noiseIds = new Set(noises.map(n => n.id));
     let hasTone = false;
     let hasNoise = false;
 
     for (const id of selectedIds) {
-        if (!hasTone && tones.some(t => t.id === id)) hasTone = true;
-        if (!hasNoise && noises.some(n => n.id === id)) hasNoise = true;
+        if (!hasTone && toneIds.has(id)) hasTone = true;
+        if (!hasNoise && noiseIds.has(id)) hasNoise = true;
         if (hasTone && hasNoise) return 'mixed';
     }
 
