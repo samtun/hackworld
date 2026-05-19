@@ -848,13 +848,13 @@ function init(): void {
     cfgBpmEl.addEventListener('change',  () => { cfgBpm   = Math.max(MIN_BPM, Math.min(MAX_BPM, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
     cfgTypeEl.addEventListener('change', () => { cfgType  = cfgTypeEl.value as OscType; });
     cfgGainEl.addEventListener('input',  () => { cfgGain  = parseFloat(cfgGainEl.value) || 0; });
-    cfgDropoffEl.addEventListener('input', () => { cfgDropoff = parseFloat(cfgDropoffEl.value); cfgDropoffV.textContent = cfgDropoff.toFixed(2); });
+    cfgDropoffEl.addEventListener('input', () => { cfgDropoff = parseFloat(cfgDropoffEl.value) || 0.3; cfgDropoffV.textContent = cfgDropoff.toFixed(2); });
     cfgGlideEl.addEventListener('change',() => { cfgGlide = cfgGlideEl.value ? parseInt(cfgGlideEl.value) : null; });
     cfgLpEl.addEventListener('change',   () => { cfgLowpass  = parseFloat(cfgLpEl.value)  || 2200; });
     cfgHpEl.addEventListener('change',   () => { cfgHighpass = parseFloat(cfgHpEl.value)  || 100;  });
 
-    // Popup live preview
-    ppDropoff.addEventListener('input', () => { ppDropoffV.textContent = parseFloat(ppDropoff.value).toFixed(2); });
+    // Popup dropoff live preview
+    ppDropoff.addEventListener('input', () => { ppDropoffV.textContent = (parseFloat(ppDropoff.value) || 0.3).toFixed(2); });
 
     // Popup actions
     ppSave.addEventListener('click', savePopup);
