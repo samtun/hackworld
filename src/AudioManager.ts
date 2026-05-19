@@ -34,8 +34,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [174.61, 220, 261.63, 293.66],
         harmonyFrequencies: [261.63, 329.63, 349.23, 392],
         pulseIntervalMs: 420,
-        pulseType: 'triangle' as OscillatorType,
-        harmonyType: 'sine' as OscillatorType,
+        pulseType: 'triangle',
+        harmonyType: 'sine',
         pulseDuration: 0.34,
         pulseGain: 0.065,
         harmonyGain: 0.03,
@@ -44,8 +44,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [220, 277.18, 329.63, 440],
         harmonyFrequencies: [329.63, 369.99, 440, 554.37],
         pulseIntervalMs: 340,
-        pulseType: 'triangle' as OscillatorType,
-        harmonyType: 'sine' as OscillatorType,
+        pulseType: 'triangle',
+        harmonyType: 'sine',
         pulseDuration: 0.22,
         pulseGain: 0.07,
         harmonyGain: 0.028,
@@ -54,8 +54,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [220, 277.18, 369.99, 466.16, 369.99],
         harmonyFrequencies: [146.83, 174.61, 220, 277.18, 233.08],
         pulseIntervalMs: 290,
-        pulseType: 'square' as OscillatorType,
-        harmonyType: 'triangle' as OscillatorType,
+        pulseType: 'square',
+        harmonyType: 'triangle',
         pulseDuration: 0.16,
         pulseGain: 0.074,
         harmonyGain: 0.024,
@@ -64,8 +64,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [196, 246.94, 293.66, 246.94, 392],
         harmonyFrequencies: [130.81, 164.81, 196, 164.81, 220],
         pulseIntervalMs: 250,
-        pulseType: 'square' as OscillatorType,
-        harmonyType: 'sawtooth' as OscillatorType,
+        pulseType: 'square',
+        harmonyType: 'sawtooth',
         pulseDuration: 0.17,
         pulseGain: 0.076,
         harmonyGain: 0.024,
@@ -74,8 +74,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [155.56, 185, 233.08, 207.65, 138.59],
         harmonyFrequencies: [233.08, 277.18, 311.13, 277.18, 207.65],
         pulseIntervalMs: 310,
-        pulseType: 'sawtooth' as OscillatorType,
-        harmonyType: 'triangle' as OscillatorType,
+        pulseType: 'sawtooth',
+        harmonyType: 'triangle',
         pulseDuration: 0.19,
         pulseGain: 0.074,
         harmonyGain: 0.023,
@@ -84,8 +84,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [155.56, 185, 233.08, 207.65, 138.59],
         harmonyFrequencies: [233.08, 277.18, 311.13, 277.18, 207.65],
         pulseIntervalMs: 260,
-        pulseType: 'sawtooth' as OscillatorType,
-        harmonyType: 'triangle' as OscillatorType,
+        pulseType: 'sawtooth',
+        harmonyType: 'triangle',
         pulseDuration: 0.17,
         pulseGain: 0.084,
         harmonyGain: 0.026,
@@ -94,8 +94,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [130.81, 164.81, 220, 261.63, 174.61],
         harmonyFrequencies: [196, 246.94, 311.13, 369.99, 246.94],
         pulseIntervalMs: 260,
-        pulseType: 'sawtooth' as OscillatorType,
-        harmonyType: 'sawtooth' as OscillatorType,
+        pulseType: 'sawtooth',
+        harmonyType: 'sawtooth',
         pulseDuration: 0.18,
         pulseGain: 0.08,
         harmonyGain: 0.024,
@@ -104,8 +104,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [130.81, 164.81, 220, 261.63, 174.61],
         harmonyFrequencies: [196, 246.94, 311.13, 369.99, 246.94],
         pulseIntervalMs: 220,
-        pulseType: 'sawtooth' as OscillatorType,
-        harmonyType: 'sawtooth' as OscillatorType,
+        pulseType: 'sawtooth',
+        harmonyType: 'sawtooth',
         pulseDuration: 0.17,
         pulseGain: 0.087,
         harmonyGain: 0.026,
@@ -114,8 +114,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [130.81, 164.81, 220, 261.63, 174.61],
         harmonyFrequencies: [196, 246.94, 311.13, 369.99, 246.94],
         pulseIntervalMs: 195,
-        pulseType: 'sawtooth' as OscillatorType,
-        harmonyType: 'square' as OscillatorType,
+        pulseType: 'sawtooth',
+        harmonyType: 'square',
         pulseDuration: 0.16,
         pulseGain: 0.095,
         harmonyGain: 0.028,
@@ -124,8 +124,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [123.47, 164.81, 220, 293.66, 329.63],
         harmonyFrequencies: [185, 246.94, 329.63, 392, 440],
         pulseIntervalMs: 240,
-        pulseType: 'sawtooth' as OscillatorType,
-        harmonyType: 'sawtooth' as OscillatorType,
+        pulseType: 'sawtooth',
+        harmonyType: 'sawtooth',
         pulseDuration: 0.2,
         pulseGain: 0.086,
         harmonyGain: 0.026,
@@ -134,8 +134,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [123.47, 164.81, 220, 293.66, 329.63],
         harmonyFrequencies: [185, 246.94, 329.63, 392, 440],
         pulseIntervalMs: 205,
-        pulseType: 'sawtooth' as OscillatorType,
-        harmonyType: 'sawtooth' as OscillatorType,
+        pulseType: 'sawtooth',
+        harmonyType: 'sawtooth',
         pulseDuration: 0.18,
         pulseGain: 0.096,
         harmonyGain: 0.028,
@@ -144,8 +144,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [123.47, 164.81, 220, 293.66, 329.63],
         harmonyFrequencies: [185, 246.94, 329.63, 392, 440],
         pulseIntervalMs: 180,
-        pulseType: 'square' as OscillatorType,
-        harmonyType: 'sawtooth' as OscillatorType,
+        pulseType: 'square',
+        harmonyType: 'sawtooth',
         pulseDuration: 0.16,
         pulseGain: 0.105,
         harmonyGain: 0.03,
@@ -154,8 +154,8 @@ export const STAGE_MUSIC: Record<string, StageMusicProfile> = {
         pulseFrequencies: [220, 246.94, 293.66, 369.99],
         harmonyFrequencies: [293.66, 329.63, 392, 466.16],
         pulseIntervalMs: 260,
-        pulseType: 'square' as OscillatorType,
-        harmonyType: 'triangle' as OscillatorType,
+        pulseType: 'square',
+        harmonyType: 'triangle',
         pulseDuration: 0.18,
         pulseGain: 0.076,
         harmonyGain: 0.025,
@@ -245,7 +245,8 @@ export class AudioManager {
         this.startStageMusicIfPossible();
     }
 
-    // ── Paste output from `npm run dev:sound-editor` into the play*() methods below ──
+    // ── To retune sounds: run `npm run dev:sound-editor`, compose there, then paste ──
+    // ── the generated playTone()/playNoise() calls directly into the methods below.  ──
 
     playFootstep(source: FootstepSource): void {
         if (source === 'player') {
@@ -309,12 +310,14 @@ export class AudioManager {
     }
 
     playBuy(): void {
+        // glide ratio 1.03 applied to each note
         this.playTone(523.25, 0.12, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0, 539.0475);
         this.playTone(659.25, 0.12, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0.04, 679.0275);
         this.playTone(783.99, 0.12, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0.08, 807.5097);
     }
 
     playSell(): void {
+        // glide ratio 0.96 applied to each note (descending glide)
         this.playTone(659.25, 0.1, 'sine', 0.05, ENVELOPE_MIN_GAIN, 0, 632.88);
         this.playTone(523.25, 0.1, 'sine', 0.05, ENVELOPE_MIN_GAIN, 0.035, 502.32);
         this.playTone(392, 0.1, 'sine', 0.05, ENVELOPE_MIN_GAIN, 0.07, 376.32);
@@ -322,6 +325,7 @@ export class AudioManager {
 
     playUpgrade(): void {
         this.playNoise(0.04, 0.025, 5200, 800, 0.02);
+        // glide ratio 1.05 applied to each note
         this.playTone(392, 0.14, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0, 411.6);
         this.playTone(523.25, 0.14, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0.045, 549.4125);
         this.playTone(659.25, 0.14, 'triangle', 0.06, ENVELOPE_MIN_GAIN, 0.09, 692.2125);
@@ -330,6 +334,7 @@ export class AudioManager {
 
     playInsufficient(): void {
         this.playNoise(0.035, 0.018, 2800, 500, 0);
+        // glide ratio 0.94 applied to each note (descending glide)
         this.playTone(311.13, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0, 292.4622);
         this.playTone(246.94, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0.05, 232.1236);
     }
@@ -341,6 +346,7 @@ export class AudioManager {
     }
 
     playHealingSkill(): void {
+        // glide ratio 1.04 applied to each note
         this.playTone(523.25, 0.16, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0, 544.18);
         this.playTone(659.25, 0.16, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0.04, 685.62);
         this.playTone(783.99, 0.16, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0.08, 815.3496);
@@ -353,17 +359,20 @@ export class AudioManager {
     }
 
     playEquip(): void {
+        // glide ratio 1.03 applied to each note
         this.playTone(392, 0.1, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0, 403.76);
         this.playTone(587.33, 0.1, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0.03, 604.9499);
         this.playTone(783.99, 0.1, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0.06, 807.5097);
     }
 
     playUiOpen(): void {
+        // glide ratio 1.04 applied to each note
         this.playTone(392, 0.1, 'triangle', 0.04, ENVELOPE_MIN_GAIN, 0, 407.68);
         this.playTone(523.25, 0.1, 'triangle', 0.04, ENVELOPE_MIN_GAIN, 0.035, 544.18);
     }
 
     playUiClose(): void {
+        // glide ratio 0.96 applied to each note (descending glide)
         this.playTone(523.25, 0.09, 'sine', 0.032, ENVELOPE_MIN_GAIN, 0, 502.32);
         this.playTone(392, 0.09, 'sine', 0.032, ENVELOPE_MIN_GAIN, 0.03, 376.32);
     }
@@ -374,11 +383,13 @@ export class AudioManager {
                 this.playTone(440, 0.09, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0, 659.25);
                 break;
             case 'uncommon':
+                // glide ratio 1.06 applied to each note
                 this.playTone(523.25, 0.12, 'triangle', 0.055, ENVELOPE_MIN_GAIN, 0, 554.645);
                 this.playTone(659.25, 0.12, 'triangle', 0.055, ENVELOPE_MIN_GAIN, 0.04, 698.805);
                 break;
             case 'special':
                 this.playNoise(0.05, 0.02, 4800, 900, 0);
+                // glide ratio 1.08 applied to each note
                 this.playTone(659.25, 0.14, 'sawtooth', 0.065, ENVELOPE_MIN_GAIN, 0, 711.99);
                 this.playTone(783.99, 0.14, 'sawtooth', 0.065, ENVELOPE_MIN_GAIN, 0.045, 846.7092);
                 this.playTone(1046.5, 0.14, 'sawtooth', 0.065, ENVELOPE_MIN_GAIN, 0.09, 1130.22);
@@ -388,6 +399,7 @@ export class AudioManager {
 
     playAlbumComplete(): void {
         this.playNoise(0.08, 0.018, 5400, 1000, 0);
+        // glide ratio 1.04; first 3 notes triangle, last 2 sawtooth
         this.playTone(392, 0.18, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0, 407.68);
         this.playTone(523.25, 0.18, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.05, 544.18);
         this.playTone(659.25, 0.18, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.1, 685.62);
@@ -397,6 +409,7 @@ export class AudioManager {
 
     playLevelUp(): void {
         this.playNoise(0.06, 0.022, 5600, 1000, 0);
+        // glide ratio 1.05; first 2 notes triangle, last 2 sawtooth
         this.playTone(523.25, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0, 549.4125);
         this.playTone(659.25, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.045, 692.2125);
         this.playTone(783.99, 0.16, 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, 0.09, 823.1895);
@@ -418,6 +431,7 @@ export class AudioManager {
     }
 
     playTeleport(): void {
+        // glide ratio 1.12 applied to each note
         this.playTone(261.63, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0, 292.0256);
         this.playTone(392, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.08, 439.04);
         this.playTone(523.25, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.16, 586.04);
@@ -448,6 +462,7 @@ export class AudioManager {
     }
 
     playChestOpen(): void {
+        // glide ratio 1.08 applied to each note
         this.playTone(196, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0, 211.68);
         this.playTone(246.94, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.05, 266.6952);
         this.playTone(329.63, 0.16, 'triangle', 0.07, ENVELOPE_MIN_GAIN, 0.1, 356.0004);
