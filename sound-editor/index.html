@@ -17,8 +17,9 @@
             --tone-fill: #1c6e8e;
             --tone-stroke: #30a8d0;
             --tone-sel: #2da0cc;
-            --noise-fill: #7a3f6e;
-            --noise-stroke: #b060a0;
+            --sel-fill:  rgba(0,229,255,0.12);
+            --sel-stroke:rgba(0,229,255,0.7);
+            --sel-note:  #ffd600;
             --playhead: #ffd600;
             --text:     #c4d4e0;
             --dim:      #50607a;
@@ -154,7 +155,19 @@
         #popup-x { position: absolute; top: 5px; right: 8px; background: none; border: none; color: var(--dim); cursor: pointer; font-size: 17px; padding: 2px 4px; }
         #popup-x:hover { color: var(--text); }
 
-        /* ── Code output ─────────────────────────────────────────────────── */
+        /* ── Selection panel ─────────────────────────────────────────────── */
+        #sel-panel {
+            position: fixed; display: none; z-index: 200;
+            background: #151828; border: 1px solid var(--sel-note);
+            border-radius: 6px; padding: 12px 14px 10px;
+            min-width: 216px; box-shadow: 0 6px 28px rgba(0,0,0,.85);
+            bottom: 12px; right: 12px;
+        }
+        #sel-panel h3 { font-size: 12px; letter-spacing: 2px; text-transform: uppercase; color: var(--sel-note); margin-bottom: 9px; }
+        #sel-x { position: absolute; top: 5px; right: 8px; background: none; border: none; color: var(--dim); cursor: pointer; font-size: 17px; padding: 2px 4px; }
+        #sel-x:hover { color: var(--text); }
+
+
         #code-section {
             background: var(--surface); border-top: 1px solid var(--border);
             flex-shrink: 0; display: flex; flex-direction: column; height: 130px;
@@ -213,6 +226,14 @@
 <!-- Toolbar -->
 <div id="toolbar">
     <div class="tg"><label>BPM</label><input type="number" id="cfg-bpm" min="40" max="300" step="1" value="120" /></div>
+    <div class="tg"><label>Snap</label>
+        <select id="cfg-snap">
+            <option value="0.125">1/8</option>
+            <option value="0.25" selected>1/4</option>
+            <option value="0.5">1/2</option>
+            <option value="1">1/1</option>
+        </select>
+    </div>
     <div class="tg" style="width:1px;height:18px;background:var(--border);padding:0;flex-shrink:0;"></div>
     <div class="tg"><label>Duration</label>
         <select id="cfg-dur"></select>
@@ -273,10 +294,12 @@
     <span class="hi">Scroll vertical: mouse wheel / touchpad</span>
     <span class="hi">Space: play / stop</span>
     <span class="hi">Click empty row: add tone</span>
-    <span class="hi">Click tone: edit</span>
+    <span class="hi">Click+drag empty: select rect</span>
+    <span class="hi">Click tone: edit / drag: move</span>
     <span class="hi">Right-click tone: delete</span>
-    <span class="hi">Click noise strip: add noise</span>
+    <span class="hi">Click noise strip: add noise / drag: move</span>
     <span class="hi">Right-click noise: delete</span>
+    <span class="hi">Delete: remove selected</span>
     <span class="hi">Drag &amp; drop .json file anywhere: load timeline</span>
 </div>
 
@@ -303,6 +326,31 @@
     <div class="pa">
         <button class="btn pri" id="pp-save">✓ Save</button>
         <button class="btn dng" id="pp-del">✕ Delete</button>
+    </div>
+</div>
+
+<!-- Selection panel (multi-edit) -->
+<div id="sel-panel">
+    <button id="sel-x">✕</button>
+    <h3>Selection (<span id="sel-count">0</span>)</h3>
+    <div class="pf"><label>Duration</label><select id="sel-dur"></select></div>
+    <div class="pf" id="sel-type-row"><label>Type</label>
+        <select id="sel-type">
+            <option value="">–</option>
+            <option value="sine">sine</option>
+            <option value="triangle">triangle</option>
+            <option value="square">square</option>
+            <option value="sawtooth">sawtooth</option>
+        </select>
+    </div>
+    <div class="pf"><label>Gain</label><input type="number" id="sel-gain" min="0" max="1" step="0.01" placeholder="–" /></div>
+    <div class="pf"><label>Dropoff</label><input type="range" id="sel-dropoff" min="0.1" max="1" step="0.05" /><span class="pv" id="sel-dropoff-v">–</span></div>
+    <div class="pf" id="sel-glide-row"><label>Glide→</label><select id="sel-glide"><option value="">–</option></select></div>
+    <div class="pf" id="sel-lp-row"><label>Lowpass</label><input type="number" id="sel-lp" min="200" max="20000" step="100" placeholder="–" /></div>
+    <div class="pf" id="sel-hp-row"><label>Highpass</label><input type="number" id="sel-hp" min="20" max="4000" step="10" placeholder="–" /></div>
+    <div class="pa">
+        <button class="btn pri" id="sel-apply">✓ Apply</button>
+        <button class="btn dng" id="sel-del">✕ Delete</button>
     </div>
 </div>
 

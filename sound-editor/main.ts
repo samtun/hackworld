@@ -98,6 +98,38 @@ let cfgBpm    = 120;    // beats per minute
 let cfgLoop   = true;   // loop playback (on by default)
 let cfgLowpass  = 2200; // default noise lowpass Hz
 let cfgHighpass = 100;  // default noise highpass Hz
+let cfgSnap   = 0.25;   // snap unit as beat multiplier (0.25 = 1/4 beat)
+
+// ── Selection & drag state ────────────────────────────────────────────────────
+let selectedIds: Set<string> = new Set();
+
+/** Positions recorded at the start of a drag operation. */
+interface DragMoveState {
+    /** Per-id original positions before drag started. */
+    origPositions: Map<string, { startTime: number; noteIdx: number }>;
+    /** Id and kind of the primary event being dragged (for popup-on-click). */
+    singleId: string | null;
+    singleKind: 'tone' | 'noise' | null;
+    startClientX: number;
+    startClientY: number;
+    moved: boolean;
+}
+let dragMoveState: DragMoveState | null = null;
+
+/** State while drawing a selection rectangle. */
+interface SelRectState {
+    /** Absolute timeline X (px), independent of scrollX. */
+    absX0: number; absX1: number;
+    /** Absolute canvas Y (px from top of canvas), independent of scrollTop. */
+    absY0: number; absY1: number;
+    canvas: 'tone' | 'noise';
+    /** Whether the rect has grown beyond the click-threshold (drag vs. click). */
+    active: boolean;
+    /** Snapped add target if user just clicks without dragging. */
+    addRow: number;
+    addTime: number;
+}
+let selRectState: SelRectState | null = null;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
 const tlCanvas    = document.getElementById('tl-canvas')    as HTMLCanvasElement;
@@ -123,6 +155,7 @@ const cfgDropoffV  = document.getElementById('cfg-dropoff-v') as HTMLSpanElement
 const cfgGlideEl  = document.getElementById('cfg-glide')    as HTMLSelectElement;
 const cfgLpEl     = document.getElementById('cfg-lp')       as HTMLInputElement;
 const cfgHpEl     = document.getElementById('cfg-hp')       as HTMLInputElement;
+const cfgSnapEl   = document.getElementById('cfg-snap')     as HTMLSelectElement;
 const popup       = document.getElementById('popup')        as HTMLDivElement;
 const popupTitle  = document.getElementById('popup-title')  as HTMLHeadingElement;
 const ppDur       = document.getElementById('pp-dur')       as HTMLSelectElement;
@@ -141,6 +174,24 @@ const ppHp        = document.getElementById('pp-hp')        as HTMLInputElement;
 const ppSave      = document.getElementById('pp-save')      as HTMLButtonElement;
 const ppDel       = document.getElementById('pp-del')       as HTMLButtonElement;
 const ppX         = document.getElementById('popup-x')      as HTMLButtonElement;
+// Selection panel
+const selPanel    = document.getElementById('sel-panel')    as HTMLDivElement;
+const selPanelX   = document.getElementById('sel-x')        as HTMLButtonElement;
+const selCountEl  = document.getElementById('sel-count')    as HTMLSpanElement;
+const selDur      = document.getElementById('sel-dur')      as HTMLSelectElement;
+const selTypeRow  = document.getElementById('sel-type-row') as HTMLDivElement;
+const selType     = document.getElementById('sel-type')     as HTMLSelectElement;
+const selGain     = document.getElementById('sel-gain')     as HTMLInputElement;
+const selDropoff  = document.getElementById('sel-dropoff')  as HTMLInputElement;
+const selDropoffV = document.getElementById('sel-dropoff-v') as HTMLSpanElement;
+const selGlideRow = document.getElementById('sel-glide-row') as HTMLDivElement;
+const selGlide    = document.getElementById('sel-glide')    as HTMLSelectElement;
+const selLpRow    = document.getElementById('sel-lp-row')   as HTMLDivElement;
+const selLp       = document.getElementById('sel-lp')       as HTMLInputElement;
+const selHpRow    = document.getElementById('sel-hp-row')   as HTMLDivElement;
+const selHp       = document.getElementById('sel-hp')       as HTMLInputElement;
+const selApplyBtn = document.getElementById('sel-apply')    as HTMLButtonElement;
+const selDelBtn   = document.getElementById('sel-del')      as HTMLButtonElement;
 const codeTa      = document.getElementById('code-ta')      as HTMLTextAreaElement;
 const copyBtn     = document.getElementById('copy-btn')     as HTMLButtonElement;
 const codeSection = document.getElementById('code-section') as HTMLDivElement;
@@ -316,15 +367,16 @@ function renderTimeline(): void {
         const bh   = ROW_H - 4;
         if (x + bw < 0 || x > w) continue;
 
-        const sel  = ev.id === editingId;
-        cx.fillStyle   = sel ? '#2da0cc' : '#1c6e8e';
-        cx.strokeStyle = sel ? '#60d8f8' : '#30a8d0';
-        cx.lineWidth   = sel ? 2 : 1;
+        const isSel = selectedIds.has(ev.id);
+        const isEd  = ev.id === editingId;
+        cx.fillStyle   = isSel ? '#2a6e7e' : (isEd ? '#2da0cc' : '#1c6e8e');
+        cx.strokeStyle = isSel ? '#ffd600' : (isEd ? '#60d8f8' : '#30a8d0');
+        cx.lineWidth   = isSel ? 2 : (isEd ? 2 : 1);
         roundRect(cx, x, y, bw, bh, 3);
         cx.fill(); cx.stroke();
 
         if (bw > 18) {
-            cx.fillStyle = '#a0d8f0'; cx.font = '10px monospace'; cx.textAlign = 'left';
+            cx.fillStyle = isSel ? '#ffd600' : '#a0d8f0'; cx.font = '10px monospace'; cx.textAlign = 'left';
             cx.fillText(NOTES[ev.noteIdx].name, x + 4, y + bh / 2 + 3);
         }
         // Glide indicator
@@ -334,6 +386,20 @@ function renderTimeline(): void {
             cx.strokeStyle = '#ffd60080'; cx.lineWidth = 1;
             cx.beginPath(); cx.moveTo(x + bw, sy); cx.lineTo(x + bw, ty); cx.stroke();
         }
+    }
+
+    // Selection rectangle overlay (on tone canvas)
+    if (selRectState && selRectState.active && selRectState.canvas === 'tone') {
+        const scrollTop = editorOuter.scrollTop;
+        const rx0 = Math.min(selRectState.absX0, selRectState.absX1) - scrollX;
+        const rx1 = Math.max(selRectState.absX0, selRectState.absX1) - scrollX;
+        const ry0 = Math.min(selRectState.absY0, selRectState.absY1) - scrollTop;
+        const ry1 = Math.max(selRectState.absY0, selRectState.absY1) - scrollTop;
+        cx.fillStyle = 'rgba(0,229,255,0.08)';
+        cx.strokeStyle = 'rgba(0,229,255,0.65)';
+        cx.lineWidth = 1;
+        cx.fillRect(rx0, ry0, rx1 - rx0, ry1 - ry0);
+        cx.strokeRect(rx0, ry0, rx1 - rx0, ry1 - ry0);
     }
 
     // Playhead
@@ -359,12 +425,24 @@ function renderNoise(): void {
         const y   = 2; const bh = NOISE_H - 4;
         if (x + bw < 0 || x > w) continue;
 
-        const sel = ev.id === editingId;
-        cx.fillStyle   = sel ? '#aa5099' : '#7a3f6e';
-        cx.strokeStyle = sel ? '#d080c8' : '#b060a0';
-        cx.lineWidth   = sel ? 2 : 1;
+        const isSel = selectedIds.has(ev.id);
+        const isEd  = ev.id === editingId;
+        cx.fillStyle   = isSel ? '#7a3f9e' : (isEd ? '#aa5099' : '#7a3f6e');
+        cx.strokeStyle = isSel ? '#ffd600' : (isEd ? '#d080c8' : '#b060a0');
+        cx.lineWidth   = isSel ? 2 : (isEd ? 2 : 1);
         roundRect(cx, x, y, bw, bh, 3);
         cx.fill(); cx.stroke();
+    }
+
+    // Selection rectangle overlay (on noise canvas)
+    if (selRectState && selRectState.active && selRectState.canvas === 'noise') {
+        const rx0 = Math.min(selRectState.absX0, selRectState.absX1) - scrollX;
+        const rx1 = Math.max(selRectState.absX0, selRectState.absX1) - scrollX;
+        cx.fillStyle = 'rgba(0,229,255,0.08)';
+        cx.strokeStyle = 'rgba(0,229,255,0.65)';
+        cx.lineWidth = 1;
+        cx.fillRect(rx0, 0, rx1 - rx0, NOISE_H);
+        cx.strokeRect(rx0, 0, rx1 - rx0, NOISE_H);
     }
 
     if (isPlaying || playhead > 0) {
@@ -431,6 +509,8 @@ function canvasXY(canvas: HTMLCanvasElement, e: MouseEvent): { x: number; y: num
 }
 
 // ── Timeline mouse events ──────────────────────────────────────────────────────
+const DRAG_THRESHOLD = 5; // px before a movement is considered a drag
+
 function onTlDown(e: MouseEvent): void {
     if (e.button !== 0) return;
     const { x, y } = canvasXY(tlCanvas, e);
@@ -438,11 +518,45 @@ function onTlDown(e: MouseEvent): void {
     const hit = hitTone(x, y);
     if (hit) {
         e.stopPropagation();
-        openPopup(hit.id, 'tone', e.clientX, e.clientY);
+        closePopup();
+
+        // If the clicked note is already in the selection, drag all selected.
+        // Otherwise clear selection and drag just this note.
+        if (!selectedIds.has(hit.id)) {
+            selectedIds = new Set([hit.id]);
+            updateSelPanel();
+        }
+
+        const origPositions = new Map<string, { startTime: number; noteIdx: number }>();
+        for (const id of selectedIds) {
+            const t = tones.find(t => t.id === id);
+            if (t) origPositions.set(id, { startTime: t.startTime, noteIdx: t.noteIdx });
+            const n = noises.find(n => n.id === id);
+            if (n) origPositions.set(id, { startTime: n.startTime, noteIdx: 0 });
+        }
+
+        dragMoveState = {
+            origPositions,
+            singleId: hit.id, singleKind: 'tone',
+            startClientX: e.clientX, startClientY: e.clientY, moved: false,
+        };
+        render();
     } else {
-        const row = Math.floor(y / ROW_H);
-        const t   = Math.max(0, (x + scrollX) / PPS);
-        if (row >= 0 && row < NOTES.length) addTone(row, t);
+        // Empty space: start selection rect / pending add
+        const row      = Math.floor(y / ROW_H);
+        const absT     = Math.max(0, (x + scrollX) / PPS);
+        const absY     = y + editorOuter.scrollTop;
+        selectedIds    = new Set();
+        updateSelPanel();
+        closePopup();
+
+        selRectState = {
+            absX0: x + scrollX, absX1: x + scrollX,
+            absY0: absY,        absY1: absY,
+            canvas: 'tone', active: false,
+            addRow: row,        addTime: snapToGrid(absT),
+        };
+        render();
     }
 }
 
@@ -450,7 +564,13 @@ function onTlCtx(e: MouseEvent): void {
     e.preventDefault();
     const { x, y } = canvasXY(tlCanvas, e);
     const hit = hitTone(x, y);
-    if (hit) { tones = tones.filter(t => t.id !== hit.id); closePopup(); render(); }
+    if (hit) {
+        tones = tones.filter(t => t.id !== hit.id);
+        selectedIds.delete(hit.id);
+        updateSelPanel();
+        closePopup();
+        render();
+    }
 }
 
 // ── Noise mouse events ─────────────────────────────────────────────────────────
@@ -461,9 +581,40 @@ function onNoiseDown(e: MouseEvent): void {
     const hit = hitNoise(x);
     if (hit) {
         e.stopPropagation();
-        openPopup(hit.id, 'noise', e.clientX, e.clientY);
+        closePopup();
+
+        if (!selectedIds.has(hit.id)) {
+            selectedIds = new Set([hit.id]);
+            updateSelPanel();
+        }
+
+        const origPositions = new Map<string, { startTime: number; noteIdx: number }>();
+        for (const id of selectedIds) {
+            const t = tones.find(t => t.id === id);
+            if (t) origPositions.set(id, { startTime: t.startTime, noteIdx: t.noteIdx });
+            const n = noises.find(n => n.id === id);
+            if (n) origPositions.set(id, { startTime: n.startTime, noteIdx: 0 });
+        }
+
+        dragMoveState = {
+            origPositions,
+            singleId: hit.id, singleKind: 'noise',
+            startClientX: e.clientX, startClientY: e.clientY, moved: false,
+        };
+        render();
     } else {
-        addNoise(Math.max(0, (x + scrollX) / PPS));
+        const absT = Math.max(0, (x + scrollX) / PPS);
+        selectedIds = new Set();
+        updateSelPanel();
+        closePopup();
+
+        selRectState = {
+            absX0: x + scrollX, absX1: x + scrollX,
+            absY0: 0, absY1: NOISE_H,
+            canvas: 'noise', active: false,
+            addRow: -1, addTime: snapToGrid(absT),
+        };
+        render();
     }
 }
 
@@ -471,7 +622,120 @@ function onNoiseCtx(e: MouseEvent): void {
     e.preventDefault();
     const { x } = canvasXY(noiseCanvas, e);
     const hit = hitNoise(x);
-    if (hit) { noises = noises.filter(n => n.id !== hit.id); closePopup(); render(); }
+    if (hit) {
+        noises = noises.filter(n => n.id !== hit.id);
+        selectedIds.delete(hit.id);
+        updateSelPanel();
+        closePopup();
+        render();
+    }
+}
+
+// ── Global mouse move / up (drag & selection rect) ────────────────────────────
+function onGlobalMove(e: MouseEvent): void {
+    if (dragMoveState) {
+        const dx = e.clientX - dragMoveState.startClientX;
+        const dy = e.clientY - dragMoveState.startClientY;
+
+        if (!dragMoveState.moved && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+            dragMoveState.moved = true;
+        }
+
+        if (dragMoveState.moved) {
+            const dtSecs = dx / PPS;
+            const dRow   = Math.round(dy / ROW_H);
+
+            for (const [id, orig] of dragMoveState.origPositions) {
+                const newT = snapToGrid(orig.startTime + dtSecs);
+                const tone = tones.find(t => t.id === id);
+                if (tone) {
+                    tone.startTime = newT;
+                    tone.noteIdx   = Math.max(0, Math.min(NOTES.length - 1, orig.noteIdx + dRow));
+                }
+                const noise = noises.find(n => n.id === id);
+                if (noise) noise.startTime = newT;
+            }
+            render();
+        }
+        return;
+    }
+
+    if (selRectState) {
+        if (selRectState.canvas === 'tone') {
+            const { x, y } = canvasXY(tlCanvas, e);
+            selRectState.absX1 = x + scrollX;
+            selRectState.absY1 = y + editorOuter.scrollTop;
+        } else {
+            const { x } = canvasXY(noiseCanvas, e);
+            selRectState.absX1 = x + scrollX;
+        }
+
+        const dx = selRectState.absX1 - selRectState.absX0;
+        const dy = selRectState.absY1 - selRectState.absY0;
+        if (!selRectState.active && Math.hypot(dx, dy) > DRAG_THRESHOLD) {
+            selRectState.active = true;
+        }
+        render();
+    }
+}
+
+function onGlobalUp(e: MouseEvent): void {
+    if (dragMoveState) {
+        if (!dragMoveState.moved && dragMoveState.singleId && dragMoveState.singleKind) {
+            // No drag — open popup for the clicked event
+            selectedIds = new Set(); // clear selection on plain click-to-edit
+            updateSelPanel();
+            openPopup(dragMoveState.singleId, dragMoveState.singleKind, e.clientX, e.clientY);
+        } else if (dragMoveState.moved) {
+            updateSelPanel();
+        }
+        dragMoveState = null;
+        render();
+        return;
+    }
+
+    if (selRectState) {
+        if (selRectState.active) {
+            finalizeSelection(selRectState);
+        } else {
+            // Click (no drag): add tone or noise
+            if (selRectState.canvas === 'tone' && selRectState.addRow >= 0 && selRectState.addRow < NOTES.length) {
+                addTone(selRectState.addRow, selRectState.addTime);
+            } else if (selRectState.canvas === 'noise') {
+                addNoise(selRectState.addTime);
+            }
+        }
+        selRectState = null;
+        render();
+    }
+}
+
+// ── Selection finalisation ─────────────────────────────────────────────────────
+function finalizeSelection(rect: SelRectState): void {
+    const x0 = Math.min(rect.absX0, rect.absX1);
+    const x1 = Math.max(rect.absX0, rect.absX1);
+    const y0 = Math.min(rect.absY0, rect.absY1);
+    const y1 = Math.max(rect.absY0, rect.absY1);
+    const bd = beatDur();
+
+    selectedIds = new Set();
+
+    if (rect.canvas === 'tone') {
+        for (const ev of tones) {
+            const ex0 = ev.startTime * PPS;
+            const ex1 = ex0 + ev.duration * bd * PPS;
+            const ey0 = ev.noteIdx * ROW_H;
+            const ey1 = ey0 + ROW_H;
+            if (ex1 >= x0 && ex0 <= x1 && ey1 >= y0 && ey0 <= y1) selectedIds.add(ev.id);
+        }
+    } else {
+        for (const ev of noises) {
+            const ex0 = ev.startTime * PPS;
+            const ex1 = ex0 + ev.duration * bd * PPS;
+            if (ex1 >= x0 && ex0 <= x1) selectedIds.add(ev.id);
+        }
+    }
+    updateSelPanel();
 }
 
 // ── Horizontal wheel scroll ────────────────────────────────────────────────────
@@ -491,10 +755,11 @@ function onWheel(e: WheelEvent): void {
 }
 
 // ── Grid snap ─────────────────────────────────────────────────────────────────
-/** Snap a time value to the beat at or before the given time (floor snap). */
+/** Snap a time value to the nearest snap unit (round snap). */
 function snapToGrid(t: number): number {
-    const bd = beatDur();
-    return Math.floor(t / bd) * bd;
+    const snapUnit = cfgSnap * beatDur();
+    if (snapUnit <= 0) return Math.max(0, t);
+    return Math.max(0, Math.round(t / snapUnit) * snapUnit);
 }
 
 // ── Add events ─────────────────────────────────────────────────────────────────
@@ -832,12 +1097,126 @@ function loadFromJson(raw: string): void {
 }
 
 
+// ── Selection panel ────────────────────────────────────────────────────────────
+/** Return the common value of all elements, or null if they differ. */
+function consensus<T>(values: T[]): T | null {
+    if (values.length === 0) return null;
+    const first = values[0];
+    return values.every(v => v === first) ? first : null;
+}
+
+/** Populate and show/hide the selection property panel. */
+function updateSelPanel(): void {
+    if (selectedIds.size === 0) { selPanel.style.display = 'none'; return; }
+    selPanel.style.display = 'block';
+    selCountEl.textContent = String(selectedIds.size);
+
+    const selTones  = tones.filter(t => selectedIds.has(t.id));
+    const selNoises = noises.filter(n => selectedIds.has(n.id));
+    const allEvts   = [...selTones, ...selNoises];
+    const onlyTones = selNoises.length === 0;
+    const onlyNoise = selTones.length === 0;
+
+    // Duration (all events)
+    buildDurationOptions(selDur, 1);
+    const durC = consensus(allEvts.map(e => e.duration));
+    if (durC !== null) { selDur.value = String(durC); }
+    else { addMixedOption(selDur, selDur); }
+
+    // Type (tones only)
+    selTypeRow.style.display = selTones.length > 0 ? '' : 'none';
+    if (selTones.length > 0) {
+        const typeC = consensus(selTones.map(t => t.type));
+        selType.value = typeC ?? '';
+    }
+
+    // Gain
+    const gainC = consensus(allEvts.map(e => e.gain));
+    selGain.value = gainC !== null ? String(gainC) : '';
+    selGain.placeholder = gainC !== null ? '' : '–';
+
+    // Dropoff
+    const dropC = consensus(allEvts.map(e => e.dropoff ?? 0.3));
+    selDropoff.value = dropC !== null ? String(dropC) : '0.55';
+    selDropoffV.textContent = dropC !== null ? dropC.toFixed(2) : '–';
+
+    // Glide (tones only, hide if mixed selection)
+    selGlideRow.style.display = onlyTones ? '' : 'none';
+    if (onlyTones) {
+        buildGlideOptions(selGlide, true);
+        const glideC = consensus(selTones.map(t => t.glideTo));
+        selGlide.value = glideC !== null && glideC !== null ? String(glideC) : '';
+    }
+
+    // Noise filter fields
+    selLpRow.style.display = onlyNoise ? '' : 'none';
+    selHpRow.style.display = onlyNoise ? '' : 'none';
+    if (onlyNoise) {
+        const lpC = consensus(selNoises.map(n => n.lowpass));
+        selLp.value = lpC !== null ? String(lpC) : '';
+        selLp.placeholder = lpC !== null ? '' : '–';
+        const hpC = consensus(selNoises.map(n => n.highpass));
+        selHp.value = hpC !== null ? String(hpC) : '';
+        selHp.placeholder = hpC !== null ? '' : '–';
+    }
+}
+
+/**
+ * Insert a "–" option at the top of a <select> and select it to indicate
+ * mixed values. Reuses an existing "–" option if already present.
+ */
+function addMixedOption(sel: HTMLSelectElement, ref: HTMLSelectElement): void {
+    if (ref.options[0]?.value !== '') {
+        const o = document.createElement('option');
+        o.value = ''; o.textContent = '–';
+        ref.insertBefore(o, ref.firstChild);
+    }
+    ref.value = '';
+}
+
+/** Apply selection panel values to all selected events. */
+function applySelection(): void {
+    const dur     = selDur.value !== '' ? parseFloat(selDur.value) : null;
+    const gain    = selGain.value !== '' ? parseFloat(selGain.value) : null;
+    const dropoff = parseFloat(selDropoff.value) || null;
+
+    for (const id of selectedIds) {
+        const tone = tones.find(t => t.id === id);
+        if (tone) {
+            if (dur   !== null && !isNaN(dur))     tone.duration = dur;
+            if (gain  !== null && !isNaN(gain))    tone.gain     = gain;
+            if (dropoff !== null)                   tone.dropoff  = Math.max(0.1, Math.min(1, dropoff));
+            if (selTypeRow.style.display !== 'none' && selType.value) tone.type = selType.value as OscType;
+            if (selGlideRow.style.display !== 'none') {
+                tone.glideTo = selGlide.value !== '' ? parseInt(selGlide.value) : null;
+            }
+        }
+        const noise = noises.find(n => n.id === id);
+        if (noise) {
+            if (dur   !== null && !isNaN(dur))     noise.duration = dur;
+            if (gain  !== null && !isNaN(gain))    noise.gain     = gain;
+            if (dropoff !== null)                   noise.dropoff  = Math.max(0.1, Math.min(1, dropoff));
+            if (selLpRow.style.display !== 'none' && selLp.value !== '') noise.lowpass  = parseFloat(selLp.value)  || 2200;
+            if (selHpRow.style.display !== 'none' && selHp.value !== '') noise.highpass = parseFloat(selHp.value) || 100;
+        }
+    }
+    render();
+}
+
+function clearSelection(): void {
+    selectedIds = new Set();
+    updateSelPanel();
+    render();
+}
+
 function init(): void {
     buildKeyCol();
     buildDurationOptions(cfgDurEl, 1);   // default 1/1 beat
     buildDurationOptions(ppDur,    1);
+    buildDurationOptions(selDur,   1);
     buildGlideOptions(cfgGlideEl, true);
     buildGlideOptions(ppGlide,    true);
+    buildGlideOptions(selGlide,   true);
     resizeAll();
     render();
 
@@ -852,6 +1231,7 @@ function init(): void {
     cfgGlideEl.addEventListener('change',() => { cfgGlide = cfgGlideEl.value ? parseInt(cfgGlideEl.value) : null; });
     cfgLpEl.addEventListener('change',   () => { cfgLowpass  = parseFloat(cfgLpEl.value)  || 2200; });
     cfgHpEl.addEventListener('change',   () => { cfgHighpass = parseFloat(cfgHpEl.value)  || 100;  });
+    cfgSnapEl.addEventListener('change', () => { cfgSnap = parseFloat(cfgSnapEl.value) || 0.25; });
 
     // Popup dropoff live preview
     ppDropoff.addEventListener('input', () => { ppDropoffV.textContent = (parseFloat(ppDropoff.value) || 0.3).toFixed(2); });
@@ -862,16 +1242,28 @@ function init(): void {
         if (!editingId) return;
         tones  = tones.filter(t => t.id !== editingId);
         noises = noises.filter(n => n.id !== editingId);
+        selectedIds.delete(editingId);
+        updateSelPanel();
         closePopup();
     });
     ppX.addEventListener('click', closePopup);
+
+    // Selection panel
+    selDropoff.addEventListener('input', () => { selDropoffV.textContent = (parseFloat(selDropoff.value) || 0.3).toFixed(2); });
+    selApplyBtn.addEventListener('click', applySelection);
+    selDelBtn.addEventListener('click', () => {
+        tones  = tones.filter(t => !selectedIds.has(t.id));
+        noises = noises.filter(n => !selectedIds.has(n.id));
+        clearSelection();
+    });
+    selPanelX.addEventListener('click', clearSelection);
 
     // Header buttons
     playBtn.addEventListener('click',   startPlayback);
     stopBtn.addEventListener('click',   stopPlayback);
     cfgLoopEl.addEventListener('change', () => { cfgLoop = cfgLoopEl.checked; });
     clearBtn.addEventListener('click',  () => {
-        stopPlayback(); tones = []; noises = []; scrollX = 0; closePopup(); render();
+        stopPlayback(); tones = []; noises = []; scrollX = 0; closePopup(); clearSelection(); render();
     });
     exportBtn.addEventListener('click', () => {
         codeTa.value = generateCode(); codeTa.select();
@@ -885,7 +1277,11 @@ function init(): void {
     noiseCanvas.addEventListener('mousedown', onNoiseDown);
     noiseCanvas.addEventListener('contextmenu', onNoiseCtx);
 
-    // Horizontal scroll via wheel — tlClip and noiseClip each cover their canvas area
+    // Global mouse move / up for drag and selection rect
+    window.addEventListener('mousemove', onGlobalMove);
+    window.addEventListener('mouseup',   onGlobalUp);
+
+    // Horizontal scroll via wheel
     tlClip.addEventListener('wheel',    onWheel, { passive: false });
     noiseClip.addEventListener('wheel', onWheel, { passive: false });
 
@@ -896,7 +1292,7 @@ function init(): void {
         render();
     });
 
-    // Space = Play / Stop
+    // Space = Play / Stop, Delete = remove selected
     const EDITABLE = new Set(['INPUT', 'SELECT', 'TEXTAREA']);
     const isEditable = (t: EventTarget | null): boolean =>
         t instanceof Element && EDITABLE.has(t.tagName);
@@ -905,6 +1301,16 @@ function init(): void {
         if (e.code === 'Space' && !isEditable(e.target)) {
             e.preventDefault();
             if (isPlaying) stopPlayback(); else startPlayback();
+        }
+        if (e.code === 'Delete' && !isEditable(e.target) && selectedIds.size > 0) {
+            e.preventDefault();
+            tones  = tones.filter(t => !selectedIds.has(t.id));
+            noises = noises.filter(n => !selectedIds.has(n.id));
+            clearSelection();
+        }
+        if (e.code === 'Escape' && !isEditable(e.target)) {
+            if (editingId) closePopup();
+            else if (selectedIds.size > 0) clearSelection();
         }
     });
 
