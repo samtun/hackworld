@@ -1,3 +1,28 @@
+# [3.24.0](https://github.com/samtun/hackworld/compare/v3.23.0...v3.24.0) (2026-05-19)
+
+
+### Bug Fixes
+
+* add shift-click selection and unified node highlight behavior ([293c431](https://github.com/samtun/hackworld/commit/293c431ae709e1e4817da01a2b6e6f1b0e0ba462))
+* address code review feedback (dropoff fallback, hint spelling, comment) ([3ddfc20](https://github.com/samtun/hackworld/commit/3ddfc20cfc835ea7b7f80abe7d8252cc016de81a))
+* address code review feedback (duplicate null check, magic number, JSDoc, spelling) ([d3bba99](https://github.com/samtun/hackworld/commit/d3bba99a163fe63a8ac019fab61d99a6d28f01c0))
+* correct selection rect scroll offset and use floor-snap for note placement ([521fe51](https://github.com/samtun/hackworld/commit/521fe510ad62aaf4146aa275a2b135135c289d2b))
+* remove per-node popup editor on click ([1739995](https://github.com/samtun/hackworld/commit/173999582145e6f19890724516f061356a810819))
+* remove unused main.js ([20fbc3e](https://github.com/samtun/hackworld/commit/20fbc3e0e6164be89a5f4aa56fc0fab7485bf92b))
+* selection rectangle spans all 3 noise tracks when selecting ([f0c62e2](https://github.com/samtun/hackworld/commit/f0c62e248b276ecd3b285f89119d08a0e4d900d2))
+* support shift-click additive node selection ([17c3bab](https://github.com/samtun/hackworld/commit/17c3bab0bfdeef648c6366da00096d2b2a7bbf8e))
+* variable naming and update tone/noise rendering geometry ([d096d7d](https://github.com/samtun/hackworld/commit/d096d7d47b682fb4b5fd85574da7b7c783ce0fd3))
+
+
+### Features
+
+* add NOISE A / B / C strips — 3 independent overlayable noise tracks ([a8542e7](https://github.com/samtun/hackworld/commit/a8542e7c444c1fd09b7b3bb957af6dfbb7ceb20b))
+* add note drag, selection rect, snap selector to sound editor ([bf4e716](https://github.com/samtun/hackworld/commit/bf4e7161933f1e1821f54c87fda70fbbd04bfee5))
+* cross-track noise selection, (?) help overlay, NOISE divider label restyle ([0268100](https://github.com/samtun/hackworld/commit/02681002382dff5893b2f05d7ca62cea48f67a62))
+* implement selection and duration-handle interactions ([765fa8c](https://github.com/samtun/hackworld/commit/765fa8caa7e51a88828a374022a381af261c2311))
+* improve sound editor with dropoff, noise config, resize, shift-scroll, and more ([45db0bf](https://github.com/samtun/hackworld/commit/45db0bfa3c45793b3b589d503625e4bd6b7e089b))
+* remove noise track comment on sound editor code output ([2a84a3f](https://github.com/samtun/hackworld/commit/2a84a3fe1046cb683eb44bbb8d848d0a82a13534))
+
 # [3.23.0](https://github.com/samtun/hackworld/compare/v3.22.0...v3.23.0) (2026-05-19)
 
 
