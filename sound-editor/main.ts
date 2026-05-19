@@ -90,7 +90,7 @@ const HANDLE_HEIGHT_RATIO = 0.6;
 let tones: ToneEvent[] = [];
 /** Flat collection of all noise events; each event carries its own row (0=A, 1=B, 2=C). */
 let noises: NoiseEvent[] = [];
-let scrollX = 0;      // horizontal scroll in px
+let scrollH = 0;      // horizontal scroll in px
 let editingId: string | null = null;
 let editingKind: 'tone' | 'noise' = 'tone';
 let isPlaying = false;
@@ -493,7 +493,7 @@ function renderTimeline(): void {
     // Tone blocks
     const bd = beatDur();
     for (const ev of tones) {
-        const { x, bw, y, handleSize } = toneNodeGeometry(ev, bd);
+        const { x, bw, y, bh, handleSize } = toneNodeGeometry(ev, bd);
         if (x + bw < 0 || x > w) continue;
 
         const isSel = selectedIds.has(ev.id);
@@ -558,7 +558,7 @@ function renderNoise(): void {
 
     const bd = beatDur();
     for (const ev of noises) {
-        const { x, bw, y, handleSize } = noiseNodeGeometry(ev, bd);
+        const { x, bw, y, bh, handleSize } = noiseNodeGeometry(ev, bd);
         if (x + bw < 0 || x > w) continue;
 
         const isSel = selectedIds.has(ev.id);
