@@ -773,11 +773,13 @@ function finalizeSelection(rect: SelRectState): void {
             if (ex1 >= x0 && ex0 <= x1 && ey1 >= y0 && ey0 <= y1) selectedIds.add(ev.id);
         }
     } else {
-        const trackIdx = rect.canvas as number;
-        for (const ev of noiseTracks[trackIdx]) {
-            const ex0 = ev.startTime * PPS;
-            const ex1 = ex0 + ev.duration * bd * PPS;
-            if (ex1 >= x0 && ex0 <= x1) selectedIds.add(ev.id);
+        // Noise canvas: select events from ALL three noise tracks that overlap the time range
+        for (const track of noiseTracks) {
+            for (const ev of track) {
+                const ex0 = ev.startTime * PPS;
+                const ex1 = ex0 + ev.duration * bd * PPS;
+                if (ex1 >= x0 && ex0 <= x1) selectedIds.add(ev.id);
+            }
         }
     }
     updateSelPanel();

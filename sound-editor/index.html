@@ -120,16 +120,30 @@
         #tl-canvas { position: absolute; top: 0; left: 0; display: block; }
 
         /* ── Noise strips (A / B / C) ────────────────────────────────────────── */
+        #noise-divider {
+            display: flex; flex-shrink: 0; height: 20px;
+            background: #0a0b14;
+            border-top: 2px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+        #noise-divider-pad {
+            width: 52px; flex-shrink: 0;
+            background: #0b0c14; border-right: 1px solid var(--border);
+        }
+        #noise-divider-lbl {
+            flex: 1; display: flex; align-items: center; padding-left: 10px;
+            font-size: 11px; letter-spacing: 3px; color: var(--accent2);
+            text-transform: uppercase; user-select: none;
+        }
         .noise-row {
             display: flex; flex-shrink: 0; height: 23px;
             border-top: 1px solid var(--border);
         }
-        .noise-row-first { border-top: 2px solid var(--border) !important; }
         .noise-lbl {
             width: 52px; flex-shrink: 0;
             background: #0b0c14; border-right: 1px solid var(--border);
             display: flex; align-items: center; justify-content: center;
-            font-size: 11px; letter-spacing: 2px; color: var(--accent2);
+            font-size: 12px; font-weight: bold; letter-spacing: 1px; color: var(--accent2);
             text-transform: uppercase; user-select: none;
         }
         .noise-clip { flex: 1; overflow: hidden; position: relative; cursor: crosshair; background: #080812; }
@@ -186,13 +200,28 @@
             resize: none; outline: none; overflow-y: auto;
         }
 
-        /* ── Hints ───────────────────────────────────────────────────────── */
-        #hints {
-            background: #080910; border-top: 1px solid var(--border);
-            padding: 3px 12px 3px calc(52px + 12px);
-            font-size: 11px; color: var(--dim); letter-spacing: 0.5px;
-            flex-shrink: 0; display: flex; gap: 14px; flex-wrap: wrap; user-select: none;
+        /* ── Help (?) button & overlay ───────────────────────────────────────── */
+        #help-btn {
+            position: relative;
+            background: none; border: 1px solid var(--border); color: var(--dim);
+            font-family: var(--font); font-size: 13px;
+            width: 28px; height: 28px; border-radius: 50%;
+            cursor: pointer; flex-shrink: 0;
+            display: flex; align-items: center; justify-content: center;
+            transition: border-color .12s, color .12s;
         }
+        #help-btn:hover { border-color: var(--accent); color: var(--accent); }
+        #help-overlay {
+            position: fixed; top: 44px; right: 8px; z-index: 300;
+            background: #0f1020; border: 1px solid var(--border);
+            border-radius: 6px; padding: 10px 14px;
+            font-size: 11px; color: var(--dim); letter-spacing: 0.5px;
+            display: flex; flex-direction: column; gap: 5px;
+            pointer-events: none; opacity: 0; transition: opacity .15s;
+            max-width: 340px; box-shadow: 0 6px 28px rgba(0,0,0,.8);
+        }
+        #help-btn:hover + #help-overlay,
+        #help-overlay:hover { opacity: 1; pointer-events: auto; }
         .hi::before { content: '▸ '; color: var(--accent); }
 
         /* ── Scrollbar ───────────────────────────────────────────────────── */
@@ -222,6 +251,21 @@
     <button class="btn" id="clear-btn">✕ CLEAR</button>
     <button class="btn" id="export-btn">⎘ EXPORT</button>
     <button class="btn" id="json-btn">⎘ JSON</button>
+    <button id="help-btn" title="Help">?</button>
+    <div id="help-overlay">
+        <span class="hi">Scroll horizontal: horizontal touchpad swipe or scrollbar</span>
+        <span class="hi">Shift + scroll: scroll horizontally (timeline)</span>
+        <span class="hi">Scroll vertical: mouse wheel / touchpad</span>
+        <span class="hi">Space: play / stop</span>
+        <span class="hi">Click empty row: add tone</span>
+        <span class="hi">Click+drag empty: selection rectangle</span>
+        <span class="hi">Click tone: edit / drag: move</span>
+        <span class="hi">Right-click tone: delete</span>
+        <span class="hi">Click noise strip (A/B/C): add noise / drag: move</span>
+        <span class="hi">Right-click noise: delete</span>
+        <span class="hi">Delete: remove selected</span>
+        <span class="hi">Drag &amp; drop .json file anywhere: load timeline</span>
+    </div>
 </div>
 
 <!-- Toolbar -->
@@ -269,17 +313,23 @@
     </div>
 </div>
 
+<!-- Noise section divider -->
+<div id="noise-divider">
+    <div id="noise-divider-pad"></div>
+    <div id="noise-divider-lbl">NOISE</div>
+</div>
+
 <!-- Noise strips (A / B / C) -->
-<div class="noise-row noise-row-first" id="noise-row-a">
-    <div class="noise-lbl">NOISE A</div>
+<div class="noise-row" id="noise-row-a">
+    <div class="noise-lbl">A</div>
     <div class="noise-clip" id="noise-clip-a"><canvas id="noise-canvas-a" class="noise-canvas"></canvas></div>
 </div>
 <div class="noise-row" id="noise-row-b">
-    <div class="noise-lbl">NOISE B</div>
+    <div class="noise-lbl">B</div>
     <div class="noise-clip" id="noise-clip-b"><canvas id="noise-canvas-b" class="noise-canvas"></canvas></div>
 </div>
 <div class="noise-row" id="noise-row-c">
-    <div class="noise-lbl">NOISE C</div>
+    <div class="noise-lbl">C</div>
     <div class="noise-clip" id="noise-clip-c"><canvas id="noise-canvas-c" class="noise-canvas"></canvas></div>
 </div>
 
@@ -294,22 +344,6 @@
         <button class="btn" id="copy-btn">⎗ Copy</button>
     </div>
     <textarea id="code-ta" readonly spellcheck="false">// Add tones and noise to the timeline, then click EXPORT.</textarea>
-</div>
-
-<!-- Hints -->
-<div id="hints">
-    <span class="hi">Scroll horizontal: horizontal touchpad swipe or scrollbar</span>
-    <span class="hi">Shift + scroll: scroll horizontally (timeline)</span>
-    <span class="hi">Scroll vertical: mouse wheel / touchpad</span>
-    <span class="hi">Space: play / stop</span>
-    <span class="hi">Click empty row: add tone</span>
-    <span class="hi">Click+drag empty: selection rectangle</span>
-    <span class="hi">Click tone: edit / drag: move</span>
-    <span class="hi">Right-click tone: delete</span>
-    <span class="hi">Click noise strip (A/B/C): add noise / drag: move</span>
-    <span class="hi">Right-click noise: delete</span>
-    <span class="hi">Delete: remove selected</span>
-    <span class="hi">Drag &amp; drop .json file anywhere: load timeline</span>
 </div>
 
 <!-- Popup (tone / noise editor) -->
