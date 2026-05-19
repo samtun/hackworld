@@ -380,7 +380,10 @@ export class AudioManager {
             case 'kernelTerminusDepth2': return { play: () => this.playKernelTerminusDepth2Music(), loopMs: 1025 };
             case 'kernelTerminusDepth3': return { play: () => this.playKernelTerminusDepth3Music(), loopMs: 900  };
             case 'gameTest':             return { play: () => this.playGameTestMusic(),             loopMs: 1040 };
-            default:                     return { play: () => this.playLobbyMusic(),                loopMs: 1360 };
+            default: {
+                console.warn(`[AudioManager] Unknown stageId "${stageId}", falling back to lobby music.`);
+                return { play: () => this.playLobbyMusic(), loopMs: 1360 };
+            }
         }
     }
 
@@ -396,9 +399,10 @@ export class AudioManager {
         this.musicPulseInterval = window.setInterval(play, loopMs);
     }
 
-    // ── Stage music phrases — each method schedules the full phrase via delays.  ──
-    // ── To retune: compose in the sound editor, paste playTone() calls here,     ──
-    // ── append `, undefined, 'music'` to each call to route it to the music bus. ──
+    // ── Stage music phrases — each method schedules the full phrase via delays.        ──
+    // ── To retune: compose in `npm run dev:sound-editor` (port 5174), paste the       ──
+    // ── generated playTone() calls here, and append `, undefined, 'music'` to each   ──
+    // ── call so it is routed to the music bus rather than the SFX bus.                ──
 
     private playStartScreenMusic(): void {
         // 4 × 420 ms phrase (loop: 1680 ms)
