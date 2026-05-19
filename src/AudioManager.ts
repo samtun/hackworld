@@ -335,9 +335,9 @@ export class AudioManager {
         this.unlockHandlersRegistered = true;
 
         const unlock = () => this.unlock();
-        window.addEventListener('pointerdown', unlock);
-        window.addEventListener('keydown', unlock);
-        window.addEventListener('touchstart', unlock, { passive: true });
+        window.addEventListener('pointerdown', unlock, { capture: true });
+        window.addEventListener('keydown', unlock, { capture: true });
+        window.addEventListener('touchstart', unlock, { passive: true, capture: true });
     }
 
     private ensureAudioContext(): AudioContext | null {

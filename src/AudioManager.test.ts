@@ -39,3 +39,34 @@ describe('audio settings persistence', () => {
         expect(manager.isSfxEnabled()).toBe(false);
     });
 });
+
+describe('audio unlock handlers', () => {
+    beforeEach(() => {
+        vi.stubGlobal('localStorage', {
+            getItem: vi.fn().mockReturnValue(null),
+            setItem: vi.fn(),
+        });
+    });
+
+    it('still unlocks audio when the start-screen touch event stops propagation', () => {
+        const manager = Object.create((AudioManager as any).prototype) as any;
+        Object.assign(manager, {
+            unlockHandlersRegistered: false,
+            unlock: vi.fn(),
+        });
+
+        manager.registerUnlockHandlers();
+
+        const startScreen = document.createElement('div');
+        startScreen.addEventListener('touchstart', (event) => {
+            event.stopPropagation();
+        });
+        document.body.appendChild(startScreen);
+
+        startScreen.dispatchEvent(new Event('touchstart', { bubbles: true, cancelable: true }));
+
+        expect(manager.unlock).toHaveBeenCalledOnce();
+
+        startScreen.remove();
+    });
+});
