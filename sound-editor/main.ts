@@ -34,76 +34,76 @@ interface NoiseEvent {
 
 // ── Chromatic scale C6→C3 (top = high, bottom = low) ─────────────────────────
 const NOTES: { name: string; freq: number }[] = [
-    { name: 'C6',  freq: 1046.50 }, { name: 'B5',  freq: 987.77  },
-    { name: 'A#5', freq: 932.33  }, { name: 'A5',  freq: 880.00  },
-    { name: 'G#5', freq: 830.61  }, { name: 'G5',  freq: 783.99  },
-    { name: 'F#5', freq: 739.99  }, { name: 'F5',  freq: 698.46  },
-    { name: 'E5',  freq: 659.25  }, { name: 'D#5', freq: 622.25  },
-    { name: 'D5',  freq: 587.33  }, { name: 'C#5', freq: 554.37  },
-    { name: 'C5',  freq: 523.25  }, { name: 'B4',  freq: 493.88  },
-    { name: 'A#4', freq: 466.16  }, { name: 'A4',  freq: 440.00  },
-    { name: 'G#4', freq: 415.30  }, { name: 'G4',  freq: 392.00  },
-    { name: 'F#4', freq: 369.99  }, { name: 'F4',  freq: 349.23  },
-    { name: 'E4',  freq: 329.63  }, { name: 'D#4', freq: 311.13  },
-    { name: 'D4',  freq: 293.66  }, { name: 'C#4', freq: 277.18  },
-    { name: 'C4',  freq: 261.63  }, { name: 'B3',  freq: 246.94  },
-    { name: 'A#3', freq: 233.08  }, { name: 'A3',  freq: 220.00  },
-    { name: 'G#3', freq: 207.65  }, { name: 'G3',  freq: 196.00  },
-    { name: 'F#3', freq: 185.00  }, { name: 'F3',  freq: 174.61  },
-    { name: 'E3',  freq: 164.81  }, { name: 'D#3', freq: 155.56  },
-    { name: 'D3',  freq: 146.83  }, { name: 'C#3', freq: 138.59  },
-    { name: 'C3',  freq: 130.81  },
+    { name: 'C6', freq: 1046.50 }, { name: 'B5', freq: 987.77 },
+    { name: 'A#5', freq: 932.33 }, { name: 'A5', freq: 880.00 },
+    { name: 'G#5', freq: 830.61 }, { name: 'G5', freq: 783.99 },
+    { name: 'F#5', freq: 739.99 }, { name: 'F5', freq: 698.46 },
+    { name: 'E5', freq: 659.25 }, { name: 'D#5', freq: 622.25 },
+    { name: 'D5', freq: 587.33 }, { name: 'C#5', freq: 554.37 },
+    { name: 'C5', freq: 523.25 }, { name: 'B4', freq: 493.88 },
+    { name: 'A#4', freq: 466.16 }, { name: 'A4', freq: 440.00 },
+    { name: 'G#4', freq: 415.30 }, { name: 'G4', freq: 392.00 },
+    { name: 'F#4', freq: 369.99 }, { name: 'F4', freq: 349.23 },
+    { name: 'E4', freq: 329.63 }, { name: 'D#4', freq: 311.13 },
+    { name: 'D4', freq: 293.66 }, { name: 'C#4', freq: 277.18 },
+    { name: 'C4', freq: 261.63 }, { name: 'B3', freq: 246.94 },
+    { name: 'A#3', freq: 233.08 }, { name: 'A3', freq: 220.00 },
+    { name: 'G#3', freq: 207.65 }, { name: 'G3', freq: 196.00 },
+    { name: 'F#3', freq: 185.00 }, { name: 'F3', freq: 174.61 },
+    { name: 'E3', freq: 164.81 }, { name: 'D#3', freq: 155.56 },
+    { name: 'D3', freq: 146.83 }, { name: 'C#3', freq: 138.59 },
+    { name: 'C3', freq: 130.81 },
 ];
 
 // ── Beat duration fractions (stored value = beat multiplier, e.g. 0.25 = 1/4 beat) ─
 const BEAT_FRACTIONS: { label: string; value: number }[] = [
-    { label: '1/8',   value: 1/8   },
-    { label: '1/4',   value: 1/4   },
-    { label: '1/2',   value: 1/2   },
-    { label: '1/1',   value: 1     },
-    { label: '2',     value: 2     },
-    { label: '4',     value: 4     },
-    { label: '8',     value: 8     },
+    { label: '1/8', value: 1 / 8 },
+    { label: '1/4', value: 1 / 4 },
+    { label: '1/2', value: 1 / 2 },
+    { label: '1/1', value: 1 },
+    { label: '2', value: 2 },
+    { label: '4', value: 4 },
+    { label: '8', value: 8 },
 ];
 
 // ── Noise track labels ────────────────────────────────────────────────────────
 const NOISE_TRACK_LABELS = ['A', 'B', 'C'] as const;
 
 // ── Layout constants ──────────────────────────────────────────────────────────
-const PPS              = 120;   // pixels per second
-const ROW_H            = 22;   // row height px
-const NOISE_H          = 23;   // noise strip height px
-const RULER_H          = 22;   // ruler height px (larger for bigger font)
-const MIN_SECS         = 10;   // minimum timeline width in seconds
-const ENV_MIN          = 0.0001;
+const PPS = 120;   // pixels per second
+const ROW_H = 22;   // row height px
+const NOISE_H = 23;   // noise strip height px
+const RULER_H = 22;   // ruler height px (larger for bigger font)
+const MIN_SECS = 10;   // minimum timeline width in seconds
+const ENV_MIN = 0.0001;
 const AUTOSCROLL_MARGIN = 80;  // px from right edge before auto-scroll kicks in
-const LOOP_LOOKAHEAD   = 0.3;  // seconds — schedule next loop pass this far ahead
-const STOP_GRACE       = 0.4;  // seconds past maxT before auto-stopping non-looped play
-const MIN_LOOP_PERIOD  = 0.001; // minimum loop period to prevent division by zero
+const LOOP_LOOKAHEAD = 0.3;  // seconds — schedule next loop pass this far ahead
+const STOP_GRACE = 0.4;  // seconds past maxT before auto-stopping non-looped play
+const MIN_LOOP_PERIOD = 0.001; // minimum loop period to prevent division by zero
 const MIN_BPM = 40;
 const MAX_BPM = 300;
 
 // ── State ─────────────────────────────────────────────────────────────────────
-let tones: ToneEvent[]   = [];
+let tones: ToneEvent[] = [];
 /** Flat collection of all noise events; each event carries its own row (0=A, 1=B, 2=C). */
 let noises: NoiseEvent[] = [];
-let scrollX    = 0;      // horizontal scroll in px
+let scrollX = 0;      // horizontal scroll in px
 let editingId: string | null = null;
 let editingKind: 'tone' | 'noise' = 'tone';
-let isPlaying  = false;
-let playhead   = 0;      // seconds
+let isPlaying = false;
+let playhead = 0;      // seconds
 let rafId: number | null = null;
 let audioCtx: AudioContext | null = null;
-let cfgDur    = 1;      // beat multiplier: 1 = 1 full beat (1/1)
+let cfgDur = 1;      // beat multiplier: 1 = 1 full beat (1/1)
 let cfgType: OscType = 'triangle';
-let cfgGain   = 0.06;
+let cfgGain = 0.06;
 let cfgDropoff = 0.3;   // 0.1 = fast decay, 1.0 = hold constant
 let cfgGlide: number | null = null;
-let cfgBpm    = 120;    // beats per minute
-let cfgLoop   = true;   // loop playback (on by default)
-let cfgLowpass  = 2200; // default noise lowpass Hz
+let cfgBpm = 120;    // beats per minute
+let cfgLoop = true;   // loop playback (on by default)
+let cfgLowpass = 2200; // default noise lowpass Hz
 let cfgHighpass = 100;  // default noise highpass Hz
-let cfgSnap   = 0.25;   // snap unit as beat multiplier (0.25 = 1/4 beat)
+let cfgSnap = 0.25;   // snap unit as beat multiplier (0.25 = 1/4 beat)
 
 // ── Selection & drag state ────────────────────────────────────────────────────
 let selectedIds: Set<string> = new Set();
@@ -140,72 +140,72 @@ interface SelRectState {
 let selRectState: SelRectState | null = null;
 
 // ── DOM refs ──────────────────────────────────────────────────────────────────
-const tlCanvas    = document.getElementById('tl-canvas')    as HTMLCanvasElement;
+const tlCanvas = document.getElementById('tl-canvas') as HTMLCanvasElement;
 const noiseCanvas = document.getElementById('noise-canvas') as HTMLCanvasElement;
-const noiseClip   = document.getElementById('noise-clip')   as HTMLDivElement;
+const noiseClip = document.getElementById('noise-clip') as HTMLDivElement;
 const noiseKeyCol = document.getElementById('noise-key-col') as HTMLDivElement;
 const rulerCanvas = document.getElementById('ruler-canvas') as HTMLCanvasElement;
 const editorOuter = document.getElementById('editor-outer') as HTMLDivElement;
-const tlClip      = document.getElementById('tl-clip')      as HTMLDivElement;
-const rulerClip   = document.getElementById('ruler-clip')   as HTMLDivElement;
-const keyCol      = document.getElementById('key-col')      as HTMLDivElement;
-const playBtn     = document.getElementById('play-btn')     as HTMLButtonElement;
-const stopBtn     = document.getElementById('stop-btn')     as HTMLButtonElement;
-const clearBtn    = document.getElementById('clear-btn')    as HTMLButtonElement;
-const exportBtn   = document.getElementById('export-btn')   as HTMLButtonElement;
-const jsonBtn     = document.getElementById('json-btn')     as HTMLButtonElement;
-const cfgLoopEl   = document.getElementById('cfg-loop')     as HTMLInputElement;
-const cfgDurEl    = document.getElementById('cfg-dur')      as HTMLSelectElement;
-const cfgBpmEl    = document.getElementById('cfg-bpm')      as HTMLInputElement;
-const cfgTypeEl   = document.getElementById('cfg-type')     as HTMLSelectElement;
-const cfgGainEl   = document.getElementById('cfg-gain')     as HTMLInputElement;
-const cfgDropoffEl = document.getElementById('cfg-dropoff')  as HTMLInputElement;
-const cfgDropoffV  = document.getElementById('cfg-dropoff-v') as HTMLSpanElement;
-const cfgGlideEl  = document.getElementById('cfg-glide')    as HTMLSelectElement;
-const cfgLpEl     = document.getElementById('cfg-lp')       as HTMLInputElement;
-const cfgHpEl     = document.getElementById('cfg-hp')       as HTMLInputElement;
-const cfgSnapEl   = document.getElementById('cfg-snap')     as HTMLSelectElement;
-const popup       = document.getElementById('popup')        as HTMLDivElement;
-const popupTitle  = document.getElementById('popup-title')  as HTMLHeadingElement;
-const ppDur       = document.getElementById('pp-dur')       as HTMLSelectElement;
-const ppType      = document.getElementById('pp-type')      as HTMLSelectElement;
-const ppTypeRow   = document.getElementById('pp-type-row')  as HTMLDivElement;
-const ppGain      = document.getElementById('pp-gain')      as HTMLInputElement;
-const ppDropoff   = document.getElementById('pp-dropoff')   as HTMLInputElement;
-const ppDropoffV  = document.getElementById('pp-dropoff-v') as HTMLSpanElement;
+const tlClip = document.getElementById('tl-clip') as HTMLDivElement;
+const rulerClip = document.getElementById('ruler-clip') as HTMLDivElement;
+const keyCol = document.getElementById('key-col') as HTMLDivElement;
+const playBtn = document.getElementById('play-btn') as HTMLButtonElement;
+const stopBtn = document.getElementById('stop-btn') as HTMLButtonElement;
+const clearBtn = document.getElementById('clear-btn') as HTMLButtonElement;
+const exportBtn = document.getElementById('export-btn') as HTMLButtonElement;
+const jsonBtn = document.getElementById('json-btn') as HTMLButtonElement;
+const cfgLoopEl = document.getElementById('cfg-loop') as HTMLInputElement;
+const cfgDurEl = document.getElementById('cfg-dur') as HTMLSelectElement;
+const cfgBpmEl = document.getElementById('cfg-bpm') as HTMLInputElement;
+const cfgTypeEl = document.getElementById('cfg-type') as HTMLSelectElement;
+const cfgGainEl = document.getElementById('cfg-gain') as HTMLInputElement;
+const cfgDropoffEl = document.getElementById('cfg-dropoff') as HTMLInputElement;
+const cfgDropoffV = document.getElementById('cfg-dropoff-v') as HTMLSpanElement;
+const cfgGlideEl = document.getElementById('cfg-glide') as HTMLSelectElement;
+const cfgLpEl = document.getElementById('cfg-lp') as HTMLInputElement;
+const cfgHpEl = document.getElementById('cfg-hp') as HTMLInputElement;
+const cfgSnapEl = document.getElementById('cfg-snap') as HTMLSelectElement;
+const popup = document.getElementById('popup') as HTMLDivElement;
+const popupTitle = document.getElementById('popup-title') as HTMLHeadingElement;
+const ppDur = document.getElementById('pp-dur') as HTMLSelectElement;
+const ppType = document.getElementById('pp-type') as HTMLSelectElement;
+const ppTypeRow = document.getElementById('pp-type-row') as HTMLDivElement;
+const ppGain = document.getElementById('pp-gain') as HTMLInputElement;
+const ppDropoff = document.getElementById('pp-dropoff') as HTMLInputElement;
+const ppDropoffV = document.getElementById('pp-dropoff-v') as HTMLSpanElement;
 const ppDropoffRow = document.getElementById('pp-dropoff-row') as HTMLDivElement;
-const ppGlide     = document.getElementById('pp-glide')     as HTMLSelectElement;
-const ppGlideRow  = document.getElementById('pp-glide-row') as HTMLDivElement;
-const ppLpRow     = document.getElementById('pp-lp-row')    as HTMLDivElement;
-const ppLp        = document.getElementById('pp-lp')        as HTMLInputElement;
-const ppHpRow     = document.getElementById('pp-hp-row')    as HTMLDivElement;
-const ppHp        = document.getElementById('pp-hp')        as HTMLInputElement;
-const ppSave      = document.getElementById('pp-save')      as HTMLButtonElement;
-const ppDel       = document.getElementById('pp-del')       as HTMLButtonElement;
-const ppX         = document.getElementById('popup-x')      as HTMLButtonElement;
+const ppGlide = document.getElementById('pp-glide') as HTMLSelectElement;
+const ppGlideRow = document.getElementById('pp-glide-row') as HTMLDivElement;
+const ppLpRow = document.getElementById('pp-lp-row') as HTMLDivElement;
+const ppLp = document.getElementById('pp-lp') as HTMLInputElement;
+const ppHpRow = document.getElementById('pp-hp-row') as HTMLDivElement;
+const ppHp = document.getElementById('pp-hp') as HTMLInputElement;
+const ppSave = document.getElementById('pp-save') as HTMLButtonElement;
+const ppDel = document.getElementById('pp-del') as HTMLButtonElement;
+const ppX = document.getElementById('popup-x') as HTMLButtonElement;
 // Selection panel
-const selPanel    = document.getElementById('sel-panel')    as HTMLDivElement;
-const selPanelX   = document.getElementById('sel-x')        as HTMLButtonElement;
-const selCountEl  = document.getElementById('sel-count')    as HTMLSpanElement;
-const selDur      = document.getElementById('sel-dur')      as HTMLSelectElement;
-const selTypeRow  = document.getElementById('sel-type-row') as HTMLDivElement;
-const selType     = document.getElementById('sel-type')     as HTMLSelectElement;
-const selGain     = document.getElementById('sel-gain')     as HTMLInputElement;
-const selDropoff  = document.getElementById('sel-dropoff')  as HTMLInputElement;
+const selPanel = document.getElementById('sel-panel') as HTMLDivElement;
+const selPanelX = document.getElementById('sel-x') as HTMLButtonElement;
+const selCountEl = document.getElementById('sel-count') as HTMLSpanElement;
+const selDur = document.getElementById('sel-dur') as HTMLSelectElement;
+const selTypeRow = document.getElementById('sel-type-row') as HTMLDivElement;
+const selType = document.getElementById('sel-type') as HTMLSelectElement;
+const selGain = document.getElementById('sel-gain') as HTMLInputElement;
+const selDropoff = document.getElementById('sel-dropoff') as HTMLInputElement;
 const selDropoffV = document.getElementById('sel-dropoff-v') as HTMLSpanElement;
 const selGlideRow = document.getElementById('sel-glide-row') as HTMLDivElement;
-const selGlide    = document.getElementById('sel-glide')    as HTMLSelectElement;
-const selLpRow    = document.getElementById('sel-lp-row')   as HTMLDivElement;
-const selLp       = document.getElementById('sel-lp')       as HTMLInputElement;
-const selHpRow    = document.getElementById('sel-hp-row')   as HTMLDivElement;
-const selHp       = document.getElementById('sel-hp')       as HTMLInputElement;
-const selApplyBtn = document.getElementById('sel-apply')    as HTMLButtonElement;
-const selDelBtn   = document.getElementById('sel-del')      as HTMLButtonElement;
-const codeTa      = document.getElementById('code-ta')      as HTMLTextAreaElement;
-const copyBtn     = document.getElementById('copy-btn')     as HTMLButtonElement;
+const selGlide = document.getElementById('sel-glide') as HTMLSelectElement;
+const selLpRow = document.getElementById('sel-lp-row') as HTMLDivElement;
+const selLp = document.getElementById('sel-lp') as HTMLInputElement;
+const selHpRow = document.getElementById('sel-hp-row') as HTMLDivElement;
+const selHp = document.getElementById('sel-hp') as HTMLInputElement;
+const selApplyBtn = document.getElementById('sel-apply') as HTMLButtonElement;
+const selDelBtn = document.getElementById('sel-del') as HTMLButtonElement;
+const codeTa = document.getElementById('code-ta') as HTMLTextAreaElement;
+const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
 const codeSection = document.getElementById('code-section') as HTMLDivElement;
-const codeHdr     = document.getElementById('code-hdr')     as HTMLDivElement;
-const hscrollBar  = document.getElementById('hscroll-bar')  as HTMLDivElement;
+const codeHdr = document.getElementById('code-hdr') as HTMLDivElement;
+const hscrollBar = document.getElementById('hscroll-bar') as HTMLDivElement;
 const hscrollInner = document.getElementById('hscroll-inner') as HTMLDivElement;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -267,7 +267,7 @@ function virtualW(): number {
     const bd = beatDur();
     const maxT = Math.max(
         MIN_SECS,
-        ...tones.map(e  => e.startTime + e.duration * bd + 2),
+        ...tones.map(e => e.startTime + e.duration * bd + 2),
         ...noises.map(e => e.startTime + e.duration * bd + 2),
     );
     return maxT * PPS;
@@ -276,9 +276,9 @@ function virtualW(): number {
 // ── Canvas scaling ────────────────────────────────────────────────────────────
 function setCanvas(c: HTMLCanvasElement, cssW: number, cssH: number): void {
     const dpr = window.devicePixelRatio || 1;
-    c.width  = Math.round(cssW * dpr);
+    c.width = Math.round(cssW * dpr);
     c.height = Math.round(cssH * dpr);
-    c.style.width  = `${cssW}px`;
+    c.style.width = `${cssW}px`;
     c.style.height = `${cssH}px`;
 }
 
@@ -296,7 +296,7 @@ function buildKeyCol(): void {
         const div = document.createElement('div');
         div.className = 'key-lbl';
         const sharp = n.name.includes('#');
-        const isC   = n.name.startsWith('C') && !sharp;
+        const isC = n.name.startsWith('C') && !sharp;
         if (isC) div.classList.add('key-c');
         else if (sharp) div.classList.add('key-sharp');
         else div.classList.add('key-nat');
@@ -345,11 +345,11 @@ function buildGlideOptions(sel: HTMLSelectElement, includeNone: boolean): void {
 
 // ── Resize all canvases ────────────────────────────────────────────────────────
 function resizeAll(): void {
-    const tlH    = NOTES.length * ROW_H;
-    const tlW    = visibleW();
-    const rW     = rulerClip.clientWidth  || tlW;
-    setCanvas(tlCanvas,    tlW, tlH);
-    setCanvas(rulerCanvas, rW,  RULER_H);
+    const tlH = NOTES.length * ROW_H;
+    const tlW = visibleW();
+    const rW = rulerClip.clientWidth || tlW;
+    setCanvas(tlCanvas, tlW, tlH);
+    setCanvas(rulerCanvas, rW, RULER_H);
     const nW = noiseClip.clientWidth || tlW;
     setCanvas(noiseCanvas, nW, NOISE_TRACK_LABELS.length * NOISE_H);
 }
@@ -358,19 +358,19 @@ function resizeAll(): void {
 function drawGrid(cx: CanvasRenderingContext2D, w: number, h: number): void {
     const bd = beatDur();
     const startBeat = Math.floor(scrollX / PPS / bd);
-    const endBeat   = Math.ceil((scrollX + w) / PPS / bd) + 1;
+    const endBeat = Math.ceil((scrollX + w) / PPS / bd) + 1;
     for (let beat = startBeat; beat <= endBeat; beat++) {
-        const x     = Math.round(beat * bd * PPS - scrollX) + 0.5;
+        const x = Math.round(beat * bd * PPS - scrollX) + 0.5;
         const isBar = beat % 4 === 0;
         cx.strokeStyle = isBar ? '#2e4870' : '#1a3050';
-        cx.lineWidth   = isBar ? 1 : 0.5;
+        cx.lineWidth = isBar ? 1 : 0.5;
         cx.beginPath(); cx.moveTo(x, 0); cx.lineTo(x, h); cx.stroke();
     }
 }
 
 // ── Render ruler ───────────────────────────────────────────────────────────────
 function renderRuler(): void {
-    const w  = rulerClip.clientWidth  || 800;
+    const w = rulerClip.clientWidth || 800;
     const cx = ctx2d(rulerCanvas);
     cx.clearRect(0, 0, w, RULER_H);
     cx.fillStyle = '#09090e';
@@ -378,14 +378,14 @@ function renderRuler(): void {
 
     const bd = beatDur();
     const startBeat = Math.floor(scrollX / PPS / bd);
-    const endBeat   = Math.ceil((scrollX + w) / PPS / bd) + 1;
+    const endBeat = Math.ceil((scrollX + w) / PPS / bd) + 1;
     cx.font = '10px monospace'; cx.textAlign = 'left';
 
     for (let beat = startBeat; beat <= endBeat; beat++) {
-        const x     = Math.round(beat * bd * PPS - scrollX) + 0.5;
+        const x = Math.round(beat * bd * PPS - scrollX) + 0.5;
         const isBar = beat % 4 === 0;
         cx.strokeStyle = isBar ? '#303858' : '#1a2030';
-        cx.lineWidth   = isBar ? 1 : 0.5;
+        cx.lineWidth = isBar ? 1 : 0.5;
         cx.beginPath();
         cx.moveTo(x, isBar ? 0 : RULER_H - 6);
         cx.lineTo(x, RULER_H); cx.stroke();
@@ -404,16 +404,16 @@ function renderRuler(): void {
 
 // ── Render main timeline ───────────────────────────────────────────────────────
 function renderTimeline(): void {
-    const w  = visibleW();
-    const h  = NOTES.length * ROW_H;
+    const w = visibleW();
+    const h = NOTES.length * ROW_H;
     const cx = ctx2d(tlCanvas);
     cx.clearRect(0, 0, w, h);
 
     // Row backgrounds
     NOTES.forEach((n, i) => {
-        const y     = i * ROW_H;
+        const y = i * ROW_H;
         const sharp = n.name.includes('#');
-        const isC   = n.name.startsWith('C') && !sharp;
+        const isC = n.name.startsWith('C') && !sharp;
         cx.fillStyle = isC ? '#0f1828' : sharp ? '#0a0f18' : '#0d1420';
         cx.fillRect(0, y, w, ROW_H);
         cx.fillStyle = '#141a26';
@@ -425,17 +425,17 @@ function renderTimeline(): void {
 
     // Tone blocks
     for (const ev of tones) {
-        const x    = ev.startTime * PPS - scrollX;
-        const bw   = Math.max(6, ev.duration * beatDur() * PPS);
-        const y    = ev.noteIdx * ROW_H + 2;
-        const bh   = ROW_H - 4;
+        const x = ev.startTime * PPS - scrollX;
+        const bw = Math.max(6, ev.duration * beatDur() * PPS);
+        const y = ev.noteIdx * ROW_H + 2;
+        const bh = ROW_H - 4;
         if (x + bw < 0 || x > w) continue;
 
         const isSel = selectedIds.has(ev.id);
-        const isEd  = ev.id === editingId;
-        cx.fillStyle   = isSel ? '#2a6e7e' : (isEd ? '#2da0cc' : '#1c6e8e');
+        const isEd = ev.id === editingId;
+        cx.fillStyle = isSel ? '#2a6e7e' : (isEd ? '#2da0cc' : '#1c6e8e');
         cx.strokeStyle = isSel ? '#ffd600' : (isEd ? '#60d8f8' : '#30a8d0');
-        cx.lineWidth   = isSel ? 2 : (isEd ? 2 : 1);
+        cx.lineWidth = isSel ? 2 : (isEd ? 2 : 1);
         roundRect(cx, x, y, bw, bh, 3);
         cx.fill(); cx.stroke();
 
@@ -477,7 +477,7 @@ function renderTimeline(): void {
 // ── Render unified noise section ───────────────────────────────────────────────
 function renderNoise(): void {
     const totalH = NOISE_TRACK_LABELS.length * NOISE_H;
-    const w  = noiseClip.clientWidth || 800;
+    const w = noiseClip.clientWidth || 800;
     const cx = ctx2d(noiseCanvas);
     cx.clearRect(0, 0, w, totalH);
     cx.fillStyle = '#080812'; cx.fillRect(0, 0, w, totalH);
@@ -491,17 +491,17 @@ function renderNoise(): void {
     }
 
     for (const ev of noises) {
-        const x   = ev.startTime * PPS - scrollX;
-        const bw  = Math.max(6, ev.duration * beatDur() * PPS);
-        const y   = ev.row * NOISE_H + 2;
-        const bh  = NOISE_H - 4;
+        const x = ev.startTime * PPS - scrollX;
+        const bw = Math.max(6, ev.duration * beatDur() * PPS);
+        const y = ev.row * NOISE_H + 2;
+        const bh = NOISE_H - 4;
         if (x + bw < 0 || x > w) continue;
 
         const isSel = selectedIds.has(ev.id);
-        const isEd  = ev.id === editingId;
-        cx.fillStyle   = isSel ? '#7a3f9e' : (isEd ? '#aa5099' : '#7a3f6e');
+        const isEd = ev.id === editingId;
+        cx.fillStyle = isSel ? '#7a3f9e' : (isEd ? '#aa5099' : '#7a3f6e');
         cx.strokeStyle = isSel ? '#ffd600' : (isEd ? '#d080c8' : '#b060a0');
-        cx.lineWidth   = isSel ? 2 : (isEd ? 2 : 1);
+        cx.lineWidth = isSel ? 2 : (isEd ? 2 : 1);
         roundRect(cx, x, y, bw, bh, 3);
         cx.fill(); cx.stroke();
     }
@@ -530,10 +530,10 @@ function roundRect(cx: CanvasRenderingContext2D, x: number, y: number, w: number
     const rr = Math.min(r, w / 2, h / 2);
     cx.beginPath();
     cx.moveTo(x + rr, y);
-    cx.lineTo(x + w - rr, y);   cx.arcTo(x + w, y,     x + w, y + rr,     rr);
+    cx.lineTo(x + w - rr, y); cx.arcTo(x + w, y, x + w, y + rr, rr);
     cx.lineTo(x + w, y + h - rr); cx.arcTo(x + w, y + h, x + w - rr, y + h, rr);
-    cx.lineTo(x + rr, y + h);   cx.arcTo(x,     y + h, x,     y + h - rr, rr);
-    cx.lineTo(x, y + rr);       cx.arcTo(x,     y,     x + rr, y,         rr);
+    cx.lineTo(x + rr, y + h); cx.arcTo(x, y + h, x, y + h - rr, rr);
+    cx.lineTo(x, y + rr); cx.arcTo(x, y, x + rr, y, rr);
     cx.closePath();
 }
 
@@ -557,8 +557,8 @@ function render(): void {
 
 // ── Hit-testing ────────────────────────────────────────────────────────────────
 function hitTone(cx: number, cy: number): ToneEvent | null {
-    const t   = (cx + scrollX) / PPS;
-    const bd  = beatDur();
+    const t = (cx + scrollX) / PPS;
+    const bd = beatDur();
     const row = Math.floor(cy / ROW_H);
     for (const ev of tones) {
         if (ev.noteIdx === row && t >= ev.startTime && t <= ev.startTime + ev.duration * bd)
@@ -569,8 +569,8 @@ function hitTone(cx: number, cy: number): ToneEvent | null {
 
 function hitNoise(cx: number, cy: number): NoiseEvent | null {
     const row = Math.floor(cy / NOISE_H);
-    const t   = (cx + scrollX) / PPS;
-    const bd  = beatDur();
+    const t = (cx + scrollX) / PPS;
+    const bd = beatDur();
     for (const ev of noises) {
         if (ev.row === row && t >= ev.startTime && t <= ev.startTime + ev.duration * bd) return ev;
     }
@@ -629,18 +629,18 @@ function onTlDown(e: MouseEvent): void {
         render();
     } else {
         // Empty space: start selection rect / pending add
-        const row      = Math.floor(y / ROW_H);
-        const absT     = Math.max(0, (x + scrollX) / PPS);
+        const row = Math.floor(y / ROW_H);
+        const absT = Math.max(0, (x + scrollX) / PPS);
         // y from getBoundingClientRect is already canvas-relative; no scrollTop adjustment needed.
-        selectedIds    = new Set();
+        selectedIds = new Set();
         updateSelPanel();
         closePopup();
 
         selRectState = {
             absX0: x + scrollX, absX1: x + scrollX,
-            absY0: y,           absY1: y,
+            absY0: y, absY1: y,
             canvas: 'tone', active: false,
-            addRow: row,        addTime: snapToGridFloor(absT),
+            addRow: row, addTime: snapToGridFloor(absT),
         };
         render();
     }
@@ -703,7 +703,7 @@ function onNoiseDown(e: MouseEvent): void {
 
         selRectState = {
             absX0: x + scrollX, absX1: x + scrollX,
-            absY0: y,           absY1: y,
+            absY0: y, absY1: y,
             canvas: 'noise', active: false,
             addRow: hitNoiseRow(y), addTime: snapToGridFloor(absT),
         };
@@ -736,14 +736,14 @@ function onGlobalMove(e: MouseEvent): void {
 
         if (dragMoveState.moved) {
             const dtSecs = dx / PPS;
-            const dRow   = Math.round(dy / ROW_H);
+            const dRow = Math.round(dy / ROW_H);
 
             for (const [id, orig] of dragMoveState.origPositions) {
                 const newT = snapToGrid(orig.startTime + dtSecs);
                 const tone = tones.find(t => t.id === id);
                 if (tone) {
                     tone.startTime = newT;
-                    tone.noteIdx   = Math.max(0, Math.min(NOTES.length - 1, orig.noteIdx + dRow));
+                    tone.noteIdx = Math.max(0, Math.min(NOTES.length - 1, orig.noteIdx + dRow));
                 }
                 const noiseFound = findNoiseById(id);
                 if (noiseFound) noiseFound.startTime = newT;
@@ -894,9 +894,9 @@ function openPopup(id: string, kind: 'tone' | 'noise', mx: number, my: number): 
         ppTypeRow.style.display = ''; ppGlideRow.style.display = '';
         ppLpRow.style.display = 'none'; ppHpRow.style.display = 'none';
         ppDropoffRow.style.display = '';
-        ppDur.value   = String(ev.duration);
-        ppType.value  = ev.type;
-        ppGain.value  = String(ev.gain);
+        ppDur.value = String(ev.duration);
+        ppType.value = ev.type;
+        ppGain.value = String(ev.gain);
         ppDropoff.value = String(ev.dropoff ?? 0.3); ppDropoffV.textContent = (ev.dropoff ?? 0.3).toFixed(2);
         ppGlide.value = ev.glideTo !== null ? String(ev.glideTo) : '';
     } else {
@@ -905,20 +905,20 @@ function openPopup(id: string, kind: 'tone' | 'noise', mx: number, my: number): 
         ppTypeRow.style.display = 'none'; ppGlideRow.style.display = 'none';
         ppLpRow.style.display = ''; ppHpRow.style.display = '';
         ppDropoffRow.style.display = '';
-        ppDur.value   = String(ev.duration);
-        ppGain.value  = String(ev.gain);
+        ppDur.value = String(ev.duration);
+        ppGain.value = String(ev.gain);
         ppDropoff.value = String(ev.dropoff ?? 0.3); ppDropoffV.textContent = (ev.dropoff ?? 0.3).toFixed(2);
-        ppLp.value    = String(ev.lowpass);
-        ppHp.value    = String(ev.highpass);
+        ppLp.value = String(ev.lowpass);
+        ppHp.value = String(ev.highpass);
     }
 
     popup.style.display = 'block';
     const pw = 240; const ph = popup.scrollHeight + 20;
     let px = mx + 10; let py = my - 20;
-    if (px + pw > window.innerWidth)  px = mx - pw - 10;
+    if (px + pw > window.innerWidth) px = mx - pw - 10;
     if (py + ph > window.innerHeight) py = window.innerHeight - ph - 8;
     popup.style.left = `${Math.max(4, px)}px`;
-    popup.style.top  = `${Math.max(4, py)}px`;
+    popup.style.top = `${Math.max(4, py)}px`;
     render();
 }
 
@@ -928,8 +928,8 @@ function closePopup(): void {
 
 function savePopup(): void {
     if (!editingId) return;
-    const dur     = parseFloat(ppDur.value) || 1;
-    const gain    = parseFloat(ppGain.value);
+    const dur = parseFloat(ppDur.value) || 1;
+    const gain = parseFloat(ppGain.value);
     const dropoff = Math.max(0.1, Math.min(1, parseFloat(ppDropoff.value) || 0.3));
 
     if (editingKind === 'tone') {
@@ -943,7 +943,7 @@ function savePopup(): void {
         const ev = editingId ? findNoiseById(editingId) : null;
         if (ev) {
             ev.duration = dur; ev.gain = gain; ev.dropoff = dropoff;
-            ev.lowpass  = parseFloat(ppLp.value) || 2200;
+            ev.lowpass = parseFloat(ppLp.value) || 2200;
             ev.highpass = parseFloat(ppHp.value) || 100;
         }
     }
@@ -964,7 +964,7 @@ function noiseBuffer(ctx: AudioContext): AudioBuffer {
     if (!cachedNoiseBuffer || cachedNoiseBuffer.sampleRate !== ctx.sampleRate) {
         const len = Math.floor(ctx.sampleRate * 0.5);
         const buf = ctx.createBuffer(1, len, ctx.sampleRate);
-        const ch  = buf.getChannelData(0);
+        const ch = buf.getChannelData(0);
         for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
         cachedNoiseBuffer = buf;
     }
@@ -973,7 +973,7 @@ function noiseBuffer(ctx: AudioContext): AudioBuffer {
 
 function schedTone(ctx: AudioContext, freq: number, dur: number, type: OscType, gain: number, dropoff: number, startAt: number, glidedFreq: number | null): void {
     const osc = ctx.createOscillator();
-    const g   = ctx.createGain();
+    const g = ctx.createGain();
     const att = Math.min(0.02, dur * 0.35);
     const endGain = Math.max(ENV_MIN, gain * dropoff);
     osc.type = type;
@@ -990,8 +990,8 @@ function schedTone(ctx: AudioContext, freq: number, dur: number, type: OscType, 
 function schedNoise(ctx: AudioContext, dur: number, gain: number, dropoff: number, lp: number, hp: number, startAt: number): void {
     const src = ctx.createBufferSource(); src.buffer = noiseBuffer(ctx);
     const hpf = ctx.createBiquadFilter(); hpf.type = 'highpass'; hpf.frequency.value = hp;
-    const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass';  lpf.frequency.value = lp;
-    const g   = ctx.createGain();
+    const lpf = ctx.createBiquadFilter(); lpf.type = 'lowpass'; lpf.frequency.value = lp;
+    const g = ctx.createGain();
     const endGain = Math.max(ENV_MIN, gain * dropoff);
     g.gain.setValueAtTime(ENV_MIN, startAt);
     g.gain.exponentialRampToValueAtTime(Math.max(ENV_MIN, gain), startAt + 0.01);
@@ -1013,14 +1013,14 @@ function startPlayback(): void {
      * Returns the total duration of the scheduled pass.
      */
     function schedulePassFresh(offset: number): number {
-        const bd   = beatDur();
+        const bd = beatDur();
         const passDur = Math.max(
             MIN_LOOP_PERIOD,
-            ...tones.map(e  => e.startTime + e.duration * bd),
+            ...tones.map(e => e.startTime + e.duration * bd),
             ...noises.map(e => e.startTime + e.duration * bd),
         );
         tones.forEach(ev => {
-            const freq  = NOTES[ev.noteIdx].freq;
+            const freq = NOTES[ev.noteIdx].freq;
             const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
             schedTone(ctx, freq, ev.duration * bd, ev.type, ev.gain, ev.dropoff ?? 0.3, offset + ev.startTime, glide);
         });
@@ -1077,7 +1077,7 @@ function startPlayback(): void {
 
         // Auto-scroll to follow playhead
         const pxPos = playhead * PPS;
-        const vw    = visibleW();
+        const vw = visibleW();
         if (pxPos - scrollX > vw - AUTOSCROLL_MARGIN) scrollX = Math.max(0, pxPos - AUTOSCROLL_MARGIN);
 
         render();
@@ -1110,28 +1110,31 @@ function generateCode(): string {
 
     // Compute loop period (max event end time)
     const passDur = Math.max(
-        ...tones.map(e  => e.startTime + e.duration * bd),
+        ...tones.map(e => e.startTime + e.duration * bd),
         ...noises.map(e => e.startTime + e.duration * bd),
     );
 
     tones.forEach(ev => {
-        const freq  = NOTES[ev.noteIdx].freq;
+        const freq = NOTES[ev.noteIdx].freq;
         const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
-        const dur   = ev.duration * bd;
-        const at    = fmt(ev.startTime);
+        const dur = ev.duration * bd;
+        const at = fmt(ev.startTime);
         const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? 0.3)));
         const glideArg = glide !== null ? `, ${fmt(glide)}` : '';
-        events.push({ t: ev.startTime,
-            line: `this.playTone(${fmt(freq)}, ${fmt(dur)}, '${ev.type}', ${fmt(ev.gain)}, ${endGain}, ${at}${glideArg}); // ${NOTES[ev.noteIdx].name}` });
+        events.push({
+            t: ev.startTime,
+            line: `this.playTone(${fmt(freq)}, ${fmt(dur)}, '${ev.type}', ${fmt(ev.gain)}, ${endGain}, ${at}${glideArg}); // ${NOTES[ev.noteIdx].name}`
+        });
     });
 
     noises.forEach(ev => {
-        const label = NOISE_TRACK_LABELS[ev.row] ?? 'A';
         const dur = ev.duration * bd;
-        const at  = fmt(ev.startTime);
+        const at = fmt(ev.startTime);
         const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? 0.3)));
-        events.push({ t: ev.startTime,
-            line: `this.playNoise(${fmt(dur)}, ${fmt(ev.gain)}, ${fmt(ev.lowpass)}, ${fmt(ev.highpass)}, ${at}, ${endGain}); // NOISE ${label}` });
+        events.push({
+            t: ev.startTime,
+            line: `this.playNoise(${fmt(dur)}, ${fmt(ev.gain)}, ${fmt(ev.lowpass)}, ${fmt(ev.highpass)}, ${at}, ${endGain});`
+        });
     });
 
     events.sort((a, b) => a.t - b.t);
@@ -1148,8 +1151,8 @@ function generateCode(): string {
 function downloadJson(): void {
     const payload = JSON.stringify({ version: 3, bpm: cfgBpm, tones, noises }, null, 2);
     const blob = new Blob([payload], { type: 'application/json' });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
     a.href = url; a.download = 'hackworld-sound.json'; a.click();
     URL.revokeObjectURL(url);
 }
@@ -1187,14 +1190,14 @@ function loadFromJson(raw: string): void {
         typeof t.type === 'string' &&
         typeof t.gain === 'number'
     ).map(t => ({
-        id:        t.id        as string,
-        noteIdx:   t.noteIdx   as number,
+        id: t.id as string,
+        noteIdx: t.noteIdx as number,
         startTime: t.startTime as number,
-        duration:  t.duration  as number,
-        type:      t.type      as OscType,
-        gain:      t.gain      as number,
-        dropoff:   typeof t.dropoff === 'number' ? t.dropoff as number : 0.3,
-        glideTo:   typeof t.glideTo === 'number' ? t.glideTo as number : null,
+        duration: t.duration as number,
+        type: t.type as OscType,
+        gain: t.gain as number,
+        dropoff: typeof t.dropoff === 'number' ? t.dropoff as number : 0.3,
+        glideTo: typeof t.glideTo === 'number' ? t.glideTo as number : null,
     }));
 
     const validNoises: NoiseEvent[] = rawNoises.filter(n =>
@@ -1203,18 +1206,18 @@ function loadFromJson(raw: string): void {
         typeof n.duration === 'number' &&
         typeof n.gain === 'number'
     ).map(n => ({
-        id:        n.id        as string,
-        row:       typeof n.row === 'number' ? Math.max(0, Math.min(NOISE_TRACK_LABELS.length - 1, n.row as number)) : 0,
+        id: n.id as string,
+        row: typeof n.row === 'number' ? Math.max(0, Math.min(NOISE_TRACK_LABELS.length - 1, n.row as number)) : 0,
         startTime: n.startTime as number,
-        duration:  n.duration  as number,
-        gain:      n.gain      as number,
-        dropoff:   typeof n.dropoff === 'number' ? n.dropoff as number : 0.3,
-        lowpass:   typeof n.lowpass  === 'number' ? n.lowpass  as number : 2200,
-        highpass:  typeof n.highpass === 'number' ? n.highpass as number : 100,
+        duration: n.duration as number,
+        gain: n.gain as number,
+        dropoff: typeof n.dropoff === 'number' ? n.dropoff as number : 0.3,
+        lowpass: typeof n.lowpass === 'number' ? n.lowpass as number : 2200,
+        highpass: typeof n.highpass === 'number' ? n.highpass as number : 100,
     }));
 
     stopPlayback();
-    tones  = validTones;
+    tones = validTones;
     noises = validNoises;
     scrollX = 0;
     if (typeof data.bpm === 'number') {
@@ -1240,9 +1243,9 @@ function updateSelPanel(): void {
     selPanel.style.display = 'block';
     selCountEl.textContent = String(selectedIds.size);
 
-    const selTones  = tones.filter(t => selectedIds.has(t.id));
+    const selTones = tones.filter(t => selectedIds.has(t.id));
     const selNoises = noises.filter(n => selectedIds.has(n.id));
-    const allEvts   = [...selTones, ...selNoises];
+    const allEvts = [...selTones, ...selNoises];
     const onlyTones = selNoises.length === 0;
     const onlyNoise = selTones.length === 0;
 
@@ -1305,16 +1308,16 @@ function addMixedOption(sel: HTMLSelectElement, ref: HTMLSelectElement): void {
 
 /** Apply selection panel values to all selected events. */
 function applySelection(): void {
-    const dur     = selDur.value !== '' ? parseFloat(selDur.value) : null;
-    const gain    = selGain.value !== '' ? parseFloat(selGain.value) : null;
+    const dur = selDur.value !== '' ? parseFloat(selDur.value) : null;
+    const gain = selGain.value !== '' ? parseFloat(selGain.value) : null;
     const dropoff = parseFloat(selDropoff.value) || null;
 
     for (const id of selectedIds) {
         const tone = tones.find(t => t.id === id);
         if (tone) {
-            if (dur   !== null && !isNaN(dur))     tone.duration = dur;
-            if (gain  !== null && !isNaN(gain))    tone.gain     = gain;
-            if (dropoff !== null)                   tone.dropoff  = Math.max(0.1, Math.min(1, dropoff));
+            if (dur !== null && !isNaN(dur)) tone.duration = dur;
+            if (gain !== null && !isNaN(gain)) tone.gain = gain;
+            if (dropoff !== null) tone.dropoff = Math.max(0.1, Math.min(1, dropoff));
             if (selTypeRow.style.display !== 'none' && selType.value) tone.type = selType.value as OscType;
             if (selGlideRow.style.display !== 'none') {
                 tone.glideTo = selGlide.value !== '' ? parseInt(selGlide.value) : null;
@@ -1322,10 +1325,10 @@ function applySelection(): void {
         }
         const noise = findNoiseById(id);
         if (noise) {
-            if (dur   !== null && !isNaN(dur))     noise.duration = dur;
-            if (gain  !== null && !isNaN(gain))    noise.gain     = gain;
-            if (dropoff !== null)                   noise.dropoff  = Math.max(0.1, Math.min(1, dropoff));
-            if (selLpRow.style.display !== 'none' && selLp.value !== '') noise.lowpass  = parseFloat(selLp.value)  || 2200;
+            if (dur !== null && !isNaN(dur)) noise.duration = dur;
+            if (gain !== null && !isNaN(gain)) noise.gain = gain;
+            if (dropoff !== null) noise.dropoff = Math.max(0.1, Math.min(1, dropoff));
+            if (selLpRow.style.display !== 'none' && selLp.value !== '') noise.lowpass = parseFloat(selLp.value) || 2200;
             if (selHpRow.style.display !== 'none' && selHp.value !== '') noise.highpass = parseFloat(selHp.value) || 100;
         }
     }
@@ -1342,25 +1345,25 @@ function init(): void {
     buildKeyCol();
     buildNoiseKeyCol();
     buildDurationOptions(cfgDurEl, 1);   // default 1/1 beat
-    buildDurationOptions(ppDur,    1);
-    buildDurationOptions(selDur,   1);
+    buildDurationOptions(ppDur, 1);
+    buildDurationOptions(selDur, 1);
     buildGlideOptions(cfgGlideEl, true);
-    buildGlideOptions(ppGlide,    true);
-    buildGlideOptions(selGlide,   true);
+    buildGlideOptions(ppGlide, true);
+    buildGlideOptions(selGlide, true);
     resizeAll();
     render();
 
     window.addEventListener('resize', () => { resizeAll(); render(); });
 
     // Toolbar
-    cfgDurEl.addEventListener('change',  () => { cfgDur = parseFloat(cfgDurEl.value) || 1; });
-    cfgBpmEl.addEventListener('change',  () => { cfgBpm   = Math.max(MIN_BPM, Math.min(MAX_BPM, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
-    cfgTypeEl.addEventListener('change', () => { cfgType  = cfgTypeEl.value as OscType; });
-    cfgGainEl.addEventListener('input',  () => { cfgGain  = parseFloat(cfgGainEl.value) || 0; });
+    cfgDurEl.addEventListener('change', () => { cfgDur = parseFloat(cfgDurEl.value) || 1; });
+    cfgBpmEl.addEventListener('change', () => { cfgBpm = Math.max(MIN_BPM, Math.min(MAX_BPM, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
+    cfgTypeEl.addEventListener('change', () => { cfgType = cfgTypeEl.value as OscType; });
+    cfgGainEl.addEventListener('input', () => { cfgGain = parseFloat(cfgGainEl.value) || 0; });
     cfgDropoffEl.addEventListener('input', () => { cfgDropoff = parseFloat(cfgDropoffEl.value) || 0.3; cfgDropoffV.textContent = cfgDropoff.toFixed(2); });
-    cfgGlideEl.addEventListener('change',() => { cfgGlide = cfgGlideEl.value ? parseInt(cfgGlideEl.value) : null; });
-    cfgLpEl.addEventListener('change',   () => { cfgLowpass  = parseFloat(cfgLpEl.value)  || 2200; });
-    cfgHpEl.addEventListener('change',   () => { cfgHighpass = parseFloat(cfgHpEl.value)  || 100;  });
+    cfgGlideEl.addEventListener('change', () => { cfgGlide = cfgGlideEl.value ? parseInt(cfgGlideEl.value) : null; });
+    cfgLpEl.addEventListener('change', () => { cfgLowpass = parseFloat(cfgLpEl.value) || 2200; });
+    cfgHpEl.addEventListener('change', () => { cfgHighpass = parseFloat(cfgHpEl.value) || 100; });
     cfgSnapEl.addEventListener('change', () => { cfgSnap = parseFloat(cfgSnapEl.value) || 0.25; });
 
     // Popup dropoff live preview
@@ -1368,9 +1371,9 @@ function init(): void {
 
     // Popup actions
     ppSave.addEventListener('click', savePopup);
-    ppDel.addEventListener('click',  () => {
+    ppDel.addEventListener('click', () => {
         if (!editingId) return;
-        tones  = tones.filter(t => t.id !== editingId);
+        tones = tones.filter(t => t.id !== editingId);
         removeNoisesById(new Set([editingId]));
         selectedIds.delete(editingId);
         updateSelPanel();
@@ -1382,17 +1385,17 @@ function init(): void {
     selDropoff.addEventListener('input', () => { selDropoffV.textContent = (parseFloat(selDropoff.value) || 0.3).toFixed(2); });
     selApplyBtn.addEventListener('click', applySelection);
     selDelBtn.addEventListener('click', () => {
-        tones  = tones.filter(t => !selectedIds.has(t.id));
+        tones = tones.filter(t => !selectedIds.has(t.id));
         removeNoisesById(selectedIds);
         clearSelection();
     });
     selPanelX.addEventListener('click', clearSelection);
 
     // Header buttons
-    playBtn.addEventListener('click',   startPlayback);
-    stopBtn.addEventListener('click',   stopPlayback);
+    playBtn.addEventListener('click', startPlayback);
+    stopBtn.addEventListener('click', stopPlayback);
     cfgLoopEl.addEventListener('change', () => { cfgLoop = cfgLoopEl.checked; });
-    clearBtn.addEventListener('click',  () => {
+    clearBtn.addEventListener('click', () => {
         stopPlayback(); tones = []; noises = []; scrollX = 0; closePopup(); clearSelection(); render();
     });
     exportBtn.addEventListener('click', () => {
@@ -1412,7 +1415,7 @@ function init(): void {
 
     // Global mouse move / up for drag and selection rect
     window.addEventListener('mousemove', onGlobalMove);
-    window.addEventListener('mouseup',   onGlobalUp);
+    window.addEventListener('mouseup', onGlobalUp);
 
     // Horizontal scroll via wheel
     tlClip.addEventListener('wheel', onWheel, { passive: false });
@@ -1436,7 +1439,7 @@ function init(): void {
         }
         if (e.code === 'Delete' && !isEditable(e.target) && selectedIds.size > 0) {
             e.preventDefault();
-            tones  = tones.filter(t => !selectedIds.has(t.id));
+            tones = tones.filter(t => !selectedIds.has(t.id));
             removeNoisesById(selectedIds);
             clearSelection();
         }
@@ -1464,12 +1467,12 @@ function init(): void {
 
     // Code section resize — drag the header bar up/down to change height
     let codeSectionResizing = false;
-    let codeResizeStartY    = 0;
-    let codeResizeStartH    = 0;
+    let codeResizeStartY = 0;
+    let codeResizeStartH = 0;
     codeHdr.addEventListener('mousedown', e => {
         codeSectionResizing = true;
-        codeResizeStartY    = e.clientY;
-        codeResizeStartH    = codeSection.offsetHeight;
+        codeResizeStartY = e.clientY;
+        codeResizeStartH = codeSection.offsetHeight;
         e.preventDefault();
     });
     window.addEventListener('mousemove', e => {
