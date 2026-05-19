@@ -390,11 +390,11 @@ function renderTimeline(): void {
 
     // Selection rectangle overlay (on tone canvas)
     if (selRectState && selRectState.active && selRectState.canvas === 'tone') {
-        const scrollTop = editorOuter.scrollTop;
         const rx0 = Math.min(selRectState.absX0, selRectState.absX1) - scrollX;
         const rx1 = Math.max(selRectState.absX0, selRectState.absX1) - scrollX;
-        const ry0 = Math.min(selRectState.absY0, selRectState.absY1) - scrollTop;
-        const ry1 = Math.max(selRectState.absY0, selRectState.absY1) - scrollTop;
+        // absY values are canvas-relative; draw directly without scrollTop adjustment
+        const ry0 = Math.min(selRectState.absY0, selRectState.absY1);
+        const ry1 = Math.max(selRectState.absY0, selRectState.absY1);
         cx.fillStyle = 'rgba(0,229,255,0.08)';
         cx.strokeStyle = 'rgba(0,229,255,0.65)';
         cx.lineWidth = 1;
@@ -545,16 +545,16 @@ function onTlDown(e: MouseEvent): void {
         // Empty space: start selection rect / pending add
         const row      = Math.floor(y / ROW_H);
         const absT     = Math.max(0, (x + scrollX) / PPS);
-        const absY     = y + editorOuter.scrollTop;
+        // y from getBoundingClientRect is already canvas-relative; no scrollTop adjustment needed.
         selectedIds    = new Set();
         updateSelPanel();
         closePopup();
 
         selRectState = {
             absX0: x + scrollX, absX1: x + scrollX,
-            absY0: absY,        absY1: absY,
+            absY0: y,           absY1: y,
             canvas: 'tone', active: false,
-            addRow: row,        addTime: snapToGrid(absT),
+            addRow: row,        addTime: snapToGridFloor(absT),
         };
         render();
     }
@@ -612,7 +612,7 @@ function onNoiseDown(e: MouseEvent): void {
             absX0: x + scrollX, absX1: x + scrollX,
             absY0: 0, absY1: NOISE_H,
             canvas: 'noise', active: false,
-            addRow: -1, addTime: snapToGrid(absT),
+            addRow: -1, addTime: snapToGridFloor(absT),
         };
         render();
     }
@@ -664,7 +664,8 @@ function onGlobalMove(e: MouseEvent): void {
         if (selRectState.canvas === 'tone') {
             const { x, y } = canvasXY(tlCanvas, e);
             selRectState.absX1 = x + scrollX;
-            selRectState.absY1 = y + editorOuter.scrollTop;
+            // y from getBoundingClientRect is already canvas-relative; no scrollTop adjustment needed.
+            selRectState.absY1 = y;
         } else {
             const { x } = canvasXY(noiseCanvas, e);
             selRectState.absX1 = x + scrollX;
@@ -766,14 +767,25 @@ function snapToGrid(t: number): number {
     return Math.max(0, Math.round(t / snapUnit) * snapUnit);
 }
 
+/**
+ * Snap a time value to the last grid point at or before t (floor snap).
+ * Used when placing new notes so the note always starts on the beat grid
+ * line immediately to the left of the click position.
+ */
+function snapToGridFloor(t: number): number {
+    const snapUnit = cfgSnap * beatDur();
+    if (snapUnit <= 0) return Math.max(0, t);
+    return Math.max(0, Math.floor(t / snapUnit) * snapUnit);
+}
+
 // ── Add events ─────────────────────────────────────────────────────────────────
 function addTone(noteIdx: number, startTime: number): void {
-    tones.push({ id: uid(), noteIdx, startTime: snapToGrid(startTime), duration: cfgDur, type: cfgType, gain: cfgGain, dropoff: cfgDropoff, glideTo: cfgGlide });
+    tones.push({ id: uid(), noteIdx, startTime: snapToGridFloor(startTime), duration: cfgDur, type: cfgType, gain: cfgGain, dropoff: cfgDropoff, glideTo: cfgGlide });
     render();
 }
 
 function addNoise(startTime: number): void {
-    noises.push({ id: uid(), startTime: snapToGrid(startTime), duration: cfgDur, gain: cfgGain, dropoff: cfgDropoff, lowpass: cfgLowpass, highpass: cfgHighpass });
+    noises.push({ id: uid(), startTime: snapToGridFloor(startTime), duration: cfgDur, gain: cfgGain, dropoff: cfgDropoff, lowpass: cfgLowpass, highpass: cfgHighpass });
     render();
 }
 
