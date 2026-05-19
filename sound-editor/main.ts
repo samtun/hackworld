@@ -108,6 +108,8 @@ let cfgSnap   = 0.25;   // snap unit as beat multiplier (0.25 = 1/4 beat)
 // ── Selection & drag state ────────────────────────────────────────────────────
 let selectedIds: Set<string> = new Set();
 
+type SelectionKind = 'none' | 'tone' | 'noise' | 'mixed';
+
 /** Positions recorded at the start of a drag operation. */
 interface DragMoveState {
     /** Per-id original positions before drag started. */
@@ -219,6 +221,37 @@ function findNoiseById(id: string): NoiseEvent | null {
 /** Remove events with the given ids from the noise collection. */
 function removeNoisesById(ids: Set<string>): void {
     noises = noises.filter(n => !ids.has(n.id));
+}
+
+/** Determine the current selected event kind. */
+function getSelectionKind(): SelectionKind {
+    let hasTone = false;
+    let hasNoise = false;
+
+    for (const id of selectedIds) {
+        if (!hasTone && tones.some(t => t.id === id)) hasTone = true;
+        if (!hasNoise && noises.some(n => n.id === id)) hasNoise = true;
+        if (hasTone && hasNoise) return 'mixed';
+    }
+
+    if (hasTone) return 'tone';
+    if (hasNoise) return 'noise';
+    return 'none';
+}
+
+/** Add a clicked node to selection while enforcing tone/noise separation. */
+function shiftSelectNode(id: string, kind: 'tone' | 'noise'): void {
+    const selectionKind = getSelectionKind();
+    const mustReset =
+        selectionKind === 'mixed' ||
+        (kind === 'tone' && selectionKind === 'noise') ||
+        (kind === 'noise' && selectionKind === 'tone');
+
+    if (mustReset) {
+        selectedIds = new Set([id]);
+        return;
+    }
+    selectedIds.add(id);
 }
 
 /** Duration of one beat in seconds at the current BPM. */
@@ -564,6 +597,13 @@ function onTlDown(e: MouseEvent): void {
         e.stopPropagation();
         closePopup();
 
+        if (e.shiftKey) {
+            shiftSelectNode(hit.id, 'tone');
+            updateSelPanel();
+            render();
+            return;
+        }
+
         // If the clicked note is already in the selection, drag all selected.
         // Otherwise clear selection and drag just this note.
         if (!selectedIds.has(hit.id)) {
@@ -626,6 +666,13 @@ function onNoiseDown(e: MouseEvent): void {
     if (hit) {
         e.stopPropagation();
         closePopup();
+
+        if (e.shiftKey) {
+            shiftSelectNode(hit.id, 'noise');
+            updateSelPanel();
+            render();
+            return;
+        }
 
         if (!selectedIds.has(hit.id)) {
             selectedIds = new Set([hit.id]);
@@ -729,7 +776,7 @@ function onGlobalUp(e: MouseEvent): void {
     if (dragMoveState) {
         if (!dragMoveState.moved && dragMoveState.singleId && dragMoveState.singleKind) {
             // No drag — open popup for the clicked event
-            selectedIds = new Set(); // clear selection on plain click-to-edit
+            selectedIds = new Set([dragMoveState.singleId]);
             updateSelPanel();
             openPopup(dragMoveState.singleId, dragMoveState.singleKind, e.clientX, e.clientY);
         } else if (dragMoveState.moved) {
