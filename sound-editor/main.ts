@@ -755,7 +755,11 @@ function onWheel(e: WheelEvent): void {
 }
 
 // ── Grid snap ─────────────────────────────────────────────────────────────────
-/** Snap a time value to the nearest snap unit (round snap). */
+/**
+ * Snap a time value to the nearest snap unit.
+ * Uses rounding (not floor) so that dragging feels natural — a note dragged
+ * halfway between two snap points snaps to the closest one.
+ */
 function snapToGrid(t: number): number {
     const snapUnit = cfgSnap * beatDur();
     if (snapUnit <= 0) return Math.max(0, t);
@@ -1137,7 +1141,7 @@ function updateSelPanel(): void {
 
     // Dropoff
     const dropC = consensus(allEvts.map(e => e.dropoff ?? 0.3));
-    selDropoff.value = dropC !== null ? String(dropC) : '0.55';
+    selDropoff.value = dropC !== null ? String(dropC) : String(0.3);
     selDropoffV.textContent = dropC !== null ? dropC.toFixed(2) : '–';
 
     // Glide (tones only, hide if mixed selection)
@@ -1145,7 +1149,7 @@ function updateSelPanel(): void {
     if (onlyTones) {
         buildGlideOptions(selGlide, true);
         const glideC = consensus(selTones.map(t => t.glideTo));
-        selGlide.value = glideC !== null && glideC !== null ? String(glideC) : '';
+        selGlide.value = glideC !== null ? String(glideC) : '';
     }
 
     // Noise filter fields
