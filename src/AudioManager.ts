@@ -4,6 +4,11 @@ type CombatSource = 'player' | 'enemy';
 type CardRevealRarity = 'normal' | 'uncommon' | 'special';
 type MusicPhrase = readonly number[];
 
+/**
+ * Minimum gain used as the start/end value in amplitude envelopes to avoid
+ * audio clicks (exponential ramps cannot go to zero). Exported so that the
+ * Sound Editor tool can reference it in generated `playTone()` snippets.
+ */
 export const ENVELOPE_MIN_GAIN = 0.0001;
 const DEFAULT_ATTACK_SECONDS = 0.02;
 const MAX_ATTACK_PORTION_OF_DURATION = 0.35;
@@ -247,6 +252,8 @@ export class AudioManager {
 
     // ── To retune sounds: run `npm run dev:sound-editor`, compose there, then paste ──
     // ── the generated playTone()/playNoise() calls directly into the methods below.  ──
+    // ── For arpeggio-style sounds the editor won't replicate the glide ratio; add a  ──
+    // ── comment like '// glide ratio 1.05' next to the last argument of each tone.   ──
 
     playFootstep(source: FootstepSource): void {
         if (source === 'player') {
