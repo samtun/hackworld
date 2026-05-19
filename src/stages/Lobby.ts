@@ -119,7 +119,7 @@ export class Lobby extends BaseStage {
         this.createTeleporter(new CANNON.Vec3(5, 0, 5), 'selection');
 
         // Healing Station
-        this.healingStation = new HealingStation(this.scene, this.healingStationPosition);
+        this.healingStation = new HealingStation(this.scene, this.physicsWorld, this.physicsMaterial, this.healingStationPosition);
 
         // Create Mainframe NPC - Main quest giver
         this.createMainframeNpc();

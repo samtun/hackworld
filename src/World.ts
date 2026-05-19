@@ -215,6 +215,7 @@ export class World {
             'models/trader_weapons.glb',
             'models/npc_placeholder.glb',
             'models/healing_station.glb',
+            'models/healing_station_collider.glb',
             'models/xdata_terminal.glb',
             'models/mainframe.glb',
             'models/teleporter.glb',
