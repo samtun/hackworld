@@ -1,3 +1,11 @@
+# [3.23.0](https://github.com/samtun/hackworld/compare/v3.22.0...v3.23.0) (2026-05-19)
+
+
+### Features
+
+* replace STAGE_MUSIC data object with per-stage play*Music() methods ([ca27553](https://github.com/samtun/hackworld/commit/ca2755344783a0490d6438003033a7c350daa83e))
+* rewrite AudioManager to use direct playTone/playNoise calls ([91d0a3e](https://github.com/samtun/hackworld/commit/91d0a3e4a7ada49c10491bbb2f73745663f7222d))
+
 # [3.22.0](https://github.com/samtun/hackworld/compare/v3.21.0...v3.22.0) (2026-05-18)
 
 
