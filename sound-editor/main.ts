@@ -777,10 +777,9 @@ function onGlobalMove(e: MouseEvent): void {
 function onGlobalUp(e: MouseEvent): void {
     if (dragMoveState) {
         if (!dragMoveState.moved && dragMoveState.singleId && dragMoveState.singleKind) {
-            // No drag — open popup for the clicked event
+            // No drag — keep only selection-panel editing (no per-node popup editor)
             selectedIds = new Set([dragMoveState.singleId]);
             updateSelPanel();
-            openPopup(dragMoveState.singleId, dragMoveState.singleKind, e.clientX, e.clientY);
         } else if (dragMoveState.moved) {
             updateSelPanel();
         }
