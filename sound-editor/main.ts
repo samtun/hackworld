@@ -82,6 +82,7 @@ const STOP_GRACE = 0.4;  // seconds past maxT before auto-stopping non-looped pl
 const MIN_LOOP_PERIOD = 0.001; // minimum loop period to prevent division by zero
 const MIN_BPM = 40;
 const MAX_BPM = 300;
+const HANDLE_HEIGHT_RATIO = 0.6;
 
 // ── State ─────────────────────────────────────────────────────────────────────
 let tones: ToneEvent[] = [];
@@ -123,6 +124,15 @@ interface DragMoveState {
 }
 let dragMoveState: DragMoveState | null = null;
 
+/** State while resizing one event duration from its right-edge handle. */
+interface ResizeState {
+    id: string;
+    kind: 'tone' | 'noise';
+    startClientX: number;
+    origDuration: number;
+}
+let resizeState: ResizeState | null = null;
+
 /** State while drawing a selection rectangle. */
 interface SelRectState {
     /** Absolute timeline X (px), independent of scrollX. */
@@ -136,6 +146,12 @@ interface SelRectState {
     /** Snapped add target if user just clicks without dragging. */
     addRow: number;
     addTime: number;
+    /** Whether click-without-drag should add a new node. */
+    addOnClick: boolean;
+    /** If true, preserve existing selection and add rectangle hits to it. */
+    additive: boolean;
+    /** Snapshot of selected ids at rect start for additive mode. */
+    baseSelection: Set<string>;
 }
 let selRectState: SelRectState | null = null;
 
@@ -243,6 +259,10 @@ function getSelectionKind(): SelectionKind {
 
 /** Add a clicked node to selection while enforcing tone/noise separation. */
 function shiftSelectNode(id: string, kind: 'tone' | 'noise'): void {
+    if (selectedIds.has(id)) {
+        selectedIds.delete(id);
+        return;
+    }
     const selectionKind = getSelectionKind();
     const mustReset =
         selectionKind === 'mixed' ||
@@ -254,6 +274,22 @@ function shiftSelectNode(id: string, kind: 'tone' | 'noise'): void {
         return;
     }
     selectedIds.add(id);
+}
+
+/** Snap a beat duration to the nearest configured beat fraction. */
+function snapDurationToFraction(durationBeats: number): number {
+    const minDur = Math.min(...BEAT_FRACTIONS.map(f => f.value));
+    const clamped = Math.max(minDur, durationBeats);
+    let best = BEAT_FRACTIONS[0].value;
+    let bestDist = Math.abs(clamped - best);
+    for (const frac of BEAT_FRACTIONS) {
+        const dist = Math.abs(clamped - frac.value);
+        if (dist < bestDist) {
+            best = frac.value;
+            bestDist = dist;
+        }
+    }
+    return best;
 }
 
 /** Duration of one beat in seconds at the current BPM. */
@@ -438,6 +474,7 @@ function renderTimeline(): void {
         cx.lineWidth = isSel ? 2 : (isEd ? 2 : 1);
         roundRect(cx, x, y, bw, bh, 3);
         cx.fill(); cx.stroke();
+        drawDurationHandle(cx, x + bw, y + bh / 2, bh * HANDLE_HEIGHT_RATIO, isSel, '#1b2a3a');
 
         if (bw > 18) {
             cx.fillStyle = isSel ? '#ffd600' : '#a0d8f0'; cx.font = '10px monospace'; cx.textAlign = 'left';
@@ -504,6 +541,7 @@ function renderNoise(): void {
         cx.lineWidth = isSel ? 2 : (isEd ? 2 : 1);
         roundRect(cx, x, y, bw, bh, 3);
         cx.fill(); cx.stroke();
+        drawDurationHandle(cx, x + bw, y + bh / 2, bh * HANDLE_HEIGHT_RATIO, isSel, '#2a1630');
     }
 
     // Selection rectangle overlay
@@ -537,6 +575,40 @@ function roundRect(cx: CanvasRenderingContext2D, x: number, y: number, w: number
     cx.closePath();
 }
 
+function drawDurationHandle(
+    cx: CanvasRenderingContext2D,
+    centerX: number,
+    centerY: number,
+    size: number,
+    isSelected: boolean,
+    fill: string,
+): void {
+    const half = size / 2;
+    cx.beginPath();
+    cx.moveTo(centerX, centerY - half);
+    cx.lineTo(centerX + half, centerY);
+    cx.lineTo(centerX, centerY + half);
+    cx.lineTo(centerX - half, centerY);
+    cx.closePath();
+    cx.fillStyle = fill;
+    cx.strokeStyle = isSelected ? '#ffd600' : '#b8cad8';
+    cx.lineWidth = isSelected ? 2 : 1;
+    cx.fill();
+    cx.stroke();
+}
+
+function pointInDiamond(
+    px: number,
+    py: number,
+    centerX: number,
+    centerY: number,
+    size: number,
+): boolean {
+    const half = size / 2;
+    if (half <= 0) return false;
+    return (Math.abs(px - centerX) / half) + (Math.abs(py - centerY) / half) <= 1;
+}
+
 // ── Scrollbar sync ─────────────────────────────────────────────────────────────
 let ignoreHscrollEvent = false;
 
@@ -567,12 +639,36 @@ function hitTone(cx: number, cy: number): ToneEvent | null {
     return null;
 }
 
+function hitToneHandle(cx: number, cy: number): ToneEvent | null {
+    const bd = beatDur();
+    for (const ev of tones) {
+        const x = ev.startTime * PPS - scrollX;
+        const bw = Math.max(6, ev.duration * bd * PPS);
+        const y = ev.noteIdx * ROW_H + 2;
+        const bh = ROW_H - 4;
+        if (pointInDiamond(cx, cy, x + bw, y + bh / 2, bh * HANDLE_HEIGHT_RATIO)) return ev;
+    }
+    return null;
+}
+
 function hitNoise(cx: number, cy: number): NoiseEvent | null {
     const row = Math.floor(cy / NOISE_H);
     const t = (cx + scrollX) / PPS;
     const bd = beatDur();
     for (const ev of noises) {
         if (ev.row === row && t >= ev.startTime && t <= ev.startTime + ev.duration * bd) return ev;
+    }
+    return null;
+}
+
+function hitNoiseHandle(cx: number, cy: number): NoiseEvent | null {
+    const bd = beatDur();
+    for (const ev of noises) {
+        const x = ev.startTime * PPS - scrollX;
+        const bw = Math.max(6, ev.duration * bd * PPS);
+        const y = ev.row * NOISE_H + 2;
+        const bh = NOISE_H - 4;
+        if (pointInDiamond(cx, cy, x + bw, y + bh / 2, bh * HANDLE_HEIGHT_RATIO)) return ev;
     }
     return null;
 }
@@ -593,6 +689,21 @@ const DRAG_THRESHOLD = 5; // px before a movement is considered a drag
 function onTlDown(e: MouseEvent): void {
     if (e.button !== 0) return;
     const { x, y } = canvasXY(tlCanvas, e);
+
+    const handleHit = !e.shiftKey ? hitToneHandle(x, y) : null;
+    if (handleHit) {
+        closePopup();
+        selectedIds = new Set([handleHit.id]);
+        updateSelPanel();
+        resizeState = {
+            id: handleHit.id,
+            kind: 'tone',
+            startClientX: e.clientX,
+            origDuration: handleHit.duration,
+        };
+        render();
+        return;
+    }
 
     const hit = hitTone(x, y);
     if (hit) {
@@ -632,8 +743,13 @@ function onTlDown(e: MouseEvent): void {
         const row = Math.floor(y / ROW_H);
         const absT = Math.max(0, (x + scrollX) / PPS);
         // y from getBoundingClientRect is already canvas-relative; no scrollTop adjustment needed.
-        selectedIds = new Set();
-        updateSelPanel();
+        const additive = e.shiftKey;
+        const hadSelection = selectedIds.size > 0;
+        const baseSelection = new Set(selectedIds);
+        if (!additive) {
+            selectedIds = new Set();
+            updateSelPanel();
+        }
         closePopup();
 
         selRectState = {
@@ -641,6 +757,9 @@ function onTlDown(e: MouseEvent): void {
             absY0: y, absY1: y,
             canvas: 'tone', active: false,
             addRow: row, addTime: snapToGridFloor(absT),
+            addOnClick: !hadSelection && !additive,
+            additive,
+            baseSelection,
         };
         render();
     }
@@ -663,6 +782,21 @@ function onTlCtx(e: MouseEvent): void {
 function onNoiseDown(e: MouseEvent): void {
     if (e.button !== 0) return;
     const { x, y } = canvasXY(noiseCanvas, e);
+
+    const handleHit = !e.shiftKey ? hitNoiseHandle(x, y) : null;
+    if (handleHit) {
+        closePopup();
+        selectedIds = new Set([handleHit.id]);
+        updateSelPanel();
+        resizeState = {
+            id: handleHit.id,
+            kind: 'noise',
+            startClientX: e.clientX,
+            origDuration: handleHit.duration,
+        };
+        render();
+        return;
+    }
 
     const hit = hitNoise(x, y);
     if (hit) {
@@ -697,8 +831,13 @@ function onNoiseDown(e: MouseEvent): void {
         render();
     } else {
         const absT = Math.max(0, (x + scrollX) / PPS);
-        selectedIds = new Set();
-        updateSelPanel();
+        const additive = e.shiftKey;
+        const hadSelection = selectedIds.size > 0;
+        const baseSelection = new Set(selectedIds);
+        if (!additive) {
+            selectedIds = new Set();
+            updateSelPanel();
+        }
         closePopup();
 
         selRectState = {
@@ -706,6 +845,9 @@ function onNoiseDown(e: MouseEvent): void {
             absY0: y, absY1: y,
             canvas: 'noise', active: false,
             addRow: hitNoiseRow(y), addTime: snapToGridFloor(absT),
+            addOnClick: !hadSelection && !additive,
+            additive,
+            baseSelection,
         };
         render();
     }
@@ -726,6 +868,19 @@ function onNoiseCtx(e: MouseEvent): void {
 
 // ── Global mouse move / up (drag & selection rect) ────────────────────────────
 function onGlobalMove(e: MouseEvent): void {
+    if (resizeState) {
+        const deltaSecs = (e.clientX - resizeState.startClientX) / PPS;
+        const event =
+            resizeState.kind === 'tone'
+                ? tones.find(t => t.id === resizeState.id)
+                : findNoiseById(resizeState.id);
+        if (!event) return;
+        const durationBeats = resizeState.origDuration + (deltaSecs / beatDur());
+        event.duration = snapDurationToFraction(durationBeats);
+        render();
+        return;
+    }
+
     if (dragMoveState) {
         const dx = e.clientX - dragMoveState.startClientX;
         const dy = e.clientY - dragMoveState.startClientY;
@@ -774,7 +929,14 @@ function onGlobalMove(e: MouseEvent): void {
     }
 }
 
-function onGlobalUp(e: MouseEvent): void {
+function onGlobalUp(_e: MouseEvent): void {
+    if (resizeState) {
+        updateSelPanel();
+        resizeState = null;
+        render();
+        return;
+    }
+
     if (dragMoveState) {
         if (!dragMoveState.moved && dragMoveState.singleId && dragMoveState.singleKind) {
             // No drag — keep only selection-panel editing (no per-node popup editor)
@@ -791,7 +953,7 @@ function onGlobalUp(e: MouseEvent): void {
     if (selRectState) {
         if (selRectState.active) {
             finalizeSelection(selRectState);
-        } else {
+        } else if (selRectState.addOnClick) {
             // Click (no drag): add tone or noise
             if (selRectState.canvas === 'tone' && selRectState.addRow >= 0 && selRectState.addRow < NOTES.length) {
                 addTone(selRectState.addRow, selRectState.addTime);
@@ -812,7 +974,7 @@ function finalizeSelection(rect: SelRectState): void {
     const y1 = Math.max(rect.absY0, rect.absY1);
     const bd = beatDur();
 
-    selectedIds = new Set();
+    const nextSelection = rect.additive ? new Set(rect.baseSelection) : new Set<string>();
 
     if (rect.canvas === 'tone') {
         for (const ev of tones) {
@@ -820,16 +982,17 @@ function finalizeSelection(rect: SelRectState): void {
             const ex1 = ex0 + ev.duration * bd * PPS;
             const ey0 = ev.noteIdx * ROW_H;
             const ey1 = ey0 + ROW_H;
-            if (ex1 >= x0 && ex0 <= x1 && ey1 >= y0 && ey0 <= y1) selectedIds.add(ev.id);
+            if (ex1 >= x0 && ex0 <= x1 && ey1 >= y0 && ey0 <= y1) nextSelection.add(ev.id);
         }
     } else {
         // Noise canvas: select all noise events whose time range overlaps the selection
         for (const ev of noises) {
             const ex0 = ev.startTime * PPS;
             const ex1 = ex0 + ev.duration * bd * PPS;
-            if (ex1 >= x0 && ex0 <= x1) selectedIds.add(ev.id);
+            if (ex1 >= x0 && ex0 <= x1) nextSelection.add(ev.id);
         }
     }
+    selectedIds = nextSelection;
     updateSelPanel();
 }
 
