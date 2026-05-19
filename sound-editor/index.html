@@ -119,7 +119,7 @@
         #tl-clip { flex: 1; overflow: hidden; position: relative; cursor: crosshair; }
         #tl-canvas { position: absolute; top: 0; left: 0; display: block; }
 
-        /* ── Noise strips (A / B / C) ────────────────────────────────────────── */
+        /* ── Noise section ───────────────────────────────────────────────────── */
         #noise-divider {
             display: flex; flex-shrink: 0; height: 20px;
             background: #0a0b14;
@@ -135,19 +135,20 @@
             font-size: 11px; letter-spacing: 3px; color: var(--accent2);
             text-transform: uppercase; user-select: none;
         }
-        .noise-row {
-            display: flex; flex-shrink: 0; height: 23px;
-            border-top: 1px solid var(--border);
-        }
-        .noise-lbl {
+        #noise-section { display: flex; flex-shrink: 0; }
+        #noise-key-col {
             width: 52px; flex-shrink: 0;
             background: #0b0c14; border-right: 1px solid var(--border);
+        }
+        .noise-row-lbl {
             display: flex; align-items: center; justify-content: center;
             font-size: 12px; font-weight: bold; letter-spacing: 1px; color: var(--accent2);
             text-transform: uppercase; user-select: none;
+            border-bottom: 1px solid #141a26;
         }
-        .noise-clip { flex: 1; overflow: hidden; position: relative; cursor: crosshair; background: #080812; }
-        .noise-canvas { position: absolute; top: 0; left: 0; display: block; }
+        .noise-row-lbl:last-child { border-bottom: none; }
+        #noise-clip { flex: 1; overflow: hidden; position: relative; cursor: crosshair; background: #080812; }
+        #noise-canvas { position: absolute; top: 0; left: 0; display: block; }
 
         /* ── Popup ───────────────────────────────────────────────────────── */
         #popup {
@@ -261,7 +262,7 @@
         <span class="hi">Click+drag empty: selection rectangle</span>
         <span class="hi">Click tone: edit / drag: move</span>
         <span class="hi">Right-click tone: delete</span>
-        <span class="hi">Click noise strip (A/B/C): add noise / drag: move</span>
+        <span class="hi">Click noise row (A/B/C): add noise / drag: move</span>
         <span class="hi">Right-click noise: delete</span>
         <span class="hi">Delete: remove selected</span>
         <span class="hi">Drag &amp; drop .json file anywhere: load timeline</span>
@@ -319,18 +320,10 @@
     <div id="noise-divider-lbl">NOISE</div>
 </div>
 
-<!-- Noise strips (A / B / C) -->
-<div class="noise-row" id="noise-row-a">
-    <div class="noise-lbl">A</div>
-    <div class="noise-clip" id="noise-clip-a"><canvas id="noise-canvas-a" class="noise-canvas"></canvas></div>
-</div>
-<div class="noise-row" id="noise-row-b">
-    <div class="noise-lbl">B</div>
-    <div class="noise-clip" id="noise-clip-b"><canvas id="noise-canvas-b" class="noise-canvas"></canvas></div>
-</div>
-<div class="noise-row" id="noise-row-c">
-    <div class="noise-lbl">C</div>
-    <div class="noise-clip" id="noise-clip-c"><canvas id="noise-canvas-c" class="noise-canvas"></canvas></div>
+<!-- Unified noise section -->
+<div id="noise-section">
+    <div id="noise-key-col"></div>
+    <div id="noise-clip"><canvas id="noise-canvas"></canvas></div>
 </div>
 
 <!-- Horizontal scrollbar -->
