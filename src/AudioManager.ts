@@ -662,6 +662,7 @@ export class AudioManager {
         lowpassFrequency: number,
         highpassFrequency: number,
         delay: number,
+        endGain: number = ENVELOPE_MIN_GAIN,
     ): void {
         const context = this.ensureAudioContext();
         if (!context || context.state !== 'running') return;
@@ -683,7 +684,7 @@ export class AudioManager {
 
         gain.gain.setValueAtTime(ENVELOPE_MIN_GAIN, startTime);
         gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, peakGain), startTime + 0.01);
-        gain.gain.exponentialRampToValueAtTime(ENVELOPE_MIN_GAIN, stopTime);
+        gain.gain.exponentialRampToValueAtTime(Math.max(ENVELOPE_MIN_GAIN, endGain), stopTime);
 
         const targetBus = this.getBus('sfx');
         if (!targetBus) return;

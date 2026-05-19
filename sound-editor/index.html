@@ -157,13 +157,15 @@
         /* ── Code output ─────────────────────────────────────────────────── */
         #code-section {
             background: var(--surface); border-top: 1px solid var(--border);
-            flex-shrink: 0; display: flex; flex-direction: column; max-height: 130px;
+            flex-shrink: 0; display: flex; flex-direction: column; height: 130px;
         }
         #code-hdr {
             display: flex; align-items: center; gap: 8px;
             padding: 4px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+            cursor: ns-resize; user-select: none;
         }
         #code-hdr span { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
+        #code-hdr::before { content: '⠿'; color: var(--border); font-size: 14px; margin-right: 2px; }
         #code-ta {
             flex: 1; background: #000; border: none; color: #98dfc0;
             font-family: var(--font); font-size: 12px; padding: 6px 10px;
@@ -223,8 +225,12 @@
             <option value="sawtooth">sawtooth</option>
         </select>
     </div>
-    <div class="tg"><label>Gain</label><input type="range" id="cfg-gain" min="0" max="1" step="0.01" value="0.06" /><span class="tv" id="cfg-gain-v">0.06</span></div>
+    <div class="tg"><label>Gain</label><input type="number" id="cfg-gain" min="0" max="1" step="0.01" value="0.06" /></div>
+    <div class="tg"><label>Dropoff</label><input type="range" id="cfg-dropoff" min="0.1" max="1" step="0.05" value="0.3" /><span class="tv" id="cfg-dropoff-v">0.30</span></div>
     <div class="tg"><label>Glide→</label><select id="cfg-glide"><option value="">None</option></select></div>
+    <div class="tg" style="width:1px;height:18px;background:var(--border);padding:0;flex-shrink:0;"></div>
+    <div class="tg"><label>LP Hz</label><input type="number" id="cfg-lp" min="200" max="20000" step="100" value="2200" /></div>
+    <div class="tg"><label>HP Hz</label><input type="number" id="cfg-hp" min="20" max="4000" step="10" value="100" /></div>
 </div>
 
 <!-- Ruler -->
@@ -263,6 +269,7 @@
 <!-- Hints -->
 <div id="hints">
     <span class="hi">Scroll horizontal: horizontal touchpad swipe or scrollbar</span>
+    <span class="hi">Shift + scroll: scroll horizontal (timeline)</span>
     <span class="hi">Scroll vertical: mouse wheel / touchpad</span>
     <span class="hi">Space: play / stop</span>
     <span class="hi">Click empty row: add tone</span>
@@ -288,7 +295,8 @@
             <option value="sawtooth">sawtooth</option>
         </select>
     </div>
-    <div class="pf"><label>Gain</label><input type="range" id="pp-gain" min="0" max="1" step="0.01" /><span class="pv" id="pp-gain-v"></span></div>
+    <div class="pf"><label>Gain</label><input type="number" id="pp-gain" min="0" max="1" step="0.01" /></div>
+    <div class="pf" id="pp-dropoff-row"><label>Dropoff</label><input type="range" id="pp-dropoff" min="0.1" max="1" step="0.05" /><span class="pv" id="pp-dropoff-v"></span></div>
     <div class="pf" id="pp-glide-row"><label>Glide→</label><select id="pp-glide"><option value="">None</option></select></div>
     <div class="pf" id="pp-lp-row" style="display:none"><label>Lowpass</label><input type="number" id="pp-lp" min="200" max="20000" step="100" /></div>
     <div class="pf" id="pp-hp-row" style="display:none"><label>Highpass</label><input type="number" id="pp-hp" min="20" max="4000" step="10" /></div>
