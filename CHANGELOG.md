@@ -1,3 +1,10 @@
+# [3.26.0](https://github.com/samtun/hackworld/compare/v3.25.0...v3.26.0) (2026-05-20)
+
+
+### Features
+
+* update card image handling to use per-album spritesheets and remove lightbox functionality ([5a194b6](https://github.com/samtun/hackworld/commit/5a194b646e6a7498259ea0e0ddf121a96a9b1811))
+
 # [3.25.0](https://github.com/samtun/hackworld/compare/v3.24.0...v3.25.0) (2026-05-20)
 
 
