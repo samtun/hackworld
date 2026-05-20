@@ -368,7 +368,7 @@ export class AudioManager {
     private getStageMusicDispatch(stageId: string): { play: () => void; loopMs: number } {
         switch (stageId) {
             case 'startScreen':          return { play: () => this.playStartScreenMusic(),          loopMs: 1680 };
-            case 'lobby':                return { play: () => this.playLobbyMusic(),                loopMs: 1360 };
+            case 'lobby':                return { play: () => this.playLobbyMusic(),                loopMs: 60000 };
             case 'networkMatrix':        return { play: () => this.playNetworkMatrixMusic(),        loopMs: 1450 };
             case 'packetForge':          return { play: () => this.playPacketForgeMusic(),          loopMs: 1250 };
             case 'cipherNull':           return { play: () => this.playCipherNullMusic(),           loopMs: 1550 };
@@ -382,7 +382,7 @@ export class AudioManager {
             case 'gameTest':             return { play: () => this.playGameTestMusic(),             loopMs: 1040 };
             default: {
                 console.warn(`[AudioManager] Unknown stageId "${stageId}", falling back to lobby music.`);
-                return { play: () => this.playLobbyMusic(), loopMs: 1360 };
+                return { play: () => this.playLobbyMusic(), loopMs: 60000 };
             }
         }
     }
@@ -417,15 +417,155 @@ export class AudioManager {
     }
 
     private playLobbyMusic(): void {
-        // 4 × 340 ms phrase (loop: 1360 ms)
-        this.playTone(220,    0.22,  'triangle', 0.07,  ENVELOPE_MIN_GAIN, 0,    undefined, 'music');
-        this.playTone(329.63, 0.198, 'sine',     0.028, ENVELOPE_MIN_GAIN, 0.04, undefined, 'music');
-        this.playTone(277.18, 0.22,  'triangle', 0.07,  ENVELOPE_MIN_GAIN, 0.34, undefined, 'music');
-        this.playTone(369.99, 0.198, 'sine',     0.028, ENVELOPE_MIN_GAIN, 0.38, undefined, 'music');
-        this.playTone(329.63, 0.22,  'triangle', 0.07,  ENVELOPE_MIN_GAIN, 0.68, undefined, 'music');
-        this.playTone(440,    0.198, 'sine',     0.028, ENVELOPE_MIN_GAIN, 0.72, undefined, 'music');
-        this.playTone(440,    0.22,  'triangle', 0.07,  ENVELOPE_MIN_GAIN, 1.02, undefined, 'music');
-        this.playTone(554.37, 0.198, 'sine',     0.028, ENVELOPE_MIN_GAIN, 1.06, undefined, 'music');
+        // 20 × 3.0 s bars at 80 BPM in A minor (loop: 60 000 ms)
+        // Chord progression: Am–F–C–G (×2) | Am–Dm–C–Em | F–G–Am–Am | Am–F–C–G
+        // Bass: sine 2.6 s · Pad: sine 2.4 s · Melody: triangle 0.6 s
+        // Kick: low-pass noise on beat 1 · Hi-hat: high-pass noise on beat 3 (t+1.5)
+
+        // ── Phrase 1 (bars 1–4, t = 0–12 s): Am – F – C – G ────────────────
+        this.playNoise(0.13,   0.018, 400,  50,    0,     0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  1.5,   0.0012);
+        this.playTone(220,    2.6,  'sine',     0.055, 0.0055, 0,     undefined, 'music'); // A3
+        this.playTone(261.63, 2.4,  'sine',     0.020, 0.003,  0.03,  undefined, 'music'); // C4
+        this.playTone(659.25, 0.6,  'triangle', 0.065, 0.0065, 0,     undefined, 'music'); // E5
+        this.playTone(523.25, 0.6,  'triangle', 0.060, 0.006,  1.5,   undefined, 'music'); // C5
+
+        this.playNoise(0.13,   0.018, 400,  50,    3.0,   0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  4.5,   0.0012);
+        this.playTone(174.61, 2.6,  'sine',     0.055, 0.0055, 3.0,   undefined, 'music'); // F3
+        this.playTone(261.63, 2.4,  'sine',     0.020, 0.003,  3.03,  undefined, 'music'); // C4
+        this.playTone(440,    0.6,  'triangle', 0.065, 0.0065, 3.0,   undefined, 'music'); // A4
+        this.playTone(349.23, 0.6,  'triangle', 0.060, 0.006,  4.5,   undefined, 'music'); // F4
+
+        this.playNoise(0.13,   0.018, 400,  50,    6.0,   0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  7.5,   0.0012);
+        this.playTone(130.81, 2.6,  'sine',     0.055, 0.0055, 6.0,   undefined, 'music'); // C3
+        this.playTone(329.63, 2.4,  'sine',     0.020, 0.003,  6.03,  undefined, 'music'); // E4
+        this.playTone(392,    0.6,  'triangle', 0.065, 0.0065, 6.0,   undefined, 'music'); // G4
+        this.playTone(659.25, 0.6,  'triangle', 0.060, 0.006,  7.5,   undefined, 'music'); // E5
+
+        this.playNoise(0.13,   0.018, 400,  50,    9.0,   0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  10.5,  0.0012);
+        this.playTone(196,    2.6,  'sine',     0.055, 0.0055, 9.0,   undefined, 'music'); // G3
+        this.playTone(293.66, 2.4,  'sine',     0.020, 0.003,  9.03,  undefined, 'music'); // D4
+        this.playTone(587.33, 0.6,  'triangle', 0.065, 0.0065, 9.0,   undefined, 'music'); // D5
+        this.playTone(493.88, 0.6,  'triangle', 0.060, 0.006,  10.5,  undefined, 'music'); // B4
+
+        // ── Phrase 2 (bars 5–8, t = 12–24 s): Am – F – C – G ───────────────
+        this.playNoise(0.13,   0.018, 400,  50,    12.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  13.5,  0.0012);
+        this.playTone(220,    2.6,  'sine',     0.055, 0.0055, 12.0,  undefined, 'music'); // A3
+        this.playTone(329.63, 2.4,  'sine',     0.020, 0.003,  12.03, undefined, 'music'); // E4
+        this.playTone(783.99, 0.6,  'triangle', 0.065, 0.0065, 12.0,  undefined, 'music'); // G5
+        this.playTone(659.25, 0.6,  'triangle', 0.060, 0.006,  13.5,  undefined, 'music'); // E5
+
+        this.playNoise(0.13,   0.018, 400,  50,    15.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  16.5,  0.0012);
+        this.playTone(174.61, 2.6,  'sine',     0.055, 0.0055, 15.0,  undefined, 'music'); // F3
+        this.playTone(220,    2.4,  'sine',     0.020, 0.003,  15.03, undefined, 'music'); // A3
+        this.playTone(523.25, 0.6,  'triangle', 0.065, 0.0065, 15.0,  undefined, 'music'); // C5
+        this.playTone(440,    0.6,  'triangle', 0.060, 0.006,  16.5,  undefined, 'music'); // A4
+
+        this.playNoise(0.13,   0.018, 400,  50,    18.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  19.5,  0.0012);
+        this.playTone(130.81, 2.6,  'sine',     0.055, 0.0055, 18.0,  undefined, 'music'); // C3
+        this.playTone(392,    2.4,  'sine',     0.020, 0.003,  18.03, undefined, 'music'); // G4
+        this.playTone(659.25, 0.6,  'triangle', 0.065, 0.0065, 18.0,  undefined, 'music'); // E5
+        this.playTone(392,    0.6,  'triangle', 0.060, 0.006,  19.5,  undefined, 'music'); // G4
+
+        this.playNoise(0.13,   0.018, 400,  50,    21.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  22.5,  0.0012);
+        this.playTone(196,    2.6,  'sine',     0.055, 0.0055, 21.0,  undefined, 'music'); // G3
+        this.playTone(246.94, 2.4,  'sine',     0.020, 0.003,  21.03, undefined, 'music'); // B3
+        this.playTone(587.33, 0.6,  'triangle', 0.065, 0.0065, 21.0,  undefined, 'music'); // D5
+        this.playTone(392,    0.6,  'triangle', 0.060, 0.006,  22.5,  undefined, 'music'); // G4
+
+        // ── Phrase 3 (bars 9–12, t = 24–36 s): Am – Dm – C – Em ────────────
+        this.playNoise(0.13,   0.018, 400,  50,    24.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  25.5,  0.0012);
+        this.playTone(220,    2.6,  'sine',     0.055, 0.0055, 24.0,  undefined, 'music'); // A3
+        this.playTone(261.63, 2.4,  'sine',     0.020, 0.003,  24.03, undefined, 'music'); // C4
+        this.playTone(440,    0.6,  'triangle', 0.065, 0.0065, 24.0,  undefined, 'music'); // A4
+        this.playTone(659.25, 0.6,  'triangle', 0.060, 0.006,  25.5,  undefined, 'music'); // E5
+
+        this.playNoise(0.13,   0.018, 400,  50,    27.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  28.5,  0.0012);
+        this.playTone(146.83, 2.6,  'sine',     0.055, 0.0055, 27.0,  undefined, 'music'); // D3
+        this.playTone(220,    2.4,  'sine',     0.020, 0.003,  27.03, undefined, 'music'); // A3
+        this.playTone(587.33, 0.6,  'triangle', 0.065, 0.0065, 27.0,  undefined, 'music'); // D5
+        this.playTone(349.23, 0.6,  'triangle', 0.060, 0.006,  28.5,  undefined, 'music'); // F4
+
+        this.playNoise(0.13,   0.018, 400,  50,    30.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  31.5,  0.0012);
+        this.playTone(130.81, 2.6,  'sine',     0.055, 0.0055, 30.0,  undefined, 'music'); // C3
+        this.playTone(329.63, 2.4,  'sine',     0.020, 0.003,  30.03, undefined, 'music'); // E4
+        this.playTone(329.63, 0.6,  'triangle', 0.065, 0.0065, 30.0,  undefined, 'music'); // E4
+        this.playTone(392,    0.6,  'triangle', 0.060, 0.006,  31.5,  undefined, 'music'); // G4
+
+        this.playNoise(0.13,   0.018, 400,  50,    33.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  34.5,  0.0012);
+        this.playTone(164.81, 2.6,  'sine',     0.055, 0.0055, 33.0,  undefined, 'music'); // E3
+        this.playTone(196,    2.4,  'sine',     0.020, 0.003,  33.03, undefined, 'music'); // G3
+        this.playTone(659.25, 0.6,  'triangle', 0.065, 0.0065, 33.0,  undefined, 'music'); // E5
+        this.playTone(493.88, 0.6,  'triangle', 0.060, 0.006,  34.5,  undefined, 'music'); // B4
+
+        // ── Phrase 4 (bars 13–16, t = 36–48 s): F – G – Am – Am ────────────
+        this.playNoise(0.13,   0.018, 400,  50,    36.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  37.5,  0.0012);
+        this.playTone(174.61, 2.6,  'sine',     0.055, 0.0055, 36.0,  undefined, 'music'); // F3
+        this.playTone(261.63, 2.4,  'sine',     0.020, 0.003,  36.03, undefined, 'music'); // C4
+        this.playTone(523.25, 0.6,  'triangle', 0.065, 0.0065, 36.0,  undefined, 'music'); // C5
+        this.playTone(440,    0.6,  'triangle', 0.060, 0.006,  37.5,  undefined, 'music'); // A4
+
+        this.playNoise(0.13,   0.018, 400,  50,    39.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  40.5,  0.0012);
+        this.playTone(196,    2.6,  'sine',     0.055, 0.0055, 39.0,  undefined, 'music'); // G3
+        this.playTone(293.66, 2.4,  'sine',     0.020, 0.003,  39.03, undefined, 'music'); // D4
+        this.playTone(392,    0.6,  'triangle', 0.065, 0.0065, 39.0,  undefined, 'music'); // G4
+        this.playTone(587.33, 0.6,  'triangle', 0.060, 0.006,  40.5,  undefined, 'music'); // D5
+
+        this.playNoise(0.13,   0.018, 400,  50,    42.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  43.5,  0.0012);
+        this.playTone(220,    2.6,  'sine',     0.055, 0.0055, 42.0,  undefined, 'music'); // A3
+        this.playTone(329.63, 2.4,  'sine',     0.020, 0.003,  42.03, undefined, 'music'); // E4
+        this.playTone(659.25, 0.6,  'triangle', 0.065, 0.0065, 42.0,  undefined, 'music'); // E5
+        this.playTone(440,    0.6,  'triangle', 0.060, 0.006,  43.5,  undefined, 'music'); // A4
+
+        this.playNoise(0.13,   0.018, 400,  50,    45.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  46.5,  0.0012);
+        this.playTone(220,    2.6,  'sine',     0.055, 0.0055, 45.0,  undefined, 'music'); // A3
+        this.playTone(261.63, 2.4,  'sine',     0.020, 0.003,  45.03, undefined, 'music'); // C4
+        this.playTone(523.25, 0.6,  'triangle', 0.065, 0.0065, 45.0,  undefined, 'music'); // C5
+        this.playTone(659.25, 0.6,  'triangle', 0.060, 0.006,  46.5,  undefined, 'music'); // E5
+
+        // ── Phrase 5 (bars 17–20, t = 48–60 s): Am – F – C – G → (loop) ─────
+        this.playNoise(0.13,   0.018, 400,  50,    48.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  49.5,  0.0012);
+        this.playTone(220,    2.6,  'sine',     0.055, 0.0055, 48.0,  undefined, 'music'); // A3
+        this.playTone(329.63, 2.4,  'sine',     0.020, 0.003,  48.03, undefined, 'music'); // E4
+        this.playTone(440,    0.6,  'triangle', 0.065, 0.0065, 48.0,  undefined, 'music'); // A4
+        this.playTone(523.25, 0.6,  'triangle', 0.060, 0.006,  49.5,  undefined, 'music'); // C5
+
+        this.playNoise(0.13,   0.018, 400,  50,    51.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  52.5,  0.0012);
+        this.playTone(174.61, 2.6,  'sine',     0.055, 0.0055, 51.0,  undefined, 'music'); // F3
+        this.playTone(261.63, 2.4,  'sine',     0.020, 0.003,  51.03, undefined, 'music'); // C4
+        this.playTone(349.23, 0.6,  'triangle', 0.065, 0.0065, 51.0,  undefined, 'music'); // F4
+        this.playTone(440,    0.6,  'triangle', 0.060, 0.006,  52.5,  undefined, 'music'); // A4
+
+        this.playNoise(0.13,   0.018, 400,  50,    54.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  55.5,  0.0012);
+        this.playTone(130.81, 2.6,  'sine',     0.055, 0.0055, 54.0,  undefined, 'music'); // C3
+        this.playTone(392,    2.4,  'sine',     0.020, 0.003,  54.03, undefined, 'music'); // G4
+        this.playTone(523.25, 0.6,  'triangle', 0.065, 0.0065, 54.0,  undefined, 'music'); // C5
+        this.playTone(659.25, 0.6,  'triangle', 0.060, 0.006,  55.5,  undefined, 'music'); // E5
+
+        this.playNoise(0.13,   0.018, 400,  50,    57.0,  0.002);
+        this.playNoise(0.07,   0.012, 7000, 2000,  58.5,  0.0012);
+        this.playTone(196,    2.6,  'sine',     0.055, 0.0055, 57.0,  undefined, 'music'); // G3
+        this.playTone(246.94, 2.4,  'sine',     0.020, 0.003,  57.03, undefined, 'music'); // B3
+        this.playTone(392,    0.6,  'triangle', 0.065, 0.0065, 57.0,  undefined, 'music'); // G4
+        this.playTone(587.33, 0.6,  'triangle', 0.060, 0.006,  58.5,  undefined, 'music'); // D5
     }
 
     private playNetworkMatrixMusic(): void {
