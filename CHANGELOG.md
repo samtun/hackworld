@@ -1,3 +1,20 @@
+# [3.25.0](https://github.com/samtun/hackworld/compare/v3.24.0...v3.25.0) (2026-05-20)
+
+
+### Bug Fixes
+
+* vertical npc collider position ([3f0d60b](https://github.com/samtun/hackworld/commit/3f0d60bd044f00fa18f8527bd4584f4aced1e03c))
+
+
+### Features
+
+* add healing station collider ([1de48f5](https://github.com/samtun/hackworld/commit/1de48f5fcee5f12cc12332efd9f008e91a34d3bb))
+* add healing station collider ([055c263](https://github.com/samtun/hackworld/commit/055c2631b8ff9864f390f3703147a4ec1c629172))
+* add healing station model ([4f01ba4](https://github.com/samtun/hackworld/commit/4f01ba41d4e0c738c02fbff434ae9b0586d0d72c))
+* improve healing station model ([6e312ab](https://github.com/samtun/hackworld/commit/6e312abdead3e9d47f2f873590991117f2cdec73))
+* make particles move fitting to size ([320f2a4](https://github.com/samtun/hackworld/commit/320f2a470a982a8e5c00bb32d510365a99a3964f))
+* reposition npcs in lobby ([eb05f0c](https://github.com/samtun/hackworld/commit/eb05f0c755db09dbc8e175382b16f5dfcb1577ee))
+
 # [3.24.0](https://github.com/samtun/hackworld/compare/v3.23.0...v3.24.0) (2026-05-19)
 
 
