@@ -53,7 +53,7 @@ export class Npc extends BaseMesh {
 
         this.body = new CANNON.Body({
             mass: 0, // Static body
-            position: new CANNON.Vec3(position.x, halfExtents.y, position.z),
+            position: new CANNON.Vec3(position.x, position.y + halfExtents.y, position.z),
             shape: shape,
             material: physicsMaterial
         });

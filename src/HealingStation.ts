@@ -5,6 +5,7 @@ import { HealingSystem } from './systems/HealingSystem';
 import { IHealingStation } from './systems/IHealingStation';
 import { createParticleShaderMaterial, updateParticleScaleFactor } from './ParticleShaderUtils';
 import { AudioManager } from './AudioManager';
+import { AssetManager } from './AssetManager';
 
 /**
  * HealingStation entity with upward-moving particle effects
@@ -12,6 +13,7 @@ import { AudioManager } from './AudioManager';
  * Particle speed increases during healing
  */
 export class HealingStation extends BaseMesh implements IHealingStation {
+    world: CANNON.World;
     particles: THREE.Points;
     particleSystem: {
         positions: Float32Array;
@@ -24,19 +26,43 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     isHealing: boolean = false;
 
     private readonly PARTICLE_COUNT = 300;
-    private readonly RING_RADIUS = 1.3; // Size
-    private readonly PARTICLE_LIFETIME = 1.5; // seconds
-    private readonly NORMAL_RISE_SPEED = 0.6; // Default rise speed
-    private readonly HEALING_RISE_SPEED = 1.8; // Faster rise speed during healing
+    private readonly SIZE = 2.8; // Size
+    private readonly PARTICLE_LIFETIME = 1.8; // seconds
+    private readonly NORMAL_RISE_SPEED = 0.3; // Default rise speed
+    private readonly HEALING_RISE_SPEED = 2.4; // Faster rise speed during healing
     private readonly MAX_PARTICLE_SIZE = 0.5;
     private readonly MAX_DELTA_TIME = 0.1; // Cap delta time to prevent particle synchronization
     private time: number = 0;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3) {
+    constructor(scene: THREE.Scene, world: CANNON.World, physicsMaterial: CANNON.Material, position: CANNON.Vec3) {
         super('models/healing_station.glb');
-        this.color = new THREE.Color(0x00ff00);
+        this.world = world;
+        this.color = new THREE.Color(0x00AAFF);
         this.mesh.position.set(position.x, position.y, position.z);
+
+        this.mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                if (child.material instanceof THREE.MeshStandardMaterial && child.material.name === 'Panel') {
+                    child.material.emissive = new THREE.Color(0xFFFFFF);
+                    child.material.emissiveMap = child.material.map;
+                    child.material.emissiveIntensity = 0.8;
+                    child.material.color = this.color;
+                }
+            }
+        });
         scene.add(this.mesh);
+
+        // Load and add collider meshes
+        const colliderGltf = AssetManager.Instance.get('models/healing_station_collider.glb');
+        colliderGltf.scene.clone().traverse((child) => {
+            if (child instanceof THREE.Mesh) {
+                console.log('Adding healing station collider shape for', child.name);
+                const body = this.createColliderFromMesh(child, physicsMaterial);
+                const bodyPosition = position.clone().addScaledVector(1, new CANNON.Vec3(child.position.x, child.position.y, child.position.z));
+                body.position.set(bodyPosition.x, bodyPosition.y, bodyPosition.z)
+                world.addBody(body);
+            }
+        });
 
         // Initialize particle system
         this.particleSystem = {
@@ -67,6 +93,55 @@ export class HealingStation extends BaseMesh implements IHealingStation {
         HealingSystem.Instance.register(this);
     }
 
+    private createColliderFromMesh(mesh: THREE.Mesh, physicsMaterial: CANNON.Material): CANNON.Body {
+        const geometry = mesh.geometry;
+
+        // 1. calculate Bounding Box (if not already done)
+        geometry.computeBoundingBox();
+        const box = geometry.boundingBox!;
+
+        // 2. calculate size (Max - Min)
+        const size = new THREE.Vector3();
+        box.getSize(size);
+
+        // 3. calculate half-extents considering scaling
+        // Cannon needs the radius from the center to the edge
+        const halfExtents = new CANNON.Vec3(
+            (size.x * mesh.scale.x) / 2,
+            (size.y * mesh.scale.y) / 2,
+            (size.z * mesh.scale.z) / 2
+        );
+
+        const boxShape = new CANNON.Box(halfExtents);
+
+        // 4. Create Body
+        const body = new CANNON.Body({
+            mass: 0, // Static
+            material: physicsMaterial,
+        });
+
+        // 5. Consider offset
+        // If the geometry center is not at (0,0,0),
+        // we need to move the shape within the body.
+        const center = new THREE.Vector3();
+        box.getCenter(center);
+        center.multiply(mesh.scale); // Also apply scaling to the offset
+
+        const cannonOffset = new CANNON.Vec3(center.x, center.y, center.z);
+        body.addShape(boxShape, cannonOffset);
+
+        // 6. Synchronize world position and rotation
+        const worldPos = new THREE.Vector3();
+        const worldQuat = new THREE.Quaternion();
+        mesh.getWorldPosition(worldPos);
+        mesh.getWorldQuaternion(worldQuat);
+
+        body.position.set(worldPos.x, worldPos.y, worldPos.z);
+        body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);
+
+        return body;
+    }
+
     /**
      * Reset a particle to its initial state on the circle
      * @param index - Particle index
@@ -75,17 +150,11 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     private resetParticle(index: number, isInitialSpawn: boolean = false): void {
         const stationPos = this.mesh.position;
 
-        // Random angle around the circle
-        const angle = Math.random() * Math.PI * 2;
-
-        // Start at random position within the ring (with slight variation)
-        const radius = Math.random() * this.RING_RADIUS;
-
         // Position on the ring at station height
         const i3 = index * 3;
-        this.particleSystem.positions[i3] = stationPos.x + Math.cos(angle) * radius;
+        this.particleSystem.positions[i3] = stationPos.x + Math.random() * this.SIZE - this.SIZE / 2;
         this.particleSystem.positions[i3 + 1] = stationPos.y;
-        this.particleSystem.positions[i3 + 2] = stationPos.z + Math.sin(angle) * radius;
+        this.particleSystem.positions[i3 + 2] = stationPos.z + Math.random() * this.SIZE - this.SIZE / 2;
 
         // Set lifetime with variation to prevent synchronized spawning
         if (isInitialSpawn) {
@@ -193,7 +262,7 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     }
 
     getRadius(): number {
-        return this.RING_RADIUS;
+        return this.SIZE;
     }
 
     setHealing(isHealing: boolean): void {

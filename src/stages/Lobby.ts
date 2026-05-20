@@ -47,7 +47,7 @@ export class Lobby extends BaseStage {
     weaponTraderNpc?: Npc;
     chipTraderNpc?: Npc;
     coreTraderNpc?: Npc;
-    irkelNpc?: Npc;
+    cardCollectionNpc?: Npc;
 
     // Managers
     private weaponTraderManager?: WeaponTrader;
@@ -65,7 +65,8 @@ export class Lobby extends BaseStage {
 
     // Healing Station
     healingStation?: HealingStation;
-    private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(-5, 0.05, 5);
+    private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, 6);
+    private upperLevelY: number = 6.75; // Y position for entities on the upper level
 
     // Callback for XData Terminal interaction (set by Game)
     xDataInteractionCallback?: () => void;
@@ -116,10 +117,10 @@ export class Lobby extends BaseStage {
         }
 
         // Teleporter
-        this.createTeleporter(new CANNON.Vec3(5, 0, 5), 'selection');
+        this.createTeleporter(new CANNON.Vec3(0, 0, -6), 'selection');
 
         // Healing Station
-        this.healingStation = new HealingStation(this.scene, this.healingStationPosition);
+        this.healingStation = new HealingStation(this.scene, this.physicsWorld, this.physicsMaterial, this.healingStationPosition);
 
         // Create Mainframe NPC - Main quest giver
         this.createMainframeNpc();
@@ -136,14 +137,14 @@ export class Lobby extends BaseStage {
 
         this.createWeaponTraderNpc();
 
-        this.createIrkelNpc();
+        this.createCardCollectionNpc();
     }
 
     /**
      * Create the Mainframe NPC with progressive dialogue based on game progress
      */
     private createMainframeNpc(): void {
-        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld, this.physicsMaterial, new CANNON.Vec3(0, 0, -14));
+        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld, this.physicsMaterial, new CANNON.Vec3(38, 6.75, -30));
         this.npcs.add(this.mainframeNpc);
     }
 
@@ -161,7 +162,7 @@ export class Lobby extends BaseStage {
             "models/npc_placeholder.glb",
             "Nyleth",
             "Talk",
-            new CANNON.Vec3(-5, 0, 0),
+            new CANNON.Vec3(-30, this.upperLevelY, -30),
             nylethDialogue
         );
         this.npcs.add(this.nylethNpc);
@@ -182,7 +183,7 @@ export class Lobby extends BaseStage {
             "models/xdata_terminal.glb",
             "XData Terminal",
             "Upgrade with X-Data",
-            new CANNON.Vec3(5, 0, -5),
+            new CANNON.Vec3(18, 0, 0),
             xDataManagerDialogue,
             () => this.xDataUpgradeManager?.show()
         );
@@ -205,7 +206,7 @@ export class Lobby extends BaseStage {
             'models/npc_placeholder.glb',
             "Grant",
             "Save Game",
-            new CANNON.Vec3(0, 0, 5),
+            new CANNON.Vec3(34, this.upperLevelY, 30),
             saveManagerDialogue,
             () => this.saveManager?.show(),
         );
@@ -227,7 +228,7 @@ export class Lobby extends BaseStage {
             "models/npc_placeholder.glb",
             "Kelly",
             "Trade Chips",
-            new CANNON.Vec3(-5, 0, -5),
+            new CANNON.Vec3(-42, this.upperLevelY, 29),
             chipTraderDialogue,
             () => this.chipTrader?.show()
         );
@@ -248,7 +249,7 @@ export class Lobby extends BaseStage {
             "models/npc_placeholder.glb",
             "Hank",
             "Trade Cores",
-            new CANNON.Vec3(5, 0, 0),
+            new CANNON.Vec3(-46, this.upperLevelY, 21),
             coreTraderDialogue,
             () => this.coreTrader?.show()
         );
@@ -270,15 +271,15 @@ export class Lobby extends BaseStage {
             "models/trader_weapons.glb",
             "Orim",
             "Trade Weapons",
-            new CANNON.Vec3(0, 0, -5),
+            new CANNON.Vec3(-42, this.upperLevelY, 17),
             weaponTraderDialogue,
             () => this.weaponTraderManager?.show()
         );
         this.npcs.add(this.weaponTraderNpc);
     }
 
-    private createIrkelNpc(): void {
-        const irkelDialogue = [
+    private createCardCollectionNpc(): void {
+        const cardCollectionNpcDialogue = [
             "Hey there, collector! I'm Irkel.",
             "I've got booster packs and can help you manage your card collection.",
             "Each pack contains 5 random cards from various albums.",
@@ -286,19 +287,19 @@ export class Lobby extends BaseStage {
         ];
 
         this.cardManager = CardManager.Instance;
-        this.irkelNpc = new Npc(
+        this.cardCollectionNpc = new Npc(
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,
             "models/npc_placeholder.glb",
             "Irkel",
             "Card Collection",
-            new CANNON.Vec3(7, 0, 0),
-            irkelDialogue,
+            new CANNON.Vec3(38, this.upperLevelY, 28),
+            cardCollectionNpcDialogue,
             () => this.cardManager?.show()
         );
 
-        this.npcs.add(this.irkelNpc);
+        this.npcs.add(this.cardCollectionNpc);
     }
 
     /**
