@@ -417,9 +417,9 @@ export class AudioManager {
     }
 
     private playLobbyMusic(): void {
-        // 20 × 3.0 s bars at 80 BPM in A minor (loop: 60 000 ms)
+        // 20 × 3.0 s bars at 80 BPM in A minor (loop: 60000 ms)
         // Chord progression: Am–F–C–G (×2) | Am–Dm–C–Em | F–G–Am–Am | Am–F–C–G
-        // Bass: sine 2.6 s · Pad: sine 2.4 s · Melody: triangle 0.6 s
+        // Bass: sine 2.6 s (fades before next bar for natural breathing) · Pad: sine 2.4 s · Melody: triangle 0.6 s
         // Kick: low-pass noise on beat 1 · Hi-hat: high-pass noise on beat 3 (t+1.5)
 
         // ── Phrase 1 (bars 1–4, t = 0–12 s): Am – F – C – G ────────────────
