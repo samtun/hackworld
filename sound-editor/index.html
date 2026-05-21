@@ -43,9 +43,16 @@
             padding: 7px 14px;
             display: flex; align-items: center; gap: 10px;
             flex-shrink: 0;
+            flex-wrap: wrap;
         }
         #hdr h1 { font-size: 18px; color: var(--accent); letter-spacing: 3px; text-transform: uppercase; }
         #hdr .sep { flex: 1; }
+        .hdr-tg {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 4px 8px;
+        }
 
         /* ── Buttons ────────────────────────────────────────────────────── */
         .btn {
@@ -246,6 +253,14 @@
 <div id="hdr">
     <h1 aria-label="HackWorld DAW Sound Editor">⬡ HackWorld DAW</h1>
     <div class="sep"></div>
+    <div class="tg hdr-tg"><label>Snap</label>
+        <select id="cfg-snap">
+            <option value="0.125">1/8</option>
+            <option value="0.25" selected>1/4</option>
+            <option value="0.5">1/2</option>
+            <option value="1">1/1</option>
+        </select>
+    </div>
     <label class="loop-lbl"><input type="checkbox" id="cfg-loop" checked> Loop</label>
     <button class="btn pri" id="play-btn">▶ PLAY</button>
     <button class="btn" id="stop-btn" disabled>■ STOP</button>
@@ -274,15 +289,6 @@
 <!-- Toolbar -->
 <div id="toolbar">
     <div class="tg"><label>BPM</label><input type="number" id="cfg-bpm" min="40" max="300" step="1" value="120" /></div>
-    <div class="tg"><label>Snap</label>
-        <select id="cfg-snap">
-            <option value="0.125">1/8</option>
-            <option value="0.25" selected>1/4</option>
-            <option value="0.5">1/2</option>
-            <option value="1">1/1</option>
-        </select>
-    </div>
-    <div class="tg" style="width:1px;height:18px;background:var(--border);padding:0;flex-shrink:0;"></div>
     <div class="tg"><label>Duration</label>
         <select id="cfg-dur"></select>
     </div>
@@ -295,7 +301,7 @@
         </select>
     </div>
     <div class="tg"><label>Gain</label><input type="number" id="cfg-gain" min="0" max="1" step="0.01" value="0.06" /></div>
-    <div class="tg"><label>Dropoff</label><input type="range" id="cfg-dropoff" min="0.1" max="1" step="0.05" value="0.3" /><span class="tv" id="cfg-dropoff-v">0.30</span></div>
+    <div class="tg"><label>Dropoff</label><input type="range" id="cfg-dropoff" min="0" max="1" step="0.05" value="0.3" /><span class="tv" id="cfg-dropoff-v">0.30</span></div>
     <div class="tg"><label>Glide→</label><select id="cfg-glide"><option value="">None</option></select></div>
     <div class="tg" style="width:1px;height:18px;background:var(--border);padding:0;flex-shrink:0;"></div>
     <div class="tg"><label>LP Hz</label><input type="number" id="cfg-lp" min="200" max="20000" step="100" value="2200" /></div>
@@ -357,7 +363,7 @@
         </select>
     </div>
     <div class="pf"><label>Gain</label><input type="number" id="pp-gain" min="0" max="1" step="0.01" /></div>
-    <div class="pf" id="pp-dropoff-row"><label>Dropoff</label><input type="range" id="pp-dropoff" min="0.1" max="1" step="0.05" /><span class="pv" id="pp-dropoff-v"></span></div>
+    <div class="pf" id="pp-dropoff-row"><label>Dropoff</label><input type="range" id="pp-dropoff" min="0" max="1" step="0.05" /><span class="pv" id="pp-dropoff-v"></span></div>
     <div class="pf" id="pp-glide-row"><label>Glide→</label><select id="pp-glide"><option value="">None</option></select></div>
     <div class="pf" id="pp-lp-row" style="display:none"><label>Lowpass</label><input type="number" id="pp-lp" min="200" max="20000" step="100" /></div>
     <div class="pf" id="pp-hp-row" style="display:none"><label>Highpass</label><input type="number" id="pp-hp" min="20" max="4000" step="10" /></div>
@@ -382,7 +388,7 @@
         </select>
     </div>
     <div class="pf"><label>Gain</label><input type="number" id="sel-gain" min="0" max="1" step="0.01" placeholder="–" /></div>
-    <div class="pf"><label>Dropoff</label><input type="range" id="sel-dropoff" min="0.1" max="1" step="0.05" /><span class="pv" id="sel-dropoff-v">–</span></div>
+    <div class="pf"><label>Dropoff</label><input type="range" id="sel-dropoff" min="0" max="1" step="0.05" /><span class="pv" id="sel-dropoff-v">–</span></div>
     <div class="pf" id="sel-glide-row"><label>Glide→</label><select id="sel-glide"><option value="">–</option></select></div>
     <div class="pf" id="sel-lp-row"><label>Lowpass</label><input type="number" id="sel-lp" min="200" max="20000" step="100" placeholder="–" /></div>
     <div class="pf" id="sel-hp-row"><label>Highpass</label><input type="number" id="sel-hp" min="20" max="4000" step="10" placeholder="–" /></div>

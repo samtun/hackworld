@@ -1,3 +1,5 @@
+import { buildChromaticNotes, clampDropoff, DEFAULT_DROPOFF, parseNumberInput } from './utils';
+
 /**
  * HackWorld Sound Editor — DAW Timeline (main.ts)
  *
@@ -17,7 +19,7 @@ interface ToneEvent {
     duration: number;
     type: OscType;
     gain: number;
-    dropoff: number;    // 0.1 (fast decay) → 1.0 (hold constant)
+    dropoff: number;    // 0.0 (fast decay) → 1.0 (hold constant)
     glideTo: number | null; // target noteIdx, or null
 }
 
@@ -27,7 +29,7 @@ interface NoiseEvent {
     startTime: number;
     duration: number;
     gain: number;
-    dropoff: number;    // 0.1 (fast decay) → 1.0 (hold constant)
+    dropoff: number;    // 0.0 (fast decay) → 1.0 (hold constant)
     lowpass: number;
     highpass: number;
 }
@@ -58,28 +60,8 @@ interface ClipboardSelection {
     noises: ClipboardNoiseEvent[];
 }
 
-// ── Chromatic scale C6→C3 (top = high, bottom = low) ─────────────────────────
-const NOTES: { name: string; freq: number }[] = [
-    { name: 'C6', freq: 1046.50 }, { name: 'B5', freq: 987.77 },
-    { name: 'A#5', freq: 932.33 }, { name: 'A5', freq: 880.00 },
-    { name: 'G#5', freq: 830.61 }, { name: 'G5', freq: 783.99 },
-    { name: 'F#5', freq: 739.99 }, { name: 'F5', freq: 698.46 },
-    { name: 'E5', freq: 659.25 }, { name: 'D#5', freq: 622.25 },
-    { name: 'D5', freq: 587.33 }, { name: 'C#5', freq: 554.37 },
-    { name: 'C5', freq: 523.25 }, { name: 'B4', freq: 493.88 },
-    { name: 'A#4', freq: 466.16 }, { name: 'A4', freq: 440.00 },
-    { name: 'G#4', freq: 415.30 }, { name: 'G4', freq: 392.00 },
-    { name: 'F#4', freq: 369.99 }, { name: 'F4', freq: 349.23 },
-    { name: 'E4', freq: 329.63 }, { name: 'D#4', freq: 311.13 },
-    { name: 'D4', freq: 293.66 }, { name: 'C#4', freq: 277.18 },
-    { name: 'C4', freq: 261.63 }, { name: 'B3', freq: 246.94 },
-    { name: 'A#3', freq: 233.08 }, { name: 'A3', freq: 220.00 },
-    { name: 'G#3', freq: 207.65 }, { name: 'G3', freq: 196.00 },
-    { name: 'F#3', freq: 185.00 }, { name: 'F3', freq: 174.61 },
-    { name: 'E3', freq: 164.81 }, { name: 'D#3', freq: 155.56 },
-    { name: 'D3', freq: 146.83 }, { name: 'C#3', freq: 138.59 },
-    { name: 'C3', freq: 130.81 },
-];
+// ── Chromatic scale C8→C1 (top = high, bottom = low) ─────────────────────────
+const NOTES = buildChromaticNotes(1, 8);
 
 // ── Beat duration fractions (stored value = beat multiplier, e.g. 0.25 = 1/4 beat) ─
 const BEAT_FRACTIONS: { label: string; value: number }[] = [
@@ -126,7 +108,7 @@ let audioCtx: AudioContext | null = null;
 let cfgDur = 1;      // beat multiplier: 1 = 1 full beat (1/1)
 let cfgType: OscType = 'triangle';
 let cfgGain = 0.06;
-let cfgDropoff = 0.3;   // 0.1 = fast decay, 1.0 = hold constant
+let cfgDropoff = DEFAULT_DROPOFF;   // 0.0 = fast decay, 1.0 = hold constant
 let cfgGlide: number | null = null;
 let cfgBpm = 120;    // beats per minute
 let cfgLoop = true;   // loop playback (on by default)
@@ -1117,7 +1099,7 @@ function openPopup(id: string, kind: 'tone' | 'noise', mx: number, my: number): 
         ppDur.value = String(ev.duration);
         ppType.value = ev.type;
         ppGain.value = String(ev.gain);
-        ppDropoff.value = String(ev.dropoff ?? 0.3); ppDropoffV.textContent = (ev.dropoff ?? 0.3).toFixed(2);
+        ppDropoff.value = String(ev.dropoff ?? DEFAULT_DROPOFF); ppDropoffV.textContent = (ev.dropoff ?? DEFAULT_DROPOFF).toFixed(2);
         ppGlide.value = ev.glideTo !== null ? String(ev.glideTo) : '';
     } else {
         const ev = findNoiseById(id)!;
@@ -1127,7 +1109,7 @@ function openPopup(id: string, kind: 'tone' | 'noise', mx: number, my: number): 
         ppDropoffRow.style.display = '';
         ppDur.value = String(ev.duration);
         ppGain.value = String(ev.gain);
-        ppDropoff.value = String(ev.dropoff ?? 0.3); ppDropoffV.textContent = (ev.dropoff ?? 0.3).toFixed(2);
+        ppDropoff.value = String(ev.dropoff ?? DEFAULT_DROPOFF); ppDropoffV.textContent = (ev.dropoff ?? DEFAULT_DROPOFF).toFixed(2);
         ppLp.value = String(ev.lowpass);
         ppHp.value = String(ev.highpass);
     }
@@ -1150,7 +1132,7 @@ function savePopup(): void {
     if (!editingId) return;
     const dur = parseFloat(ppDur.value) || 1;
     const gain = parseFloat(ppGain.value);
-    const dropoff = Math.max(0.1, Math.min(1, parseFloat(ppDropoff.value) || 0.3));
+    const dropoff = clampDropoff(parseNumberInput(ppDropoff.value, DEFAULT_DROPOFF));
 
     if (editingKind === 'tone') {
         const ev = tones.find(t => t.id === editingId);
@@ -1242,10 +1224,10 @@ function startPlayback(): void {
         tones.forEach(ev => {
             const freq = NOTES[ev.noteIdx].freq;
             const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
-            schedTone(ctx, freq, ev.duration * bd, ev.type, ev.gain, ev.dropoff ?? 0.3, offset + ev.startTime, glide);
+            schedTone(ctx, freq, ev.duration * bd, ev.type, ev.gain, ev.dropoff ?? DEFAULT_DROPOFF, offset + ev.startTime, glide);
         });
         noises.forEach(ev => {
-            schedNoise(ctx, ev.duration * bd, ev.gain, ev.dropoff ?? 0.3, ev.lowpass, ev.highpass, offset + ev.startTime);
+            schedNoise(ctx, ev.duration * bd, ev.gain, ev.dropoff ?? DEFAULT_DROPOFF, ev.lowpass, ev.highpass, offset + ev.startTime);
         });
         return passDur;
     }
@@ -1339,7 +1321,7 @@ function generateCode(): string {
         const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
         const dur = ev.duration * bd;
         const at = fmt(ev.startTime);
-        const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? 0.3)));
+        const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? DEFAULT_DROPOFF)));
         const glideArg = glide !== null ? `, ${fmt(glide)}` : '';
         events.push({
             t: ev.startTime,
@@ -1350,7 +1332,7 @@ function generateCode(): string {
     noises.forEach(ev => {
         const dur = ev.duration * bd;
         const at = fmt(ev.startTime);
-        const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? 0.3)));
+        const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? DEFAULT_DROPOFF)));
         events.push({
             t: ev.startTime,
             line: `this.playNoise(${fmt(dur)}, ${fmt(ev.gain)}, ${fmt(ev.lowpass)}, ${fmt(ev.highpass)}, ${at}, ${endGain});`
@@ -1416,7 +1398,7 @@ function loadFromJson(raw: string): void {
         duration: t.duration as number,
         type: t.type as OscType,
         gain: t.gain as number,
-        dropoff: typeof t.dropoff === 'number' ? t.dropoff as number : 0.3,
+        dropoff: typeof t.dropoff === 'number' ? clampDropoff(t.dropoff as number) : DEFAULT_DROPOFF,
         glideTo: typeof t.glideTo === 'number' ? t.glideTo as number : null,
     }));
 
@@ -1431,7 +1413,7 @@ function loadFromJson(raw: string): void {
         startTime: n.startTime as number,
         duration: n.duration as number,
         gain: n.gain as number,
-        dropoff: typeof n.dropoff === 'number' ? n.dropoff as number : 0.3,
+        dropoff: typeof n.dropoff === 'number' ? clampDropoff(n.dropoff as number) : DEFAULT_DROPOFF,
         lowpass: typeof n.lowpass === 'number' ? n.lowpass as number : 2200,
         highpass: typeof n.highpass === 'number' ? n.highpass as number : 100,
     }));
@@ -1488,8 +1470,8 @@ function updateSelPanel(): void {
     selGain.placeholder = gainC !== null ? '' : '–';
 
     // Dropoff
-    const dropC = consensus(allEvts.map(e => e.dropoff ?? 0.3));
-    selDropoff.value = dropC !== null ? String(dropC) : String(0.3);
+    const dropC = consensus(allEvts.map(e => e.dropoff ?? DEFAULT_DROPOFF));
+    selDropoff.value = dropC !== null ? String(dropC) : String(DEFAULT_DROPOFF);
     selDropoffV.textContent = dropC !== null ? dropC.toFixed(2) : '–';
 
     // Glide (tones only, hide if mixed selection)
@@ -1537,7 +1519,7 @@ function applySelectionField(field: 'duration' | 'type' | 'gain' | 'dropoff' | '
         if (tone) {
             if (field === 'duration' && dur !== null && !isNaN(dur)) tone.duration = dur;
             if (field === 'gain' && gain !== null && !isNaN(gain)) tone.gain = gain;
-            if (field === 'dropoff' && dropoff !== null && !isNaN(dropoff)) tone.dropoff = Math.max(0.1, Math.min(1, dropoff));
+            if (field === 'dropoff' && dropoff !== null && !isNaN(dropoff)) tone.dropoff = clampDropoff(dropoff);
             if (field === 'type' && selTypeRow.style.display !== 'none' && selType.value) tone.type = selType.value as OscType;
             if (field === 'glide' && selGlideRow.style.display !== 'none') {
                 tone.glideTo = selGlide.value !== '' ? parseInt(selGlide.value) : null;
@@ -1547,7 +1529,7 @@ function applySelectionField(field: 'duration' | 'type' | 'gain' | 'dropoff' | '
         if (noise) {
             if (field === 'duration' && dur !== null && !isNaN(dur)) noise.duration = dur;
             if (field === 'gain' && gain !== null && !isNaN(gain)) noise.gain = gain;
-            if (field === 'dropoff' && dropoff !== null && !isNaN(dropoff)) noise.dropoff = Math.max(0.1, Math.min(1, dropoff));
+            if (field === 'dropoff' && dropoff !== null && !isNaN(dropoff)) noise.dropoff = clampDropoff(dropoff);
             if (field === 'lowpass' && selLpRow.style.display !== 'none' && lowpass !== null && !isNaN(lowpass)) noise.lowpass = lowpass;
             if (field === 'highpass' && selHpRow.style.display !== 'none' && highpass !== null && !isNaN(highpass)) noise.highpass = highpass;
         }
@@ -1654,14 +1636,14 @@ function init(): void {
     cfgBpmEl.addEventListener('change', () => { cfgBpm = Math.max(MIN_BPM, Math.min(MAX_BPM, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
     cfgTypeEl.addEventListener('change', () => { cfgType = cfgTypeEl.value as OscType; });
     cfgGainEl.addEventListener('input', () => { cfgGain = parseFloat(cfgGainEl.value) || 0; });
-    cfgDropoffEl.addEventListener('input', () => { cfgDropoff = parseFloat(cfgDropoffEl.value) || 0.3; cfgDropoffV.textContent = cfgDropoff.toFixed(2); });
+    cfgDropoffEl.addEventListener('input', () => { cfgDropoff = clampDropoff(parseNumberInput(cfgDropoffEl.value, DEFAULT_DROPOFF)); cfgDropoffV.textContent = cfgDropoff.toFixed(2); });
     cfgGlideEl.addEventListener('change', () => { cfgGlide = cfgGlideEl.value ? parseInt(cfgGlideEl.value) : null; });
     cfgLpEl.addEventListener('change', () => { cfgLowpass = parseFloat(cfgLpEl.value) || 2200; });
     cfgHpEl.addEventListener('change', () => { cfgHighpass = parseFloat(cfgHpEl.value) || 100; });
     cfgSnapEl.addEventListener('change', () => { cfgSnap = parseFloat(cfgSnapEl.value) || 0.25; });
 
     // Popup dropoff live preview
-    ppDropoff.addEventListener('input', () => { ppDropoffV.textContent = (parseFloat(ppDropoff.value) || 0.3).toFixed(2); });
+    ppDropoff.addEventListener('input', () => { ppDropoffV.textContent = clampDropoff(parseNumberInput(ppDropoff.value, DEFAULT_DROPOFF)).toFixed(2); });
 
     // Popup actions
     ppSave.addEventListener('click', savePopup);
@@ -1676,7 +1658,7 @@ function init(): void {
     ppX.addEventListener('click', closePopup);
 
     // Selection panel
-    selDropoff.addEventListener('input', () => { selDropoffV.textContent = (parseFloat(selDropoff.value) || 0.3).toFixed(2); });
+    selDropoff.addEventListener('input', () => { selDropoffV.textContent = clampDropoff(parseNumberInput(selDropoff.value, DEFAULT_DROPOFF)).toFixed(2); });
     selDur.addEventListener('change', () => applySelectionField('duration'));
     selType.addEventListener('change', () => applySelectionField('type'));
     selGain.addEventListener('input', () => applySelectionField('gain'));
