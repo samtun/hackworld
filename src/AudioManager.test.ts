@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AudioManager, MUSIC_ENABLED_STORAGE_KEY, SFX_ENABLED_STORAGE_KEY } from './AudioManager';
 
 describe('audio settings persistence', () => {
@@ -41,6 +41,10 @@ describe('audio settings persistence', () => {
 });
 
 describe('stage music transitions', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     it('stops active stage-music oscillators immediately when stage music is stopped', () => {
         const manager = Object.create((AudioManager as any).prototype) as any;
         const stopA = vi.fn();
@@ -70,7 +74,5 @@ describe('stage music transitions', () => {
         expect(manager.activeMusicOscillators.size).toBe(0);
         expect(manager.musicPulseInterval).toBeNull();
         expect(manager.playingStageId).toBeNull();
-
-        clearIntervalSpy.mockRestore();
     });
 });
