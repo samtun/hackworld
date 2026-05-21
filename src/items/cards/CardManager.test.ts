@@ -114,8 +114,7 @@ function makeManager(overrides: Record<string, any> = {}): any {
         lastSelectState: false,
         lastCancelState: false,
         currentInputManager: undefined,
-        lightboxVisible: false,
-        lightboxOverlay: document.createElement('div'),
+        Visible: false,
         cardCollection: {
             getTotalCollected: vi.fn().mockReturnValue(0),
             getTotalCards: vi.fn().mockReturnValue(72),
@@ -216,7 +215,7 @@ describe('CardManager', () => {
         it('calls render when needsRender=true even with no input', () => {
             mgr.isVisible = true;
             mgr.needsRender = true;
-            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => {});
+            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => { });
             mgr.update(makePlayer(), makeInput());
             expect(renderSpy).toHaveBeenCalledOnce();
         });
@@ -224,7 +223,7 @@ describe('CardManager', () => {
         it('sets needsRender=false after rendering', () => {
             mgr.isVisible = true;
             mgr.needsRender = true;
-            vi.spyOn(mgr, 'render' as any).mockImplementation(() => {});
+            vi.spyOn(mgr, 'render' as any).mockImplementation(() => { });
             mgr.update(makePlayer(), makeInput());
             expect(mgr.needsRender).toBe(false);
         });
@@ -233,7 +232,7 @@ describe('CardManager', () => {
             mgr.isVisible = true;
             mgr.needsRender = false;
             mgr.selectedMenuIndex = 1;
-            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => {});
+            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => { });
             const input = makeInput({ isNavigateUpPressed: vi.fn().mockReturnValue(true) });
             mgr.update(makePlayer(), input);
             expect(mgr.selectedMenuIndex).toBe(0);
@@ -246,7 +245,7 @@ describe('CardManager', () => {
             mgr.isVisible = true;
             mgr.needsRender = false;
             mgr.selectedMenuIndex = 0;
-            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => {});
+            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => { });
             const input = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
             mgr.update(makePlayer(), input);
             expect(mgr.selectedMenuIndex).toBe(1);
@@ -257,7 +256,7 @@ describe('CardManager', () => {
         it('sets needsRender=true and calls render when select fires', () => {
             mgr.isVisible = true;
             mgr.needsRender = false;
-            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => {});
+            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => { });
             const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
             mgr.update(makePlayer({ boosterPacks: 0 }), input);
             expect(renderSpy).toHaveBeenCalledOnce();
@@ -266,7 +265,7 @@ describe('CardManager', () => {
         it('sets needsRender=true and calls render when cancel fires', () => {
             mgr.isVisible = true;
             mgr.needsRender = false;
-            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => {});
+            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => { });
             const input = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
             mgr.update(makePlayer(), input);
             expect(renderSpy).toHaveBeenCalledOnce();
@@ -275,7 +274,7 @@ describe('CardManager', () => {
         it('does not re-render on second frame when no input is held', () => {
             mgr.isVisible = true;
             mgr.needsRender = false;
-            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => {});
+            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => { });
             const input = makeInput();
             mgr.update(makePlayer(), input);
             mgr.update(makePlayer(), input);
@@ -285,7 +284,7 @@ describe('CardManager', () => {
         it('only renders once per debounced button press (not on every held frame)', () => {
             mgr.isVisible = true;
             mgr.needsRender = false;
-            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => {});
+            const renderSpy = vi.spyOn(mgr, 'render' as any).mockImplementation(() => { });
             // First frame: button pressed
             const inputDown = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
             mgr.update(makePlayer(), inputDown);
