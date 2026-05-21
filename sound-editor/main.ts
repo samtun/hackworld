@@ -1,3 +1,10 @@
+import {
+    buildChromaticNotes,
+    clampDropoff,
+    DEFAULT_DROPOFF,
+    parseNumberInput,
+} from '../src/sound-editor/utils';
+
 /**
  * HackWorld Sound Editor — DAW Timeline (main.ts)
  *
@@ -17,7 +24,7 @@ interface ToneEvent {
     duration: number;
     type: OscType;
     gain: number;
-    dropoff: number;    // 0.1 (fast decay) → 1.0 (hold constant)
+    dropoff: number;    // 0.0 (fast decay) → 1.0 (hold constant)
     glideTo: number | null; // target noteIdx, or null
 }
 
@@ -27,33 +34,39 @@ interface NoiseEvent {
     startTime: number;
     duration: number;
     gain: number;
-    dropoff: number;    // 0.1 (fast decay) → 1.0 (hold constant)
+    dropoff: number;    // 0.0 (fast decay) → 1.0 (hold constant)
     lowpass: number;
     highpass: number;
 }
 
-// ── Chromatic scale C6→C3 (top = high, bottom = low) ─────────────────────────
-const NOTES: { name: string; freq: number }[] = [
-    { name: 'C6', freq: 1046.50 }, { name: 'B5', freq: 987.77 },
-    { name: 'A#5', freq: 932.33 }, { name: 'A5', freq: 880.00 },
-    { name: 'G#5', freq: 830.61 }, { name: 'G5', freq: 783.99 },
-    { name: 'F#5', freq: 739.99 }, { name: 'F5', freq: 698.46 },
-    { name: 'E5', freq: 659.25 }, { name: 'D#5', freq: 622.25 },
-    { name: 'D5', freq: 587.33 }, { name: 'C#5', freq: 554.37 },
-    { name: 'C5', freq: 523.25 }, { name: 'B4', freq: 493.88 },
-    { name: 'A#4', freq: 466.16 }, { name: 'A4', freq: 440.00 },
-    { name: 'G#4', freq: 415.30 }, { name: 'G4', freq: 392.00 },
-    { name: 'F#4', freq: 369.99 }, { name: 'F4', freq: 349.23 },
-    { name: 'E4', freq: 329.63 }, { name: 'D#4', freq: 311.13 },
-    { name: 'D4', freq: 293.66 }, { name: 'C#4', freq: 277.18 },
-    { name: 'C4', freq: 261.63 }, { name: 'B3', freq: 246.94 },
-    { name: 'A#3', freq: 233.08 }, { name: 'A3', freq: 220.00 },
-    { name: 'G#3', freq: 207.65 }, { name: 'G3', freq: 196.00 },
-    { name: 'F#3', freq: 185.00 }, { name: 'F3', freq: 174.61 },
-    { name: 'E3', freq: 164.81 }, { name: 'D#3', freq: 155.56 },
-    { name: 'D3', freq: 146.83 }, { name: 'C#3', freq: 138.59 },
-    { name: 'C3', freq: 130.81 },
-];
+interface ClipboardToneEvent {
+    noteIdx: number;
+    startTime: number;
+    duration: number;
+    type: OscType;
+    gain: number;
+    dropoff: number;
+    glideTo: number | null;
+}
+
+interface ClipboardNoiseEvent {
+    row: number;
+    startTime: number;
+    duration: number;
+    gain: number;
+    dropoff: number;
+    lowpass: number;
+    highpass: number;
+}
+
+interface ClipboardSelection {
+    minStartTime: number;
+    tones: ClipboardToneEvent[];
+    noises: ClipboardNoiseEvent[];
+}
+
+// ── Chromatic scale from C8 down to C1 (top = high, bottom = low) ────────────
+const NOTES = buildChromaticNotes(1, 8);
 
 // ── Beat duration fractions (stored value = beat multiplier, e.g. 0.25 = 1/4 beat) ─
 const BEAT_FRACTIONS: { label: string; value: number }[] = [
@@ -100,13 +113,15 @@ let audioCtx: AudioContext | null = null;
 let cfgDur = 1;      // beat multiplier: 1 = 1 full beat (1/1)
 let cfgType: OscType = 'triangle';
 let cfgGain = 0.06;
-let cfgDropoff = 0.3;   // 0.1 = fast decay, 1.0 = hold constant
+let cfgDropoff = DEFAULT_DROPOFF;   // 0.0 = fast decay, 1.0 = hold constant
 let cfgGlide: number | null = null;
 let cfgBpm = 120;    // beats per minute
 let cfgLoop = true;   // loop playback (on by default)
 let cfgLowpass = 2200; // default noise lowpass Hz
 let cfgHighpass = 100;  // default noise highpass Hz
 let cfgSnap = 0.25;   // snap unit as beat multiplier (0.25 = 1/4 beat)
+let lastTimelineMouseTime = 0;
+let clipboardSelection: ClipboardSelection | null = null;
 
 // ── Selection & drag state ────────────────────────────────────────────────────
 let selectedIds: Set<string> = new Set();
@@ -217,7 +232,6 @@ const selLpRow = document.getElementById('sel-lp-row') as HTMLDivElement;
 const selLp = document.getElementById('sel-lp') as HTMLInputElement;
 const selHpRow = document.getElementById('sel-hp-row') as HTMLDivElement;
 const selHp = document.getElementById('sel-hp') as HTMLInputElement;
-const selApplyBtn = document.getElementById('sel-apply') as HTMLButtonElement;
 const selDelBtn = document.getElementById('sel-del') as HTMLButtonElement;
 const codeTa = document.getElementById('code-ta') as HTMLTextAreaElement;
 const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
@@ -705,11 +719,17 @@ function canvasXY(canvas: HTMLCanvasElement, e: MouseEvent): { x: number; y: num
     return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
+function updateTimelineMouseTime(canvas: HTMLCanvasElement, e: MouseEvent): void {
+    const { x } = canvasXY(canvas, e);
+    lastTimelineMouseTime = Math.max(0, (x + scrollX) / PPS);
+}
+
 // ── Timeline mouse events ──────────────────────────────────────────────────────
 const DRAG_THRESHOLD = 5; // px before a movement is considered a drag
 
 function onTlDown(e: MouseEvent): void {
     if (e.button !== 0) return;
+    updateTimelineMouseTime(tlCanvas, e);
     const { x, y } = canvasXY(tlCanvas, e);
 
     // Keep Shift+click semantics for selection toggle/additive flows; don't start resize with Shift held.
@@ -804,6 +824,7 @@ function onTlCtx(e: MouseEvent): void {
 // ── Noise mouse events ─────────────────────────────────────────────────────────
 function onNoiseDown(e: MouseEvent): void {
     if (e.button !== 0) return;
+    updateTimelineMouseTime(noiseCanvas, e);
     const { x, y } = canvasXY(noiseCanvas, e);
 
     // Keep Shift+click semantics for selection toggle/additive flows; don't start resize with Shift held.
@@ -1083,7 +1104,7 @@ function openPopup(id: string, kind: 'tone' | 'noise', mx: number, my: number): 
         ppDur.value = String(ev.duration);
         ppType.value = ev.type;
         ppGain.value = String(ev.gain);
-        ppDropoff.value = String(ev.dropoff ?? 0.3); ppDropoffV.textContent = (ev.dropoff ?? 0.3).toFixed(2);
+        ppDropoff.value = String(ev.dropoff ?? DEFAULT_DROPOFF); ppDropoffV.textContent = (ev.dropoff ?? DEFAULT_DROPOFF).toFixed(2);
         ppGlide.value = ev.glideTo !== null ? String(ev.glideTo) : '';
     } else {
         const ev = findNoiseById(id)!;
@@ -1093,7 +1114,7 @@ function openPopup(id: string, kind: 'tone' | 'noise', mx: number, my: number): 
         ppDropoffRow.style.display = '';
         ppDur.value = String(ev.duration);
         ppGain.value = String(ev.gain);
-        ppDropoff.value = String(ev.dropoff ?? 0.3); ppDropoffV.textContent = (ev.dropoff ?? 0.3).toFixed(2);
+        ppDropoff.value = String(ev.dropoff ?? DEFAULT_DROPOFF); ppDropoffV.textContent = (ev.dropoff ?? DEFAULT_DROPOFF).toFixed(2);
         ppLp.value = String(ev.lowpass);
         ppHp.value = String(ev.highpass);
     }
@@ -1116,7 +1137,7 @@ function savePopup(): void {
     if (!editingId) return;
     const dur = parseFloat(ppDur.value) || 1;
     const gain = parseFloat(ppGain.value);
-    const dropoff = Math.max(0.1, Math.min(1, parseFloat(ppDropoff.value) || 0.3));
+    const dropoff = clampDropoff(parseNumberInput(ppDropoff.value, DEFAULT_DROPOFF));
 
     if (editingKind === 'tone') {
         const ev = tones.find(t => t.id === editingId);
@@ -1208,10 +1229,10 @@ function startPlayback(): void {
         tones.forEach(ev => {
             const freq = NOTES[ev.noteIdx].freq;
             const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
-            schedTone(ctx, freq, ev.duration * bd, ev.type, ev.gain, ev.dropoff ?? 0.3, offset + ev.startTime, glide);
+            schedTone(ctx, freq, ev.duration * bd, ev.type, ev.gain, ev.dropoff ?? DEFAULT_DROPOFF, offset + ev.startTime, glide);
         });
         noises.forEach(ev => {
-            schedNoise(ctx, ev.duration * bd, ev.gain, ev.dropoff ?? 0.3, ev.lowpass, ev.highpass, offset + ev.startTime);
+            schedNoise(ctx, ev.duration * bd, ev.gain, ev.dropoff ?? DEFAULT_DROPOFF, ev.lowpass, ev.highpass, offset + ev.startTime);
         });
         return passDur;
     }
@@ -1305,7 +1326,7 @@ function generateCode(): string {
         const glide = ev.glideTo !== null ? NOTES[ev.glideTo].freq : null;
         const dur = ev.duration * bd;
         const at = fmt(ev.startTime);
-        const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? 0.3)));
+        const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? DEFAULT_DROPOFF)));
         const glideArg = glide !== null ? `, ${fmt(glide)}` : '';
         events.push({
             t: ev.startTime,
@@ -1316,7 +1337,7 @@ function generateCode(): string {
     noises.forEach(ev => {
         const dur = ev.duration * bd;
         const at = fmt(ev.startTime);
-        const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? 0.3)));
+        const endGain = fmt(Math.max(ENV_MIN, ev.gain * (ev.dropoff ?? DEFAULT_DROPOFF)));
         events.push({
             t: ev.startTime,
             line: `this.playNoise(${fmt(dur)}, ${fmt(ev.gain)}, ${fmt(ev.lowpass)}, ${fmt(ev.highpass)}, ${at}, ${endGain});`
@@ -1382,7 +1403,7 @@ function loadFromJson(raw: string): void {
         duration: t.duration as number,
         type: t.type as OscType,
         gain: t.gain as number,
-        dropoff: typeof t.dropoff === 'number' ? t.dropoff as number : 0.3,
+        dropoff: typeof t.dropoff === 'number' ? clampDropoff(t.dropoff as number) : DEFAULT_DROPOFF,
         glideTo: typeof t.glideTo === 'number' ? t.glideTo as number : null,
     }));
 
@@ -1397,7 +1418,7 @@ function loadFromJson(raw: string): void {
         startTime: n.startTime as number,
         duration: n.duration as number,
         gain: n.gain as number,
-        dropoff: typeof n.dropoff === 'number' ? n.dropoff as number : 0.3,
+        dropoff: typeof n.dropoff === 'number' ? clampDropoff(n.dropoff as number) : DEFAULT_DROPOFF,
         lowpass: typeof n.lowpass === 'number' ? n.lowpass as number : 2200,
         highpass: typeof n.highpass === 'number' ? n.highpass as number : 100,
     }));
@@ -1454,8 +1475,8 @@ function updateSelPanel(): void {
     selGain.placeholder = gainC !== null ? '' : '–';
 
     // Dropoff
-    const dropC = consensus(allEvts.map(e => e.dropoff ?? 0.3));
-    selDropoff.value = dropC !== null ? String(dropC) : String(0.3);
+    const dropC = consensus(allEvts.map(e => e.dropoff ?? DEFAULT_DROPOFF));
+    selDropoff.value = dropC !== null ? String(dropC) : String(DEFAULT_DROPOFF);
     selDropoffV.textContent = dropC !== null ? dropC.toFixed(2) : '–';
 
     // Glide (tones only, hide if mixed selection)
@@ -1492,32 +1513,106 @@ function addMixedOption(sel: HTMLSelectElement, ref: HTMLSelectElement): void {
     ref.value = '';
 }
 
-/** Apply selection panel values to all selected events. */
-function applySelection(): void {
-    const dur = selDur.value !== '' ? parseFloat(selDur.value) : null;
-    const gain = selGain.value !== '' ? parseFloat(selGain.value) : null;
-    const dropoff = parseFloat(selDropoff.value) || null;
-
+function applySelectionField(field: 'duration' | 'type' | 'gain' | 'dropoff' | 'glide' | 'lowpass' | 'highpass'): void {
+    const dur = field === 'duration' && selDur.value !== '' ? parseFloat(selDur.value) : null;
+    const gain = field === 'gain' && selGain.value !== '' ? parseFloat(selGain.value) : null;
+    const dropoff = field === 'dropoff' ? parseFloat(selDropoff.value) : null;
+    const lowpass = field === 'lowpass' && selLp.value !== '' ? parseFloat(selLp.value) : null;
+    const highpass = field === 'highpass' && selHp.value !== '' ? parseFloat(selHp.value) : null;
     for (const id of selectedIds) {
         const tone = tones.find(t => t.id === id);
         if (tone) {
-            if (dur !== null && !isNaN(dur)) tone.duration = dur;
-            if (gain !== null && !isNaN(gain)) tone.gain = gain;
-            if (dropoff !== null) tone.dropoff = Math.max(0.1, Math.min(1, dropoff));
-            if (selTypeRow.style.display !== 'none' && selType.value) tone.type = selType.value as OscType;
-            if (selGlideRow.style.display !== 'none') {
+            if (field === 'duration' && dur !== null && !isNaN(dur)) tone.duration = dur;
+            if (field === 'gain' && gain !== null && !isNaN(gain)) tone.gain = gain;
+            if (field === 'dropoff' && dropoff !== null && !isNaN(dropoff)) tone.dropoff = clampDropoff(dropoff);
+            if (field === 'type' && selTypeRow.style.display !== 'none' && selType.value) tone.type = selType.value as OscType;
+            if (field === 'glide' && selGlideRow.style.display !== 'none') {
                 tone.glideTo = selGlide.value !== '' ? parseInt(selGlide.value) : null;
             }
         }
         const noise = findNoiseById(id);
         if (noise) {
-            if (dur !== null && !isNaN(dur)) noise.duration = dur;
-            if (gain !== null && !isNaN(gain)) noise.gain = gain;
-            if (dropoff !== null) noise.dropoff = Math.max(0.1, Math.min(1, dropoff));
-            if (selLpRow.style.display !== 'none' && selLp.value !== '') noise.lowpass = parseFloat(selLp.value) || 2200;
-            if (selHpRow.style.display !== 'none' && selHp.value !== '') noise.highpass = parseFloat(selHp.value) || 100;
+            if (field === 'duration' && dur !== null && !isNaN(dur)) noise.duration = dur;
+            if (field === 'gain' && gain !== null && !isNaN(gain)) noise.gain = gain;
+            if (field === 'dropoff' && dropoff !== null && !isNaN(dropoff)) noise.dropoff = clampDropoff(dropoff);
+            if (field === 'lowpass' && selLpRow.style.display !== 'none' && lowpass !== null && !isNaN(lowpass)) noise.lowpass = lowpass;
+            if (field === 'highpass' && selHpRow.style.display !== 'none' && highpass !== null && !isNaN(highpass)) noise.highpass = highpass;
         }
     }
+    render();
+}
+
+function copySelectedEvents(): void {
+    const copiedTones = tones
+        .filter(t => selectedIds.has(t.id))
+        .map(t => ({
+            noteIdx: t.noteIdx,
+            startTime: t.startTime,
+            duration: t.duration,
+            type: t.type,
+            gain: t.gain,
+            dropoff: t.dropoff,
+            glideTo: t.glideTo,
+        }));
+    const copiedNoises = noises
+        .filter(n => selectedIds.has(n.id))
+        .map(n => ({
+            row: n.row,
+            startTime: n.startTime,
+            duration: n.duration,
+            gain: n.gain,
+            dropoff: n.dropoff,
+            lowpass: n.lowpass,
+            highpass: n.highpass,
+        }));
+
+    const allStartTimes = [...copiedTones.map(t => t.startTime), ...copiedNoises.map(n => n.startTime)];
+    if (allStartTimes.length === 0) return;
+    clipboardSelection = {
+        minStartTime: Math.min(...allStartTimes),
+        tones: copiedTones,
+        noises: copiedNoises,
+    };
+}
+
+function pasteCopiedEvents(targetTime: number): void {
+    if (!clipboardSelection) return;
+
+    const snappedTarget = snapToGridFloor(targetTime);
+    const delta = snappedTarget - clipboardSelection.minStartTime;
+    const newSelection = new Set<string>();
+
+    for (const t of clipboardSelection.tones) {
+        const id = uid();
+        tones.push({
+            id,
+            noteIdx: t.noteIdx,
+            startTime: snapToGridFloor(Math.max(0, t.startTime + delta)),
+            duration: t.duration,
+            type: t.type,
+            gain: t.gain,
+            dropoff: t.dropoff,
+            glideTo: t.glideTo,
+        });
+        newSelection.add(id);
+    }
+    for (const n of clipboardSelection.noises) {
+        const id = uid();
+        noises.push({
+            id,
+            row: n.row,
+            startTime: snapToGridFloor(Math.max(0, n.startTime + delta)),
+            duration: n.duration,
+            gain: n.gain,
+            dropoff: n.dropoff,
+            lowpass: n.lowpass,
+            highpass: n.highpass,
+        });
+        newSelection.add(id);
+    }
+
+    selectedIds = newSelection;
+    updateSelPanel();
     render();
 }
 
@@ -1546,14 +1641,14 @@ function init(): void {
     cfgBpmEl.addEventListener('change', () => { cfgBpm = Math.max(MIN_BPM, Math.min(MAX_BPM, parseFloat(cfgBpmEl.value) || 120)); cfgBpmEl.value = String(cfgBpm); render(); });
     cfgTypeEl.addEventListener('change', () => { cfgType = cfgTypeEl.value as OscType; });
     cfgGainEl.addEventListener('input', () => { cfgGain = parseFloat(cfgGainEl.value) || 0; });
-    cfgDropoffEl.addEventListener('input', () => { cfgDropoff = parseFloat(cfgDropoffEl.value) || 0.3; cfgDropoffV.textContent = cfgDropoff.toFixed(2); });
+    cfgDropoffEl.addEventListener('input', () => { cfgDropoff = clampDropoff(parseNumberInput(cfgDropoffEl.value, DEFAULT_DROPOFF)); cfgDropoffV.textContent = cfgDropoff.toFixed(2); });
     cfgGlideEl.addEventListener('change', () => { cfgGlide = cfgGlideEl.value ? parseInt(cfgGlideEl.value) : null; });
     cfgLpEl.addEventListener('change', () => { cfgLowpass = parseFloat(cfgLpEl.value) || 2200; });
     cfgHpEl.addEventListener('change', () => { cfgHighpass = parseFloat(cfgHpEl.value) || 100; });
     cfgSnapEl.addEventListener('change', () => { cfgSnap = parseFloat(cfgSnapEl.value) || 0.25; });
 
     // Popup dropoff live preview
-    ppDropoff.addEventListener('input', () => { ppDropoffV.textContent = (parseFloat(ppDropoff.value) || 0.3).toFixed(2); });
+    ppDropoff.addEventListener('input', () => { ppDropoffV.textContent = clampDropoff(parseNumberInput(ppDropoff.value, DEFAULT_DROPOFF)).toFixed(2); });
 
     // Popup actions
     ppSave.addEventListener('click', savePopup);
@@ -1568,8 +1663,14 @@ function init(): void {
     ppX.addEventListener('click', closePopup);
 
     // Selection panel
-    selDropoff.addEventListener('input', () => { selDropoffV.textContent = (parseFloat(selDropoff.value) || 0.3).toFixed(2); });
-    selApplyBtn.addEventListener('click', applySelection);
+    selDropoff.addEventListener('input', () => { selDropoffV.textContent = clampDropoff(parseNumberInput(selDropoff.value, DEFAULT_DROPOFF)).toFixed(2); });
+    selDur.addEventListener('change', () => applySelectionField('duration'));
+    selType.addEventListener('change', () => applySelectionField('type'));
+    selGain.addEventListener('input', () => applySelectionField('gain'));
+    selDropoff.addEventListener('input', () => applySelectionField('dropoff'));
+    selGlide.addEventListener('change', () => applySelectionField('glide'));
+    selLp.addEventListener('input', () => applySelectionField('lowpass'));
+    selHp.addEventListener('input', () => applySelectionField('highpass'));
     selDelBtn.addEventListener('click', () => {
         tones = tones.filter(t => !selectedIds.has(t.id));
         removeNoisesById(selectedIds);
@@ -1592,10 +1693,12 @@ function init(): void {
 
     // Timeline interaction
     tlCanvas.addEventListener('mousedown', onTlDown);
+    tlCanvas.addEventListener('mousemove', e => updateTimelineMouseTime(tlCanvas, e));
     tlCanvas.addEventListener('contextmenu', onTlCtx);
 
     // Noise canvas interaction
     noiseCanvas.addEventListener('mousedown', onNoiseDown);
+    noiseCanvas.addEventListener('mousemove', e => updateTimelineMouseTime(noiseCanvas, e));
     noiseCanvas.addEventListener('contextmenu', onNoiseCtx);
     noiseClip.addEventListener('wheel', onWheel, { passive: false });
 
@@ -1628,6 +1731,16 @@ function init(): void {
             tones = tones.filter(t => !selectedIds.has(t.id));
             removeNoisesById(selectedIds);
             clearSelection();
+        }
+        if ((e.ctrlKey || e.metaKey) && !isEditable(e.target)) {
+            const key = e.key.toLowerCase();
+            if (key === 'c') {
+                e.preventDefault();
+                copySelectedEvents();
+            } else if (key === 'v') {
+                e.preventDefault();
+                pasteCopiedEvents(lastTimelineMouseTime);
+            }
         }
         if (e.code === 'Escape' && !isEditable(e.target)) {
             if (editingId) closePopup();
