@@ -32,6 +32,32 @@ interface NoiseEvent {
     highpass: number;
 }
 
+interface ClipboardToneEvent {
+    noteIdx: number;
+    startTime: number;
+    duration: number;
+    type: OscType;
+    gain: number;
+    dropoff: number;
+    glideTo: number | null;
+}
+
+interface ClipboardNoiseEvent {
+    row: number;
+    startTime: number;
+    duration: number;
+    gain: number;
+    dropoff: number;
+    lowpass: number;
+    highpass: number;
+}
+
+interface ClipboardSelection {
+    minStartTime: number;
+    tones: ClipboardToneEvent[];
+    noises: ClipboardNoiseEvent[];
+}
+
 // ── Chromatic scale C6→C3 (top = high, bottom = low) ─────────────────────────
 const NOTES: { name: string; freq: number }[] = [
     { name: 'C6', freq: 1046.50 }, { name: 'B5', freq: 987.77 },
@@ -107,6 +133,8 @@ let cfgLoop = true;   // loop playback (on by default)
 let cfgLowpass = 2200; // default noise lowpass Hz
 let cfgHighpass = 100;  // default noise highpass Hz
 let cfgSnap = 0.25;   // snap unit as beat multiplier (0.25 = 1/4 beat)
+let lastTimelineMouseTime = 0;
+let clipboardSelection: ClipboardSelection | null = null;
 
 // ── Selection & drag state ────────────────────────────────────────────────────
 let selectedIds: Set<string> = new Set();
@@ -217,7 +245,6 @@ const selLpRow = document.getElementById('sel-lp-row') as HTMLDivElement;
 const selLp = document.getElementById('sel-lp') as HTMLInputElement;
 const selHpRow = document.getElementById('sel-hp-row') as HTMLDivElement;
 const selHp = document.getElementById('sel-hp') as HTMLInputElement;
-const selApplyBtn = document.getElementById('sel-apply') as HTMLButtonElement;
 const selDelBtn = document.getElementById('sel-del') as HTMLButtonElement;
 const codeTa = document.getElementById('code-ta') as HTMLTextAreaElement;
 const copyBtn = document.getElementById('copy-btn') as HTMLButtonElement;
@@ -705,11 +732,17 @@ function canvasXY(canvas: HTMLCanvasElement, e: MouseEvent): { x: number; y: num
     return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 
+function updateTimelineMouseTime(canvas: HTMLCanvasElement, e: MouseEvent): void {
+    const { x } = canvasXY(canvas, e);
+    lastTimelineMouseTime = Math.max(0, (x + scrollX) / PPS);
+}
+
 // ── Timeline mouse events ──────────────────────────────────────────────────────
 const DRAG_THRESHOLD = 5; // px before a movement is considered a drag
 
 function onTlDown(e: MouseEvent): void {
     if (e.button !== 0) return;
+    updateTimelineMouseTime(tlCanvas, e);
     const { x, y } = canvasXY(tlCanvas, e);
 
     // Keep Shift+click semantics for selection toggle/additive flows; don't start resize with Shift held.
@@ -804,6 +837,7 @@ function onTlCtx(e: MouseEvent): void {
 // ── Noise mouse events ─────────────────────────────────────────────────────────
 function onNoiseDown(e: MouseEvent): void {
     if (e.button !== 0) return;
+    updateTimelineMouseTime(noiseCanvas, e);
     const { x, y } = canvasXY(noiseCanvas, e);
 
     // Keep Shift+click semantics for selection toggle/additive flows; don't start resize with Shift held.
@@ -1492,32 +1526,106 @@ function addMixedOption(sel: HTMLSelectElement, ref: HTMLSelectElement): void {
     ref.value = '';
 }
 
-/** Apply selection panel values to all selected events. */
-function applySelection(): void {
+function applySelectionField(field: 'duration' | 'type' | 'gain' | 'dropoff' | 'glide' | 'lowpass' | 'highpass'): void {
     const dur = selDur.value !== '' ? parseFloat(selDur.value) : null;
     const gain = selGain.value !== '' ? parseFloat(selGain.value) : null;
-    const dropoff = parseFloat(selDropoff.value) || null;
-
+    const dropoff = parseFloat(selDropoff.value);
+    const lowpass = selLp.value !== '' ? parseFloat(selLp.value) : null;
+    const highpass = selHp.value !== '' ? parseFloat(selHp.value) : null;
     for (const id of selectedIds) {
         const tone = tones.find(t => t.id === id);
         if (tone) {
-            if (dur !== null && !isNaN(dur)) tone.duration = dur;
-            if (gain !== null && !isNaN(gain)) tone.gain = gain;
-            if (dropoff !== null) tone.dropoff = Math.max(0.1, Math.min(1, dropoff));
-            if (selTypeRow.style.display !== 'none' && selType.value) tone.type = selType.value as OscType;
-            if (selGlideRow.style.display !== 'none') {
+            if (field === 'duration' && dur !== null && !isNaN(dur)) tone.duration = dur;
+            if (field === 'gain' && gain !== null && !isNaN(gain)) tone.gain = gain;
+            if (field === 'dropoff' && !isNaN(dropoff)) tone.dropoff = Math.max(0.1, Math.min(1, dropoff));
+            if (field === 'type' && selTypeRow.style.display !== 'none' && selType.value) tone.type = selType.value as OscType;
+            if (field === 'glide' && selGlideRow.style.display !== 'none') {
                 tone.glideTo = selGlide.value !== '' ? parseInt(selGlide.value) : null;
             }
         }
         const noise = findNoiseById(id);
         if (noise) {
-            if (dur !== null && !isNaN(dur)) noise.duration = dur;
-            if (gain !== null && !isNaN(gain)) noise.gain = gain;
-            if (dropoff !== null) noise.dropoff = Math.max(0.1, Math.min(1, dropoff));
-            if (selLpRow.style.display !== 'none' && selLp.value !== '') noise.lowpass = parseFloat(selLp.value) || 2200;
-            if (selHpRow.style.display !== 'none' && selHp.value !== '') noise.highpass = parseFloat(selHp.value) || 100;
+            if (field === 'duration' && dur !== null && !isNaN(dur)) noise.duration = dur;
+            if (field === 'gain' && gain !== null && !isNaN(gain)) noise.gain = gain;
+            if (field === 'dropoff' && !isNaN(dropoff)) noise.dropoff = Math.max(0.1, Math.min(1, dropoff));
+            if (field === 'lowpass' && selLpRow.style.display !== 'none' && lowpass !== null && !isNaN(lowpass)) noise.lowpass = lowpass;
+            if (field === 'highpass' && selHpRow.style.display !== 'none' && highpass !== null && !isNaN(highpass)) noise.highpass = highpass;
         }
     }
+    render();
+}
+
+function copySelectedEvents(): void {
+    const copiedTones = tones
+        .filter(t => selectedIds.has(t.id))
+        .map(t => ({
+            noteIdx: t.noteIdx,
+            startTime: t.startTime,
+            duration: t.duration,
+            type: t.type,
+            gain: t.gain,
+            dropoff: t.dropoff,
+            glideTo: t.glideTo,
+        }));
+    const copiedNoises = noises
+        .filter(n => selectedIds.has(n.id))
+        .map(n => ({
+            row: n.row,
+            startTime: n.startTime,
+            duration: n.duration,
+            gain: n.gain,
+            dropoff: n.dropoff,
+            lowpass: n.lowpass,
+            highpass: n.highpass,
+        }));
+
+    const allStartTimes = [...copiedTones.map(t => t.startTime), ...copiedNoises.map(n => n.startTime)];
+    if (allStartTimes.length === 0) return;
+    clipboardSelection = {
+        minStartTime: Math.min(...allStartTimes),
+        tones: copiedTones,
+        noises: copiedNoises,
+    };
+}
+
+function pasteCopiedEvents(targetTime: number): void {
+    if (!clipboardSelection) return;
+
+    const snappedTarget = snapToGridFloor(targetTime);
+    const delta = snappedTarget - clipboardSelection.minStartTime;
+    const newSelection = new Set<string>();
+
+    for (const t of clipboardSelection.tones) {
+        const id = uid();
+        tones.push({
+            id,
+            noteIdx: t.noteIdx,
+            startTime: snapToGridFloor(Math.max(0, t.startTime + delta)),
+            duration: t.duration,
+            type: t.type,
+            gain: t.gain,
+            dropoff: t.dropoff,
+            glideTo: t.glideTo,
+        });
+        newSelection.add(id);
+    }
+    for (const n of clipboardSelection.noises) {
+        const id = uid();
+        noises.push({
+            id,
+            row: n.row,
+            startTime: snapToGridFloor(Math.max(0, n.startTime + delta)),
+            duration: n.duration,
+            gain: n.gain,
+            dropoff: n.dropoff,
+            lowpass: n.lowpass,
+            highpass: n.highpass,
+        });
+        newSelection.add(id);
+    }
+
+    selectedIds = newSelection;
+    updateSelPanel();
     render();
 }
 
@@ -1569,7 +1677,13 @@ function init(): void {
 
     // Selection panel
     selDropoff.addEventListener('input', () => { selDropoffV.textContent = (parseFloat(selDropoff.value) || 0.3).toFixed(2); });
-    selApplyBtn.addEventListener('click', applySelection);
+    selDur.addEventListener('change', () => applySelectionField('duration'));
+    selType.addEventListener('change', () => applySelectionField('type'));
+    selGain.addEventListener('input', () => applySelectionField('gain'));
+    selDropoff.addEventListener('input', () => applySelectionField('dropoff'));
+    selGlide.addEventListener('change', () => applySelectionField('glide'));
+    selLp.addEventListener('input', () => applySelectionField('lowpass'));
+    selHp.addEventListener('input', () => applySelectionField('highpass'));
     selDelBtn.addEventListener('click', () => {
         tones = tones.filter(t => !selectedIds.has(t.id));
         removeNoisesById(selectedIds);
@@ -1592,10 +1706,12 @@ function init(): void {
 
     // Timeline interaction
     tlCanvas.addEventListener('mousedown', onTlDown);
+    tlCanvas.addEventListener('mousemove', e => updateTimelineMouseTime(tlCanvas, e));
     tlCanvas.addEventListener('contextmenu', onTlCtx);
 
     // Noise canvas interaction
     noiseCanvas.addEventListener('mousedown', onNoiseDown);
+    noiseCanvas.addEventListener('mousemove', e => updateTimelineMouseTime(noiseCanvas, e));
     noiseCanvas.addEventListener('contextmenu', onNoiseCtx);
     noiseClip.addEventListener('wheel', onWheel, { passive: false });
 
@@ -1628,6 +1744,16 @@ function init(): void {
             tones = tones.filter(t => !selectedIds.has(t.id));
             removeNoisesById(selectedIds);
             clearSelection();
+        }
+        if ((e.ctrlKey || e.metaKey) && !isEditable(e.target)) {
+            const key = e.key.toLowerCase();
+            if (key === 'c') {
+                e.preventDefault();
+                copySelectedEvents();
+            } else if (key === 'v') {
+                e.preventDefault();
+                pasteCopiedEvents(lastTimelineMouseTime);
+            }
         }
         if (e.code === 'Escape' && !isEditable(e.target)) {
             if (editingId) closePopup();
