@@ -1,3 +1,12 @@
+## [3.27.1](https://github.com/samtun/hackworld/compare/v3.27.0...v3.27.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* auto-apply selection edits and add copy paste in sound editor ([ec8aed7](https://github.com/samtun/hackworld/commit/ec8aed7b64a4c946a40e0a3895c33017be05268f))
+* optimize selection field parsing for auto-apply ([af8e659](https://github.com/samtun/hackworld/commit/af8e65977b24cf294158022b1cfb61bb21320b67))
+* update sound editor snap, dropoff, and note range ([5946b73](https://github.com/samtun/hackworld/commit/5946b73ef8577f40286bfe3f3fcafc293205dc7a))
+
 # [3.27.0](https://github.com/samtun/hackworld/compare/v3.26.1...v3.27.0) (2026-05-21)
 
 
