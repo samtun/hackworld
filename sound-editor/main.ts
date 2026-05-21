@@ -60,7 +60,7 @@ interface ClipboardSelection {
     noises: ClipboardNoiseEvent[];
 }
 
-// ── Chromatic scale C8→C1 (top = high, bottom = low) ─────────────────────────
+// ── Chromatic scale from C8 down to C1 (top = high, bottom = low) ────────────
 const NOTES = buildChromaticNotes(1, 8);
 
 // ── Beat duration fractions (stored value = beat multiplier, e.g. 0.25 = 1/4 beat) ─

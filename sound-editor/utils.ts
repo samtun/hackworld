@@ -16,7 +16,7 @@ export function buildChromaticNotes(minOctave: number, maxOctave: number): NoteD
 
     for (let midi = maxMidi; midi >= minMidi; midi--) {
         const octave = Math.floor(midi / 12) - 1;
-        const noteName = NOTE_NAMES[midi % NOTE_NAMES.length];
+        const noteName = NOTE_NAMES[midi % 12];
         notes.push({
             name: `${noteName}${octave}`,
             freq: A4_FREQ * Math.pow(2, (midi - A4_MIDI) / 12),
