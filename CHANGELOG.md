@@ -1,3 +1,10 @@
+## [3.26.1](https://github.com/samtun/hackworld/compare/v3.26.0...v3.26.1) (2026-05-21)
+
+
+### Bug Fixes
+
+* stop previous stage music immediately on stage switch ([18de712](https://github.com/samtun/hackworld/commit/18de71281e2d3d41fc74031454e7d2d426100ede))
+
 # [3.26.0](https://github.com/samtun/hackworld/compare/v3.25.0...v3.26.0) (2026-05-20)
 
 
