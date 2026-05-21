@@ -1,4 +1,9 @@
-import { buildChromaticNotes, clampDropoff, DEFAULT_DROPOFF, parseNumberInput } from './utils';
+import {
+    buildChromaticNotes,
+    clampDropoff,
+    DEFAULT_DROPOFF,
+    parseNumberInput,
+} from '../src/sound-editor/utils';
 
 /**
  * HackWorld Sound Editor — DAW Timeline (main.ts)

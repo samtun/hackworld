@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildChromaticNotes, clampDropoff, parseNumberInput } from '../../sound-editor/utils';
+import { buildChromaticNotes, clampDropoff, parseNumberInput } from './utils';
 
 describe('sound editor utils', () => {
     it('builds a descending chromatic range from C8 through C1', () => {
