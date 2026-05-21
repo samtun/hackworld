@@ -1,3 +1,11 @@
+# [3.27.0](https://github.com/samtun/hackworld/compare/v3.26.1...v3.27.0) (2026-05-21)
+
+
+### Features
+
+* add improved lobby music with 60-second Am progression and sound editor JSON ([c5bba06](https://github.com/samtun/hackworld/commit/c5bba06e2f976660f091e569f09c78cf31359f8a))
+* use 16 bars instead of 20 for lobby music ([dd1c921](https://github.com/samtun/hackworld/commit/dd1c9218ae5142a6bc8b48aa02d070097d489ede))
+
 ## [3.26.1](https://github.com/samtun/hackworld/compare/v3.26.0...v3.26.1) (2026-05-21)
 
 
