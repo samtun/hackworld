@@ -1527,17 +1527,17 @@ function addMixedOption(sel: HTMLSelectElement, ref: HTMLSelectElement): void {
 }
 
 function applySelectionField(field: 'duration' | 'type' | 'gain' | 'dropoff' | 'glide' | 'lowpass' | 'highpass'): void {
-    const dur = selDur.value !== '' ? parseFloat(selDur.value) : null;
-    const gain = selGain.value !== '' ? parseFloat(selGain.value) : null;
-    const dropoff = parseFloat(selDropoff.value);
-    const lowpass = selLp.value !== '' ? parseFloat(selLp.value) : null;
-    const highpass = selHp.value !== '' ? parseFloat(selHp.value) : null;
+    const dur = field === 'duration' && selDur.value !== '' ? parseFloat(selDur.value) : null;
+    const gain = field === 'gain' && selGain.value !== '' ? parseFloat(selGain.value) : null;
+    const dropoff = field === 'dropoff' ? parseFloat(selDropoff.value) : null;
+    const lowpass = field === 'lowpass' && selLp.value !== '' ? parseFloat(selLp.value) : null;
+    const highpass = field === 'highpass' && selHp.value !== '' ? parseFloat(selHp.value) : null;
     for (const id of selectedIds) {
         const tone = tones.find(t => t.id === id);
         if (tone) {
             if (field === 'duration' && dur !== null && !isNaN(dur)) tone.duration = dur;
             if (field === 'gain' && gain !== null && !isNaN(gain)) tone.gain = gain;
-            if (field === 'dropoff' && !isNaN(dropoff)) tone.dropoff = Math.max(0.1, Math.min(1, dropoff));
+            if (field === 'dropoff' && dropoff !== null && !isNaN(dropoff)) tone.dropoff = Math.max(0.1, Math.min(1, dropoff));
             if (field === 'type' && selTypeRow.style.display !== 'none' && selType.value) tone.type = selType.value as OscType;
             if (field === 'glide' && selGlideRow.style.display !== 'none') {
                 tone.glideTo = selGlide.value !== '' ? parseInt(selGlide.value) : null;
@@ -1547,7 +1547,7 @@ function applySelectionField(field: 'duration' | 'type' | 'gain' | 'dropoff' | '
         if (noise) {
             if (field === 'duration' && dur !== null && !isNaN(dur)) noise.duration = dur;
             if (field === 'gain' && gain !== null && !isNaN(gain)) noise.gain = gain;
-            if (field === 'dropoff' && !isNaN(dropoff)) noise.dropoff = Math.max(0.1, Math.min(1, dropoff));
+            if (field === 'dropoff' && dropoff !== null && !isNaN(dropoff)) noise.dropoff = Math.max(0.1, Math.min(1, dropoff));
             if (field === 'lowpass' && selLpRow.style.display !== 'none' && lowpass !== null && !isNaN(lowpass)) noise.lowpass = lowpass;
             if (field === 'highpass' && selHpRow.style.display !== 'none' && highpass !== null && !isNaN(highpass)) noise.highpass = highpass;
         }
