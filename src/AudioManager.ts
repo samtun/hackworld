@@ -35,6 +35,7 @@ export class AudioManager {
     private currentStageId: string | null = null;
     private playingStageId: string | null = null;
     private musicPulseInterval: number | null = null;
+    private activeMusicOscillators: Set<OscillatorNode> = new Set();
     private healingStationLoopInterval: number | null = null;
     private activeHealingStationCount = 0;
     private musicEnabled = true;
@@ -586,6 +587,16 @@ export class AudioManager {
             this.musicPulseInterval = null;
         }
 
+        this.activeMusicOscillators.forEach((oscillator) => {
+            try {
+                oscillator.stop(0);
+            } catch {
+                // Ignore InvalidStateError when an oscillator is already stopped.
+            }
+            oscillator.disconnect();
+        });
+        this.activeMusicOscillators.clear();
+
         this.playingStageId = null;
     }
 
@@ -652,6 +663,12 @@ export class AudioManager {
 
         oscillator.connect(gain);
         gain.connect(targetBus);
+        if (bus === 'music') {
+            this.activeMusicOscillators.add(oscillator);
+            oscillator.onended = () => {
+                this.activeMusicOscillators.delete(oscillator);
+            };
+        }
         oscillator.start(startTime);
         oscillator.stop(stopTime);
     }
