@@ -1,3 +1,10 @@
+# [3.28.0](https://github.com/samtun/hackworld/compare/v3.27.1...v3.28.0) (2026-05-22)
+
+
+### Features
+
+* add controller mapping to pause menu ([9d47b3b](https://github.com/samtun/hackworld/commit/9d47b3b1b20f367c6952089cd8805e492843a16e))
+
 ## [3.27.1](https://github.com/samtun/hackworld/compare/v3.27.0...v3.27.1) (2026-05-21)
 
 
