@@ -69,6 +69,7 @@ export class PauseMenu {
 
         this.items = [
             { id: 'continue', label: 'Continue', buildEl: (item) => this.buildSimpleItem(item) },
+            { id: 'controllermapping', label: 'Controller Mapping', buildEl: (item) => this.buildSimpleItem(item) },
             { id: 'performance', label: '', buildEl: (item) => this.buildPerformanceItem(item) },
             { id: 'controlhints', label: '', buildEl: (item) => this.buildControlHintsItem(item) },
             { id: 'music', label: '', buildEl: (item) => this.buildMusicItem(item) },
@@ -339,6 +340,9 @@ export class PauseMenu {
             case 'continue':
                 this.hide();
                 this.callbacks.onContinue();
+                break;
+            case 'controllermapping':
+                window.open('images/controller_mapping.png', '_blank');
                 break;
             case 'performance':
                 this.performanceModeEnabled = this.callbacks.onTogglePerformanceMode();
