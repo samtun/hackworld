@@ -108,12 +108,12 @@ export class Lobby extends BaseStage {
                     ShaderUtils.applyVerticalFade(material, -18.0, -5.0);
                 }
             });
-        }
 
-        const lobbyColliderModel = this.assetManager.get('models/lobby_collider.glb');
-        if (lobbyColliderModel) {
-            const lobbyColliderScene = lobbyColliderModel.scene.clone();
-            this.createLobbyColliders(lobbyColliderScene);
+            const lobbyColliderModel = this.assetManager.get('models/lobby_collider.glb');
+            if (lobbyColliderModel) {
+                const lobbyColliderScene = lobbyColliderModel.scene.clone();
+                this.createObjectColliders(lobbyColliderScene);
+            }
         }
 
         // Teleporter
@@ -138,6 +138,21 @@ export class Lobby extends BaseStage {
         this.createWeaponTraderNpc();
 
         this.createCardCollectionNpc();
+
+        // Props
+        const pileGltf = this.assetManager.get('models/pile.glb');
+        if (pileGltf) {
+            const pileScene = pileGltf.scene.clone();
+            pileScene.position.set(8, 0, 8);
+            this.scene.add(pileScene);
+            this.meshes.push(pileScene);
+
+            const pileColliderModel = this.assetManager.get('models/pile_collider.glb');
+            if (pileColliderModel) {
+                const pileColliderScene = pileColliderModel.scene.clone();
+                this.createObjectColliders(pileColliderScene, pileScene.position);
+            }
+        }
     }
 
     /**
@@ -330,15 +345,15 @@ export class Lobby extends BaseStage {
         this.healingStation.update(dt);
     }
 
-    private createLobbyColliders(modelScene: THREE.Group | THREE.Object3D): void {
+    private createObjectColliders(modelScene: THREE.Group | THREE.Object3D, offset?: THREE.Vector3, rotation?: THREE.Euler): void {
         modelScene.traverse((child) => {
             if (child instanceof THREE.Mesh) {
-                this.createColliderFromMesh(child);
+                this.createColliderFromMesh(child, offset, rotation);
             }
         });
     }
 
-    private createColliderFromMesh(mesh: THREE.Mesh): void {
+    private createColliderFromMesh(mesh: THREE.Mesh, offset?: THREE.Vector3, rotation?: THREE.Euler): void {
         const geometry = mesh.geometry;
 
         // 1. calculate Bounding Box (if not already done)
@@ -370,16 +385,30 @@ export class Lobby extends BaseStage {
         // we need to move the shape within the body.
         const center = new THREE.Vector3();
         box.getCenter(center);
-        center.multiply(mesh.scale); // Also apply scaling to the offset
+        center.multiply(mesh.scale); // Apply mesh scaling to the geometry center
 
         const cannonOffset = new CANNON.Vec3(center.x, center.y, center.z);
-        body.addShape(boxShape, cannonOffset);
+        let cannonRotation: CANNON.Quaternion | undefined;
+        if (rotation) {
+            const rotationQuaternion = new THREE.Quaternion().setFromEuler(rotation);
+            cannonRotation = new CANNON.Quaternion(
+                rotationQuaternion.x,
+                rotationQuaternion.y,
+                rotationQuaternion.z,
+                rotationQuaternion.w
+            );
+        }
+        body.addShape(boxShape, cannonOffset, cannonRotation);
 
         // 6. Synchronize world position and rotation
         const worldPos = new THREE.Vector3();
         const worldQuat = new THREE.Quaternion();
         mesh.getWorldPosition(worldPos);
         mesh.getWorldQuaternion(worldQuat);
+
+        if (offset) {
+            worldPos.add(offset);
+        }
 
         body.position.set(worldPos.x, worldPos.y, worldPos.z);
         body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);

@@ -233,6 +233,9 @@ export class World {
             'models/weapon_drop.glb',
             'models/chip_drop.glb',
             'models/core_drop.glb',
+            // Props
+            'models/pile.glb',
+            'models/pile_collider.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);
