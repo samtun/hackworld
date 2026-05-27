@@ -1,3 +1,13 @@
+# [3.29.0](https://github.com/samtun/hackworld/compare/v3.28.0...v3.29.0) (2026-05-27)
+
+
+### Features
+
+* add pile model to lobby ([ac9a92e](https://github.com/samtun/hackworld/commit/ac9a92e9f79d2e8b3cf2e7b522d4103e82ec54c4))
+* add rotation to ModelProp, rotate satellite dish prop ([8d17c7f](https://github.com/samtun/hackworld/commit/8d17c7f4c8115199105379e54becacf87b86be9c))
+* add satellite dish prop ([f9577c3](https://github.com/samtun/hackworld/commit/f9577c3815f84e8207549f71f9cd6b98aee1fceb))
+* refactor model and collider loading for props ([51cf4ac](https://github.com/samtun/hackworld/commit/51cf4ace7be2e6aef5cbdafcb913def00a0ce89f))
+
 # [3.28.0](https://github.com/samtun/hackworld/compare/v3.27.1...v3.28.0) (2026-05-22)
 
 
