@@ -31,6 +31,7 @@ export class ModelProp extends BaseMesh {
         physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
         position?: THREE.Vector3,
+        rotation?: THREE.Euler,
         onScene?: (mesh: THREE.Group) => void
     ) {
         super(`models/${modelName}.glb`);
@@ -40,13 +41,21 @@ export class ModelProp extends BaseMesh {
             this.mesh.position.copy(position);
         }
 
+        if (rotation) {
+            this.mesh.rotation.copy(rotation);
+        }
+
         scene.add(this.mesh);
         onScene?.(this.mesh);
 
         try {
             const colliderGltf = AssetManager.Instance.get(`models/${modelName}_collider.glb`);
+            const colliderScene = colliderGltf.scene;
+            if (rotation) {
+                colliderScene.rotation.copy(rotation);
+            }
             this.bodies = ModelColliderLoader.Instance.loadColliders(
-                colliderGltf.scene,
+                colliderScene,
                 physicsWorld,
                 physicsMaterial,
                 position

@@ -90,6 +90,7 @@ export class Lobby extends BaseStage {
             this.physicsWorld,
             this.physicsMaterial,
             undefined,
+            undefined,
             (lobbyScene) => {
                 lobbyScene.traverse((node) => {
                     if (!(node instanceof THREE.Mesh)) {
@@ -150,7 +151,8 @@ export class Lobby extends BaseStage {
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,
-            new THREE.Vector3(-12, 0, 12)
+            new THREE.Vector3(-12, 0, 0),
+            new THREE.Euler(0, Math.PI / 2, 0)
         ));
     }
 

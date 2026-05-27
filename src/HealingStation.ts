@@ -41,6 +41,7 @@ export class HealingStation extends ModelProp implements IHealingStation {
             world,
             physicsMaterial,
             new THREE.Vector3(position.x, position.y, position.z),
+            new THREE.Euler(0, 0, 0),
             (mesh) => {
                 mesh.traverse((child) => {
                     if (child instanceof THREE.Mesh) {
