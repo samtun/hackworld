@@ -21,6 +21,7 @@ import { ItemDropManager } from '../items/ItemDropManager';
 import { MinimapDrop } from '../items/minimap/MinimapDrop';
 import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
 import { AudioManager } from '../AudioManager';
+import { ModelProp } from '../ModelProp';
 
 /**
  * Tiny Y offset applied to north/south walls (those running along X) to
@@ -80,6 +81,7 @@ export abstract class BaseStage {
     lootChests: LootChest[] = [];
     breakableBarrels: BreakableBarrel[] = [];
     electricTraps: ElectricTrap[] = [];
+    props: ModelProp[] = [];
 
     /**
      * Room definitions set by procedural stages.
@@ -277,6 +279,12 @@ export abstract class BaseStage {
             trap.cleanup();
         }
         this.electricTraps = [];
+
+        // Clean up model props
+        for (const prop of this.props) {
+            prop.cleanup(this.scene);
+        }
+        this.props = [];
 
         // Clear teleporter references
         this.teleporter = undefined;
@@ -731,6 +739,10 @@ export abstract class BaseStage {
 
         for (const mixer of this.mixers) {
             mixer.update(dt);
+        }
+
+        for (const prop of this.props) {
+            prop.update(dt);
         }
 
         // Update barrel destruction animations

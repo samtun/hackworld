@@ -1,18 +1,17 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { BaseMesh } from './BaseMesh';
+import { ModelProp } from './ModelProp';
 import { HealingSystem } from './systems/HealingSystem';
 import { IHealingStation } from './systems/IHealingStation';
 import { createParticleShaderMaterial, updateParticleScaleFactor } from './ParticleShaderUtils';
 import { AudioManager } from './AudioManager';
-import { AssetManager } from './AssetManager';
 
 /**
  * HealingStation entity with upward-moving particle effects
  * Particles rise straight up (not spinning) at a slower speed
  * Particle speed increases during healing
  */
-export class HealingStation extends BaseMesh implements IHealingStation {
+export class HealingStation extends ModelProp implements IHealingStation {
     world: CANNON.World;
     particles: THREE.Points;
     particleSystem: {
@@ -35,34 +34,29 @@ export class HealingStation extends BaseMesh implements IHealingStation {
     private time: number = 0;
 
     constructor(scene: THREE.Scene, world: CANNON.World, physicsMaterial: CANNON.Material, position: CANNON.Vec3) {
-        super('models/healing_station.glb');
+        const color = new THREE.Color(0x00AAFF);
+        super(
+            'healing_station',
+            scene,
+            world,
+            physicsMaterial,
+            new THREE.Vector3(position.x, position.y, position.z),
+            new THREE.Euler(0, 0, 0),
+            (mesh) => {
+                mesh.traverse((child) => {
+                    if (child instanceof THREE.Mesh) {
+                        if (child.material instanceof THREE.MeshStandardMaterial && child.material.name === 'Panel') {
+                            child.material.emissive = new THREE.Color(0xFFFFFF);
+                            child.material.emissiveMap = child.material.map;
+                            child.material.emissiveIntensity = 0.8;
+                            child.material.color = color;
+                        }
+                    }
+                });
+            }
+        );
         this.world = world;
-        this.color = new THREE.Color(0x00AAFF);
-        this.mesh.position.set(position.x, position.y, position.z);
-
-        this.mesh.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                if (child.material instanceof THREE.MeshStandardMaterial && child.material.name === 'Panel') {
-                    child.material.emissive = new THREE.Color(0xFFFFFF);
-                    child.material.emissiveMap = child.material.map;
-                    child.material.emissiveIntensity = 0.8;
-                    child.material.color = this.color;
-                }
-            }
-        });
-        scene.add(this.mesh);
-
-        // Load and add collider meshes
-        const colliderGltf = AssetManager.Instance.get('models/healing_station_collider.glb');
-        colliderGltf.scene.clone().traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                console.log('Adding healing station collider shape for', child.name);
-                const body = this.createColliderFromMesh(child, physicsMaterial);
-                const bodyPosition = position.clone().addScaledVector(1, new CANNON.Vec3(child.position.x, child.position.y, child.position.z));
-                body.position.set(bodyPosition.x, bodyPosition.y, bodyPosition.z)
-                world.addBody(body);
-            }
-        });
+        this.color = color;
 
         // Initialize particle system
         this.particleSystem = {
@@ -91,55 +85,6 @@ export class HealingStation extends BaseMesh implements IHealingStation {
 
         // Register with healing system so it can manage player healing
         HealingSystem.Instance.register(this);
-    }
-
-    private createColliderFromMesh(mesh: THREE.Mesh, physicsMaterial: CANNON.Material): CANNON.Body {
-        const geometry = mesh.geometry;
-
-        // 1. calculate Bounding Box (if not already done)
-        geometry.computeBoundingBox();
-        const box = geometry.boundingBox!;
-
-        // 2. calculate size (Max - Min)
-        const size = new THREE.Vector3();
-        box.getSize(size);
-
-        // 3. calculate half-extents considering scaling
-        // Cannon needs the radius from the center to the edge
-        const halfExtents = new CANNON.Vec3(
-            (size.x * mesh.scale.x) / 2,
-            (size.y * mesh.scale.y) / 2,
-            (size.z * mesh.scale.z) / 2
-        );
-
-        const boxShape = new CANNON.Box(halfExtents);
-
-        // 4. Create Body
-        const body = new CANNON.Body({
-            mass: 0, // Static
-            material: physicsMaterial,
-        });
-
-        // 5. Consider offset
-        // If the geometry center is not at (0,0,0),
-        // we need to move the shape within the body.
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-        center.multiply(mesh.scale); // Also apply scaling to the offset
-
-        const cannonOffset = new CANNON.Vec3(center.x, center.y, center.z);
-        body.addShape(boxShape, cannonOffset);
-
-        // 6. Synchronize world position and rotation
-        const worldPos = new THREE.Vector3();
-        const worldQuat = new THREE.Quaternion();
-        mesh.getWorldPosition(worldPos);
-        mesh.getWorldQuaternion(worldQuat);
-
-        body.position.set(worldPos.x, worldPos.y, worldPos.z);
-        body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);
-
-        return body;
     }
 
     /**
@@ -244,10 +189,8 @@ export class HealingStation extends BaseMesh implements IHealingStation {
             this.isHealing = false;
         }
 
-        scene.remove(this.mesh);
+        super.cleanup(scene);
         scene.remove(this.particles);
-
-        this.disposeMesh();
 
         if (this.particles.geometry) this.particles.geometry.dispose();
         const particleMaterial = this.particles.material as THREE.ShaderMaterial;
