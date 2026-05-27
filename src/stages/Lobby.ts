@@ -13,6 +13,7 @@ import { CoreTrader } from '../items/cores/CoreTrader';
 import { CardManager } from '../items/cards/CardManager';
 import { ShaderUtils } from '../ShaderUtils';
 import { GameProgressManager } from '../GameProgressManager';
+import { ModelProp } from '../ModelProp';
 import type { StageMinimapLayout } from './StageMinimapLayout';
 
 export class Lobby extends BaseStage {
@@ -83,38 +84,34 @@ export class Lobby extends BaseStage {
         // Update Mainframe dialogue on each load (in case progress changed)
         this.updateMainframeDialogue();
 
-        const lobbyGltf = this.assetManager.get('models/lobby.glb');
-        if (lobbyGltf) {
-            const lobbyScene = lobbyGltf.scene.clone();
-            lobbyScene.position.set(0, 0, 0);
-            this.scene.add(lobbyScene);
-            this.meshes.push(lobbyScene);
-            lobbyScene.traverse((node) => {
-                if (!(node instanceof THREE.Mesh)) {
-                    return;
-                }
-
-                if (node.name === "Banner") {
-                    const material = node.material as THREE.MeshStandardMaterial;
-
-                    // Get texture for banner mesh to animate it later
-                    if (material.map) {
-                        this.bannerTexture = material.map;
+        this.props.push(new ModelProp(
+            'lobby',
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            undefined,
+            (lobbyScene) => {
+                lobbyScene.traverse((node) => {
+                    if (!(node instanceof THREE.Mesh)) {
+                        return;
                     }
-                } else if (node.material.name === "StageWalls") {
-                    const material = node.material as THREE.MeshStandardMaterial;
 
-                    // Fade out to alpha=0 at -18.0 to -5.0 in Y axis direction
-                    ShaderUtils.applyVerticalFade(material, -18.0, -5.0);
-                }
-            });
+                    if (node.name === "Banner") {
+                        const material = node.material as THREE.MeshStandardMaterial;
 
-            const lobbyColliderModel = this.assetManager.get('models/lobby_collider.glb');
-            if (lobbyColliderModel) {
-                const lobbyColliderScene = lobbyColliderModel.scene.clone();
-                this.createObjectColliders(lobbyColliderScene);
+                        // Get texture for banner mesh to animate it later
+                        if (material.map) {
+                            this.bannerTexture = material.map;
+                        }
+                    } else if (node.material.name === "StageWalls") {
+                        const material = node.material as THREE.MeshStandardMaterial;
+
+                        // Fade out to alpha=0 at -18.0 to -5.0 in Y axis direction
+                        ShaderUtils.applyVerticalFade(material, -18.0, -5.0);
+                    }
+                });
             }
-        }
+        ));
 
         // Teleporter
         this.createTeleporter(new CANNON.Vec3(0, 0, -6), 'selection');
@@ -140,19 +137,13 @@ export class Lobby extends BaseStage {
         this.createCardCollectionNpc();
 
         // Props
-        const pileGltf = this.assetManager.get('models/pile.glb');
-        if (pileGltf) {
-            const pileScene = pileGltf.scene.clone();
-            pileScene.position.set(8, 0, 8);
-            this.scene.add(pileScene);
-            this.meshes.push(pileScene);
-
-            const pileColliderModel = this.assetManager.get('models/pile_collider.glb');
-            if (pileColliderModel) {
-                const pileColliderScene = pileColliderModel.scene.clone();
-                this.createObjectColliders(pileColliderScene, pileScene.position);
-            }
-        }
+        this.props.push(new ModelProp(
+            'pile',
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            new THREE.Vector3(8, 0, 8)
+        ));
     }
 
     /**
@@ -343,78 +334,6 @@ export class Lobby extends BaseStage {
 
         if (!this.healingStation) return;
         this.healingStation.update(dt);
-    }
-
-    private createObjectColliders(modelScene: THREE.Group | THREE.Object3D, offset?: THREE.Vector3, rotation?: THREE.Euler): void {
-        modelScene.traverse((child) => {
-            if (child instanceof THREE.Mesh) {
-                this.createColliderFromMesh(child, offset, rotation);
-            }
-        });
-    }
-
-    private createColliderFromMesh(mesh: THREE.Mesh, offset?: THREE.Vector3, rotation?: THREE.Euler): void {
-        const geometry = mesh.geometry;
-
-        // 1. calculate Bounding Box (if not already done)
-        geometry.computeBoundingBox();
-        const box = geometry.boundingBox!;
-
-        // 2. calculate size (Max - Min)
-        const size = new THREE.Vector3();
-        box.getSize(size);
-
-        // 3. calculate half-extents considering scaling
-        // Cannon needs the radius from the center to the edge
-        const halfExtents = new CANNON.Vec3(
-            (size.x * mesh.scale.x) / 2,
-            (size.y * mesh.scale.y) / 2,
-            (size.z * mesh.scale.z) / 2
-        );
-
-        const boxShape = new CANNON.Box(halfExtents);
-
-        // 4. Create Body
-        const body = new CANNON.Body({
-            mass: 0, // Static
-            material: this.physicsMaterial
-        });
-
-        // 5. Consider offset
-        // If the geometry center is not at (0,0,0),
-        // we need to move the shape within the body.
-        const center = new THREE.Vector3();
-        box.getCenter(center);
-        center.multiply(mesh.scale); // Apply mesh scaling to the geometry center
-
-        const cannonOffset = new CANNON.Vec3(center.x, center.y, center.z);
-        let cannonRotation: CANNON.Quaternion | undefined;
-        if (rotation) {
-            const rotationQuaternion = new THREE.Quaternion().setFromEuler(rotation);
-            cannonRotation = new CANNON.Quaternion(
-                rotationQuaternion.x,
-                rotationQuaternion.y,
-                rotationQuaternion.z,
-                rotationQuaternion.w
-            );
-        }
-        body.addShape(boxShape, cannonOffset, cannonRotation);
-
-        // 6. Synchronize world position and rotation
-        const worldPos = new THREE.Vector3();
-        const worldQuat = new THREE.Quaternion();
-        mesh.getWorldPosition(worldPos);
-        mesh.getWorldQuaternion(worldQuat);
-
-        if (offset) {
-            worldPos.add(offset);
-        }
-
-        body.position.set(worldPos.x, worldPos.y, worldPos.z);
-        body.quaternion.set(worldQuat.x, worldQuat.y, worldQuat.z, worldQuat.w);
-
-        this.physicsWorld.addBody(body);
-        this.bodies.push(body);
     }
 
     /**
