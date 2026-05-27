@@ -236,6 +236,8 @@ export class World {
             // Props
             'models/pile.glb',
             'models/pile_collider.glb',
+            'models/satellite_dish.glb',
+            'models/satellite_dish_collider.glb'
         ];
 
         await this.assetManager.preloadAll(commonAssets);

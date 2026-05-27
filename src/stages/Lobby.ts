@@ -144,6 +144,14 @@ export class Lobby extends BaseStage {
             this.physicsMaterial,
             new THREE.Vector3(8, 0, 8)
         ));
+
+        this.props.push(new ModelProp(
+            'satellite_dish',
+            this.scene,
+            this.physicsWorld,
+            this.physicsMaterial,
+            new THREE.Vector3(-12, 0, 12)
+        ));
     }
 
     /**
