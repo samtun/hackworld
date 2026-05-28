@@ -136,6 +136,44 @@ describe('BreakableBarrel', () => {
         expect(scene.remove.mock.calls.length).toBe(afterAnimCalls);
     });
 
+    describe('generateDrop', () => {
+        it('only allows weapon/chip/core in the rare roll ranges', () => {
+            const { barrel } = makeBarrel();
+            const player = { luckDropChanceBonus: 0 } as any;
+            const weaponDrop = {} as any;
+            const chipDrop = {} as any;
+            const coreDrop = {} as any;
+            vi.spyOn(barrel as any, 'generateWeaponDrop').mockReturnValue(weaponDrop);
+            vi.spyOn(barrel as any, 'generateChipDrop').mockReturnValue(chipDrop);
+            vi.spyOn(barrel as any, 'generateCoreDrop').mockReturnValue(coreDrop);
+            vi.spyOn(barrel as any, 'generateMoneyDrop').mockReturnValue({} as any);
+            vi.spyOn(barrel as any, 'generatePotionDrop').mockReturnValue({} as any);
+            const randomSpy = vi.spyOn(Math, 'random');
+
+            randomSpy.mockReturnValueOnce(0.005);
+            expect(barrel.generateDrop({} as any, player)).toBe(weaponDrop);
+
+            randomSpy.mockReturnValueOnce(0.015);
+            expect(barrel.generateDrop({} as any, player)).toBe(chipDrop);
+
+            randomSpy.mockReturnValueOnce(0.025);
+            expect(barrel.generateDrop({} as any, player)).toBe(coreDrop);
+
+            randomSpy.mockReturnValueOnce(0.04);
+            barrel.generateDrop({} as any, player);
+            expect((barrel as any).generateMoneyDrop).toHaveBeenCalledOnce();
+
+            randomSpy.mockReturnValueOnce(0.2);
+            barrel.generateDrop({} as any, player);
+            expect((barrel as any).generatePotionDrop).toHaveBeenCalledOnce();
+
+            randomSpy.mockReturnValueOnce(0.5);
+            expect(barrel.generateDrop({} as any, player)).toBeNull();
+
+            randomSpy.mockRestore();
+        });
+    });
+
     describe('destruction animation', () => {
         it('spawns 8 fragment meshes on hit', () => {
             const { barrel, scene } = makeBarrel();
