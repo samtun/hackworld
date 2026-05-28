@@ -148,7 +148,7 @@ export class SecurityCore extends StageWithLevels {
      */
     getRequiredAssets(): string[] {
         return [
-            'models/monster.glb'
+            'models/brute_enemy.glb'
         ];
     }
 

@@ -222,7 +222,7 @@ export class Enemy extends BaseMesh {
         physicsMaterial: CANNON.Material,
         config: Partial<EnemyArchetypeConfig> = {},
     ) {
-        super('models/monster.glb');
+        super('models/brute_enemy.glb');
 
         this.scene = scene;
         this.world = world;
@@ -302,7 +302,7 @@ export class Enemy extends BaseMesh {
 
         this.mixer = new THREE.AnimationMixer(this.mesh);
 
-        const gltf = AssetManager.Instance.get('models/monster.glb');
+        const gltf = AssetManager.Instance.get('models/brute_enemy.glb');
         const animations = gltf.animations;
 
         if (animations && animations.length > 0) {

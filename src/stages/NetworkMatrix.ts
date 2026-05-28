@@ -86,7 +86,7 @@ export class NetworkMatrix extends BaseStage {
      */
     getRequiredAssets(): string[] {
         return [
-            'models/monster.glb'
+            'models/brute_enemy.glb'
         ];
     }
 

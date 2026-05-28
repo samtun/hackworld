@@ -109,7 +109,7 @@ export class GameTest extends BaseStage {
 
     getRequiredAssets(): string[] {
         return [
-            'models/monster.glb',
+            'models/brute_enemy.glb',
         ];
     }
 
@@ -177,9 +177,9 @@ export class GameTest extends BaseStage {
             this.npcs.add(btn as unknown as Npc);
         };
 
-        addButton(-2, 'Enemy',       0xff3333, (pos) => this.spawnEnemy(pos));
-        addButton( 0, 'Elite Enemy',  0xff8800, (pos) => this.spawnEnemy(pos, EnemySpawnType.Elite));
-        addButton( 2, 'Boss',         0xaa00ff, (pos) => this.spawnBoss(pos));
+        addButton(-2, 'Enemy', 0xff3333, (pos) => this.spawnEnemy(pos));
+        addButton(0, 'Elite Enemy', 0xff8800, (pos) => this.spawnEnemy(pos, EnemySpawnType.Elite));
+        addButton(2, 'Boss', 0xaa00ff, (pos) => this.spawnBoss(pos));
 
         // Indicator plane spanning the button row and the spawn zone
         const minX = BUTTON_AREA_X - 2 - SPAWN_AREA_PADDING;
@@ -250,12 +250,12 @@ export class GameTest extends BaseStage {
 
         // Row 0: Aegis Sword – one per tier
         const weaponConfigs: { damage: number; level: number; factor: number }[] = [
-            { damage: 8,    level: 1, factor: 0.80 },  // Broken
-            { damage: 10,   level: 1, factor: 1.00 },  // Stable
-            { damage: 10,   level: 1, factor: 1.05 },  // Maintained
-            { damage: 11,   level: 1, factor: 1.10 },  // Overclocked
-            { damage: 12,   level: 1, factor: 1.15 },  // ZeroDay
-            { damage: 12,   level: 1, factor: 1.20 },  // Leet
+            { damage: 8, level: 1, factor: 0.80 },  // Broken
+            { damage: 10, level: 1, factor: 1.00 },  // Stable
+            { damage: 10, level: 1, factor: 1.05 },  // Maintained
+            { damage: 11, level: 1, factor: 1.10 },  // Overclocked
+            { damage: 12, level: 1, factor: 1.15 },  // ZeroDay
+            { damage: 12, level: 1, factor: 1.20 },  // Leet
         ];
         for (const wc of weaponConfigs) {
             this.addDropConfig(pos(), (scene, p) =>
@@ -388,7 +388,7 @@ export class GameTest extends BaseStage {
             damage: 10,
             activationInterval: [],
         }));
-        }
+    }
 
     // ───────────────────────────────────────────────────────────────────────────
     //  Respawn tick helpers

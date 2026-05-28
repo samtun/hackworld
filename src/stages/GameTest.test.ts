@@ -20,7 +20,7 @@ describe('GameTest', () => {
             // GameTest is abstract-safe to instantiate via prototype for metadata-only tests
             const stage = Object.create(GameTest.prototype) as GameTest;
             const assets = stage.getRequiredAssets();
-            expect(assets).toContain('models/monster.glb');
+            expect(assets).toContain('models/brute_enemy.glb');
         });
     });
 });
