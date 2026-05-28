@@ -14,7 +14,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
     // Threshold for becoming eligible for higher level drops (80% of next level requirement)
     private static readonly HIGHER_LEVEL_THRESHOLD = 0.8;
     public getDistributionWeight(_enemy: Enemy, _player: Player): number {
-        return 5;
+        return 2.5;
     }
 
     drop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
