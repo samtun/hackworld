@@ -43,7 +43,7 @@ describe('EnemyType definitions', () => {
             distToPlayer: 3.5,
         });
         expect(executed).toBe(true);
-        expect(body.velocity.x).toBeGreaterThan(0);
-        expect(body.velocity.y).toBeGreaterThanOrEqual(1.2);
+        expect(body.velocity.x).toBeCloseTo(3.0 / 0.28, 2);
+        expect(body.velocity.y).toBeCloseTo(1.2, 2);
     });
 });
