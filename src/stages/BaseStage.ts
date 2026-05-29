@@ -604,10 +604,22 @@ export abstract class BaseStage {
         AudioManager.Instance.playBossSpawn();
     }
 
-    protected getAvailableEnemyTypes(_spawnType: EnemySpawnType): readonly EnemyType[] {
+    /**
+     * List enemy families that can be rolled for a spawn tier.
+     * Stages can override this to restrict specific tiers (for example, only
+     * Brutes for early-game regular spawns while allowing Stalkers on elites).
+     * The default implementation ignores the tier and enables all known types.
+     */
+    protected getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        void spawnType;
         return [EnemyType.Brute, EnemyType.Stalker];
     }
 
+    /**
+     * Resolve the enemy family for an individual spawn point.
+     * Priority: explicit {@link EnemySpawnPoint.enemyType}, then random choice
+     * from {@link getAvailableEnemyTypes}, then a brute fallback.
+     */
     private resolveEnemyTypeForSpawn(spawn: EnemySpawnPoint): EnemyType {
         if (spawn.enemyType) {
             return spawn.enemyType;
@@ -617,7 +629,7 @@ export abstract class BaseStage {
             return DEFAULT_ENEMY_TYPE;
         }
         const selectedIndex = Math.floor(Math.random() * availableEnemyTypes.length);
-        return availableEnemyTypes[selectedIndex] ?? DEFAULT_ENEMY_TYPE;
+        return availableEnemyTypes[selectedIndex];
     }
 
     protected getEnemyConfig(

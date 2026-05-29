@@ -203,9 +203,11 @@ export class Enemy extends BaseMesh {
     protected scene: THREE.Scene;
     protected world: CANNON.World;
     protected physicsMaterial: CANNON.Material;
+    /** Logical enemy family used to select model and type-specific behavior. */
     readonly enemyType: EnemyType;
+    /** Resolved type definition for this enemy family (model path, movement traits). */
     private enemyTypeDefinition: EnemyTypeDefinition;
-    private readonly modelPath: string;
+    /** Cooldown timer for optional enemy-type movement abilities (e.g. stalker jump). */
     private enemyTypeAbilityCooldownTimer: number = 0;
 
     /** Flat circular shadow below the enemy. */
@@ -236,7 +238,6 @@ export class Enemy extends BaseMesh {
         this.physicsMaterial = physicsMaterial;
         this.enemyType = enemyType;
         this.enemyTypeDefinition = enemyTypeDefinition;
-        this.modelPath = enemyTypeDefinition.modelPath;
         this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
         const resolvedConfig: EnemyArchetypeConfig = { ...DEFAULT_ENEMY_ARCHETYPE, ...config };
         resolvedConfig.speed *= this.enemyTypeDefinition.speedMultiplier;
@@ -313,7 +314,7 @@ export class Enemy extends BaseMesh {
 
         this.mixer = new THREE.AnimationMixer(this.mesh);
 
-        const gltf = AssetManager.Instance.get(this.modelPath);
+        const gltf = AssetManager.Instance.get(this.enemyTypeDefinition.modelPath);
         const animations = gltf.animations;
 
         if (animations && animations.length > 0) {
@@ -729,7 +730,6 @@ export class Enemy extends BaseMesh {
                         this.body.velocity.x *= 0.9;
                         this.body.velocity.z *= 0.9;
                     }
-
                 } else {
                     // Return to base position
                     if (distToBase > this.baseArrivalThreshold) {
@@ -813,12 +813,17 @@ export class Enemy extends BaseMesh {
         this.updateAnimations(isMoving);
     }
 
+    /**
+     * Attempts to execute a type-specific movement ability.
+     * Returns true when an ability was executed (and regular chase movement
+     * should be skipped for this frame), otherwise false.
+     */
     private tryUseEnemyTypeMovementAbility(
         playerPos: CANNON.Vec3,
         myPos: CANNON.Vec3,
         distToPlayer: number,
     ): boolean {
-        const jumpBehavior = this.enemyTypeDefinition?.jumpBehavior;
+        const jumpBehavior = this.enemyTypeDefinition.jumpBehavior;
         if (!jumpBehavior) return false;
         if (this.enemyTypeAbilityCooldownTimer > 0) return false;
         if (distToPlayer <= jumpBehavior.minDistanceToPlayer) return false;
