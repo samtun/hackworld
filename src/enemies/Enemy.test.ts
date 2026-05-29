@@ -52,7 +52,7 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         techDropRateFactor: 1.0,
         enemyType: EnemyType.Brute,
         enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Brute),
-        enemyTypeAbilityCooldownTimer: 0,
+        enemyTypeAbilityCooldownTimers: new Map(),
 
         // State flags
         isDead: false,

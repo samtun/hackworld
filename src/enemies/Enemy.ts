@@ -207,8 +207,8 @@ export class Enemy extends BaseMesh {
     readonly enemyType: EnemyType;
     /** Resolved type definition for this enemy family (model path, movement traits). */
     private enemyTypeDefinition: EnemyTypeDefinition;
-    /** Cooldown timer for optional enemy-type movement abilities (e.g. stalker jump). */
-    private enemyTypeAbilityCooldownTimer: number = 0;
+    /** Cooldown timers for optional enemy-type movement abilities keyed by ability id. */
+    private enemyTypeAbilityCooldownTimers: Map<string, number> = new Map();
 
     /** Flat circular shadow below the enemy. */
     public blobShadow!: BlobShadow;
@@ -521,8 +521,12 @@ export class Enemy extends BaseMesh {
 
         if (this.isDead) return;
 
-        if (this.enemyTypeAbilityCooldownTimer > 0) {
-            this.enemyTypeAbilityCooldownTimer = Math.max(0, this.enemyTypeAbilityCooldownTimer - dt);
+        if (this.enemyTypeAbilityCooldownTimers.size > 0) {
+            for (const [abilityId, cooldown] of this.enemyTypeAbilityCooldownTimers.entries()) {
+                const nextCooldown = cooldown - dt;
+                if (nextCooldown > 0) this.enemyTypeAbilityCooldownTimers.set(abilityId, nextCooldown);
+                else this.enemyTypeAbilityCooldownTimers.delete(abilityId);
+            }
         }
 
         // Cast a ray straight down to find the floor surface position and normal,
@@ -823,30 +827,27 @@ export class Enemy extends BaseMesh {
         myPos: CANNON.Vec3,
         distToPlayer: number,
     ): boolean {
-        const jumpBehavior = this.enemyTypeDefinition.jumpBehavior;
-        if (!jumpBehavior) return false;
-        if (this.enemyTypeAbilityCooldownTimer > 0) return false;
-        if (distToPlayer <= jumpBehavior.minDistanceToPlayer) return false;
+        const movementAbilities = this.enemyTypeDefinition.movementAbilities;
+        if (!movementAbilities || movementAbilities.length === 0) return false;
 
-        const dx = playerPos.x - myPos.x;
-        const dz = playerPos.z - myPos.z;
-        const len = Math.sqrt(dx * dx + dz * dz);
-        if (len <= 0) return false;
+        for (const movementAbility of movementAbilities) {
+            const cooldown = this.enemyTypeAbilityCooldownTimers.get(movementAbility.id) ?? 0;
+            if (cooldown > 0) continue;
 
-        const dirX = dx / len;
-        const dirZ = dz / len;
-        const horizontalVelocity = jumpBehavior.forwardDistance / jumpBehavior.jumpDuration;
-        this.body.velocity.x = dirX * horizontalVelocity;
-        this.body.velocity.z = dirZ * horizontalVelocity;
-        this.body.velocity.y = Math.max(this.body.velocity.y, jumpBehavior.upwardVelocity);
-        this.enemyTypeAbilityCooldownTimer = jumpBehavior.cooldown;
+            const executed = movementAbility.execute({
+                body: this.body,
+                mesh: this.mesh,
+                playerPos,
+                myPos,
+                distToPlayer,
+            });
+            if (!executed) continue;
 
-        const angle = Math.atan2(dirX, dirZ);
-        const targetQuaternion = new THREE.Quaternion();
-        targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
-        this.mesh.quaternion.copy(targetQuaternion);
+            this.enemyTypeAbilityCooldownTimers.set(movementAbility.id, movementAbility.cooldown);
+            return true;
+        }
 
-        return true;
+        return false;
     }
 
     // Set flash color for damage effect
