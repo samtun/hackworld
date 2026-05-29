@@ -16,11 +16,12 @@ describe('GameTest', () => {
     });
 
     describe('getRequiredAssets', () => {
-        it('includes the monster model needed by enemies', () => {
+        it('includes both enemy models needed by enemies', () => {
             // GameTest is abstract-safe to instantiate via prototype for metadata-only tests
             const stage = Object.create(GameTest.prototype) as GameTest;
             const assets = stage.getRequiredAssets();
             expect(assets).toContain('models/brute_enemy.glb');
+            expect(assets).toContain('models/stalker_enemy.glb');
         });
     });
 });

@@ -25,6 +25,8 @@ import { Enemy } from '../enemies/Enemy';
 import { BossEnemy } from '../enemies/BossEnemy';
 import { ElectricTrap } from '../items/ElectricTrap';
 import { AudioManager } from '../AudioManager';
+import { DEFAULT_ENEMY_TYPE, type EnemyType } from '../enemies/EnemyType';
+import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -110,6 +112,7 @@ export class GameTest extends BaseStage {
     getRequiredAssets(): string[] {
         return [
             'models/brute_enemy.glb',
+            'models/stalker_enemy.glb',
         ];
     }
 
@@ -209,6 +212,8 @@ export class GameTest extends BaseStage {
     protected override spawnEnemy(
         position: CANNON.Vec3,
         spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite = EnemySpawnType.Regular,
+        _spawn?: EnemySpawnPoint,
+        enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ): void {
         const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial, spawnType === EnemySpawnType.Elite ? {
             maxHp: 150,
@@ -223,13 +228,17 @@ export class GameTest extends BaseStage {
             blockChance: 0.2,
             size: 2.75,
             color: 0x663300,
-        } : {});
+        } : {}, enemyType);
         enemy.update(0);
         this.enemies.push(enemy);
     }
 
-    protected override spawnBoss(position: CANNON.Vec3): void {
-        const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+    protected override spawnBoss(
+        position: CANNON.Vec3,
+        _spawn?: EnemySpawnPoint,
+        enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
+    ): void {
+        const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial, {}, enemyType);
         boss.update(0);
         this.enemies.push(boss);
         AudioManager.Instance.playBossSpawn();

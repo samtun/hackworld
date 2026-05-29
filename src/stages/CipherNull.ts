@@ -134,7 +134,8 @@ export class CipherNull extends StageWithLevels {
 
     getRequiredAssets(): string[] {
         return [
-            'models/brute_enemy.glb'
+            'models/brute_enemy.glb',
+            'models/stalker_enemy.glb',
         ];
     }
 

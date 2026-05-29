@@ -99,7 +99,8 @@ export class PacketForge extends BaseStage {
 
     getRequiredAssets(): string[] {
         return [
-            'models/brute_enemy.glb'
+            'models/brute_enemy.glb',
+            'models/stalker_enemy.glb',
         ];
     }
 
