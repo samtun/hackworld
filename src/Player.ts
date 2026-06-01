@@ -78,7 +78,7 @@ export class Player extends BaseMesh {
     private readonly MAX_LEVEL = 9999;
     private readonly LEVEL_HP_MULTIPLIER = 10.01; // HP increase by (10 + 0.01) * level
     private readonly LEVEL_TP_MULTIPLIER = 5.005; // TP increase by (5 + 0.005) * level
-    private readonly EXP_BASE = 350;
+    private readonly EXP_BASE = 250;
     private readonly EXP_LINEAR_FACTOR = 30;
     private readonly EXP_QUADRATIC_FACTOR = 0.07;
     private readonly LASER_UNLOCK_LEVEL = 10;

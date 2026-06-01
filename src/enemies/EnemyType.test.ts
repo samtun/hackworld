@@ -3,6 +3,8 @@ import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { EnemyType, getEnemyTypeDefinition } from './EnemyType';
 
+const TEST_NORMAL_MOVE_SPEED = 2.4;
+
 describe('EnemyType definitions', () => {
     it('keeps brute without movement abilities', () => {
         const bruteDefinition = getEnemyTypeDefinition(EnemyType.Brute);
@@ -30,6 +32,7 @@ describe('EnemyType definitions', () => {
             playerPos: new CANNON.Vec3(1.5, 0, 0),
             myPos: new CANNON.Vec3(0, 0, 0),
             distToPlayer: 1.5,
+            normalMoveSpeed: TEST_NORMAL_MOVE_SPEED,
         });
         expect(blocked).toBe(false);
         expect(body.velocity.x).toBe(0);
@@ -41,9 +44,10 @@ describe('EnemyType definitions', () => {
             playerPos: new CANNON.Vec3(3.5, 0, 0),
             myPos: new CANNON.Vec3(0, 0, 0),
             distToPlayer: 3.5,
+            normalMoveSpeed: TEST_NORMAL_MOVE_SPEED,
         });
         expect(executed).toBe(true);
-        expect(body.velocity.x).toBeCloseTo(3.0 / 0.28, 2);
-        expect(body.velocity.y).toBeCloseTo(1.2, 2);
+        expect(body.velocity.x).toBeCloseTo(TEST_NORMAL_MOVE_SPEED * 2, 5);
+        expect(body.velocity.y).toBeCloseTo(10, 5);
     });
 });

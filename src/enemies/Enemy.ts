@@ -209,6 +209,8 @@ export class Enemy extends BaseMesh {
     private enemyTypeDefinition: EnemyTypeDefinition;
     /** Cooldown timers for optional enemy-type movement abilities keyed by ability id. */
     private enemyTypeAbilityCooldownTimers: Map<string, number> = new Map();
+    /** Counts down while an ability is controlling horizontal movement; skip normal velocity override while > 0. */
+    private abilityMoveTimer: number = 0;
 
     /** Flat circular shadow below the enemy. */
     public blobShadow!: BlobShadow;
@@ -239,6 +241,12 @@ export class Enemy extends BaseMesh {
         this.enemyType = enemyType;
         this.enemyTypeDefinition = enemyTypeDefinition;
         this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
+
+        // Pre-seed cooldown timers so abilities don't fire immediately on spawn.
+        for (const ability of enemyTypeDefinition.movementAbilities ?? []) {
+            const randomExtra = ability.randomDelay != null ? Math.random() * ability.randomDelay : 0;
+            this.enemyTypeAbilityCooldownTimers.set(ability.id, ability.cooldown + randomExtra);
+        }
         const resolvedConfig: EnemyArchetypeConfig = { ...DEFAULT_ENEMY_ARCHETYPE, ...config };
         resolvedConfig.speed *= this.enemyTypeDefinition.speedMultiplier;
 
@@ -703,7 +711,14 @@ export class Enemy extends BaseMesh {
                     this.attack();
                 }
 
+                if (this.abilityMoveTimer > 0) {
+                    this.abilityMoveTimer -= dt;
+                }
+
                 if (this.tryUseEnemyTypeMovementAbility(playerPos, myPos, distToPlayer)) {
+                    isMoving = true;
+                } else if (this.abilityMoveTimer > 0) {
+                    // An ability is still controlling movement; don't override horizontal velocity.
                     isMoving = true;
                 } else {
                     const moveResult = this.computeMovement(playerPos, myPos, dt);
@@ -840,10 +855,13 @@ export class Enemy extends BaseMesh {
                 playerPos,
                 myPos,
                 distToPlayer,
+                normalMoveSpeed: this.speed,
             });
             if (!executed) continue;
 
-            this.enemyTypeAbilityCooldownTimers.set(movementAbility.id, movementAbility.cooldown);
+            const randomExtra = movementAbility.randomDelay != null ? Math.random() * movementAbility.randomDelay : 0;
+            this.enemyTypeAbilityCooldownTimers.set(movementAbility.id, movementAbility.cooldown + randomExtra);
+            this.abilityMoveTimer = movementAbility.moveDuration ?? 0;
             return true;
         }
 
