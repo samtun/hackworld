@@ -13,7 +13,7 @@ import { ModelColliderLoader } from './ModelColliderLoader';
  *
  * Naming convention for paired assets:
  *   Visual model:   models/{modelName}.glb
- *   Collider model: models/{modelName}_collider.glb   (optional — skipped if not preloaded)
+ *   Collider model: models/{modelName}.collider.glb   (optional — skipped if not preloaded)
  *
  * Usage — pure visual prop (no subclassing needed):
  *   this.props.push(new ModelProp('pile', scene, physicsWorld, physicsMaterial, position));
@@ -49,7 +49,7 @@ export class ModelProp extends BaseMesh {
         onScene?.(this.mesh);
 
         try {
-            const colliderGltf = AssetManager.Instance.get(`models/${modelName}_collider.glb`);
+            const colliderGltf = AssetManager.Instance.get(`models/${modelName}.collider.glb`);
             const colliderScene = colliderGltf.scene;
             if (rotation) {
                 colliderScene.rotation.copy(rotation);

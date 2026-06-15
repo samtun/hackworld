@@ -27,6 +27,7 @@ import { ElectricTrap } from '../items/ElectricTrap';
 import { AudioManager } from '../AudioManager';
 import { DEFAULT_ENEMY_TYPE, type EnemyType } from '../enemies/EnemyType';
 import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
+import { ModelProp } from '../ModelProp';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -71,6 +72,19 @@ const AEGIS_SWORD_SELL_PRICE = 50;
 /* Traps area */
 const TRAPS_AREA_X = 12;
 const TRAPS_AREA_Z = -5;
+
+/** Props grid area (opposite side from item grid) */
+const PROP_GRID_X = -5;
+const PROP_GRID_Z = -10;
+const PROP_GRID_SPACING = 4;
+const PROP_GRID_COLS = 4;
+
+/** All available prop model names (relative to 'props/' prefix). */
+const PROP_NAMES = [
+    'ac', 'barrier', 'dataspire', 'energycells',
+    'pile', 'pipes', 'router', 'satellitedish',
+    'serverrack', 'vent',
+];
 
 // ─── GameTest ─────────────────────────────────────────────────────────────────
 
@@ -148,6 +162,7 @@ export class GameTest extends BaseStage {
         this.buildItemGrid();
         this.buildBarrelChestArea();
         this.buildTrapsArea();
+        this.buildPropsGrid();
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -397,6 +412,26 @@ export class GameTest extends BaseStage {
             damage: 10,
             activationInterval: [],
         }));
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    //  Props Grid
+    // ───────────────────────────────────────────────────────────────────────────
+
+    private buildPropsGrid(): void {
+        PROP_NAMES.forEach((name, i) => {
+            const col = i % PROP_GRID_COLS;
+            const row = Math.floor(i / PROP_GRID_COLS);
+            const x = PROP_GRID_X - col * PROP_GRID_SPACING;
+            const z = PROP_GRID_Z - row * PROP_GRID_SPACING;
+            this.props.push(new ModelProp(
+                `props/${name}`,
+                this.scene,
+                this.physicsWorld,
+                this.physicsMaterial,
+                new THREE.Vector3(x, 0, z),
+            ));
+        });
     }
 
     // ───────────────────────────────────────────────────────────────────────────

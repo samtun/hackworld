@@ -215,13 +215,13 @@ export class World {
             'models/trader_weapons.glb',
             'models/npc_placeholder.glb',
             'models/healing_station.glb',
-            'models/healing_station_collider.glb',
+            'models/healing_station.collider.glb',
             'models/xdata_terminal.glb',
             'models/mainframe.glb',
             'models/teleporter.glb',
             // Stages
             'models/lobby.glb',
-            'models/lobby_collider.glb',
+            'models/lobby.collider.glb',
             // Characters
             'models/main_character.glb',
             // Effects
@@ -234,10 +234,26 @@ export class World {
             'models/chip_drop.glb',
             'models/core_drop.glb',
             // Props
-            'models/pile.glb',
-            'models/pile_collider.glb',
-            'models/satellite_dish.glb',
-            'models/satellite_dish_collider.glb'
+            'models/props/pile.glb',
+            'models/props/pile.collider.glb',
+            'models/props/satellitedish.glb',
+            'models/props/satellitedish.collider.glb',
+            'models/props/ac.glb',
+            'models/props/ac.collider.glb',
+            'models/props/pipes.glb',
+            'models/props/pipes.collider.glb',
+            'models/props/serverrack.glb',
+            'models/props/serverrack.collider.glb',
+            'models/props/barrier.glb',
+            'models/props/barrier.collider.glb',
+            'models/props/dataspire.glb',
+            'models/props/dataspire.collider.glb',
+            'models/props/energycells.glb',
+            'models/props/energycells.collider.glb',
+            'models/props/router.glb',
+            'models/props/router.collider.glb',
+            'models/props/vent.glb',
+            'models/props/vent.collider.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);
