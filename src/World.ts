@@ -233,27 +233,6 @@ export class World {
             'models/weapon_drop.glb',
             'models/chip_drop.glb',
             'models/core_drop.glb',
-            // Props
-            'models/props/pile.glb',
-            'models/props/pile.collider.glb',
-            'models/props/satellitedish.glb',
-            'models/props/satellitedish.collider.glb',
-            'models/props/ac.glb',
-            'models/props/ac.collider.glb',
-            'models/props/pipes.glb',
-            'models/props/pipes.collider.glb',
-            'models/props/serverrack.glb',
-            'models/props/serverrack.collider.glb',
-            'models/props/barrier.glb',
-            'models/props/barrier.collider.glb',
-            'models/props/dataspire.glb',
-            'models/props/dataspire.collider.glb',
-            'models/props/energycells.glb',
-            'models/props/energycells.collider.glb',
-            'models/props/router.glb',
-            'models/props/router.collider.glb',
-            'models/props/vent.glb',
-            'models/props/vent.collider.glb',
         ];
 
         await this.assetManager.preloadAll(commonAssets);
