@@ -150,6 +150,7 @@ export class SecurityCore extends StageWithLevels {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            ...this.getDungeonPropAssets(),
         ];
     }
 

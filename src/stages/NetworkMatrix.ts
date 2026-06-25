@@ -88,6 +88,7 @@ export class NetworkMatrix extends BaseStage {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            ...this.getDungeonPropAssets(),
         ];
     }
 

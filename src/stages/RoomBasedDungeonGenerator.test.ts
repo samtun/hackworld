@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
     RoomBasedDungeonGenerator,
+    CORRIDOR_WIDTH,
     WALL_HEIGHT,
     WALL_THICKNESS,
     COLLIDER_EXTRA_HEIGHT,
@@ -11,6 +12,7 @@ import {
     EnemySpawnType,
 } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig, DungeonLayout } from './RoomBasedDungeonGenerator';
+import { DUNGEON_PROP_DEFINITIONS } from './DungeonPropCatalog';
 
 const baseConfig: RoomGenerationConfig = {
     combatRoomCount: { min: 2, max: 4 },
@@ -381,10 +383,64 @@ describe('RoomBasedDungeonGenerator', () => {
             }
         });
 
-        it('obstacles have WALL_HEIGHT height', () => {
+        it('obstacles use prop footprints from the dungeon prop catalog', () => {
             const layout = gen(34);
             for (const obs of layout.obstacles) {
-                expect(obs.height).toBe(WALL_HEIGHT);
+                expect(DUNGEON_PROP_DEFINITIONS.some(def =>
+                    def.modelName === obs.propModelName
+                    && def.width === obs.width
+                    && def.height === obs.height
+                    && def.depth === obs.depth,
+                )).toBe(true);
+            }
+        });
+
+        it('obstacles keep corridor entrances clear by their footprint', () => {
+            const layout = gen(35);
+            for (const obs of layout.obstacles) {
+                const room = layout.rooms.find(r =>
+                    obs.x >= r.centerX - r.width / 2
+                    && obs.x <= r.centerX + r.width / 2
+                    && obs.z >= r.centerZ - r.depth / 2
+                    && obs.z <= r.centerZ + r.depth / 2,
+                );
+                expect(room).toBeDefined();
+                for (const door of room!.doors) {
+                    const doorPos = door.direction === 'north'
+                        ? { x: room!.centerX + door.offset, z: room!.centerZ + room!.depth / 2 }
+                        : door.direction === 'south'
+                            ? { x: room!.centerX + door.offset, z: room!.centerZ - room!.depth / 2 }
+                            : door.direction === 'east'
+                                ? { x: room!.centerX + room!.width / 2, z: room!.centerZ + door.offset }
+                                : { x: room!.centerX - room!.width / 2, z: room!.centerZ + door.offset };
+                    const dx = obs.x - doorPos.x;
+                    const dz = obs.z - doorPos.z;
+                    const minDistance = CORRIDOR_WIDTH + 1 + Math.max(obs.width, obs.depth) / 2;
+                    expect(Math.sqrt(dx * dx + dz * dz)).toBeGreaterThanOrEqual(minDistance);
+                }
+            }
+        });
+    });
+
+    describe('enemy spawns', () => {
+        it('enemies do not spawn on top of obstacle props', () => {
+            const layout = gen(36);
+            for (const roomSpawns of layout.roomSpawns) {
+                const room = layout.rooms.find(r => r.id === roomSpawns.roomId)!;
+                const roomObstacles = layout.obstacles.filter(obs =>
+                    obs.x >= room.centerX - room.width / 2
+                    && obs.x <= room.centerX + room.width / 2
+                    && obs.z >= room.centerZ - room.depth / 2
+                    && obs.z <= room.centerZ + room.depth / 2,
+                );
+
+                for (const spawn of roomSpawns.spawns) {
+                    for (const obs of roomObstacles) {
+                        const dx = spawn.x - obs.x;
+                        const dz = spawn.z - obs.z;
+                        expect(Math.sqrt(dx * dx + dz * dz)).toBeGreaterThanOrEqual(Math.max(obs.width, obs.depth));
+                    }
+                }
             }
         });
     });
