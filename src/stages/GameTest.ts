@@ -83,7 +83,8 @@ const PROP_GRID_COLS = 4;
 const PROP_NAMES = [
     'ac', 'barrier', 'dataspire', 'energycells',
     'pile', 'pipes', 'cabletray', 'satellitedish',
-    'serverrack', 'vent', 'cabletraybow', 'router'
+    'serverrack', 'vent', 'cabletraybow', 'router',
+    'cabletraycurve', 'coolingtank', 'holoprojector',
 ];
 
 // ─── GameTest ─────────────────────────────────────────────────────────────────
@@ -152,6 +153,12 @@ export class GameTest extends BaseStage {
             'models/props/cabletraybow.collider.glb',
             'models/props/cabletray.glb',
             'models/props/cabletray.collider.glb',
+            'models/props/cabletraycurve.glb',
+            'models/props/cabletraycurve.collider.glb',
+            'models/props/coolingtank.glb',
+            'models/props/coolingtank.collider.glb',
+            'models/props/holoprojector.glb',
+            'models/props/holoprojector.collider.glb',
         ];
     }
 
