@@ -10,7 +10,7 @@ import { ItemDropType } from '../ItemDropType';
 export class ChipDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.CHIP;
     public getDistributionWeight(_enemy: Enemy, _: Player): number {
-        return 4;
+        return 2;
     }
 
     drop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {

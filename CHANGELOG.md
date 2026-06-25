@@ -1,3 +1,10 @@
+## [3.29.1](https://github.com/samtun/hackworld/compare/v3.29.0...v3.29.1) (2026-05-28)
+
+
+### Bug Fixes
+
+* reduce enemy and barrel high-value drop rates ([db5a184](https://github.com/samtun/hackworld/commit/db5a1842cf754ce21ff6dddb8f18b1e1207f9579)), closes [hi#value](https://github.com/hi/issues/value)
+
 # [3.29.0](https://github.com/samtun/hackworld/compare/v3.28.0...v3.29.0) (2026-05-27)
 
 

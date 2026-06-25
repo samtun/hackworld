@@ -137,27 +137,27 @@ describe('MoneyDropStrategy', () => {
 // ─── WeaponDropStrategy ───────────────────────────────────────────────────────
 
 describe('WeaponDropStrategy', () => {
-    it('has distribution weight 5', () => {
+    it('has distribution weight 2.5', () => {
         const strategy = new WeaponDropStrategy();
-        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(5);
+        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(2.5);
     });
 });
 
 // ─── ChipDropStrategy ─────────────────────────────────────────────────────────
 
 describe('ChipDropStrategy', () => {
-    it('has distribution weight 4', () => {
+    it('has distribution weight 2', () => {
         const strategy = new ChipDropStrategy();
-        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(4);
+        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(2);
     });
 });
 
 // ─── CoreDropStrategy ─────────────────────────────────────────────────────────
 
 describe('CoreDropStrategy', () => {
-    it('has distribution weight 4', () => {
+    it('has distribution weight 2', () => {
         const strategy = new CoreDropStrategy();
-        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(4);
+        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(2);
     });
 });
 

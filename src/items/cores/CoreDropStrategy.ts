@@ -10,7 +10,7 @@ import { ItemDropType } from '../ItemDropType';
 export class CoreDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.CORE;
     public getDistributionWeight(_enemy: Enemy, _player: Player): number {
-        return 4;
+        return 2;
     }
 
     drop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {

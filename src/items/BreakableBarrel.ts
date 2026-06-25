@@ -60,6 +60,12 @@ export class BreakableBarrel implements Breakable {
     private static readonly RADIAL_SEGMENTS = 8;
     /** Number of height segments (must be even so there is a middle ring). */
     private static readonly HEIGHT_SEGMENTS = 4;
+    /** Barrel drop thresholds for rarer high-value drops. */
+    private static readonly WEAPON_DROP_THRESHOLD = 0.01;
+    private static readonly CHIP_DROP_THRESHOLD = 0.02;
+    private static readonly CORE_DROP_THRESHOLD = 0.03;
+    private static readonly MONEY_DROP_THRESHOLD = 0.19;
+    private static readonly POTION_DROP_THRESHOLD = 0.29;
 
     /** Number of fragments spawned on destruction. */
     private static readonly FRAGMENT_COUNT = 8;
@@ -282,15 +288,15 @@ export class BreakableBarrel implements Breakable {
 
         // Determine item to drop, or drop nothing
         const roll = Math.random() - player.luckDropChanceBonus;
-        if (roll < 0.08) {
+        if (roll < BreakableBarrel.WEAPON_DROP_THRESHOLD) {
             return this.generateWeaponDrop(scene, player, dropPosition);
-        } else if (roll < 0.16) {
+        } else if (roll < BreakableBarrel.CHIP_DROP_THRESHOLD) {
             return this.generateChipDrop(scene, player, dropPosition);
-        } else if (roll < 0.24) {
+        } else if (roll < BreakableBarrel.CORE_DROP_THRESHOLD) {
             return this.generateCoreDrop(scene, player, dropPosition);
-        } else if (roll < 0.40){
+        } else if (roll < BreakableBarrel.MONEY_DROP_THRESHOLD) {
             return this.generateMoneyDrop(scene, player, dropPosition);
-        } else if (roll < 0.50) {
+        } else if (roll < BreakableBarrel.POTION_DROP_THRESHOLD) {
             return this.generatePotionDrop(scene, player, dropPosition);
         } else {
             return null;
