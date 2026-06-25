@@ -25,6 +25,9 @@ import { Enemy } from '../enemies/Enemy';
 import { BossEnemy } from '../enemies/BossEnemy';
 import { ElectricTrap } from '../items/ElectricTrap';
 import { AudioManager } from '../AudioManager';
+import { DEFAULT_ENEMY_TYPE, type EnemyType } from '../enemies/EnemyType';
+import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
+import { ModelProp } from '../ModelProp';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -70,6 +73,21 @@ const AEGIS_SWORD_SELL_PRICE = 50;
 const TRAPS_AREA_X = 12;
 const TRAPS_AREA_Z = -5;
 
+/** Props grid area (opposite side from item grid) */
+const PROP_GRID_X = -5;
+const PROP_GRID_Z = -10;
+const PROP_GRID_SPACING = 4;
+const PROP_GRID_COLS = 4;
+
+/** All available prop model names (relative to 'props/' prefix). */
+const PROP_NAMES = [
+    'ac', 'barrier', 'dataspire', 'energycells',
+    'pile', 'pipes', 'cabletray', 'satellitedish',
+    'serverrack', 'vent', 'cabletraybow', 'router',
+    'cabletraycurve', 'coolingtank', 'coolingtanklarge', 'holoprojector',
+    'desk', 'deskl',
+];
+
 // ─── GameTest ─────────────────────────────────────────────────────────────────
 
 export class GameTest extends BaseStage {
@@ -109,7 +127,45 @@ export class GameTest extends BaseStage {
 
     getRequiredAssets(): string[] {
         return [
-            'models/monster.glb',
+            'models/brute_enemy.glb',
+            'models/stalker_enemy.glb',
+            // Props
+            'models/props/pile.glb',
+            'models/props/pile.collider.glb',
+            'models/props/satellitedish.glb',
+            'models/props/satellitedish.collider.glb',
+            'models/props/ac.glb',
+            'models/props/ac.collider.glb',
+            'models/props/pipes.glb',
+            'models/props/pipes.collider.glb',
+            'models/props/serverrack.glb',
+            'models/props/serverrack.collider.glb',
+            'models/props/barrier.glb',
+            'models/props/barrier.collider.glb',
+            'models/props/dataspire.glb',
+            'models/props/dataspire.collider.glb',
+            'models/props/energycells.glb',
+            'models/props/energycells.collider.glb',
+            'models/props/router.glb',
+            'models/props/router.collider.glb',
+            'models/props/vent.glb',
+            'models/props/vent.collider.glb',
+            'models/props/cabletraybow.glb',
+            'models/props/cabletraybow.collider.glb',
+            'models/props/cabletray.glb',
+            'models/props/cabletray.collider.glb',
+            'models/props/cabletraycurve.glb',
+            'models/props/cabletraycurve.collider.glb',
+            'models/props/coolingtank.glb',
+            'models/props/coolingtank.collider.glb',
+            'models/props/coolingtanklarge.glb',
+            'models/props/coolingtanklarge.collider.glb',
+            'models/props/holoprojector.glb',
+            'models/props/holoprojector.collider.glb',
+            'models/props/desk.glb',
+            'models/props/desk.collider.glb',
+            'models/props/deskl.glb',
+            'models/props/deskl.collider.glb',
         ];
     }
 
@@ -145,6 +201,7 @@ export class GameTest extends BaseStage {
         this.buildItemGrid();
         this.buildBarrelChestArea();
         this.buildTrapsArea();
+        this.buildPropsGrid();
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -177,9 +234,9 @@ export class GameTest extends BaseStage {
             this.npcs.add(btn as unknown as Npc);
         };
 
-        addButton(-2, 'Enemy',       0xff3333, (pos) => this.spawnEnemy(pos));
-        addButton( 0, 'Elite Enemy',  0xff8800, (pos) => this.spawnEnemy(pos, EnemySpawnType.Elite));
-        addButton( 2, 'Boss',         0xaa00ff, (pos) => this.spawnBoss(pos));
+        addButton(-2, 'Enemy', 0xff3333, (pos) => this.spawnEnemy(pos));
+        addButton(0, 'Elite Enemy', 0xff8800, (pos) => this.spawnEnemy(pos, EnemySpawnType.Elite));
+        addButton(2, 'Boss', 0xaa00ff, (pos) => this.spawnBoss(pos));
 
         // Indicator plane spanning the button row and the spawn zone
         const minX = BUTTON_AREA_X - 2 - SPAWN_AREA_PADDING;
@@ -209,6 +266,8 @@ export class GameTest extends BaseStage {
     protected override spawnEnemy(
         position: CANNON.Vec3,
         spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite = EnemySpawnType.Regular,
+        _spawn?: EnemySpawnPoint,
+        enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ): void {
         const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial, spawnType === EnemySpawnType.Elite ? {
             maxHp: 150,
@@ -223,13 +282,17 @@ export class GameTest extends BaseStage {
             blockChance: 0.2,
             size: 2.75,
             color: 0x663300,
-        } : {});
+        } : {}, enemyType);
         enemy.update(0);
         this.enemies.push(enemy);
     }
 
-    protected override spawnBoss(position: CANNON.Vec3): void {
-        const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial);
+    protected override spawnBoss(
+        position: CANNON.Vec3,
+        _spawn?: EnemySpawnPoint,
+        enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
+    ): void {
+        const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial, {}, enemyType);
         boss.update(0);
         this.enemies.push(boss);
         AudioManager.Instance.playBossSpawn();
@@ -250,12 +313,12 @@ export class GameTest extends BaseStage {
 
         // Row 0: Aegis Sword – one per tier
         const weaponConfigs: { damage: number; level: number; factor: number }[] = [
-            { damage: 8,    level: 1, factor: 0.80 },  // Broken
-            { damage: 10,   level: 1, factor: 1.00 },  // Stable
-            { damage: 10,   level: 1, factor: 1.05 },  // Maintained
-            { damage: 11,   level: 1, factor: 1.10 },  // Overclocked
-            { damage: 12,   level: 1, factor: 1.15 },  // ZeroDay
-            { damage: 12,   level: 1, factor: 1.20 },  // Leet
+            { damage: 8, level: 1, factor: 0.80 },  // Broken
+            { damage: 10, level: 1, factor: 1.00 },  // Stable
+            { damage: 10, level: 1, factor: 1.05 },  // Maintained
+            { damage: 11, level: 1, factor: 1.10 },  // Overclocked
+            { damage: 12, level: 1, factor: 1.15 },  // ZeroDay
+            { damage: 12, level: 1, factor: 1.20 },  // Leet
         ];
         for (const wc of weaponConfigs) {
             this.addDropConfig(pos(), (scene, p) =>
@@ -388,7 +451,27 @@ export class GameTest extends BaseStage {
             damage: 10,
             activationInterval: [],
         }));
-        }
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    //  Props Grid
+    // ───────────────────────────────────────────────────────────────────────────
+
+    private buildPropsGrid(): void {
+        PROP_NAMES.forEach((name, i) => {
+            const col = i % PROP_GRID_COLS;
+            const row = Math.floor(i / PROP_GRID_COLS);
+            const x = PROP_GRID_X - col * PROP_GRID_SPACING;
+            const z = PROP_GRID_Z - row * PROP_GRID_SPACING;
+            this.props.push(new ModelProp(
+                `props/${name}`,
+                this.scene,
+                this.physicsWorld,
+                this.physicsMaterial,
+                new THREE.Vector3(x, 0, z),
+            ));
+        });
+    }
 
     // ───────────────────────────────────────────────────────────────────────────
     //  Respawn tick helpers

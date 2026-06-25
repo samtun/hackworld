@@ -22,6 +22,7 @@ import { MinimapDrop } from '../items/minimap/MinimapDrop';
 import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
 import { AudioManager } from '../AudioManager';
 import { ModelProp } from '../ModelProp';
+import { DEFAULT_ENEMY_TYPE, EnemyType } from '../enemies/EnemyType';
 
 /**
  * Tiny Y offset applied to north/south walls (those running along X) to
@@ -570,6 +571,7 @@ export abstract class BaseStage {
         position: CANNON.Vec3,
         spawnType: EnemySpawnType.Regular | EnemySpawnType.Elite = EnemySpawnType.Regular,
         spawn?: EnemySpawnPoint,
+        enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ): void {
         const enemy = new Enemy(
             this.scene,
@@ -577,6 +579,7 @@ export abstract class BaseStage {
             position,
             this.physicsMaterial,
             this.getEnemyConfig(spawnType, spawn),
+            enemyType,
         );
         this.enemies.push(enemy);
     }
@@ -584,16 +587,49 @@ export abstract class BaseStage {
     /**
      * Spawn boss enemy
      */
-    protected spawnBoss(position: CANNON.Vec3, spawn?: EnemySpawnPoint): void {
+    protected spawnBoss(
+        position: CANNON.Vec3,
+        spawn?: EnemySpawnPoint,
+        enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
+    ): void {
         const boss = new BossEnemy(
             this.scene,
             this.physicsWorld,
             position,
             this.physicsMaterial,
             this.getBossConfig(spawn),
+            enemyType,
         );
         this.enemies.push(boss);
         AudioManager.Instance.playBossSpawn();
+    }
+
+    /**
+     * List enemy families that can be rolled for a spawn tier.
+     * Stages can override this to restrict specific tiers (for example, only
+     * Brutes for early-game regular spawns while allowing Stalkers on elites).
+     * The default implementation ignores the tier and enables all known types.
+     */
+    protected getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        void spawnType;
+        return [EnemyType.Brute, EnemyType.Stalker];
+    }
+
+    /**
+     * Resolve the enemy family for an individual spawn point.
+     * Priority: explicit {@link EnemySpawnPoint.enemyType}, then random choice
+     * from {@link getAvailableEnemyTypes}, then a brute fallback.
+     */
+    private resolveEnemyTypeForSpawn(spawn: EnemySpawnPoint): EnemyType {
+        if (spawn.enemyType) {
+            return spawn.enemyType;
+        }
+        const availableEnemyTypes = this.getAvailableEnemyTypes(spawn.type);
+        if (availableEnemyTypes.length === 0) {
+            return DEFAULT_ENEMY_TYPE;
+        }
+        const selectedIndex = Math.floor(Math.random() * availableEnemyTypes.length);
+        return availableEnemyTypes[selectedIndex];
     }
 
     protected getEnemyConfig(
@@ -799,11 +835,12 @@ export abstract class BaseStage {
 
             const pos = new CANNON.Vec3(sx, spawn.y, sz);
             const countBefore = this.enemies.length;
+            const enemyType = this.resolveEnemyTypeForSpawn(spawn);
 
             if (spawn.type === EnemySpawnType.Regular || spawn.type === EnemySpawnType.Elite) {
-                this.spawnEnemy(pos, spawn.type, spawn);
+                this.spawnEnemy(pos, spawn.type, spawn, enemyType);
             } else if (spawn.type === EnemySpawnType.Boss) {
-                this.spawnBoss(pos, spawn);
+                this.spawnBoss(pos, spawn, enemyType);
             }
 
             if (this.enemies.length > countBefore) {

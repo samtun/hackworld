@@ -215,13 +215,13 @@ export class World {
             'models/trader_weapons.glb',
             'models/npc_placeholder.glb',
             'models/healing_station.glb',
-            'models/healing_station_collider.glb',
+            'models/healing_station.collider.glb',
             'models/xdata_terminal.glb',
             'models/mainframe.glb',
             'models/teleporter.glb',
             // Stages
             'models/lobby.glb',
-            'models/lobby_collider.glb',
+            'models/lobby.collider.glb',
             // Characters
             'models/main_character.glb',
             // Effects
@@ -233,11 +233,6 @@ export class World {
             'models/weapon_drop.glb',
             'models/chip_drop.glb',
             'models/core_drop.glb',
-            // Props
-            'models/pile.glb',
-            'models/pile_collider.glb',
-            'models/satellite_dish.glb',
-            'models/satellite_dish_collider.glb'
         ];
 
         await this.assetManager.preloadAll(commonAssets);

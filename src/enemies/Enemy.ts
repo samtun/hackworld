@@ -10,6 +10,7 @@ import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
 import { BlobShadow } from '../BlobShadow';
 import type { BreakableBarrel } from '../items/BreakableBarrel';
 import { AudioManager } from '../AudioManager';
+import { DEFAULT_ENEMY_TYPE, EnemyType, type EnemyTypeDefinition, getEnemyTypeDefinition } from './EnemyType';
 
 /** Maximum downward distance (metres) for the shadow floor raycast. */
 const SHADOW_CAST_DIST = 4.0;
@@ -202,6 +203,14 @@ export class Enemy extends BaseMesh {
     protected scene: THREE.Scene;
     protected world: CANNON.World;
     protected physicsMaterial: CANNON.Material;
+    /** Logical enemy family used to select model and type-specific behavior. */
+    readonly enemyType: EnemyType;
+    /** Resolved type definition for this enemy family (model path, movement traits). */
+    private enemyTypeDefinition: EnemyTypeDefinition;
+    /** Cooldown timers for optional enemy-type movement abilities keyed by ability id. */
+    private enemyTypeAbilityCooldownTimers: Map<string, number> = new Map();
+    /** Counts down while an ability is controlling horizontal movement; skip normal velocity override while > 0. */
+    private abilityMoveTimer: number = 0;
 
     /** Flat circular shadow below the enemy. */
     public blobShadow!: BlobShadow;
@@ -221,14 +230,25 @@ export class Enemy extends BaseMesh {
         position: CANNON.Vec3,
         physicsMaterial: CANNON.Material,
         config: Partial<EnemyArchetypeConfig> = {},
+        enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ) {
-        super('models/monster.glb');
+        const enemyTypeDefinition = getEnemyTypeDefinition(enemyType);
+        super(enemyTypeDefinition.modelPath);
 
         this.scene = scene;
         this.world = world;
         this.physicsMaterial = physicsMaterial;
+        this.enemyType = enemyType;
+        this.enemyTypeDefinition = enemyTypeDefinition;
         this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
+
+        // Pre-seed cooldown timers so abilities don't fire immediately on spawn.
+        for (const ability of enemyTypeDefinition.movementAbilities ?? []) {
+            const randomExtra = ability.randomDelay != null ? Math.random() * ability.randomDelay : 0;
+            this.enemyTypeAbilityCooldownTimers.set(ability.id, ability.cooldown + randomExtra);
+        }
         const resolvedConfig: EnemyArchetypeConfig = { ...DEFAULT_ENEMY_ARCHETYPE, ...config };
+        resolvedConfig.speed *= this.enemyTypeDefinition.speedMultiplier;
 
         this.maxHp = resolvedConfig.maxHp;
         this.hp = this.maxHp;
@@ -302,7 +322,7 @@ export class Enemy extends BaseMesh {
 
         this.mixer = new THREE.AnimationMixer(this.mesh);
 
-        const gltf = AssetManager.Instance.get('models/monster.glb');
+        const gltf = AssetManager.Instance.get(this.enemyTypeDefinition.modelPath);
         const animations = gltf.animations;
 
         if (animations && animations.length > 0) {
@@ -509,6 +529,14 @@ export class Enemy extends BaseMesh {
 
         if (this.isDead) return;
 
+        if (this.enemyTypeAbilityCooldownTimers.size > 0) {
+            for (const [abilityId, cooldown] of this.enemyTypeAbilityCooldownTimers.entries()) {
+                const nextCooldown = cooldown - dt;
+                if (nextCooldown > 0) this.enemyTypeAbilityCooldownTimers.set(abilityId, nextCooldown);
+                else this.enemyTypeAbilityCooldownTimers.delete(abilityId);
+            }
+        }
+
         // Cast a ray straight down to find the floor surface position and normal,
         // so the shadow is placed at the correct height on both flat and sloped floors.
         const floorRayStart = new CANNON.Vec3(this.body.position.x, this.body.position.y, this.body.position.z);
@@ -683,16 +711,27 @@ export class Enemy extends BaseMesh {
                     this.attack();
                 }
 
-                const moveResult = this.computeMovement(playerPos, myPos, dt);
-                if (moveResult) {
-                    this.body.velocity.x = moveResult.dirX * this.speed;
-                    this.body.velocity.z = moveResult.dirZ * this.speed;
-                    isMoving = true;
+                if (this.abilityMoveTimer > 0) {
+                    this.abilityMoveTimer -= dt;
+                }
 
-                    const angle = Math.atan2(moveResult.dirX, moveResult.dirZ);
-                    const targetQuaternion = new THREE.Quaternion();
-                    targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
-                    this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
+                if (this.tryUseEnemyTypeMovementAbility(playerPos, myPos, distToPlayer)) {
+                    isMoving = true;
+                } else if (this.abilityMoveTimer > 0) {
+                    // An ability is still controlling movement; don't override horizontal velocity.
+                    isMoving = true;
+                } else {
+                    const moveResult = this.computeMovement(playerPos, myPos, dt);
+                    if (moveResult) {
+                        this.body.velocity.x = moveResult.dirX * this.speed;
+                        this.body.velocity.z = moveResult.dirZ * this.speed;
+                        isMoving = true;
+
+                        const angle = Math.atan2(moveResult.dirX, moveResult.dirZ);
+                        const targetQuaternion = new THREE.Quaternion();
+                        targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+                        this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
+                    }
                 }
             } else {
                 // Player out of range - reset stuck state and return to base after delay
@@ -791,6 +830,42 @@ export class Enemy extends BaseMesh {
         // Update animations
         this.updateFootstepAudio(dt, isMoving);
         this.updateAnimations(isMoving);
+    }
+
+    /**
+     * Attempts to execute a type-specific movement ability.
+     * Returns true when an ability was executed (and regular chase movement
+     * should be skipped for this frame), otherwise false.
+     */
+    private tryUseEnemyTypeMovementAbility(
+        playerPos: CANNON.Vec3,
+        myPos: CANNON.Vec3,
+        distToPlayer: number,
+    ): boolean {
+        const movementAbilities = this.enemyTypeDefinition.movementAbilities;
+        if (!movementAbilities || movementAbilities.length === 0) return false;
+
+        for (const movementAbility of movementAbilities) {
+            const cooldown = this.enemyTypeAbilityCooldownTimers.get(movementAbility.id) ?? 0;
+            if (cooldown > 0) continue;
+
+            const executed = movementAbility.execute({
+                body: this.body,
+                mesh: this.mesh,
+                playerPos,
+                myPos,
+                distToPlayer,
+                normalMoveSpeed: this.speed,
+            });
+            if (!executed) continue;
+
+            const randomExtra = movementAbility.randomDelay != null ? Math.random() * movementAbility.randomDelay : 0;
+            this.enemyTypeAbilityCooldownTimers.set(movementAbility.id, movementAbility.cooldown + randomExtra);
+            this.abilityMoveTimer = movementAbility.moveDuration ?? 0;
+            return true;
+        }
+
+        return false;
     }
 
     // Set flash color for damage effect

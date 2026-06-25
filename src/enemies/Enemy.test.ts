@@ -13,6 +13,7 @@ vi.mock('../AudioManager', () => ({
 
 import { Enemy, MAX_ENEMY_RADIUS, ENEMY_RADIUS_FACTOR } from './Enemy';
 import { AudioManager } from '../AudioManager';
+import { EnemyType, getEnemyTypeDefinition } from './EnemyType';
 
 function mockAction() {
     const action: any = {
@@ -49,6 +50,9 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         criticalChance: 0.04,
         criticalHitMultiplier: 1.2,
         techDropRateFactor: 1.0,
+        enemyType: EnemyType.Brute,
+        enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Brute),
+        enemyTypeAbilityCooldownTimers: new Map(),
 
         // State flags
         isDead: false,

@@ -1,4 +1,5 @@
 import type { StageMinimapLayout } from './StageMinimapLayout';
+import type { EnemyType } from '../enemies/EnemyType';
 
 /**
  * Wall height and thickness constants (in metres).
@@ -149,6 +150,7 @@ export interface EnemySpawnPoint {
     y: number;
     z: number;
     type: EnemySpawnType;
+    enemyType?: EnemyType;
 }
 
 export enum EnemySpawnType {

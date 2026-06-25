@@ -3,6 +3,7 @@ import { BaseStage } from './BaseStage';
 import type { StageMinimapLayout } from './StageMinimapLayout';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
+import { EnemyType } from '../enemies/EnemyType';
 
 /** Minimal duck-type for the CANNON.Vec3 positions passed to spawnEnemy stubs. */
 interface Vec3Like { x: number; y: number; z: number; }
@@ -146,6 +147,34 @@ describe('BaseStage lazy enemy spawning', () => {
 
         expect(stage.enemies).toHaveLength(0);
         expect(stage.roomPendingSpawnData.size).toBe(1);
+    });
+
+    describe('BaseStage enemy type resolution', () => {
+        it('uses explicit spawn enemyType when provided', () => {
+            const stage = Object.create(BaseStage.prototype) as any;
+            const resolved = stage.resolveEnemyTypeForSpawn({
+                x: 0, y: 0, z: 0, type: EnemySpawnType.Regular, enemyType: EnemyType.Stalker,
+            });
+            expect(resolved).toBe(EnemyType.Stalker);
+        });
+
+        it('uses available enemy types when spawn does not specify one', () => {
+            const stage = Object.create(BaseStage.prototype) as any;
+            stage.getAvailableEnemyTypes = vi.fn().mockReturnValue([EnemyType.Stalker]);
+            const resolved = stage.resolveEnemyTypeForSpawn({
+                x: 0, y: 0, z: 0, type: EnemySpawnType.Elite,
+            });
+            expect(resolved).toBe(EnemyType.Stalker);
+        });
+
+        it('falls back to Brute when no enemy types are available', () => {
+            const stage = Object.create(BaseStage.prototype) as any;
+            stage.getAvailableEnemyTypes = vi.fn().mockReturnValue([]);
+            const resolved = stage.resolveEnemyTypeForSpawn({
+                x: 0, y: 0, z: 0, type: EnemySpawnType.Boss,
+            });
+            expect(resolved).toBe(EnemyType.Brute);
+        });
     });
 
     it('enemies are spawned when the player enters their room', () => {

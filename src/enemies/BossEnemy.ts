@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Enemy, ENEMY_RADIUS_FACTOR } from './Enemy';
 import type { EnemyArchetypeConfig } from './Enemy';
+import { DEFAULT_ENEMY_TYPE, type EnemyType } from './EnemyType';
 
 enum BossAttackType {
     Melee1 = 'Melee1',
@@ -25,6 +26,7 @@ export class BossEnemy extends Enemy {
         position: CANNON.Vec3,
         physicsMaterial: CANNON.Material,
         config: Partial<EnemyArchetypeConfig> = {},
+        enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ) {
         super(scene, world, position, physicsMaterial, {
             maxHp: 500,
@@ -40,7 +42,7 @@ export class BossEnemy extends Enemy {
             size: 3.5,
             color: 0x000000,
             ...config,
-        });
+        }, enemyType);
 
         // Create health bar UI
         this.setupHealthBar();

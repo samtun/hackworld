@@ -6,7 +6,7 @@ import * as THREE from 'three';
  *
  * Naming convention for paired assets:
  *   Visual model:   models/{modelName}.glb
- *   Collider model: models/{modelName}_collider.glb
+ *   Collider model: models/{modelName}.collider.glb
  *
  * Both assets must be preloaded via AssetManager before calling these methods.
  */
