@@ -1,3 +1,25 @@
+# [3.30.0](https://github.com/samtun/hackworld/compare/v3.29.1...v3.30.0) (2026-06-25)
+
+
+### Bug Fixes
+
+* resolve 3 failing CI tests in HealingStation and PauseMenu ([1e08278](https://github.com/samtun/hackworld/commit/1e08278cc93c82c3a6f329bd52c61202bea57b03))
+* serialize gh-pages deploys to prevent push race condition ([c9a90a6](https://github.com/samtun/hackworld/commit/c9a90a65b6a6ce42e3e4b666e1c79ab8e7aacdaf)), closes [#pages](https://github.com/samtun/hackworld/issues/pages)
+
+
+### Features
+
+* add ability move timer and enhance stalker jump ability mechanics ([3d3ed9c](https://github.com/samtun/hackworld/commit/3d3ed9c87b8c97bc0c79d3d5e73781d1b5e1a89c))
+* add cable tray props ([5b9b68a](https://github.com/samtun/hackworld/commit/5b9b68a18bc55472291b001076fdadcf491e1326))
+* add desk prop ([4766b78](https://github.com/samtun/hackworld/commit/4766b7887261fc6ee72f8e903df83526a1a6ce5c))
+* add l-desk prop ([c9ce4a2](https://github.com/samtun/hackworld/commit/c9ce4a2bc60e6105eb2622ad2477141b17b8740b))
+* add large cooling tank ([6a077a6](https://github.com/samtun/hackworld/commit/6a077a6327156a90873c5273a453d41dc625044f))
+* add more props ([b73b0c9](https://github.com/samtun/hackworld/commit/b73b0c95068d98b1e36eb807e1a9fd600504d8b7))
+* add props to GameTest area ([9994934](https://github.com/samtun/hackworld/commit/9994934618898a1b0692f0f64ad126d9147ac6eb))
+* add stalker enemy model ([ecf81b4](https://github.com/samtun/hackworld/commit/ecf81b4e921c14b5b1b16fbc1240daef369c5942))
+* add stalker enemy type behavior and shared tier spawning ([9c298fa](https://github.com/samtun/hackworld/commit/9c298faf5691ab29e2f9491931ce9cbabb738b31))
+* update stalker and satellite dish models ([b9d1de5](https://github.com/samtun/hackworld/commit/b9d1de513f2d641f72df132eacb46112838522af))
+
 ## [3.29.1](https://github.com/samtun/hackworld/compare/v3.29.0...v3.29.1) (2026-05-28)
 
 
