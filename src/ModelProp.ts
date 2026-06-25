@@ -71,7 +71,7 @@ export class ModelProp extends BaseMesh {
      */
     public cleanup(scene: THREE.Scene): void {
         scene.remove(this.mesh);
-        for (const body of this.bodies) {
+        for (const body of (this.bodies ?? [])) {
             this.propPhysicsWorld.removeBody(body);
         }
         this.disposeMesh();
