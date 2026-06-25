@@ -84,7 +84,7 @@ const PROP_NAMES = [
     'ac', 'barrier', 'dataspire', 'energycells',
     'pile', 'pipes', 'cabletray', 'satellitedish',
     'serverrack', 'vent', 'cabletraybow', 'router',
-    'cabletraycurve', 'coolingtank', 'holoprojector',
+    'cabletraycurve', 'coolingtank', 'coolingtanklarge', 'holoprojector',
 ];
 
 // ─── GameTest ─────────────────────────────────────────────────────────────────
@@ -157,6 +157,8 @@ export class GameTest extends BaseStage {
             'models/props/cabletraycurve.collider.glb',
             'models/props/coolingtank.glb',
             'models/props/coolingtank.collider.glb',
+            'models/props/coolingtanklarge.glb',
+            'models/props/coolingtanklarge.collider.glb',
             'models/props/holoprojector.glb',
             'models/props/holoprojector.collider.glb',
         ];
