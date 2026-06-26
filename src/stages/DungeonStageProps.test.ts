@@ -24,22 +24,27 @@ describe('procedural dungeon prop themes', () => {
     });
 
     it('room-based stages preload curated themed subsets instead of the full catalog', () => {
-        const stagePropSets = [
-            new Set(getPropNames(Object.create(NetworkMatrix.prototype) as NetworkMatrix)),
-            new Set(getPropNames(Object.create(PacketForge.prototype) as PacketForge)),
-            new Set(getPropNames(Object.create(CipherNull.prototype) as CipherNull)),
-            new Set(getPropNames(Object.create(SecurityCore.prototype) as SecurityCore)),
-            new Set(getPropNames(Object.create(KernelTerminus.prototype) as KernelTerminus)),
-        ];
+        const expectedStagePropSets = new Map<string, string[]>([
+            ['NetworkMatrix', ['router', 'serverrack', 'barrier', 'energycells', 'cabletray', 'cabletraybow']],
+            ['PacketForge', ['pipes', 'cabletray', 'cabletraybow', 'cabletraycurve', 'pile', 'barrier']],
+            ['CipherNull', ['desk', 'deskl', 'satellitedish', 'vent', 'ac', 'router']],
+            ['SecurityCore', ['dataspire', 'energycells', 'holoprojector', 'coolingtank', 'coolingtanklarge', 'serverrack']],
+            ['KernelTerminus', ['barrier', 'coolingtanklarge', 'dataspire', 'holoprojector', 'pile', 'serverrack']],
+        ]);
+        const actualStagePropSets = new Map<string, Set<string>>([
+            ['NetworkMatrix', new Set(getPropNames(Object.create(NetworkMatrix.prototype) as NetworkMatrix))],
+            ['PacketForge', new Set(getPropNames(Object.create(PacketForge.prototype) as PacketForge))],
+            ['CipherNull', new Set(getPropNames(Object.create(CipherNull.prototype) as CipherNull))],
+            ['SecurityCore', new Set(getPropNames(Object.create(SecurityCore.prototype) as SecurityCore))],
+            ['KernelTerminus', new Set(getPropNames(Object.create(KernelTerminus.prototype) as KernelTerminus))],
+        ]);
 
-        for (const propSet of stagePropSets) {
-            expect(propSet.size).toBeGreaterThanOrEqual(5);
-            expect(propSet.size).toBeLessThan(DUNGEON_PROP_DEFINITIONS.length);
+        for (const [stageName, expectedProps] of expectedStagePropSets) {
+            const actualProps = actualStagePropSets.get(stageName);
+            expect(actualProps).toBeDefined();
+            expect(actualProps!.size).toBeGreaterThanOrEqual(5);
+            expect(actualProps!.size).toBeLessThan(DUNGEON_PROP_DEFINITIONS.length);
+            expect(actualProps).toEqual(new Set(expectedProps));
         }
-
-        expect(stagePropSets[0]).not.toEqual(stagePropSets[1]);
-        expect(stagePropSets[1]).not.toEqual(stagePropSets[2]);
-        expect(stagePropSets[2]).not.toEqual(stagePropSets[3]);
-        expect(stagePropSets[3]).not.toEqual(stagePropSets[4]);
     });
 });
