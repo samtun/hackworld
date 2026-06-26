@@ -7,6 +7,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class SecurityCore extends StageWithLevels {
     private static id: string = 'securityCore';
@@ -95,12 +96,22 @@ export class SecurityCore extends StageWithLevels {
         color: 0x6f3da6,
     };
 
+    private static readonly obstacleProps = getDungeonPropDefinitions([
+        'dataspire',
+        'energycells',
+        'holoprojector',
+        'coolingtank',
+        'coolingtanklarge',
+        'serverrack',
+    ]);
+
     private static readonly generationConfig: RoomGenerationConfig = {
         combatRoomCount: { min: 12, max: 15 },
         combatRoomSize: { minWidth: 13, maxWidth: 33, minDepth: 13, maxDepth: 33 },
         finalRoomSize: { minWidth: 20, maxWidth: 39, minDepth: 20, maxDepth: 39 },
         enemyCount: { min: 2, max: 8, areaPerEnemy: 48, eliteFraction: 0.45 },
         obstacleCount: { min: 2, max: 4 },
+        obstacleProps: SecurityCore.obstacleProps,
         hasBoss: true,
         lootRoomCount: { min: 2, max: 3 },
         chestsPerLootRoom: 2,
@@ -150,7 +161,7 @@ export class SecurityCore extends StageWithLevels {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
-            ...this.getDungeonPropAssets(),
+            ...this.getDungeonPropAssets(SecurityCore.obstacleProps),
         ];
     }
 

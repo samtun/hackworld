@@ -5,6 +5,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class PacketForge extends BaseStage {
     private static id: string = "packetForge";
@@ -62,12 +63,22 @@ export class PacketForge extends BaseStage {
         color: 0x2b6aa6,
     };
 
+    private static readonly obstacleProps = getDungeonPropDefinitions([
+        'pipes',
+        'cabletray',
+        'cabletraybow',
+        'cabletraycurve',
+        'pile',
+        'barrier',
+    ]);
+
     private static readonly generationConfig: RoomGenerationConfig = {
         combatRoomCount: { min: 6, max: 9 },
         combatRoomSize: { minWidth: 14, maxWidth: 24, minDepth: 14, maxDepth: 24 },
         finalRoomSize: { minWidth: 19, maxWidth: 29, minDepth: 19, maxDepth: 29 },
         enemyCount: { min: 2, max: 5, areaPerEnemy: 62, eliteFraction: 0.25 },
         obstacleCount: { min: 1, max: 3 },
+        obstacleProps: PacketForge.obstacleProps,
         hasBoss: true,
         lootRoomCount: { min: 1, max: 2 },
         chestsPerLootRoom: 1,
@@ -101,7 +112,7 @@ export class PacketForge extends BaseStage {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
-            ...this.getDungeonPropAssets(),
+            ...this.getDungeonPropAssets(PacketForge.obstacleProps),
         ];
     }
 

@@ -7,6 +7,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class KernelTerminus extends StageWithLevels {
     private static id: string = 'kernelTerminus';
@@ -97,12 +98,22 @@ export class KernelTerminus extends StageWithLevels {
         color: 0x9f4654,
     };
 
+    private static readonly obstacleProps = getDungeonPropDefinitions([
+        'barrier',
+        'coolingtanklarge',
+        'dataspire',
+        'holoprojector',
+        'pile',
+        'serverrack',
+    ]);
+
     private static readonly generationConfig: RoomGenerationConfig = {
         combatRoomCount: { min: 14, max: 18 },
         combatRoomSize: { minWidth: 14, maxWidth: 36, minDepth: 14, maxDepth: 36 },
         finalRoomSize: { minWidth: 24, maxWidth: 42, minDepth: 24, maxDepth: 42 },
         enemyCount: { min: 3, max: 10, areaPerEnemy: 42, eliteFraction: 0.52 },
         obstacleCount: { min: 2, max: 5 },
+        obstacleProps: KernelTerminus.obstacleProps,
         hasBoss: true,
         bossRoomCount: 2,
         lootRoomCount: { min: 3, max: 4 },
@@ -150,7 +161,7 @@ export class KernelTerminus extends StageWithLevels {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
-            ...this.getDungeonPropAssets(),
+            ...this.getDungeonPropAssets(KernelTerminus.obstacleProps),
         ];
     }
 

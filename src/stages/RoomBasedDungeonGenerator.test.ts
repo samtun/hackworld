@@ -12,7 +12,10 @@ import {
     EnemySpawnType,
 } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig, DungeonLayout } from './RoomBasedDungeonGenerator';
-import { DUNGEON_PROP_DEFINITIONS } from './DungeonPropCatalog';
+import {
+    DUNGEON_PROP_DEFINITIONS,
+    getDungeonPropDefinitions,
+} from './DungeonPropCatalog';
 
 const baseConfig: RoomGenerationConfig = {
     combatRoomCount: { min: 2, max: 4 },
@@ -387,6 +390,27 @@ describe('RoomBasedDungeonGenerator', () => {
             const layout = gen(34);
             for (const obs of layout.obstacles) {
                 expect(DUNGEON_PROP_DEFINITIONS.some(def =>
+                    def.modelName === obs.propModelName
+                    && def.width === obs.width
+                    && def.height === obs.height
+                    && def.depth === obs.depth,
+                )).toBe(true);
+            }
+        });
+
+        it('obstacles only use the configured stage prop subset', () => {
+            const obstacleProps = getDungeonPropDefinitions(['router', 'serverrack']);
+            const layout = gen(340, {
+                ...baseConfig,
+                combatRoomCount: { min: 4, max: 4 },
+                obstacleCount: { min: 2, max: 2 },
+                obstacleProps,
+                hasBoss: false,
+            });
+
+            expect(layout.obstacles.length).toBeGreaterThan(0);
+            for (const obs of layout.obstacles) {
+                expect(obstacleProps.some(def =>
                     def.modelName === obs.propModelName
                     && def.width === obs.width
                     && def.height === obs.height

@@ -23,7 +23,11 @@ import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
 import { AudioManager } from '../AudioManager';
 import { ModelProp } from '../ModelProp';
 import { DEFAULT_ENEMY_TYPE, EnemyType } from '../enemies/EnemyType';
-import { DUNGEON_PROP_ASSET_PATHS } from './DungeonPropCatalog';
+import {
+    DUNGEON_PROP_ASSET_PATHS,
+    getDungeonPropAssetPaths,
+} from './DungeonPropCatalog';
+import type { DungeonPropDefinition } from './DungeonPropCatalog';
 
 /**
  * Tiny Y offset applied to north/south walls (those running along X) to
@@ -165,8 +169,11 @@ export abstract class BaseStage {
         return [];
     }
 
-    protected getDungeonPropAssets(): string[] {
-        return DUNGEON_PROP_ASSET_PATHS;
+    protected getDungeonPropAssets(definitions?: readonly DungeonPropDefinition[]): string[] {
+        if (!definitions) {
+            return DUNGEON_PROP_ASSET_PATHS;
+        }
+        return getDungeonPropAssetPaths(definitions);
     }
 
     /**

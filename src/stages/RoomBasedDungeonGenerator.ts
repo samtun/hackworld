@@ -1,6 +1,7 @@
 import type { StageMinimapLayout } from './StageMinimapLayout';
 import type { EnemyType } from '../enemies/EnemyType';
 import { DUNGEON_PROP_DEFINITIONS } from './DungeonPropCatalog';
+import type { DungeonPropDefinition } from './DungeonPropCatalog';
 
 /**
  * Wall height and thickness constants (in metres).
@@ -289,6 +290,8 @@ export interface RoomGenerationConfig {
     };
     /** Obstacle count range per room (safe room always gets zero). */
     obstacleCount: { min: number; max: number };
+    /** Prop definitions eligible for obstacle placement in this stage. */
+    obstacleProps?: readonly DungeonPropDefinition[];
     /** Whether bosses should be placed in final rooms. */
     hasBoss: boolean;
     /** Number of boss rooms among the combat rooms (default: 1). */
@@ -1145,6 +1148,8 @@ export class RoomBasedDungeonGenerator {
 
         for (const room of rooms) {
             if (room.isSafe || room.isTeleporterRoom || room.isLootRoom) continue;
+            const obstacleProps = config.obstacleProps ?? DUNGEON_PROP_DEFINITIONS;
+            if (obstacleProps.length === 0) continue;
 
             const count = this.rangeInt(config.obstacleCount.min, config.obstacleCount.max);
 
@@ -1161,7 +1166,7 @@ export class RoomBasedDungeonGenerator {
 
             while (placed < count && attempts < maxAttempts) {
                 attempts++;
-                const definition = DUNGEON_PROP_DEFINITIONS[this.rangeInt(0, DUNGEON_PROP_DEFINITIONS.length - 1)];
+                const definition = obstacleProps[this.rangeInt(0, obstacleProps.length - 1)];
                 const { width: w, height: h, depth: d, modelName: propModelName } = definition;
                 const footprintRadius = Math.max(w, d) / 2;
                 const minX = Math.ceil(room.centerX - room.width / 2 + SPAWN_PADDING + w / 2);

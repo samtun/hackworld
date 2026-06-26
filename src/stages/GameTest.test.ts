@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { GameTest } from './GameTest';
+import {
+    DUNGEON_PROP_ASSET_PATHS,
+    DUNGEON_PROP_DEFINITIONS,
+} from './DungeonPropCatalog';
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
@@ -22,6 +26,13 @@ describe('GameTest', () => {
             const assets = stage.getRequiredAssets();
             expect(assets).toContain('models/brute_enemy.glb');
             expect(assets).toContain('models/stalker_enemy.glb');
+        });
+
+        it('preloads every prop asset from the shared dungeon catalog', () => {
+            const stage = Object.create(GameTest.prototype) as GameTest;
+            const assets = stage.getRequiredAssets();
+            expect(assets).toEqual(expect.arrayContaining(DUNGEON_PROP_ASSET_PATHS));
+            expect(DUNGEON_PROP_DEFINITIONS).toHaveLength(18);
         });
     });
 });
