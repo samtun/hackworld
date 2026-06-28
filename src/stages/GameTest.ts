@@ -28,6 +28,10 @@ import { AudioManager } from '../AudioManager';
 import { DEFAULT_ENEMY_TYPE, type EnemyType } from '../enemies/EnemyType';
 import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
 import { ModelProp } from '../ModelProp';
+import {
+    DUNGEON_PROP_ASSET_PATHS,
+    DUNGEON_PROP_DEFINITIONS,
+} from './DungeonPropCatalog';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -79,15 +83,6 @@ const PROP_GRID_Z = -10;
 const PROP_GRID_SPACING = 4;
 const PROP_GRID_COLS = 4;
 
-/** All available prop model names (relative to 'props/' prefix). */
-const PROP_NAMES = [
-    'ac', 'barrier', 'dataspire', 'energycells',
-    'pile', 'pipes', 'cabletray', 'satellitedish',
-    'serverrack', 'vent', 'cabletraybow', 'router',
-    'cabletraycurve', 'coolingtank', 'coolingtanklarge', 'holoprojector',
-    'desk', 'deskl',
-];
-
 // ─── GameTest ─────────────────────────────────────────────────────────────────
 
 export class GameTest extends BaseStage {
@@ -129,43 +124,7 @@ export class GameTest extends BaseStage {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
-            // Props
-            'models/props/pile.glb',
-            'models/props/pile.collider.glb',
-            'models/props/satellitedish.glb',
-            'models/props/satellitedish.collider.glb',
-            'models/props/ac.glb',
-            'models/props/ac.collider.glb',
-            'models/props/pipes.glb',
-            'models/props/pipes.collider.glb',
-            'models/props/serverrack.glb',
-            'models/props/serverrack.collider.glb',
-            'models/props/barrier.glb',
-            'models/props/barrier.collider.glb',
-            'models/props/dataspire.glb',
-            'models/props/dataspire.collider.glb',
-            'models/props/energycells.glb',
-            'models/props/energycells.collider.glb',
-            'models/props/router.glb',
-            'models/props/router.collider.glb',
-            'models/props/vent.glb',
-            'models/props/vent.collider.glb',
-            'models/props/cabletraybow.glb',
-            'models/props/cabletraybow.collider.glb',
-            'models/props/cabletray.glb',
-            'models/props/cabletray.collider.glb',
-            'models/props/cabletraycurve.glb',
-            'models/props/cabletraycurve.collider.glb',
-            'models/props/coolingtank.glb',
-            'models/props/coolingtank.collider.glb',
-            'models/props/coolingtanklarge.glb',
-            'models/props/coolingtanklarge.collider.glb',
-            'models/props/holoprojector.glb',
-            'models/props/holoprojector.collider.glb',
-            'models/props/desk.glb',
-            'models/props/desk.collider.glb',
-            'models/props/deskl.glb',
-            'models/props/deskl.collider.glb',
+            ...DUNGEON_PROP_ASSET_PATHS,
         ];
     }
 
@@ -458,13 +417,13 @@ export class GameTest extends BaseStage {
     // ───────────────────────────────────────────────────────────────────────────
 
     private buildPropsGrid(): void {
-        PROP_NAMES.forEach((name, i) => {
+        DUNGEON_PROP_DEFINITIONS.forEach(({ modelName }, i) => {
             const col = i % PROP_GRID_COLS;
             const row = Math.floor(i / PROP_GRID_COLS);
             const x = PROP_GRID_X - col * PROP_GRID_SPACING;
             const z = PROP_GRID_Z - row * PROP_GRID_SPACING;
             this.props.push(new ModelProp(
-                `props/${name}`,
+                `props/${modelName}`,
                 this.scene,
                 this.physicsWorld,
                 this.physicsMaterial,

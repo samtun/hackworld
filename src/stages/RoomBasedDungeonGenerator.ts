@@ -1,5 +1,7 @@
 import type { StageMinimapLayout } from './StageMinimapLayout';
 import type { EnemyType } from '../enemies/EnemyType';
+import { DUNGEON_PROP_DEFINITIONS } from './DungeonPropCatalog';
+import type { DungeonPropDefinition } from './DungeonPropCatalog';
 
 /**
  * Wall height and thickness constants (in metres).
@@ -165,15 +167,17 @@ export interface RoomSpawns {
     spawns: EnemySpawnPoint[];
 }
 
-/** A box obstacle placed on the floor inside a room. */
+/** A prop obstacle footprint placed on the floor inside a room. */
 export interface RoomObstacle {
     x: number;
-    /** Always set to height / 2 so the bottom of the box sits on the floor. */
+    /** Always set to height / 2 so the prop footprint sits on the floor. */
     y: number;
     z: number;
     width: number;
     height: number;
     depth: number;
+    /** Model name relative to `models/props/`, without file extension. */
+    propModelName?: string;
 }
 
 /** A loot chest spawn point. */
@@ -286,6 +290,8 @@ export interface RoomGenerationConfig {
     };
     /** Obstacle count range per room (safe room always gets zero). */
     obstacleCount: { min: number; max: number };
+    /** Prop definitions eligible for obstacle placement in this stage. */
+    obstacleProps?: readonly DungeonPropDefinition[];
     /** Whether bosses should be placed in final rooms. */
     hasBoss: boolean;
     /** Number of boss rooms among the combat rooms (default: 1). */
@@ -1130,9 +1136,9 @@ export class RoomBasedDungeonGenerator {
     // -----------------------------------------------------------------------
 
     /**
-     * Place random box obstacles in every non-safe, non-teleporter room.
-     * Obstacle positions and sizes are snapped to the 1 m grid to avoid
-     * narrow irregular gaps between obstacles and walls.
+     * Place random prop obstacles in every non-safe, non-teleporter room.
+     * Obstacle positions and footprints are snapped to the 1 m grid to avoid
+     * narrow irregular gaps between props, walls, and corridor entrances.
      */
     private buildObstacles(
         rooms: DungeonRoom[],
@@ -1142,12 +1148,10 @@ export class RoomBasedDungeonGenerator {
 
         for (const room of rooms) {
             if (room.isSafe || room.isTeleporterRoom || room.isLootRoom) continue;
+            const obstacleProps = config.obstacleProps ?? DUNGEON_PROP_DEFINITIONS;
+            if (obstacleProps.length === 0) continue;
 
             const count = this.rangeInt(config.obstacleCount.min, config.obstacleCount.max);
-            const minX = Math.ceil(room.centerX - room.width / 2 + SPAWN_PADDING);
-            const maxX = Math.floor(room.centerX + room.width / 2 - SPAWN_PADDING);
-            const minZ = Math.ceil(room.centerZ - room.depth / 2 + SPAWN_PADDING);
-            const maxZ = Math.floor(room.centerZ + room.depth / 2 - SPAWN_PADDING);
 
             // Exclusion zones around door openings to keep corridors accessible
             const exclusions: Array<{ x: number; z: number; radius: number }> = [];
@@ -1162,23 +1166,28 @@ export class RoomBasedDungeonGenerator {
 
             while (placed < count && attempts < maxAttempts) {
                 attempts++;
-                // Grid-snapped size: 1, 2, or 3 metres
-                const w = this.rangeInt(1, 3);
-                const h = WALL_HEIGHT;
-                const d = this.rangeInt(1, 3);
-                // Grid-snapped position
+                const definition = obstacleProps[this.rangeInt(0, obstacleProps.length - 1)];
+                const { width: w, height: h, depth: d, modelName: propModelName } = definition;
+                const footprintRadius = Math.max(w, d) / 2;
+                const minX = Math.ceil(room.centerX - room.width / 2 + SPAWN_PADDING + w / 2);
+                const maxX = Math.floor(room.centerX + room.width / 2 - SPAWN_PADDING - w / 2);
+                const minZ = Math.ceil(room.centerZ - room.depth / 2 + SPAWN_PADDING + d / 2);
+                const maxZ = Math.floor(room.centerZ + room.depth / 2 - SPAWN_PADDING - d / 2);
+                if (minX > maxX || minZ > maxZ) continue;
+
                 const x = this.rangeInt(minX, maxX);
                 const z = this.rangeInt(minZ, maxZ);
 
                 const excluded = exclusions.some(ez => {
                     const dx = x - ez.x;
                     const dz = z - ez.z;
-                    return dx * dx + dz * dz < ez.radius * ez.radius;
+                    const minDistance = ez.radius + footprintRadius;
+                    return dx * dx + dz * dz < minDistance * minDistance;
                 });
 
                 if (!excluded) {
-                    obstacles.push({ x, y: room.elevation + h / 2, z, width: w, height: h, depth: d });
-                    exclusions.push({ x, z, radius: Math.max(w, d) + 1 });
+                    obstacles.push({ x, y: room.elevation + h / 2, z, width: w, height: h, depth: d, propModelName });
+                    exclusions.push({ x, z, radius: footprintRadius + 1 });
                     placed++;
                 }
             }

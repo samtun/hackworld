@@ -5,6 +5,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class NetworkMatrix extends BaseStage {
     private static id: string = "networkMatrix";
@@ -47,12 +48,22 @@ export class NetworkMatrix extends BaseStage {
         color: 0x204a2e,
     };
 
+    private static readonly obstacleProps = getDungeonPropDefinitions([
+        'router',
+        'serverrack',
+        'barrier',
+        'energycells',
+        'cabletray',
+        'cabletraybow',
+    ]);
+
     private static readonly generationConfig: RoomGenerationConfig = {
         combatRoomCount: { min: 5, max: 7 },
         combatRoomSize: { minWidth: 13, maxWidth: 20, minDepth: 13, maxDepth: 20 },
         finalRoomSize: { minWidth: 16, maxWidth: 24, minDepth: 16, maxDepth: 24 },
         enemyCount: { min: 1, max: 4, areaPerEnemy: 70, eliteFraction: 0.15 },
         obstacleCount: { min: 1, max: 2 },
+        obstacleProps: NetworkMatrix.obstacleProps,
         hasBoss: false,
         lootRoomCount: { min: 1, max: 1 },
         chestsPerLootRoom: 1,
@@ -88,6 +99,7 @@ export class NetworkMatrix extends BaseStage {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            ...this.getDungeonPropAssets(NetworkMatrix.obstacleProps),
         ];
     }
 

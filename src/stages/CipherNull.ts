@@ -7,6 +7,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class CipherNull extends StageWithLevels {
     private static id: string = 'cipherNull';
@@ -84,12 +85,22 @@ export class CipherNull extends StageWithLevels {
         color: 0x2a7888,
     };
 
+    private static readonly obstacleProps = getDungeonPropDefinitions([
+        'desk',
+        'deskl',
+        'satellitedish',
+        'vent',
+        'ac',
+        'router',
+    ]);
+
     private static readonly generationConfig: RoomGenerationConfig = {
         combatRoomCount: { min: 9, max: 13 },
         combatRoomSize: { minWidth: 14, maxWidth: 30, minDepth: 14, maxDepth: 30 },
         finalRoomSize: { minWidth: 20, maxWidth: 35, minDepth: 20, maxDepth: 35 },
         enemyCount: { min: 2, max: 7, areaPerEnemy: 55, eliteFraction: 0.35 },
         obstacleCount: { min: 2, max: 4 },
+        obstacleProps: CipherNull.obstacleProps,
         hasBoss: true,
         lootRoomCount: { min: 2, max: 2 },
         chestsPerLootRoom: 2,
@@ -136,6 +147,7 @@ export class CipherNull extends StageWithLevels {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            ...this.getDungeonPropAssets(CipherNull.obstacleProps),
         ];
     }
 

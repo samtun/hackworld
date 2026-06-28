@@ -23,6 +23,11 @@ import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
 import { AudioManager } from '../AudioManager';
 import { ModelProp } from '../ModelProp';
 import { DEFAULT_ENEMY_TYPE, EnemyType } from '../enemies/EnemyType';
+import {
+    DUNGEON_PROP_ASSET_PATHS,
+    getDungeonPropAssetPaths,
+} from './DungeonPropCatalog';
+import type { DungeonPropDefinition } from './DungeonPropCatalog';
 
 /**
  * Tiny Y offset applied to north/south walls (those running along X) to
@@ -162,6 +167,13 @@ export abstract class BaseStage {
      */
     getRequiredAssets(): string[] {
         return [];
+    }
+
+    protected getDungeonPropAssets(definitions?: readonly DungeonPropDefinition[]): string[] {
+        if (!definitions) {
+            return DUNGEON_PROP_ASSET_PATHS;
+        }
+        return getDungeonPropAssetPaths(definitions);
     }
 
     /**
@@ -376,6 +388,17 @@ export abstract class BaseStage {
      */
     protected buildObstaclesFromLayout(layout: DungeonLayout): void {
         for (const obs of layout.obstacles) {
+            if (obs.propModelName) {
+                this.props.push(new ModelProp(
+                    `props/${obs.propModelName}`,
+                    this.scene,
+                    this.physicsWorld,
+                    this.physicsMaterial,
+                    new THREE.Vector3(obs.x, obs.y - obs.height / 2, obs.z),
+                ));
+                continue;
+            }
+
             const geo = new THREE.BoxGeometry(obs.width, obs.height, obs.depth);
             const mat = createObstacleMaterial(0x555555, obs.height);
             const mesh = new THREE.Mesh(geo, mat);
