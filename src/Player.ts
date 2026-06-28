@@ -40,6 +40,8 @@ enum ActionType {
     PowerUp = "PowerUp"
 };
 
+export const PLAYER_COLLISION_GROUP = 2;
+
 export class Player extends BaseMesh {
     id: string;
     body: CANNON.Body;
@@ -351,6 +353,7 @@ export class Player extends BaseMesh {
             fixedRotation: true,
             material: physicsMaterial
         });
+        this.body.collisionFilterGroup = PLAYER_COLLISION_GROUP;
 
         // Add foot sphere to enable skipping over small obstacles
         // Needs to be added first to be the first shape accessed via [0]
