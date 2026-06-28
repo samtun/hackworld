@@ -682,12 +682,13 @@ describe('RoomBasedDungeonGenerator', () => {
     });
 
     describe('minimap layout', () => {
-        it('contains one rectangle for each room and corridor', () => {
+        it('contains one rectangle for each room, niche, and corridor', () => {
             const layout = gen(42, {
                 ...baseConfig,
                 lootRoomCount: { min: 1, max: 1 },
             });
-            expect(layout.minimapLayout.rects.length).toBe(layout.rooms.length + layout.corridors.length);
+            const totalNiches = layout.rooms.reduce((sum, r) => sum + r.niches.length, 0);
+            expect(layout.minimapLayout.rects.length).toBe(layout.rooms.length + totalNiches + layout.corridors.length);
         });
 
         it('uses floor bounds as minimap bounds', () => {
@@ -792,6 +793,166 @@ describe('RoomBasedDungeonGenerator', () => {
                 for (const wall of layout.walls) {
                     expect(wall.colliderHeight).toBe(WALL_HEIGHT + COLLIDER_EXTRA_HEIGHT);
                     expect(wall.height).toBeLessThanOrEqual(WALL_HEIGHT);
+                }
+            }
+        });
+    });
+
+    describe('room niches (complex geometry)', () => {
+        it('some rooms have niches across multiple seeds', () => {
+            let foundNiches = false;
+            for (let seed = 0; seed < 50; seed++) {
+                const layout = gen(seed);
+                if (layout.rooms.some(r => r.niches.length > 0)) {
+                    foundNiches = true;
+                    break;
+                }
+            }
+            expect(foundNiches).toBe(true);
+        });
+
+        it('safe, teleporter, and loot rooms never have niches', () => {
+            for (let seed = 0; seed < 20; seed++) {
+                const layout = gen(seed, { ...baseConfig, lootRoomCount: { min: 1, max: 1 } });
+                for (const room of layout.rooms) {
+                    if (room.isSafe || room.isTeleporterRoom || room.isLootRoom) {
+                        expect(room.niches).toHaveLength(0);
+                    }
+                }
+            }
+        });
+
+        it('niches have positive dimensions', () => {
+            for (let seed = 0; seed < 30; seed++) {
+                const layout = gen(seed);
+                for (const room of layout.rooms) {
+                    for (const niche of room.niches) {
+                        expect(niche.width).toBeGreaterThan(0);
+                        expect(niche.depth).toBeGreaterThan(0);
+                    }
+                }
+            }
+        });
+
+        it('niches extend outward from the parent room wall', () => {
+            for (let seed = 0; seed < 30; seed++) {
+                const layout = gen(seed);
+                for (const room of layout.rooms) {
+                    for (const niche of room.niches) {
+                        switch (niche.direction) {
+                            case 'north':
+                                expect(niche.centerZ).toBeGreaterThan(room.centerZ + room.depth / 2);
+                                break;
+                            case 'south':
+                                expect(niche.centerZ).toBeLessThan(room.centerZ - room.depth / 2);
+                                break;
+                            case 'east':
+                                expect(niche.centerX).toBeGreaterThan(room.centerX + room.width / 2);
+                                break;
+                            case 'west':
+                                expect(niche.centerX).toBeLessThan(room.centerX - room.width / 2);
+                                break;
+                        }
+                    }
+                }
+            }
+        });
+
+        it('niches do not overlap with other rooms or corridors', () => {
+            for (let seed = 0; seed < 20; seed++) {
+                const layout = gen(seed);
+                for (const room of layout.rooms) {
+                    for (const niche of room.niches) {
+                        const nMinX = niche.centerX - niche.width / 2;
+                        const nMaxX = niche.centerX + niche.width / 2;
+                        const nMinZ = niche.centerZ - niche.depth / 2;
+                        const nMaxZ = niche.centerZ + niche.depth / 2;
+
+                        // Check against other rooms
+                        for (const other of layout.rooms) {
+                            if (other.id === room.id) continue;
+                            const oMinX = other.centerX - other.width / 2;
+                            const oMaxX = other.centerX + other.width / 2;
+                            const oMinZ = other.centerZ - other.depth / 2;
+                            const oMaxZ = other.centerZ + other.depth / 2;
+                            const overlapX = nMinX < oMaxX && nMaxX > oMinX;
+                            const overlapZ = nMinZ < oMaxZ && nMaxZ > oMinZ;
+                            expect(overlapX && overlapZ).toBe(false);
+                        }
+                    }
+                }
+            }
+        });
+
+        it('niches are only placed on walls without doors', () => {
+            for (let seed = 0; seed < 30; seed++) {
+                const layout = gen(seed);
+                for (const room of layout.rooms) {
+                    for (const niche of room.niches) {
+                        const doorsOnSameWall = room.doors.filter(d => d.direction === niche.direction);
+                        expect(doorsOnSameWall).toHaveLength(0);
+                    }
+                }
+            }
+        });
+
+        it('all rooms have niches array (even if empty)', () => {
+            const layout = gen(42);
+            for (const room of layout.rooms) {
+                expect(Array.isArray(room.niches)).toBe(true);
+            }
+        });
+
+        it('enemy spawns are inside room footprint (including niches)', () => {
+            for (let seed = 0; seed < 10; seed++) {
+                const layout = gen(seed);
+                for (const rs of layout.roomSpawns) {
+                    const room = layout.rooms.find(r => r.id === rs.roomId)!;
+                    for (const spawn of rs.spawns) {
+                        const inMain =
+                            spawn.x >= room.centerX - room.width / 2 &&
+                            spawn.x <= room.centerX + room.width / 2 &&
+                            spawn.z >= room.centerZ - room.depth / 2 &&
+                            spawn.z <= room.centerZ + room.depth / 2;
+                        const inNiche = room.niches.some(n =>
+                            spawn.x >= n.centerX - n.width / 2 &&
+                            spawn.x <= n.centerX + n.width / 2 &&
+                            spawn.z >= n.centerZ - n.depth / 2 &&
+                            spawn.z <= n.centerZ + n.depth / 2,
+                        );
+                        expect(inMain || inNiche).toBe(true);
+                    }
+                }
+            }
+        });
+
+        it('niche rects appear in minimap layout with correct roomId', () => {
+            for (let seed = 0; seed < 20; seed++) {
+                const layout = gen(seed);
+                for (const room of layout.rooms) {
+                    for (const niche of room.niches) {
+                        const matching = layout.minimapLayout.rects.find(
+                            r => r.kind === 'room' &&
+                                r.roomId === room.id &&
+                                Math.abs(r.x - niche.centerX) < 0.01 &&
+                                Math.abs(r.z - niche.centerZ) < 0.01,
+                        );
+                        expect(matching).toBeDefined();
+                    }
+                }
+            }
+        });
+
+        it('floor bounds include niches', () => {
+            for (let seed = 0; seed < 20; seed++) {
+                const layout = gen(seed);
+                for (const room of layout.rooms) {
+                    for (const niche of room.niches) {
+                        expect(layout.floorBounds.minX).toBeLessThanOrEqual(niche.centerX - niche.width / 2);
+                        expect(layout.floorBounds.maxX).toBeGreaterThanOrEqual(niche.centerX + niche.width / 2);
+                        expect(layout.floorBounds.minZ).toBeLessThanOrEqual(niche.centerZ - niche.depth / 2);
+                        expect(layout.floorBounds.maxZ).toBeGreaterThanOrEqual(niche.centerZ + niche.depth / 2);
+                    }
                 }
             }
         });

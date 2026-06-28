@@ -504,6 +504,27 @@ export abstract class BaseStage {
                 this.physicsWorld.addBody(body);
                 this.bodies.push(body);
             }
+
+            for (const niche of room.niches) {
+                const nicheGeo = new THREE.PlaneGeometry(niche.width, niche.depth);
+                nicheGeo.rotateX(-Math.PI / 2);
+                const nicheMesh = new THREE.Mesh(nicheGeo, floorMat);
+                nicheMesh.position.set(niche.centerX, room.elevation, niche.centerZ);
+                nicheMesh.receiveShadow = true;
+                this.scene.add(nicheMesh);
+                this.meshes.push(nicheMesh);
+
+                if (room.elevation > 0) {
+                    const nicheShape = new CANNON.Box(
+                        new CANNON.Vec3(niche.width / 2, FLOOR_THICKNESS / 2, niche.depth / 2),
+                    );
+                    const nicheBody = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
+                    nicheBody.addShape(nicheShape);
+                    nicheBody.position.set(niche.centerX, room.elevation - FLOOR_THICKNESS / 2, niche.centerZ);
+                    this.physicsWorld.addBody(nicheBody);
+                    this.bodies.push(nicheBody);
+                }
+            }
         }
 
         for (const cor of layout.corridors) {
