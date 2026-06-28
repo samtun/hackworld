@@ -382,6 +382,23 @@ export abstract class BaseStage {
     }
 
     /**
+     * Create a lobby return teleporter in the centre of the starting room.
+     */
+    protected createCenteredLobbyReturnTeleporter(layout: DungeonLayout, lobbyId: string): void {
+        this.createLobbyReturnTeleporter(
+            new CANNON.Vec3(layout.spawnPosition.x, layout.spawnElevation, layout.spawnPosition.z),
+            lobbyId,
+        );
+    }
+
+    /**
+     * Place the player spawn in front of the starting-room return teleporter.
+     */
+    protected setSpawnPositionInFrontOfLobbyReturnTeleporter(layout: DungeonLayout): void {
+        this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z + 2);
+    }
+
+    /**
      * Build scene meshes and physics bodies for all obstacles in the layout.
      * Obstacles use the same transparency shader as walls so they fade when
      * the player is behind them relative to the camera.
