@@ -150,6 +150,20 @@ describe('BaseStage lobby return teleporter placement', () => {
             'lobby',
         );
     });
+
+    it('places the player spawn in front of the starting-room teleporter', () => {
+        const stage = Object.create(BaseStage.prototype) as any;
+        stage.spawnPosition = { set: vi.fn() };
+
+        const layout = {
+            spawnPosition: { x: 4, z: -3 },
+            spawnElevation: 2,
+        } as DungeonLayout;
+
+        stage.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
+
+        expect(stage.spawnPosition.set).toHaveBeenCalledWith(4, 2.4, -1);
+    });
 });
 
 describe('BaseStage lazy enemy spawning', () => {

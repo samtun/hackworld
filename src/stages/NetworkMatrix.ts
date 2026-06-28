@@ -121,8 +121,8 @@ export class NetworkMatrix extends BaseStage {
         const layout = generator.generate(NetworkMatrix.generationConfig);
         this.setMinimapLayout(layout.minimapLayout, false);
 
-        // Update spawn position from generated layout
-        this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
+        // Spawn the player in front of the centred lobby return teleporter
+        this.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
 
         // Register rooms for per-room enemy aggro and teleporter activation
         this.dungeonRooms = layout.rooms;

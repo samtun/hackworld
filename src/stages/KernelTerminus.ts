@@ -195,7 +195,7 @@ export class KernelTerminus extends StageWithLevels {
         );
         this.setMinimapLayout(layout.minimapLayout, false);
 
-        this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
+        this.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
         this.dungeonRooms = layout.rooms;
 
         this.buildFloorFromLayout(layout, this.levelConfig.floorColor);

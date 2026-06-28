@@ -137,7 +137,7 @@ export class PacketForge extends BaseStage {
         const layout = generator.generate(PacketForge.generationConfig);
         this.setMinimapLayout(layout.minimapLayout, false);
 
-        this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
+        this.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
         this.dungeonRooms = layout.rooms;
 
         this.buildFloorFromLayout(layout, 0x0a1f32);
