@@ -805,7 +805,7 @@ export abstract class BaseStage {
      */
     update(dt: number, player: Player, _anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
         if (this.teleporter) {
-            this.teleporter.update(dt);
+            this.teleporter.updateWithPlayerPosition(dt, player.position);
         }
 
         // Update mixers
