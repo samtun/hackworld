@@ -1,3 +1,4 @@
+import * as CANNON from 'cannon-es';
 import { describe, it, expect, vi } from 'vitest';
 import { BaseStage } from './BaseStage';
 import type { StageMinimapLayout } from './StageMinimapLayout';
@@ -8,10 +9,10 @@ import { EnemyType } from '../enemies/EnemyType';
 /** Minimal duck-type for the CANNON.Vec3 positions passed to spawnEnemy stubs. */
 interface Vec3Like { x: number; y: number; z: number; }
 
-function makeStage(layout: StageMinimapLayout | null, teleporter?: { position: { x: number; z: number }; isActive: boolean }) {
+function makeStage(layout: StageMinimapLayout | null, teleporters: [{ position: { x: number; z: number }; isActive: boolean }]) {
     const stage = Object.create(BaseStage.prototype) as any;
     stage.minimapLayout = layout;
-    stage.teleporter = teleporter;
+    stage.teleporters = teleporters;
     stage.dungeonRooms = [];
     stage.enemies = [];
     stage.roomEnemyMap = new Map();
@@ -26,7 +27,7 @@ function makeStage(layout: StageMinimapLayout | null, teleporter?: { position: {
 function makeSpawningStage() {
     const stage = Object.create(BaseStage.prototype) as any;
     stage.minimapLayout = null;
-    stage.teleporter = undefined;
+    stage.teleporters = [];
     stage.enemies = [] as any[];
     stage.roomEnemyMap = new Map<number, any[]>();
     stage.roomPendingSpawnData = new Map<number, EnemySpawnPoint[]>();
@@ -53,7 +54,7 @@ describe('BaseStage.getMinimapLayout', () => {
                 rects: [],
                 bounds: { minX: -1, maxX: 1, minZ: -1, maxZ: 1 },
             },
-            { position: { x: 12, z: -7 }, isActive: true },
+            [{ position: { x: 12, z: -7 }, isActive: true }],
         );
 
         const layout = stage.getMinimapLayout();
@@ -143,7 +144,7 @@ describe('BaseStage lobby return teleporter placement', () => {
             spawnElevation: 2,
         } as DungeonLayout;
 
-        stage.createCenteredLobbyReturnTeleporter(layout, 'lobby');
+        stage.createLobbyReturnTeleporter(new CANNON.Vec3(layout.spawnPosition.x, layout.spawnElevation, layout.spawnPosition.z), 'lobby');
 
         expect(stage.createLobbyReturnTeleporter).toHaveBeenCalledWith(
             expect.objectContaining({ x: 4, y: 2, z: -3 }),

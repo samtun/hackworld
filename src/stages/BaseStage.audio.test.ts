@@ -24,7 +24,7 @@ describe('BaseStage teleporter activation audio', () => {
         };
 
         Object.assign(stage, {
-            teleporter,
+            teleporters: [teleporter],
             enemies: [],
             roomPendingSpawnData: new Map(),
             totalExpectedEnemies: 4,
