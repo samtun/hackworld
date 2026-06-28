@@ -1,3 +1,15 @@
+# [3.33.0](https://github.com/samtun/hackworld/compare/v3.32.0...v3.33.0) (2026-06-28)
+
+
+### Bug Fixes
+
+* teleporter management in stages ([ecb2e6e](https://github.com/samtun/hackworld/commit/ecb2e6e7da8e20c0f8745ca728d1bc92712cb216))
+
+
+### Features
+
+* enhance room geometry with rectangular niches for complex shapes ([3f19d02](https://github.com/samtun/hackworld/commit/3f19d023d4590e502cc6084602cfdc127a06f1d9)), closes [samtun/hackworld#296](https://github.com/samtun/hackworld/issues/296)
+
 # [3.32.0](https://github.com/samtun/hackworld/compare/v3.31.0...v3.32.0) (2026-06-28)
 
 
