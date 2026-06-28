@@ -1,3 +1,11 @@
+## [3.30.1](https://github.com/samtun/hackworld/compare/v3.30.0...v3.30.1) (2026-06-28)
+
+
+### Bug Fixes
+
+* theme dungeon prop selections ([4bf2697](https://github.com/samtun/hackworld/commit/4bf2697df2acab2c48f10c1839256e4223968f79))
+* use prop obstacles in dungeon generation ([bbfea2e](https://github.com/samtun/hackworld/commit/bbfea2e2c97814ce19f76f48bb894966dbc48674))
+
 # [3.30.0](https://github.com/samtun/hackworld/compare/v3.29.1...v3.30.0) (2026-06-25)
 
 
