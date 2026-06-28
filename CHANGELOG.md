@@ -1,3 +1,11 @@
+## [3.30.4](https://github.com/samtun/hackworld/compare/v3.30.3...v3.30.4) (2026-06-28)
+
+
+### Bug Fixes
+
+* enable mobile controls on start and title menus ([9e3c205](https://github.com/samtun/hackworld/commit/9e3c2053d6afd45c845894c008a446aaee1800fd))
+* make lore introduction skippable on mobile devices ([17bdb16](https://github.com/samtun/hackworld/commit/17bdb161eefdf8f671f86a9a0cbb5bbe4056c0a4))
+
 ## [3.30.3](https://github.com/samtun/hackworld/compare/v3.30.2...v3.30.3) (2026-06-28)
 
 
