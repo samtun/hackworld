@@ -551,6 +551,8 @@ export class Game {
 
         // Lore introduction is active — the LoreIntroduction class handles its own rendering
         if (this.currentScene === 'lore') {
+            // Act as if a menu is open on the lore introduction screen so the introduction can be skipped with the B button
+            this.input.menuOpen = true;
             return;
         }
 
