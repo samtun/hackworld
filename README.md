@@ -79,7 +79,6 @@ The game is fully playable with keyboard, controller (tested with XBox controlle
 
 #### Mobile Touch Controls
 Mobile devices (phones and tablets) automatically display on-screen touch controls.
-- On the start/title screens, **A/B/X** advance from "Press START", the virtual joystick moves menu selection, and **A** confirms.
 
 ## Development
 
