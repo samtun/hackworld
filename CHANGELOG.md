@@ -1,3 +1,10 @@
+## [3.30.2](https://github.com/samtun/hackworld/compare/v3.30.1...v3.30.2) (2026-06-28)
+
+
+### Bug Fixes
+
+* keep dead enemies physical during death fade ([b90a51a](https://github.com/samtun/hackworld/commit/b90a51a592ac4cf3d6f27649c763f8c1f7bdb6f5))
+
 ## [3.30.1](https://github.com/samtun/hackworld/compare/v3.30.0...v3.30.1) (2026-06-28)
 
 
