@@ -155,7 +155,8 @@ export class HealingStation extends ModelProp implements IHealingStation {
             this.particleSystem.positions[i3 + 1] = stationPos.y + height;
 
             // Update size - decrease as particle ages
-            this.particleSystem.sizes[i] = this.MAX_PARTICLE_SIZE * (1 - ageFactor);
+            const sizeFactor = this.isHealing ? 1.0 : 0.6; // Slightly larger when healing
+            this.particleSystem.sizes[i] = this.MAX_PARTICLE_SIZE * (1 - ageFactor) * sizeFactor;
         }
 
         // Update the geometry attributes
