@@ -248,6 +248,7 @@ export class Game {
     }
 
     private onInitialLoadComplete(): void {
+        this.input.initializeMobileControls();
         this.ui.hideLoadingScreen();
         this.ui.showStartScreen();
         this.initializeEntities();
@@ -514,6 +515,21 @@ export class Game {
         this.isTransitioning = false;
     }
 
+    private isStartScreenAdvancePressed(): boolean {
+        if (this.input.isStartPressed()) {
+            return true;
+        }
+
+        const mobileControls = this.input.mobileControls;
+        if (!mobileControls?.isMobile) {
+            return false;
+        }
+
+        return (mobileControls.isJumpPressed ?? false)
+            || (mobileControls.isCancelPressed ?? false)
+            || (mobileControls.isAttackPressed ?? false);
+    }
+
     animate() {
         requestAnimationFrame(() => this.animate());
 
@@ -522,7 +538,7 @@ export class Game {
             // Show the main menu after START is pressed (but not while already transitioning
             // or while the menu is already visible)
             if (!this.isTransitioning && !this.ui.isStartMenuShowing() &&
-                (this.input.isStartPressed() || this.ui.startScreenTapped)) {
+                (this.isStartScreenAdvancePressed() || this.ui.startScreenTapped)) {
                 this.isTransitioning = true;
                 this.ui.showStartMenu(
                     this.input,
