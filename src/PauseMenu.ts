@@ -2,6 +2,7 @@ import { InputManager } from './InputManager';
 import { AudioManager } from './AudioManager';
 
 const PAUSE_FADE_MS = 300;
+const MAPPING_FADE_MS = 250;
 
 /** localStorage key used to persist Performance Mode across sessions */
 export const PERFORMANCE_MODE_STORAGE_KEY = 'hackworld_performance_mode';
@@ -29,6 +30,11 @@ interface PauseMenuItem {
  */
 export class PauseMenu {
     private readonly overlay: HTMLDivElement;
+    private readonly controllerMappingEl: HTMLDivElement;
+    private readonly menuContainer: HTMLDivElement;
+    private readonly titleElement: HTMLDivElement;
+    private controllerMappingVisible = false;
+    private prevMappingCancel = false;
     private readonly itemEls: HTMLDivElement[] = [];
     private readonly input: InputManager;
     private readonly items: PauseMenuItem[];
@@ -97,8 +103,8 @@ export class PauseMenu {
         ].join(';');
 
         // Title: "Execution Paused"
-        const title = document.createElement('div');
-        title.style.cssText = [
+        this.titleElement = document.createElement('div');
+        this.titleElement.style.cssText = [
             'font-size:min(72px, 10vw)',
             'font-weight:bold',
             'color:#8B0000',
@@ -107,12 +113,12 @@ export class PauseMenu {
             'text-align:center',
             'padding:0 20px',
         ].join(';');
-        title.textContent = 'Execution Paused';
-        this.overlay.appendChild(title);
+        this.titleElement.textContent = 'Execution Paused';
+        this.overlay.appendChild(this.titleElement);
 
         // Menu items container
-        const menuContainer = document.createElement('div');
-        menuContainer.style.cssText = [
+        this.menuContainer = document.createElement('div');
+        this.menuContainer.style.cssText = [
             'display:flex',
             'flex-direction:column',
             'align-items:center',
@@ -134,10 +140,71 @@ export class PauseMenu {
                 this.updateStyles();
             });
             this.itemEls.push(el);
-            menuContainer.appendChild(el);
+            this.menuContainer.appendChild(el);
         });
 
-        this.overlay.appendChild(menuContainer);
+        this.overlay.appendChild(this.menuContainer);
+
+        // Controller mapping popup – shown in-place over the pause menu backdrop
+        this.controllerMappingEl = document.createElement('div');
+        this.controllerMappingEl.style.cssText = [
+            'position:absolute',
+            'top:0',
+            'left:0',
+            'width:100%',
+            'height:100%',
+            'display:none',
+            'opacity:0',
+            `transition:opacity ${MAPPING_FADE_MS}ms ease-in-out`,
+            'flex-direction:column',
+            'justify-content:center',
+            'align-items:center',
+        ].join(';');
+        this.controllerMappingEl.addEventListener('click', () => this.hideControllerMapping());
+        this.controllerMappingEl.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            this.hideControllerMapping();
+        });
+        this.controllerMappingEl.setAttribute('role', 'button');
+        this.controllerMappingEl.setAttribute('tabindex', '0');
+        this.controllerMappingEl.setAttribute('aria-label', 'Controller mapping – press Escape, B, Enter or Space to close');
+        this.controllerMappingEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.hideControllerMapping();
+            }
+        });
+
+        const mappingImg = document.createElement('img');
+        mappingImg.src = 'images/controller_mapping.png';
+        mappingImg.alt = 'Xbox controller button layout: A – jump/interact, B – cancel/close, X – attack, Y – skill modifier, D-Pad – navigate, Start/Select – pause/inventory';
+        mappingImg.style.cssText = [
+            'max-width:88%',
+            'max-height:82vh',
+            'width:auto',
+            'height:auto',
+            'object-fit:contain',
+        ].join(';');
+        // Prevent click on the image from propagating to the close handler
+        mappingImg.addEventListener('click', (e) => e.stopPropagation());
+        mappingImg.addEventListener('touchend', (e) => e.stopPropagation());
+        this.controllerMappingEl.appendChild(mappingImg);
+
+        const mappingHint = document.createElement('div');
+        mappingHint.innerHTML =
+            '<span class="key-icon">ESC</span> / <span class="btn-icon xbox-b">B</span> Close';
+        mappingHint.setAttribute('aria-label', 'Press Escape key or B button to close');
+        mappingHint.style.cssText = [
+            'margin-top:16px',
+            'color:#cccccc',
+            'font-family:"Share Tech",Arial,sans-serif',
+            'font-size:min(2.5vh, 3vw)',
+            'user-select:none',
+        ].join(';');
+        this.controllerMappingEl.appendChild(mappingHint);
+
+        this.overlay.appendChild(this.controllerMappingEl);
         document.body.appendChild(this.overlay);
 
         this.updateStyles();
@@ -179,6 +246,9 @@ export class PauseMenu {
     hide(): void {
         if (!this._visible) return;
         this._visible = false;
+        this.controllerMappingVisible = false;
+        this.controllerMappingEl.style.opacity = '0';
+        this.controllerMappingEl.style.display = 'none';
         AudioManager.Instance.playUiClose();
         this.stopLoop();
         this.overlay.style.opacity = '0';
@@ -342,7 +412,7 @@ export class PauseMenu {
                 this.callbacks.onContinue();
                 break;
             case 'controllermapping':
-                window.open('images/controller_mapping.png', '_blank');
+                this.showControllerMapping();
                 break;
             case 'performance':
                 this.performanceModeEnabled = this.callbacks.onTogglePerformanceMode();
@@ -364,6 +434,36 @@ export class PauseMenu {
                 this.updateSfxLabel();
                 break;
         }
+    }
+
+    private showControllerMapping(): void {
+        this.controllerMappingVisible = true;
+        // Prevent the currently-held cancel button from immediately closing the popup
+        this.prevMappingCancel = this.input.isCancelPressed() || this.input.isPausePressed();
+        AudioManager.Instance.playUiOpen();
+        this.controllerMappingEl.style.display = 'flex';
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                this.menuContainer.style.opacity = '0';
+                this.titleElement.style.opacity = '0';
+                this.controllerMappingEl.style.opacity = '1';
+            });
+        });
+    }
+
+    private hideControllerMapping(): void {
+        this.controllerMappingVisible = false;
+        // Prevent the cancel button that closed the popup from also closing the pause menu
+        this.prevCancel = true;
+        AudioManager.Instance.playUiClose();
+        this.controllerMappingEl.style.opacity = '0';
+        setTimeout(() => {
+            if (!this.controllerMappingVisible) {
+                this.controllerMappingEl.style.display = 'none';
+                this.menuContainer.style.opacity = '1';
+                this.titleElement.style.opacity = '1';
+            }
+        }, MAPPING_FADE_MS);
     }
 
     private toggleSfxWithFeedback(): boolean {
@@ -389,10 +489,20 @@ export class PauseMenu {
     private inputLoop(): void {
         if (!this._visible) return;
 
+        const cancelBtn = this.input.isCancelPressed() || this.input.isPausePressed();
+
+        if (this.controllerMappingVisible) {
+            if (cancelBtn && !this.prevMappingCancel) {
+                this.hideControllerMapping();
+            }
+            this.prevMappingCancel = cancelBtn;
+            this.animFrameId = requestAnimationFrame(() => this.inputLoop());
+            return;
+        }
+
         const navUp = this.input.isNavigateUpPressed();
         const navDown = this.input.isNavigateDownPressed();
         const confirmBtn = this.input.isSelectPressed();
-        const cancelBtn = this.input.isCancelPressed() || this.input.isPausePressed();
 
         if (navUp && !this.prevNavUp) this.navigate(-1);
         if (navDown && !this.prevNavDown) this.navigate(1);

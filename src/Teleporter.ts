@@ -177,7 +177,7 @@ export class Teleporter extends Npc {
     /**
      * Update particle positions and lifetimes
      */
-    update(deltaTime: number): void {
+    updateWithPlayerPosition(deltaTime: number, playerPosition: THREE.Vector3): void {
         // Call base class update for animation mixers
         super.update(deltaTime);
 
@@ -199,11 +199,14 @@ export class Teleporter extends Npc {
                 continue;
             }
 
+            const isPlayerNearby = this.isPlayerNearby(playerPosition);
+
             // Calculate age factor (0 = just spawned, 1 = about to die)
             const ageFactor = 1 - (this.particleSystem.lifetimes[i] / this.PARTICLE_LIFETIME);
 
-            // Calculate Z offset based on age (moves from -2 to +2)
-            const zOffset = this.Z_OFFSET - ageFactor * this.Z_TRAVEL_DISTANCE;
+            // Calculate Z offset based on age and player position
+            const movementSpeed = isPlayerNearby ? 3.6 : 0.2;
+            const zOffset = this.Z_OFFSET - ageFactor * this.Z_TRAVEL_DISTANCE * movementSpeed;
 
             // Update position - X and Y stay fixed at initial offset, only Z changes
             this.particleSystem.positions[i3] = teleporterPos.x + this.particleSystem.initialX[i];
@@ -211,7 +214,8 @@ export class Teleporter extends Npc {
             this.particleSystem.positions[i3 + 2] = teleporterPos.z + zOffset;
 
             // Update size - decrease as particle ages (reaches 0 at the end)
-            this.particleSystem.sizes[i] = this.particleSystem.initialSizes[i] * (1 - ageFactor);
+            const sizeFactor = isPlayerNearby ? 1.0 : 0.6;
+            this.particleSystem.sizes[i] = this.particleSystem.initialSizes[i] * (1 - ageFactor) * sizeFactor; // Slightly larger when player is nearby
         }
 
         // Update the geometry attributes
