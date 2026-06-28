@@ -77,8 +77,8 @@ export abstract class BaseStage {
     protected physicsMaterial: CANNON.Material;
     protected assetManager: AssetManager;
 
-    teleporter?: Teleporter;
-    lobbyReturnTeleporter?: Teleporter;
+    // Collection of teleporters. Main teleporter to exit the stage is at index 0
+    teleporters: Teleporter[] = [];
     bodies: CANNON.Body[] = [];
     meshes: (THREE.Mesh | THREE.Group | THREE.Object3D)[] = [];
     enemies: Enemy[] = [];
@@ -300,8 +300,7 @@ export abstract class BaseStage {
         this.props = [];
 
         // Clear teleporter references
-        this.teleporter = undefined;
-        this.lobbyReturnTeleporter = undefined;
+        this.teleporters = [];
     }
 
     /**
@@ -352,7 +351,7 @@ export abstract class BaseStage {
      *                    non-interactive until {@link Teleporter.activate} is called.
      */
     protected createTeleporter(position: CANNON.Vec3, destination: string, startActive: boolean = true): void {
-        this.teleporter = new Teleporter(
+        const teleporter = new Teleporter(
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,
@@ -361,34 +360,27 @@ export abstract class BaseStage {
             startActive
         );
         // Add teleporter to npcs set so it's handled like any other NPC
-        this.npcs.add(this.teleporter);
+        this.npcs.add(teleporter);
+        // Add teleporter to teleporters array
+        this.teleporters.push(teleporter);
     }
 
     /**
      * Create a lobby return teleporter at the spawn point.
      * Always active – allows players to return to the lobby at any time.
      */
-    protected createLobbyReturnTeleporter(position: CANNON.Vec3, lobbyId: string): void {
-        this.lobbyReturnTeleporter = new Teleporter(
+    protected createLobbyReturnTeleporter(layout: DungeonLayout): void {
+        const lobbyReturnTeleporter = new Teleporter(
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,
-            position,
-            lobbyId,
+            new CANNON.Vec3(layout.spawnPosition.x, layout.spawnElevation, layout.spawnPosition.z),
+            'lobby', // Hard coded, since accessing the metadata here would introduce a circular dependency
             true,
             'Return to Lobby'
         );
-        this.npcs.add(this.lobbyReturnTeleporter);
-    }
-
-    /**
-     * Create a lobby return teleporter in the centre of the starting room.
-     */
-    protected createCenteredLobbyReturnTeleporter(layout: DungeonLayout, lobbyId: string): void {
-        this.createLobbyReturnTeleporter(
-            new CANNON.Vec3(layout.spawnPosition.x, layout.spawnElevation, layout.spawnPosition.z),
-            lobbyId,
-        );
+        this.npcs.add(lobbyReturnTeleporter);
+        this.teleporters.push(lobbyReturnTeleporter);
     }
 
     /**
@@ -778,13 +770,15 @@ export abstract class BaseStage {
 
         const layout: StageMinimapLayout = { ...this.minimapLayout, rects };
 
-        if (!this.teleporter) return layout;
+        if (!this.teleporters || this.teleporters.length === 0) return layout;
+
+        const returnTeleporter = this.teleporters[0];
         return {
             ...layout,
             teleporter: {
-                x: this.teleporter.position.x,
-                z: this.teleporter.position.z,
-                active: this.teleporter.isActive,
+                x: returnTeleporter.position.x,
+                z: returnTeleporter.position.z,
+                active: returnTeleporter.isActive,
             },
         };
     }
@@ -825,9 +819,7 @@ export abstract class BaseStage {
      * teleporter activation, and wall transparency shader uniforms.
      */
     update(dt: number, player: Player, _anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
-        if (this.teleporter) {
-            this.teleporter.updateWithPlayerPosition(dt, player.position);
-        }
+        this.teleporters.forEach(teleporter => teleporter.updateWithPlayerPosition(dt, player.position));
 
         // Update mixers
         for (const npc of this.npcs) {
@@ -1057,7 +1049,7 @@ export abstract class BaseStage {
     }
 
     /**
-     * Activate the teleporter once every enemy in the stage has been defeated.
+     * Activate the return teleporter once every enemy in the stage has been defeated.
      *
      * With lazy enemy spawning the teleporter must not activate while unvisited
      * rooms still have pending spawns.  World.ts removes dead enemies from
@@ -1067,11 +1059,11 @@ export abstract class BaseStage {
      * A guard on `totalExpectedEnemies > 0` prevents activation on empty stages.
      */
     private checkTeleporterActivation(): void {
-        if (!this.teleporter || this.teleporter.isActive) return;
+        if (this.teleporters.length === 0 || this.teleporters[0].isActive) return;
         if (this.totalExpectedEnemies === 0) return;
         if (this.roomPendingSpawnData.size === 0 && this.enemies.length === 0) {
             AudioManager.Instance.playStageCleared();
-            this.teleporter.activate();
+            this.teleporters[0].activate();
         }
     }
 }
