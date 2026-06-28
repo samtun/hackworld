@@ -196,8 +196,8 @@ export class SecurityCore extends StageWithLevels {
         );
         this.setMinimapLayout(layout.minimapLayout, false);
 
-        // Update spawn position from generated layout
-        this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
+        // Spawn the player in front of the centred lobby return teleporter
+        this.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
 
         // Register rooms for per-room enemy aggro and teleporter activation
         this.dungeonRooms = layout.rooms;
@@ -214,10 +214,7 @@ export class SecurityCore extends StageWithLevels {
         this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), this.levelConfig.teleporterDestination, false);
 
         // Lobby return teleporter at spawn – always active so players can leave at any time
-        this.createLobbyReturnTeleporter(
-            new CANNON.Vec3(layout.spawnPosition.x + 2, layout.spawnElevation, layout.spawnPosition.z),
-            Lobby.getMetadata().id
-        );
+        this.createCenteredLobbyReturnTeleporter(layout, Lobby.getMetadata().id);
 
         // Spawn enemies with room assignments so aggro is room-gated
         this.spawnEnemiesFromLayout(layout);

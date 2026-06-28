@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { BaseStage } from './BaseStage';
 import type { StageMinimapLayout } from './StageMinimapLayout';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
-import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
+import type { DungeonLayout, EnemySpawnPoint } from './RoomBasedDungeonGenerator';
 import { EnemyType } from '../enemies/EnemyType';
 
 /** Minimal duck-type for the CANNON.Vec3 positions passed to spawnEnemy stubs. */
@@ -130,6 +130,39 @@ describe('BaseStage.getMinimapLayout', () => {
 
         expect(room1.cleared).toBe(true);
         expect(room2.cleared).toBeUndefined();
+    });
+});
+
+describe('BaseStage lobby return teleporter placement', () => {
+    it('places the lobby return teleporter at the starting-room centre', () => {
+        const stage = Object.create(BaseStage.prototype) as any;
+        stage.createLobbyReturnTeleporter = vi.fn();
+
+        const layout = {
+            spawnPosition: { x: 4, z: -3 },
+            spawnElevation: 2,
+        } as DungeonLayout;
+
+        stage.createCenteredLobbyReturnTeleporter(layout, 'lobby');
+
+        expect(stage.createLobbyReturnTeleporter).toHaveBeenCalledWith(
+            expect.objectContaining({ x: 4, y: 2, z: -3 }),
+            'lobby',
+        );
+    });
+
+    it('places the player spawn in front of the starting-room teleporter', () => {
+        const stage = Object.create(BaseStage.prototype) as any;
+        stage.spawnPosition = { set: vi.fn() };
+
+        const layout = {
+            spawnPosition: { x: 4, z: -3 },
+            spawnElevation: 2,
+        } as DungeonLayout;
+
+        stage.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
+
+        expect(stage.spawnPosition.set).toHaveBeenCalledWith(4, 2.4, -1);
     });
 });
 

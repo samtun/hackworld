@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Player } from '../Player';
+import { Player, PLAYER_COLLISION_GROUP } from '../Player';
 import { BaseMesh } from '../BaseMesh';
 import { PlayerRegistry } from '../PlayerRegistry';
 import { AssetManager } from '../AssetManager';
@@ -196,7 +196,6 @@ export class Enemy extends BaseMesh {
     protected deathFadeDuration: number = 0.5;
     protected deathFadeTimer: number = 0;
     protected isDeathFading: boolean = false;
-    private deathYPosition: number = 0;
 
     protected materials: THREE.Material[] = [];
     private player: Player;
@@ -305,6 +304,8 @@ export class Enemy extends BaseMesh {
             material: physicsMaterial,
             fixedRotation: true
         });
+        this.body.collisionFilterMask = -1;
+        this.body.collisionFilterMask |= PLAYER_COLLISION_GROUP;
         this.body.addShape(shape);
         this.body.position.copy(position);
         (this.body as any).entity = this;
@@ -559,9 +560,6 @@ export class Enemy extends BaseMesh {
 
         if (this.isDying || this.isDead || this.isDeathFading) {
             this.footstepTimer = 0;
-            // Keep at death height to prevent falling through floor
-            this.body.velocity.y = 0;
-            this.body.position.y = this.deathYPosition;
         }
 
         // Handle death fade after death animation completes
@@ -1044,7 +1042,6 @@ export class Enemy extends BaseMesh {
         this.isDying = true;
         this.footstepTimer = 0;
         this.deathTimer = 0;
-        this.deathYPosition = this.body.position.y;
 
         // Cancel any ongoing attack
         if (this.isAttacking) {
@@ -1052,9 +1049,9 @@ export class Enemy extends BaseMesh {
             this.deactivateAttackHitbox();
         }
 
-        // Disable collision and clear velocity to prevent positioning drift
-        // from knockback impulses applied just before death
-        this.body.collisionResponse = false;
+        // Disable collision only against the player while still colliding with
+        // world geometry so defeated enemies can fall naturally during fade-out.
+        this.body.collisionFilterMask &= ~PLAYER_COLLISION_GROUP;
         this.body.velocity.x = 0;
         this.body.velocity.z = 0;
         AudioManager.Instance.playDeath('enemy');
