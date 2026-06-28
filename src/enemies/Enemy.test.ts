@@ -13,7 +13,10 @@ vi.mock('../AudioManager', () => ({
 
 import { Enemy, MAX_ENEMY_RADIUS, ENEMY_RADIUS_FACTOR } from './Enemy';
 import { AudioManager } from '../AudioManager';
+import { PLAYER_COLLISION_GROUP } from '../Player';
 import { EnemyType, getEnemyTypeDefinition } from './EnemyType';
+
+const WORLD_COLLISION_GROUP = 1;
 
 function mockAction() {
     const action: any = {
@@ -93,6 +96,7 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
             position: { x: 0, y: 1, z: 0, copy: vi.fn(), vsub: (_v: any) => ({ x: 0, y: 0, z: 0 }) },
             velocity: { x: 0, y: 0, z: 0 },
             collisionResponse: true,
+            collisionFilterMask: -1,
         },
 
         // Mocked base position for return-to-base behaviour
@@ -265,15 +269,11 @@ describe('Enemy.die', () => {
         expect((enemy as any).deathTimer).toBe(0);
     });
 
-    it('records the Y position at death for body freeze', () => {
-        (enemy as any).body.position.y = 3;
+    it('excludes player collisions on death', () => {
+        expect((enemy as any).body.collisionFilterMask & PLAYER_COLLISION_GROUP).toBe(PLAYER_COLLISION_GROUP);
         enemy.die();
-        expect((enemy as any).deathYPosition).toBe(3);
-    });
-
-    it('disables collision response on death', () => {
-        enemy.die();
-        expect((enemy as any).body.collisionResponse).toBe(false);
+        expect((enemy as any).body.collisionFilterMask & PLAYER_COLLISION_GROUP).toBe(0);
+        expect((enemy as any).body.collisionFilterMask & WORLD_COLLISION_GROUP).toBe(WORLD_COLLISION_GROUP);
     });
 
     it('zeroes horizontal velocity on death to prevent knockback drift', () => {
@@ -362,12 +362,12 @@ describe('Enemy.update – state machine', () => {
         expect(enemy.hp).toBe(initialHp);
     });
 
-    it('freezes body Y-velocity while dying', () => {
+    it('keeps body Y-velocity while dying', () => {
         const enemy = makeEnemy() as any;
         enemy.isDying = true;
         enemy.body.velocity.y = -10;
         enemy.update(0.016);
-        expect(enemy.body.velocity.y).toBe(0);
+        expect(enemy.body.velocity.y).toBe(-10);
     });
 
     it('advances deathFadeTimer while isDeathFading', () => {
