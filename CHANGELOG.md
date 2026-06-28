@@ -1,3 +1,11 @@
+## [3.30.3](https://github.com/samtun/hackworld/compare/v3.30.2...v3.30.3) (2026-06-28)
+
+
+### Bug Fixes
+
+* center the starting room teleporter ([e7ec613](https://github.com/samtun/hackworld/commit/e7ec613f3fbd53be38b499bf9a68834f4e64c354))
+* spawn players in front of return teleporters ([2ace831](https://github.com/samtun/hackworld/commit/2ace831f9f7426a8b9b9344650d044d8e99701c5))
+
 ## [3.30.2](https://github.com/samtun/hackworld/compare/v3.30.1...v3.30.2) (2026-06-28)
 
 
