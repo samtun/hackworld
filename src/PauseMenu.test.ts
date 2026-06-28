@@ -240,4 +240,68 @@ describe('PauseMenu', () => {
         expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
         expect(document.querySelector('[data-pause-menu]')?.textContent).toContain('Sound Effects off');
     });
+
+    describe('controller mapping popup', () => {
+        it('shows the controller mapping popup when the menu item is confirmed', () => {
+            (menu as any).selectedIndex = 1; // 'controllermapping'
+            (menu as any).confirm();
+
+            expect((menu as any).controllerMappingVisible).toBe(true);
+            expect((menu as any).controllerMappingEl.style.display).toBe('flex');
+        });
+
+        it('plays the UI open sound when showing the controller mapping popup', () => {
+            (menu as any).selectedIndex = 1;
+            (menu as any).confirm();
+
+            expect(AudioManager.Instance.playUiOpen).toHaveBeenCalled();
+        });
+
+        it('hides the controller mapping popup and plays close sound when hideControllerMapping is called', () => {
+            (menu as any).selectedIndex = 1;
+            (menu as any).confirm();
+            vi.clearAllMocks();
+
+            (menu as any).hideControllerMapping();
+
+            expect((menu as any).controllerMappingVisible).toBe(false);
+            expect((menu as any).controllerMappingEl.style.opacity).toBe('0');
+            expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
+        });
+
+        it('sets prevCancel to true when closing the popup so the pause menu does not also close', () => {
+            (menu as any).selectedIndex = 1;
+            (menu as any).confirm();
+
+            (menu as any).hideControllerMapping();
+
+            expect((menu as any).prevCancel).toBe(true);
+        });
+
+        it('renders the ESC/B close hint inside the controller mapping popup', () => {
+            const mappingEl = (menu as any).controllerMappingEl as HTMLDivElement;
+            expect(mappingEl.innerHTML).toContain('ESC');
+            expect(mappingEl.innerHTML).toContain('B');
+            expect(mappingEl.innerHTML).toContain('Close');
+        });
+
+        it('renders an img element with the controller mapping image source', () => {
+            const mappingEl = (menu as any).controllerMappingEl as HTMLDivElement;
+            const img = mappingEl.querySelector('img');
+            expect(img).not.toBeNull();
+            expect(img?.src).toContain('controller_mapping.png');
+        });
+
+        it('resets the controller mapping state when the pause menu is hidden', () => {
+            (menu as any).selectedIndex = 1;
+            (menu as any).confirm();
+            expect((menu as any).controllerMappingVisible).toBe(true);
+
+            menu.show();
+            menu.hide();
+
+            expect((menu as any).controllerMappingVisible).toBe(false);
+            expect((menu as any).controllerMappingEl.style.display).toBe('none');
+        });
+    });
 });
