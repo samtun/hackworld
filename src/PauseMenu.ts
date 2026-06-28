@@ -31,6 +31,8 @@ interface PauseMenuItem {
 export class PauseMenu {
     private readonly overlay: HTMLDivElement;
     private readonly controllerMappingEl: HTMLDivElement;
+    private readonly menuContainer: HTMLDivElement;
+    private readonly titleElement: HTMLDivElement;
     private controllerMappingVisible = false;
     private prevMappingCancel = false;
     private readonly itemEls: HTMLDivElement[] = [];
@@ -101,8 +103,8 @@ export class PauseMenu {
         ].join(';');
 
         // Title: "Execution Paused"
-        const title = document.createElement('div');
-        title.style.cssText = [
+        this.titleElement = document.createElement('div');
+        this.titleElement.style.cssText = [
             'font-size:min(72px, 10vw)',
             'font-weight:bold',
             'color:#8B0000',
@@ -111,12 +113,12 @@ export class PauseMenu {
             'text-align:center',
             'padding:0 20px',
         ].join(';');
-        title.textContent = 'Execution Paused';
-        this.overlay.appendChild(title);
+        this.titleElement.textContent = 'Execution Paused';
+        this.overlay.appendChild(this.titleElement);
 
         // Menu items container
-        const menuContainer = document.createElement('div');
-        menuContainer.style.cssText = [
+        this.menuContainer = document.createElement('div');
+        this.menuContainer.style.cssText = [
             'display:flex',
             'flex-direction:column',
             'align-items:center',
@@ -138,10 +140,10 @@ export class PauseMenu {
                 this.updateStyles();
             });
             this.itemEls.push(el);
-            menuContainer.appendChild(el);
+            this.menuContainer.appendChild(el);
         });
 
-        this.overlay.appendChild(menuContainer);
+        this.overlay.appendChild(this.menuContainer);
 
         // Controller mapping popup – shown in-place over the pause menu backdrop
         this.controllerMappingEl = document.createElement('div');
@@ -442,6 +444,8 @@ export class PauseMenu {
         this.controllerMappingEl.style.display = 'flex';
         requestAnimationFrame(() => {
             requestAnimationFrame(() => {
+                this.menuContainer.style.opacity = '0';
+                this.titleElement.style.opacity = '0';
                 this.controllerMappingEl.style.opacity = '1';
             });
         });
@@ -456,6 +460,8 @@ export class PauseMenu {
         setTimeout(() => {
             if (!this.controllerMappingVisible) {
                 this.controllerMappingEl.style.display = 'none';
+                this.menuContainer.style.opacity = '1';
+                this.titleElement.style.opacity = '1';
             }
         }, MAPPING_FADE_MS);
     }
