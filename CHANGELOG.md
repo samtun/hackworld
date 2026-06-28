@@ -1,3 +1,11 @@
+# [3.32.0](https://github.com/samtun/hackworld/compare/v3.31.0...v3.32.0) (2026-06-28)
+
+
+### Features
+
+* fix fade in and out opacity settings ([df285e9](https://github.com/samtun/hackworld/commit/df285e958fd86af20e4d1b559489139e98223ad6))
+* show controller mapping in a popup instead of new tab ([76a3f49](https://github.com/samtun/hackworld/commit/76a3f49a4da2e29cb32c31ae7ea3518551a83e33))
+
 # [3.31.0](https://github.com/samtun/hackworld/compare/v3.30.4...v3.31.0) (2026-06-28)
 
 
