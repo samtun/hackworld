@@ -427,20 +427,12 @@ export class Game {
     }
 
     private handleSkillUnlocked(skillIndex: number): void {
-        if (skillIndex === 0) {
+        // Healing skill is unlocked at all times - unlock indeces start at 1
+        if (skillIndex === 1) {
             this.ui.showSkillUnlockOverlay(
                 'Laser Skill Unlocked',
                 'Fires a focused ranged blast that pierces through enemies.',
                 '<span class="key-icon">Q</span> + <span class="key-icon">SPACE</span> / <span class="btn-icon xbox-lb">LB</span> + <span class="btn-icon xbox-a">A</span> / Mobile: Tap Laser HUD icon',
-            );
-            return;
-        }
-
-        if (skillIndex === 1) {
-            this.ui.showSkillUnlockOverlay(
-                'Heal Skill Unlocked',
-                'Restores HP instantly to keep you in the fight.',
-                '<span class="key-icon">Q</span> + <span class="key-icon">ESC</span> / <span class="btn-icon xbox-lb">LB</span> + <span class="btn-icon xbox-b">B</span> / Mobile: Tap Heal HUD icon',
             );
             return;
         }

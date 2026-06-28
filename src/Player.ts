@@ -84,8 +84,8 @@ export class Player extends BaseMesh {
     private readonly EXP_LINEAR_FACTOR = 30;
     private readonly EXP_QUADRATIC_FACTOR = 0.07;
     private readonly LASER_UNLOCK_LEVEL = 10;
-    private readonly HEAL_UNLOCK_LEVEL = 20;
-    private readonly AREA_UNLOCK_LEVEL = 38;
+    private readonly HEAL_UNLOCK_LEVEL = 1;
+    private readonly AREA_UNLOCK_LEVEL = 25;
 
     // Tech point cap
     private readonly TECH_POINT_CAP = 2500;
@@ -379,11 +379,10 @@ export class Player extends BaseMesh {
 
         world.addBody(this.body);
 
-
         // Initialize skills
         this.skills = [
-            new LaserBeamSkill(this.resetSkillUsage),
             new HealingSkill(this.resetSkillUsage),
+            new LaserBeamSkill(this.resetSkillUsage),
             new AreaAttackSkill(this.resetSkillUsage)
         ];
 
@@ -1677,8 +1676,8 @@ export class Player extends BaseMesh {
 
     private getSkillUnlockLevel(skillIndex: number): number {
         switch (skillIndex) {
-            case 0: return this.LASER_UNLOCK_LEVEL;
-            case 1: return this.HEAL_UNLOCK_LEVEL;
+            case 0: return this.HEAL_UNLOCK_LEVEL;
+            case 1: return this.LASER_UNLOCK_LEVEL;
             case 2: return this.AREA_UNLOCK_LEVEL;
             default: return Number.MAX_SAFE_INTEGER;
         }
