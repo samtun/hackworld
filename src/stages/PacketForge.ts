@@ -148,10 +148,7 @@ export class PacketForge extends BaseStage {
         this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getMetadata().id, false);
 
         // Lobby return teleporter at spawn – always active so players can leave at any time
-        this.createLobbyReturnTeleporter(
-            new CANNON.Vec3(layout.spawnPosition.x + 2, layout.spawnElevation, layout.spawnPosition.z),
-            Lobby.getMetadata().id
-        );
+        this.createCenteredLobbyReturnTeleporter(layout, Lobby.getMetadata().id);
 
         this.spawnEnemiesFromLayout(layout);
         this.buildChestsFromLayout(layout);

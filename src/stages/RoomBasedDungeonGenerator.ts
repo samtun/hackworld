@@ -27,7 +27,7 @@ export const CORRIDOR_LENGTH = 5;
 export const ROOM_ELEVATION_STEP = 2;
 
 /** Fixed size (width = depth) for the safe starting room (in metres). */
-export const SAFE_ROOM_SIZE = 10;
+export const SAFE_ROOM_SIZE = 11;
 
 /** Size of the dedicated teleporter room (in metres). */
 export const TELEPORTER_ROOM_SIZE = 16;
@@ -244,7 +244,7 @@ export interface DungeonLayout {
     spawnPosition: Vec2;
     /** Floor elevation of the safe (starting) room. */
     spawnElevation: number;
-    /** Position of the teleporter in the teleporter room (centred against the far wall). */
+    /** Position of the teleporter in the teleporter room. */
     teleporterPosition: Vec2;
     /** Floor elevation of the teleporter room. */
     teleporterElevation: number;
