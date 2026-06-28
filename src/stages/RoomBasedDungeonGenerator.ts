@@ -1187,29 +1187,29 @@ export class RoomBasedDungeonGenerator {
     /** Build the three outer walls of a niche (the 4th side is open to the parent room). */
     private buildNicheWalls(niche: RoomNiche, elevation: number): WallSegment[] {
         const walls: WallSegment[] = [];
-        const nHW = niche.width / 2;
-        const nHD = niche.depth / 2;
+        const halfW = niche.width / 2;
+        const halfD = niche.depth / 2;
 
         switch (niche.direction) {
             case 'north':
-                walls.push(this.xWall(niche.centerX, niche.centerZ + nHD, niche.width - WALL_THICKNESS, elevation));
-                walls.push(this.zWall(niche.centerX + nHW, niche.centerZ, niche.depth, elevation));
-                walls.push(this.zWall(niche.centerX - nHW, niche.centerZ, niche.depth, elevation));
+                walls.push(this.xWall(niche.centerX, niche.centerZ + halfD, niche.width - WALL_THICKNESS, elevation));
+                walls.push(this.zWall(niche.centerX + halfW, niche.centerZ, niche.depth, elevation));
+                walls.push(this.zWall(niche.centerX - halfW, niche.centerZ, niche.depth, elevation));
                 break;
             case 'south':
-                walls.push(this.xWall(niche.centerX, niche.centerZ - nHD, niche.width - WALL_THICKNESS, elevation));
-                walls.push(this.zWall(niche.centerX + nHW, niche.centerZ, niche.depth, elevation));
-                walls.push(this.zWall(niche.centerX - nHW, niche.centerZ, niche.depth, elevation));
+                walls.push(this.xWall(niche.centerX, niche.centerZ - halfD, niche.width - WALL_THICKNESS, elevation));
+                walls.push(this.zWall(niche.centerX + halfW, niche.centerZ, niche.depth, elevation));
+                walls.push(this.zWall(niche.centerX - halfW, niche.centerZ, niche.depth, elevation));
                 break;
             case 'east':
-                walls.push(this.zWall(niche.centerX + nHW, niche.centerZ, niche.depth, elevation));
-                walls.push(this.xWall(niche.centerX, niche.centerZ + nHD, niche.width - WALL_THICKNESS, elevation));
-                walls.push(this.xWall(niche.centerX, niche.centerZ - nHD, niche.width - WALL_THICKNESS, elevation));
+                walls.push(this.zWall(niche.centerX + halfW, niche.centerZ, niche.depth, elevation));
+                walls.push(this.xWall(niche.centerX, niche.centerZ + halfD, niche.width - WALL_THICKNESS, elevation));
+                walls.push(this.xWall(niche.centerX, niche.centerZ - halfD, niche.width - WALL_THICKNESS, elevation));
                 break;
             case 'west':
-                walls.push(this.zWall(niche.centerX - nHW, niche.centerZ, niche.depth, elevation));
-                walls.push(this.xWall(niche.centerX, niche.centerZ + nHD, niche.width - WALL_THICKNESS, elevation));
-                walls.push(this.xWall(niche.centerX, niche.centerZ - nHD, niche.width - WALL_THICKNESS, elevation));
+                walls.push(this.zWall(niche.centerX - halfW, niche.centerZ, niche.depth, elevation));
+                walls.push(this.xWall(niche.centerX, niche.centerZ + halfD, niche.width - WALL_THICKNESS, elevation));
+                walls.push(this.xWall(niche.centerX, niche.centerZ - halfD, niche.width - WALL_THICKNESS, elevation));
                 break;
         }
 
