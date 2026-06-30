@@ -1,3 +1,17 @@
+# [3.34.0](https://github.com/samtun/hackworld/compare/v3.33.0...v3.34.0) (2026-06-30)
+
+
+### Bug Fixes
+
+* base stage tests ([536578c](https://github.com/samtun/hackworld/commit/536578ca29427e9401f1926fb399fa9dae2a1c3d))
+* inputmanager tests ([1139799](https://github.com/samtun/hackworld/commit/11397993c2f5fe50ddcf7f4472ffefd69d8342ec))
+* player tests ([9891db6](https://github.com/samtun/hackworld/commit/9891db61f1647b04478d5dc1dde16f2c0cb1af11))
+
+
+### Features
+
+* make heal skill available from level 1 ([70aef88](https://github.com/samtun/hackworld/commit/70aef88b6c907d8d4c60242029898d3181affcfe))
+
 # [3.33.0](https://github.com/samtun/hackworld/compare/v3.32.0...v3.33.0) (2026-06-28)
 
 
