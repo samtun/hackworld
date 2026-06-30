@@ -404,34 +404,8 @@ export class InputManager {
         return false;
     }
 
-    // Skill 1: L1 + A (Laser Beam)
+    // Skill 1: L1 + B (Heal)
     isSkill1Pressed(): boolean {
-        // Keyboard: Q + Space
-        if (this.keys['KeyQ'] && this.keys['Space']) return true;
-
-        // Gamepad: L1 (button 4) + A (button 0)
-        if (this.gamepadIndex !== null) {
-            const gp = navigator.getGamepads()[this.gamepadIndex];
-            if (gp) {
-                if (gp.buttons[4]?.pressed && gp.buttons[0]?.pressed) return true;
-            }
-        }
-
-        // Mobile: Skill toggle mode + Jump button
-        if (this.mobileControls?.isMobile && this.mobileControls?.isSkill1Pressed) {
-            return true;
-        }
-
-        return false;
-    }
-
-    isSkill1JustPressed(): boolean {
-        const currentState = this.isSkill1Pressed();
-        return !this.previousSkill1State && currentState;
-    }
-
-    // Skill 2: L1 + B (Healing)
-    isSkill2Pressed(): boolean {
         // Keyboard: Q + Escape
         if (this.keys['KeyQ'] && this.keys['Escape']) return true;
 
@@ -451,9 +425,35 @@ export class InputManager {
         return false;
     }
 
+    // Skill 2: L1 + A (Laser Beam)
+    isSkill2Pressed(): boolean {
+        // Keyboard: Q + Space
+        if (this.keys['KeyQ'] && this.keys['Space']) return true;
+
+        // Gamepad: L1 (button 4) + A (button 0)
+        if (this.gamepadIndex !== null) {
+            const gp = navigator.getGamepads()[this.gamepadIndex];
+            if (gp) {
+                if (gp.buttons[4]?.pressed && gp.buttons[0]?.pressed) return true;
+            }
+        }
+
+        // Mobile: Skill toggle mode + Jump button
+        if (this.mobileControls?.isMobile && this.mobileControls?.isSkill2Pressed) {
+            return true;
+        }
+
+        return false;
+    }
+
     isSkill2JustPressed(): boolean {
         const currentState = this.isSkill2Pressed();
         return !this.previousSkill2State && currentState;
+    }
+
+    isSkill1JustPressed(): boolean {
+        const currentState = this.isSkill1Pressed();
+        return !this.previousSkill1State && currentState;
     }
 
     // Skill 3: L1 + X (Area Attack)

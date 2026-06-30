@@ -168,7 +168,7 @@ class PlayerUI {
         skillsWrapper.style.display = 'flex';
         skillsWrapper.style.gap = '6px';
         skillsWrapper.style.width = '168px';
-        skillsWrapper.style.justifyContent = 'center';
+        skillsWrapper.style.justifyContent = 'flex-start';
         const mobileControls = MobileControlsManager.Instance;
         skillsWrapper.style.pointerEvents = mobileControls.isMobile ? 'auto' : 'none';
         this.wrapper.appendChild(skillsWrapper);

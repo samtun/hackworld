@@ -49,8 +49,8 @@ function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
         EXP_LINEAR_FACTOR: 30,
         EXP_QUADRATIC_FACTOR: 0.07,
         LASER_UNLOCK_LEVEL: 10,
-        HEAL_UNLOCK_LEVEL: 20,
-        AREA_UNLOCK_LEVEL: 38,
+        HEAL_UNLOCK_LEVEL: 1,
+        AREA_UNLOCK_LEVEL: 25,
         TECH_POINT_CAP: 2500,
         SKILL_TECH_POINT_CAP: 1200,
         HIT_INVULNERABILITY: 1.0,
@@ -653,20 +653,20 @@ describe('Player.gainExp', () => {
 describe('Player skill unlock progression', () => {
     it('unlocks skills at levels 10, 20, and 38', () => {
         const player = makePlayer({ level: 1 });
-        expect(player.isSkillUnlocked(0)).toBe(false);
-        expect(player.isSkillUnlocked(1)).toBe(false);
-        expect(player.isSkillUnlocked(2)).toBe(false);
-
-        player.level = 10;
         expect(player.isSkillUnlocked(0)).toBe(true);
         expect(player.isSkillUnlocked(1)).toBe(false);
         expect(player.isSkillUnlocked(2)).toBe(false);
 
-        player.level = 20;
+        player.level = 9;
+        expect(player.isSkillUnlocked(0)).toBe(true);
+        expect(player.isSkillUnlocked(1)).toBe(false);
+        expect(player.isSkillUnlocked(2)).toBe(false);
+
+        player.level = 10;
         expect(player.isSkillUnlocked(1)).toBe(true);
         expect(player.isSkillUnlocked(2)).toBe(false);
 
-        player.level = 38;
+        player.level = 25;
         expect(player.isSkillUnlocked(2)).toBe(true);
     });
 
@@ -677,11 +677,10 @@ describe('Player skill unlock progression', () => {
             onSkillUnlocked,
         });
 
-        (player as any).emitSkillUnlockEvents(9, 38);
+        (player as any).emitSkillUnlockEvents(9, 25);
 
-        expect(onSkillUnlocked).toHaveBeenNthCalledWith(1, 0);
-        expect(onSkillUnlocked).toHaveBeenNthCalledWith(2, 1);
-        expect(onSkillUnlocked).toHaveBeenNthCalledWith(3, 2);
+        expect(onSkillUnlocked).toHaveBeenNthCalledWith(1, 1);
+        expect(onSkillUnlocked).toHaveBeenNthCalledWith(2, 2);
     });
 
     it('does not execute locked skills', () => {
@@ -697,7 +696,7 @@ describe('Player skill unlock progression', () => {
             weapon: { isAttacking: false },
         } as any);
 
-        (player as any).useSkill(0);
+        (player as any).useSkill(1);
 
         expect(skill.use).not.toHaveBeenCalled();
     });

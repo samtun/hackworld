@@ -9,7 +9,7 @@ import { EnemyType } from '../enemies/EnemyType';
 /** Minimal duck-type for the CANNON.Vec3 positions passed to spawnEnemy stubs. */
 interface Vec3Like { x: number; y: number; z: number; }
 
-function makeStage(layout: StageMinimapLayout | null, teleporters: [{ position: { x: number; z: number }; isActive: boolean }]) {
+function makeStage(layout: StageMinimapLayout | null, teleporters: { position: { x: number; z: number }; isActive: boolean }[]) {
     const stage = Object.create(BaseStage.prototype) as any;
     stage.minimapLayout = layout;
     stage.teleporters = teleporters;
@@ -67,7 +67,7 @@ describe('BaseStage.getMinimapLayout', () => {
             rects: [],
             bounds: { minX: -1, maxX: 1, minZ: -1, maxZ: 1 },
         };
-        const stage = makeStage(baseLayout);
+        const stage = makeStage(baseLayout, []);
 
         const layout = stage.getMinimapLayout();
 

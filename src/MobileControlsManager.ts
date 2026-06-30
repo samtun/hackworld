@@ -28,8 +28,8 @@ export class MobileControlsManager {
     public isPausePressed: boolean = false;
 
     // Skill state (triggered from HUD skill indicators)
-    public isSkill1Pressed: boolean = false; // Laser
-    public isSkill2Pressed: boolean = false; // Heal
+    public isSkill1Pressed: boolean = false; // Heal
+    public isSkill2Pressed: boolean = false; // Laser
     public isSkill3Pressed: boolean = false; // Area
 
     // Track previous states for edge detection
