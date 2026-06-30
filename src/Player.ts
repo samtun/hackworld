@@ -170,6 +170,7 @@ export class Player extends BaseMesh {
     private isChargingAttack: boolean = false;
     private chargeTimer: number = 0;
     private readonly CHARGE_DURATION: number = 0.8;
+    private readonly CHARGE_FADE_OUT_DURATION: number = 0.1;
     private readonly CHARGE_DELAY: number = 0.2; // Wait 0.2s before starting charge animation
     private chargeDelayTimer: number = 0;
     private isDashing: boolean = false;
@@ -178,6 +179,7 @@ export class Player extends BaseMesh {
     private readonly DASH_SPEED: number = 25;
     private dashDirection: THREE.Vector3 = new THREE.Vector3();
     private chargeFx: THREE.Group;
+    private chargeFxMaterial: THREE.MeshStandardMaterial | null = null;
     private chargeFxTexture: THREE.Texture | null = null;
     private dashHitEnemies: Set<Enemy> = new Set();
     private attackHitEnemies: Set<Enemy> = new Set();
@@ -193,8 +195,6 @@ export class Player extends BaseMesh {
     private blockShield: BlockShield | null = null;
 
     // Particle wall constants
-    private readonly CHARGEFX_BASE_HEIGHT: number = 0.8;
-    private readonly CHARGEFX_CHARGED_HEIGHT: number = 1.1;
     private readonly CHARGEFX_SCROLL_SPEED: number = 3.0;
 
     // Level up particle explosion
@@ -294,11 +294,11 @@ export class Player extends BaseMesh {
                 return;
             }
 
-            const material = node.material as THREE.MeshStandardMaterial;
+            this.chargeFxMaterial = node.material as THREE.MeshStandardMaterial;
 
             // Get texture for charge fx mesh to animate it later
-            if (material.map) {
-                this.chargeFxTexture = material.map;
+            if (this.chargeFxMaterial.map) {
+                this.chargeFxTexture = this.chargeFxMaterial.map;
             }
         });
 
@@ -1450,6 +1450,9 @@ export class Player extends BaseMesh {
     }
 
     private createChargeFx() {
+        if (this.chargeFxMaterial) {
+            this.chargeFxMaterial.opacity = 0; // Reset opacity for fade-in
+        }
         this.mesh.add(this.chargeFx);
     }
 
@@ -1460,11 +1463,21 @@ export class Player extends BaseMesh {
 
         // When fully charged, raise particles higher
         const isFullyCharged = this.chargeTimer >= this.CHARGE_DURATION;
-        const targetHeight = isFullyCharged ? this.CHARGEFX_CHARGED_HEIGHT : this.CHARGEFX_BASE_HEIGHT;
-        const pulseScale = targetHeight * pulseScaleFactor;
 
         // Update mesh scale
-        this.chargeFx.scale.set(pulseScale, pulseScale, pulseScale);
+        this.chargeFx.scale.set(pulseScaleFactor, isFullyCharged ? pulseScaleFactor : pulseScaleFactor * 0.6, pulseScaleFactor);
+
+        // Update charge fx material to fade in and out
+        if (this.chargeFxMaterial) {
+            if (this.isChargingAttack) {
+                // Fade in
+                this.chargeFxMaterial.opacity = THREE.MathUtils.clamp(this.chargeTimer / this.CHARGE_DURATION, 0, 1);
+            } else if (this.dashTimer >= this.DASH_DURATION - this.CHARGE_FADE_OUT_DURATION) {
+                // Fade out
+                const fadeOutTime = this.dashTimer - (this.DASH_DURATION - this.CHARGE_FADE_OUT_DURATION);
+                this.chargeFxMaterial.opacity = THREE.MathUtils.clamp(1 - fadeOutTime / this.CHARGE_FADE_OUT_DURATION, 0, 1);       
+            }
+        }
 
         // Update texture offset for scrolling effect
         if (this.chargeFxTexture) {
