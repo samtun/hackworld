@@ -366,28 +366,23 @@ describe('InputManager', () => {
             expect(manager.isSkill1Pressed()).toBe(false);
         });
 
-        it('returns true with KeyQ + Space', () => {
+        it('returns true with KeyQ + Escape', () => {
             manager.keys['KeyQ'] = true;
-            manager.keys['Space'] = true;
+            manager.keys['Escape'] = true;
             expect(manager.isSkill1Pressed()).toBe(true);
-        });
-
-        it('returns false with only KeyQ', () => {
-            manager.keys['KeyQ'] = true;
-            expect(manager.isSkill1Pressed()).toBe(false);
         });
     });
 
     describe('isSkill1JustPressed()', () => {
         it('returns true when newly pressed', () => {
             manager.keys['KeyQ'] = true;
-            manager.keys['Space'] = true;
+            manager.keys['Escape'] = true;
             expect(manager.isSkill1JustPressed()).toBe(true);
         });
 
-        it('returns false when was already pressed', () => {
+        it('returns false when already pressed', () => {
             manager.keys['KeyQ'] = true;
-            manager.keys['Space'] = true;
+            manager.keys['Escape'] = true;
             manager.updateState();
             expect(manager.isSkill1JustPressed()).toBe(false);
         });
@@ -398,23 +393,28 @@ describe('InputManager', () => {
             expect(manager.isSkill2Pressed()).toBe(false);
         });
 
-        it('returns true with KeyQ + Escape', () => {
+        it('returns true with KeyQ + Space', () => {
             manager.keys['KeyQ'] = true;
-            manager.keys['Escape'] = true;
+            manager.keys['Space'] = true;
             expect(manager.isSkill2Pressed()).toBe(true);
+        });
+
+        it('returns false with only KeyQ', () => {
+            manager.keys['KeyQ'] = true;
+            expect(manager.isSkill2Pressed()).toBe(false);
         });
     });
 
     describe('isSkill2JustPressed()', () => {
         it('returns true when newly pressed', () => {
             manager.keys['KeyQ'] = true;
-            manager.keys['Escape'] = true;
+            manager.keys['Space'] = true;
             expect(manager.isSkill2JustPressed()).toBe(true);
         });
 
-        it('returns false when already pressed', () => {
+        it('returns false when was already pressed', () => {
             manager.keys['KeyQ'] = true;
-            manager.keys['Escape'] = true;
+            manager.keys['Space'] = true;
             manager.updateState();
             expect(manager.isSkill2JustPressed()).toBe(false);
         });
