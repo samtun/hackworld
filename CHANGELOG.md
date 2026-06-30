@@ -1,3 +1,12 @@
+# [3.35.0](https://github.com/samtun/hackworld/compare/v3.34.0...v3.35.0) (2026-06-30)
+
+
+### Features
+
+* add dash fx model ([675eb2d](https://github.com/samtun/hackworld/commit/675eb2dbf466196bedb2125c7420d71dc7366b73))
+* improve dash visual further ([1909ab1](https://github.com/samtun/hackworld/commit/1909ab1997a70bcf038af93eb6223426b9f6d2f9))
+* update dash and charge fx ([d4ab63e](https://github.com/samtun/hackworld/commit/d4ab63ef41ed39d44f0c5a29af4400a0718d0310))
+
 # [3.34.0](https://github.com/samtun/hackworld/compare/v3.33.0...v3.34.0) (2026-06-30)
 
 
