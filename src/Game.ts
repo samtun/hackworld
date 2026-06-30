@@ -458,10 +458,8 @@ export class Game {
 
         // Update particle scale factors for screen-independent sizing
         if (this.world.currentStage) {
-            // Update teleporter particles if exists
-            if (this.world.currentStage.teleporter) {
-                this.world.currentStage.teleporter.updateScaleFactor();
-            }
+            // Update teleporters
+            this.world.currentStage.teleporters.forEach(tp => tp.updateScaleFactor());
 
             // Update healing station particles if exists (Lobby specific)
             const stage = this.world.currentStage as any;

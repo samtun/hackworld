@@ -40,6 +40,18 @@ const SPAWN_PADDING = 2;
 
 /** Maximum random-position attempts when placing a chest or barrel. */
 const MAX_SPAWN_ATTEMPTS = 30;
+/** Minimum opening width of a room niche along the parent wall (in metres). */
+const MIN_NICHE_OPENING = 6;
+/** Maximum fraction of wall length that a niche opening can occupy. */
+const MAX_NICHE_OPENING_FRACTION = 0.5;
+/** Minimum extension depth of a niche perpendicular to the wall (in metres). */
+const MIN_NICHE_DEPTH = 5;
+/** Maximum extension depth of a niche perpendicular to the wall (in metres). */
+const MAX_NICHE_DEPTH = 8;
+/** Probability (0–1) that an eligible combat room receives niches. */
+const NICHE_PROBABILITY = 0.4;
+/** Minimum distance from wall corner to niche opening edge (in metres). */
+const NICHE_CORNER_PADDING = 2;
 /** Y offset for the minimap unlock item above room floor elevation. */
 export const MAP_ITEM_SPAWN_Y_OFFSET = 0.45;
 
@@ -89,6 +101,8 @@ export interface DungeonRoom {
     elevation: number;
     /** All door openings for this room. */
     doors: DoorOpening[];
+    /** Rectangular niches extending from room walls (empty for simple rectangular rooms). */
+    niches: RoomNiche[];
     /**
      * @deprecated Use {@link doors} instead. Kept for backward compatibility.
      * True if any door exists on the west wall.
@@ -99,6 +113,20 @@ export interface DungeonRoom {
      * True if any door exists on the east wall.
      */
     hasEastDoor: boolean;
+}
+
+/** A rectangular extension (niche/indentation) of a room, attached to one of its walls. */
+export interface RoomNiche {
+    /** Center X of the niche rectangle. */
+    centerX: number;
+    /** Center Z of the niche rectangle. */
+    centerZ: number;
+    /** Niche extent along the X axis. */
+    width: number;
+    /** Niche extent along the Z axis. */
+    depth: number;
+    /** Which wall of the parent room this niche extends from. */
+    direction: 'north' | 'south' | 'east' | 'west';
 }
 
 /** A corridor connecting two rooms. */
@@ -618,6 +646,7 @@ export class RoomBasedDungeonGenerator {
                     room.doors.push({ direction: returnDir, offset: returnOffset });
 
                     rooms.push(room);
+                    const roomOccIdx = occupied.length;
                     occupied.push(roomAABB(cx, cz, width, depth));
 
                     // Add corridor
@@ -634,6 +663,10 @@ export class RoomBasedDungeonGenerator {
                             elevationEnd,
                         });
                         occupied.push(corAABB);
+                    }
+
+                    if (!isSafe && !isTeleporterRoom) {
+                        this.generateNiches(room, occupied, roomOccIdx);
                     }
 
                     return true;
@@ -672,6 +705,7 @@ export class RoomBasedDungeonGenerator {
                     room.doors.push({ direction: returnDir, offset: returnOffset });
 
                     rooms.push(room);
+                    const roomOccIdx = occupied.length;
                     occupied.push(roomAABB(cx, cz, fallbackWidth, fallbackDepth));
 
                     if (corAABB) {
@@ -687,6 +721,10 @@ export class RoomBasedDungeonGenerator {
                             elevationEnd,
                         });
                         occupied.push(corAABB);
+                    }
+
+                    if (!isSafe && !isTeleporterRoom) {
+                        this.generateNiches(room, occupied, roomOccIdx);
                     }
 
                     return true;
@@ -830,9 +868,83 @@ export class RoomBasedDungeonGenerator {
             isLootRoom,
             elevation: isSafe ? 0 : elevation,
             doors: [],
+            niches: [],
             hasWestDoor: false,
             hasEastDoor: false,
         };
+    }
+
+    /**
+     * Attempt to add 1–2 rectangular niches to a combat room.
+     * Niches extend outward from walls that don't have doors.
+     */
+    private generateNiches(room: DungeonRoom, occupied: AABB[], roomOccIdx: number): void {
+        if (room.isFinal) return;
+        if (this.next() > NICHE_PROBABILITY) return;
+
+        const numNiches = this.rangeInt(1, 2);
+        const availableWalls: Direction[] = (['north', 'south', 'east', 'west'] as Direction[])
+            .filter(dir => !room.doors.some(d => d.direction === dir));
+        this.shuffle(availableWalls);
+
+        for (let i = 0; i < numNiches && i < availableWalls.length; i++) {
+            const niche = this.tryGenerateNiche(room, availableWalls[i], occupied, roomOccIdx);
+            if (niche) {
+                room.niches.push(niche);
+                occupied.push(roomAABB(niche.centerX, niche.centerZ, niche.width, niche.depth));
+            }
+        }
+    }
+
+    private tryGenerateNiche(
+        room: DungeonRoom, dir: Direction, occupied: AABB[], roomOccIdx: number,
+    ): RoomNiche | null {
+        const isNS = dir === 'north' || dir === 'south';
+        const wallLength = isNS ? room.width : room.depth;
+
+        const maxOpening = Math.floor(wallLength * MAX_NICHE_OPENING_FRACTION);
+        if (maxOpening < MIN_NICHE_OPENING) return null;
+
+        const openingWidth = this.rangeInt(MIN_NICHE_OPENING, maxOpening);
+        const extensionDepth = this.rangeInt(MIN_NICHE_DEPTH, MAX_NICHE_DEPTH);
+
+        const maxOffset = wallLength / 2 - openingWidth / 2 - NICHE_CORNER_PADDING;
+        if (maxOffset < 0) return null;
+        const wallOffset = Math.round(this.range(-maxOffset, maxOffset));
+
+        let cx: number, cz: number, w: number, d: number;
+        switch (dir) {
+            case 'north':
+                cx = room.centerX + wallOffset;
+                cz = room.centerZ + room.depth / 2 + extensionDepth / 2;
+                w = openingWidth;
+                d = extensionDepth;
+                break;
+            case 'south':
+                cx = room.centerX + wallOffset;
+                cz = room.centerZ - room.depth / 2 - extensionDepth / 2;
+                w = openingWidth;
+                d = extensionDepth;
+                break;
+            case 'east':
+                cx = room.centerX + room.width / 2 + extensionDepth / 2;
+                cz = room.centerZ + wallOffset;
+                w = extensionDepth;
+                d = openingWidth;
+                break;
+            case 'west':
+                cx = room.centerX - room.width / 2 - extensionDepth / 2;
+                cz = room.centerZ + wallOffset;
+                w = extensionDepth;
+                d = openingWidth;
+                break;
+        }
+
+        const nicheBB = roomAABB(cx, cz, w, d, 1);
+        const overlaps = occupied.some((o, idx) => idx !== roomOccIdx && aabbOverlap(o, nicheBB));
+        if (overlaps) return null;
+
+        return { centerX: cx, centerZ: cz, width: w, depth: d, direction: dir };
     }
 
     /**
@@ -988,80 +1100,77 @@ export class RoomBasedDungeonGenerator {
         const { centerX: cx, centerZ: cz, width, depth, elevation } = room;
         const halfW = width / 2;
         const halfD = depth / 2;
-
-        // N/S walls (running along X) are trimmed by WALL_THICKNESS in total
-        // (WALL_THICKNESS / 2 = 0.5 m on each end) so they fit exactly between
-        // the E/W walls at each corner.  This eliminates the corner geometry
-        // overlap that caused z-fighting.
         const nsWidth = width - WALL_THICKNESS;
 
-        // North wall (at cz + halfD, runs along X)
-        const northDoors = room.doors.filter(d => d.direction === 'north');
-        walls.push(...this.buildWallWithDoors(cx, cz + halfD, nsWidth, 'x', northDoors, elevation));
+        const openingsPerWall: Record<Direction, { offset: number; halfWidth: number }[]> = {
+            north: [], south: [], east: [], west: [],
+        };
 
-        // South wall (at cz - halfD, runs along X)
-        const southDoors = room.doors.filter(d => d.direction === 'south');
-        walls.push(...this.buildWallWithDoors(cx, cz - halfD, nsWidth, 'x', southDoors, elevation));
+        for (const door of room.doors) {
+            openingsPerWall[door.direction].push({ offset: door.offset, halfWidth: CORRIDOR_WIDTH / 2 });
+        }
 
-        // East wall (at cx + halfW, runs along Z) — full depth, covers the corner space
-        const eastDoors = room.doors.filter(d => d.direction === 'east');
-        walls.push(...this.buildWallWithDoors(cx + halfW, cz, depth, 'z', eastDoors, elevation));
+        for (const niche of room.niches) {
+            const isNS = niche.direction === 'north' || niche.direction === 'south';
+            const openingWidth = isNS ? niche.width : niche.depth;
+            const offset = isNS
+                ? niche.centerX - room.centerX
+                : niche.centerZ - room.centerZ;
+            openingsPerWall[niche.direction].push({ offset, halfWidth: openingWidth / 2 });
+        }
 
-        // West wall (at cx - halfW, runs along Z) — full depth, covers the corner space
-        const westDoors = room.doors.filter(d => d.direction === 'west');
-        walls.push(...this.buildWallWithDoors(cx - halfW, cz, depth, 'z', westDoors, elevation));
+        walls.push(...this.buildWallWithOpenings(cx, cz + halfD, nsWidth, 'x', openingsPerWall.north, elevation));
+        walls.push(...this.buildWallWithOpenings(cx, cz - halfD, nsWidth, 'x', openingsPerWall.south, elevation));
+        walls.push(...this.buildWallWithOpenings(cx + halfW, cz, depth, 'z', openingsPerWall.east, elevation));
+        walls.push(...this.buildWallWithOpenings(cx - halfW, cz, depth, 'z', openingsPerWall.west, elevation));
+
+        for (const niche of room.niches) {
+            walls.push(...this.buildNicheWalls(niche, elevation));
+        }
 
         return walls;
     }
 
     /**
-     * Build a single wall with zero or more door openings cut out.
+     * Build a single wall with zero or more openings (doors or niche connections) cut out.
      *
-     * @param wallPos    Position along the perpendicular axis (e.g. Z for N/S walls).
-     * @param wallCenter Centre along the wall's primary axis.
-     * @param wallLength Total length of the wall.
-     * @param axis       'x' for N/S walls (running along X), 'z' for E/W walls (running along Z).
-     * @param doors      Door openings along this wall.
+     * @param wallPrimary  Centre along the wall's primary axis.
+     * @param wallSecondary Position along the perpendicular axis.
+     * @param wallLength   Total length of the wall.
+     * @param axis         'x' for N/S walls (running along X), 'z' for E/W walls.
+     * @param openings     Openings with offset and halfWidth.
+     * @param elevation    Floor elevation of the room.
      */
-    private buildWallWithDoors(
+    private buildWallWithOpenings(
         wallPrimary: number, wallSecondary: number, wallLength: number,
-        axis: 'x' | 'z', doors: DoorOpening[], elevation: number = 0,
+        axis: 'x' | 'z', openings: { offset: number; halfWidth: number }[], elevation: number = 0,
     ): WallSegment[] {
-        if (doors.length === 0) {
-            // Solid wall — no doors
-            if (axis === 'x') {
-                return [this.xWall(wallPrimary, wallSecondary, wallLength, elevation)];
-            } else {
-                return [this.zWall(wallPrimary, wallSecondary, wallLength, elevation)];
-            }
+        if (openings.length === 0) {
+            if (axis === 'x') return [this.xWall(wallPrimary, wallSecondary, wallLength, elevation)];
+            return [this.zWall(wallPrimary, wallSecondary, wallLength, elevation)];
         }
 
-        // Sort doors by offset (ascending along the wall)
-        const sorted = [...doors].sort((a, b) => a.offset - b.offset);
-        const halfDoor = CORRIDOR_WIDTH / 2;
+        const sorted = [...openings].sort((a, b) => a.offset - b.offset);
         const halfLength = wallLength / 2;
-
-        // Build segments between door gaps
         const segments: WallSegment[] = [];
-        let cursor = -halfLength; // start of wall in local coords
+        let cursor = -halfLength;
 
-        for (const door of sorted) {
-            const doorStart = door.offset - halfDoor;
-            const doorEnd = door.offset + halfDoor;
+        for (const opening of sorted) {
+            const openStart = opening.offset - opening.halfWidth;
+            const openEnd = opening.offset + opening.halfWidth;
 
-            const segLength = doorStart - cursor;
+            const segLength = openStart - cursor;
             if (segLength > 0.01) {
-                const segCenter = (cursor + doorStart) / 2;
+                const segCenter = (cursor + openStart) / 2;
                 if (axis === 'x') {
                     segments.push(this.xWall(wallPrimary + segCenter, wallSecondary, segLength, elevation));
                 } else {
                     segments.push(this.zWall(wallPrimary, wallSecondary + segCenter, segLength, elevation));
                 }
             }
-            cursor = doorEnd;
+            cursor = openEnd;
         }
 
-        // Final segment after the last door
         const remaining = halfLength - cursor;
         if (remaining > 0.01) {
             const segCenter = (cursor + halfLength) / 2;
@@ -1073,6 +1182,38 @@ export class RoomBasedDungeonGenerator {
         }
 
         return segments;
+    }
+
+    /** Build the three outer walls of a niche (the 4th side is open to the parent room). */
+    private buildNicheWalls(niche: RoomNiche, elevation: number): WallSegment[] {
+        const walls: WallSegment[] = [];
+        const halfW = niche.width / 2;
+        const halfD = niche.depth / 2;
+
+        switch (niche.direction) {
+            case 'north':
+                walls.push(this.xWall(niche.centerX, niche.centerZ + halfD, niche.width - WALL_THICKNESS, elevation));
+                walls.push(this.zWall(niche.centerX + halfW, niche.centerZ, niche.depth, elevation));
+                walls.push(this.zWall(niche.centerX - halfW, niche.centerZ, niche.depth, elevation));
+                break;
+            case 'south':
+                walls.push(this.xWall(niche.centerX, niche.centerZ - halfD, niche.width - WALL_THICKNESS, elevation));
+                walls.push(this.zWall(niche.centerX + halfW, niche.centerZ, niche.depth, elevation));
+                walls.push(this.zWall(niche.centerX - halfW, niche.centerZ, niche.depth, elevation));
+                break;
+            case 'east':
+                walls.push(this.zWall(niche.centerX + halfW, niche.centerZ, niche.depth, elevation));
+                walls.push(this.xWall(niche.centerX, niche.centerZ + halfD, niche.width - WALL_THICKNESS, elevation));
+                walls.push(this.xWall(niche.centerX, niche.centerZ - halfD, niche.width - WALL_THICKNESS, elevation));
+                break;
+            case 'west':
+                walls.push(this.zWall(niche.centerX - halfW, niche.centerZ, niche.depth, elevation));
+                walls.push(this.xWall(niche.centerX, niche.centerZ + halfD, niche.width - WALL_THICKNESS, elevation));
+                walls.push(this.xWall(niche.centerX, niche.centerZ - halfD, niche.width - WALL_THICKNESS, elevation));
+                break;
+        }
+
+        return walls;
     }
 
     /** Build side walls for a corridor, extended in height for elevation changes. */
@@ -1159,6 +1300,10 @@ export class RoomBasedDungeonGenerator {
                 const doorWorldPos = this.doorWorldPosition(room, door);
                 exclusions.push({ x: doorWorldPos.x, z: doorWorldPos.z, radius: CORRIDOR_WIDTH + 1 });
             }
+            for (const niche of room.niches) {
+                const openingPos = this.nicheOpeningPosition(room, niche);
+                exclusions.push({ x: openingPos.x, z: openingPos.z, radius: CORRIDOR_WIDTH + 1 });
+            }
 
             const maxAttempts = count * 15;
             let attempts = 0;
@@ -1169,14 +1314,16 @@ export class RoomBasedDungeonGenerator {
                 const definition = obstacleProps[this.rangeInt(0, obstacleProps.length - 1)];
                 const { width: w, height: h, depth: d, modelName: propModelName } = definition;
                 const footprintRadius = Math.max(w, d) / 2;
-                const minX = Math.ceil(room.centerX - room.width / 2 + SPAWN_PADDING + w / 2);
-                const maxX = Math.floor(room.centerX + room.width / 2 - SPAWN_PADDING - w / 2);
-                const minZ = Math.ceil(room.centerZ - room.depth / 2 + SPAWN_PADDING + d / 2);
-                const maxZ = Math.floor(room.centerZ + room.depth / 2 - SPAWN_PADDING - d / 2);
+                const bounds = this.roomBounds(room, SPAWN_PADDING);
+                const minX = Math.ceil(bounds.minX + w / 2);
+                const maxX = Math.floor(bounds.maxX - w / 2);
+                const minZ = Math.ceil(bounds.minZ + d / 2);
+                const maxZ = Math.floor(bounds.maxZ - d / 2);
                 if (minX > maxX || minZ > maxZ) continue;
 
                 const x = this.rangeInt(minX, maxX);
                 const z = this.rangeInt(minZ, maxZ);
+                if (!this.isPointInsideRoom(room, x, z, SPAWN_PADDING)) continue;
 
                 const excluded = exclusions.some(ez => {
                     const dx = x - ez.x;
@@ -1210,6 +1357,52 @@ export class RoomBasedDungeonGenerator {
         }
     }
 
+    /** Check whether a point lies inside a room's footprint (main rect or any niche) with padding. */
+    private isPointInsideRoom(room: DungeonRoom, x: number, z: number, padding: number): boolean {
+        if (x >= room.centerX - room.width / 2 + padding &&
+            x <= room.centerX + room.width / 2 - padding &&
+            z >= room.centerZ - room.depth / 2 + padding &&
+            z <= room.centerZ + room.depth / 2 - padding) {
+            return true;
+        }
+        for (const niche of room.niches) {
+            if (x >= niche.centerX - niche.width / 2 + padding &&
+                x <= niche.centerX + niche.width / 2 - padding &&
+                z >= niche.centerZ - niche.depth / 2 + padding &&
+                z <= niche.centerZ + niche.depth / 2 - padding) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /** Get the world-space position of a niche opening on a room wall. */
+    private nicheOpeningPosition(room: DungeonRoom, niche: RoomNiche): Vec2 {
+        switch (niche.direction) {
+            case 'north': return { x: niche.centerX, z: room.centerZ + room.depth / 2 };
+            case 'south': return { x: niche.centerX, z: room.centerZ - room.depth / 2 };
+            case 'east': return { x: room.centerX + room.width / 2, z: niche.centerZ };
+            case 'west': return { x: room.centerX - room.width / 2, z: niche.centerZ };
+        }
+    }
+
+    /**
+     * Compute the bounding box of a room including all niches, inset by padding.
+     */
+    private roomBounds(room: DungeonRoom, padding: number): { minX: number; maxX: number; minZ: number; maxZ: number } {
+        let minX = room.centerX - room.width / 2 + padding;
+        let maxX = room.centerX + room.width / 2 - padding;
+        let minZ = room.centerZ - room.depth / 2 + padding;
+        let maxZ = room.centerZ + room.depth / 2 - padding;
+        for (const niche of room.niches) {
+            minX = Math.min(minX, niche.centerX - niche.width / 2 + padding);
+            maxX = Math.max(maxX, niche.centerX + niche.width / 2 - padding);
+            minZ = Math.min(minZ, niche.centerZ - niche.depth / 2 + padding);
+            maxZ = Math.max(maxZ, niche.centerZ + niche.depth / 2 - padding);
+        }
+        return { minX, maxX, minZ, maxZ };
+    }
+
     // -----------------------------------------------------------------------
     // Enemy spawn generation
     // -----------------------------------------------------------------------
@@ -1241,7 +1434,10 @@ export class RoomBasedDungeonGenerator {
             return [{ x: room.centerX, y: room.elevation + 0.5, z: room.centerZ, type: EnemySpawnType.Boss }];
         }
 
-        const area = room.width * room.depth;
+        let area = room.width * room.depth;
+        for (const niche of room.niches) {
+            area += niche.width * niche.depth;
+        }
         const totalEnemies = Math.max(
             config.enemyCount.min,
             Math.min(config.enemyCount.max, Math.floor(area / config.enemyCount.areaPerEnemy)),
@@ -1253,20 +1449,20 @@ export class RoomBasedDungeonGenerator {
         const exclusions: Array<{ x: number; z: number; radius: number }> = [];
         exclusions.push({ x: teleporterPos.x, z: teleporterPos.z, radius: 3 });
         for (const obs of obstacles) {
-            if (
-                obs.x >= room.centerX - room.width / 2 &&
-                obs.x <= room.centerX + room.width / 2 &&
-                obs.z >= room.centerZ - room.depth / 2 &&
-                obs.z <= room.centerZ + room.depth / 2
-            ) {
+            if (this.isPointInsideRoom(room, obs.x, obs.z, 0)) {
                 exclusions.push({ x: obs.x, z: obs.z, radius: Math.max(obs.width, obs.depth) });
             }
         }
+        for (const niche of room.niches) {
+            const openingPos = this.nicheOpeningPosition(room, niche);
+            exclusions.push({ x: openingPos.x, z: openingPos.z, radius: CORRIDOR_WIDTH + 1 });
+        }
 
-        const minX = room.centerX - room.width / 2 + SPAWN_PADDING;
-        const maxX = room.centerX + room.width / 2 - SPAWN_PADDING;
-        const minZ = room.centerZ - room.depth / 2 + SPAWN_PADDING;
-        const maxZ = room.centerZ + room.depth / 2 - SPAWN_PADDING;
+        const bounds = this.roomBounds(room, SPAWN_PADDING);
+        const minX = bounds.minX;
+        const maxX = bounds.maxX;
+        const minZ = bounds.minZ;
+        const maxZ = bounds.maxZ;
 
         const isExcluded = (x: number, z: number): boolean =>
             exclusions.some(ez => {
@@ -1282,6 +1478,7 @@ export class RoomBasedDungeonGenerator {
             for (let i = 0; i < maxAttempts; i++) {
                 const x = this.range(minX, maxX);
                 const z = this.range(minZ, maxZ);
+                if (!this.isPointInsideRoom(room, x, z, SPAWN_PADDING)) continue;
                 if (!isExcluded(x, z)) {
                     spawns.push({ x, y, z, type });
                     return;
@@ -1448,12 +1645,7 @@ export class RoomBasedDungeonGenerator {
         exclusions.push({ x: spawnPos.x, z: spawnPos.z, radius: 3 });
 
         for (const obs of obstacles) {
-            if (
-                obs.x >= room.centerX - room.width / 2 &&
-                obs.x <= room.centerX + room.width / 2 &&
-                obs.z >= room.centerZ - room.depth / 2 &&
-                obs.z <= room.centerZ + room.depth / 2
-            ) {
+            if (this.isPointInsideRoom(room, obs.x, obs.z, 0)) {
                 exclusions.push({ x: obs.x, z: obs.z, radius: Math.max(obs.width, obs.depth) });
             }
         }
@@ -1463,16 +1655,22 @@ export class RoomBasedDungeonGenerator {
             const doorPos = this.doorWorldPosition(room, door);
             exclusions.push({ x: doorPos.x, z: doorPos.z, radius: CORRIDOR_WIDTH + 1 });
         }
+        for (const niche of room.niches) {
+            const openingPos = this.nicheOpeningPosition(room, niche);
+            exclusions.push({ x: openingPos.x, z: openingPos.z, radius: CORRIDOR_WIDTH + 1 });
+        }
         exclusions.push(...extraExclusions);
 
-        const minX = room.centerX - room.width / 2 + SPAWN_PADDING;
-        const maxX = room.centerX + room.width / 2 - SPAWN_PADDING;
-        const minZ = room.centerZ - room.depth / 2 + SPAWN_PADDING;
-        const maxZ = room.centerZ + room.depth / 2 - SPAWN_PADDING;
+        const bounds = this.roomBounds(room, SPAWN_PADDING);
+        const minX = bounds.minX;
+        const maxX = bounds.maxX;
+        const minZ = bounds.minZ;
+        const maxZ = bounds.maxZ;
 
         for (let attempt = 0; attempt < MAX_SPAWN_ATTEMPTS; attempt++) {
             const x = this.range(minX, maxX);
             const z = this.range(minZ, maxZ);
+            if (!this.isPointInsideRoom(room, x, z, SPAWN_PADDING)) continue;
             const excluded = exclusions.some(ez => {
                 const dx = x - ez.x;
                 const dz = z - ez.z;
@@ -1501,12 +1699,7 @@ export class RoomBasedDungeonGenerator {
         exclusions.push({ x: spawnPos.x, z: spawnPos.z, radius: 3 });
 
         for (const obs of obstacles) {
-            if (
-                obs.x >= room.centerX - room.width / 2 &&
-                obs.x <= room.centerX + room.width / 2 &&
-                obs.z >= room.centerZ - room.depth / 2 &&
-                obs.z <= room.centerZ + room.depth / 2
-            ) {
+            if (this.isPointInsideRoom(room, obs.x, obs.z, 0)) {
                 exclusions.push({ x: obs.x, z: obs.z, radius: Math.max(obs.width, obs.depth) });
             }
         }
@@ -1515,17 +1708,23 @@ export class RoomBasedDungeonGenerator {
             const doorPos = this.doorWorldPosition(room, door);
             exclusions.push({ x: doorPos.x, z: doorPos.z, radius: CORRIDOR_WIDTH + 1 });
         }
+        for (const niche of room.niches) {
+            const openingPos = this.nicheOpeningPosition(room, niche);
+            exclusions.push({ x: openingPos.x, z: openingPos.z, radius: CORRIDOR_WIDTH + 1 });
+        }
         exclusions.push(...extraExclusions);
 
         const perimeterDepth = SPAWN_PADDING + 1;
-        const minX = room.centerX - room.width / 2 + SPAWN_PADDING;
-        const maxX = room.centerX + room.width / 2 - SPAWN_PADDING;
-        const minZ = room.centerZ - room.depth / 2 + SPAWN_PADDING;
-        const maxZ = room.centerZ + room.depth / 2 - SPAWN_PADDING;
-        const innerMinX = room.centerX - room.width / 2 + perimeterDepth;
-        const innerMaxX = room.centerX + room.width / 2 - perimeterDepth;
-        const innerMinZ = room.centerZ - room.depth / 2 + perimeterDepth;
-        const innerMaxZ = room.centerZ + room.depth / 2 - perimeterDepth;
+        const bounds = this.roomBounds(room, SPAWN_PADDING);
+        const minX = bounds.minX;
+        const maxX = bounds.maxX;
+        const minZ = bounds.minZ;
+        const maxZ = bounds.maxZ;
+        const innerBounds = this.roomBounds(room, perimeterDepth);
+        const innerMinX = innerBounds.minX;
+        const innerMaxX = innerBounds.maxX;
+        const innerMinZ = innerBounds.minZ;
+        const innerMaxZ = innerBounds.maxZ;
 
         const isExcluded = (x: number, z: number): boolean =>
             exclusions.some(ez => {
@@ -1537,7 +1736,7 @@ export class RoomBasedDungeonGenerator {
         for (let attempt = 0; attempt < MAX_SPAWN_ATTEMPTS; attempt++) {
             const x = this.range(minX, maxX);
             const z = this.range(minZ, maxZ);
-            // Reject positions that are inside the inner area (i.e. not on perimeter)
+            if (!this.isPointInsideRoom(room, x, z, SPAWN_PADDING)) continue;
             if (x > innerMinX && x < innerMaxX && z > innerMinZ && z < innerMaxZ) continue;
             if (!isExcluded(x, z)) return { x, z };
         }
@@ -1563,14 +1762,24 @@ export class RoomBasedDungeonGenerator {
         floorBounds: { minX: number; maxX: number; minZ: number; maxZ: number },
     ): StageMinimapLayout {
         const rects = [
-            ...rooms.map(room => ({
-                x: room.centerX,
-                z: room.centerZ,
-                width: room.width,
-                depth: room.depth,
-                kind: 'room' as const,
-                roomId: room.id,
-            })),
+            ...rooms.flatMap(room => [
+                {
+                    x: room.centerX,
+                    z: room.centerZ,
+                    width: room.width,
+                    depth: room.depth,
+                    kind: 'room' as const,
+                    roomId: room.id,
+                },
+                ...room.niches.map(niche => ({
+                    x: niche.centerX,
+                    z: niche.centerZ,
+                    width: niche.width,
+                    depth: niche.depth,
+                    kind: 'room' as const,
+                    roomId: room.id,
+                })),
+            ]),
             ...corridors.map(corridor => ({
                 x: corridor.centerX,
                 z: corridor.centerZ,
@@ -1598,6 +1807,13 @@ export class RoomBasedDungeonGenerator {
             maxX = Math.max(maxX, room.centerX + room.width / 2);
             minZ = Math.min(minZ, room.centerZ - room.depth / 2);
             maxZ = Math.max(maxZ, room.centerZ + room.depth / 2);
+
+            for (const niche of room.niches) {
+                minX = Math.min(minX, niche.centerX - niche.width / 2);
+                maxX = Math.max(maxX, niche.centerX + niche.width / 2);
+                minZ = Math.min(minZ, niche.centerZ - niche.depth / 2);
+                maxZ = Math.max(maxZ, niche.centerZ + niche.depth / 2);
+            }
         }
 
         for (const cor of corridors) {
