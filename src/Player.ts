@@ -170,6 +170,7 @@ export class Player extends BaseMesh {
     private isChargingAttack: boolean = false;
     private chargeTimer: number = 0;
     private readonly CHARGE_DURATION: number = 0.8;
+    private readonly CHARGE_FADE_OUT_DURATION: number = 0.1;
     private readonly CHARGE_DELAY: number = 0.2; // Wait 0.2s before starting charge animation
     private chargeDelayTimer: number = 0;
     private isDashing: boolean = false;
@@ -177,7 +178,9 @@ export class Player extends BaseMesh {
     private readonly DASH_DURATION: number = 0.3;
     private readonly DASH_SPEED: number = 25;
     private dashDirection: THREE.Vector3 = new THREE.Vector3();
-    private chargeParticles: THREE.Mesh[] = [];
+    private chargeFx: THREE.Group;
+    private chargeFxMaterial: THREE.MeshStandardMaterial | null = null;
+    private chargeFxTexture: THREE.Texture | null = null;
     private dashHitEnemies: Set<Enemy> = new Set();
     private attackHitEnemies: Set<Enemy> = new Set();
     private attackLockedUntilRelease: boolean = false;
@@ -192,9 +195,7 @@ export class Player extends BaseMesh {
     private blockShield: BlockShield | null = null;
 
     // Particle wall constants
-    private readonly PARTICLE_BASE_HEIGHT: number = 0.2;
-    private readonly PARTICLE_CHARGED_HEIGHT: number = 0.8;
-    private readonly PARTICLE_HEIGHT_TRANSITION_SPEED: number = 0.15;
+    private readonly CHARGEFX_SCROLL_SPEED: number = 3.0;
 
     // Level up particle explosion
     private levelUpParticles: Array<{ mesh: THREE.Mesh, velocity: THREE.Vector3 }> = [];
@@ -286,6 +287,20 @@ export class Player extends BaseMesh {
         this.weaponRepository = WeaponRepository.Instance;
         this.position = position.clone() as any;
         this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
+        this.chargeFx = AssetManager.Instance.get('models/dash_charge_fx.glb').scene.clone();
+        this.chargeFx.receiveShadow = false;
+        this.chargeFx.traverse((node) => {
+            if (!(node instanceof THREE.Mesh)) {
+                return;
+            }
+
+            this.chargeFxMaterial = node.material as THREE.MeshStandardMaterial;
+
+            // Get texture for charge fx mesh to animate it later
+            if (this.chargeFxMaterial.map) {
+                this.chargeFxTexture = this.chargeFxMaterial.map;
+            }
+        });
 
         // Setup Animations
         this.setupAnimations();
@@ -828,9 +843,14 @@ export class Player extends BaseMesh {
         this.body.velocity.x = this.dashDirection.x * this.DASH_SPEED;
         this.body.velocity.z = this.dashDirection.z * this.DASH_SPEED;
 
+        this.updateChargeFx(dt);
+
         if (this.dashTimer >= this.DASH_DURATION) {
             this.isDashing = false;
             this.dashHitEnemies.clear();
+            
+            // Remove charge fx
+            this.removeChargeFx();
         }
         this.syncPosition();
         return true;
@@ -846,7 +866,7 @@ export class Player extends BaseMesh {
 
         this.chargeTimer += dt;
         this.invulnerableTimer = 0; // allow damage while charging
-        this.updateChargeParticles();
+        this.updateChargeFx(dt);
 
         if (this.input.isAttackReleased()) {
             if (this.chargeTimer >= this.CHARGE_DURATION) {
@@ -1407,13 +1427,13 @@ export class Player extends BaseMesh {
     private startChargeAttack() {
         this.isChargingAttack = true;
         this.chargeTimer = 0;
-        this.createChargeParticles();
+        this.createChargeFx();
     }
 
     private cancelChargeAttack() {
         this.isChargingAttack = false;
         this.chargeTimer = 0;
-        this.removeChargeParticles();
+        this.removeChargeFx();
         this.attackLockedUntilRelease = true;
     }
 
@@ -1427,67 +1447,46 @@ export class Player extends BaseMesh {
         // Set dash direction to player's facing direction
         const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
         this.dashDirection.copy(forward);
-
-        // Remove charge particles
-        this.removeChargeParticles();
     }
 
-    private createChargeParticles() {
-        // Create teardrop/heart-shaped particle wall at 0.2m height
-        // The shape is based on the image provided
-        const particleCount = 40;
-        const particleGeometry = new THREE.BoxGeometry(0.1, 0.2, 0.1);
-        const particleMaterial = new THREE.MeshStandardMaterial({
-            color: 0x00ffff,
-            emissive: 0x00ffff,
-            emissiveIntensity: 0.5,
-            transparent: true,
-            opacity: 0.7
-        });
-
-        // Create particles in a teardrop/heart pattern
-        for (let i = 0; i < particleCount; i++) {
-            const t = (i / particleCount) * Math.PI * 2;
-
-            // Parametric equation for a heart/teardrop shape
-            // Modified cardioid equation
-            const r = 0.8 * (1 - Math.sin(t));
-            const x = r * Math.cos(t);
-            const z = r * Math.sin(t);
-
-            const particle = new THREE.Mesh(particleGeometry, particleMaterial);
-            particle.position.set(x, this.PARTICLE_BASE_HEIGHT, z);
-
-            this.chargeParticles.push(particle);
-            this.mesh.add(particle);
+    private createChargeFx() {
+        if (this.chargeFxMaterial) {
+            this.chargeFxMaterial.opacity = 0; // Reset opacity for fade-in
         }
+        this.mesh.add(this.chargeFx);
     }
 
-    private updateChargeParticles() {
+    private updateChargeFx(dt: number) {
         // Particles are children of the player mesh, so they automatically follow
         // Add pulsing animation and raise height when fully charged
-        const pulseScale = 1 + Math.sin(this.chargeTimer * 10) * 0.2;
+        const pulseScaleFactor = 1 + Math.sin(this.chargeTimer * 15) * 0.1;
 
         // When fully charged, raise particles higher
         const isFullyCharged = this.chargeTimer >= this.CHARGE_DURATION;
-        const targetHeight = isFullyCharged ? this.PARTICLE_CHARGED_HEIGHT : this.PARTICLE_BASE_HEIGHT;
 
-        this.chargeParticles.forEach(particle => {
-            particle.scale.y = pulseScale;
+        // Update mesh scale
+        this.chargeFx.scale.set(pulseScaleFactor, isFullyCharged ? pulseScaleFactor : pulseScaleFactor * 0.6, pulseScaleFactor);
 
-            // Smoothly transition to target height
-            const currentHeight = particle.position.y;
-            particle.position.y += (targetHeight - currentHeight) * this.PARTICLE_HEIGHT_TRANSITION_SPEED;
-        });
+        // Update charge fx material to fade in and out
+        if (this.chargeFxMaterial) {
+            if (this.isChargingAttack) {
+                // Fade in
+                this.chargeFxMaterial.opacity = THREE.MathUtils.clamp(this.chargeTimer / this.CHARGE_DURATION, 0, 1);
+            } else if (this.dashTimer >= this.DASH_DURATION - this.CHARGE_FADE_OUT_DURATION) {
+                // Fade out
+                const fadeOutTime = this.dashTimer - (this.DASH_DURATION - this.CHARGE_FADE_OUT_DURATION);
+                this.chargeFxMaterial.opacity = THREE.MathUtils.clamp(1 - fadeOutTime / this.CHARGE_FADE_OUT_DURATION, 0, 1);       
+            }
+        }
+
+        // Update texture offset for scrolling effect
+        if (this.chargeFxTexture) {
+            this.chargeFxTexture.offset.x -= this.CHARGEFX_SCROLL_SPEED * dt * (isFullyCharged ? 1.0 : 0.7);
+        }
     }
 
-    private removeChargeParticles() {
-        this.chargeParticles.forEach(particle => {
-            this.mesh.remove(particle);
-            particle.geometry.dispose();
-            (particle.material as THREE.Material).dispose();
-        });
-        this.chargeParticles = [];
+    private removeChargeFx() {
+        this.mesh.remove(this.chargeFx);
     }
 
     private createLevelUpParticles() {

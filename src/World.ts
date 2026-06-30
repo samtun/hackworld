@@ -228,6 +228,7 @@ export class World {
             'models/heal_fx.glb',
             'models/area_fx.glb',
             'models/laser_fx.glb',
+            'models/dash_charge_fx.glb',
             // Items
             'models/coin.glb',
             'models/weapon_drop.glb',
