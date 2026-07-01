@@ -1,3 +1,14 @@
+# [3.41.0](https://github.com/samtun/hackworld/compare/v3.40.0...v3.41.0) (2026-07-01)
+
+
+### Features
+
+* adjust remaining mentions of old tech level requirements ([576b8f5](https://github.com/samtun/hackworld/commit/576b8f5e68339ea6b7071c07bebed31b74aff310))
+* adjust tests ([8306d5f](https://github.com/samtun/hackworld/commit/8306d5f0640079e77305d628324d18a27a1c2e54))
+* improve tech caps per level ([a92b43c](https://github.com/samtun/hackworld/commit/a92b43ced5a5fce37440a30c04fdf3846bf58991))
+* introduce tech point caps per level ([9a5be8b](https://github.com/samtun/hackworld/commit/9a5be8ba091eabf77a8121089b9bf923e3fec97b))
+* make capped tech points show in blue ([b36fa6a](https://github.com/samtun/hackworld/commit/b36fa6a8f1f0d75f1559174c32f3bdd92777d7a7))
+
 # [3.40.0](https://github.com/samtun/hackworld/compare/v3.39.1...v3.40.0) (2026-07-01)
 
 
