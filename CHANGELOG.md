@@ -1,3 +1,15 @@
+# [3.38.0](https://github.com/samtun/hackworld/compare/v3.37.0...v3.38.0) (2026-07-01)
+
+
+### Bug Fixes
+
+* tests ([8781995](https://github.com/samtun/hackworld/commit/8781995601c3b88397d44dbb34e9d6c5821528ed))
+
+
+### Features
+
+* increase damage and heal output 10x ([881ae50](https://github.com/samtun/hackworld/commit/881ae500b16d857d98a60c7fcdfcb5d29fa1ca86))
+
 # [3.37.0](https://github.com/samtun/hackworld/compare/v3.36.0...v3.37.0) (2026-07-01)
 
 
