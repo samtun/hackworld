@@ -694,11 +694,11 @@ export class DebugValueEditor {
         this.updateInputValue('level', player.level);
         this.updateInputValue('xData', player.xData);
         this.updateInputValue('money', player.bits);
-        
+
         // Update game progress
         const progressManager = GameProgressManager.Instance;
         this.updateInputValue('gameProgress', progressManager.progress);
-        
+
         const playerTech = (player as any).tech || {};
         this.updateInputValue('swordTech', playerTech[WeaponType.SWORD] || 0);
         this.updateInputValue('doubleSwordTech', playerTech[WeaponType.DUAL_BLADE] || 0);
@@ -714,21 +714,21 @@ export class DebugValueEditor {
         this.applyInputValue('tp', (val) => { player.tp = Math.max(0, Math.min(val, player.maxTp)); });
         this.applyInputValue('xData', (val) => { player.xData = Math.max(0, val); });
         this.applyInputValue('money', (val) => { player.bits = Math.max(0, val); });
-        
+
         // Apply game progress changes
-        this.applyInputValue('gameProgress', (val) => { 
+        this.applyInputValue('gameProgress', (val) => {
             const progressManager = GameProgressManager.Instance;
             progressManager.progress = Math.max(0, val);
         });
-        
+
         this.applyInputValue('swordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.SWORD] = Math.max(0, val); });
         this.applyInputValue('doubleSwordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.DUAL_BLADE] = Math.max(0, val); });
         this.applyInputValue('lanceTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.LANCE] = Math.max(0, val); });
         this.applyInputValue('hammerTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.HAMMER] = Math.max(0, val); });
 
-        this.applyInputValue('recoveryTech', (val) => { player.skillTech[SkillTechType.RECOVERY] = Math.max(0, Math.min(1200, val)); });
-        this.applyInputValue('blastTech', (val) => { player.skillTech[SkillTechType.BLAST] = Math.max(0, Math.min(1200, val)); });
-        this.applyInputValue('rangedTech', (val) => { player.skillTech[SkillTechType.RANGED] = Math.max(0, Math.min(1200, val)); });
+        this.applyInputValue('recoveryTech', (val) => { player.skillTech[SkillTechType.RECOVERY] = Math.max(0, Math.min(9999, val)); });
+        this.applyInputValue('blastTech', (val) => { player.skillTech[SkillTechType.BLAST] = Math.max(0, Math.min(9999, val)); });
+        this.applyInputValue('rangedTech', (val) => { player.skillTech[SkillTechType.RANGED] = Math.max(0, Math.min(9999, val)); });
     }
 
     private updateInputValue(key: string, value: number): void {

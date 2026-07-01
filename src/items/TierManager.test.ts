@@ -45,22 +45,22 @@ describe('TierManager', () => {
             expect(mgr.getSkillTierForTech(59)).toBe(Tier.STABLE);
         });
 
-        it('returns MAINTAINED at 120 tech points', () => {
+        it('returns MAINTAINED at 60 tech points', () => {
             expect(mgr.getSkillTierForTech(60)).toBe(Tier.MAINTAINED);
             expect(mgr.getSkillTierForTech(279)).toBe(Tier.MAINTAINED);
         });
 
-        it('returns OVERCLOCKED at 240 tech points', () => {
+        it('returns OVERCLOCKED at 280 tech points', () => {
             expect(mgr.getSkillTierForTech(280)).toBe(Tier.OVERCLOCKED);
             expect(mgr.getSkillTierForTech(879)).toBe(Tier.OVERCLOCKED);
         });
 
-        it('returns ZERODAY at 520 tech points', () => {
+        it('returns ZERODAY at 880 tech points', () => {
             expect(mgr.getSkillTierForTech(880)).toBe(Tier.ZERODAY);
             expect(mgr.getSkillTierForTech(1799)).toBe(Tier.ZERODAY);
         });
 
-        it('returns LEET at 1200 tech points', () => {
+        it('returns LEET at 1800 tech points', () => {
             expect(mgr.getSkillTierForTech(1800)).toBe(Tier.LEET);
             expect(mgr.getSkillTierForTech(9999)).toBe(Tier.LEET);
         });
