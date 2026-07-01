@@ -61,6 +61,7 @@ function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
         LEVEL_UP_PARTICLE_LIFETIME: 0.6,
         LEVEL_UP_SHOCKWAVE_DELAY: 0.4,
         LEVEL_UP_SHOCKWAVE_RANGE: 15,
+        SKILL_ANIMATION_MAX_DURATION: 2.0,
 
         // Base stats
         baseHp: 170,
@@ -1602,5 +1603,84 @@ describe('Player.executeLevelUpShockwave', () => {
 
         expect((deadBody.entity as any).takeDamage).not.toHaveBeenCalled();
         expect((dyingBody.entity as any).takeDamage).not.toHaveBeenCalled();
+    });
+});
+
+// ─── handleSkillAnimation safety timeout ──────────────────────────────────────
+
+describe('Player.handleSkillAnimation', () => {
+    it('returns false immediately when isUsingSkill is false', () => {
+        const player = makePlayer({ isUsingSkill: false, skillAnimationTimer: 0 });
+        (player as any).haltMovement = vi.fn();
+
+        const result = (player as any).handleSkillAnimation(0.1);
+
+        expect(result).toBe(false);
+        expect((player as any).haltMovement).not.toHaveBeenCalled();
+    });
+
+    it('returns true and halts movement while isUsingSkill is true within max duration', () => {
+        const player = makePlayer({ isUsingSkill: true, skillAnimationTimer: 0 });
+        (player as any).haltMovement = vi.fn();
+
+        const result = (player as any).handleSkillAnimation(0.1);
+
+        expect(result).toBe(true);
+        expect((player as any).skillAnimationTimer).toBeCloseTo(0.1);
+        expect((player as any).haltMovement).toHaveBeenCalled();
+    });
+
+    it('force-releases the skill lock when skillAnimationTimer exceeds SKILL_ANIMATION_MAX_DURATION', () => {
+        const maxDuration = (makePlayer() as any).SKILL_ANIMATION_MAX_DURATION as number;
+        const player = makePlayer({ isUsingSkill: true, skillAnimationTimer: maxDuration - 0.01 });
+        (player as any).haltMovement = vi.fn();
+
+        // One tick that pushes the timer over the limit
+        const result = (player as any).handleSkillAnimation(0.02);
+
+        expect(result).toBe(false);
+        expect((player as any).isUsingSkill).toBe(false);
+        expect((player as any).skillAnimationTimer).toBe(0);
+    });
+});
+
+// ─── skill state cleared on death and respawn ─────────────────────────────────
+
+describe('Player die() / respawn() skill-state cleanup', () => {
+    function makePlayerForDeath() {
+        return makePlayer({
+            hp: 1,
+            isDead: false,
+            isUsingSkill: true,
+            skillAnimationTimer: 0.5,
+            footstepTimer: 0,
+            body: {
+                position: { x: 0, y: 0, z: 0, copy: vi.fn() },
+                velocity: { x: 0, y: 0, z: 0, set: vi.fn() },
+                applyImpulse: vi.fn(),
+                type: 2,
+            },
+        });
+    }
+
+    it('clears isUsingSkill and skillAnimationTimer when die() is called', () => {
+        const player = makePlayerForDeath();
+        (player as any).fadeToAction = vi.fn();
+
+        (player as any).die();
+
+        expect((player as any).isUsingSkill).toBe(false);
+        expect((player as any).skillAnimationTimer).toBe(0);
+    });
+
+    it('clears isUsingSkill and skillAnimationTimer when respawn() is called', () => {
+        const player = makePlayerForDeath();
+        player.isDead = true;
+
+        const position = { x: 1, y: 0, z: 1 };
+        player.respawn(position as any);
+
+        expect((player as any).isUsingSkill).toBe(false);
+        expect((player as any).skillAnimationTimer).toBe(0);
     });
 });
