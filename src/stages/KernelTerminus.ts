@@ -99,12 +99,7 @@ export class KernelTerminus extends StageWithLevels {
     };
 
     private static readonly obstacleProps = getDungeonPropDefinitions([
-        'barrier',
-        'coolingtanklarge',
-        'dataspire',
-        'holoprojector',
-        'pile',
-        'serverrack',
+        'holoprojector', 'coolingtanklarge', 'dataspire', 'serverrack', 'coolingtank'
     ]);
 
     private static readonly generationConfig: RoomGenerationConfig = {

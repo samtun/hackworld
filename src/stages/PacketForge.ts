@@ -64,12 +64,7 @@ export class PacketForge extends BaseStage {
     };
 
     private static readonly obstacleProps = getDungeonPropDefinitions([
-        'pipes',
-        'cabletray',
-        'cabletraybow',
-        'cabletraycurve',
-        'pile',
-        'barrier',
+        'pipes', 'desk', 'deskl', 'barrier', 'serverrack'
     ]);
 
     private static readonly generationConfig: RoomGenerationConfig = {
