@@ -86,6 +86,6 @@ describe('createWallMaterial', () => {
         expect(shader.fragmentShader).toContain('horizontalRadius');
         expect(shader.fragmentShader).toContain('verticalRadius');
         expect(shader.fragmentShader).toContain('segmentFactor');
-        expect(shader.fragmentShader).not.toContain('distToPlayer = length(vWorldPosition.xz - u_playerPos.xz);');
+        expect(shader.fragmentShader).not.toContain('proximityRadius');
     });
 });
