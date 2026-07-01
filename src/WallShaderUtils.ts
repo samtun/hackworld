@@ -434,6 +434,10 @@ function createTransparentModelMaterial(material: THREE.MeshStandardMaterial): T
 /**
  * Replace all mesh-standard materials in a model with transparency-aware
  * clones and return the tracked materials so their uniforms can be updated.
+ * @param root Root object of the loaded model whose mesh-standard materials
+ *             should participate in player-visibility occlusion fading.
+ * @returns The cloned mesh-standard materials that were updated so callers can
+ *          store them and refresh their shader uniforms every frame.
  */
 export function applyTransparencyShaderToModel(root: THREE.Object3D): THREE.MeshStandardMaterial[] {
     const trackedMaterials: THREE.MeshStandardMaterial[] = [];

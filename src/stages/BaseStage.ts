@@ -386,6 +386,11 @@ export abstract class BaseStage {
         this.teleporters.push(lobbyReturnTeleporter);
     }
 
+    /**
+     * Register a model-backed entity (for example NPCs, teleporters, healing
+     * stations, or props) so its mesh materials receive the shared occlusion
+     * transparency shader and are updated every frame with player/camera data.
+     */
     protected trackTransparencyEntity(entity: {
         enableWallTransparency(materials: THREE.MeshStandardMaterial[]): void;
     }): void {

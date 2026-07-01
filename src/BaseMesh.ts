@@ -52,6 +52,11 @@ export abstract class BaseMesh {
         this.disposeMeshRecursive(this.mesh);
     }
 
+    /**
+     * Register this model's mesh-standard materials for camera-occlusion
+     * transparency by cloning them, applying the shared shader, and appending
+     * the tracked materials to the provided stage-owned collection.
+     */
     public enableWallTransparency(materials: THREE.MeshStandardMaterial[]): void {
         materials.push(...applyTransparencyShaderToModel(this.mesh));
     }
