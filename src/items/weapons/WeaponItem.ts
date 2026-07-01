@@ -9,21 +9,21 @@ export class WeaponItem extends EquippableItem {
     model: string;
     // fixed numeric level for this weapon instance (1 = α, 2 = β, ...)
     level: number;
-    
+
     /** The drop tier definition for this weapon null = no tier */
     tier: WeaponTierDefinition;
 
     // Level metadata - single source of truth for weapon level requirements
     public static readonly WEAPON_LEVELS = [
         { requiredTech: 0, damagePercent: 1 }, // α
-        { requiredTech: 120, damagePercent: 1.80 }, // β
-        { requiredTech: 460, damagePercent: 3.20 }, // γ
+        { requiredTech: 60, damagePercent: 1.80 }, // β
+        { requiredTech: 280, damagePercent: 3.20 }, // γ
         { requiredTech: 720, damagePercent: 6.20 }, // δ
-        { requiredTech: 1280, damagePercent: 9.80 }, // ε
-        { requiredTech: 2500, damagePercent: 14.00 } // ω
+        { requiredTech: 2200, damagePercent: 9.80 }, // ε
+        { requiredTech: 4500, damagePercent: 14.00 } // ω
     ];
 
-    constructor(id: string, name: string, buyPrice: number, sellPrice: number, weaponType: WeaponType, damage: number, model: string, tier: WeaponTierDefinition,level: number = 1) {
+    constructor(id: string, name: string, buyPrice: number, sellPrice: number, weaponType: WeaponType, damage: number, model: string, tier: WeaponTierDefinition, level: number = 1) {
         super(id, name, buyPrice, sellPrice);
         this.weaponType = weaponType;
         this.damage = damage;

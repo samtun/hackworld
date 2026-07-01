@@ -94,7 +94,7 @@ export class TierManager {
         }],
     ]);
 
-    private constructor() {}
+    private constructor() { }
 
     public static get Instance(): TierManager {
         return this.instance || (this.instance = new this());
@@ -120,10 +120,10 @@ export class TierManager {
      * Skills start at STABLE (no BROKEN tier).
      */
     getSkillTierForTech(techPoints: number): Tier {
-        if (techPoints >= 1200) return Tier.LEET;
-        if (techPoints >= 520) return Tier.ZERODAY;
-        if (techPoints >= 240) return Tier.OVERCLOCKED;
-        if (techPoints >= 120) return Tier.MAINTAINED;
+        if (techPoints >= 1800) return Tier.LEET;
+        if (techPoints >= 880) return Tier.ZERODAY;
+        if (techPoints >= 280) return Tier.OVERCLOCKED;
+        if (techPoints >= 60) return Tier.MAINTAINED;
         return Tier.STABLE;
     }
 }
