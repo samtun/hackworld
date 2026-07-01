@@ -1,3 +1,10 @@
+# [3.36.0](https://github.com/samtun/hackworld/compare/v3.35.0...v3.36.0) (2026-07-01)
+
+
+### Features
+
+* improve wall transparency shader ([d2d4bc2](https://github.com/samtun/hackworld/commit/d2d4bc294fa6486eaed06b490f9cf5aff5902428))
+
 # [3.35.0](https://github.com/samtun/hackworld/compare/v3.34.0...v3.35.0) (2026-06-30)
 
 
