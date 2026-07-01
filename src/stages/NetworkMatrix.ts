@@ -19,10 +19,10 @@ export class NetworkMatrix extends BaseStage {
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 60,
+        maxHp: 600,
         speed: 3,
-        damage: 10,
-        baseExp: 10,
+        damage: 100,
+        baseExp: 100,
         itemDropChance: 0.08,
         techDropRateFactor: 1.0,
         xDataDropChanceWeight: 1.0,
@@ -34,10 +34,10 @@ export class NetworkMatrix extends BaseStage {
     };
 
     private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 150,
+        maxHp: 1500,
         speed: 3.75,
-        damage: 15,
-        baseExp: 25,
+        damage: 150,
+        baseExp: 250,
         itemDropChance: 0.30,
         techDropRateFactor: 1.3,
         xDataDropChanceWeight: 1.5,
@@ -74,7 +74,7 @@ export class NetworkMatrix extends BaseStage {
             count: { min: 1, max: 2 },
             width: { min: 2, max: 4 },
             length: { min: 2, max: 4 },
-            damage: 8,
+            damage: 120,
             patterns: [
                 [1500, 2000],
                 [800, 1200, 800, 2000],

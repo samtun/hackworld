@@ -113,18 +113,18 @@ describe('LaserBeamSkill', () => {
         it('sets name, cooldown, and tpCost', () => {
             expect(skill.name).toBe('Laser Beam');
             expect(skill.cooldown).toBe(5);
-            expect(skill.tpCost).toBe(25);
+            expect(skill.tpCost).toBe(250);
         });
     });
 
     describe('getEffectiveTpCost()', () => {
         it.each([
-            [Tier.STABLE,      25],
-            [Tier.BROKEN,      25],
-            [Tier.MAINTAINED,  50],
-            [Tier.OVERCLOCKED, 75],
-            [Tier.ZERODAY,     125],
-            [Tier.LEET,        200],
+            [Tier.STABLE,      250],
+            [Tier.BROKEN,      250],
+            [Tier.MAINTAINED,  500],
+            [Tier.OVERCLOCKED, 750],
+            [Tier.ZERODAY,     1250],
+            [Tier.LEET,        2000],
         ])('returns %s for tier %s', (tier, expected) => {
             const player = makePlayer(tier) as Player;
             expect(skill.getEffectiveTpCost(player)).toBe(expected);
@@ -138,7 +138,7 @@ describe('LaserBeamSkill', () => {
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [], addBody: vi.fn(), removeBody: vi.fn() } as any;
             (skill as any).execute(player, scene, world);
-            expect((skill as any).effectiveDamage).toBe(20);
+            expect((skill as any).effectiveDamage).toBe(200);
         });
 
         it('multiplies effectiveDamage by 3 at MAINTAINED tier', () => {
@@ -146,7 +146,7 @@ describe('LaserBeamSkill', () => {
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [], addBody: vi.fn(), removeBody: vi.fn() } as any;
             (skill as any).execute(player, scene, world);
-            expect((skill as any).effectiveDamage).toBe(60);
+            expect((skill as any).effectiveDamage).toBe(600);
         });
 
         it('multiplies effectiveDamage by 6 at OVERCLOCKED tier', () => {
@@ -154,7 +154,7 @@ describe('LaserBeamSkill', () => {
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [], addBody: vi.fn(), removeBody: vi.fn() } as any;
             (skill as any).execute(player, scene, world);
-            expect((skill as any).effectiveDamage).toBe(120);
+            expect((skill as any).effectiveDamage).toBe(1200);
         });
 
         it('sets effectiveRadius to 1.5x at OVERCLOCKED tier', () => {

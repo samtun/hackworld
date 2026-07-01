@@ -11,7 +11,7 @@ import { AudioManager } from '../AudioManager';
  * Healing Skill
  */
 export class HealingSkill extends Skill {
-    private readonly BASE_HEAL_AMOUNT = 40;
+    private readonly BASE_HEAL_AMOUNT = 400;
     private readonly BASE_DURATION = 1.5;
     private readonly PARTICLE_COUNT = 60;
     private readonly RECOVERY_DURATION = 5; // Seconds of post-heal recovery at Overclocked+
@@ -35,7 +35,7 @@ export class HealingSkill extends Skill {
     private recoveryTimer: number = 0;
 
     constructor(onCompletedCallback: () => void) {
-        super('Healing', 5, 20, onCompletedCallback, 'images/ui_icons/heal.png');
+        super('Healing', 5, 200, onCompletedCallback, 'images/ui_icons/heal.png');
     }
 
     getEffectiveTpCost(player: Player): number {

@@ -36,6 +36,8 @@ function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
     // Private readonly constants (normally assigned in class field initializers)
     Object.assign(player, {
         MAX_STAT_VALUE: 9999,
+        MAX_HP_VALUE: 999999,
+        MAX_TP_VALUE: 999999,
         HP_TP_UPGRADE_AMOUNT: 5,
         STRENGTH_DEFENSE_UPGRADE_AMOUNT: 1,
         STAT_FORMULA_NUMERATOR: 0.27,
@@ -1249,12 +1251,12 @@ describe('Player.getBaseStatValue', () => {
         expect(player.getBaseStatValue(StatType.STRENGTH)).toBe(4);
     });
 
-    it('returns base HP (100) with no upgrades', () => {
+    it('returns base HP with no upgrades', () => {
         const player = makePlayer();
         expect(player.getBaseStatValue(StatType.HP)).toBe(100);
     });
 
-    it('returns base TP (100) with no upgrades', () => {
+    it('returns base TP with no upgrades', () => {
         const player = makePlayer();
         expect(player.getBaseStatValue(StatType.TP)).toBe(100);
     });

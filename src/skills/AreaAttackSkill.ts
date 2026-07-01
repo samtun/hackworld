@@ -13,7 +13,7 @@ import { AudioManager } from '../AudioManager';
  * Area Attack Skill
  */
 export class AreaAttackSkill extends Skill {
-    private readonly BASE_DAMAGE = 42;
+    private readonly BASE_DAMAGE = 320;
     private readonly RANGE = 5;
     private readonly DURATION = 0.8;
     private effectTimer: number = 0;
@@ -50,7 +50,7 @@ export class AreaAttackSkill extends Skill {
     }
 
     constructor(onCompletedCallback: () => void) {
-        super('Area Attack', 10, 30, onCompletedCallback, 'images/ui_icons/area.png');
+        super('Area Attack', 10, 300, onCompletedCallback, 'images/ui_icons/area.png');
     }
 
     getEffectiveTpCost(player: Player): number {

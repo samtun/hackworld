@@ -1,3 +1,22 @@
+# [3.38.0](https://github.com/samtun/hackworld/compare/v3.37.0...v3.38.0) (2026-07-01)
+
+
+### Bug Fixes
+
+* tests ([8781995](https://github.com/samtun/hackworld/commit/8781995601c3b88397d44dbb34e9d6c5821528ed))
+
+
+### Features
+
+* increase damage and heal output 10x ([881ae50](https://github.com/samtun/hackworld/commit/881ae500b16d857d98a60c7fcdfcb5d29fa1ca86))
+
+# [3.37.0](https://github.com/samtun/hackworld/compare/v3.36.0...v3.37.0) (2026-07-01)
+
+
+### Features
+
+* make dash attack hit barrels and use dedicated 1m radius hitbox ([1748eab](https://github.com/samtun/hackworld/commit/1748eabfa528d1d26b8690f9a787a2b7ded9c9a8))
+
 # [3.36.0](https://github.com/samtun/hackworld/compare/v3.35.0...v3.36.0) (2026-07-01)
 
 

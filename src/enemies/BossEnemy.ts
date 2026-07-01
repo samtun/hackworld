@@ -29,10 +29,10 @@ export class BossEnemy extends Enemy {
         enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ) {
         super(scene, world, position, physicsMaterial, {
-            maxHp: 500,
+            maxHp: 5000,
             speed: 4.5,
-            damage: 25,
-            baseExp: 120,
+            damage: 250,
+            baseExp: 1200,
             itemDropChance: 1,
             techDropRateFactor: 1.6,
             xDataDropChanceWeight: 3,

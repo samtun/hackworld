@@ -19,10 +19,10 @@ export class PacketForge extends BaseStage {
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 90,
+        maxHp: 900,
         speed: 3.35,
-        damage: 35,
-        baseExp: 16,
+        damage: 350,
+        baseExp: 160,
         itemDropChance: 0.16,
         techDropRateFactor: 1.15,
         xDataDropChanceWeight: 1.2,
@@ -34,10 +34,10 @@ export class PacketForge extends BaseStage {
     };
 
     private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 170,
+        maxHp: 1700,
         speed: 3.85,
-        damage: 60,
-        baseExp: 30,
+        damage: 600,
+        baseExp: 300,
         itemDropChance: 0.30,
         techDropRateFactor: 1.35,
         xDataDropChanceWeight: 1.8,
@@ -49,10 +49,10 @@ export class PacketForge extends BaseStage {
     };
 
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 620,
+        maxHp: 6200,
         speed: 4.35,
-        damage: 95,
-        baseExp: 145,
+        damage: 950,
+        baseExp: 1450,
         itemDropChance: 1,
         techDropRateFactor: 1.75,
         xDataDropChanceWeight: 3.2,
@@ -89,7 +89,7 @@ export class PacketForge extends BaseStage {
             count: { min: 1, max: 3 },
             width: { min: 2, max: 5 },
             length: { min: 2, max: 5 },
-            damage: 60,
+            damage: 600,
             patterns: [
                 [1200, 1500],
                 [700, 900, 700, 1500],

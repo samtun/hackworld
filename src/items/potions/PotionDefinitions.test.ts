@@ -18,11 +18,11 @@ describe('POTION_LEVELS', () => {
     });
 
     it('level 1 values match spec', () => {
-        expect(POTION_LEVELS[0]).toEqual({ level: 1, hpAmount: 20, tpAmount: 10, requiredPlayerLevel: 0 });
+        expect(POTION_LEVELS[0]).toEqual({ level: 1, hpAmount: 200, tpAmount: 100, requiredPlayerLevel: 0 });
     });
 
     it('level 6 values match spec', () => {
-        expect(POTION_LEVELS[5]).toEqual({ level: 6, hpAmount: 400, tpAmount: 100, requiredPlayerLevel: 240 });
+        expect(POTION_LEVELS[5]).toEqual({ level: 6, hpAmount: 4000, tpAmount: 1000, requiredPlayerLevel: 240 });
     });
 });
 
@@ -66,19 +66,19 @@ describe('determinePotionLevel', () => {
 
 describe('getPotionAmount', () => {
     it('returns HP amount for HP potion level 1', () => {
-        expect(getPotionAmount(PotionType.HP, 1)).toBe(20);
+        expect(getPotionAmount(PotionType.HP, 1)).toBe(200);
     });
 
     it('returns TP amount for TP potion level 1', () => {
-        expect(getPotionAmount(PotionType.TP, 1)).toBe(10);
+        expect(getPotionAmount(PotionType.TP, 1)).toBe(100);
     });
 
     it('returns HP amount for HP potion level 4', () => {
-        expect(getPotionAmount(PotionType.HP, 4)).toBe(100);
+        expect(getPotionAmount(PotionType.HP, 4)).toBe(1000);
     });
 
     it('returns TP amount for TP potion level 6', () => {
-        expect(getPotionAmount(PotionType.TP, 6)).toBe(100);
+        expect(getPotionAmount(PotionType.TP, 6)).toBe(1000);
     });
 
     it('returns 0 for invalid level', () => {
