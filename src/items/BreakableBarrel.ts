@@ -60,12 +60,12 @@ export class BreakableBarrel implements Breakable {
     private static readonly RADIAL_SEGMENTS = 8;
     /** Number of height segments (must be even so there is a middle ring). */
     private static readonly HEIGHT_SEGMENTS = 4;
-    /** Barrel drop thresholds for rarer high-value drops. */
+    /** Barrel drop thresholds (cumulative probabilities). */
     private static readonly WEAPON_DROP_THRESHOLD = 0.01;
     private static readonly CHIP_DROP_THRESHOLD = 0.02;
     private static readonly CORE_DROP_THRESHOLD = 0.03;
-    private static readonly MONEY_DROP_THRESHOLD = 0.19;
-    private static readonly POTION_DROP_THRESHOLD = 0.29;
+    private static readonly MONEY_DROP_THRESHOLD = 0.33;
+    private static readonly POTION_DROP_THRESHOLD = 0.73;
 
     /** Number of fragments spawned on destruction. */
     private static readonly FRAGMENT_COUNT = 8;

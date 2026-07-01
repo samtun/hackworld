@@ -67,7 +67,9 @@ export class Player extends BaseMesh {
 
     // Stat caps and upgrade amounts
     public readonly MAX_STAT_VALUE = 9999;
-    private readonly HP_TP_UPGRADE_AMOUNT = 5;
+    private readonly MAX_HP_VALUE = 999999;
+    private readonly MAX_TP_VALUE = 999999;
+    private readonly HP_TP_UPGRADE_AMOUNT = 15;
     private readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
 
     // Stat effect formula constants
@@ -78,9 +80,9 @@ export class Player extends BaseMesh {
 
     // Level system constants
     private readonly MAX_LEVEL = 9999;
-    private readonly LEVEL_HP_MULTIPLIER = 10.01; // HP increase by (10 + 0.01) * level
-    private readonly LEVEL_TP_MULTIPLIER = 5.005; // TP increase by (5 + 0.005) * level
-    private readonly EXP_BASE = 250;
+    private readonly LEVEL_HP_MULTIPLIER = 100.01; // HP increase by (100 + 0.01) * level
+    private readonly LEVEL_TP_MULTIPLIER = 50.05; // TP increase by (50 + 0.05) * level
+    private readonly EXP_BASE = 2500;
     private readonly EXP_LINEAR_FACTOR = 30;
     private readonly EXP_QUADRATIC_FACTOR = 0.07;
     private readonly LASER_UNLOCK_LEVEL = 10;
@@ -107,8 +109,8 @@ export class Player extends BaseMesh {
     private readonly BODY_HEIGHT = 1.6;
 
     // Base Stats (without equipment modifiers or upgrades)
-    private baseHp: number = 170;
-    private baseTp: number = 60;
+    private baseHp: number = 1700;
+    private baseTp: number = 600;
     private baseStrength: number = 1;
     private baseDefense: number = 1;
     private baseAgility: number = 1;
@@ -438,8 +440,8 @@ export class Player extends BaseMesh {
         this.defense = Math.min(Math.floor(this.baseDefense + this.defenseUpgrades + this.defensePoints), this.MAX_STAT_VALUE);
         this.agility = Math.min(Math.floor(this.baseAgility + this.agilityUpgrades + this.agilityPoints), this.MAX_STAT_VALUE);
         this.luck = Math.min(Math.floor(this.baseLuck + this.luckUpgrades + this.luckPoints), this.MAX_STAT_VALUE);
-        this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, this.MAX_STAT_VALUE);
-        this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, this.MAX_STAT_VALUE);
+        this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, this.MAX_HP_VALUE);
+        this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, this.MAX_TP_VALUE);
 
         // Ensure current HP/TP don't exceed new max
         if (this.hp > this.maxHp) this.hp = this.maxHp;
@@ -1831,12 +1833,14 @@ export class Player extends BaseMesh {
                 break;
         }
 
-        // Check if stat would exceed 9999 cap
-        const upgradeAmount = (statType === StatType.HP || statType === StatType.TP)
+        // Check if stat would exceed cap
+        const isHpOrTp = statType === StatType.HP || statType === StatType.TP;
+        const upgradeAmount = isHpOrTp
             ? this.HP_TP_UPGRADE_AMOUNT
             : this.STRENGTH_DEFENSE_UPGRADE_AMOUNT;
-        if (currentValue + upgradeAmount > this.MAX_STAT_VALUE) {
-            console.log(`${statType} is already at max value (${this.MAX_STAT_VALUE})`);
+        const maxStatValue = isHpOrTp ? (statType === StatType.HP ? this.MAX_HP_VALUE : this.MAX_TP_VALUE) : this.MAX_STAT_VALUE;
+        if (currentValue + upgradeAmount > maxStatValue) {
+            console.log(`${statType} is already at max value (${maxStatValue})`);
             return false;
         }
 
@@ -1890,9 +1894,9 @@ export class Player extends BaseMesh {
             case StatType.DEFENSE:
                 return Math.min(this.baseDefense + this.defenseUpgrades + this.defensePoints, this.MAX_STAT_VALUE);
             case StatType.HP:
-                return Math.min(100 + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT), this.MAX_STAT_VALUE);
+                return Math.min(100 + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT), this.MAX_HP_VALUE);
             case StatType.TP:
-                return Math.min(100 + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT), this.MAX_STAT_VALUE);
+                return Math.min(100 + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT), this.MAX_TP_VALUE);
             case StatType.AGILITY:
                 return Math.min(this.baseAgility + this.agilityUpgrades + this.agilityPoints, this.MAX_STAT_VALUE);
             case StatType.LUCK:

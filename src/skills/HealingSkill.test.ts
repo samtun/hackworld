@@ -93,7 +93,7 @@ describe('HealingSkill', () => {
         it('sets name, cooldown, and tpCost', () => {
             expect(skill.name).toBe('Healing');
             expect(skill.cooldown).toBe(5);
-            expect(skill.tpCost).toBe(20);
+            expect(skill.tpCost).toBe(200);
         });
     });
 
@@ -107,12 +107,12 @@ describe('HealingSkill', () => {
 
     describe('getEffectiveTpCost()', () => {
         it.each([
-            [Tier.STABLE,      20],
-            [Tier.BROKEN,      20],
-            [Tier.MAINTAINED,  40],
-            [Tier.OVERCLOCKED, 60],
-            [Tier.ZERODAY,     120],
-            [Tier.LEET,        200],
+            [Tier.STABLE,      200],
+            [Tier.BROKEN,      200],
+            [Tier.MAINTAINED,  400],
+            [Tier.OVERCLOCKED, 600],
+            [Tier.ZERODAY,     1200],
+            [Tier.LEET,        2000],
         ])('returns %s for tier %s', (tier, expected) => {
             const player = makePlayer(tier) as Player;
             expect(skill.getEffectiveTpCost(player)).toBe(expected);
@@ -122,39 +122,39 @@ describe('HealingSkill', () => {
 
     describe('execute() via use()', () => {
         it('calls player.heal with BASE_HEAL_AMOUNT at STABLE tier', () => {
-            const player = makePlayer(Tier.STABLE, 0, 100);
-            player.tp = 100;
+            const player = makePlayer(Tier.STABLE, 0, 1000);
+            player.tp = 1000;
             (skill as any).cooldownTimer = 0;
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
             skill.use(player, scene, world);
-            expect(player.heal).toHaveBeenCalledWith(40, 0, true);
+            expect(player.heal).toHaveBeenCalledWith(400, 0, true);
         });
 
-        it('calls player.heal with 80 at MAINTAINED tier when hp=0', () => {
-            const player = makePlayer(Tier.MAINTAINED, 0, 100);
-            player.tp = 100;
+        it('calls player.heal with 800 at MAINTAINED tier when hp=0', () => {
+            const player = makePlayer(Tier.MAINTAINED, 0, 1000);
+            player.tp = 1000;
             (skill as any).cooldownTimer = 0;
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
             skill.use(player, scene, world);
-            expect(player.heal).toHaveBeenCalledWith(80, 0, true);
+            expect(player.heal).toHaveBeenCalledWith(800, 0, true);
         });
 
         it('calls player.heal capped to remaining HP at MAINTAINED tier', () => {
-            const player = makePlayer(Tier.MAINTAINED, 60, 100);
-            player.tp = 100;
+            const player = makePlayer(Tier.MAINTAINED, 600, 1000);
+            player.tp = 1000;
             (skill as any).cooldownTimer = 0;
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
             skill.use(player, scene, world);
-            // healAmount=80, maxHp-hp=40 → actualHeal=40
-            expect(player.heal).toHaveBeenCalledWith(40, 0, true);
+            // healAmount=800, maxHp-hp=400 → actualHeal=400
+            expect(player.heal).toHaveBeenCalledWith(400, 0, true);
         });
 
         it('calls tryIncrementSkillTech when HP < maxHp', () => {
-            const player = makePlayer(Tier.STABLE, 50, 100);
-            player.tp = 100;
+            const player = makePlayer(Tier.STABLE, 500, 1000);
+            player.tp = 1000;
             (skill as any).cooldownTimer = 0;
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
@@ -163,8 +163,8 @@ describe('HealingSkill', () => {
         });
 
         it('does NOT call tryIncrementSkillTech when already at full HP', () => {
-            const player = makePlayer(Tier.STABLE, 100, 100);
-            player.tp = 100;
+            const player = makePlayer(Tier.STABLE, 1000, 1000);
+            player.tp = 1000;
             (skill as any).cooldownTimer = 0;
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
@@ -173,8 +173,8 @@ describe('HealingSkill', () => {
         });
 
         it('sets isBeingExecuted to true after execute', () => {
-            const player = makePlayer(Tier.STABLE, 50, 100);
-            player.tp = 100;
+            const player = makePlayer(Tier.STABLE, 500, 1000);
+            player.tp = 1000;
             (skill as any).cooldownTimer = 0;
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
@@ -183,8 +183,8 @@ describe('HealingSkill', () => {
         });
 
         it('sets recoveryRemaining at OVERCLOCKED tier', () => {
-            const player = makePlayer(Tier.OVERCLOCKED, 0, 100);
-            player.tp = 200;
+            const player = makePlayer(Tier.OVERCLOCKED, 0, 1000);
+            player.tp = 1000;
             (skill as any).cooldownTimer = 0;
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
@@ -195,8 +195,8 @@ describe('HealingSkill', () => {
 
     describe('update()', () => {
         it('advances effectTimer while executing', () => {
-            const player = makePlayer(Tier.STABLE, 50, 100);
-            player.tp = 100;
+            const player = makePlayer(Tier.STABLE, 500, 1000);
+            player.tp = 1000;
             (skill as any).cooldownTimer = 0;
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
@@ -207,8 +207,8 @@ describe('HealingSkill', () => {
         });
 
         it('calls cleanup and sets isBeingExecuted=false when effectTimer exceeds duration', () => {
-            const player = makePlayer(Tier.STABLE, 50, 100);
-            player.tp = 100;
+            const player = makePlayer(Tier.STABLE, 500, 1000);
+            player.tp = 1000;
             (skill as any).cooldownTimer = 0;
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
@@ -224,7 +224,7 @@ describe('HealingSkill', () => {
         });
 
         it('applies recovery healing over time at OVERCLOCKED tier', () => {
-            const player = makePlayer(Tier.OVERCLOCKED, 0, 1000);
+            const player = makePlayer(Tier.OVERCLOCKED, 500, 1000);
             // Set up recovery state directly to avoid coupling with execute/use flow
             (skill as any).recoveryPlayer = player;
             (skill as any).recoveryRemaining = 5;

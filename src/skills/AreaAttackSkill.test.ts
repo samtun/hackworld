@@ -81,7 +81,7 @@ describe('AreaAttackSkill', () => {
         it('sets name, cooldown, and tpCost', () => {
             expect(skill.name).toBe('Area Attack');
             expect(skill.cooldown).toBe(10);
-            expect(skill.tpCost).toBe(30);
+            expect(skill.tpCost).toBe(300);
         });
     });
 
@@ -95,12 +95,12 @@ describe('AreaAttackSkill', () => {
 
     describe('getEffectiveTpCost()', () => {
         it.each([
-            [Tier.STABLE,      30],
-            [Tier.BROKEN,      30],
-            [Tier.MAINTAINED,  60],
-            [Tier.OVERCLOCKED, 90],
-            [Tier.ZERODAY,     150],
-            [Tier.LEET,        240],
+            [Tier.STABLE,      300],
+            [Tier.BROKEN,      300],
+            [Tier.MAINTAINED,  600],
+            [Tier.OVERCLOCKED, 900],
+            [Tier.ZERODAY,     1500],
+            [Tier.LEET,        2400],
         ])('returns %s for tier %s', (tier, expected) => {
             const player = makePlayer(tier) as Player;
             expect(skill.getEffectiveTpCost(player)).toBe(expected);
@@ -110,11 +110,11 @@ describe('AreaAttackSkill', () => {
 
     describe('execute()', () => {
         it.each([
-            [Tier.STABLE,      42,   1],
-            [Tier.MAINTAINED,  84,   2],
-            [Tier.OVERCLOCKED, 168,  3],
-            [Tier.ZERODAY,     336,  3],
-            [Tier.LEET,        672,  4],
+            [Tier.STABLE,      320,   1],
+            [Tier.MAINTAINED,  640,   2],
+            [Tier.OVERCLOCKED, 1280,  3],
+            [Tier.ZERODAY,     2560,  3],
+            [Tier.LEET,        5120,  4],
         ])('sets effectiveDamage=%i and effectiveWaves=%i at tier %s', (tier, damage, waves) => {
             const player = makePlayer(tier);
             const scene = { add: vi.fn(), remove: vi.fn() } as any;

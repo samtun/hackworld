@@ -41,10 +41,10 @@ export class CipherNull extends StageWithLevels {
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 130,
+        maxHp: 1300,
         speed: 3.65,
-        damage: 60,
-        baseExp: 24,
+        damage: 600,
+        baseExp: 240,
         itemDropChance: 0.23,
         techDropRateFactor: 1.3,
         xDataDropChanceWeight: 1.6,
@@ -56,10 +56,10 @@ export class CipherNull extends StageWithLevels {
     };
 
     private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 210,
+        maxHp: 2100,
         speed: 4.1,
-        damage: 110,
-        baseExp: 40,
+        damage: 1100,
+        baseExp: 400,
         itemDropChance: 0.34,
         techDropRateFactor: 1.55,
         xDataDropChanceWeight: 2.2,
@@ -71,10 +71,10 @@ export class CipherNull extends StageWithLevels {
     };
 
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 760,
+        maxHp: 7600,
         speed: 4.55,
-        damage: 160,
-        baseExp: 180,
+        damage: 1600,
+        baseExp: 1800,
         itemDropChance: 1,
         techDropRateFactor: 1.9,
         xDataDropChanceWeight: 3.9,
@@ -111,7 +111,7 @@ export class CipherNull extends StageWithLevels {
             count: { min: 2, max: 4 },
             width: { min: 2, max: 5 },
             length: { min: 2, max: 6 },
-            damage: 130,
+            damage: 1300,
             patterns: [
                 [1000, 1300],
                 [600, 700, 600, 1300],

@@ -163,11 +163,11 @@ describe('BreakableBarrel', () => {
             barrel.generateDrop({} as any, player);
             expect((barrel as any).generateMoneyDrop).toHaveBeenCalledOnce();
 
-            randomSpy.mockReturnValueOnce(0.2);
+            randomSpy.mockReturnValueOnce(0.33);
             barrel.generateDrop({} as any, player);
             expect((barrel as any).generatePotionDrop).toHaveBeenCalledOnce();
 
-            randomSpy.mockReturnValueOnce(0.5);
+            randomSpy.mockReturnValueOnce(0.74);
             expect(barrel.generateDrop({} as any, player)).toBeNull();
 
             randomSpy.mockRestore();

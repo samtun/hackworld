@@ -229,10 +229,10 @@ export class GameTest extends BaseStage {
         enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ): void {
         const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial, spawnType === EnemySpawnType.Elite ? {
-            maxHp: 150,
+            maxHp: 1500,
             speed: 3.75,
-            damage: 15,
-            baseExp: 25,
+            damage: 150,
+            baseExp: 250,
             itemDropChance: 0.30,
             techDropRateFactor: 1.3,
             xDataDropChanceWeight: 1.5,
@@ -272,12 +272,12 @@ export class GameTest extends BaseStage {
 
         // Row 0: Aegis Sword – one per tier
         const weaponConfigs: { damage: number; level: number; factor: number }[] = [
-            { damage: 8, level: 1, factor: 0.80 },  // Broken
-            { damage: 10, level: 1, factor: 1.00 },  // Stable
-            { damage: 10, level: 1, factor: 1.05 },  // Maintained
-            { damage: 11, level: 1, factor: 1.10 },  // Overclocked
-            { damage: 12, level: 1, factor: 1.15 },  // ZeroDay
-            { damage: 12, level: 1, factor: 1.20 },  // Leet
+            { damage: 80, level: 1, factor: 0.80 },  // Broken
+            { damage: 100, level: 1, factor: 1.00 },  // Stable
+            { damage: 105, level: 1, factor: 1.05 },  // Maintained
+            { damage: 110, level: 1, factor: 1.10 },  // Overclocked
+            { damage: 115, level: 1, factor: 1.15 },  // ZeroDay
+            { damage: 120, level: 1, factor: 1.20 },  // Leet
         ];
         for (const wc of weaponConfigs) {
             this.addDropConfig(pos(), (scene, p) =>
@@ -389,7 +389,7 @@ export class GameTest extends BaseStage {
             z: TRAPS_AREA_Z,
             width: 1,
             length: 1,
-            damage: 10,
+            damage: 100,
             activationInterval: [1000, 1000],
         }));
         this.electricTraps.push(new ElectricTrap(this.scene, {
@@ -398,7 +398,7 @@ export class GameTest extends BaseStage {
             z: TRAPS_AREA_Z,
             width: 2,
             length: 1,
-            damage: 10,
+            damage: 100,
             activationInterval: [500, 500, 1000, 500, 3000, 500],
         }));
         this.electricTraps.push(new ElectricTrap(this.scene, {
@@ -407,7 +407,7 @@ export class GameTest extends BaseStage {
             z: TRAPS_AREA_Z,
             width: 2,
             length: 1,
-            damage: 10,
+            damage: 100,
             activationInterval: [],
         }));
     }
