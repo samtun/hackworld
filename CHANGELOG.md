@@ -1,3 +1,10 @@
+# [3.40.0](https://github.com/samtun/hackworld/compare/v3.39.1...v3.40.0) (2026-07-01)
+
+
+### Features
+
+* change tech point thresholds for balancing ([69f49a6](https://github.com/samtun/hackworld/commit/69f49a646bfddcc5743398e530f4bb7de0ccb0f6))
+
 ## [3.39.1](https://github.com/samtun/hackworld/compare/v3.39.0...v3.39.1) (2026-07-01)
 
 
