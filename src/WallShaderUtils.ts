@@ -92,20 +92,30 @@ vLocalPosition = position;
 const TRANSPARENCY_FRAGMENT = `
 #include <dithering_fragment>
 
-float distToPlayer = length(vWorldPosition.xz - u_playerPos.xz);
-float proximityRadius = 5.0;
-float proximityFactor = 1.0 - smoothstep(0.0, proximityRadius, distToPlayer);
+vec3 cameraToPlayer = u_playerPos - u_cameraPos;
+float viewLength = max(length(cameraToPlayer), 0.0001);
+vec3 viewDir = cameraToPlayer / viewLength;
+vec3 cameraToFragment = vWorldPosition - u_cameraPos;
 
-vec2 camToPlayer = normalize(u_playerPos.xz - u_cameraPos.xz);
-float wallDist   = dot(vWorldPosition.xz - u_cameraPos.xz, camToPlayer);
-float playerDist = dot(u_playerPos.xz    - u_cameraPos.xz, camToPlayer);
+float depthAlongView = dot(cameraToFragment, viewDir);
+float depthT = clamp(depthAlongView / viewLength, 0.0, 1.0);
+vec3 closestPointOnView = u_cameraPos + viewDir * clamp(depthAlongView, 0.0, viewLength);
+vec3 viewOffset = vWorldPosition - closestPointOnView;
 
-vec2 wallOffset = (vWorldPosition.xz - u_cameraPos.xz) - wallDist * camToPlayer;
-float lateralDist = length(wallOffset);
+float horizontalRadius = mix(0.2, 0.95, depthT);
+float verticalRadius = mix(0.35, 1.6, depthT);
+float frustumDistance = length(vec2(
+    length(viewOffset.xz) / max(horizontalRadius, 0.0001),
+    abs(viewOffset.y) / max(verticalRadius, 0.0001)
+));
+float frustumFactor = 1.0 - smoothstep(0.7, 1.0, frustumDistance);
 
-float behindFactor = smoothstep(playerDist + 1.0, playerDist - 2.0, wallDist);
-float lateralFactor = 1.0 - smoothstep(0.0, 3.0, lateralDist);
-float fadeMask = behindFactor * lateralFactor * proximityFactor;
+float entryFade = smoothstep(-0.05, 0.35, depthAlongView);
+float exitFade = 1.0 - smoothstep(viewLength - 0.4, viewLength + 0.35, depthAlongView);
+float segmentFactor = entryFade * exitFade;
+
+float surfaceFacingCamera = smoothstep(0.45, 0.75, abs(dot(normalize(vWorldNormal), -viewDir)));
+float fadeMask = frustumFactor * segmentFactor * surfaceFacingCamera;
 
 vec2 gridPos = vWorldPosition.xz * 2.0;
 float gridX = abs(fract(gridPos.x) - 0.4);
@@ -406,16 +416,17 @@ function createTransparentModelMaterial(material: THREE.MeshStandardMaterial): T
         shader.uniforms.u_playerPos = { value: new THREE.Vector3() };
         shader.uniforms.u_cameraPos = { value: new THREE.Vector3() };
 
-        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + shader.vertexShader;
+        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + VERTEX_WORLD_NORMAL_PREAMBLE + shader.vertexShader;
         shader.vertexShader = shader.vertexShader.replace(
             '#include <worldpos_vertex>',
-            VERTEX_WORLD_POS_CALC,
+            VERTEX_WORLD_POS_CALC + VERTEX_WORLD_NORMAL_CALC,
         );
 
         shader.fragmentShader = `
             uniform vec3 u_playerPos;
             uniform vec3 u_cameraPos;
             varying vec3 vWorldPosition;
+            varying vec3 vWorldNormal;
             ${shader.fragmentShader}
         `;
 
