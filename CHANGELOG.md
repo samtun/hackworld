@@ -1,3 +1,10 @@
+# [3.39.0](https://github.com/samtun/hackworld/compare/v3.38.0...v3.39.0) (2026-07-01)
+
+
+### Features
+
+* add drone charging station prop ([b4635cb](https://github.com/samtun/hackworld/commit/b4635cb27c35f9d15a2189429938f8c80d0ea4f0))
+
 # [3.38.0](https://github.com/samtun/hackworld/compare/v3.37.0...v3.38.0) (2026-07-01)
 
 
