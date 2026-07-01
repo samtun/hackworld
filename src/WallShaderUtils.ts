@@ -92,8 +92,9 @@ vLocalPosition = position;
 const TRANSPARENCY_FRAGMENT = `
 #include <dithering_fragment>
 
+const float OCCLUSION_EPSILON = 0.0001;
 vec3 cameraToPlayer = u_playerPos - u_cameraPos;
-float viewLength = max(length(cameraToPlayer), 0.0001);
+float viewLength = max(length(cameraToPlayer), OCCLUSION_EPSILON);
 vec3 viewDir = cameraToPlayer / viewLength;
 vec3 cameraToFragment = vWorldPosition - u_cameraPos;
 
@@ -102,18 +103,26 @@ float depthT = clamp(depthAlongView / viewLength, 0.0, 1.0);
 vec3 closestPointOnView = u_cameraPos + viewDir * clamp(depthAlongView, 0.0, viewLength);
 vec3 viewOffset = vWorldPosition - closestPointOnView;
 
+// Expand the look-through region from a narrow camera-side tube into a
+// player-sized frustum near the target so thicker props fade more naturally.
 float horizontalRadius = mix(0.2, 0.95, depthT);
 float verticalRadius = mix(0.35, 1.6, depthT);
 float frustumDistance = length(vec2(
-    length(viewOffset.xz) / max(horizontalRadius, 0.0001),
-    abs(viewOffset.y) / max(verticalRadius, 0.0001)
+    length(viewOffset.xz) / max(horizontalRadius, OCCLUSION_EPSILON),
+    abs(viewOffset.y) / max(verticalRadius, OCCLUSION_EPSILON)
 ));
+// Keep a solid core for the actual sightline while softening only the outer
+// edge of the frustum to avoid a harsh transparency cutoff.
 float frustumFactor = 1.0 - smoothstep(0.7, 1.0, frustumDistance);
 
+// Ease the effect in just after the camera and out again as it reaches the
+// player so only geometry between those two points is affected.
 float entryFade = smoothstep(-0.05, 0.35, depthAlongView);
 float exitFade = 1.0 - smoothstep(viewLength - 0.4, viewLength + 0.35, depthAlongView);
 float segmentFactor = entryFade * exitFade;
 
+// Favor surfaces whose normals broadly face the camera ray, which prevents
+// floors and side faces from fading unless they truly block the view.
 float surfaceFacingCamera = smoothstep(0.45, 0.75, abs(dot(normalize(vWorldNormal), -viewDir)));
 float fadeMask = frustumFactor * segmentFactor * surfaceFacingCamera;
 
