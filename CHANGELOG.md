@@ -1,3 +1,10 @@
+## [3.39.1](https://github.com/samtun/hackworld/compare/v3.39.0...v3.39.1) (2026-07-01)
+
+
+### Bug Fixes
+
+* prevent player from getting stuck in skill animation end pose ([38fa3e7](https://github.com/samtun/hackworld/commit/38fa3e786e95802b57d91b7564733fad9d6645ca))
+
 # [3.39.0](https://github.com/samtun/hackworld/compare/v3.38.0...v3.39.0) (2026-07-01)
 
 
