@@ -1,3 +1,10 @@
+# [3.37.0](https://github.com/samtun/hackworld/compare/v3.36.0...v3.37.0) (2026-07-01)
+
+
+### Features
+
+* make dash attack hit barrels and use dedicated 1m radius hitbox ([1748eab](https://github.com/samtun/hackworld/commit/1748eabfa528d1d26b8690f9a787a2b7ded9c9a8))
+
 # [3.36.0](https://github.com/samtun/hackworld/compare/v3.35.0...v3.36.0) (2026-07-01)
 
 
