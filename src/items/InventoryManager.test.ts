@@ -1,21 +1,25 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../InputManager', () => ({
-    InputManager: { Instance: {
-        isNavigateUpPressed: vi.fn().mockReturnValue(false),
-        isNavigateDownPressed: vi.fn().mockReturnValue(false),
-        isSelectPressed: vi.fn().mockReturnValue(false),
-        isCancelPressed: vi.fn().mockReturnValue(false),
-    }}
+    InputManager: {
+        Instance: {
+            isNavigateUpPressed: vi.fn().mockReturnValue(false),
+            isNavigateDownPressed: vi.fn().mockReturnValue(false),
+            isSelectPressed: vi.fn().mockReturnValue(false),
+            isCancelPressed: vi.fn().mockReturnValue(false),
+        }
+    }
 }));
 vi.mock('../ui/UiUtils', () => ({ shakeElement: vi.fn(), resetInputDebounce: vi.fn() }));
 vi.mock('../ui/InputHints', () => ({ getHint: vi.fn().mockReturnValue(''), HintConfigs: { inventoryNavigate: 'inventoryNavigate' } }));
 vi.mock('../ui/MenuManager', () => ({
-    MenuManager: { Instance: {
-        createOverlay: vi.fn(() => { const d = document.createElement('div'); d.style.display = 'none'; return d; }),
-        createGridWindow: vi.fn(() => document.createElement('div')),
-        createPanel: vi.fn(() => document.createElement('div')),
-    }},
+    MenuManager: {
+        Instance: {
+            createOverlay: vi.fn(() => { const d = document.createElement('div'); d.style.display = 'none'; return d; }),
+            createGridWindow: vi.fn(() => document.createElement('div')),
+            createPanel: vi.fn(() => document.createElement('div')),
+        }
+    },
     MENU_COLORS: {
         COST_COLOR: '#ffd700', MAXED_COLOR: '#ff6666', TEXT: '#fff', TRANSPARENT: 'transparent',
         ITEM_SELECTED: '#888', ITEM_HOVER: '#666', PANEL_STATS: '#424242', PANEL_LOOT: '#555',
@@ -29,13 +33,15 @@ vi.mock('../ui/UIManager', () => ({
     UIManager: { Instance: { showControlHints: vi.fn(), hideControlHints: vi.fn() } }
 }));
 vi.mock('../AudioManager', () => ({
-    AudioManager: { Instance: {
-        playUiOpen: vi.fn(),
-        playUiClose: vi.fn(),
-        playMenuNavigate: vi.fn(),
-        playEquip: vi.fn(),
-        playInsufficient: vi.fn(),
-    } }
+    AudioManager: {
+        Instance: {
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
+            playMenuNavigate: vi.fn(),
+            playEquip: vi.fn(),
+            playInsufficient: vi.fn(),
+        }
+    }
 }));
 vi.mock('../ui/StatIcons', () => ({
     ICON_HP: '', ICON_TP: '', ICON_STRENGTH: '', ICON_DEFENSE: '', ICON_AGILITY: '', ICON_LUCK: '',
@@ -44,7 +50,7 @@ vi.mock('../ui/StatIcons', () => ({
 }));
 vi.mock('./ItemDisplay', () => ({ formatItemLabel: vi.fn((item: any) => item?.name || '') }));
 vi.mock('./ItemDetailsPanel', () => ({ ItemDetailsPanel: { generateHTML: vi.fn().mockReturnValue('<div>details</div>') } }));
-vi.mock('../Player', () => ({ Player: class {} }));
+vi.mock('../Player', () => ({ Player: class { } }));
 
 import { InventoryManager } from './InventoryManager';
 import { AudioManager } from '../AudioManager';
@@ -312,7 +318,7 @@ describe('InventoryManager', () => {
 
     // Navigation tests
     describe('navigation via update()', () => {
-        function makeInput(overrides: Partial<{up: boolean, down: boolean, select: boolean, cancel: boolean}> = {}) {
+        function makeInput(overrides: Partial<{ up: boolean, down: boolean, select: boolean, cancel: boolean }> = {}) {
             return {
                 isNavigateUpPressed: vi.fn().mockReturnValue(overrides.up ?? false),
                 isNavigateDownPressed: vi.fn().mockReturnValue(overrides.down ?? false),
@@ -400,22 +406,22 @@ describe('InventoryManager', () => {
             expect(html).toContain('0 | <span style="font-style:italic;color:#BBB;">α</span>');
         });
 
-        it('shows β for weapon tech at 120 (β threshold)', () => {
-            const player = makePlayer([], { [WeaponType.SWORD]: 120 });
+        it('shows β for weapon tech at 60 (β threshold)', () => {
+            const player = makePlayer([], { [WeaponType.SWORD]: 60 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('120 | <span style="font-style:italic;color:#BBB;">β</span>');
+            expect(html).toContain('60 | <span style="font-style:italic;color:#BBB;">β</span>');
         });
 
-        it('shows γ for weapon tech at 460 (γ threshold)', () => {
-            const player = makePlayer([], { [WeaponType.DUAL_BLADE]: 460 });
+        it('shows γ for weapon tech at 280 (γ threshold)', () => {
+            const player = makePlayer([], { [WeaponType.DUAL_BLADE]: 280 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('460 | <span style="font-style:italic;color:#BBB;">γ</span>');
+            expect(html).toContain('280 | <span style="font-style:italic;color:#BBB;">γ</span>');
         });
 
         it('shows ω for weapon tech at max level threshold', () => {
-            const player = makePlayer([], { [WeaponType.HAMMER]: 2500 });
+            const player = makePlayer([], { [WeaponType.HAMMER]: 4500 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('2500 | <span style="font-style:italic;color:#BBB;">ω</span>');
+            expect(html).toContain('4500 | <span style="font-style:italic;color:#BBB;">ω</span>');
         });
 
         it('shows Stable for skill tech below 120', () => {
@@ -425,21 +431,21 @@ describe('InventoryManager', () => {
         });
 
         it('shows Maintained for skill tech at 121', () => {
-            const player = makePlayer([], {}, { [SkillTechType.BLAST]: 121 });
+            const player = makePlayer([], {}, { [SkillTechType.BLAST]: 61 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('121 | <span style="font-style:italic;color:#BBB;">Maintained</span>');
+            expect(html).toContain('61 | <span style="font-style:italic;color:#BBB;">Maintained</span>');
         });
 
-        it('shows ZeroDay for skill tech at 520', () => {
-            const player = makePlayer([], {}, { [SkillTechType.RANGED]: 520 });
+        it('shows ZeroDay for skill tech at 880', () => {
+            const player = makePlayer([], {}, { [SkillTechType.RANGED]: 880 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('520 | <span style="font-style:italic;color:#BBB;">ZeroDay</span>');
+            expect(html).toContain('880 | <span style="font-style:italic;color:#BBB;">ZeroDay</span>');
         });
 
         it('shows Leet for skill tech at 1200', () => {
-            const player = makePlayer([], {}, { [SkillTechType.RANGED]: 1200 });
+            const player = makePlayer([], {}, { [SkillTechType.RANGED]: 1800 });
             const html = (mgr as any).generateStatsHTML(player);
-            expect(html).toContain('1200 | <span style="font-style:italic;color:#BBB;">Leet</span>');
+            expect(html).toContain('1800 | <span style="font-style:italic;color:#BBB;">Leet</span>');
         });
     });
 });

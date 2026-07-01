@@ -53,8 +53,7 @@ function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
         LASER_UNLOCK_LEVEL: 10,
         HEAL_UNLOCK_LEVEL: 1,
         AREA_UNLOCK_LEVEL: 25,
-        TECH_POINT_CAP: 2500,
-        SKILL_TECH_POINT_CAP: 1200,
+        TECH_POINT_CAP: 9999,
         HIT_INVULNERABILITY: 1.0,
         STUN_TIME: 0.5,
         KNOCKBACK_FORCE: 80,
@@ -1230,9 +1229,21 @@ describe('Player.getSkillTier', () => {
         expect(player.getSkillTier('RECOVERY' as any)).toBe(Tier.STABLE);
     });
 
-    it('returns LEET when skill tech is at cap (1200)', () => {
+    it('returns LEET when skill tech is at cap (9999)', () => {
         const player = makePlayer();
-        (player as any).skillTech['BLAST'] = 1200;
+        (player as any).skillTech['BLAST'] = 9999;
+        expect(player.getSkillTier('BLAST' as any)).toBe(Tier.LEET);
+    });
+
+    it('returns ZERODAY when skill tech is below leet amount (1799)', () => {
+        const player = makePlayer();
+        (player as any).skillTech['BLAST'] = 1799;
+        expect(player.getSkillTier('BLAST' as any)).toBe(Tier.ZERODAY);
+    });
+
+    it('returns LEET when skill tech is at leet amount (1800)', () => {
+        const player = makePlayer();
+        (player as any).skillTech['BLAST'] = 1800;
         expect(player.getSkillTier('BLAST' as any)).toBe(Tier.LEET);
     });
 });
@@ -1349,19 +1360,20 @@ describe('Player.tryIncrementSkillTech', () => {
 
     it('does NOT increment past SKILL_TECH_POINT_CAP', () => {
         const player = makePlayer();
-        (player as any).skillTech[SkillTechType.RANGED] = 1200; // at cap
+        (player as any).skillTech[SkillTechType.RANGED] = 9999; // at cap
         vi.spyOn(Math, 'random').mockReturnValue(0.001);
         player.tryIncrementSkillTech(SkillTechType.RANGED);
-        expect((player as any).skillTech[SkillTechType.RANGED]).toBe(1200);
+        expect((player as any).skillTech[SkillTechType.RANGED]).toBe(9999);
         vi.restoreAllMocks();
     });
 
     it('caps incremented value at SKILL_TECH_POINT_CAP', () => {
         const player = makePlayer();
-        (player as any).skillTech[SkillTechType.RECOVERY] = 1199;
+        (player as any).level = 9999;
+        (player as any).skillTech[SkillTechType.RECOVERY] = 9998;
         vi.spyOn(Math, 'random').mockReturnValue(0.001);
         player.tryIncrementSkillTech(SkillTechType.RECOVERY);
-        expect((player as any).skillTech[SkillTechType.RECOVERY]).toBe(1200);
+        expect((player as any).skillTech[SkillTechType.RECOVERY]).toBe(9999);
         vi.restoreAllMocks();
     });
 

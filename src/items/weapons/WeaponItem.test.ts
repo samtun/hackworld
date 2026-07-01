@@ -35,10 +35,10 @@ describe('WeaponItem', () => {
             expect(def.damagePercent).toBe(1);
         });
 
-        it('returns level 2 definition (requiredTech=120)', () => {
+        it('returns level 2 definition (requiredTech=60)', () => {
             const weapon = makeWeapon(2);
             const def = weapon.getLevelByNumber();
-            expect(def.requiredTech).toBe(120);
+            expect(def.requiredTech).toBe(60);
         });
 
         it('caps at the highest level definition for level beyond max', () => {
@@ -152,20 +152,20 @@ describe('WeaponItem', () => {
     describe('getLevelForTech', () => {
         it('returns level 1 for tech below β threshold', () => {
             expect(WeaponItem.getLevelForTech(0)).toBe(1);
-            expect(WeaponItem.getLevelForTech(119)).toBe(1);
+            expect(WeaponItem.getLevelForTech(59)).toBe(1);
         });
 
-        it('returns level 2 at the β threshold (120)', () => {
-            expect(WeaponItem.getLevelForTech(120)).toBe(2);
-            expect(WeaponItem.getLevelForTech(459)).toBe(2);
+        it('returns level 2 at the β threshold (60)', () => {
+            expect(WeaponItem.getLevelForTech(60)).toBe(2);
+            expect(WeaponItem.getLevelForTech(279)).toBe(2);
         });
 
-        it('returns level 3 at the γ threshold (460)', () => {
-            expect(WeaponItem.getLevelForTech(460)).toBe(3);
+        it('returns level 3 at the γ threshold (280)', () => {
+            expect(WeaponItem.getLevelForTech(280)).toBe(3);
         });
 
-        it('returns max level for tech at or above ω threshold (2500)', () => {
-            expect(WeaponItem.getLevelForTech(2500)).toBe(WeaponItem.WEAPON_LEVELS.length);
+        it('returns max level for tech at or above ω threshold (4500)', () => {
+            expect(WeaponItem.getLevelForTech(4500)).toBe(WeaponItem.WEAPON_LEVELS.length);
             expect(WeaponItem.getLevelForTech(9999)).toBe(WeaponItem.WEAPON_LEVELS.length);
         });
     });
