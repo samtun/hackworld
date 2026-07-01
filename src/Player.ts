@@ -177,6 +177,7 @@ export class Player extends BaseMesh {
     private dashTimer: number = 0;
     private readonly DASH_DURATION: number = 0.3;
     private readonly DASH_SPEED: number = 25;
+    private readonly DASH_HITBOX_RADIUS: number = 1.0;
     private dashDirection: THREE.Vector3 = new THREE.Vector3();
     private chargeFx: THREE.Group;
     private chargeFxMaterial: THREE.MeshStandardMaterial | null = null;
@@ -382,15 +383,6 @@ export class Player extends BaseMesh {
 
         // Damping to stop sliding
         this.body.linearDamping = 0.9;
-
-        this.body.addEventListener('collide', (e: any) => {
-            const entity = e.body.entity;
-            if (entity && entity instanceof Enemy) {
-                if (this.isDashing) {
-                    this.handleDashHit(entity);
-                }
-            }
-        });
 
         world.addBody(this.body);
 
@@ -844,6 +836,7 @@ export class Player extends BaseMesh {
         this.body.velocity.z = this.dashDirection.z * this.DASH_SPEED;
 
         this.updateChargeFx(dt);
+        this.checkDashHitbox();
 
         if (this.dashTimer >= this.DASH_DURATION) {
             this.isDashing = false;
@@ -854,6 +847,37 @@ export class Player extends BaseMesh {
         }
         this.syncPosition();
         return true;
+    }
+
+    /**
+     * Check a 1m radius sphere hitbox centered at the player's center sphere
+     * position for dash attack hit detection against enemies and breakables.
+     * This hitbox is separate from the player collision body and is only used
+     * for hit detection during the dash attack.
+     */
+    private checkDashHitbox(): void {
+        const centerOffset = this.BODY_HEIGHT / 3;
+        const hitboxX = this.body.position.x;
+        const hitboxY = this.body.position.y + centerOffset;
+        const hitboxZ = this.body.position.z;
+
+        for (const body of this.body.world!.bodies) {
+            const entity = (body as any).entity;
+            if (!entity) continue;
+
+            const dx = body.position.x - hitboxX;
+            const dy = body.position.y - hitboxY;
+            const dz = body.position.z - hitboxZ;
+            const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+
+            if (dist <= this.DASH_HITBOX_RADIUS) {
+                if (entity instanceof Enemy) {
+                    this.handleDashHit(entity);
+                } else if (isBreakable(entity) && !entity.isDestroyed) {
+                    this.handleBreakableHit(entity);
+                }
+            }
+        }
     }
 
     private handleCharging(dt: number): boolean {

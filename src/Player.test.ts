@@ -1604,3 +1604,130 @@ describe('Player.executeLevelUpShockwave', () => {
         expect((dyingBody.entity as any).takeDamage).not.toHaveBeenCalled();
     });
 });
+
+// ─── checkDashHitbox ──────────────────────────────────────────────────────────
+
+describe('Player.checkDashHitbox', () => {
+    function makeDashEnemyBody(x: number, y: number, z: number, isDead = false, isDying = false) {
+        const enemy = Object.create(Enemy.prototype) as Enemy;
+        Object.assign(enemy, { isDead, isDying, techDropRateFactor: 1, takeDamage: vi.fn() });
+        return { position: { x, y, z }, entity: enemy };
+    }
+
+    it('hits an enemy within the 1m dash hitbox radius', () => {
+        const enemyBody = makeDashEnemyBody(0.5, 0.53, 0);
+
+        const player = makePlayer({
+            isDashing: true,
+            dashHitEnemies: new Set(),
+            body: {
+                position: { x: 0, y: 0.8, z: 0 },
+                world: { bodies: [enemyBody] },
+            },
+            BODY_HEIGHT: 1.6,
+            DASH_HITBOX_RADIUS: 1.0,
+        } as any);
+        (player as any).getHitDamage = vi.fn().mockReturnValue(30);
+        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
+        (player as any).tryIncrementWeaponTech = vi.fn();
+
+        (player as any).checkDashHitbox();
+
+        expect((enemyBody.entity as any).takeDamage).toHaveBeenCalledOnce();
+    });
+
+    it('does not hit enemies beyond 1m radius', () => {
+        const enemyBody = makeDashEnemyBody(2, 0.53, 2);
+
+        const player = makePlayer({
+            isDashing: true,
+            dashHitEnemies: new Set(),
+            body: {
+                position: { x: 0, y: 0.8, z: 0 },
+                world: { bodies: [enemyBody] },
+            },
+            BODY_HEIGHT: 1.6,
+            DASH_HITBOX_RADIUS: 1.0,
+        } as any);
+        (player as any).getHitDamage = vi.fn().mockReturnValue(30);
+        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
+
+        (player as any).checkDashHitbox();
+
+        expect((enemyBody.entity as any).takeDamage).not.toHaveBeenCalled();
+    });
+
+    it('hits breakable barrels within the 1m dash hitbox radius', () => {
+        const barrel = {
+            isDestroyed: false,
+            onHit: vi.fn(),
+        };
+        const barrelBody = { position: { x: 0.5, y: 0.53, z: 0 }, entity: barrel };
+
+        const onBreakableHit = vi.fn();
+        const player = makePlayer({
+            isDashing: true,
+            dashHitEnemies: new Set(),
+            onBreakableHit,
+            body: {
+                position: { x: 0, y: 0.8, z: 0 },
+                world: { bodies: [barrelBody] },
+            },
+            BODY_HEIGHT: 1.6,
+            DASH_HITBOX_RADIUS: 1.0,
+        } as any);
+
+        (player as any).checkDashHitbox();
+
+        expect(onBreakableHit).toHaveBeenCalledWith(barrel);
+    });
+
+    it('does not hit already-destroyed breakables', () => {
+        const barrel = {
+            isDestroyed: true,
+            onHit: vi.fn(),
+        };
+        const barrelBody = { position: { x: 0.5, y: 0.53, z: 0 }, entity: barrel };
+
+        const onBreakableHit = vi.fn();
+        const player = makePlayer({
+            isDashing: true,
+            dashHitEnemies: new Set(),
+            onBreakableHit,
+            body: {
+                position: { x: 0, y: 0.8, z: 0 },
+                world: { bodies: [barrelBody] },
+            },
+            BODY_HEIGHT: 1.6,
+            DASH_HITBOX_RADIUS: 1.0,
+        } as any);
+
+        (player as any).checkDashHitbox();
+
+        expect(onBreakableHit).not.toHaveBeenCalled();
+    });
+
+    it('does not hit the same enemy twice during one dash', () => {
+        const enemyBody = makeDashEnemyBody(0.5, 0.53, 0);
+
+        const dashHitEnemies = new Set();
+        const player = makePlayer({
+            isDashing: true,
+            dashHitEnemies,
+            body: {
+                position: { x: 0, y: 0.8, z: 0 },
+                world: { bodies: [enemyBody] },
+            },
+            BODY_HEIGHT: 1.6,
+            DASH_HITBOX_RADIUS: 1.0,
+        } as any);
+        (player as any).getHitDamage = vi.fn().mockReturnValue(30);
+        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
+        (player as any).tryIncrementWeaponTech = vi.fn();
+
+        (player as any).checkDashHitbox();
+        (player as any).checkDashHitbox();
+
+        expect((enemyBody.entity as any).takeDamage).toHaveBeenCalledOnce();
+    });
+});
