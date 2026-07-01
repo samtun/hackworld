@@ -562,7 +562,7 @@ export class Player extends BaseMesh {
             return; // Cap reached
         }
 
-        const dropChance = Math.min(0.5, 0.015 + Math.log10(skillTechPoints + 3) * 0.02 + 0.00004 * skillTechPoints);
+        const dropChance = Math.min(0.3, 0.05 + Math.log10(skillTechPoints + 3) * 0.02 + 0.00012 * skillTechPoints);
         if (Math.random() <= dropChance) {
             this.skillTech[type] = Math.min(skillTechPoints + 1, this.TECH_POINT_CAP);
             this.floatingIndicatorManager.spawnTech(this.body.position);
