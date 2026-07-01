@@ -11,12 +11,12 @@ export interface PotionLevelDefinition {
 }
 
 export const POTION_LEVELS: readonly PotionLevelDefinition[] = [
-    { level: 1, hpAmount: 20,  tpAmount: 10,  requiredPlayerLevel: 0 },
-    { level: 2, hpAmount: 40,  tpAmount: 15,  requiredPlayerLevel: 20 },
-    { level: 3, hpAmount: 60,  tpAmount: 20,  requiredPlayerLevel: 40 },
-    { level: 4, hpAmount: 100, tpAmount: 30,  requiredPlayerLevel: 70 },
-    { level: 5, hpAmount: 200, tpAmount: 60,  requiredPlayerLevel: 120 },
-    { level: 6, hpAmount: 400, tpAmount: 100, requiredPlayerLevel: 240 },
+    { level: 1, hpAmount: 200,  tpAmount: 100,  requiredPlayerLevel: 0 },
+    { level: 2, hpAmount: 400,  tpAmount: 150,  requiredPlayerLevel: 20 },
+    { level: 3, hpAmount: 600,  tpAmount: 200,  requiredPlayerLevel: 40 },
+    { level: 4, hpAmount: 1000, tpAmount: 300,  requiredPlayerLevel: 70 },
+    { level: 5, hpAmount: 2000, tpAmount: 600,  requiredPlayerLevel: 120 },
+    { level: 6, hpAmount: 4000, tpAmount: 1000, requiredPlayerLevel: 240 },
 ];
 
 /**

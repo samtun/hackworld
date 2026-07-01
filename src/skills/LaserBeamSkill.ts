@@ -13,7 +13,7 @@ import { AudioManager } from '../AudioManager';
  * Laser Beam Skill
  */
 export class LaserBeamSkill extends Skill {
-    private readonly BASE_DAMAGE = 20;
+    private readonly BASE_DAMAGE = 200;
     private readonly RANGE = 10;
     private readonly BASE_RADIUS = 1;
     private effectTimer: number = 0;
@@ -37,7 +37,7 @@ export class LaserBeamSkill extends Skill {
     private isLeet: boolean = false;
 
     constructor(onCompletedCallback: () => void) {
-        super('Laser Beam', 5, 25, onCompletedCallback, 'images/ui_icons/laser.png');
+        super('Laser Beam', 5, 250, onCompletedCallback, 'images/ui_icons/laser.png');
     }
 
     getEffectiveTpCost(player: Player): number {

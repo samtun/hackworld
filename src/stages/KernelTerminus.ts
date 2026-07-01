@@ -54,10 +54,10 @@ export class KernelTerminus extends StageWithLevels {
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 240,
+        maxHp: 2400,
         speed: 4.25,
-        damage: 140,
-        baseExp: 62,
+        damage: 1400,
+        baseExp: 620,
         itemDropChance: 0.40,
         techDropRateFactor: 1.75,
         xDataDropChanceWeight: 2.7,
@@ -69,10 +69,10 @@ export class KernelTerminus extends StageWithLevels {
     };
 
     private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 360,
+        maxHp: 3600,
         speed: 4.55,
-        damage: 250,
-        baseExp: 85,
+        damage: 2500,
+        baseExp: 850,
         itemDropChance: 0.46,
         techDropRateFactor: 2.0,
         xDataDropChanceWeight: 3.2,
@@ -84,10 +84,10 @@ export class KernelTerminus extends StageWithLevels {
     };
 
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 1450,
+        maxHp: 14500,
         speed: 4.95,
-        damage: 320,
-        baseExp: 340,
+        damage: 3200,
+        baseExp: 3400,
         itemDropChance: 1,
         techDropRateFactor: 2.5,
         xDataDropChanceWeight: 5.7,
@@ -125,7 +125,7 @@ export class KernelTerminus extends StageWithLevels {
             count: { min: 3, max: 5 },
             width: { min: 2, max: 6 },
             length: { min: 2, max: 7 },
-            damage: 400,
+            damage: 4000,
             patterns: [
                 [800, 900],
                 [450, 550, 450, 900],
