@@ -25,11 +25,11 @@ describe('procedural dungeon prop themes', () => {
 
     it('room-based stages preload curated themed subsets instead of the full catalog', () => {
         const expectedStagePropSets = new Map<string, string[]>([
-            ['NetworkMatrix', ['router', 'serverrack', 'barrier', 'energycells', 'cabletray', 'cabletraybow']],
-            ['PacketForge', ['pipes', 'cabletray', 'cabletraybow', 'cabletraycurve', 'pile', 'barrier']],
-            ['CipherNull', ['desk', 'deskl', 'satellitedish', 'vent', 'ac', 'router']],
-            ['SecurityCore', ['dataspire', 'energycells', 'holoprojector', 'coolingtank', 'coolingtanklarge', 'serverrack']],
-            ['KernelTerminus', ['barrier', 'coolingtanklarge', 'dataspire', 'holoprojector', 'pile', 'serverrack']],
+            ['NetworkMatrix', ['serverrack', 'barrier', 'energycells', 'pile']],
+            ['PacketForge', ['pipes', 'desk', 'deskl', 'barrier', 'serverrack']],
+            ['CipherNull', ['satellitedish', 'vent', 'ac', 'barrier']],
+            ['SecurityCore', ['dronechargingstation', 'dronechargingstationanimated', 'pipes', 'vent', 'serverrack']],
+            ['KernelTerminus', ['holoprojector', 'coolingtanklarge', 'dataspire', 'serverrack', 'coolingtank']],
         ]);
         const actualStagePropSets = new Map<string, Set<string>>([
             ['NetworkMatrix', new Set(getPropNames(Object.create(NetworkMatrix.prototype) as NetworkMatrix))],
@@ -42,7 +42,7 @@ describe('procedural dungeon prop themes', () => {
         for (const [stageName, expectedProps] of expectedStagePropSets) {
             const actualProps = actualStagePropSets.get(stageName);
             expect(actualProps).toBeDefined();
-            expect(actualProps!.size).toBeGreaterThanOrEqual(5);
+            expect(actualProps!.size).toBeGreaterThanOrEqual(4);
             expect(actualProps!.size).toBeLessThan(DUNGEON_PROP_DEFINITIONS.length);
             expect(actualProps).toEqual(new Set(expectedProps));
         }

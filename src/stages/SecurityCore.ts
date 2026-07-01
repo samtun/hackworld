@@ -52,10 +52,10 @@ export class SecurityCore extends StageWithLevels {
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
     private static readonly regularEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 190,
+        maxHp: 1900,
         speed: 4.05,
-        damage: 95,
-        baseExp: 40,
+        damage: 950,
+        baseExp: 400,
         itemDropChance: 0.34,
         techDropRateFactor: 1.5,
         xDataDropChanceWeight: 2.0,
@@ -67,10 +67,10 @@ export class SecurityCore extends StageWithLevels {
     };
 
     private static readonly eliteEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 260,
+        maxHp: 2600,
         speed: 4.35,
-        damage: 170,
-        baseExp: 58,
+        damage: 1700,
+        baseExp: 580,
         itemDropChance: 0.40,
         techDropRateFactor: 1.7,
         xDataDropChanceWeight: 2.5,
@@ -82,10 +82,10 @@ export class SecurityCore extends StageWithLevels {
     };
 
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 920,
+        maxHp: 9200,
         speed: 4.75,
-        damage: 230,
-        baseExp: 220,
+        damage: 2300,
+        baseExp: 2200,
         itemDropChance: 1,
         techDropRateFactor: 2.0,
         xDataDropChanceWeight: 4.4,
@@ -97,12 +97,7 @@ export class SecurityCore extends StageWithLevels {
     };
 
     private static readonly obstacleProps = getDungeonPropDefinitions([
-        'dataspire',
-        'energycells',
-        'holoprojector',
-        'coolingtank',
-        'coolingtanklarge',
-        'serverrack',
+        'dronechargingstation', 'dronechargingstationanimated', 'pipes', 'vent', 'serverrack'
     ]);
 
     private static readonly generationConfig: RoomGenerationConfig = {
@@ -122,7 +117,7 @@ export class SecurityCore extends StageWithLevels {
             count: { min: 2, max: 4 },
             width: { min: 2, max: 6 },
             length: { min: 2, max: 6 },
-            damage: 250,
+            damage: 2500,
             patterns: [
                 [900, 1400],
                 [500, 700, 500, 1200],
