@@ -90,8 +90,7 @@ export class Player extends BaseMesh {
     private readonly AREA_UNLOCK_LEVEL = 25;
 
     // Tech point cap
-    private readonly TECH_POINT_CAP = 2500;
-    private readonly SKILL_TECH_POINT_CAP = 1200;
+    private readonly TECH_POINT_CAP = 9999;
 
     // Movement speed constant
     private readonly WALK_SPEED = 6;
@@ -555,13 +554,13 @@ export class Player extends BaseMesh {
     // Potentially increment skill tech for the given skill type
     tryIncrementSkillTech(type: SkillTechType): void {
         const x = this.skillTech[type];
-        if (x >= this.SKILL_TECH_POINT_CAP) {
+        if (x >= this.TECH_POINT_CAP) {
             return; // Cap reached
         }
 
         const dropChance = 0.015 + Math.log10(x + 3) * 0.02 + 0.00004 * x;
         if (Math.random() <= dropChance) {
-            this.skillTech[type] = Math.min(x + 1, this.SKILL_TECH_POINT_CAP);
+            this.skillTech[type] = Math.min(x + 1, this.TECH_POINT_CAP);
             this.floatingIndicatorManager.spawnTech(this.body.position);
         }
     }
@@ -848,7 +847,7 @@ export class Player extends BaseMesh {
         if (this.dashTimer >= this.DASH_DURATION) {
             this.isDashing = false;
             this.dashHitEnemies.clear();
-            
+
             // Remove charge fx
             this.removeChargeFx();
         }
@@ -1527,7 +1526,7 @@ export class Player extends BaseMesh {
             } else if (this.dashTimer >= this.DASH_DURATION - this.CHARGE_FADE_OUT_DURATION) {
                 // Fade out
                 const fadeOutTime = this.dashTimer - (this.DASH_DURATION - this.CHARGE_FADE_OUT_DURATION);
-                this.chargeFxMaterial.opacity = THREE.MathUtils.clamp(1 - fadeOutTime / this.CHARGE_FADE_OUT_DURATION, 0, 1);       
+                this.chargeFxMaterial.opacity = THREE.MathUtils.clamp(1 - fadeOutTime / this.CHARGE_FADE_OUT_DURATION, 0, 1);
             }
         }
 
