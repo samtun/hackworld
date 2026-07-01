@@ -122,8 +122,9 @@ export abstract class BaseStage {
     protected navGrid: DungeonNavGrid | null = null;
 
     /**
-     * Wall materials using the transparency shader.
-     * Uniforms are updated each frame so walls fade when the player is behind them.
+     * Occluding materials using the transparency shader.
+     * Uniforms are updated each frame so walls, props, and NPC models fade when
+     * they block the camera's view of the player.
      */
     protected wallMaterials: THREE.MeshStandardMaterial[] = [];
     private minimapLayout: StageMinimapLayout | null = null;
@@ -359,6 +360,7 @@ export abstract class BaseStage {
             destination,
             startActive
         );
+        this.trackTransparencyEntity(teleporter);
         // Add teleporter to npcs set so it's handled like any other NPC
         this.npcs.add(teleporter);
         // Add teleporter to teleporters array
@@ -379,8 +381,15 @@ export abstract class BaseStage {
             true,
             'Return to Lobby'
         );
+        this.trackTransparencyEntity(lobbyReturnTeleporter);
         this.npcs.add(lobbyReturnTeleporter);
         this.teleporters.push(lobbyReturnTeleporter);
+    }
+
+    protected trackTransparencyEntity(entity: {
+        enableWallTransparency(materials: THREE.MeshStandardMaterial[]): void;
+    }): void {
+        entity.enableWallTransparency(this.wallMaterials);
     }
 
     /**
@@ -398,13 +407,15 @@ export abstract class BaseStage {
     protected buildObstaclesFromLayout(layout: DungeonLayout): void {
         for (const obs of layout.obstacles) {
             if (obs.propModelName) {
-                this.props.push(new ModelProp(
+                const prop = new ModelProp(
                     `props/${obs.propModelName}`,
                     this.scene,
                     this.physicsWorld,
                     this.physicsMaterial,
                     new THREE.Vector3(obs.x, obs.y - obs.height / 2, obs.z),
-                ));
+                );
+                this.trackTransparencyEntity(prop);
+                this.props.push(prop);
                 continue;
             }
 
@@ -815,8 +826,9 @@ export abstract class BaseStage {
 
     /**
      * Update teleporter particles, NPC animations, mixers, and – when a
-     * procedural room layout is active – room-based enemy aggro, automatic
-     * teleporter activation, and wall transparency shader uniforms.
+     * procedural room layout is active – room-based enemy aggro and automatic
+     * teleporter activation. Transparency shader uniforms are updated in every
+     * stage for any registered occluding materials.
      */
     update(dt: number, player: Player, _anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
         this.teleporters.forEach(teleporter => teleporter.updateWithPlayerPosition(dt, player.position));
@@ -848,11 +860,11 @@ export abstract class BaseStage {
             this.updateRoomAggro(player);
             this.checkTeleporterActivation();
 
-            // Update wall transparency shader with player and camera positions
-            if (cameraPosition && this.wallMaterials.length > 0) {
-                this.shaderTime += dt;
-                updateWallUniforms(this.wallMaterials, player.position, cameraPosition, this.shaderTime);
-            }
+        }
+
+        if (cameraPosition && this.wallMaterials.length > 0) {
+            this.shaderTime += dt;
+            updateWallUniforms(this.wallMaterials, player.position, cameraPosition, this.shaderTime);
         }
     }
 

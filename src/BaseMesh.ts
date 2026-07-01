@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { AssetManager } from './AssetManager';
+import { applyTransparencyShaderToModel } from './WallShaderUtils';
 
 export abstract class BaseMesh {
     protected mesh: THREE.Group;
@@ -49,6 +50,10 @@ export abstract class BaseMesh {
 
     protected disposeMesh(): void {
         this.disposeMeshRecursive(this.mesh);
+    }
+
+    public enableWallTransparency(materials: THREE.MeshStandardMaterial[]): void {
+        materials.push(...applyTransparencyShaderToModel(this.mesh));
     }
 
     public update(deltaTime: number): void {

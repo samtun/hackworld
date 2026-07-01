@@ -393,6 +393,76 @@ export function createObstacleMaterial(color: number = 0x555555, height: number 
     return material;
 }
 
+/**
+ * Clone a mesh-standard material and inject the same end-of-fragment
+ * transparency logic used by walls/obstacles, while preserving the model's
+ * original textures and shading.
+ */
+function createTransparentModelMaterial(material: THREE.MeshStandardMaterial): THREE.MeshStandardMaterial {
+    const transparentMaterial = material.clone();
+    transparentMaterial.transparent = true;
+
+    transparentMaterial.onBeforeCompile = (shader) => {
+        shader.uniforms.u_playerPos = { value: new THREE.Vector3() };
+        shader.uniforms.u_cameraPos = { value: new THREE.Vector3() };
+
+        shader.vertexShader = VERTEX_WORLD_POS_PREAMBLE + shader.vertexShader;
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <worldpos_vertex>',
+            VERTEX_WORLD_POS_CALC,
+        );
+
+        shader.fragmentShader = `
+            uniform vec3 u_playerPos;
+            uniform vec3 u_cameraPos;
+            varying vec3 vWorldPosition;
+            ${shader.fragmentShader}
+        `;
+
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <dithering_fragment>',
+            TRANSPARENCY_FRAGMENT,
+        );
+
+        wallShaderMap.set(transparentMaterial, shader);
+    };
+
+    transparentMaterial.needsUpdate = true;
+    return transparentMaterial;
+}
+
+/**
+ * Replace all mesh-standard materials in a model with transparency-aware
+ * clones and return the tracked materials so their uniforms can be updated.
+ */
+export function applyTransparencyShaderToModel(root: THREE.Object3D): THREE.MeshStandardMaterial[] {
+    const trackedMaterials: THREE.MeshStandardMaterial[] = [];
+
+    root.traverse((child) => {
+        if (!(child instanceof THREE.Mesh)) {
+            return;
+        }
+
+        const replaceMaterial = (material: THREE.Material): THREE.Material => {
+            if (!(material instanceof THREE.MeshStandardMaterial)) {
+                return material;
+            }
+
+            const transparentMaterial = createTransparentModelMaterial(material);
+            trackedMaterials.push(transparentMaterial);
+            return transparentMaterial;
+        };
+
+        if (Array.isArray(child.material)) {
+            child.material = child.material.map(replaceMaterial);
+        } else {
+            child.material = replaceMaterial(child.material);
+        }
+    });
+
+    return trackedMaterials;
+}
+
 // ---------------------------------------------------------------------------
 // Floor material – circuit board pattern
 // ---------------------------------------------------------------------------

@@ -422,13 +422,15 @@ export class GameTest extends BaseStage {
             const row = Math.floor(i / PROP_GRID_COLS);
             const x = PROP_GRID_X - col * PROP_GRID_SPACING;
             const z = PROP_GRID_Z - row * PROP_GRID_SPACING;
-            this.props.push(new ModelProp(
+            const prop = new ModelProp(
                 `props/${modelName}`,
                 this.scene,
                 this.physicsWorld,
                 this.physicsMaterial,
                 new THREE.Vector3(x, 0, z),
-            ));
+            );
+            this.trackTransparencyEntity(prop);
+            this.props.push(prop);
         });
     }
 

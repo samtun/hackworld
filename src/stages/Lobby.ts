@@ -119,6 +119,7 @@ export class Lobby extends BaseStage {
 
         // Healing Station
         this.healingStation = new HealingStation(this.scene, this.physicsWorld, this.physicsMaterial, this.healingStationPosition);
+        this.trackTransparencyEntity(this.healingStation);
 
         // Create Mainframe NPC - Main quest giver
         this.createMainframeNpc();
@@ -144,6 +145,7 @@ export class Lobby extends BaseStage {
      */
     private createMainframeNpc(): void {
         this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld, this.physicsMaterial, new CANNON.Vec3(38, 6.75, -30));
+        this.trackTransparencyEntity(this.mainframeNpc);
         this.npcs.add(this.mainframeNpc);
     }
 
@@ -164,6 +166,7 @@ export class Lobby extends BaseStage {
             new CANNON.Vec3(-30, this.upperLevelY, -30),
             nylethDialogue
         );
+        this.trackTransparencyEntity(this.nylethNpc);
         this.npcs.add(this.nylethNpc);
     }
 
@@ -186,6 +189,7 @@ export class Lobby extends BaseStage {
             xDataManagerDialogue,
             () => this.xDataUpgradeManager?.show()
         );
+        this.trackTransparencyEntity(this.xDataManagerNpc);
         this.npcs.add(this.xDataManagerNpc);
     }
 
@@ -209,6 +213,7 @@ export class Lobby extends BaseStage {
             saveManagerDialogue,
             () => this.saveManager?.show(),
         );
+        this.trackTransparencyEntity(this.saveManagerNpc);
         this.npcs.add(this.saveManagerNpc);
     }
 
@@ -231,6 +236,7 @@ export class Lobby extends BaseStage {
             chipTraderDialogue,
             () => this.chipTrader?.show()
         );
+        this.trackTransparencyEntity(this.chipTraderNpc);
         this.npcs.add(this.chipTraderNpc);
     }
 
@@ -252,6 +258,7 @@ export class Lobby extends BaseStage {
             coreTraderDialogue,
             () => this.coreTrader?.show()
         );
+        this.trackTransparencyEntity(this.coreTraderNpc);
         this.npcs.add(this.coreTraderNpc);
     }
 
@@ -274,6 +281,7 @@ export class Lobby extends BaseStage {
             weaponTraderDialogue,
             () => this.weaponTraderManager?.show()
         );
+        this.trackTransparencyEntity(this.weaponTraderNpc);
         this.npcs.add(this.weaponTraderNpc);
     }
 
@@ -298,6 +306,7 @@ export class Lobby extends BaseStage {
             () => this.cardManager?.show()
         );
 
+        this.trackTransparencyEntity(this.cardCollectionNpc);
         this.npcs.add(this.cardCollectionNpc);
     }
 
