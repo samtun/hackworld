@@ -92,45 +92,48 @@ vLocalPosition = position;
 const TRANSPARENCY_FRAGMENT = `
 #include <dithering_fragment>
 
-float distToPlayer = length(vWorldPosition.xz - u_playerPos.xz);
-float proximityRadius = 5.0;
-float proximityFactor = 1.0 - smoothstep(0.0, proximityRadius, distToPlayer);
+const float OCCLUSION_EPSILON = 0.0001;
+vec3 cameraToPlayer = u_playerPos + vec3(0, 0.8, 0) - u_cameraPos;
+float viewLength = max(length(cameraToPlayer), OCCLUSION_EPSILON);
+vec3 viewDir = cameraToPlayer / viewLength;
+vec3 cameraToFragment = vWorldPosition - u_cameraPos;
 
-vec2 camToPlayer = normalize(u_playerPos.xz - u_cameraPos.xz);
-float wallDist   = dot(vWorldPosition.xz - u_cameraPos.xz, camToPlayer);
-float playerDist = dot(u_playerPos.xz    - u_cameraPos.xz, camToPlayer);
+float depthAlongView = dot(cameraToFragment, viewDir);
+float depthT = clamp(depthAlongView / viewLength, 0.0, 1.0);
+vec3 closestPointOnView = u_cameraPos + viewDir * clamp(depthAlongView, 0.0, viewLength);
+vec3 viewOffset = vWorldPosition - closestPointOnView;
 
-vec2 wallOffset = (vWorldPosition.xz - u_cameraPos.xz) - wallDist * camToPlayer;
-float lateralDist = length(wallOffset);
+// Expand the look-through region from a narrow camera-side tube into a
+// player-sized frustum near the target so thicker props fade more naturally.
+float horizontalRadius = mix(0.35, 1.6, depthT);
+float verticalRadius = mix(0.35, 1.6, depthT);
+float frustumDistance = length(vec2(
+    length(viewOffset.xz) / max(horizontalRadius, OCCLUSION_EPSILON),
+    abs(viewOffset.y) / max(verticalRadius, OCCLUSION_EPSILON)
+));
+// Keep a solid core for the actual sightline while softening only the outer
+// edge of the frustum to avoid a harsh transparency cutoff.
+float frustumFactor = 1.0 - smoothstep(0.7, 1.0, frustumDistance);
 
-float behindFactor = smoothstep(playerDist + 1.0, playerDist - 2.0, wallDist);
-float lateralFactor = 1.0 - smoothstep(0.0, 3.0, lateralDist);
-float fadeMask = behindFactor * lateralFactor * proximityFactor;
+// Ease the effect in just after the camera and out again as it reaches the
+// player so only geometry between those two points is affected.
+float entryFade = smoothstep(-0.05, 0.35, depthAlongView);
+float exitFade = 1.0 - smoothstep(viewLength - 0.4, viewLength + 0.35, depthAlongView);
+float segmentFactor = entryFade * exitFade;
 
-vec2 gridPos = vWorldPosition.xz * 2.0;
-float gridX = abs(fract(gridPos.x) - 0.4);
-float gridZ = abs(fract(gridPos.y) - 0.4);
-float lineW = 0.1;
-float circuitH = step(lineW, gridX);
-float circuitV = step(lineW, gridZ);
-float circuit = 1.0 - circuitH * circuitV;
-float nodeDist = min(gridX, gridZ);
-float nodes = 1.0 - step(0.15, nodeDist);
-circuit = max(circuit, nodes);
+float fadeMask = frustumFactor * segmentFactor;
 
 float edgeLow  = 0.15;
 float edgeHigh = 0.85;
-float edgeBand = smoothstep(edgeLow, edgeLow + 0.1, fadeMask) *
-                 (1.0 - smoothstep(edgeHigh - 0.1, edgeHigh, fadeMask));
+float edgeBand = smoothstep(edgeLow, edgeLow + 1.0, fadeMask) *
+                 (1.0 - smoothstep(edgeHigh - 1.0, edgeHigh, fadeMask));
 
-float solidAlpha = 1.0 - smoothstep(edgeLow, edgeLow + 0.1, fadeMask);
-float coreTransp = smoothstep(edgeHigh - 0.1, edgeHigh, fadeMask);
-float circuitAlpha = edgeBand * circuit * 0.6;
-float finalAlpha = solidAlpha + circuitAlpha;
-finalAlpha = clamp(finalAlpha, 0.0, 1.0);
-finalAlpha = mix(finalAlpha, 0.0, coreTransp);
+float solidAlpha = 1.0 - smoothstep(edgeLow, edgeLow + 1.0, fadeMask);
+float coreTransp = smoothstep(edgeHigh - 1.0, edgeHigh, fadeMask);
+solidAlpha = clamp(solidAlpha, 0.0, 1.0);
+solidAlpha = mix(solidAlpha, 0.0, coreTransp);
 
-gl_FragColor.a *= finalAlpha;
+gl_FragColor.a *= solidAlpha;
 `;
 
 // ---------------------------------------------------------------------------
