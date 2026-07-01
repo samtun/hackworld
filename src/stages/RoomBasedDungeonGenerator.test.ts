@@ -399,7 +399,7 @@ describe('RoomBasedDungeonGenerator', () => {
         });
 
         it('obstacles only use the configured stage prop subset', () => {
-            const obstacleProps = getDungeonPropDefinitions(['router', 'serverrack']);
+            const obstacleProps = getDungeonPropDefinitions(['desk', 'serverrack']);
             const layout = gen(340, {
                 ...baseConfig,
                 combatRoomCount: { min: 4, max: 4 },

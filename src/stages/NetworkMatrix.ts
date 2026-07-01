@@ -49,12 +49,7 @@ export class NetworkMatrix extends BaseStage {
     };
 
     private static readonly obstacleProps = getDungeonPropDefinitions([
-        'router',
-        'serverrack',
-        'barrier',
-        'energycells',
-        'cabletray',
-        'cabletraybow',
+        'serverrack', 'barrier', 'energycells', 'pile'
     ]);
 
     private static readonly generationConfig: RoomGenerationConfig = {
