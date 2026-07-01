@@ -536,16 +536,18 @@ export class Player extends BaseMesh {
     // Increment tech for the currently equipped weapon
     tryIncrementWeaponTech(dropRateFactor: number) {
         const key = this.currentWeaponType;
-        const x = this.tech[key];
-        if (x >= this.TECH_POINT_CAP) {
+        const weaponTechPoints = this.tech[key];
+        const levelTechCapReached = weaponTechPoints >= TierManager.Instance.getTechCapForLevel(this.level);
+        const totalTechCapReached = weaponTechPoints >= this.TECH_POINT_CAP;
+        if (levelTechCapReached || totalTechCapReached) {
             return; // Cap reached
         }
 
-        const dropChance = (0.015 + Math.log10(x + 3) * 0.02 + 0.0001 * x) * dropRateFactor;
+        const dropChance = Math.min(0.5, (0.015 + Math.log10(weaponTechPoints + 3) * 0.02 + 0.0001 * weaponTechPoints) * dropRateFactor);
         const random = Math.random();
-        console.log(`Tech increment check: current tech=${x}, ${random} <= dropChance=${dropChance.toFixed(4)}`);
+        console.log(`Tech increment check: current tech=${weaponTechPoints}, ${random} <= dropChance=${dropChance.toFixed(4)}`);
         if (random <= dropChance) {
-            console.log(`Tech increased from ${x} to ${x + 1}`);
+            console.log(`Tech increased from ${weaponTechPoints} to ${weaponTechPoints + 1}`);
             this.tech[key] += 1;
             this.floatingIndicatorManager.spawnTech(this.body.position);
         }
@@ -553,14 +555,16 @@ export class Player extends BaseMesh {
 
     // Potentially increment skill tech for the given skill type
     tryIncrementSkillTech(type: SkillTechType): void {
-        const x = this.skillTech[type];
-        if (x >= this.TECH_POINT_CAP) {
+        const skillTechPoints = this.skillTech[type];
+        const levelTechCapReached = skillTechPoints >= TierManager.Instance.getTechCapForLevel(this.level);
+        const totalTechCapReached = skillTechPoints >= this.TECH_POINT_CAP;
+        if (levelTechCapReached || totalTechCapReached) {
             return; // Cap reached
         }
 
-        const dropChance = 0.015 + Math.log10(x + 3) * 0.02 + 0.00004 * x;
+        const dropChance = Math.min(0.3, 0.05 + Math.log10(skillTechPoints + 3) * 0.02 + 0.00012 * skillTechPoints);
         if (Math.random() <= dropChance) {
-            this.skillTech[type] = Math.min(x + 1, this.TECH_POINT_CAP);
+            this.skillTech[type] = Math.min(skillTechPoints + 1, this.TECH_POINT_CAP);
             this.floatingIndicatorManager.spawnTech(this.body.position);
         }
     }

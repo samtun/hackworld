@@ -18,7 +18,7 @@ export class WeaponItem extends EquippableItem {
         { requiredTech: 0, damagePercent: 1 }, // α
         { requiredTech: 60, damagePercent: 1.80 }, // β
         { requiredTech: 280, damagePercent: 3.20 }, // γ
-        { requiredTech: 720, damagePercent: 6.20 }, // δ
+        { requiredTech: 820, damagePercent: 6.20 }, // δ
         { requiredTech: 2200, damagePercent: 9.80 }, // ε
         { requiredTech: 4500, damagePercent: 14.00 } // ω
     ];

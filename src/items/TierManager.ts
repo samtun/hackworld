@@ -126,5 +126,17 @@ export class TierManager {
         if (techPoints >= 60) return Tier.MAINTAINED;
         return Tier.STABLE;
     }
-}
 
+    /**
+     * Returns the maximum tech point cap (weapon or skill) for a given player level.
+     * @param level The level to get the tech point cap for
+     * @returns The maximum tech point amount for the given level
+     */
+    getTechCapForLevel(level: number): number {
+        if (level <= 10) return Math.floor(60 / 10 * level);
+        if (level <= 40) return Math.floor((280 - 60) / (40 - 10) * level);
+        if (level <= 90) return Math.floor((820 - 280) / (90 - 40) * level);
+        if (level <= 150) return Math.floor((1800 - 820) / (150 - 90) * level);
+        return Math.floor((4500 - 1800) / (240 - 150) * level);
+    }
+}
