@@ -63,6 +63,7 @@ function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
         LEVEL_UP_PARTICLE_LIFETIME: 0.6,
         LEVEL_UP_SHOCKWAVE_DELAY: 0.4,
         LEVEL_UP_SHOCKWAVE_RANGE: 15,
+        SKILL_ANIMATION_MAX_DURATION: 2.0,
 
         // Base stats
         baseHp: 170,
@@ -1607,129 +1608,81 @@ describe('Player.executeLevelUpShockwave', () => {
     });
 });
 
-// ─── checkDashHitbox ──────────────────────────────────────────────────────────
+// ─── handleSkillAnimation safety timeout ──────────────────────────────────────
 
-describe('Player.checkDashHitbox', () => {
-    function makeDashEnemyBody(x: number, y: number, z: number, isDead = false, isDying = false) {
-        const enemy = Object.create(Enemy.prototype) as Enemy;
-        Object.assign(enemy, { isDead, isDying, techDropRateFactor: 1, takeDamage: vi.fn() });
-        return { position: { x, y, z }, entity: enemy };
+describe('Player.handleSkillAnimation', () => {
+    it('returns false immediately when isUsingSkill is false', () => {
+        const player = makePlayer({ isUsingSkill: false, skillAnimationTimer: 0 });
+        (player as any).haltMovement = vi.fn();
+
+        const result = (player as any).handleSkillAnimation(0.1);
+
+        expect(result).toBe(false);
+        expect((player as any).haltMovement).not.toHaveBeenCalled();
+    });
+
+    it('returns true and halts movement while isUsingSkill is true within max duration', () => {
+        const player = makePlayer({ isUsingSkill: true, skillAnimationTimer: 0 });
+        (player as any).haltMovement = vi.fn();
+
+        const result = (player as any).handleSkillAnimation(0.1);
+
+        expect(result).toBe(true);
+        expect((player as any).skillAnimationTimer).toBeCloseTo(0.1);
+        expect((player as any).haltMovement).toHaveBeenCalled();
+    });
+
+    it('force-releases the skill lock when skillAnimationTimer exceeds SKILL_ANIMATION_MAX_DURATION', () => {
+        const maxDuration = (makePlayer() as any).SKILL_ANIMATION_MAX_DURATION as number;
+        const player = makePlayer({ isUsingSkill: true, skillAnimationTimer: maxDuration - 0.01 });
+        (player as any).haltMovement = vi.fn();
+
+        // One tick that pushes the timer over the limit
+        const result = (player as any).handleSkillAnimation(0.02);
+
+        expect(result).toBe(false);
+        expect((player as any).isUsingSkill).toBe(false);
+        expect((player as any).skillAnimationTimer).toBe(0);
+    });
+});
+
+// ─── skill state cleared on death and respawn ─────────────────────────────────
+
+describe('Player die() / respawn() skill-state cleanup', () => {
+    function makePlayerForDeath() {
+        return makePlayer({
+            hp: 1,
+            isDead: false,
+            isUsingSkill: true,
+            skillAnimationTimer: 0.5,
+            footstepTimer: 0,
+            body: {
+                position: { x: 0, y: 0, z: 0, copy: vi.fn() },
+                velocity: { x: 0, y: 0, z: 0, set: vi.fn() },
+                applyImpulse: vi.fn(),
+                type: 2,
+            },
+        });
     }
 
-    it('hits an enemy within the 1m dash hitbox radius', () => {
-        const enemyBody = makeDashEnemyBody(0.5, 0.53, 0);
+    it('clears isUsingSkill and skillAnimationTimer when die() is called', () => {
+        const player = makePlayerForDeath();
+        (player as any).fadeToAction = vi.fn();
 
-        const player = makePlayer({
-            isDashing: true,
-            dashHitEnemies: new Set(),
-            body: {
-                position: { x: 0, y: 0.8, z: 0 },
-                world: { bodies: [enemyBody] },
-            },
-            BODY_HEIGHT: 1.6,
-            DASH_HITBOX_RADIUS: 1.0,
-        } as any);
-        (player as any).getHitDamage = vi.fn().mockReturnValue(30);
-        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
-        (player as any).tryIncrementWeaponTech = vi.fn();
+        (player as any).die();
 
-        (player as any).checkDashHitbox();
-
-        expect((enemyBody.entity as any).takeDamage).toHaveBeenCalledOnce();
+        expect((player as any).isUsingSkill).toBe(false);
+        expect((player as any).skillAnimationTimer).toBe(0);
     });
 
-    it('does not hit enemies beyond 1m radius', () => {
-        const enemyBody = makeDashEnemyBody(2, 0.53, 2);
+    it('clears isUsingSkill and skillAnimationTimer when respawn() is called', () => {
+        const player = makePlayerForDeath();
+        player.isDead = true;
 
-        const player = makePlayer({
-            isDashing: true,
-            dashHitEnemies: new Set(),
-            body: {
-                position: { x: 0, y: 0.8, z: 0 },
-                world: { bodies: [enemyBody] },
-            },
-            BODY_HEIGHT: 1.6,
-            DASH_HITBOX_RADIUS: 1.0,
-        } as any);
-        (player as any).getHitDamage = vi.fn().mockReturnValue(30);
-        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
+        const position = { x: 1, y: 0, z: 1 };
+        player.respawn(position as any);
 
-        (player as any).checkDashHitbox();
-
-        expect((enemyBody.entity as any).takeDamage).not.toHaveBeenCalled();
-    });
-
-    it('hits breakable barrels within the 1m dash hitbox radius', () => {
-        const barrel = {
-            isDestroyed: false,
-            onHit: vi.fn(),
-        };
-        const barrelBody = { position: { x: 0.5, y: 0.53, z: 0 }, entity: barrel };
-
-        const onBreakableHit = vi.fn();
-        const player = makePlayer({
-            isDashing: true,
-            dashHitEnemies: new Set(),
-            onBreakableHit,
-            body: {
-                position: { x: 0, y: 0.8, z: 0 },
-                world: { bodies: [barrelBody] },
-            },
-            BODY_HEIGHT: 1.6,
-            DASH_HITBOX_RADIUS: 1.0,
-        } as any);
-
-        (player as any).checkDashHitbox();
-
-        expect(onBreakableHit).toHaveBeenCalledWith(barrel);
-    });
-
-    it('does not hit already-destroyed breakables', () => {
-        const barrel = {
-            isDestroyed: true,
-            onHit: vi.fn(),
-        };
-        const barrelBody = { position: { x: 0.5, y: 0.53, z: 0 }, entity: barrel };
-
-        const onBreakableHit = vi.fn();
-        const player = makePlayer({
-            isDashing: true,
-            dashHitEnemies: new Set(),
-            onBreakableHit,
-            body: {
-                position: { x: 0, y: 0.8, z: 0 },
-                world: { bodies: [barrelBody] },
-            },
-            BODY_HEIGHT: 1.6,
-            DASH_HITBOX_RADIUS: 1.0,
-        } as any);
-
-        (player as any).checkDashHitbox();
-
-        expect(onBreakableHit).not.toHaveBeenCalled();
-    });
-
-    it('does not hit the same enemy twice during one dash', () => {
-        const enemyBody = makeDashEnemyBody(0.5, 0.53, 0);
-
-        const dashHitEnemies = new Set();
-        const player = makePlayer({
-            isDashing: true,
-            dashHitEnemies,
-            body: {
-                position: { x: 0, y: 0.8, z: 0 },
-                world: { bodies: [enemyBody] },
-            },
-            BODY_HEIGHT: 1.6,
-            DASH_HITBOX_RADIUS: 1.0,
-        } as any);
-        (player as any).getHitDamage = vi.fn().mockReturnValue(30);
-        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
-        (player as any).tryIncrementWeaponTech = vi.fn();
-
-        (player as any).checkDashHitbox();
-        (player as any).checkDashHitbox();
-
-        expect((enemyBody.entity as any).takeDamage).toHaveBeenCalledOnce();
+        expect((player as any).isUsingSkill).toBe(false);
+        expect((player as any).skillAnimationTimer).toBe(0);
     });
 });

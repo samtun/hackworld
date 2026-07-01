@@ -237,6 +237,11 @@ export class Player extends BaseMesh {
     public skills: Skill[] = [];
     private isUsingSkill: boolean = false;
     private skillAnimationTimer: number = 0;
+    // Safety timeout: maximum time the skill animation lock may hold the player. The
+    // longest skill effect is HealingSkill at 1.5 s (BASE_DURATION). This value is set
+    // to 2.0 s to give the normal onCompletedCallback a chance to fire first while still
+    // guaranteeing release if the callback is never called (e.g. the player dies mid-skill).
+    private readonly SKILL_ANIMATION_MAX_DURATION: number = 2.0;
     public onSkillUnlocked?: (skillIndex: number) => void;
 
     // A bonus on drop chances in percentage points (e.g. 0.05 for +5% drop chances)
@@ -1181,6 +1186,15 @@ export class Player extends BaseMesh {
 
         this.skillAnimationTimer += dt;
 
+        // Safety fallback: if the skill's onCompletedCallback was never fired (e.g. the player
+        // died mid-skill and updateSkills was skipped), force-release the lock so the player
+        // is never permanently stuck in the final animation pose.
+        if (this.skillAnimationTimer >= this.SKILL_ANIMATION_MAX_DURATION) {
+            this.isUsingSkill = false;
+            this.skillAnimationTimer = 0;
+            return false;
+        }
+
         // Keep player stopped during animation
         this.haltMovement();
         this.syncPosition();
@@ -1371,6 +1385,13 @@ export class Player extends BaseMesh {
     private die(): void {
         this.isDead = true;
         this.footstepTimer = 0;
+
+        // Clear any active skill state so the player is never stuck in the skill animation
+        // pose after respawn. updateSkills() is skipped while isDead, so the skill's own
+        // onCompletedCallback would never fire without this explicit reset.
+        this.isUsingSkill = false;
+        this.skillAnimationTimer = 0;
+
         console.log('Player died');
         AudioManager.Instance.playDeath('player');
 
@@ -1414,6 +1435,11 @@ export class Player extends BaseMesh {
         this.hp = this.maxHp;
         this.tp = this.maxTp;
         this.invulnerableTimer = 2.0; // 2 seconds invulnerability after respawn
+
+        // Ensure skill animation lock is cleared so the player can act immediately after
+        // respawn, even if die() was called without the skill having completed.
+        this.isUsingSkill = false;
+        this.skillAnimationTimer = 0;
 
         // Reset position and velocity
         this.body.position.copy(position);
