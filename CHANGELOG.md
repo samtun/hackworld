@@ -1,3 +1,13 @@
+# [3.42.0](https://github.com/samtun/hackworld/compare/v3.41.0...v3.42.0) (2026-07-02)
+
+
+### Features
+
+* add B.003 and C.001 card albums ([9a5ff93](https://github.com/samtun/hackworld/commit/9a5ff931198d43da213547d348f79a9bcca15193))
+* add receiverstation prop ([9a9dd3a](https://github.com/samtun/hackworld/commit/9a9dd3a335244ea484b5d2dcaf04d9f0b980692d))
+* adjust test ([ed527a6](https://github.com/samtun/hackworld/commit/ed527a61ff3d4724d102ac7dc3f6dba84fce542c))
+* update animated dronestation ([d8aaa53](https://github.com/samtun/hackworld/commit/d8aaa53dfcae3e2600234f3e0602dccb97ccb199))
+
 # [3.41.0](https://github.com/samtun/hackworld/compare/v3.40.0...v3.41.0) (2026-07-01)
 
 
