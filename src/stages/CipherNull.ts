@@ -86,7 +86,7 @@ export class CipherNull extends StageWithLevels {
     };
 
     private static readonly obstacleProps = getDungeonPropDefinitions([
-        'satellitedish', 'vent', 'ac', 'barrier'
+        'satellitedish', 'vent', 'ac', 'barrier', 'receiverstation'
     ]);
 
     private static readonly generationConfig: RoomGenerationConfig = {

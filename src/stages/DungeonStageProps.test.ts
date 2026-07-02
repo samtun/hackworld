@@ -27,7 +27,7 @@ describe('procedural dungeon prop themes', () => {
         const expectedStagePropSets = new Map<string, string[]>([
             ['NetworkMatrix', ['serverrack', 'barrier', 'energycells', 'pile']],
             ['PacketForge', ['pipes', 'desk', 'deskl', 'barrier', 'serverrack']],
-            ['CipherNull', ['satellitedish', 'vent', 'ac', 'barrier']],
+            ['CipherNull', ['satellitedish', 'vent', 'ac', 'barrier', 'receiverstation']],
             ['SecurityCore', ['dronechargingstation', 'dronechargingstationanimated', 'pipes', 'vent', 'serverrack']],
             ['KernelTerminus', ['holoprojector', 'coolingtanklarge', 'dataspire', 'serverrack', 'coolingtank']],
         ]);

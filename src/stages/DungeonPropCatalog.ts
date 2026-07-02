@@ -19,6 +19,7 @@ export const DUNGEON_PROP_DEFINITIONS: DungeonPropDefinition[] = [
     { modelName: 'holoprojector', width: 2, height: 2, depth: 2 },
     { modelName: 'pile', width: 2, height: 1, depth: 2 },
     { modelName: 'pipes', width: 2, height: 2, depth: 1 },
+    { modelName: 'receiverstation', width: 1, height: 2, depth: 1 },
     { modelName: 'satellitedish', width: 2, height: 2, depth: 2 },
     { modelName: 'serverrack', width: 1, height: 2, depth: 1 },
     { modelName: 'vent', width: 2, height: 1, depth: 1 },
