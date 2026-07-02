@@ -32,7 +32,7 @@ describe('GameTest', () => {
             const stage = Object.create(GameTest.prototype) as GameTest;
             const assets = stage.getRequiredAssets();
             expect(assets).toEqual(expect.arrayContaining(DUNGEON_PROP_ASSET_PATHS));
-            expect(DUNGEON_PROP_DEFINITIONS).toHaveLength(16);
+            expect(DUNGEON_PROP_DEFINITIONS).toHaveLength(17);
         });
     });
 });
