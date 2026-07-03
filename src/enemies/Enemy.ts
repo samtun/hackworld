@@ -14,6 +14,7 @@ import {
     DEFAULT_ENEMY_TYPE,
     EnemyAttackMode,
     EnemyType,
+    POD_LASER_PROJECTILE_COLOR,
     type EnemyCombatBehaviorDefinition,
     type EnemyTypeDefinition,
     getEnemyTypeDefinition,
@@ -62,7 +63,7 @@ const LASER_PROJECTILE_HEIGHT = 0.18;
 const LASER_PROJECTILE_LENGTH = 0.5;
 const LASER_PROJECTILE_PLAYER_HIT_RADIUS = 0.65;
 const STANDOFF_VELOCITY_DAMPING = 0.9;
-const RETREAT_ATTACK_CHANCE_PER_SECOND = 0.85;
+const RETREAT_ATTACK_RATE_PER_SECOND = 0.85;
 const NAV_TARGET_CHANGE_RECOMPUTE_DISTANCE = 0.5;
 const RETREAT_ANGLE_OFFSETS = [
     0,
@@ -859,12 +860,10 @@ export class Enemy extends BaseMesh {
             distToPlayer <= this.attackRange &&
             this.attackTimer <= 0 &&
             !this.isAttacking &&
-            (this.isCorneredForSpacing || Math.random() < RETREAT_ATTACK_CHANCE_PER_SECOND * dt)
+            (this.isCorneredForSpacing || Math.random() < RETREAT_ATTACK_RATE_PER_SECOND * dt)
         ) {
-            console.log(`Attack range check: dist=${distToPlayer.toFixed(2)}`);
             this.attack();
         } else if (this.canAttackPlayer(distToPlayer)) {
-            console.log(`Attack range check: dist=${distToPlayer.toFixed(2)}`);
             this.attack();
         }
 
@@ -1169,7 +1168,7 @@ export class Enemy extends BaseMesh {
             LASER_PROJECTILE_LENGTH,
         );
         const material = new THREE.MeshBasicMaterial({
-            color: this.enemyCombatBehavior.laserColor ?? 0xff8a00,
+            color: this.enemyCombatBehavior.laserColor ?? POD_LASER_PROJECTILE_COLOR,
         });
         this.laserProjectile = new THREE.Mesh(geometry, material);
         this.laserProjectile.visible = false;

@@ -12,6 +12,8 @@ export enum EnemyAttackMode {
     Laser = 'laser',
 }
 
+export const POD_LASER_PROJECTILE_COLOR = 0xff8a00;
+
 export interface EnemyCombatBehaviorDefinition {
     attackMode: EnemyAttackMode;
     attackCooldown?: number;
@@ -113,7 +115,7 @@ const ENEMY_TYPE_DEFINITIONS: Record<EnemyType, EnemyTypeDefinition> = {
             preferredDistance: 7.0,
             preferredDistanceTolerance: 0.75,
             minimumAttackDistance: 6.0,
-            laserColor: 0xff8a00,
+            laserColor: POD_LASER_PROJECTILE_COLOR,
         },
     },
 };
