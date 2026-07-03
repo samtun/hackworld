@@ -49,24 +49,6 @@ export class NetworkMatrix extends BaseStage {
         color: 0x204a2e,
     };
 
-    private static readonly regularPodEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 420,
-        speed: 2.2,
-        damage: 85,
-        baseExp: 110,
-        size: 1.55,
-        color: 0x3a1f5f,
-    };
-
-    private static readonly elitePodEnemyConfig: Partial<EnemyArchetypeConfig> = {
-        maxHp: 1050,
-        speed: 2.75,
-        damage: 130,
-        baseExp: 275,
-        size: 2.25,
-        color: 0x562d85,
-    };
-
     private static readonly obstacleProps = getDungeonPropDefinitions([
         'serverrack', 'barrier', 'energycells', 'pile'
     ]);
@@ -129,18 +111,6 @@ export class NetworkMatrix extends BaseStage {
         return spawnType === EnemySpawnType.Boss
             ? [EnemyType.Brute]
             : [EnemyType.Brute];
-    }
-
-    protected override getEnemyTypeConfig(
-        enemyType: EnemyType,
-        spawnType: EnemySpawnType,
-    ): Partial<EnemyArchetypeConfig> {
-        if (enemyType !== EnemyType.Pod) {
-            return {};
-        }
-        return spawnType === EnemySpawnType.Elite
-            ? NetworkMatrix.elitePodEnemyConfig
-            : NetworkMatrix.regularPodEnemyConfig;
     }
 
     async load(): Promise<void> {

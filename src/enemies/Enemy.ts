@@ -51,6 +51,9 @@ export const ENEMY_RADIUS_FACTOR = 0.326;
 const ENEMY_ATTACK_RANGE_FACTOR = 0.792;
 const BASE_ATTACK_HITBOX_SIZE = new CANNON.Vec3(0.5, 0.5, 0.8);
 const BASE_ATTACK_HITBOX_OFFSET = 1.0;
+const LASER_START_OFFSET_FACTOR = 0.9;
+const LASER_VERTICAL_OFFSET = 0.2;
+const LASER_MIN_START_OFFSET = 0.4;
 
 /** Maximum allowed enemy size (metres). Keeps enemies passable through corridors. */
 export const MAX_ENEMY_SIZE = 2.0;
@@ -746,6 +749,8 @@ export class Enemy extends BaseMesh {
                         targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
                         this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
                     } else {
+                        // Laser enemies stop inside their preferred stand-off band.
+                        // Damping prevents them from drifting forward on leftover momentum.
                         this.body.velocity.x *= 0.9;
                         this.body.velocity.z *= 0.9;
                     }
@@ -1033,9 +1038,10 @@ export class Enemy extends BaseMesh {
         }
 
         direction.normalize();
-        start.x += direction.x * Math.max(this.radius * 0.9, 0.4);
-        start.y += direction.y * 0.2;
-        start.z += direction.z * Math.max(this.radius * 0.9, 0.4);
+        const laserStartOffset = Math.max(this.radius * LASER_START_OFFSET_FACTOR, LASER_MIN_START_OFFSET);
+        start.x += direction.x * laserStartOffset;
+        start.y += direction.y * LASER_VERTICAL_OFFSET;
+        start.z += direction.z * laserStartOffset;
 
         const ray = new CANNON.Ray(start, target);
         ray.skipBackfaces = true;
