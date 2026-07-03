@@ -103,6 +103,7 @@ const ENEMY_TYPE_DEFINITIONS: Record<EnemyType, EnemyTypeDefinition> = {
         },
     },
     [EnemyType.Pod]: {
+        // Temporary placeholder until the dedicated floating pod model is ready.
         modelPath: 'models/brute_enemy.glb',
         speedMultiplier: 1.0,
         combatBehavior: {

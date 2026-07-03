@@ -482,6 +482,7 @@ describe('Enemy laser combat behavior', () => {
 
         expect(enemy.canAttackPlayer(5.5)).toBe(false);
         expect(enemy.canAttackPlayer(7.0)).toBe(true);
+        expect(enemy.canAttackPlayer(7.75)).toBe(true);
     });
 
     it('applies laser damage during the ranged attack window without using the melee hitbox', () => {

@@ -741,7 +741,10 @@ export class Enemy extends BaseMesh {
                     // An ability is still controlling movement; don't override horizontal velocity.
                     isMoving = true;
                 } else {
-                    const moveResult = this.computeCombatMovement(playerPos, myPos, distToPlayer, dt);
+                    const preferredCombatDistanceBand = this.getPreferredCombatDistanceBand();
+                    const moveResult = preferredCombatDistanceBand
+                        ? this.computeCombatMovement(playerPos, myPos, distToPlayer, dt)
+                        : this.computeMovement(playerPos, myPos, dt);
                     if (moveResult) {
                         this.body.velocity.x = moveResult.dirX * this.speed;
                         this.body.velocity.z = moveResult.dirZ * this.speed;
@@ -751,11 +754,14 @@ export class Enemy extends BaseMesh {
                         const targetQuaternion = new THREE.Quaternion();
                         targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
                         this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
-                    } else {
+                    } else if (preferredCombatDistanceBand) {
                         // Laser enemies stop inside their preferred stand-off band.
                         // Damping prevents them from drifting forward on leftover momentum.
                         this.body.velocity.x *= STANDOFF_VELOCITY_DAMPING;
                         this.body.velocity.z *= STANDOFF_VELOCITY_DAMPING;
+                    } else {
+                        this.body.velocity.x *= 0.9;
+                        this.body.velocity.z *= 0.9;
                     }
                 }
             } else {
