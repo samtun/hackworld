@@ -4,6 +4,22 @@ import * as THREE from 'three';
 export enum EnemyType {
     Brute = 'brute',
     Stalker = 'stalker',
+    Pod = 'pod',
+}
+
+export enum EnemyAttackMode {
+    Melee = 'melee',
+    Laser = 'laser',
+}
+
+export interface EnemyCombatBehaviorDefinition {
+    attackMode: EnemyAttackMode;
+    attackCooldown?: number;
+    attackRange?: number;
+    preferredDistance?: number;
+    preferredDistanceTolerance?: number;
+    minimumAttackDistance?: number;
+    laserColor?: number;
 }
 
 export interface EnemyMovementAbilityCommandContext {
@@ -29,6 +45,7 @@ export interface EnemyTypeDefinition {
     modelPath: string;
     speedMultiplier: number;
     movementAbilities?: EnemyMovementAbilityDefinition[];
+    combatBehavior?: EnemyCombatBehaviorDefinition;
 }
 
 const STALKER_JUMP_MIN_DISTANCE_TO_PLAYER = 2.0;
@@ -73,11 +90,30 @@ const ENEMY_TYPE_DEFINITIONS: Record<EnemyType, EnemyTypeDefinition> = {
     [EnemyType.Brute]: {
         modelPath: 'models/brute_enemy.glb',
         speedMultiplier: 1.0,
+        combatBehavior: {
+            attackMode: EnemyAttackMode.Melee,
+        },
     },
     [EnemyType.Stalker]: {
         modelPath: 'models/stalker_enemy.glb',
         speedMultiplier: 0.8,
         movementAbilities: [stalkerJumpAbility],
+        combatBehavior: {
+            attackMode: EnemyAttackMode.Melee,
+        },
+    },
+    [EnemyType.Pod]: {
+        modelPath: 'models/brute_enemy.glb',
+        speedMultiplier: 1.0,
+        combatBehavior: {
+            attackMode: EnemyAttackMode.Laser,
+            attackCooldown: 1.35,
+            attackRange: 7.75,
+            preferredDistance: 7.0,
+            preferredDistanceTolerance: 0.75,
+            minimumAttackDistance: 6.0,
+            laserColor: 0xff4fd8,
+        },
     },
 };
 

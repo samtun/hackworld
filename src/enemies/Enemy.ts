@@ -10,7 +10,14 @@ import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
 import { BlobShadow } from '../BlobShadow';
 import type { BreakableBarrel } from '../items/BreakableBarrel';
 import { AudioManager } from '../AudioManager';
-import { DEFAULT_ENEMY_TYPE, EnemyType, type EnemyTypeDefinition, getEnemyTypeDefinition } from './EnemyType';
+import {
+    DEFAULT_ENEMY_TYPE,
+    EnemyAttackMode,
+    EnemyType,
+    type EnemyCombatBehaviorDefinition,
+    type EnemyTypeDefinition,
+    getEnemyTypeDefinition,
+} from './EnemyType';
 
 /** Maximum downward distance (metres) for the shadow floor raycast. */
 const SHADOW_CAST_DIST = 4.0;
@@ -206,10 +213,14 @@ export class Enemy extends BaseMesh {
     readonly enemyType: EnemyType;
     /** Resolved type definition for this enemy family (model path, movement traits). */
     private enemyTypeDefinition: EnemyTypeDefinition;
+    /** Resolved combat behavior for this enemy family. */
+    private enemyCombatBehavior: EnemyCombatBehaviorDefinition;
     /** Cooldown timers for optional enemy-type movement abilities keyed by ability id. */
     private enemyTypeAbilityCooldownTimers: Map<string, number> = new Map();
     /** Counts down while an ability is controlling horizontal movement; skip normal velocity override while > 0. */
     private abilityMoveTimer: number = 0;
+    /** Temporary beam shown while laser attacks are active. */
+    private laserBeam: THREE.Line | null = null;
 
     /** Flat circular shadow below the enemy. */
     public blobShadow!: BlobShadow;
@@ -239,6 +250,9 @@ export class Enemy extends BaseMesh {
         this.physicsMaterial = physicsMaterial;
         this.enemyType = enemyType;
         this.enemyTypeDefinition = enemyTypeDefinition;
+        this.enemyCombatBehavior = enemyTypeDefinition.combatBehavior ?? {
+            attackMode: EnemyAttackMode.Melee,
+        };
         this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
 
         // Pre-seed cooldown timers so abilities don't fire immediately on spawn.
@@ -262,7 +276,8 @@ export class Enemy extends BaseMesh {
         this.blockChance = resolvedConfig.blockChance;
         this.size = resolvedConfig.size;
         this.radius = this.computeRadius(this.size);
-        this.attackRange = this.size * ENEMY_ATTACK_RANGE_FACTOR;
+        this.attackRange = this.enemyCombatBehavior.attackRange ?? this.size * ENEMY_ATTACK_RANGE_FACTOR;
+        this.attackCooldown = this.enemyCombatBehavior.attackCooldown ?? this.attackCooldown;
         const sizeScale = this.size / BASE_ENEMY_SIZE;
         this.attackHitboxSize.set(
             BASE_ATTACK_HITBOX_SIZE.x * sizeScale,
@@ -369,6 +384,7 @@ export class Enemy extends BaseMesh {
                 if (finishedAction === this.actions[EnemyActionType.Attack]) {
                     this.isAttacking = false;
                     this.deactivateAttackHitbox();
+                    this.updateLaserBeamVisual(false);
                 }
                 if (finishedAction === this.actions[EnemyActionType.Death]) {
                     this.isDeathFading = true;
@@ -719,7 +735,7 @@ export class Enemy extends BaseMesh {
                     // An ability is still controlling movement; don't override horizontal velocity.
                     isMoving = true;
                 } else {
-                    const moveResult = this.computeMovement(playerPos, myPos, dt);
+                    const moveResult = this.computeCombatMovement(playerPos, myPos, distToPlayer, dt);
                     if (moveResult) {
                         this.body.velocity.x = moveResult.dirX * this.speed;
                         this.body.velocity.z = moveResult.dirZ * this.speed;
@@ -729,6 +745,9 @@ export class Enemy extends BaseMesh {
                         const targetQuaternion = new THREE.Quaternion();
                         targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
                         this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
+                    } else {
+                        this.body.velocity.x *= 0.9;
+                        this.body.velocity.z *= 0.9;
                     }
                 }
             } else {
@@ -806,21 +825,43 @@ export class Enemy extends BaseMesh {
             if (this.attackAnimTimer >= this.attackMaxDuration) {
                 this.isAttacking = false;
                 this.deactivateAttackHitbox();
+                this.updateLaserBeamVisual(false);
             } else {
-                // Activate hitbox after delay
-                if (this.attackAnimTimer >= this.attackHitboxDelay && !this.attackHitboxActive) {
-                    this.activateAttackHitbox();
-                }
+                if (this.shouldUseLaserAttack()) {
+                    const laserWindowActive = this.attackAnimTimer >= this.attackHitboxDelay &&
+                        this.attackAnimTimer < this.attackHitboxDelay + this.attackHitboxDuration;
 
-                // Deactivate hitbox after its active duration
-                if (this.attackHitboxActive && this.attackAnimTimer >= this.attackHitboxDelay + this.attackHitboxDuration) {
-                    this.deactivateAttackHitbox();
-                }
+                    if (laserWindowActive) {
+                        const laserEndpoints = this.getLaserAttackEndpoints();
+                        this.updateLaserBeamVisual(true, laserEndpoints.start, laserEndpoints.end);
 
-                // Update hitbox position and check collision while active
-                if (this.attackHitboxActive) {
-                    this.updateAttackHitboxPosition();
-                    this.checkAttackHitboxCollision();
+                        if (!this.hasDealtDamageThisAttack && laserEndpoints.hitsPlayer) {
+                            const isCriticalHit = Math.random() < this.criticalChance;
+                            const damage = isCriticalHit
+                                ? Math.floor(this.damage * this.criticalHitMultiplier)
+                                : this.damage;
+                            this.player.takeDamage(damage, this.body.position, isCriticalHit);
+                            this.hasDealtDamageThisAttack = true;
+                        }
+                    } else {
+                        this.updateLaserBeamVisual(false);
+                    }
+                } else {
+                    // Activate hitbox after delay
+                    if (this.attackAnimTimer >= this.attackHitboxDelay && !this.attackHitboxActive) {
+                        this.activateAttackHitbox();
+                    }
+
+                    // Deactivate hitbox after its active duration
+                    if (this.attackHitboxActive && this.attackAnimTimer >= this.attackHitboxDelay + this.attackHitboxDuration) {
+                        this.deactivateAttackHitbox();
+                    }
+
+                    // Update hitbox position and check collision while active
+                    if (this.attackHitboxActive) {
+                        this.updateAttackHitboxPosition();
+                        this.checkAttackHitboxCollision();
+                    }
                 }
             }
         }
@@ -934,10 +975,133 @@ export class Enemy extends BaseMesh {
         return { dirX: dx / len, dirZ: dz / len };
     }
 
+    private computeMovementAwayFrom(target: CANNON.Vec3, myPos: CANNON.Vec3): { dirX: number; dirZ: number } | null {
+        const dx = myPos.x - target.x;
+        const dz = myPos.z - target.z;
+        const len = Math.sqrt(dx * dx + dz * dz);
+        if (len <= 0) return null;
+        return { dirX: dx / len, dirZ: dz / len };
+    }
+
+    private getPreferredCombatDistanceBand(): { min: number; max: number } | null {
+        const preferredDistance = this.enemyCombatBehavior.preferredDistance;
+        if (preferredDistance === undefined) return null;
+        const tolerance = this.enemyCombatBehavior.preferredDistanceTolerance ?? 0;
+        return {
+            min: Math.max(0, preferredDistance - tolerance),
+            max: preferredDistance + tolerance,
+        };
+    }
+
+    private computeCombatMovement(
+        playerPos: CANNON.Vec3,
+        myPos: CANNON.Vec3,
+        distToPlayer: number,
+        dt: number,
+    ): { dirX: number; dirZ: number } | null {
+        const preferredBand = this.getPreferredCombatDistanceBand();
+        if (!preferredBand) {
+            return this.computeMovement(playerPos, myPos, dt);
+        }
+        if (distToPlayer > preferredBand.max) {
+            return this.computeMovement(playerPos, myPos, dt);
+        }
+        if (distToPlayer < preferredBand.min) {
+            return this.computeMovementAwayFrom(playerPos, myPos);
+        }
+        return null;
+    }
+
+    private shouldUseLaserAttack(): boolean {
+        return this.enemyCombatBehavior.attackMode === EnemyAttackMode.Laser;
+    }
+
+    private getLaserAttackEndpoints(): { start: THREE.Vector3; end: THREE.Vector3; hitsPlayer: boolean } {
+        const targetY = this.player.body.position.y + 0.6;
+        const start = new CANNON.Vec3(
+            this.body.position.x,
+            this.body.position.y + this.bodyHalfExtentY * 0.35,
+            this.body.position.z,
+        );
+        const target = new CANNON.Vec3(this.player.body.position.x, targetY, this.player.body.position.z);
+        const direction = target.vsub(start);
+        const distance = direction.length();
+
+        if (distance <= 0) {
+            const point = new THREE.Vector3(start.x, start.y, start.z);
+            return { start: point, end: point.clone(), hitsPlayer: false };
+        }
+
+        direction.normalize();
+        start.x += direction.x * Math.max(this.radius * 0.9, 0.4);
+        start.y += direction.y * 0.2;
+        start.z += direction.z * Math.max(this.radius * 0.9, 0.4);
+
+        const ray = new CANNON.Ray(start, target);
+        ray.skipBackfaces = true;
+        const result = new CANNON.RaycastResult();
+        ray.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result, skipBackfaces: true });
+
+        let end = target;
+        let hitsPlayer = false;
+
+        if (result.hasHit && result.body && result.body !== this.body) {
+            end = result.hitPointWorld.clone();
+            hitsPlayer = result.body === this.player.body;
+        }
+
+        return {
+            start: new THREE.Vector3(start.x, start.y, start.z),
+            end: new THREE.Vector3(end.x, end.y, end.z),
+            hitsPlayer,
+        };
+    }
+
+    private ensureLaserBeam(): void {
+        if (this.laserBeam) return;
+
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3));
+        const material = new THREE.LineBasicMaterial({
+            color: this.enemyCombatBehavior.laserColor ?? 0xff4fd8,
+            transparent: true,
+            opacity: 0.9,
+        });
+        this.laserBeam = new THREE.Line(geometry, material);
+        this.laserBeam.visible = false;
+        this.scene.add(this.laserBeam);
+    }
+
+    private updateLaserBeamVisual(visible: boolean, start?: THREE.Vector3, end?: THREE.Vector3): void {
+        if (!visible || !start || !end) {
+            if (this.laserBeam) {
+                this.laserBeam.visible = false;
+            }
+            return;
+        }
+
+        this.ensureLaserBeam();
+        if (!this.laserBeam) return;
+
+        const positions = this.laserBeam.geometry.getAttribute('position') as THREE.BufferAttribute;
+        positions.setXYZ(0, start.x, start.y, start.z);
+        positions.setXYZ(1, end.x, end.y, end.z);
+        positions.needsUpdate = true;
+        this.laserBeam.geometry.computeBoundingSphere();
+        this.laserBeam.visible = true;
+    }
+
     /**
      * Check if the enemy can attack the player
      */
     private canAttackPlayer(distToPlayer: number): boolean {
+        if (this.shouldUseLaserAttack()) {
+            const minimumAttackDistance = this.enemyCombatBehavior.minimumAttackDistance ?? 0;
+            return distToPlayer >= minimumAttackDistance &&
+                distToPlayer <= this.attackRange &&
+                this.attackTimer <= 0 &&
+                !this.isAttacking;
+        }
         const attackRangeVariance = Math.random() * this.attackRange * 0.3;
         return distToPlayer < this.attackRange + attackRangeVariance &&
             this.attackTimer <= 0 &&
@@ -1035,6 +1199,7 @@ export class Enemy extends BaseMesh {
         if (this.isAttacking) {
             this.isAttacking = false;
             this.deactivateAttackHitbox();
+            this.updateLaserBeamVisual(false);
         }
     }
 
@@ -1047,6 +1212,7 @@ export class Enemy extends BaseMesh {
         if (this.isAttacking) {
             this.isAttacking = false;
             this.deactivateAttackHitbox();
+            this.updateLaserBeamVisual(false);
         }
 
         // Disable collision only against the player while still colliding with
@@ -1087,6 +1253,13 @@ export class Enemy extends BaseMesh {
      */
     cleanup(): void {
         this.deactivateAttackHitbox();
+        this.updateLaserBeamVisual(false);
+        if (this.laserBeam) {
+            this.scene.remove(this.laserBeam);
+            this.laserBeam.geometry.dispose();
+            (this.laserBeam.material as THREE.Material).dispose();
+            this.laserBeam = null;
+        }
         if (this.blockShield) {
             this.blockShield.dispose();
             this.blockShield = null;

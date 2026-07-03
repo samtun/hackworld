@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
-import { EnemyType, getEnemyTypeDefinition } from './EnemyType';
+import { EnemyAttackMode, EnemyType, getEnemyTypeDefinition } from './EnemyType';
 
 const TEST_NORMAL_MOVE_SPEED = 2.4;
 
@@ -16,6 +16,14 @@ describe('EnemyType definitions', () => {
         expect(stalkerDefinition.movementAbilities).toHaveLength(1);
         expect(stalkerDefinition.movementAbilities?.[0].id).toBe('stalker-jump');
         expect(stalkerDefinition.movementAbilities?.[0].cooldown).toBe(5.0);
+    });
+
+    it('defines pod as a laser enemy using the brute placeholder model', () => {
+        const podDefinition = getEnemyTypeDefinition(EnemyType.Pod);
+        expect(podDefinition.modelPath).toBe('models/brute_enemy.glb');
+        expect(podDefinition.combatBehavior?.attackMode).toBe(EnemyAttackMode.Laser);
+        expect(podDefinition.combatBehavior?.preferredDistance).toBe(7.0);
+        expect(podDefinition.combatBehavior?.attackRange).toBe(7.75);
     });
 
     it('executes stalker jump only when distance condition is met', () => {

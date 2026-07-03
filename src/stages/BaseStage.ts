@@ -631,7 +631,10 @@ export abstract class BaseStage {
             this.physicsWorld,
             position,
             this.physicsMaterial,
-            this.getEnemyConfig(spawnType, spawn),
+            {
+                ...this.getEnemyConfig(spawnType, spawn),
+                ...this.getEnemyTypeConfig(enemyType, spawnType, spawn),
+            },
             enemyType,
         );
         this.enemies.push(enemy);
@@ -650,7 +653,10 @@ export abstract class BaseStage {
             this.physicsWorld,
             position,
             this.physicsMaterial,
-            this.getBossConfig(spawn),
+            {
+                ...this.getBossConfig(spawn),
+                ...this.getEnemyTypeConfig(enemyType, EnemySpawnType.Boss, spawn),
+            },
             enemyType,
         );
         this.enemies.push(boss);
@@ -664,8 +670,18 @@ export abstract class BaseStage {
      * The default implementation ignores the tier and enables all known types.
      */
     protected getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
-        void spawnType;
+        if (spawnType === EnemySpawnType.Boss) {
+            return [EnemyType.Brute];
+        }
         return [EnemyType.Brute, EnemyType.Stalker];
+    }
+
+    protected getEnemyTypeConfig(
+        _enemyType: EnemyType,
+        _spawnType: EnemySpawnType,
+        _spawn?: EnemySpawnPoint,
+    ): Partial<EnemyArchetypeConfig> {
+        return {};
     }
 
     /**

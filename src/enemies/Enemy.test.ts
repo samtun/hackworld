@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import * as CANNON from 'cannon-es';
+import * as THREE from 'three';
 
 vi.mock('../AudioManager', () => ({
     AudioManager: {
@@ -55,6 +57,7 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         techDropRateFactor: 1.0,
         enemyType: EnemyType.Brute,
         enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Brute),
+        enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Brute).combatBehavior,
         enemyTypeAbilityCooldownTimers: new Map(),
 
         // State flags
@@ -125,6 +128,7 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         // Attack hitbox
         attackHitboxBody: null,
         attackHitboxActive: false,
+        laserBeam: null,
 
         // Animation (mock actions so fadeToAction doesn't throw)
         actions: {
@@ -430,6 +434,93 @@ describe('Enemy.attack', () => {
         const enemy = makeEnemy();
         enemy.attack();
         expect(AudioManager.Instance.playAttack).toHaveBeenCalledWith('enemy');
+    });
+});
+
+describe('Enemy laser combat behavior', () => {
+    it('holds position when already within the preferred laser distance band', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+        }) as any;
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(7, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            7,
+            0.016,
+        );
+
+        expect(movement).toBeNull();
+    });
+
+    it('retreats when the player gets too close to a laser enemy', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+        }) as any;
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(3, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            3,
+            0.016,
+        );
+
+        expect(movement).toEqual({ dirX: -1, dirZ: 0 });
+    });
+
+    it('only starts laser attacks once the player is at stand-off range', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+
+        expect(enemy.canAttackPlayer(5.5)).toBe(false);
+        expect(enemy.canAttackPlayer(7.0)).toBe(true);
+    });
+
+    it('applies laser damage during the ranged attack window without using the melee hitbox', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+        }) as any;
+        enemy.body.position = new CANNON.Vec3(0, 1, 0);
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(7, 1, 0) },
+            takeDamage: vi.fn(),
+        };
+        enemy.attackTimer = 1.0;
+        enemy.isAttacking = true;
+        enemy.attackAnimTimer = 0;
+        enemy.attackHitboxDelay = 0.1;
+        enemy.attackHitboxDuration = 0.1;
+        enemy.getLaserAttackEndpoints = vi.fn().mockReturnValue({
+            start: new THREE.Vector3(0, 1, 0),
+            end: new THREE.Vector3(7, 1, 0),
+            hitsPlayer: true,
+        });
+        enemy.updateLaserBeamVisual = vi.fn();
+        enemy.activateAttackHitbox = vi.fn();
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+
+        enemy.update(0.11);
+
+        expect(enemy.player.takeDamage).toHaveBeenCalledWith(enemy.damage, enemy.body.position, false);
+        expect(enemy.activateAttackHitbox).not.toHaveBeenCalled();
+        expect(enemy.updateLaserBeamVisual).toHaveBeenCalledWith(
+            true,
+            expect.any(THREE.Vector3),
+            expect.any(THREE.Vector3),
+        );
+        randomSpy.mockRestore();
     });
 });
 

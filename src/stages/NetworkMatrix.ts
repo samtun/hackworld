@@ -5,6 +5,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class NetworkMatrix extends BaseStage {
@@ -46,6 +47,24 @@ export class NetworkMatrix extends BaseStage {
         blockChance: 0.2,
         size: 2.75,
         color: 0x204a2e,
+    };
+
+    private static readonly regularPodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 420,
+        speed: 2.2,
+        damage: 85,
+        baseExp: 110,
+        size: 1.55,
+        color: 0x3a1f5f,
+    };
+
+    private static readonly elitePodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 1050,
+        speed: 2.75,
+        damage: 130,
+        baseExp: 275,
+        size: 2.25,
+        color: 0x562d85,
     };
 
     private static readonly obstacleProps = getDungeonPropDefinitions([
@@ -104,6 +123,24 @@ export class NetworkMatrix extends BaseStage {
         return spawnType === EnemySpawnType.Elite
             ? NetworkMatrix.eliteEnemyConfig
             : NetworkMatrix.regularEnemyConfig;
+    }
+
+    protected override getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        return spawnType === EnemySpawnType.Boss
+            ? [EnemyType.Brute]
+            : [EnemyType.Brute];
+    }
+
+    protected override getEnemyTypeConfig(
+        enemyType: EnemyType,
+        spawnType: EnemySpawnType,
+    ): Partial<EnemyArchetypeConfig> {
+        if (enemyType !== EnemyType.Pod) {
+            return {};
+        }
+        return spawnType === EnemySpawnType.Elite
+            ? NetworkMatrix.elitePodEnemyConfig
+            : NetworkMatrix.regularPodEnemyConfig;
     }
 
     async load(): Promise<void> {

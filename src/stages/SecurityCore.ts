@@ -7,6 +7,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class SecurityCore extends StageWithLevels {
@@ -79,6 +80,24 @@ export class SecurityCore extends StageWithLevels {
         blockChance: 0.28,
         size: 3.1,
         color: 0x4e2a78,
+    };
+
+    private static readonly regularPodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 1350,
+        speed: 3.0,
+        damage: 900,
+        baseExp: 430,
+        size: 2.15,
+        color: 0x743db6,
+    };
+
+    private static readonly elitePodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 1850,
+        speed: 3.25,
+        damage: 1600,
+        baseExp: 620,
+        size: 2.65,
+        color: 0x9159dc,
     };
 
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
@@ -166,6 +185,25 @@ export class SecurityCore extends StageWithLevels {
         const baseConfig = spawnType === EnemySpawnType.Elite
             ? SecurityCore.eliteEnemyConfig
             : SecurityCore.regularEnemyConfig;
+        return this.scaleEnemyConfig(baseConfig);
+    }
+
+    protected override getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        return spawnType === EnemySpawnType.Boss
+            ? [EnemyType.Brute]
+            : [EnemyType.Brute, EnemyType.Pod, EnemyType.Stalker];
+    }
+
+    protected override getEnemyTypeConfig(
+        enemyType: EnemyType,
+        spawnType: EnemySpawnType,
+    ): Partial<EnemyArchetypeConfig> {
+        if (enemyType !== EnemyType.Pod) {
+            return {};
+        }
+        const baseConfig = spawnType === EnemySpawnType.Elite
+            ? SecurityCore.elitePodEnemyConfig
+            : SecurityCore.regularPodEnemyConfig;
         return this.scaleEnemyConfig(baseConfig);
     }
 

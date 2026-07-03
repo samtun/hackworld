@@ -5,6 +5,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class PacketForge extends BaseStage {
@@ -46,6 +47,24 @@ export class PacketForge extends BaseStage {
         blockChance: 0.24,
         size: 2.85,
         color: 0x1d4f7a,
+    };
+
+    private static readonly regularPodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 650,
+        speed: 2.45,
+        damage: 300,
+        baseExp: 175,
+        size: 1.75,
+        color: 0x4b2f80,
+    };
+
+    private static readonly elitePodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 1250,
+        speed: 2.85,
+        damage: 540,
+        baseExp: 320,
+        size: 2.35,
+        color: 0x6944ad,
     };
 
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
@@ -117,6 +136,24 @@ export class PacketForge extends BaseStage {
         return spawnType === EnemySpawnType.Elite
             ? PacketForge.eliteEnemyConfig
             : PacketForge.regularEnemyConfig;
+    }
+
+    protected override getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        return spawnType === EnemySpawnType.Boss
+            ? [EnemyType.Brute]
+            : [EnemyType.Brute, EnemyType.Pod];
+    }
+
+    protected override getEnemyTypeConfig(
+        enemyType: EnemyType,
+        spawnType: EnemySpawnType,
+    ): Partial<EnemyArchetypeConfig> {
+        if (enemyType !== EnemyType.Pod) {
+            return {};
+        }
+        return spawnType === EnemySpawnType.Elite
+            ? PacketForge.elitePodEnemyConfig
+            : PacketForge.regularPodEnemyConfig;
     }
 
     protected override getBossConfig(): Partial<EnemyArchetypeConfig> {

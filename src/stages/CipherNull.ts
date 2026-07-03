@@ -7,6 +7,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class CipherNull extends StageWithLevels {
@@ -68,6 +69,24 @@ export class CipherNull extends StageWithLevels {
         blockChance: 0.27,
         size: 3.0,
         color: 0x1a515d,
+    };
+
+    private static readonly regularPodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 950,
+        speed: 2.7,
+        damage: 550,
+        baseExp: 255,
+        size: 1.95,
+        color: 0x603b9c,
+    };
+
+    private static readonly elitePodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 1500,
+        speed: 3.05,
+        damage: 1000,
+        baseExp: 430,
+        size: 2.55,
+        color: 0x7e55c0,
     };
 
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
@@ -152,6 +171,25 @@ export class CipherNull extends StageWithLevels {
         const baseConfig = spawnType === EnemySpawnType.Elite
             ? CipherNull.eliteEnemyConfig
             : CipherNull.regularEnemyConfig;
+        return this.scaleEnemyConfig(baseConfig);
+    }
+
+    protected override getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        return spawnType === EnemySpawnType.Boss
+            ? [EnemyType.Brute]
+            : [EnemyType.Brute, EnemyType.Pod, EnemyType.Stalker];
+    }
+
+    protected override getEnemyTypeConfig(
+        enemyType: EnemyType,
+        spawnType: EnemySpawnType,
+    ): Partial<EnemyArchetypeConfig> {
+        if (enemyType !== EnemyType.Pod) {
+            return {};
+        }
+        const baseConfig = spawnType === EnemySpawnType.Elite
+            ? CipherNull.elitePodEnemyConfig
+            : CipherNull.regularPodEnemyConfig;
         return this.scaleEnemyConfig(baseConfig);
     }
 
