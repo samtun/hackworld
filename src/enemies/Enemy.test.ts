@@ -117,7 +117,7 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
             bodies: [],
             broadphase: { aabbQuery: vi.fn().mockReturnValue([]) },
         },
-        scene: { remove: vi.fn() },
+        scene: { add: vi.fn(), remove: vi.fn() },
         mesh: {
             position: { x: 0, y: 0, z: 0, copy: vi.fn() },
             quaternion: { slerp: vi.fn() },
@@ -128,7 +128,13 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         // Attack hitbox
         attackHitboxBody: null,
         attackHitboxActive: false,
-        laserBeam: null,
+        laserProjectile: null,
+        laserProjectileVelocity: new THREE.Vector3(),
+        laserProjectileRemainingDistance: 0,
+        laserProjectileActive: false,
+        hasSpawnedLaserProjectileThisAttack: false,
+        isRetreatingForSpacing: false,
+        isCorneredForSpacing: false,
 
         // Animation (mock actions so fadeToAction doesn't throw)
         actions: {
@@ -443,6 +449,7 @@ describe('Enemy laser combat behavior', () => {
             enemyType: EnemyType.Pod,
             enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
             enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
         }) as any;
 
         const movement = enemy.computeCombatMovement(
@@ -460,6 +467,7 @@ describe('Enemy laser combat behavior', () => {
             enemyType: EnemyType.Pod,
             enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
             enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
         }) as any;
 
         const movement = enemy.computeCombatMovement(
@@ -470,6 +478,51 @@ describe('Enemy laser combat behavior', () => {
         );
 
         expect(movement).toEqual({ dirX: -1, dirZ: 0 });
+    });
+
+    it('tries another reachable stand-off position when direct retreat is blocked', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            navGrid: {
+                findPath: vi.fn()
+                    .mockReturnValueOnce([])
+                    .mockReturnValueOnce([{ x: 0, z: 0 }, { x: -5, z: 5 }]),
+            },
+        }) as any;
+        enemy.computeMovement = vi.fn().mockReturnValue({ dirX: -0.7, dirZ: 0.7 });
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(3, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            3,
+            0.016,
+        );
+
+        expect(movement).toEqual({ dirX: -0.7, dirZ: 0.7 });
+        expect(enemy.computeMovement).toHaveBeenCalledWith(expect.any(CANNON.Vec3), expect.any(CANNON.Vec3), 0.016);
+    });
+
+    it('marks pods as cornered when no retreat path is available', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            navGrid: {
+                findPath: vi.fn().mockReturnValue([]),
+            },
+        }) as any;
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(3, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            3,
+            0.016,
+        );
+
+        expect(movement).toBeNull();
+        expect(enemy.isCorneredForSpacing).toBe(true);
     });
 
     it('only starts laser attacks once the player is at stand-off range', () => {
@@ -485,7 +538,7 @@ describe('Enemy laser combat behavior', () => {
         expect(enemy.canAttackPlayer(7.75)).toBe(true);
     });
 
-    it('applies laser damage during the ranged attack window without using the melee hitbox', () => {
+    it('fires a visible laser projectile during the ranged attack window without using the melee hitbox', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
             enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
@@ -506,21 +559,79 @@ describe('Enemy laser combat behavior', () => {
         enemy.getLaserAttackEndpoints = vi.fn().mockReturnValue({
             start: new THREE.Vector3(0, 1, 0),
             end: new THREE.Vector3(7, 1, 0),
-            hitsPlayer: true,
         });
-        enemy.updateLaserBeamVisual = vi.fn();
+        enemy.fireLaserProjectile = vi.fn();
         enemy.activateAttackHitbox = vi.fn();
-        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
 
         enemy.update(0.11);
 
-        expect(enemy.player.takeDamage).toHaveBeenCalledWith(enemy.damage, enemy.body.position, false);
+        expect(enemy.fireLaserProjectile).toHaveBeenCalledOnce();
+        expect(enemy.player.takeDamage).not.toHaveBeenCalled();
         expect(enemy.activateAttackHitbox).not.toHaveBeenCalled();
-        expect(enemy.updateLaserBeamVisual).toHaveBeenCalledWith(
-            true,
-            expect.any(THREE.Vector3),
-            expect.any(THREE.Vector3),
-        );
+    });
+
+    it('damages the player only after the projectile reaches them', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+        }) as any;
+        enemy.body.position = new CANNON.Vec3(0, 1, 0);
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(7, 1, 0) },
+            takeDamage: vi.fn(),
+        };
+        enemy.laserProjectile = {
+            position: new THREE.Vector3(0, 1, 0),
+            quaternion: { setFromUnitVectors: vi.fn() },
+            visible: false,
+            geometry: { dispose: vi.fn() },
+            material: { dispose: vi.fn() },
+        };
+        enemy.attack();
+        enemy.getLaserAttackEndpoints = vi.fn().mockReturnValue({
+            start: new THREE.Vector3(0, 1, 0),
+            end: new THREE.Vector3(7, 1, 0),
+        });
+
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+
+        enemy.fireLaserProjectile();
+        enemy.updateLaserProjectile(0.1);
+        expect(enemy.player.takeDamage).not.toHaveBeenCalled();
+
+        enemy.updateLaserProjectile(0.4);
+        expect(enemy.player.takeDamage).toHaveBeenCalledWith(enemy.damage, enemy.body.position, false);
+        randomSpy.mockRestore();
+    });
+
+    it('can still launch a laser attack while retreating', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(3, 0, 0) },
+            takeDamage: vi.fn(),
+        };
+        enemy.body.position = new CANNON.Vec3(0, 0, 0);
+        enemy.basePosition = new CANNON.Vec3(0, 0, 0);
+        enemy.computeCombatMovement = vi.fn().mockImplementation(() => {
+            enemy.isRetreatingForSpacing = true;
+            return { dirX: -1, dirZ: 0 };
+        });
+        enemy.attack = vi.fn();
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+
+        enemy.update(0.2);
+
+        expect(enemy.attack).toHaveBeenCalledOnce();
         randomSpy.mockRestore();
     });
 });

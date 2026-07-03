@@ -56,7 +56,24 @@ const LASER_TARGET_VERTICAL_OFFSET = 0.6;
 const LASER_ORIGIN_VERTICAL_FACTOR = 0.35;
 const LASER_VERTICAL_OFFSET = 0.2;
 const LASER_MIN_START_OFFSET = 0.4;
+const LASER_PROJECTILE_SPEED = 15;
+const LASER_PROJECTILE_WIDTH = 0.18;
+const LASER_PROJECTILE_HEIGHT = 0.18;
+const LASER_PROJECTILE_LENGTH = 0.5;
+const LASER_PROJECTILE_PLAYER_HIT_RADIUS = 0.65;
 const STANDOFF_VELOCITY_DAMPING = 0.9;
+const RETREAT_ATTACK_CHANCE_PER_SECOND = 0.85;
+const NAV_TARGET_CHANGE_RECOMPUTE_DISTANCE = 0.5;
+const RETREAT_ANGLE_OFFSETS = [
+    0,
+    Math.PI / 4,
+    -Math.PI / 4,
+    Math.PI / 2,
+    -Math.PI / 2,
+    (3 * Math.PI) / 4,
+    (-3 * Math.PI) / 4,
+    Math.PI,
+];
 
 /** Maximum allowed enemy size (metres). Keeps enemies passable through corridors. */
 export const MAX_ENEMY_SIZE = 2.0;
@@ -150,6 +167,9 @@ export class Enemy extends BaseMesh {
     private navPathIndex = 0;
     /** Seconds since the path was last recomputed. */
     private navPathAge = 0;
+    /** Target used for the current cached navigation path. */
+    private navPathTargetX: number | null = null;
+    private navPathTargetZ: number | null = null;
     /** How often (in seconds) to recompute the path. */
     private readonly NAV_RECOMPUTE_INTERVAL = 0.5;
 
@@ -225,8 +245,14 @@ export class Enemy extends BaseMesh {
     private enemyTypeAbilityCooldownTimers: Map<string, number> = new Map();
     /** Counts down while an ability is controlling horizontal movement; skip normal velocity override while > 0. */
     private abilityMoveTimer: number = 0;
-    /** Temporary beam shown while laser attacks are active. */
-    private laserBeam: THREE.Line | null = null;
+    /** Temporary projectile used by ranged laser enemies. */
+    private laserProjectile: THREE.Mesh | null = null;
+    private laserProjectileVelocity: THREE.Vector3 = new THREE.Vector3();
+    private laserProjectileRemainingDistance: number = 0;
+    private laserProjectileActive: boolean = false;
+    private hasSpawnedLaserProjectileThisAttack: boolean = false;
+    private isRetreatingForSpacing: boolean = false;
+    private isCorneredForSpacing: boolean = false;
 
     /** Flat circular shadow below the enemy. */
     public blobShadow!: BlobShadow;
@@ -390,7 +416,7 @@ export class Enemy extends BaseMesh {
                 if (finishedAction === this.actions[EnemyActionType.Attack]) {
                     this.isAttacking = false;
                     this.deactivateAttackHitbox();
-                    this.updateLaserBeamVisual(false);
+                    this.hideLaserProjectile();
                 }
                 if (finishedAction === this.actions[EnemyActionType.Death]) {
                     this.isDeathFading = true;
@@ -695,6 +721,8 @@ export class Enemy extends BaseMesh {
         const distToBase = Math.sqrt(dxBase * dxBase + dzBase * dzBase);
 
         let isMoving = false;
+        this.isRetreatingForSpacing = false;
+        this.isCorneredForSpacing = false;
 
         // Don't move while attacking
         if (!this.isAttacking) {
@@ -826,7 +854,16 @@ export class Enemy extends BaseMesh {
         }
 
         // Attack Trigger
-        if (this.canAttackPlayer(distToPlayer)) {
+        if (this.shouldUseLaserAttack() &&
+            this.isRetreatingForSpacing &&
+            distToPlayer <= this.attackRange &&
+            this.attackTimer <= 0 &&
+            !this.isAttacking &&
+            (this.isCorneredForSpacing || Math.random() < RETREAT_ATTACK_CHANCE_PER_SECOND * dt)
+        ) {
+            console.log(`Attack range check: dist=${distToPlayer.toFixed(2)}`);
+            this.attack();
+        } else if (this.canAttackPlayer(distToPlayer)) {
             console.log(`Attack range check: dist=${distToPlayer.toFixed(2)}`);
             this.attack();
         }
@@ -839,26 +876,13 @@ export class Enemy extends BaseMesh {
             if (this.attackAnimTimer >= this.attackMaxDuration) {
                 this.isAttacking = false;
                 this.deactivateAttackHitbox();
-                this.updateLaserBeamVisual(false);
             } else {
                 if (this.shouldUseLaserAttack()) {
                     const laserWindowActive = this.attackAnimTimer >= this.attackHitboxDelay &&
                         this.attackAnimTimer < this.attackHitboxDelay + this.attackHitboxDuration;
 
-                    if (laserWindowActive) {
-                        const laserEndpoints = this.getLaserAttackEndpoints();
-                        this.updateLaserBeamVisual(true, laserEndpoints.start, laserEndpoints.end);
-
-                        if (!this.hasDealtDamageThisAttack && laserEndpoints.hitsPlayer) {
-                            const isCriticalHit = Math.random() < this.criticalChance;
-                            const damage = isCriticalHit
-                                ? Math.floor(this.damage * this.criticalHitMultiplier)
-                                : this.damage;
-                            this.player.takeDamage(damage, this.body.position, isCriticalHit);
-                            this.hasDealtDamageThisAttack = true;
-                        }
-                    } else {
-                        this.updateLaserBeamVisual(false);
+                    if (laserWindowActive && !this.hasSpawnedLaserProjectileThisAttack) {
+                        this.fireLaserProjectile();
                     }
                 } else {
                     // Activate hitbox after delay
@@ -879,6 +903,8 @@ export class Enemy extends BaseMesh {
                 }
             }
         }
+
+        this.updateLaserProjectile(dt);
 
         // Update animations
         this.updateFootstepAudio(dt, isMoving);
@@ -949,11 +975,17 @@ export class Enemy extends BaseMesh {
         this.navPathAge += dt;
 
         if (this.navGrid) {
+            const targetChanged = this.navPathTargetX === null ||
+                this.navPathTargetZ === null ||
+                Math.abs(this.navPathTargetX - target.x) > NAV_TARGET_CHANGE_RECOMPUTE_DISTANCE ||
+                Math.abs(this.navPathTargetZ - target.z) > NAV_TARGET_CHANGE_RECOMPUTE_DISTANCE;
             // Recompute path periodically (player is moving)
-            if (this.navPath.length === 0 || this.navPathAge >= this.NAV_RECOMPUTE_INTERVAL) {
+            if (this.navPath.length === 0 || this.navPathAge >= this.NAV_RECOMPUTE_INTERVAL || targetChanged) {
                 this.navPath = this.navGrid.findPath(myPos.x, myPos.z, target.x, target.z);
                 this.navPathIndex = 0;
                 this.navPathAge = 0;
+                this.navPathTargetX = target.x;
+                this.navPathTargetZ = target.z;
             }
 
             // Advance along the path
@@ -1021,7 +1053,12 @@ export class Enemy extends BaseMesh {
             return this.computeMovement(playerPos, myPos, dt);
         }
         if (distToPlayer < preferredBand.min) {
-            return this.computeMovementAwayFrom(playerPos, myPos);
+            this.isRetreatingForSpacing = true;
+            const retreatMovement = this.computeRetreatMovement(playerPos, myPos, preferredBand, dt);
+            if (!retreatMovement) {
+                this.isCorneredForSpacing = true;
+            }
+            return retreatMovement;
         }
         return null;
     }
@@ -1030,7 +1067,61 @@ export class Enemy extends BaseMesh {
         return this.enemyCombatBehavior.attackMode === EnemyAttackMode.Laser;
     }
 
-    private getLaserAttackEndpoints(): { start: THREE.Vector3; end: THREE.Vector3; hitsPlayer: boolean } {
+    private computeRetreatMovement(
+        playerPos: CANNON.Vec3,
+        myPos: CANNON.Vec3,
+        preferredBand: { min: number; max: number },
+        dt: number,
+    ): { dirX: number; dirZ: number } | null {
+        if (!this.navGrid) {
+            return this.computeMovementAwayFrom(playerPos, myPos);
+        }
+
+        const retreatTarget = this.findRetreatTarget(playerPos, myPos, preferredBand);
+        if (!retreatTarget) {
+            return null;
+        }
+
+        return this.computeMovement(retreatTarget, myPos, dt);
+    }
+
+    private findRetreatTarget(
+        playerPos: CANNON.Vec3,
+        myPos: CANNON.Vec3,
+        preferredBand: { min: number; max: number },
+    ): CANNON.Vec3 | null {
+        if (!this.navGrid) {
+            return null;
+        }
+
+        const away = myPos.vsub(playerPos);
+        away.y = 0;
+        if (away.length() <= 0) {
+            return null;
+        }
+        away.normalize();
+
+        const preferredDistance = this.enemyCombatBehavior.preferredDistance ??
+            (preferredBand.min + preferredBand.max) / 2;
+        const baseAngle = Math.atan2(away.z, away.x);
+
+        for (const angleOffset of RETREAT_ANGLE_OFFSETS) {
+            const angle = baseAngle + angleOffset;
+            const candidate = new CANNON.Vec3(
+                playerPos.x + Math.cos(angle) * preferredDistance,
+                myPos.y,
+                playerPos.z + Math.sin(angle) * preferredDistance,
+            );
+            const path = this.navGrid.findPath(myPos.x, myPos.z, candidate.x, candidate.z);
+            if (path.length > 0) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private getLaserAttackEndpoints(): { start: THREE.Vector3; end: THREE.Vector3 } {
         const targetY = this.player.body.position.y + LASER_TARGET_VERTICAL_OFFSET;
         const start = new CANNON.Vec3(
             this.body.position.x,
@@ -1043,7 +1134,7 @@ export class Enemy extends BaseMesh {
 
         if (distance <= 0) {
             const point = new THREE.Vector3(start.x, start.y, start.z);
-            return { start: point, end: point.clone(), hitsPlayer: false };
+            return { start: point, end: point.clone() };
         }
 
         direction.normalize();
@@ -1058,52 +1149,102 @@ export class Enemy extends BaseMesh {
         ray.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result, skipBackfaces: true });
 
         let end = target;
-        let hitsPlayer = false;
 
         if (result.hasHit && result.body && result.body !== this.body) {
             end = result.hitPointWorld.clone();
-            hitsPlayer = result.body === this.player.body;
         }
 
         return {
             start: new THREE.Vector3(start.x, start.y, start.z),
             end: new THREE.Vector3(end.x, end.y, end.z),
-            hitsPlayer,
         };
     }
 
-    private ensureLaserBeam(): void {
-        if (this.laserBeam) return;
+    private ensureLaserProjectile(): void {
+        if (this.laserProjectile) return;
 
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 0, 0, 0], 3));
-        const material = new THREE.LineBasicMaterial({
-            color: this.enemyCombatBehavior.laserColor ?? 0xff4fd8,
-            transparent: true,
-            opacity: 0.9,
+        const geometry = new THREE.BoxGeometry(
+            LASER_PROJECTILE_WIDTH,
+            LASER_PROJECTILE_HEIGHT,
+            LASER_PROJECTILE_LENGTH,
+        );
+        const material = new THREE.MeshBasicMaterial({
+            color: this.enemyCombatBehavior.laserColor ?? 0xff8a00,
         });
-        this.laserBeam = new THREE.Line(geometry, material);
-        this.laserBeam.visible = false;
-        this.scene.add(this.laserBeam);
+        this.laserProjectile = new THREE.Mesh(geometry, material);
+        this.laserProjectile.visible = false;
+        this.scene.add(this.laserProjectile);
     }
 
-    private updateLaserBeamVisual(visible: boolean, start?: THREE.Vector3, end?: THREE.Vector3): void {
-        if (!visible || !start || !end) {
-            if (this.laserBeam) {
-                this.laserBeam.visible = false;
-            }
+    private fireLaserProjectile(): void {
+        const laserEndpoints = this.getLaserAttackEndpoints();
+        const direction = laserEndpoints.end.clone().sub(laserEndpoints.start);
+        const distance = direction.length();
+        if (distance <= 0) {
             return;
         }
 
-        this.ensureLaserBeam();
-        if (!this.laserBeam) return;
+        this.ensureLaserProjectile();
+        if (!this.laserProjectile) return;
 
-        const positions = this.laserBeam.geometry.getAttribute('position') as THREE.BufferAttribute;
-        positions.setXYZ(0, start.x, start.y, start.z);
-        positions.setXYZ(1, end.x, end.y, end.z);
-        positions.needsUpdate = true;
-        this.laserBeam.geometry.computeBoundingSphere();
-        this.laserBeam.visible = true;
+        direction.normalize();
+        this.laserProjectile.position.copy(laserEndpoints.start);
+        this.laserProjectile.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
+        this.laserProjectile.visible = true;
+        this.laserProjectileVelocity.copy(direction);
+        this.laserProjectileRemainingDistance = distance;
+        this.laserProjectileActive = true;
+        this.hasSpawnedLaserProjectileThisAttack = true;
+    }
+
+    private updateLaserProjectile(dt: number): void {
+        if (!this.laserProjectileActive || !this.laserProjectile) return;
+
+        const start = this.laserProjectile.position.clone();
+        const distanceThisFrame = Math.min(LASER_PROJECTILE_SPEED * dt, this.laserProjectileRemainingDistance);
+        this.laserProjectile.position.addScaledVector(this.laserProjectileVelocity, distanceThisFrame);
+        this.laserProjectileRemainingDistance -= distanceThisFrame;
+
+        if (!this.hasDealtDamageThisAttack &&
+            this.doesLaserProjectileHitPlayer(start, this.laserProjectile.position)
+        ) {
+            this.dealLaserDamage();
+            this.hasDealtDamageThisAttack = true;
+            this.hideLaserProjectile();
+            return;
+        }
+
+        if (this.laserProjectileRemainingDistance <= 0) {
+            this.hideLaserProjectile();
+        }
+    }
+
+    private doesLaserProjectileHitPlayer(start: THREE.Vector3, end: THREE.Vector3): boolean {
+        const playerTarget = new THREE.Vector3(
+            this.player.body.position.x,
+            this.player.body.position.y + LASER_TARGET_VERTICAL_OFFSET,
+            this.player.body.position.z,
+        );
+        const closestPoint = new THREE.Vector3();
+        new THREE.Line3(start, end).closestPointToPoint(playerTarget, true, closestPoint);
+        return closestPoint.distanceToSquared(playerTarget) <=
+            LASER_PROJECTILE_PLAYER_HIT_RADIUS * LASER_PROJECTILE_PLAYER_HIT_RADIUS;
+    }
+
+    private dealLaserDamage(): void {
+        const isCriticalHit = Math.random() < this.criticalChance;
+        const damage = isCriticalHit
+            ? Math.floor(this.damage * this.criticalHitMultiplier)
+            : this.damage;
+        this.player.takeDamage(damage, this.body.position, isCriticalHit);
+    }
+
+    private hideLaserProjectile(): void {
+        this.laserProjectileActive = false;
+        this.laserProjectileRemainingDistance = 0;
+        if (this.laserProjectile) {
+            this.laserProjectile.visible = false;
+        }
     }
 
     /**
@@ -1128,6 +1269,7 @@ export class Enemy extends BaseMesh {
         this.isAttacking = true;
         this.attackAnimTimer = 0;
         this.hasDealtDamageThisAttack = false;
+        this.hasSpawnedLaserProjectileThisAttack = false;
 
         console.log("Enemy attacks!");
         AudioManager.Instance.playAttack('enemy');
@@ -1214,7 +1356,7 @@ export class Enemy extends BaseMesh {
         if (this.isAttacking) {
             this.isAttacking = false;
             this.deactivateAttackHitbox();
-            this.updateLaserBeamVisual(false);
+            this.hideLaserProjectile();
         }
     }
 
@@ -1227,7 +1369,7 @@ export class Enemy extends BaseMesh {
         if (this.isAttacking) {
             this.isAttacking = false;
             this.deactivateAttackHitbox();
-            this.updateLaserBeamVisual(false);
+            this.hideLaserProjectile();
         }
 
         // Disable collision only against the player while still colliding with
@@ -1268,12 +1410,12 @@ export class Enemy extends BaseMesh {
      */
     cleanup(): void {
         this.deactivateAttackHitbox();
-        this.updateLaserBeamVisual(false);
-        if (this.laserBeam) {
-            this.scene.remove(this.laserBeam);
-            this.laserBeam.geometry.dispose();
-            (this.laserBeam.material as THREE.Material).dispose();
-            this.laserBeam = null;
+        this.hideLaserProjectile();
+        if (this.laserProjectile) {
+            this.scene.remove(this.laserProjectile);
+            this.laserProjectile.geometry.dispose();
+            (this.laserProjectile.material as THREE.Material).dispose();
+            this.laserProjectile = null;
         }
         if (this.blockShield) {
             this.blockShield.dispose();
