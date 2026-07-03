@@ -52,8 +52,11 @@ const ENEMY_ATTACK_RANGE_FACTOR = 0.792;
 const BASE_ATTACK_HITBOX_SIZE = new CANNON.Vec3(0.5, 0.5, 0.8);
 const BASE_ATTACK_HITBOX_OFFSET = 1.0;
 const LASER_START_OFFSET_FACTOR = 0.9;
+const LASER_TARGET_VERTICAL_OFFSET = 0.6;
+const LASER_ORIGIN_VERTICAL_FACTOR = 0.35;
 const LASER_VERTICAL_OFFSET = 0.2;
 const LASER_MIN_START_OFFSET = 0.4;
+const STANDOFF_VELOCITY_DAMPING = 0.9;
 
 /** Maximum allowed enemy size (metres). Keeps enemies passable through corridors. */
 export const MAX_ENEMY_SIZE = 2.0;
@@ -751,8 +754,8 @@ export class Enemy extends BaseMesh {
                     } else {
                         // Laser enemies stop inside their preferred stand-off band.
                         // Damping prevents them from drifting forward on leftover momentum.
-                        this.body.velocity.x *= 0.9;
-                        this.body.velocity.z *= 0.9;
+                        this.body.velocity.x *= STANDOFF_VELOCITY_DAMPING;
+                        this.body.velocity.z *= STANDOFF_VELOCITY_DAMPING;
                     }
                 }
             } else {
@@ -1022,10 +1025,10 @@ export class Enemy extends BaseMesh {
     }
 
     private getLaserAttackEndpoints(): { start: THREE.Vector3; end: THREE.Vector3; hitsPlayer: boolean } {
-        const targetY = this.player.body.position.y + 0.6;
+        const targetY = this.player.body.position.y + LASER_TARGET_VERTICAL_OFFSET;
         const start = new CANNON.Vec3(
             this.body.position.x,
-            this.body.position.y + this.bodyHalfExtentY * 0.35,
+            this.body.position.y + this.bodyHalfExtentY * LASER_ORIGIN_VERTICAL_FACTOR,
             this.body.position.z,
         );
         const target = new CANNON.Vec3(this.player.body.position.x, targetY, this.player.body.position.z);

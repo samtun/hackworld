@@ -151,6 +151,8 @@ export class PacketForge extends BaseStage {
         if (enemyType !== EnemyType.Pod) {
             return {};
         }
+        // Packet Forge is a single-depth stage, so these per-type pod stats are
+        // used directly instead of going through StageWithLevels difficulty scaling.
         return spawnType === EnemySpawnType.Elite
             ? PacketForge.elitePodEnemyConfig
             : PacketForge.regularPodEnemyConfig;
