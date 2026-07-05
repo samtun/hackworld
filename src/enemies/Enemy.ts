@@ -1125,7 +1125,7 @@ export class Enemy extends BaseMesh {
         return null;
     }
 
-    private getLaserAttackEndpoints(): { start: THREE.Vector3; end: THREE.Vector3 } {
+    private getRawLaserAttackEndpoints(): { start: THREE.Vector3; end: THREE.Vector3 } {
         const targetY = this.player.body.position.y + LASER_TARGET_VERTICAL_OFFSET;
         const start = new CANNON.Vec3(
             this.body.position.x,
@@ -1170,7 +1170,7 @@ export class Enemy extends BaseMesh {
     }
 
     private fireLaserProjectile(): void {
-        const laserEndpoints = this.getLaserAttackEndpoints();
+        const laserEndpoints = this.getRawLaserAttackEndpoints();
         const direction = laserEndpoints.end.clone().sub(laserEndpoints.start);
         const distance = direction.length();
         if (distance <= 0) {
@@ -1223,7 +1223,7 @@ export class Enemy extends BaseMesh {
     }
 
     private hasClearLineOfSightToPlayer(): boolean {
-        const { start, end } = this.getLaserAttackEndpoints();
+        const { start, end } = this.getRawLaserAttackEndpoints();
         return this.findLaserProjectileBlocker(start, end) === null;
     }
 

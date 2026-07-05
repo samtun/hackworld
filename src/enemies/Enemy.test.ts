@@ -578,7 +578,7 @@ describe('Enemy laser combat behavior', () => {
         enemy.attackAnimTimer = 0;
         enemy.attackHitboxDelay = 0.1;
         enemy.attackHitboxDuration = 0.1;
-        enemy.getLaserAttackEndpoints = vi.fn().mockReturnValue({
+        enemy.getRawLaserAttackEndpoints = vi.fn().mockReturnValue({
             start: new THREE.Vector3(0, 1, 0),
             end: new THREE.Vector3(7, 1, 0),
         });
@@ -592,7 +592,7 @@ describe('Enemy laser combat behavior', () => {
         expect(enemy.activateAttackHitbox).not.toHaveBeenCalled();
     });
 
-    it('keeps traveling after the initial target distance until it reaches the player', () => {
+    it('keeps traveling until it hits a retreating player instead of stopping at the original range', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
             enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
@@ -613,7 +613,7 @@ describe('Enemy laser combat behavior', () => {
             material: { dispose: vi.fn() },
         };
         enemy.attack();
-        enemy.getLaserAttackEndpoints = vi.fn().mockReturnValue({
+        enemy.getRawLaserAttackEndpoints = vi.fn().mockReturnValue({
             start: new THREE.Vector3(0, 1, 0),
             end: new THREE.Vector3(7, 1, 0),
         });
@@ -660,7 +660,7 @@ describe('Enemy laser combat behavior', () => {
             return true;
         });
         enemy.attack();
-        enemy.getLaserAttackEndpoints = vi.fn().mockReturnValue({
+        enemy.getRawLaserAttackEndpoints = vi.fn().mockReturnValue({
             start: new THREE.Vector3(0, 1, 0),
             end: new THREE.Vector3(7, 1, 0),
         });
@@ -674,6 +674,40 @@ describe('Enemy laser combat behavior', () => {
         expect(enemy.laserProjectile.position.x).toBeCloseTo(4, 5);
         expect(enemy.laserProjectile.position.y).toBeCloseTo(1, 5);
         expect(enemy.laserProjectile.position.z).toBeCloseTo(0, 5);
+    });
+
+    it('expires the projectile after its fixed lifetime when it hits nothing', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+        }) as any;
+        enemy.body.position = new CANNON.Vec3(0, 1, 0);
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(100, 50, 100) },
+            takeDamage: vi.fn(),
+        };
+        enemy.laserProjectile = {
+            position: new THREE.Vector3(0, 1, 0),
+            quaternion: { setFromUnitVectors: vi.fn() },
+            visible: false,
+            geometry: { dispose: vi.fn() },
+            material: { dispose: vi.fn() },
+        };
+        enemy.attack();
+        enemy.getRawLaserAttackEndpoints = vi.fn().mockReturnValue({
+            start: new THREE.Vector3(0, 1, 0),
+            end: new THREE.Vector3(7, 1, 0),
+        });
+
+        enemy.fireLaserProjectile();
+        enemy.updateLaserProjectile(4.1);
+
+        expect(enemy.player.takeDamage).not.toHaveBeenCalled();
+        expect(enemy.laserProjectileActive).toBe(false);
+        expect(enemy.laserProjectile.visible).toBe(false);
     });
 
     it('can still launch a laser attack while retreating', () => {
