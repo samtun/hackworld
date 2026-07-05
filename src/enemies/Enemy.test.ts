@@ -19,6 +19,7 @@ import { PLAYER_COLLISION_GROUP } from '../Player';
 import { EnemyType, getEnemyTypeDefinition } from './EnemyType';
 
 const WORLD_COLLISION_GROUP = 1;
+const FAR_AWAY_POSITION = new CANNON.Vec3(100, 50, 100);
 
 function mockAction() {
     const action: any = {
@@ -652,7 +653,10 @@ describe('Enemy laser combat behavior', () => {
             geometry: { dispose: vi.fn() },
             material: { dispose: vi.fn() },
         };
-        enemy.world.raycastAll = vi.fn((_from: CANNON.Vec3, _to: CANNON.Vec3, _options: unknown, callback: (result: CANNON.RaycastResult) => void) => {
+        enemy.world.raycastAll = vi.fn((from: CANNON.Vec3, to: CANNON.Vec3, options: unknown, callback: (result: CANNON.RaycastResult) => void) => {
+            void from;
+            void to;
+            void options;
             callback({
                 body: { mass: 0, collisionResponse: true },
                 hitPointWorld: new CANNON.Vec3(4, 1, 0),
@@ -686,7 +690,7 @@ describe('Enemy laser combat behavior', () => {
         enemy.player = {
             agility: 1,
             isDead: false,
-            body: { position: new CANNON.Vec3(100, 50, 100) },
+            body: { position: FAR_AWAY_POSITION.clone() },
             takeDamage: vi.fn(),
         };
         enemy.laserProjectile = {
