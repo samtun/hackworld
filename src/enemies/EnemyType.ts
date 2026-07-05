@@ -91,14 +91,14 @@ const stalkerJumpAbility: EnemyMovementAbilityDefinition = {
 const ENEMY_TYPE_DEFINITIONS: Record<EnemyType, EnemyTypeDefinition> = {
     [EnemyType.Brute]: {
         modelPath: 'models/brute_enemy.glb',
-        speedMultiplier: 1.0,
+        speedMultiplier: 0.9,
         combatBehavior: {
             attackMode: EnemyAttackMode.Melee,
         },
     },
     [EnemyType.Stalker]: {
         modelPath: 'models/stalker_enemy.glb',
-        speedMultiplier: 0.8,
+        speedMultiplier: 1.2,
         movementAbilities: [stalkerJumpAbility],
         combatBehavior: {
             attackMode: EnemyAttackMode.Melee,
@@ -107,7 +107,7 @@ const ENEMY_TYPE_DEFINITIONS: Record<EnemyType, EnemyTypeDefinition> = {
     [EnemyType.Pod]: {
         // Temporary placeholder until the dedicated floating pod model is ready.
         modelPath: 'models/brute_enemy.glb',
-        speedMultiplier: 1.0,
+        speedMultiplier: 0.5,
         combatBehavior: {
             attackMode: EnemyAttackMode.Laser,
             attackCooldown: 1.35,
