@@ -1197,10 +1197,13 @@ export class Enemy extends BaseMesh {
         const end = start.clone().addScaledVector(this.laserProjectileVelocity, LASER_PROJECTILE_SPEED * dt);
         const blockerHit = this.findLaserProjectileBlocker(start, end);
         const segmentEnd = blockerHit?.point ?? end;
+        const blockerDistance = blockerHit ? start.distanceTo(blockerHit.point) : null;
         this.laserProjectile.position.copy(segmentEnd);
 
+        const playerHitDistance = this.getLaserProjectileHitDistance(start, segmentEnd);
         if (!this.hasDealtDamageThisAttack &&
-            this.doesLaserProjectileHitPlayer(start, segmentEnd)
+            playerHitDistance !== null &&
+            (blockerDistance === null || playerHitDistance < blockerDistance)
         ) {
             this.dealLaserDamage();
             this.hasDealtDamageThisAttack = true;
@@ -1286,7 +1289,7 @@ export class Enemy extends BaseMesh {
         return body.mass === 0;
     }
 
-    private doesLaserProjectileHitPlayer(start: THREE.Vector3, end: THREE.Vector3): boolean {
+    private getLaserProjectileHitDistance(start: THREE.Vector3, end: THREE.Vector3): number | null {
         const playerTarget = new THREE.Vector3(
             this.player.body.position.x,
             this.player.body.position.y + LASER_TARGET_VERTICAL_OFFSET,
@@ -1294,8 +1297,12 @@ export class Enemy extends BaseMesh {
         );
         const closestPoint = new THREE.Vector3();
         new THREE.Line3(start, end).closestPointToPoint(playerTarget, true, closestPoint);
-        return closestPoint.distanceToSquared(playerTarget) <=
-            LASER_PROJECTILE_PLAYER_HIT_RADIUS * LASER_PROJECTILE_PLAYER_HIT_RADIUS;
+        if (closestPoint.distanceToSquared(playerTarget) >
+            LASER_PROJECTILE_PLAYER_HIT_RADIUS * LASER_PROJECTILE_PLAYER_HIT_RADIUS
+        ) {
+            return null;
+        }
+        return start.distanceTo(closestPoint);
     }
 
     private dealLaserDamage(): void {

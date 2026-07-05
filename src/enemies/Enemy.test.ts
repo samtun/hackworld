@@ -624,9 +624,11 @@ describe('Enemy laser combat behavior', () => {
         enemy.player.body.position = new CANNON.Vec3(9, 1, 0);
         enemy.updateLaserProjectile(0.5);
         expect(enemy.player.takeDamage).not.toHaveBeenCalled();
+        expect(enemy.laserProjectile.position.x).toBeCloseTo(7.5, 5);
 
         enemy.updateLaserProjectile(0.1);
         expect(enemy.player.takeDamage).toHaveBeenCalledWith(enemy.damage, enemy.body.position, false);
+        expect(enemy.laserProjectile.position.x).toBeCloseTo(9, 5);
         randomSpy.mockRestore();
     });
 
@@ -669,6 +671,9 @@ describe('Enemy laser combat behavior', () => {
         expect(enemy.player.takeDamage).not.toHaveBeenCalled();
         expect(enemy.laserProjectileActive).toBe(false);
         expect(enemy.laserProjectile.visible).toBe(false);
+        expect(enemy.laserProjectile.position.x).toBeCloseTo(4, 5);
+        expect(enemy.laserProjectile.position.y).toBeCloseTo(1, 5);
+        expect(enemy.laserProjectile.position.z).toBeCloseTo(0, 5);
     });
 
     it('can still launch a laser attack while retreating', () => {
