@@ -62,6 +62,7 @@ const LASER_PROJECTILE_WIDTH = 0.18;
 const LASER_PROJECTILE_HEIGHT = 0.18;
 const LASER_PROJECTILE_LENGTH = 0.5;
 const LASER_PROJECTILE_PLAYER_HIT_RADIUS = 0.65;
+const LASER_PROJECTILE_LIFETIME = 4;
 const STANDOFF_VELOCITY_DAMPING = 0.9;
 const RETREAT_ATTACK_RATE_PER_SECOND = 0.85;
 const NAV_TARGET_CHANGE_RECOMPUTE_DISTANCE = 0.5;
@@ -249,7 +250,7 @@ export class Enemy extends BaseMesh {
     /** Temporary projectile used by ranged laser enemies. */
     private laserProjectile: THREE.Mesh | null = null;
     private laserProjectileVelocity: THREE.Vector3 = new THREE.Vector3();
-    private laserProjectileRemainingDistance: number = 0;
+    private laserProjectileRemainingLifetime: number = 0;
     private laserProjectileActive: boolean = false;
     private hasSpawnedLaserProjectileThisAttack: boolean = false;
     private isRetreatingForSpacing: boolean = false;
@@ -860,6 +861,7 @@ export class Enemy extends BaseMesh {
             distToPlayer <= this.attackRange &&
             this.attackTimer <= 0 &&
             !this.isAttacking &&
+            this.hasClearLineOfSightToPlayer() &&
             (this.isCorneredForSpacing || Math.random() < RETREAT_ATTACK_RATE_PER_SECOND * dt)
         ) {
             this.attack();
@@ -1059,6 +1061,9 @@ export class Enemy extends BaseMesh {
             }
             return retreatMovement;
         }
+        if (!this.hasClearLineOfSightToPlayer()) {
+            return this.computeMovement(playerPos, myPos, dt);
+        }
         return null;
     }
 
@@ -1142,20 +1147,9 @@ export class Enemy extends BaseMesh {
         start.y += direction.y * LASER_VERTICAL_OFFSET;
         start.z += direction.z * laserStartOffset;
 
-        const ray = new CANNON.Ray(start, target);
-        ray.skipBackfaces = true;
-        const result = new CANNON.RaycastResult();
-        ray.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result, skipBackfaces: true });
-
-        let end = target;
-
-        if (result.hasHit && result.body && result.body !== this.body) {
-            end = result.hitPointWorld.clone();
-        }
-
         return {
             start: new THREE.Vector3(start.x, start.y, start.z),
-            end: new THREE.Vector3(end.x, end.y, end.z),
+            end: new THREE.Vector3(target.x, target.y, target.z),
         };
     }
 
@@ -1191,7 +1185,7 @@ export class Enemy extends BaseMesh {
         this.laserProjectile.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
         this.laserProjectile.visible = true;
         this.laserProjectileVelocity.copy(direction);
-        this.laserProjectileRemainingDistance = distance;
+        this.laserProjectileRemainingLifetime = LASER_PROJECTILE_LIFETIME;
         this.laserProjectileActive = true;
         this.hasSpawnedLaserProjectileThisAttack = true;
     }
@@ -1200,12 +1194,13 @@ export class Enemy extends BaseMesh {
         if (!this.laserProjectileActive || !this.laserProjectile) return;
 
         const start = this.laserProjectile.position.clone();
-        const distanceThisFrame = Math.min(LASER_PROJECTILE_SPEED * dt, this.laserProjectileRemainingDistance);
-        this.laserProjectile.position.addScaledVector(this.laserProjectileVelocity, distanceThisFrame);
-        this.laserProjectileRemainingDistance -= distanceThisFrame;
+        const end = start.clone().addScaledVector(this.laserProjectileVelocity, LASER_PROJECTILE_SPEED * dt);
+        const blockerHit = this.findLaserProjectileBlocker(start, end);
+        const segmentEnd = blockerHit?.point ?? end;
+        this.laserProjectile.position.copy(segmentEnd);
 
         if (!this.hasDealtDamageThisAttack &&
-            this.doesLaserProjectileHitPlayer(start, this.laserProjectile.position)
+            this.doesLaserProjectileHitPlayer(start, segmentEnd)
         ) {
             this.dealLaserDamage();
             this.hasDealtDamageThisAttack = true;
@@ -1213,9 +1208,82 @@ export class Enemy extends BaseMesh {
             return;
         }
 
-        if (this.laserProjectileRemainingDistance <= 0) {
+        if (blockerHit) {
+            this.hideLaserProjectile();
+            return;
+        }
+
+        this.laserProjectileRemainingLifetime -= dt;
+        if (this.laserProjectileRemainingLifetime <= 0) {
             this.hideLaserProjectile();
         }
+    }
+
+    private hasClearLineOfSightToPlayer(): boolean {
+        const { start, end } = this.getLaserAttackEndpoints();
+        return this.findLaserProjectileBlocker(start, end) === null;
+    }
+
+    private findLaserProjectileBlocker(
+        start: THREE.Vector3,
+        end: THREE.Vector3,
+    ): { point: THREE.Vector3; body: CANNON.Body } | null {
+        const hits: { distance: number; point: THREE.Vector3; body: CANNON.Body }[] = [];
+        const startVec = new CANNON.Vec3(start.x, start.y, start.z);
+        const endVec = new CANNON.Vec3(end.x, end.y, end.z);
+
+        this.world.raycastAll(
+            startVec,
+            endVec,
+            { skipBackfaces: true },
+            (result: CANNON.RaycastResult) => {
+                if (!result.body || !this.isLaserProjectileBlockingBody(result.body)) {
+                    return;
+                }
+
+                hits.push({
+                    distance: startVec.distanceTo(result.hitPointWorld),
+                    point: new THREE.Vector3(
+                        result.hitPointWorld.x,
+                        result.hitPointWorld.y,
+                        result.hitPointWorld.z,
+                    ),
+                    body: result.body,
+                });
+            },
+        );
+
+        if (hits.length === 0) {
+            return null;
+        }
+
+        hits.sort((a, b) => a.distance - b.distance);
+        return {
+            point: hits[0].point,
+            body: hits[0].body,
+        };
+    }
+
+    private isLaserProjectileBlockingBody(body: CANNON.Body): boolean {
+        const bodyMetadata = body as CANNON.Body & {
+            isAttackHitbox?: boolean;
+            isEnemyAttackHitbox?: boolean;
+            isTrigger?: boolean;
+        };
+
+        if (body === this.body || body === this.player.body || body === this.attackHitboxBody) {
+            return false;
+        }
+
+        if (bodyMetadata.isAttackHitbox || bodyMetadata.isEnemyAttackHitbox || bodyMetadata.isTrigger) {
+            return false;
+        }
+
+        if (body.collisionResponse === false) {
+            return false;
+        }
+
+        return body.mass === 0;
     }
 
     private doesLaserProjectileHitPlayer(start: THREE.Vector3, end: THREE.Vector3): boolean {
@@ -1240,7 +1308,7 @@ export class Enemy extends BaseMesh {
 
     private hideLaserProjectile(): void {
         this.laserProjectileActive = false;
-        this.laserProjectileRemainingDistance = 0;
+        this.laserProjectileRemainingLifetime = 0;
         if (this.laserProjectile) {
             this.laserProjectile.visible = false;
         }
@@ -1255,7 +1323,8 @@ export class Enemy extends BaseMesh {
             return distToPlayer >= minimumAttackDistance &&
                 distToPlayer <= this.attackRange &&
                 this.attackTimer <= 0 &&
-                !this.isAttacking;
+                !this.isAttacking &&
+                this.hasClearLineOfSightToPlayer();
         }
         const attackRangeVariance = Math.random() * this.attackRange * 0.3;
         return distToPlayer < this.attackRange + attackRangeVariance &&

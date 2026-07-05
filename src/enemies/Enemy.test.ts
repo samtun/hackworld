@@ -116,6 +116,7 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
             removeBody: vi.fn(),
             bodies: [],
             broadphase: { aabbQuery: vi.fn().mockReturnValue([]) },
+            raycastAll: vi.fn().mockReturnValue(false),
         },
         scene: { add: vi.fn(), remove: vi.fn() },
         mesh: {
@@ -130,7 +131,7 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         attackHitboxActive: false,
         laserProjectile: null,
         laserProjectileVelocity: new THREE.Vector3(),
-        laserProjectileRemainingDistance: 0,
+        laserProjectileRemainingLifetime: 0,
         laserProjectileActive: false,
         hasSpawnedLaserProjectileThisAttack: false,
         isRetreatingForSpacing: false,
@@ -462,6 +463,27 @@ describe('Enemy laser combat behavior', () => {
         expect(movement).toBeNull();
     });
 
+    it('moves closer instead of holding position when line of sight is blocked', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+        enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
+        enemy.computeMovement = vi.fn().mockReturnValue({ dirX: 1, dirZ: 0 });
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(7, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            7,
+            0.016,
+        );
+
+        expect(movement).toEqual({ dirX: 1, dirZ: 0 });
+        expect(enemy.computeMovement).toHaveBeenCalledWith(expect.any(CANNON.Vec3), expect.any(CANNON.Vec3), 0.016);
+    });
+
     it('retreats when the player gets too close to a laser enemy', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
@@ -570,7 +592,7 @@ describe('Enemy laser combat behavior', () => {
         expect(enemy.activateAttackHitbox).not.toHaveBeenCalled();
     });
 
-    it('damages the player only after the projectile reaches them', () => {
+    it('keeps traveling after the initial target distance until it reaches the player', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
             enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
@@ -599,12 +621,54 @@ describe('Enemy laser combat behavior', () => {
         const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
 
         enemy.fireLaserProjectile();
-        enemy.updateLaserProjectile(0.1);
+        enemy.player.body.position = new CANNON.Vec3(9, 1, 0);
+        enemy.updateLaserProjectile(0.5);
         expect(enemy.player.takeDamage).not.toHaveBeenCalled();
 
-        enemy.updateLaserProjectile(0.4);
+        enemy.updateLaserProjectile(0.1);
         expect(enemy.player.takeDamage).toHaveBeenCalledWith(enemy.damage, enemy.body.position, false);
         randomSpy.mockRestore();
+    });
+
+    it('stops the projectile when it hits a solid obstacle before the player', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+        }) as any;
+        enemy.body.position = new CANNON.Vec3(0, 1, 0);
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(7, 1, 0) },
+            takeDamage: vi.fn(),
+        };
+        enemy.laserProjectile = {
+            position: new THREE.Vector3(0, 1, 0),
+            quaternion: { setFromUnitVectors: vi.fn() },
+            visible: false,
+            geometry: { dispose: vi.fn() },
+            material: { dispose: vi.fn() },
+        };
+        enemy.world.raycastAll = vi.fn((_from: CANNON.Vec3, _to: CANNON.Vec3, _options: unknown, callback: (result: CANNON.RaycastResult) => void) => {
+            callback({
+                body: { mass: 0, collisionResponse: true },
+                hitPointWorld: new CANNON.Vec3(4, 1, 0),
+            } as CANNON.RaycastResult);
+            return true;
+        });
+        enemy.attack();
+        enemy.getLaserAttackEndpoints = vi.fn().mockReturnValue({
+            start: new THREE.Vector3(0, 1, 0),
+            end: new THREE.Vector3(7, 1, 0),
+        });
+
+        enemy.fireLaserProjectile();
+        enemy.updateLaserProjectile(0.5);
+
+        expect(enemy.player.takeDamage).not.toHaveBeenCalled();
+        expect(enemy.laserProjectileActive).toBe(false);
+        expect(enemy.laserProjectile.visible).toBe(false);
     });
 
     it('can still launch a laser attack while retreating', () => {
@@ -633,6 +697,47 @@ describe('Enemy laser combat behavior', () => {
 
         expect(enemy.attack).toHaveBeenCalledOnce();
         randomSpy.mockRestore();
+    });
+
+    it('does not start a laser attack through an occluding obstacle while retreating', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(3, 0, 0) },
+            takeDamage: vi.fn(),
+        };
+        enemy.body.position = new CANNON.Vec3(0, 0, 0);
+        enemy.basePosition = new CANNON.Vec3(0, 0, 0);
+        enemy.computeCombatMovement = vi.fn().mockImplementation(() => {
+            enemy.isRetreatingForSpacing = true;
+            return { dirX: -1, dirZ: 0 };
+        });
+        enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
+        enemy.attack = vi.fn();
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+
+        enemy.update(0.2);
+
+        expect(enemy.attack).not.toHaveBeenCalled();
+        randomSpy.mockRestore();
+    });
+
+    it('requires a clear line of sight before a laser enemy can attack', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+        enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
+
+        expect(enemy.canAttackPlayer(7)).toBe(false);
     });
 });
 
