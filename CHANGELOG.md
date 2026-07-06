@@ -1,3 +1,17 @@
+# [3.44.0](https://github.com/samtun/hackworld/compare/v3.43.0...v3.44.0) (2026-07-06)
+
+
+### Features
+
+* add card album C2 and C3 ([ee27b7e](https://github.com/samtun/hackworld/commit/ee27b7e244f432135e4211bdd24ec80c9b39f937))
+
+# [3.43.0](https://github.com/samtun/hackworld/compare/v3.42.0...v3.43.0) (2026-07-06)
+
+
+### Features
+
+* add C2 album cards ([f517921](https://github.com/samtun/hackworld/commit/f517921425d21e3b14bd3af4786da6059a1a8f06))
+
 # [3.42.0](https://github.com/samtun/hackworld/compare/v3.41.0...v3.42.0) (2026-07-02)
 
 
