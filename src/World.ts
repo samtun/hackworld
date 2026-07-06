@@ -305,17 +305,17 @@ export class World {
     update(dt: number, player: Player, cameraPosition: THREE.Vector3, anyMenuOpen: boolean) {
         if (!this.currentStage) return;
 
-        // Update grid plane shader time uniform
-        this.gridPlaneMaterial.uniforms.u_time.value += dt;
-        this.gridPlaneMaterial.uniforms.u_cameraPosition.value.copy(cameraPosition);
-
         // Update stage (teleporters, etc.)
         this.currentStage.update(dt, player, anyMenuOpen, cameraPosition);
 
         if (anyMenuOpen) {
-            // If any menu is open, skip enemy and drop updates to pause the world
+            // If any menu is open, skip all other updates
             return;
         }
+
+        // Update grid plane shader time uniform
+        this.gridPlaneMaterial.uniforms.u_time.value += dt;
+        this.gridPlaneMaterial.uniforms.u_cameraPosition.value.copy(cameraPosition);
 
         // Update systems that operate across stages (healing, etc.)
         HealingSystem.Instance.update(dt);

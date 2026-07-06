@@ -834,7 +834,11 @@ export abstract class BaseStage {
      * procedural room layout is active – room-based enemy aggro, automatic
      * teleporter activation, and wall transparency shader uniforms.
      */
-    update(dt: number, player: Player, _anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
+    update(dt: number, player: Player, anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
+        if (anyMenuOpen) {
+            return;
+        }
+
         this.teleporters.forEach(teleporter => teleporter.updateWithPlayerPosition(dt, player.position));
 
         // Update mixers
