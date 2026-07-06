@@ -18,10 +18,10 @@ describe('EnemyType definitions', () => {
         expect(stalkerDefinition.movementAbilities?.[0].cooldown).toBe(5.0);
     });
 
-    it('defines pod as a laser enemy using the brute placeholder model', () => {
+    it('defines pod as a ranged enemy using the brute placeholder model', () => {
         const podDefinition = getEnemyTypeDefinition(EnemyType.Pod);
         expect(podDefinition.modelPath).toBe('models/brute_enemy.glb');
-        expect(podDefinition.combatBehavior?.attackMode).toBe(EnemyAttackMode.Laser);
+        expect(podDefinition.combatBehavior?.attackMode).toBe(EnemyAttackMode.Ranged);
         expect(podDefinition.combatBehavior?.preferredDistance).toBe(7.0);
         expect(podDefinition.combatBehavior?.attackRange).toBe(7.75);
     });

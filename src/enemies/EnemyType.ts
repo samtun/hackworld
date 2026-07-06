@@ -9,10 +9,10 @@ export enum EnemyType {
 
 export enum EnemyAttackMode {
     Melee = 'melee',
-    Laser = 'laser',
+    Ranged = 'ranged',
 }
 
-export const POD_LASER_PROJECTILE_COLOR = 0xff8a00;
+export const POD_PROJECTILE_COLOR = 0xff8a00;
 
 export interface EnemyCombatBehaviorDefinition {
     attackMode: EnemyAttackMode;
@@ -21,7 +21,7 @@ export interface EnemyCombatBehaviorDefinition {
     preferredDistance?: number;
     preferredDistanceTolerance?: number;
     minimumAttackDistance?: number;
-    laserColor?: number;
+    projectileColor?: number;
 }
 
 export interface EnemyMovementAbilityCommandContext {
@@ -109,13 +109,13 @@ const ENEMY_TYPE_DEFINITIONS: Record<EnemyType, EnemyTypeDefinition> = {
         modelPath: 'models/pod_enemy.glb',
         speedMultiplier: 0.5,
         combatBehavior: {
-            attackMode: EnemyAttackMode.Laser,
+            attackMode: EnemyAttackMode.Ranged,
             attackCooldown: 1.35,
             attackRange: 7.75,
             preferredDistance: 7.0,
             preferredDistanceTolerance: 0.75,
             minimumAttackDistance: 6.0,
-            laserColor: POD_LASER_PROJECTILE_COLOR,
+            projectileColor: POD_PROJECTILE_COLOR,
         },
     },
 };
