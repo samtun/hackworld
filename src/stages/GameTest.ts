@@ -124,6 +124,7 @@ export class GameTest extends BaseStage {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            'models/pod_enemy.glb',
             ...DUNGEON_PROP_ASSET_PATHS,
         ];
     }

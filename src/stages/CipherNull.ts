@@ -112,7 +112,7 @@ export class CipherNull extends StageWithLevels {
         combatRoomCount: { min: 9, max: 13 },
         combatRoomSize: { minWidth: 14, maxWidth: 30, minDepth: 14, maxDepth: 30 },
         finalRoomSize: { minWidth: 20, maxWidth: 35, minDepth: 20, maxDepth: 35 },
-        enemyCount: { min: 2, max: 7, areaPerEnemy: 55, eliteFraction: 0.35 },
+        enemyCount: { min: 2, max: 4, areaPerEnemy: 80, eliteFraction: 0.30 },
         obstacleCount: { min: 2, max: 4 },
         obstacleProps: CipherNull.obstacleProps,
         hasBoss: true,
@@ -161,6 +161,7 @@ export class CipherNull extends StageWithLevels {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            'models/pod_enemy.glb',
             ...this.getDungeonPropAssets(CipherNull.obstacleProps),
         ];
     }

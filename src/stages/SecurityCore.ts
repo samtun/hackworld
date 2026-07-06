@@ -123,7 +123,7 @@ export class SecurityCore extends StageWithLevels {
         combatRoomCount: { min: 12, max: 15 },
         combatRoomSize: { minWidth: 13, maxWidth: 33, minDepth: 13, maxDepth: 33 },
         finalRoomSize: { minWidth: 20, maxWidth: 39, minDepth: 20, maxDepth: 39 },
-        enemyCount: { min: 2, max: 8, areaPerEnemy: 48, eliteFraction: 0.45 },
+        enemyCount: { min: 2, max: 5, areaPerEnemy: 70, eliteFraction: 0.4 },
         obstacleCount: { min: 2, max: 4 },
         obstacleProps: SecurityCore.obstacleProps,
         hasBoss: true,
@@ -175,6 +175,7 @@ export class SecurityCore extends StageWithLevels {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            'models/pod_enemy.glb',
             ...this.getDungeonPropAssets(SecurityCore.obstacleProps),
         ];
     }

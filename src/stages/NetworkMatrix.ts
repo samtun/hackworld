@@ -57,7 +57,7 @@ export class NetworkMatrix extends BaseStage {
         combatRoomCount: { min: 5, max: 7 },
         combatRoomSize: { minWidth: 13, maxWidth: 20, minDepth: 13, maxDepth: 20 },
         finalRoomSize: { minWidth: 16, maxWidth: 24, minDepth: 16, maxDepth: 24 },
-        enemyCount: { min: 1, max: 4, areaPerEnemy: 70, eliteFraction: 0.15 },
+        enemyCount: { min: 1, max: 3, areaPerEnemy: 100, eliteFraction: 0.15 },
         obstacleCount: { min: 1, max: 2 },
         obstacleProps: NetworkMatrix.obstacleProps,
         hasBoss: false,

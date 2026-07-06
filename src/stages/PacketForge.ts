@@ -90,7 +90,7 @@ export class PacketForge extends BaseStage {
         combatRoomCount: { min: 6, max: 9 },
         combatRoomSize: { minWidth: 14, maxWidth: 24, minDepth: 14, maxDepth: 24 },
         finalRoomSize: { minWidth: 19, maxWidth: 29, minDepth: 19, maxDepth: 29 },
-        enemyCount: { min: 2, max: 5, areaPerEnemy: 62, eliteFraction: 0.25 },
+        enemyCount: { min: 1, max: 3, areaPerEnemy: 90, eliteFraction: 0.25 },
         obstacleCount: { min: 1, max: 3 },
         obstacleProps: PacketForge.obstacleProps,
         hasBoss: true,
@@ -126,6 +126,7 @@ export class PacketForge extends BaseStage {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            'models/pod_enemy.glb',
             ...this.getDungeonPropAssets(PacketForge.obstacleProps),
         ];
     }
