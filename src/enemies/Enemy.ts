@@ -1046,6 +1046,11 @@ export class Enemy extends BaseMesh {
         distToPlayer: number,
         dt: number,
     ): { dirX: number; dirZ: number } | null {
+        // Prioritize moving to get line of sight before considering combat distance bands
+        if (!this.hasClearLineOfSightToPlayer()) {
+            return this.computeMovement(playerPos, myPos, dt);
+        }
+
         const preferredBand = this.getPreferredCombatDistanceBand();
         if (!preferredBand) {
             return this.computeMovement(playerPos, myPos, dt);
@@ -1061,9 +1066,7 @@ export class Enemy extends BaseMesh {
             }
             return retreatMovement;
         }
-        if (!this.hasClearLineOfSightToPlayer()) {
-            return this.computeMovement(playerPos, myPos, dt);
-        }
+
         return null;
     }
 
