@@ -716,7 +716,7 @@ export class Player extends BaseMesh {
         }
     }
 
-    private updateAnimations(preventMovement: boolean) {
+    private updateAnimations() {
         if (this.isDead) {
             return;
         }
@@ -769,7 +769,7 @@ export class Player extends BaseMesh {
         }
 
         // Run / Idle
-        const isMoving = !preventMovement && this.input.getMovementVector().length() > 0.1;
+        const isMoving = this.input.getMovementVector().length() > 0.1;
         if (isMoving) {
             const action = this.weapon.weaponType !== WeaponType.HAMMER ? ActionType.RunOneHanded : ActionType.RunTwoHanded;
             this.fadeToAction(action, 0.05);
@@ -778,19 +778,17 @@ export class Player extends BaseMesh {
         }
     }
 
-    update(dt: number, isNearInteractive: boolean = false, preventMovement: boolean = false) {
+    update(dt: number, isNearInteractive: boolean = false, isAnyMenuOpen: boolean = false) {
+        if (isAnyMenuOpen) {
+            return; // Skip update if any menu is open
+        }
+
         // Update animations
         if (this.mixer) {
             this.mixer.update(dt);
         }
 
-        this.updateAnimations(preventMovement);
-
-        if (preventMovement) {
-            this.haltMovement();
-            this.syncPosition();
-            return;
-        }
+        this.updateAnimations();
 
         if (this.isDead) return;
 

@@ -5,6 +5,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class NetworkMatrix extends BaseStage {
@@ -56,7 +57,7 @@ export class NetworkMatrix extends BaseStage {
         combatRoomCount: { min: 5, max: 7 },
         combatRoomSize: { minWidth: 13, maxWidth: 20, minDepth: 13, maxDepth: 20 },
         finalRoomSize: { minWidth: 16, maxWidth: 24, minDepth: 16, maxDepth: 24 },
-        enemyCount: { min: 1, max: 4, areaPerEnemy: 70, eliteFraction: 0.15 },
+        enemyCount: { min: 1, max: 3, areaPerEnemy: 100, eliteFraction: 0.15 },
         obstacleCount: { min: 1, max: 2 },
         obstacleProps: NetworkMatrix.obstacleProps,
         hasBoss: false,
@@ -104,6 +105,12 @@ export class NetworkMatrix extends BaseStage {
         return spawnType === EnemySpawnType.Elite
             ? NetworkMatrix.eliteEnemyConfig
             : NetworkMatrix.regularEnemyConfig;
+    }
+
+    protected override getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        return spawnType === EnemySpawnType.Boss
+            ? [EnemyType.Brute]
+            : [EnemyType.Brute];
     }
 
     async load(): Promise<void> {

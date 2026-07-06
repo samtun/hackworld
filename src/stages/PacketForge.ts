@@ -5,6 +5,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class PacketForge extends BaseStage {
@@ -48,6 +49,24 @@ export class PacketForge extends BaseStage {
         color: 0x1d4f7a,
     };
 
+    private static readonly regularPodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 650,
+        speed: 2.45,
+        damage: 300,
+        baseExp: 175,
+        size: 1.75,
+        color: 0x4b2f80,
+    };
+
+    private static readonly elitePodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 1250,
+        speed: 2.85,
+        damage: 540,
+        baseExp: 320,
+        size: 2.35,
+        color: 0x6944ad,
+    };
+
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 6200,
         speed: 4.35,
@@ -71,7 +90,7 @@ export class PacketForge extends BaseStage {
         combatRoomCount: { min: 6, max: 9 },
         combatRoomSize: { minWidth: 14, maxWidth: 24, minDepth: 14, maxDepth: 24 },
         finalRoomSize: { minWidth: 19, maxWidth: 29, minDepth: 19, maxDepth: 29 },
-        enemyCount: { min: 2, max: 5, areaPerEnemy: 62, eliteFraction: 0.25 },
+        enemyCount: { min: 1, max: 3, areaPerEnemy: 90, eliteFraction: 0.25 },
         obstacleCount: { min: 1, max: 3 },
         obstacleProps: PacketForge.obstacleProps,
         hasBoss: true,
@@ -107,6 +126,7 @@ export class PacketForge extends BaseStage {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            'models/pod_enemy.glb',
             ...this.getDungeonPropAssets(PacketForge.obstacleProps),
         ];
     }
@@ -117,6 +137,26 @@ export class PacketForge extends BaseStage {
         return spawnType === EnemySpawnType.Elite
             ? PacketForge.eliteEnemyConfig
             : PacketForge.regularEnemyConfig;
+    }
+
+    protected override getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        return spawnType === EnemySpawnType.Boss
+            ? [EnemyType.Brute]
+            : [EnemyType.Brute, EnemyType.Pod];
+    }
+
+    protected override getEnemyTypeConfig(
+        enemyType: EnemyType,
+        spawnType: EnemySpawnType,
+    ): Partial<EnemyArchetypeConfig> {
+        if (enemyType !== EnemyType.Pod) {
+            return {};
+        }
+        // Packet Forge is a single-depth stage, so these per-type pod stats are
+        // used directly instead of going through StageWithLevels difficulty scaling.
+        return spawnType === EnemySpawnType.Elite
+            ? PacketForge.elitePodEnemyConfig
+            : PacketForge.regularPodEnemyConfig;
     }
 
     protected override getBossConfig(): Partial<EnemyArchetypeConfig> {

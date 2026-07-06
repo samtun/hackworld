@@ -10,7 +10,15 @@ import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
 import { BlobShadow } from '../BlobShadow';
 import type { BreakableBarrel } from '../items/BreakableBarrel';
 import { AudioManager } from '../AudioManager';
-import { DEFAULT_ENEMY_TYPE, EnemyType, type EnemyTypeDefinition, getEnemyTypeDefinition } from './EnemyType';
+import {
+    DEFAULT_ENEMY_TYPE,
+    EnemyAttackMode,
+    EnemyType,
+    POD_PROJECTILE_COLOR,
+    type EnemyCombatBehaviorDefinition,
+    type EnemyTypeDefinition,
+    getEnemyTypeDefinition,
+} from './EnemyType';
 
 /** Maximum downward distance (metres) for the shadow floor raycast. */
 const SHADOW_CAST_DIST = 4.0;
@@ -44,6 +52,30 @@ export const ENEMY_RADIUS_FACTOR = 0.326;
 const ENEMY_ATTACK_RANGE_FACTOR = 0.792;
 const BASE_ATTACK_HITBOX_SIZE = new CANNON.Vec3(0.5, 0.5, 0.8);
 const BASE_ATTACK_HITBOX_OFFSET = 1.0;
+const RANGED_START_OFFSET_FACTOR = 0.9;
+const RANGED_TARGET_VERTICAL_OFFSET = 0.6;
+const RANGED_ORIGIN_VERTICAL_FACTOR = 0.35;
+const RANGED_VERTICAL_OFFSET = 0.2;
+const RANGED_MIN_START_OFFSET = 0.4;
+const PROJECTILE_SPEED = 15;
+const RANGED_PROJECTILE_WIDTH = 0.18;
+const RANGED_PROJECTILE_HEIGHT = 0.18;
+const RANGED_PROJECTILE_LENGTH = 0.5;
+const RANGED_PROJECTILE_PLAYER_HIT_RADIUS = 0.65;
+const PROJECTILE_LIFETIME = 4;
+const STANDOFF_VELOCITY_DAMPING = 0.9;
+const RETREAT_ATTACK_RATE_PER_SECOND = 0.85;
+const NAV_TARGET_CHANGE_RECOMPUTE_DISTANCE = 0.5;
+const RETREAT_ANGLE_OFFSETS = [
+    0,
+    Math.PI / 4,
+    -Math.PI / 4,
+    Math.PI / 2,
+    -Math.PI / 2,
+    (3 * Math.PI) / 4,
+    (-3 * Math.PI) / 4,
+    Math.PI,
+];
 
 /** Maximum allowed enemy size (metres). Keeps enemies passable through corridors. */
 export const MAX_ENEMY_SIZE = 2.0;
@@ -137,6 +169,9 @@ export class Enemy extends BaseMesh {
     private navPathIndex = 0;
     /** Seconds since the path was last recomputed. */
     private navPathAge = 0;
+    /** Target used for the current cached navigation path. */
+    private navPathTargetX: number | null = null;
+    private navPathTargetZ: number | null = null;
     /** How often (in seconds) to recompute the path. */
     private readonly NAV_RECOMPUTE_INTERVAL = 0.5;
 
@@ -206,10 +241,20 @@ export class Enemy extends BaseMesh {
     readonly enemyType: EnemyType;
     /** Resolved type definition for this enemy family (model path, movement traits). */
     private enemyTypeDefinition: EnemyTypeDefinition;
+    /** Resolved combat behavior for this enemy family. */
+    private enemyCombatBehavior: EnemyCombatBehaviorDefinition;
     /** Cooldown timers for optional enemy-type movement abilities keyed by ability id. */
     private enemyTypeAbilityCooldownTimers: Map<string, number> = new Map();
     /** Counts down while an ability is controlling horizontal movement; skip normal velocity override while > 0. */
     private abilityMoveTimer: number = 0;
+    /** Temporary projectile used by ranged ranged enemies. */
+    private projectile: THREE.Mesh | null = null;
+    private projectileVelocity: THREE.Vector3 = new THREE.Vector3();
+    private projectileRemainingLifetime: number = 0;
+    private projectileActive: boolean = false;
+    private hasSpawnedProjectileThisAttack: boolean = false;
+    private isRetreatingForSpacing: boolean = false;
+    private isCorneredForSpacing: boolean = false;
 
     /** Flat circular shadow below the enemy. */
     public blobShadow!: BlobShadow;
@@ -239,6 +284,9 @@ export class Enemy extends BaseMesh {
         this.physicsMaterial = physicsMaterial;
         this.enemyType = enemyType;
         this.enemyTypeDefinition = enemyTypeDefinition;
+        this.enemyCombatBehavior = enemyTypeDefinition.combatBehavior ?? {
+            attackMode: EnemyAttackMode.Melee,
+        };
         this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
 
         // Pre-seed cooldown timers so abilities don't fire immediately on spawn.
@@ -262,7 +310,8 @@ export class Enemy extends BaseMesh {
         this.blockChance = resolvedConfig.blockChance;
         this.size = resolvedConfig.size;
         this.radius = this.computeRadius(this.size);
-        this.attackRange = this.size * ENEMY_ATTACK_RANGE_FACTOR;
+        this.attackRange = this.enemyCombatBehavior.attackRange ?? this.size * ENEMY_ATTACK_RANGE_FACTOR;
+        this.attackCooldown = this.enemyCombatBehavior.attackCooldown ?? this.attackCooldown;
         const sizeScale = this.size / BASE_ENEMY_SIZE;
         this.attackHitboxSize.set(
             BASE_ATTACK_HITBOX_SIZE.x * sizeScale,
@@ -369,6 +418,7 @@ export class Enemy extends BaseMesh {
                 if (finishedAction === this.actions[EnemyActionType.Attack]) {
                     this.isAttacking = false;
                     this.deactivateAttackHitbox();
+                    this.hideProjectile();
                 }
                 if (finishedAction === this.actions[EnemyActionType.Death]) {
                     this.isDeathFading = true;
@@ -673,6 +723,8 @@ export class Enemy extends BaseMesh {
         const distToBase = Math.sqrt(dxBase * dxBase + dzBase * dzBase);
 
         let isMoving = false;
+        this.isRetreatingForSpacing = false;
+        this.isCorneredForSpacing = false;
 
         // Don't move while attacking
         if (!this.isAttacking) {
@@ -719,7 +771,10 @@ export class Enemy extends BaseMesh {
                     // An ability is still controlling movement; don't override horizontal velocity.
                     isMoving = true;
                 } else {
-                    const moveResult = this.computeMovement(playerPos, myPos, dt);
+                    const preferredCombatDistanceBand = this.getPreferredCombatDistanceBand();
+                    const moveResult = preferredCombatDistanceBand
+                        ? this.computeCombatMovement(playerPos, myPos, distToPlayer, dt)
+                        : this.computeMovement(playerPos, myPos, dt);
                     if (moveResult) {
                         this.body.velocity.x = moveResult.dirX * this.speed;
                         this.body.velocity.z = moveResult.dirZ * this.speed;
@@ -729,6 +784,14 @@ export class Enemy extends BaseMesh {
                         const targetQuaternion = new THREE.Quaternion();
                         targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
                         this.mesh.quaternion.slerp(targetQuaternion, 10 * dt);
+                    } else if (preferredCombatDistanceBand) {
+                        // Ranged enemies stop inside their preferred stand-off band.
+                        // Damping prevents them from drifting forward on leftover momentum.
+                        this.body.velocity.x *= STANDOFF_VELOCITY_DAMPING;
+                        this.body.velocity.z *= STANDOFF_VELOCITY_DAMPING;
+                    } else {
+                        this.body.velocity.x *= 0.9;
+                        this.body.velocity.z *= 0.9;
                     }
                 }
             } else {
@@ -793,8 +856,16 @@ export class Enemy extends BaseMesh {
         }
 
         // Attack Trigger
-        if (this.canAttackPlayer(distToPlayer)) {
-            console.log(`Attack range check: dist=${distToPlayer.toFixed(2)}`);
+        if (this.shouldUseRangedAttack() &&
+            this.isRetreatingForSpacing &&
+            distToPlayer <= this.attackRange &&
+            this.attackTimer <= 0 &&
+            !this.isAttacking &&
+            this.hasClearLineOfSightToPlayer() &&
+            (this.isCorneredForSpacing || Math.random() < RETREAT_ATTACK_RATE_PER_SECOND * dt)
+        ) {
+            this.attack();
+        } else if (this.canAttackPlayer(distToPlayer)) {
             this.attack();
         }
 
@@ -807,23 +878,34 @@ export class Enemy extends BaseMesh {
                 this.isAttacking = false;
                 this.deactivateAttackHitbox();
             } else {
-                // Activate hitbox after delay
-                if (this.attackAnimTimer >= this.attackHitboxDelay && !this.attackHitboxActive) {
-                    this.activateAttackHitbox();
-                }
+                if (this.shouldUseRangedAttack()) {
+                    const rangedWindowActive = this.attackAnimTimer >= this.attackHitboxDelay &&
+                        this.attackAnimTimer < this.attackHitboxDelay + this.attackHitboxDuration;
 
-                // Deactivate hitbox after its active duration
-                if (this.attackHitboxActive && this.attackAnimTimer >= this.attackHitboxDelay + this.attackHitboxDuration) {
-                    this.deactivateAttackHitbox();
-                }
+                    if (rangedWindowActive && !this.hasSpawnedProjectileThisAttack) {
+                        this.fireProjectile();
+                    }
+                } else {
+                    // Activate hitbox after delay
+                    if (this.attackAnimTimer >= this.attackHitboxDelay && !this.attackHitboxActive) {
+                        this.activateAttackHitbox();
+                    }
 
-                // Update hitbox position and check collision while active
-                if (this.attackHitboxActive) {
-                    this.updateAttackHitboxPosition();
-                    this.checkAttackHitboxCollision();
+                    // Deactivate hitbox after its active duration
+                    if (this.attackHitboxActive && this.attackAnimTimer >= this.attackHitboxDelay + this.attackHitboxDuration) {
+                        this.deactivateAttackHitbox();
+                    }
+
+                    // Update hitbox position and check collision while active
+                    if (this.attackHitboxActive) {
+                        this.updateAttackHitboxPosition();
+                        this.checkAttackHitboxCollision();
+                    }
                 }
             }
         }
+
+        this.updateProjectile(dt);
 
         // Update animations
         this.updateFootstepAudio(dt, isMoving);
@@ -894,11 +976,17 @@ export class Enemy extends BaseMesh {
         this.navPathAge += dt;
 
         if (this.navGrid) {
+            const targetChanged = this.navPathTargetX === null ||
+                this.navPathTargetZ === null ||
+                Math.abs(this.navPathTargetX - target.x) > NAV_TARGET_CHANGE_RECOMPUTE_DISTANCE ||
+                Math.abs(this.navPathTargetZ - target.z) > NAV_TARGET_CHANGE_RECOMPUTE_DISTANCE;
             // Recompute path periodically (player is moving)
-            if (this.navPath.length === 0 || this.navPathAge >= this.NAV_RECOMPUTE_INTERVAL) {
+            if (this.navPath.length === 0 || this.navPathAge >= this.NAV_RECOMPUTE_INTERVAL || targetChanged) {
                 this.navPath = this.navGrid.findPath(myPos.x, myPos.z, target.x, target.z);
                 this.navPathIndex = 0;
                 this.navPathAge = 0;
+                this.navPathTargetX = target.x;
+                this.navPathTargetZ = target.z;
             }
 
             // Advance along the path
@@ -934,10 +1022,317 @@ export class Enemy extends BaseMesh {
         return { dirX: dx / len, dirZ: dz / len };
     }
 
+    private computeMovementAwayFrom(target: CANNON.Vec3, myPos: CANNON.Vec3): { dirX: number; dirZ: number } | null {
+        const dx = myPos.x - target.x;
+        const dz = myPos.z - target.z;
+        const len = Math.sqrt(dx * dx + dz * dz);
+        if (len <= 0) return null;
+        return { dirX: dx / len, dirZ: dz / len };
+    }
+
+    private getPreferredCombatDistanceBand(): { min: number; max: number } | null {
+        const preferredDistance = this.enemyCombatBehavior.preferredDistance;
+        if (preferredDistance === undefined) return null;
+        const tolerance = this.enemyCombatBehavior.preferredDistanceTolerance ?? 0;
+        return {
+            min: Math.max(0, preferredDistance - tolerance),
+            max: preferredDistance + tolerance,
+        };
+    }
+
+    private computeCombatMovement(
+        playerPos: CANNON.Vec3,
+        myPos: CANNON.Vec3,
+        distToPlayer: number,
+        dt: number,
+    ): { dirX: number; dirZ: number } | null {
+        const preferredBand = this.getPreferredCombatDistanceBand();
+        if (!preferredBand) {
+            return this.computeMovement(playerPos, myPos, dt);
+        }
+        if (distToPlayer > preferredBand.max) {
+            return this.computeMovement(playerPos, myPos, dt);
+        }
+        if (distToPlayer < preferredBand.min) {
+            this.isRetreatingForSpacing = true;
+            const retreatMovement = this.computeRetreatMovement(playerPos, myPos, preferredBand, dt);
+            if (!retreatMovement) {
+                this.isCorneredForSpacing = true;
+            }
+            return retreatMovement;
+        }
+        if (!this.hasClearLineOfSightToPlayer()) {
+            return this.computeMovement(playerPos, myPos, dt);
+        }
+        return null;
+    }
+
+    private shouldUseRangedAttack(): boolean {
+        return this.enemyCombatBehavior.attackMode === EnemyAttackMode.Ranged;
+    }
+
+    private computeRetreatMovement(
+        playerPos: CANNON.Vec3,
+        myPos: CANNON.Vec3,
+        preferredBand: { min: number; max: number },
+        dt: number,
+    ): { dirX: number; dirZ: number } | null {
+        if (!this.navGrid) {
+            return this.computeMovementAwayFrom(playerPos, myPos);
+        }
+
+        const retreatTarget = this.findRetreatTarget(playerPos, myPos, preferredBand);
+        if (!retreatTarget) {
+            return null;
+        }
+
+        return this.computeMovement(retreatTarget, myPos, dt);
+    }
+
+    private findRetreatTarget(
+        playerPos: CANNON.Vec3,
+        myPos: CANNON.Vec3,
+        preferredBand: { min: number; max: number },
+    ): CANNON.Vec3 | null {
+        if (!this.navGrid) {
+            return null;
+        }
+
+        const away = myPos.vsub(playerPos);
+        away.y = 0;
+        if (away.length() <= 0) {
+            return null;
+        }
+        away.normalize();
+
+        const preferredDistance = this.enemyCombatBehavior.preferredDistance ??
+            (preferredBand.min + preferredBand.max) / 2;
+        const baseAngle = Math.atan2(away.z, away.x);
+
+        for (const angleOffset of RETREAT_ANGLE_OFFSETS) {
+            const angle = baseAngle + angleOffset;
+            const candidate = new CANNON.Vec3(
+                playerPos.x + Math.cos(angle) * preferredDistance,
+                myPos.y,
+                playerPos.z + Math.sin(angle) * preferredDistance,
+            );
+            const path = this.navGrid.findPath(myPos.x, myPos.z, candidate.x, candidate.z);
+            if (path.length > 0) {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    private getRawRangedAttackEndpoints(): { start: THREE.Vector3; end: THREE.Vector3 } {
+        const targetY = this.player.body.position.y + RANGED_TARGET_VERTICAL_OFFSET;
+        const start = new CANNON.Vec3(
+            this.body.position.x,
+            this.body.position.y + this.bodyHalfExtentY * RANGED_ORIGIN_VERTICAL_FACTOR,
+            this.body.position.z,
+        );
+        const target = new CANNON.Vec3(this.player.body.position.x, targetY, this.player.body.position.z);
+        const direction = target.vsub(start);
+        const distance = direction.length();
+
+        if (distance <= 0) {
+            const point = new THREE.Vector3(start.x, start.y, start.z);
+            return { start: point, end: point.clone() };
+        }
+
+        direction.normalize();
+        const rangedStartOffset = Math.max(this.radius * RANGED_START_OFFSET_FACTOR, RANGED_MIN_START_OFFSET);
+        start.x += direction.x * rangedStartOffset;
+        start.y += direction.y * RANGED_VERTICAL_OFFSET;
+        start.z += direction.z * rangedStartOffset;
+
+        return {
+            start: new THREE.Vector3(start.x, start.y, start.z),
+            end: new THREE.Vector3(target.x, target.y, target.z),
+        };
+    }
+
+    private ensureProjectile(): void {
+        if (this.projectile) return;
+
+        const geometry = new THREE.BoxGeometry(
+            RANGED_PROJECTILE_WIDTH,
+            RANGED_PROJECTILE_HEIGHT,
+            RANGED_PROJECTILE_LENGTH,
+        );
+        const material = new THREE.MeshBasicMaterial({
+            color: this.enemyCombatBehavior.projectileColor ?? POD_PROJECTILE_COLOR,
+        });
+        this.projectile = new THREE.Mesh(geometry, material);
+        this.projectile.visible = false;
+        this.scene.add(this.projectile);
+    }
+
+    private fireProjectile(): void {
+        const rangedEndpoints = this.getRawRangedAttackEndpoints();
+        const direction = rangedEndpoints.end.clone().sub(rangedEndpoints.start);
+        const distance = direction.length();
+        if (distance <= 0) {
+            return;
+        }
+
+        this.ensureProjectile();
+        if (!this.projectile) return;
+
+        direction.normalize();
+        this.projectile.position.copy(rangedEndpoints.start);
+        this.projectile.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
+        this.projectile.visible = true;
+        this.projectileVelocity.copy(direction);
+        this.projectileRemainingLifetime = PROJECTILE_LIFETIME;
+        this.projectileActive = true;
+        this.hasSpawnedProjectileThisAttack = true;
+    }
+
+    private updateProjectile(dt: number): void {
+        if (!this.projectileActive || !this.projectile) return;
+
+        const start = this.projectile.position.clone();
+        const end = start.clone().addScaledVector(this.projectileVelocity, PROJECTILE_SPEED * dt);
+        const blockerHit = this.findProjectileBlocker(start, end);
+        const segmentEnd = blockerHit?.point ?? end;
+        const blockerDistance = blockerHit ? start.distanceTo(blockerHit.point) : null;
+        this.projectile.position.copy(segmentEnd);
+
+        const playerHitDistance = this.getProjectileHitDistance(start, segmentEnd);
+        if (!this.hasDealtDamageThisAttack &&
+            playerHitDistance !== null &&
+            (blockerDistance === null || playerHitDistance < blockerDistance)
+        ) {
+            this.dealDamage();
+            this.hasDealtDamageThisAttack = true;
+            this.hideProjectile();
+            return;
+        }
+
+        if (blockerHit) {
+            this.hideProjectile();
+            return;
+        }
+
+        this.projectileRemainingLifetime -= dt;
+        if (this.projectileRemainingLifetime <= 0) {
+            this.hideProjectile();
+        }
+    }
+
+    private hasClearLineOfSightToPlayer(): boolean {
+        const { start, end } = this.getRawRangedAttackEndpoints();
+        return this.findProjectileBlocker(start, end) === null;
+    }
+
+    private findProjectileBlocker(
+        start: THREE.Vector3,
+        end: THREE.Vector3,
+    ): { point: THREE.Vector3; body: CANNON.Body } | null {
+        const hits: { distance: number; point: THREE.Vector3; body: CANNON.Body }[] = [];
+        const startVec = new CANNON.Vec3(start.x, start.y, start.z);
+        const endVec = new CANNON.Vec3(end.x, end.y, end.z);
+
+        this.world.raycastAll(
+            startVec,
+            endVec,
+            { skipBackfaces: true },
+            (result: CANNON.RaycastResult) => {
+                if (!result.body || !this.isProjectileBlockingBody(result.body)) {
+                    return;
+                }
+
+                hits.push({
+                    distance: startVec.distanceTo(result.hitPointWorld),
+                    point: new THREE.Vector3(
+                        result.hitPointWorld.x,
+                        result.hitPointWorld.y,
+                        result.hitPointWorld.z,
+                    ),
+                    body: result.body,
+                });
+            },
+        );
+
+        if (hits.length === 0) {
+            return null;
+        }
+
+        hits.sort((a, b) => a.distance - b.distance);
+        return {
+            point: hits[0].point,
+            body: hits[0].body,
+        };
+    }
+
+    private isProjectileBlockingBody(body: CANNON.Body): boolean {
+        const bodyMetadata = body as CANNON.Body & {
+            isAttackHitbox?: boolean;
+            isEnemyAttackHitbox?: boolean;
+            isTrigger?: boolean;
+        };
+
+        if (body === this.body || body === this.player.body || body === this.attackHitboxBody) {
+            return false;
+        }
+
+        if (bodyMetadata.isAttackHitbox || bodyMetadata.isEnemyAttackHitbox || bodyMetadata.isTrigger) {
+            return false;
+        }
+
+        if (body.collisionResponse === false) {
+            return false;
+        }
+
+        return body.mass === 0;
+    }
+
+    private getProjectileHitDistance(start: THREE.Vector3, end: THREE.Vector3): number | null {
+        const playerTarget = new THREE.Vector3(
+            this.player.body.position.x,
+            this.player.body.position.y + RANGED_TARGET_VERTICAL_OFFSET,
+            this.player.body.position.z,
+        );
+        const closestPoint = new THREE.Vector3();
+        new THREE.Line3(start, end).closestPointToPoint(playerTarget, true, closestPoint);
+        if (closestPoint.distanceToSquared(playerTarget) >
+            RANGED_PROJECTILE_PLAYER_HIT_RADIUS * RANGED_PROJECTILE_PLAYER_HIT_RADIUS
+        ) {
+            return null;
+        }
+        return start.distanceTo(closestPoint);
+    }
+
+    private dealDamage(): void {
+        const isCriticalHit = Math.random() < this.criticalChance;
+        const damage = isCriticalHit
+            ? Math.floor(this.damage * this.criticalHitMultiplier)
+            : this.damage;
+        this.player.takeDamage(damage, this.body.position, isCriticalHit);
+    }
+
+    private hideProjectile(): void {
+        this.projectileActive = false;
+        this.projectileRemainingLifetime = 0;
+        if (this.projectile) {
+            this.projectile.visible = false;
+        }
+    }
+
     /**
      * Check if the enemy can attack the player
      */
     private canAttackPlayer(distToPlayer: number): boolean {
+        if (this.shouldUseRangedAttack()) {
+            const minimumAttackDistance = this.enemyCombatBehavior.minimumAttackDistance ?? 0;
+            return distToPlayer >= minimumAttackDistance &&
+                distToPlayer <= this.attackRange &&
+                this.attackTimer <= 0 &&
+                !this.isAttacking &&
+                this.hasClearLineOfSightToPlayer();
+        }
         const attackRangeVariance = Math.random() * this.attackRange * 0.3;
         return distToPlayer < this.attackRange + attackRangeVariance &&
             this.attackTimer <= 0 &&
@@ -949,6 +1344,7 @@ export class Enemy extends BaseMesh {
         this.isAttacking = true;
         this.attackAnimTimer = 0;
         this.hasDealtDamageThisAttack = false;
+        this.hasSpawnedProjectileThisAttack = false;
 
         console.log("Enemy attacks!");
         AudioManager.Instance.playAttack('enemy');
@@ -1035,6 +1431,7 @@ export class Enemy extends BaseMesh {
         if (this.isAttacking) {
             this.isAttacking = false;
             this.deactivateAttackHitbox();
+            this.hideProjectile();
         }
     }
 
@@ -1047,6 +1444,7 @@ export class Enemy extends BaseMesh {
         if (this.isAttacking) {
             this.isAttacking = false;
             this.deactivateAttackHitbox();
+            this.hideProjectile();
         }
 
         // Disable collision only against the player while still colliding with
@@ -1087,6 +1485,13 @@ export class Enemy extends BaseMesh {
      */
     cleanup(): void {
         this.deactivateAttackHitbox();
+        this.hideProjectile();
+        if (this.projectile) {
+            this.scene.remove(this.projectile);
+            this.projectile.geometry.dispose();
+            (this.projectile.material as THREE.Material).dispose();
+            this.projectile = null;
+        }
         if (this.blockShield) {
             this.blockShield.dispose();
             this.blockShield = null;

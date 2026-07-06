@@ -7,6 +7,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class CipherNull extends StageWithLevels {
@@ -70,6 +71,24 @@ export class CipherNull extends StageWithLevels {
         color: 0x1a515d,
     };
 
+    private static readonly regularPodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 950,
+        speed: 2.7,
+        damage: 550,
+        baseExp: 255,
+        size: 1.95,
+        color: 0x603b9c,
+    };
+
+    private static readonly elitePodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 1500,
+        speed: 3.05,
+        damage: 1000,
+        baseExp: 430,
+        size: 2.55,
+        color: 0x7e55c0,
+    };
+
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 7600,
         speed: 4.55,
@@ -93,7 +112,7 @@ export class CipherNull extends StageWithLevels {
         combatRoomCount: { min: 9, max: 13 },
         combatRoomSize: { minWidth: 14, maxWidth: 30, minDepth: 14, maxDepth: 30 },
         finalRoomSize: { minWidth: 20, maxWidth: 35, minDepth: 20, maxDepth: 35 },
-        enemyCount: { min: 2, max: 7, areaPerEnemy: 55, eliteFraction: 0.35 },
+        enemyCount: { min: 2, max: 4, areaPerEnemy: 80, eliteFraction: 0.30 },
         obstacleCount: { min: 2, max: 4 },
         obstacleProps: CipherNull.obstacleProps,
         hasBoss: true,
@@ -142,6 +161,7 @@ export class CipherNull extends StageWithLevels {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            'models/pod_enemy.glb',
             ...this.getDungeonPropAssets(CipherNull.obstacleProps),
         ];
     }
@@ -152,6 +172,25 @@ export class CipherNull extends StageWithLevels {
         const baseConfig = spawnType === EnemySpawnType.Elite
             ? CipherNull.eliteEnemyConfig
             : CipherNull.regularEnemyConfig;
+        return this.scaleEnemyConfig(baseConfig);
+    }
+
+    protected override getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        return spawnType === EnemySpawnType.Boss
+            ? [EnemyType.Brute]
+            : [EnemyType.Brute, EnemyType.Pod, EnemyType.Stalker];
+    }
+
+    protected override getEnemyTypeConfig(
+        enemyType: EnemyType,
+        spawnType: EnemySpawnType,
+    ): Partial<EnemyArchetypeConfig> {
+        if (enemyType !== EnemyType.Pod) {
+            return {};
+        }
+        const baseConfig = spawnType === EnemySpawnType.Elite
+            ? CipherNull.elitePodEnemyConfig
+            : CipherNull.regularPodEnemyConfig;
         return this.scaleEnemyConfig(baseConfig);
     }
 

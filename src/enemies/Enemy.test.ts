@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import * as CANNON from 'cannon-es';
+import * as THREE from 'three';
 
 vi.mock('../AudioManager', () => ({
     AudioManager: {
@@ -17,6 +19,7 @@ import { PLAYER_COLLISION_GROUP } from '../Player';
 import { EnemyType, getEnemyTypeDefinition } from './EnemyType';
 
 const WORLD_COLLISION_GROUP = 1;
+const FAR_AWAY_POSITION = new CANNON.Vec3(100, 50, 100);
 
 function mockAction() {
     const action: any = {
@@ -55,6 +58,7 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         techDropRateFactor: 1.0,
         enemyType: EnemyType.Brute,
         enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Brute),
+        enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Brute).combatBehavior,
         enemyTypeAbilityCooldownTimers: new Map(),
 
         // State flags
@@ -113,8 +117,9 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
             removeBody: vi.fn(),
             bodies: [],
             broadphase: { aabbQuery: vi.fn().mockReturnValue([]) },
+            raycastAll: vi.fn().mockReturnValue(false),
         },
-        scene: { remove: vi.fn() },
+        scene: { add: vi.fn(), remove: vi.fn() },
         mesh: {
             position: { x: 0, y: 0, z: 0, copy: vi.fn() },
             quaternion: { slerp: vi.fn() },
@@ -125,6 +130,13 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         // Attack hitbox
         attackHitboxBody: null,
         attackHitboxActive: false,
+        projectile: null,
+        projectileVelocity: new THREE.Vector3(),
+        projectileRemainingLifetime: 0,
+        projectileActive: false,
+        hasSpawnedProjectileThisAttack: false,
+        isRetreatingForSpacing: false,
+        isCorneredForSpacing: false,
 
         // Animation (mock actions so fadeToAction doesn't throw)
         actions: {
@@ -430,6 +442,345 @@ describe('Enemy.attack', () => {
         const enemy = makeEnemy();
         enemy.attack();
         expect(AudioManager.Instance.playAttack).toHaveBeenCalledWith('enemy');
+    });
+});
+
+describe('Enemy ranged combat behavior', () => {
+    it('holds position when already within the preferred ranged distance band', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(7, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            7,
+            0.016,
+        );
+
+        expect(movement).toBeNull();
+    });
+
+    it('moves closer instead of holding position when line of sight is blocked', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+        enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
+        enemy.computeMovement = vi.fn().mockReturnValue({ dirX: 1, dirZ: 0 });
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(7, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            7,
+            0.016,
+        );
+
+        expect(movement).toEqual({ dirX: 1, dirZ: 0 });
+        expect(enemy.computeMovement).toHaveBeenCalledWith(expect.any(CANNON.Vec3), expect.any(CANNON.Vec3), 0.016);
+    });
+
+    it('retreats when the player gets too close to a ranged enemy', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(3, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            3,
+            0.016,
+        );
+
+        expect(movement).toEqual({ dirX: -1, dirZ: 0 });
+    });
+
+    it('tries another reachable stand-off position when direct retreat is blocked', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            navGrid: {
+                findPath: vi.fn()
+                    .mockReturnValueOnce([])
+                    .mockReturnValueOnce([{ x: 0, z: 0 }, { x: -5, z: 5 }]),
+            },
+        }) as any;
+        enemy.computeMovement = vi.fn().mockReturnValue({ dirX: -0.7, dirZ: 0.7 });
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(3, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            3,
+            0.016,
+        );
+
+        expect(movement).toEqual({ dirX: -0.7, dirZ: 0.7 });
+        expect(enemy.computeMovement).toHaveBeenCalledWith(expect.any(CANNON.Vec3), expect.any(CANNON.Vec3), 0.016);
+    });
+
+    it('marks pods as cornered when no retreat path is available', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            navGrid: {
+                findPath: vi.fn().mockReturnValue([]),
+            },
+        }) as any;
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(3, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            3,
+            0.016,
+        );
+
+        expect(movement).toBeNull();
+        expect(enemy.isCorneredForSpacing).toBe(true);
+    });
+
+    it('only starts ranged attacks once the player is at stand-off range', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+
+        expect(enemy.canAttackPlayer(5.5)).toBe(false);
+        expect(enemy.canAttackPlayer(7.0)).toBe(true);
+        expect(enemy.canAttackPlayer(7.75)).toBe(true);
+    });
+
+    it('fires a visible ranged projectile during the ranged attack window without using the melee hitbox', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+        }) as any;
+        enemy.body.position = new CANNON.Vec3(0, 1, 0);
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(7, 1, 0) },
+            takeDamage: vi.fn(),
+        };
+        enemy.attackTimer = 1.0;
+        enemy.isAttacking = true;
+        enemy.attackAnimTimer = 0;
+        enemy.attackHitboxDelay = 0.1;
+        enemy.attackHitboxDuration = 0.1;
+        enemy.getRawRangedAttackEndpoints = vi.fn().mockReturnValue({
+            start: new THREE.Vector3(0, 1, 0),
+            end: new THREE.Vector3(7, 1, 0),
+        });
+        enemy.fireProjectile = vi.fn();
+        enemy.activateAttackHitbox = vi.fn();
+
+        enemy.update(0.11);
+
+        expect(enemy.fireProjectile).toHaveBeenCalledOnce();
+        expect(enemy.player.takeDamage).not.toHaveBeenCalled();
+        expect(enemy.activateAttackHitbox).not.toHaveBeenCalled();
+    });
+
+    it('keeps traveling until it hits a retreating player instead of stopping at the original range', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+        }) as any;
+        enemy.body.position = new CANNON.Vec3(0, 1, 0);
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(7, 1, 0) },
+            takeDamage: vi.fn(),
+        };
+        enemy.projectile = {
+            position: new THREE.Vector3(0, 1, 0),
+            quaternion: { setFromUnitVectors: vi.fn() },
+            visible: false,
+            geometry: { dispose: vi.fn() },
+            material: { dispose: vi.fn() },
+        };
+        enemy.attack();
+        enemy.getRawRangedAttackEndpoints = vi.fn().mockReturnValue({
+            start: new THREE.Vector3(0, 1, 0),
+            end: new THREE.Vector3(7, 1, 0),
+        });
+
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.99);
+
+        enemy.fireProjectile();
+        enemy.player.body.position = new CANNON.Vec3(9, 1, 0);
+        enemy.updateProjectile(0.5);
+        expect(enemy.player.takeDamage).not.toHaveBeenCalled();
+        expect(enemy.projectile.position.x).toBeCloseTo(7.5, 5);
+
+        enemy.updateProjectile(0.1);
+        expect(enemy.player.takeDamage).toHaveBeenCalledWith(enemy.damage, enemy.body.position, false);
+        expect(enemy.projectile.position.x).toBeCloseTo(9, 5);
+        randomSpy.mockRestore();
+    });
+
+    it('stops the projectile when it hits a solid obstacle before the player', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+        }) as any;
+        enemy.body.position = new CANNON.Vec3(0, 1, 0);
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(7, 1, 0) },
+            takeDamage: vi.fn(),
+        };
+        enemy.projectile = {
+            position: new THREE.Vector3(0, 1, 0),
+            quaternion: { setFromUnitVectors: vi.fn() },
+            visible: false,
+            geometry: { dispose: vi.fn() },
+            material: { dispose: vi.fn() },
+        };
+        enemy.world.raycastAll = vi.fn((from: CANNON.Vec3, to: CANNON.Vec3, options: unknown, callback: (result: CANNON.RaycastResult) => void) => {
+            void from;
+            void to;
+            void options;
+            callback({
+                body: { mass: 0, collisionResponse: true },
+                hitPointWorld: new CANNON.Vec3(4, 1, 0),
+            } as CANNON.RaycastResult);
+            return true;
+        });
+        enemy.attack();
+        enemy.getRawRangedAttackEndpoints = vi.fn().mockReturnValue({
+            start: new THREE.Vector3(0, 1, 0),
+            end: new THREE.Vector3(7, 1, 0),
+        });
+
+        enemy.fireProjectile();
+        enemy.updateProjectile(0.5);
+
+        expect(enemy.player.takeDamage).not.toHaveBeenCalled();
+        expect(enemy.projectileActive).toBe(false);
+        expect(enemy.projectile.visible).toBe(false);
+        expect(enemy.projectile.position.x).toBeCloseTo(4, 5);
+        expect(enemy.projectile.position.y).toBeCloseTo(1, 5);
+        expect(enemy.projectile.position.z).toBeCloseTo(0, 5);
+    });
+
+    it('expires the projectile after its fixed lifetime when it hits nothing', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+        }) as any;
+        enemy.body.position = new CANNON.Vec3(0, 1, 0);
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: FAR_AWAY_POSITION.clone() },
+            takeDamage: vi.fn(),
+        };
+        enemy.projectile = {
+            position: new THREE.Vector3(0, 1, 0),
+            quaternion: { setFromUnitVectors: vi.fn() },
+            visible: false,
+            geometry: { dispose: vi.fn() },
+            material: { dispose: vi.fn() },
+        };
+        enemy.attack();
+        enemy.getRawRangedAttackEndpoints = vi.fn().mockReturnValue({
+            start: new THREE.Vector3(0, 1, 0),
+            end: new THREE.Vector3(7, 1, 0),
+        });
+
+        enemy.fireProjectile();
+        enemy.updateProjectile(4.1);
+
+        expect(enemy.player.takeDamage).not.toHaveBeenCalled();
+        expect(enemy.projectileActive).toBe(false);
+        expect(enemy.projectile.visible).toBe(false);
+    });
+
+    it('can still launch a ranged attack while retreating', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(3, 0, 0) },
+            takeDamage: vi.fn(),
+        };
+        enemy.body.position = new CANNON.Vec3(0, 0, 0);
+        enemy.basePosition = new CANNON.Vec3(0, 0, 0);
+        enemy.computeCombatMovement = vi.fn().mockImplementation(() => {
+            enemy.isRetreatingForSpacing = true;
+            return { dirX: -1, dirZ: 0 };
+        });
+        enemy.attack = vi.fn();
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+
+        enemy.update(0.2);
+
+        expect(enemy.attack).toHaveBeenCalledOnce();
+        randomSpy.mockRestore();
+    });
+
+    it('does not start a ranged attack through an occluding obstacle while retreating', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+        enemy.player = {
+            agility: 1,
+            isDead: false,
+            body: { position: new CANNON.Vec3(3, 0, 0) },
+            takeDamage: vi.fn(),
+        };
+        enemy.body.position = new CANNON.Vec3(0, 0, 0);
+        enemy.basePosition = new CANNON.Vec3(0, 0, 0);
+        enemy.computeCombatMovement = vi.fn().mockImplementation(() => {
+            enemy.isRetreatingForSpacing = true;
+            return { dirX: -1, dirZ: 0 };
+        });
+        enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
+        enemy.attack = vi.fn();
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.1);
+
+        enemy.update(0.2);
+
+        expect(enemy.attack).not.toHaveBeenCalled();
+        randomSpy.mockRestore();
+    });
+
+    it('requires a clear line of sight before a ranged enemy can attack', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+        enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
+
+        expect(enemy.canAttackPlayer(7)).toBe(false);
     });
 });
 

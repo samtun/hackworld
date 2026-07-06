@@ -771,46 +771,48 @@ export class Game {
         const isNearInteractive = nearbyInteractive !== null;
 
         // Update Game Logic
-        // Skip physics simulation while any menu is open so enemies don't drift
-        if (!anyMenuOpen) {
-            this.physicsWorld.step(1 / 60, dt, 3);
+        // Prevent updates when in a menu
+        if (!this.pauseMenu.visible) {
+            // Camera Follow
+            const targetX = this.player.position.x + this.cameraOffset.x;
+            const targetY = this.player.position.y + this.cameraOffset.y;
+            const targetZ = this.player.position.z + this.cameraOffset.z;
+
+            const lerpFactor = Math.min(5 * dt, 1);
+            this.camera.position.x += (targetX - this.camera.position.x) * lerpFactor;
+            this.camera.position.y += (targetY - this.camera.position.y) * lerpFactor;
+            this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
+            this.floatingIndicatorCamera.position.x += (targetX - this.floatingIndicatorCamera.position.x) * lerpFactor;
+            this.floatingIndicatorCamera.position.y += (targetY - this.floatingIndicatorCamera.position.y) * lerpFactor;
+            this.floatingIndicatorCamera.position.z += (targetZ - this.floatingIndicatorCamera.position.z) * lerpFactor;
+
+            if (!anyMenuOpen) {
+                this.physicsWorld.step(1 / 60, dt, 3);
+
+                // Prevent jumping in the frame(s) immediately after interacting
+                const preventJump = isNearInteractive || this.wasJustInteracted;
+                this.player.update(dt, preventJump, anyMenuOpen);
+                this.world.update(dt, this.player, this.camera.position, anyMenuOpen);
+
+                const minimapState = this.world.getCurrentMinimapState();
+                this.ui.setMinimapState(minimapState.layout, minimapState.visible);
+
+                this.ui.update(this.player, dt);
+
+                // Handle death overlay input
+                this.ui.handleDeathOverlayInput(this.input);
+                this.ui.handleSkillUnlockOverlayInput(this.input);
+            }
         }
 
         if (this.debugMode && this.physicsDebugger) {
             this.physicsDebugger.update();
         }
 
-        // Prevent jumping in the frame(s) immediately after interacting
-        const preventJump = isNearInteractive || this.wasJustInteracted;
-        // Prevent movement when in a menu
-        this.player.update(dt, preventJump, anyMenuOpen);
-        this.world.update(dt, this.player, this.camera.position, anyMenuOpen);
-        const minimapState = this.world.getCurrentMinimapState();
-        this.ui.setMinimapState(minimapState.layout, minimapState.visible);
-
-        this.ui.update(this.player, dt);
-
-        // Handle death overlay input
-        this.ui.handleDeathOverlayInput(this.input);
-        this.ui.handleSkillUnlockOverlayInput(this.input);
-
         // Update debug value editor if visible
         if (this.debugMode && this.debugValueEditor) {
             this.debugValueEditor.update(this.player, dt);
         }
-
-        // Camera Follow
-        const targetX = this.player.position.x + this.cameraOffset.x;
-        const targetY = this.player.position.y + this.cameraOffset.y;
-        const targetZ = this.player.position.z + this.cameraOffset.z;
-
-        const lerpFactor = Math.min(5 * dt, 1);
-        this.camera.position.x += (targetX - this.camera.position.x) * lerpFactor;
-        this.camera.position.y += (targetY - this.camera.position.y) * lerpFactor;
-        this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
-        this.floatingIndicatorCamera.position.x += (targetX - this.floatingIndicatorCamera.position.x) * lerpFactor;
-        this.floatingIndicatorCamera.position.y += (targetY - this.floatingIndicatorCamera.position.y) * lerpFactor;
-        this.floatingIndicatorCamera.position.z += (targetZ - this.floatingIndicatorCamera.position.z) * lerpFactor;
 
         // Handle interactions (use variables we already calculated)
         const isSelectPressed = this.input.isSelectPressed();

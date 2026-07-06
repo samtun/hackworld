@@ -7,6 +7,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class KernelTerminus extends StageWithLevels {
@@ -83,6 +84,24 @@ export class KernelTerminus extends StageWithLevels {
         color: 0x78333d,
     };
 
+    private static readonly regularPodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 1700,
+        speed: 3.15,
+        damage: 1300,
+        baseExp: 680,
+        size: 2.35,
+        color: 0x8a46c2,
+    };
+
+    private static readonly elitePodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 2550,
+        speed: 3.35,
+        damage: 2350,
+        baseExp: 930,
+        size: 2.95,
+        color: 0xac65eb,
+    };
+
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 14500,
         speed: 4.95,
@@ -106,7 +125,7 @@ export class KernelTerminus extends StageWithLevels {
         combatRoomCount: { min: 14, max: 18 },
         combatRoomSize: { minWidth: 14, maxWidth: 36, minDepth: 14, maxDepth: 36 },
         finalRoomSize: { minWidth: 24, maxWidth: 42, minDepth: 24, maxDepth: 42 },
-        enemyCount: { min: 3, max: 10, areaPerEnemy: 42, eliteFraction: 0.52 },
+        enemyCount: { min: 3, max: 8, areaPerEnemy: 55, eliteFraction: 0.45 },
         obstacleCount: { min: 2, max: 5 },
         obstacleProps: KernelTerminus.obstacleProps,
         hasBoss: true,
@@ -156,6 +175,7 @@ export class KernelTerminus extends StageWithLevels {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            'models/pod_enemy.glb',
             ...this.getDungeonPropAssets(KernelTerminus.obstacleProps),
         ];
     }
@@ -166,6 +186,25 @@ export class KernelTerminus extends StageWithLevels {
         const baseConfig = spawnType === EnemySpawnType.Elite
             ? KernelTerminus.eliteEnemyConfig
             : KernelTerminus.regularEnemyConfig;
+        return this.scaleEnemyConfig(baseConfig);
+    }
+
+    protected override getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        return spawnType === EnemySpawnType.Boss
+            ? [EnemyType.Brute]
+            : [EnemyType.Brute, EnemyType.Pod, EnemyType.Stalker];
+    }
+
+    protected override getEnemyTypeConfig(
+        enemyType: EnemyType,
+        spawnType: EnemySpawnType,
+    ): Partial<EnemyArchetypeConfig> {
+        if (enemyType !== EnemyType.Pod) {
+            return {};
+        }
+        const baseConfig = spawnType === EnemySpawnType.Elite
+            ? KernelTerminus.elitePodEnemyConfig
+            : KernelTerminus.regularPodEnemyConfig;
         return this.scaleEnemyConfig(baseConfig);
     }
 

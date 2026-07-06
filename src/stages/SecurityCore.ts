@@ -7,6 +7,7 @@ import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 export class SecurityCore extends StageWithLevels {
@@ -81,6 +82,24 @@ export class SecurityCore extends StageWithLevels {
         color: 0x4e2a78,
     };
 
+    private static readonly regularPodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 1350,
+        speed: 3.0,
+        damage: 900,
+        baseExp: 430,
+        size: 2.15,
+        color: 0x743db6,
+    };
+
+    private static readonly elitePodEnemyConfig: Partial<EnemyArchetypeConfig> = {
+        maxHp: 1850,
+        speed: 3.25,
+        damage: 1600,
+        baseExp: 620,
+        size: 2.65,
+        color: 0x9159dc,
+    };
+
     private static readonly bossConfig: Partial<EnemyArchetypeConfig> = {
         maxHp: 9200,
         speed: 4.75,
@@ -104,7 +123,7 @@ export class SecurityCore extends StageWithLevels {
         combatRoomCount: { min: 12, max: 15 },
         combatRoomSize: { minWidth: 13, maxWidth: 33, minDepth: 13, maxDepth: 33 },
         finalRoomSize: { minWidth: 20, maxWidth: 39, minDepth: 20, maxDepth: 39 },
-        enemyCount: { min: 2, max: 8, areaPerEnemy: 48, eliteFraction: 0.45 },
+        enemyCount: { min: 2, max: 5, areaPerEnemy: 70, eliteFraction: 0.4 },
         obstacleCount: { min: 2, max: 4 },
         obstacleProps: SecurityCore.obstacleProps,
         hasBoss: true,
@@ -156,6 +175,7 @@ export class SecurityCore extends StageWithLevels {
         return [
             'models/brute_enemy.glb',
             'models/stalker_enemy.glb',
+            'models/pod_enemy.glb',
             ...this.getDungeonPropAssets(SecurityCore.obstacleProps),
         ];
     }
@@ -166,6 +186,25 @@ export class SecurityCore extends StageWithLevels {
         const baseConfig = spawnType === EnemySpawnType.Elite
             ? SecurityCore.eliteEnemyConfig
             : SecurityCore.regularEnemyConfig;
+        return this.scaleEnemyConfig(baseConfig);
+    }
+
+    protected override getAvailableEnemyTypes(spawnType: EnemySpawnType): readonly EnemyType[] {
+        return spawnType === EnemySpawnType.Boss
+            ? [EnemyType.Brute]
+            : [EnemyType.Brute, EnemyType.Pod, EnemyType.Stalker];
+    }
+
+    protected override getEnemyTypeConfig(
+        enemyType: EnemyType,
+        spawnType: EnemySpawnType,
+    ): Partial<EnemyArchetypeConfig> {
+        if (enemyType !== EnemyType.Pod) {
+            return {};
+        }
+        const baseConfig = spawnType === EnemySpawnType.Elite
+            ? SecurityCore.elitePodEnemyConfig
+            : SecurityCore.regularPodEnemyConfig;
         return this.scaleEnemyConfig(baseConfig);
     }
 
