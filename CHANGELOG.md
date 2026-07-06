@@ -1,3 +1,23 @@
+# [3.45.0](https://github.com/samtun/hackworld/compare/v3.44.0...v3.45.0) (2026-07-06)
+
+
+### Bug Fixes
+
+* handle pod projectile blockers ([2620be0](https://github.com/samtun/hackworld/commit/2620be0440f33cf871778f4b16c13eb3a1a8762a))
+* polish pod projectile follow-up ([55b2fb0](https://github.com/samtun/hackworld/commit/55b2fb00577336aa418eeba00365b75b90be7b94))
+* refine pod projectile occlusion ([eec7faf](https://github.com/samtun/hackworld/commit/eec7faf51dcb9fdd94fedd9a6d91cce229489a40))
+* refine pod ranged combat ([316977f](https://github.com/samtun/hackworld/commit/316977f5577b76f5abdda1fec3904c289ec186e2))
+
+
+### Features
+
+* add ranged pod enemy variety ([c883bf0](https://github.com/samtun/hackworld/commit/c883bf099d2287e4fc18c8e4dd5582975d22d314))
+* add third enemy type with pod model and adjust enemy counts in stages ([33a997f](https://github.com/samtun/hackworld/commit/33a997ffdda4d158d8fba63fc96b99ddee80595f))
+* fix game update loop to also pause animations when menu is open ([81463a9](https://github.com/samtun/hackworld/commit/81463a9d41615d076c733ebd7eb6be453a588332))
+* improve enemy movement speeds ([521d1c8](https://github.com/samtun/hackworld/commit/521d1c81a3427787afdf6aa73539fe45353595ee))
+* improve pod enemy animation ([9aa30ff](https://github.com/samtun/hackworld/commit/9aa30ff0b1cde2e7c8fc88f616aa0be10246a611))
+* rename laser enemy to ranged enemy ([5bfd6fb](https://github.com/samtun/hackworld/commit/5bfd6fbaa9550f55ef6e6ae769ce07cc287dd0d4))
+
 # [3.44.0](https://github.com/samtun/hackworld/compare/v3.43.0...v3.44.0) (2026-07-06)
 
 
