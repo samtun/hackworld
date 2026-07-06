@@ -20,7 +20,7 @@ describe('EnemyType definitions', () => {
 
     it('defines pod as a ranged enemy using the brute placeholder model', () => {
         const podDefinition = getEnemyTypeDefinition(EnemyType.Pod);
-        expect(podDefinition.modelPath).toBe('models/brute_enemy.glb');
+        expect(podDefinition.modelPath).toBe('models/pod_enemy.glb');
         expect(podDefinition.combatBehavior?.attackMode).toBe(EnemyAttackMode.Ranged);
         expect(podDefinition.combatBehavior?.preferredDistance).toBe(7.0);
         expect(podDefinition.combatBehavior?.attackRange).toBe(7.75);
