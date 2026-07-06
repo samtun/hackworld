@@ -485,6 +485,27 @@ describe('Enemy ranged combat behavior', () => {
         expect(enemy.computeMovement).toHaveBeenCalledWith(expect.any(CANNON.Vec3), expect.any(CANNON.Vec3), 0.016);
     });
 
+    it('moves closer instead of holding position when line of sight is blocked and enemy is within preferred distance band', () => {
+        const enemy = makeEnemy({
+            enemyType: EnemyType.Pod,
+            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
+            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
+            attackRange: 7.75,
+        }) as any;
+        enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
+        enemy.computeMovement = vi.fn().mockReturnValue({ dirX: 1, dirZ: 0 });
+
+        const movement = enemy.computeCombatMovement(
+            new CANNON.Vec3(7.75, 0, 0),
+            new CANNON.Vec3(0, 0, 0),
+            7.75,
+            0.016,
+        );
+
+        expect(movement).toEqual({ dirX: 1, dirZ: 0 });
+        expect(enemy.computeMovement).toHaveBeenCalledWith(expect.any(CANNON.Vec3), expect.any(CANNON.Vec3), 0.016);
+    });
+
     it('retreats when the player gets too close to a ranged enemy', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
