@@ -106,6 +106,8 @@ function makePlayer(overrides = {}): Player {
 - Use concrete expected values: ✅ `toBeCloseTo(0.02053, 4)` ❌ `toBeGreaterThan(0)`
 - Use equivalence classes (boundary, typical, edge) — avoid redundant cases
 - Combine related assertions in one `it()` block
+- Do NOT test private methods or implementation details; test public behavior only
+- Do NOT use any to get around proper test setup
 
 ## What to Avoid
 - ❌ Monolithic classes; entity logic in `Game.ts`/`World.ts`; tightly coupled components
