@@ -462,9 +462,11 @@ export class Game {
             this.world.currentStage.teleporters.forEach(tp => tp.updateScaleFactor());
 
             // Update healing station particles if exists (Lobby specific)
-            const stage = this.world.currentStage as any;
-            if (stage.healingStation && typeof stage.healingStation.updateScaleFactor === 'function') {
-                stage.healingStation.updateScaleFactor();
+            if (this.world.currentStage.id === Lobby.getMetadata().id) {
+                const lobbyStage = this.world.currentStage as Lobby;
+                if (lobbyStage.healingStation && typeof lobbyStage.healingStation.updateScaleFactor === 'function') {
+                    lobbyStage.healingStation.updateScaleFactor();
+                }
             }
         }
     }
@@ -688,7 +690,6 @@ export class Game {
         // Define interactive entity types
         interface InteractiveEntity {
             type: InteractiveEntityType;
-            data?: any;
             hint: string;
             action: () => void;
         }
@@ -708,7 +709,6 @@ export class Game {
                 if (npc.isPlayerNearby(this.player.position)) {
                     nearbyInteractive = {
                         type: InteractiveEntityType.NPC,
-                        data: npc,
                         hint: npc.getInteractionHint(this.input),
                         action: () => {
                             // If dialogue hasn't been shown yet, show it first
@@ -740,7 +740,6 @@ export class Game {
                 if (interactiveDrop) {
                     nearbyInteractive = {
                         type: interactiveDrop.interactiveType,
-                        data: interactiveDrop,
                         hint: getHint(HintConfigs.pickUp, this.input),
                         action: () => {
                             this.world.pickupDrop(interactiveDrop, this.player);
@@ -756,7 +755,6 @@ export class Game {
                         chest.prepareLoot(this.player);
                         nearbyInteractive = {
                             type: InteractiveEntityType.CHEST,
-                            data: chest,
                             hint: chest.getInteractionHint(this.input),
                             action: () => {
                                 chest.open(this.player);
