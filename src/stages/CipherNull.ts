@@ -227,6 +227,9 @@ export class CipherNull extends StageWithLevels {
         const tp = layout.teleporterPosition;
         this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), this.levelConfig.teleporterDestination, false);
 
+        // Lobby return teleporter at spawn – always active so players can leave at any time
+        this.createLobbyReturnTeleporter(layout);
+
         this.spawnEnemiesFromLayout(layout);
         this.buildChestsFromLayout(layout);
         this.buildBarrelsFromLayout(layout);
