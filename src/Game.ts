@@ -61,7 +61,7 @@ export class Game {
     currentScene: string = 'startScreen';
 
     // Debug
-    physicsDebugger: any;
+    physicsDebugger?: ReturnType<typeof CannonDebugger>;
     debugMode: boolean = false;
     debugMeshes: THREE.Mesh[] = [];
     debugValueEditor?: DebugValueEditor;
