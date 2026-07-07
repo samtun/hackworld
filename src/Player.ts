@@ -25,6 +25,7 @@ import { CardCollection } from './items/cards/CardCollection';
 import { Album } from './items/cards/Card';
 import { BlobShadow } from './BlobShadow';
 import { AudioManager } from './AudioManager';
+import { cannonToThree } from './utils/VectorConversion';
 
 enum ActionType {
     Idle = 'Idle',
@@ -292,7 +293,7 @@ export class Player extends BaseMesh {
         this.id = crypto.randomUUID();
         this.input = input;
         this.weaponRepository = WeaponRepository.Instance;
-        this.position = position.clone() as any;
+        this.position = cannonToThree(position);
         this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
         this.chargeFx = AssetManager.Instance.get('models/dash_charge_fx.glb').scene.clone();
         this.chargeFx.receiveShadow = false;
@@ -355,7 +356,7 @@ export class Player extends BaseMesh {
         swordItem.isEquipped = true;
         this.currentWeaponType = swordItem.weaponType;
 
-        this.mesh.position.set(position.x, position.y, position.z);
+        this.mesh.position.copy(cannonToThree(position));
         scene.add(this.mesh);
 
         // Physics Body
