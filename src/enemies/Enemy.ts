@@ -134,6 +134,8 @@ export class Enemy extends BaseMesh {
     damage: number = DEFAULT_ENEMY_ARCHETYPE.damage;
     protected criticalChance: number = DEFAULT_ENEMY_ARCHETYPE.criticalChance;
     protected criticalHitMultiplier: number = DEFAULT_ENEMY_ARCHETYPE.criticalHitMultiplier;
+    protected knockbackForce: number = 15.0;
+    protected blockedKnockbackFactor: number = 0.4;
 
     /**
      * When false the enemy idles in place regardless of player proximity.
@@ -1387,22 +1389,24 @@ export class Enemy extends BaseMesh {
         // enemy fights back even when hit from outside its room.
         this.aggroEnabled = true;
 
+        if (!this.isBlocking && this.tryBlock()) {
+            this.activateBlock();
+        }
+
         // Knockback
         if (sourcePos) {
             const knockbackDir = this.body.position.vsub(sourcePos);
             knockbackDir.y = 0; // Keep it horizontal
             if (knockbackDir.length() > 0) {
                 knockbackDir.normalize();
-                const force = 15 * knockbackFactor; // Increased force
+                if (this.isBlocking) {
+                    // Reduce knockback when blocking
+                    knockbackFactor *= this.blockedKnockbackFactor;
+                }
+                const force = this.knockbackForce * knockbackFactor; // Increased force
                 this.body.velocity.x = knockbackDir.x * force;
                 this.body.velocity.z = knockbackDir.z * force;
             }
-        }
-
-        // Check if enemy blocks this attack
-        if (!this.isBlocking && this.tryBlock()) {
-            this.activateBlock();
-            return;
         }
 
         // If already blocking, absorb the hit (no damage, no knockback)

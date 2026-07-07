@@ -1344,7 +1344,8 @@ export class Player extends BaseMesh {
             knockDir.y = 0;
             if (knockDir.length() > 0) {
                 knockDir.normalize();
-                this.body.applyImpulse(new CANNON.Vec3(knockDir.x * this.KNOCKBACK_FORCE, 5, knockDir.z * this.KNOCKBACK_FORCE), knockDir);
+                const knockbackForce = this.KNOCKBACK_FORCE * (this.isBlocking ? 0.5 : 1.0); // Reduce knockback if blocking
+                this.body.applyImpulse(new CANNON.Vec3(knockDir.x * knockbackForce, 5, knockDir.z * knockbackForce), knockDir);
             }
         }
 
