@@ -86,7 +86,7 @@ export class BlobShadow {
     /** Remove the shadow from the scene and dispose its GPU resources. */
     cleanup(): void {
         this.scene.remove(this.mesh);
-        (this.mesh.geometry as THREE.BufferGeometry).dispose();
+        this.mesh.geometry.dispose();
         (this.mesh.material as THREE.Material).dispose();
     }
 }
