@@ -1,3 +1,10 @@
+# [3.48.0](https://github.com/samtun/hackworld/compare/v3.47.0...v3.48.0) (2026-07-07)
+
+
+### Features
+
+* add return teleporter to CipherNull ([54dd74f](https://github.com/samtun/hackworld/commit/54dd74f352761d2f4f4ea0d3dbf61163295baf21))
+
 # [3.47.0](https://github.com/samtun/hackworld/compare/v3.46.0...v3.47.0) (2026-07-07)
 
 
