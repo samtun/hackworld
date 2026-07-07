@@ -56,6 +56,8 @@ function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
         criticalChance: 0.04,
         criticalHitMultiplier: 1.2,
         techDropRateFactor: 1.0,
+        knockbackForce: 15.0,
+        blockedKnockbackFactor: 0.4,
         enemyType: EnemyType.Brute,
         enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Brute),
         enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Brute).combatBehavior,
@@ -965,6 +967,42 @@ describe('Enemy.takeDamage – knockback', () => {
         enemyHigh.takeDamage(1, false, sourcePos, 2.0);
         expect(enemyHigh.body.velocity.x).toBeCloseTo(enemy.body.velocity.x * 2, 5);
     });
+
+    it.each([
+        { knockbackForce: 15, blockedKnockbackFactor: 0.4 },
+        { knockbackForce: 10, blockedKnockbackFactor: 0.5 },
+        { knockbackForce: 0, blockedKnockbackFactor: 0.4 }, // Edge case: No knockback
+        { knockbackForce: 20, blockedKnockbackFactor: 0.0 }, // Edge case: Full block (0 multiplier)
+        { knockbackForce: 25, blockedKnockbackFactor: 1.0 }, // Edge case: No reduction (1 multiplier)
+    ])(
+        'reduces knockback when blocking (force: $knockbackForce, factor: $blockedKnockbackFactor)',
+        ({ knockbackForce, blockedKnockbackFactor }) => {
+            const enemy = makeEnemy() as any;
+            enemy.isBlocking = true;
+            enemy.knockbackForce = knockbackForce;
+            enemy.blockedKnockbackFactor = blockedKnockbackFactor;
+            enemy.body.velocity = { x: 0, y: 0, z: 0 };
+            enemy.body.position = {
+                x: 5, y: 0, z: 0,
+                copy: vi.fn(),
+                vsub: (v: any) => {
+                    const dir = { x: 5 - v.x, y: 0, z: 0 - v.z };
+                    return Object.assign(dir, {
+                        length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
+                        normalize: function (this: any) {
+                            const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
+                            this.x /= l; this.z /= l;
+                            return this;
+                        },
+                    });
+                },
+            };
+            const sourcePos = { x: 0, y: 0, z: 0 } as any;
+            enemy.takeDamage(1, false, sourcePos, 1.0);
+
+            const expectedKnockBack = blockedKnockbackFactor * knockbackForce; // knockbackForce=15, blocked → 0.4 multiplier
+            expect(enemy.body.velocity.x).toBeCloseTo(expectedKnockBack);
+        });
 });
 
 // ─── cleanup ───────────────────────────────────────────────────────────────────
