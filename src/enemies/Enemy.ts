@@ -582,61 +582,14 @@ export class Enemy extends BaseMesh {
 
         if (this.isDead) return;
 
-        if (this.enemyTypeAbilityCooldownTimers.size > 0) {
-            for (const [abilityId, cooldown] of this.enemyTypeAbilityCooldownTimers.entries()) {
-                const nextCooldown = cooldown - dt;
-                if (nextCooldown > 0) this.enemyTypeAbilityCooldownTimers.set(abilityId, nextCooldown);
-                else this.enemyTypeAbilityCooldownTimers.delete(abilityId);
-            }
-        }
-
-        // Cast a ray straight down to find the floor surface position and normal,
-        // so the shadow is placed at the correct height on both flat and sloped floors.
-        const floorRayStart = new CANNON.Vec3(this.body.position.x, this.body.position.y, this.body.position.z);
-        const floorRayEnd = new CANNON.Vec3(this.body.position.x, this.body.position.y - SHADOW_CAST_DIST, this.body.position.z);
-        const floorRay = new CANNON.Ray(floorRayStart, floorRayEnd);
-        const floorRayResult = new CANNON.RaycastResult();
-        floorRay.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: floorRayResult, skipBackfaces: true });
-
-        let shadowY = this.body.position.y - this.bodyHalfExtentY;
-        let shadowNormal: THREE.Vector3 | undefined;
-        if (floorRayResult.hasHit && floorRayResult.body !== this.body) {
-            shadowY = floorRayResult.hitPointWorld.y;
-            shadowNormal = new THREE.Vector3(
-                floorRayResult.hitNormalWorld.x,
-                floorRayResult.hitNormalWorld.y,
-                floorRayResult.hitNormalWorld.z,
-            );
-        }
-        this.blobShadow.update(this.body.position.x, shadowY, this.body.position.z, shadowNormal);
+        this.tickAbilityCooldowns(dt);
+        this.updateShadow();
 
         if (this.isDying || this.isDead || this.isDeathFading) {
             this.footstepTimer = 0;
         }
 
-        // Handle death fade after death animation completes
-        if (this.isDeathFading) {
-            this.footstepTimer = 0;
-            this.deathFadeTimer += dt;
-            const progress = this.deathFadeTimer / this.deathFadeDuration;
-
-            if (progress >= 1) {
-                this.isDead = true;
-            } else {
-                // Fade out materials
-                this.materials.forEach((mat) => {
-                    if (mat instanceof THREE.MeshStandardMaterial) {
-                        mat.transparent = true;
-                        mat.opacity = 1 - progress;
-                    }
-                });
-            }
-
-            // Sync position during fade
-            this.mesh.position.copy(this.body.position as any);
-            this.mesh.position.y -= this.bodyHalfExtentY;
-            return;
-        }
+        if (this.handleDeathFade(dt)) return;
 
         // Flash Effect
         if (this.flashTimer > 0) {
@@ -646,32 +599,13 @@ export class Enemy extends BaseMesh {
             }
         }
 
-        if (this.isDying) {
-            this.footstepTimer = 0;
-            this.deathTimer += dt;
-
-            // Friction for dying body
-            this.body.velocity.x *= 0.9;
-            this.body.velocity.z *= 0.9;
-
-            // Sync position while playing death animation
-            this.mesh.position.copy(this.body.position as any);
-            this.mesh.position.y -= this.bodyHalfExtentY;
-            return;
-        }
+        if (this.handleDying(dt)) return;
 
         // Sync mesh with body
         this.mesh.position.copy(this.body.position as any);
         this.mesh.position.y -= this.bodyHalfExtentY;
 
-        // Block timer - remove shield when block expires
-        if (this.isBlocking) {
-            this.blockTimer += dt;
-            if (this.blockTimer >= this.BLOCK_DURATION) {
-                this.isBlocking = false;
-                this.blockShield?.detach();
-            }
-        }
+        this.updateBlockTimer(dt);
 
         // Stun Logic
         if (this.stunTimer > 0) {
@@ -718,15 +652,128 @@ export class Enemy extends BaseMesh {
 
         const playerPos = this.player.body.position;
         const myPos = this.body.position;
-
         const distToPlayer = myPos.distanceTo(playerPos);
-        const dxBase = myPos.x - this.basePosition.x;
-        const dzBase = myPos.z - this.basePosition.z;
-        const distToBase = Math.sqrt(dxBase * dxBase + dzBase * dzBase);
 
+        const isMoving = this.runMovementAI(dt, playerPos, myPos, distToPlayer);
+
+        this.handleAttackLogic(dt, distToPlayer);
+
+        this.updateProjectile(dt);
+
+        // Update animations
+        this.updateFootstepAudio(dt, isMoving);
+        this.updateAnimations(isMoving);
+    }
+
+    /** Advances per-ability cooldown timers, removing any that have expired. */
+    private tickAbilityCooldowns(dt: number): void {
+        if (this.enemyTypeAbilityCooldownTimers.size > 0) {
+            for (const [abilityId, cooldown] of this.enemyTypeAbilityCooldownTimers.entries()) {
+                const nextCooldown = cooldown - dt;
+                if (nextCooldown > 0) this.enemyTypeAbilityCooldownTimers.set(abilityId, nextCooldown);
+                else this.enemyTypeAbilityCooldownTimers.delete(abilityId);
+            }
+        }
+    }
+
+    /**
+     * Casts a downward ray to locate the floor surface, then positions the
+     * blob shadow at the correct height (accounting for slopes).
+     */
+    private updateShadow(): void {
+        // Cast a ray straight down to find the floor surface position and normal,
+        // so the shadow is placed at the correct height on both flat and sloped floors.
+        const floorRayStart = new CANNON.Vec3(this.body.position.x, this.body.position.y, this.body.position.z);
+        const floorRayEnd = new CANNON.Vec3(this.body.position.x, this.body.position.y - SHADOW_CAST_DIST, this.body.position.z);
+        const floorRay = new CANNON.Ray(floorRayStart, floorRayEnd);
+        const floorRayResult = new CANNON.RaycastResult();
+        floorRay.intersectWorld(this.world, { mode: CANNON.Ray.CLOSEST, result: floorRayResult, skipBackfaces: true });
+
+        let shadowY = this.body.position.y - this.bodyHalfExtentY;
+        let shadowNormal: THREE.Vector3 | undefined;
+        if (floorRayResult.hasHit && floorRayResult.body !== this.body) {
+            shadowY = floorRayResult.hitPointWorld.y;
+            shadowNormal = new THREE.Vector3(
+                floorRayResult.hitNormalWorld.x,
+                floorRayResult.hitNormalWorld.y,
+                floorRayResult.hitNormalWorld.z,
+            );
+        }
+        this.blobShadow.update(this.body.position.x, shadowY, this.body.position.z, shadowNormal);
+    }
+
+    /**
+     * Handles the post-death material fade-out.
+     * Returns true when the fade is active and the rest of update should be skipped.
+     */
+    private handleDeathFade(dt: number): boolean {
+        if (!this.isDeathFading) return false;
+
+        this.footstepTimer = 0;
+        this.deathFadeTimer += dt;
+        const progress = this.deathFadeTimer / this.deathFadeDuration;
+
+        if (progress >= 1) {
+            this.isDead = true;
+        } else {
+            // Fade out materials
+            this.materials.forEach((mat) => {
+                if (mat instanceof THREE.MeshStandardMaterial) {
+                    mat.transparent = true;
+                    mat.opacity = 1 - progress;
+                }
+            });
+        }
+
+        // Sync position during fade
+        this.mesh.position.copy(this.body.position as any);
+        this.mesh.position.y -= this.bodyHalfExtentY;
+        return true;
+    }
+
+    /**
+     * Handles the death animation while the enemy is dying.
+     * Returns true when the dying animation is playing and the rest of update should be skipped.
+     */
+    private handleDying(dt: number): boolean {
+        if (!this.isDying) return false;
+
+        this.footstepTimer = 0;
+        this.deathTimer += dt;
+
+        // Friction for dying body
+        this.body.velocity.x *= 0.9;
+        this.body.velocity.z *= 0.9;
+
+        // Sync position while playing death animation
+        this.mesh.position.copy(this.body.position as any);
+        this.mesh.position.y -= this.bodyHalfExtentY;
+        return true;
+    }
+
+    /** Advances the block timer and removes the shield once the block duration expires. */
+    private updateBlockTimer(dt: number): void {
+        if (this.isBlocking) {
+            this.blockTimer += dt;
+            if (this.blockTimer >= this.BLOCK_DURATION) {
+                this.isBlocking = false;
+                this.blockShield?.detach();
+            }
+        }
+    }
+
+    /**
+     * Runs the full movement AI for one frame.
+     * Returns true when the enemy is actively moving this frame.
+     */
+    private runMovementAI(dt: number, playerPos: CANNON.Vec3, myPos: CANNON.Vec3, distToPlayer: number): boolean {
         let isMoving = false;
         this.isRetreatingForSpacing = false;
         this.isCorneredForSpacing = false;
+
+        const dxBase = myPos.x - this.basePosition.x;
+        const dzBase = myPos.z - this.basePosition.z;
+        const distToBase = Math.sqrt(dxBase * dxBase + dzBase * dzBase);
 
         // Don't move while attacking
         if (!this.isAttacking) {
@@ -852,6 +899,11 @@ export class Enemy extends BaseMesh {
             }
         }
 
+        return isMoving;
+    }
+
+    /** Handles attack cooldown, attack triggering, and the melee/ranged hitbox lifecycle. */
+    private handleAttackLogic(dt: number, distToPlayer: number): void {
         // Attack Cooldown
         if (this.attackTimer > 0) {
             this.attackTimer -= dt;
@@ -906,12 +958,6 @@ export class Enemy extends BaseMesh {
                 }
             }
         }
-
-        this.updateProjectile(dt);
-
-        // Update animations
-        this.updateFootstepAudio(dt, isMoving);
-        this.updateAnimations(isMoving);
     }
 
     /**
