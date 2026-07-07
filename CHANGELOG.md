@@ -1,3 +1,10 @@
+# [3.47.0](https://github.com/samtun/hackworld/compare/v3.46.0...v3.47.0) (2026-07-07)
+
+
+### Features
+
+* reduce knockback on player and enemies when blocking ([c62c02a](https://github.com/samtun/hackworld/commit/c62c02ab790c7326709d9a64d633688dbb27ceab))
+
 # [3.46.0](https://github.com/samtun/hackworld/compare/v3.45.0...v3.46.0) (2026-07-06)
 
 
