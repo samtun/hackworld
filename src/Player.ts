@@ -139,7 +139,7 @@ export class Player extends BaseMesh {
     boosterPacks: number = 0;
 
     // Weapon tech/proficiency stats (gained on hit)
-    public tech: Record<WeaponType, number> = {
+    public weaponTech: Record<WeaponType, number> = {
         [WeaponType.SWORD]: 0,
         [WeaponType.DUAL_BLADE]: 0,
         [WeaponType.LANCE]: 0,
@@ -530,13 +530,13 @@ export class Player extends BaseMesh {
 
     // Return current tech points for a given weapon type
     getTechForWeapon(type: WeaponType): number {
-        return this.tech[type] ?? 0;
+        return this.weaponTech[type] ?? 0;
     }
 
     // Increment tech for the currently equipped weapon
     tryIncrementWeaponTech(dropRateFactor: number) {
         const key = this.currentWeaponType;
-        const weaponTechPoints = this.tech[key];
+        const weaponTechPoints = this.weaponTech[key];
         const levelTechCapReached = weaponTechPoints >= TierManager.Instance.getTechCapForLevel(this.level);
         const totalTechCapReached = weaponTechPoints >= this.TECH_POINT_CAP;
         if (levelTechCapReached || totalTechCapReached) {
@@ -548,7 +548,7 @@ export class Player extends BaseMesh {
         console.log(`Tech increment check: current tech=${weaponTechPoints}, ${random} <= dropChance=${dropChance.toFixed(4)}`);
         if (random <= dropChance) {
             console.log(`Tech increased from ${weaponTechPoints} to ${weaponTechPoints + 1}`);
-            this.tech[key] += 1;
+            this.weaponTech[key] += 1;
             this.floatingIndicatorManager.spawnTech(this.body.position);
         }
     }
