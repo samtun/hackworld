@@ -471,6 +471,24 @@ describe('Player.takeDamage', () => {
         player.takeDamage(10);
         expect(AudioManager.Instance.playDamage).toHaveBeenCalledWith('player');
     });
+
+    it('applies knockback to the player', () => {
+        player.body = {
+            applyImpulse: vi.fn(),
+            position: {
+                x: 0, y: 0, z: 0, copy: vi.fn(),
+                vsub: (_v: any) => ({ x: -1, y: 0, z: 0, length: () => 1, normalize: vi.fn() })
+            }
+        } as any;
+        const sourcePos = { x: 1, y: 0, z: 0 } as any;
+        player.takeDamage(50, sourcePos);
+
+        expect((player as any).body.applyImpulse).toHaveBeenCalledWith(
+            expect.objectContaining({ x: -80, y: 5, z: 0 }),
+            expect.objectContaining({ x: -1, y: 0, z: 0 })
+        );
+        expect(AudioManager.Instance.playDamage).toHaveBeenCalledWith('player');
+    });
 });
 
 // ─── die / respawn ─────────────────────────────────────────────────────────────
@@ -1016,7 +1034,7 @@ describe('Player.startBlock', () => {
     });
 });
 
-// ─── takeDamage – blocking ─────────────────────────────────────────────────────
+// ─── takeDamage ─────────────────────────────────────────────────────
 
 describe('Player.takeDamage – blocking', () => {
     it('absorbs damage completely when blocking', () => {
@@ -1024,6 +1042,25 @@ describe('Player.takeDamage – blocking', () => {
         player.isBlocking = true;
         player.takeDamage(50);
         expect(player.hp).toBe(player.maxHp);
+    });
+
+    it('reduces knockback when blocking', () => {
+        const player = makePlayer();
+        player.body = {
+            applyImpulse: vi.fn(),
+            position: {
+                x: 0, y: 0, z: 0, copy: vi.fn(),
+                vsub: (_v: any) => ({ x: -1, y: 0, z: 0, length: () => 1, normalize: vi.fn() })
+            }
+        } as any;
+        player.isBlocking = true;
+        const sourcePos = { x: 1, y: 0, z: 0 } as any;
+        player.takeDamage(50, sourcePos);
+
+        expect((player as any).body.applyImpulse).toHaveBeenCalledWith(
+            expect.objectContaining({ x: -40, y: 5, z: 0 }),
+            expect.objectContaining({ x: -1, y: 0, z: 0 })
+        );
     });
 });
 

@@ -1,3 +1,17 @@
+# [3.47.0](https://github.com/samtun/hackworld/compare/v3.46.0...v3.47.0) (2026-07-07)
+
+
+### Features
+
+* reduce knockback on player and enemies when blocking ([c62c02a](https://github.com/samtun/hackworld/commit/c62c02ab790c7326709d9a64d633688dbb27ceab))
+
+# [3.46.0](https://github.com/samtun/hackworld/compare/v3.45.0...v3.46.0) (2026-07-06)
+
+
+### Features
+
+* make enemies prioritize getting a clear line of sight on the player ([c7f0c01](https://github.com/samtun/hackworld/commit/c7f0c0106dce4afc8a9fd2b5bfed14c5d9513413))
+
 # [3.45.0](https://github.com/samtun/hackworld/compare/v3.44.0...v3.45.0) (2026-07-06)
 
 
