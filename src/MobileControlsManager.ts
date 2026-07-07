@@ -69,7 +69,7 @@ export class MobileControlsManager {
         });
 
         // Setup joystick event listeners
-        this.joystickManager.on('move', (_evt: any, data: any) => {
+        this.joystickManager.on('move', (_evt: nipplejs.EventData, data: nipplejs.JoystickOutputData) => {
             const force = Math.min(data.force, 1); // Cap at 1
             const angle = data.angle.radian;
 
