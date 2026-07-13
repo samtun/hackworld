@@ -128,7 +128,6 @@ export class Player extends BaseMesh {
     defense: number = 1;
     agility: number = 1;
     luck: number = 1;
-    invulnerableTimer: number = 0;
 
     // Stat points available for allocation
     statPointsAvailable: number = 0;
@@ -187,6 +186,8 @@ export class Player extends BaseMesh {
     private dashHitEnemies: Set<Enemy> = new Set();
     private attackHitEnemies: Set<Enemy> = new Set();
     private attackLockedUntilRelease: boolean = false;
+
+    private invulnerableTimer: number = 0;
 
     /** Callback invoked when the player's weapon or skill hits a breakable entity. */
     onBreakableHit?: (breakable: Breakable) => void;
@@ -1126,15 +1127,19 @@ export class Player extends BaseMesh {
     }
 
     private handleInvulnerability(dt: number) {
+        if (!this.innerMesh) {
+            return;
+        }
+
         if (this.invulnerableTimer > 0) {
             this.invulnerableTimer -= dt;
             if (Math.floor(this.invulnerableTimer * 10) % 2 === 0) {
-                (this.innerMesh?.material as THREE.MeshStandardMaterial).color = new THREE.Color(0x888888);
+                (this.innerMesh.material as THREE.MeshStandardMaterial).color = new THREE.Color(0x888888);
             } else {
-                (this.innerMesh?.material as THREE.MeshStandardMaterial).color = new THREE.Color(0xffffff);
+                (this.innerMesh.material as THREE.MeshStandardMaterial).color = new THREE.Color(0xffffff);
             }
         } else {
-            (this.innerMesh?.material as THREE.MeshStandardMaterial).color = new THREE.Color(0xffffff);
+            (this.innerMesh.material as THREE.MeshStandardMaterial).color = new THREE.Color(0xffffff);
         }
     }
 
