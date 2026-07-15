@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+
+vi.mock('./InputManager', () => ({
+    InputManager: {
+        Instance: {}
+    },
+}));
+
 vi.mock('./AudioManager', () => ({
     AudioManager: {
         Instance: {
@@ -11,6 +18,14 @@ vi.mock('./AudioManager', () => ({
             playUpgrade: vi.fn(),
             playLevelUp: vi.fn(),
         },
+    },
+}));
+
+vi.mock('./AssetManager', () => ({
+    AssetManager: {
+        Instance: {
+            get: vi.fn().mockReturnValue(mock<GLTF>())
+        }
     },
 }));
 
@@ -26,181 +41,22 @@ import { CardCollection } from './items/cards/CardCollection';
 import { Album } from './items/cards/Card';
 import { Enemy } from './enemies/Enemy';
 import { AudioManager } from './AudioManager';
-import { InputManager } from './InputManager';
-
-type MockOverrides<T> = {
-    [K in keyof T]?: T[K] extends object ? Partial<T[K]> : T[K];
-};
 
 /**
- * Create a minimal Player instance for unit testing without instantiating
- * Three.js / Cannon-es objects (bypasses the constructor).
+ * Create a minimal Player instance for unit testing
  */
-function makePlayer(overrides: MockOverrides<Player> = {}): Player {
-    const player = Object.create(Player.prototype) as Player;
-
-    // Private readonly constants (normally assigned in class field initializers)
-    Object.assign(player, {
-        MAX_STAT_VALUE: 9999,
-        MAX_HP_VALUE: 999999,
-        MAX_TP_VALUE: 999999,
-        HP_TP_UPGRADE_AMOUNT: 5,
-        STRENGTH_DEFENSE_UPGRADE_AMOUNT: 1,
-        STAT_FORMULA_NUMERATOR: 0.27,
-        STAT_FORMULA_LOG_BASE: 9999,
-        LUCK_DIVISOR: 40000,
-        CRITICAL_HIT_MULTIPLIER: 1.5,
-        MAX_LEVEL: 9999,
-        LEVEL_HP_MULTIPLIER: 10.01,
-        LEVEL_TP_MULTIPLIER: 5.005,
-        EXP_BASE: 350,
-        EXP_LINEAR_FACTOR: 30,
-        EXP_QUADRATIC_FACTOR: 0.07,
-        LASER_UNLOCK_LEVEL: 10,
-        HEAL_UNLOCK_LEVEL: 1,
-        AREA_UNLOCK_LEVEL: 25,
-        TECH_POINT_CAP: 9999,
-        HIT_INVULNERABILITY: 1.0,
-        STUN_TIME: 0.5,
-        KNOCKBACK_FORCE: 80,
-        CHARGE_DURATION: 0.8,
-        WALK_SPEED: 6,
-        LEVEL_UP_PARTICLE_LIFETIME: 0.6,
-        LEVEL_UP_SHOCKWAVE_DELAY: 0.4,
-        LEVEL_UP_SHOCKWAVE_RANGE: 15,
-        SKILL_ANIMATION_MAX_DURATION: 2.0,
-
-        // Base stats
-        baseHp: 170,
-        baseTp: 60,
-        baseStrength: 1,
-        baseDefense: 1,
-        baseAgility: 1,
-        baseLuck: 1,
-
-        // Current stats
-        level: 1,
-        exp: 0,
-        expRequired: 350,
-        maxHp: 170,
-        hp: 170,
-        maxTp: 60,
-        tp: 60,
-        strength: 1,
-        defense: 1,
-        agility: 1,
-        luck: 1,
-        invulnerableTimer: 0,
-        statPointsAvailable: 0,
-        xData: 0,
-        boosterPacks: 0,
-        bits: 0,
-
-        // Upgrade levels
-        strengthUpgrades: 0,
-        defenseUpgrades: 0,
-        hpUpgrades: 0,
-        tpUpgrades: 0,
-        agilityUpgrades: 0,
-        luckUpgrades: 0,
-
-        // Stat points from leveling
-        strengthPoints: 0,
-        defensePoints: 0,
-        agilityPoints: 0,
-        luckPoints: 0,
-
-        // State flags
-        isDead: false,
-        isLevelingUp: false,
-        isDashing: false,
-        isChargingAttack: false,
-        shockwavePending: false,
-        levelUpShockwaveTimer: 0,
-        stunTimer: 0,
-        levelUpParticles: [],
-        levelUpParticleTimer: 0,
-        chargeParticles: [],
-
-        // Inventory & items
-        inventory: [],
-        currentWeaponType: WeaponType.SWORD,
-        weaponTech: {
-            [WeaponType.SWORD]: 0,
-            [WeaponType.DUAL_BLADE]: 0,
-            [WeaponType.LANCE]: 0,
-            [WeaponType.HAMMER]: 0,
-        },
-        skillTech: {
-            RECOVERY: 0,
-            BLAST: 0,
-            RANGED: 0,
-        },
-
-        // Mocked dependencies
-        floatingIndicatorManager: {
-            spawnDamage: vi.fn(),
-            spawnHeal: vi.fn(),
-            spawnTp: vi.fn(),
-            spawnTech: vi.fn(),
-        },
-        body: {
-            position: {
-                x: 0, y: 0, z: 0, copy: vi.fn(), clone: vi.fn().mockReturnValue({ x: 0, y: 0, z: 0, length: () => 0 }), vsub: (_v: any) => ({ x: 0, y: 0, z: 0, length: () => 0, normalize: vi.fn() })
-            },
-            velocity: { x: 0, y: 0, z: 0, set: vi.fn() },
-            shapes: [{ radius: 1 }],
-            applyImpulse: vi.fn(),
-            type: 2, // CANNON.Body.DYNAMIC
-        },
-        weapon: {
-            stopAttack: vi.fn(),
-            isAttacking: false,
-            damage: 10,
-            weaponType: WeaponType.SWORD,
-            attack: vi.fn(),
-            update: vi.fn(),
-        },
-        mesh: {
-            position: { x: 0, y: 0, z: 0, copy: vi.fn() },
-            quaternion: { slerp: vi.fn() },
-            children: [],
-            parent: null,
-            add: vi.fn(),
-            remove: vi.fn(),
-        },
-        position: { copy: vi.fn() },
-        world: {
-            bodies: [],
-            broadphase: { aabbQuery: vi.fn().mockReturnValue([]) }
-        },
-        scene: {},
-        actions: {},
-        currentAction: null,
-        skills: [],
-        deathCallback: undefined,
-
-        // Block state
-        isBlocking: false,
-        blockTimer: 0,
-        BLOCK_DURATION: 0.5,
-        blockShield: { attachTo: vi.fn(), detach: vi.fn(), dispose: vi.fn() },
-        isGrounded: true,
-
-        // Blob shadow
-        blobShadow: { update: vi.fn(), cleanup: vi.fn(), visible: true, setScale: vi.fn() },
-
-        input: mock<InputManager>({ getMovementVector: () => new Vector2(0, 0) }),
-    });
-
-    // Override syncPosition to avoid THREE.Vector3 creation
-    player.syncPosition = vi.fn();
+function makePlayer(overrides: Partial<Player> = {}): Player {
+    const sceneMock = mock<THREE.Scene>();
+    const worldMock = mock<CANNON.World>();
+    const position = mock<CANNON.Vec3>({ x: 0, y: 0, z: 0 });
+    const physicsMaterial = mock<CANNON.Material>();
+    const player = new Player(sceneMock, worldMock, position, physicsMaterial);
 
     Object.assign(player, overrides);
     return player;
 }
 
-function makeWeaponItem(overrides: MockOverrides<WeaponItem> = {}): WeaponItem {
+function makeWeaponItem(overrides: Partial<WeaponItem> = {}): WeaponItem {
     const weaponItemMock = Object.create(WeaponItem.prototype) as WeaponItem;
     Object.assign(weaponItemMock, {
         isEquipped: true,
@@ -212,12 +68,13 @@ function makeWeaponItem(overrides: MockOverrides<WeaponItem> = {}): WeaponItem {
     return weaponItemMock;
 }
 
-function makeWeapon(overrides: MockOverrides<Weapon> = {}): Weapon {
+function makeWeapon(overrides: Partial<Weapon> = {}): Weapon {
     const weaponMock = Object.create(Weapon.prototype) as Weapon;
     Object.assign(weaponMock, {
         damage: 1,
         weaponType: WeaponType.SWORD,
         update: vi.fn(),
+        test: 123
     });
 
     Object.assign(weaponMock, overrides);
@@ -1433,9 +1290,13 @@ describe('Player.tryIncrementWeaponTech', () => {
 
 import { SkillTechType } from './skills/SkillTechType';
 import { mock } from 'vitest-mock-extended';
-import { Vector2 } from 'three';
+import { Shape, Vector2 } from 'three';
 import { Item } from './items/Item';
 import { Weapon } from './items/weapons/Weapon';
+import { FloatingIndicatorManager } from './FloatingIndicatorManager';
+import { Vec3 } from 'cannon-es';
+import { InputManager } from './InputManager';
+import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 
 describe('Player.tryIncrementSkillTech', () => {
     it('increments skill tech when random roll succeeds', () => {
@@ -1789,12 +1650,16 @@ describe('Player.handleSkillAnimation', () => {
     });
 
     it('force-releases the skill lock when skillAnimationTimer exceeds SKILL_ANIMATION_MAX_DURATION', () => {
-        const maxDuration = (makePlayer() as any).SKILL_ANIMATION_MAX_DURATION as number;
-        const player = makePlayer({ isUsingSkill: true, skillAnimationTimer: maxDuration - 0.01 });
+        const player = makePlayer({
+            input: {
+                isSkill1JustPressed: vi.fn().mockReturnValue(true),
+            },
+        });
+        const maxDuration = 2.0;
         player.haltMovement = vi.fn();
 
         // One tick that pushes the timer over the limit
-        const result = player.handleSkillAnimation(0.02);
+        const result = player.handleSkillAnimation(2.1);
 
         expect(result).toBe(false);
         expect(player.isUsingSkill).toBe(false);

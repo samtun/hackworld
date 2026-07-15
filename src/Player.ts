@@ -46,12 +46,13 @@ export const PLAYER_COLLISION_GROUP = 2;
 export class Player extends BaseMesh {
     id: string;
     body: CANNON.Body;
-    input: InputManager;
     weapon: Weapon;
     currentWeaponType: WeaponType = WeaponType.SWORD;
     innerMesh?: THREE.Mesh;
     position: THREE.Vector3;
     private rightHandBone?: THREE.Bone;
+
+    private readonly input: InputManager;
 
     // Scene and World references for items
     public scene: THREE.Scene;
@@ -287,12 +288,12 @@ export class Player extends BaseMesh {
         return CardCollection.Instance.isAlbumComplete(Album.C002) ? 0.10 : 0;
     }
 
-    constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, input: InputManager, physicsMaterial: CANNON.Material) {
+    constructor(scene: THREE.Scene, world: CANNON.World, position: CANNON.Vec3, physicsMaterial: CANNON.Material) {
         super('models/main_character.glb');
         this.scene = scene;
         this.world = world;
         this.id = crypto.randomUUID();
-        this.input = input;
+        this.input = InputManager.Instance;
         this.weaponRepository = WeaponRepository.Instance;
         this.position = cannonToThree(position);
         this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
