@@ -4,22 +4,18 @@ import { FloatingIndicator, FloatingIndicatorConfig } from './FloatingIndicator'
 import { ItemDrop } from './items/ItemDrop';
 import { MoneyDrop } from './items/bits/MoneyDrop';
 import { XDataDrop } from './items/xdata/XDataDrop';
+import { singleton } from 'tsyringe';
 
 /**
  * Manager for all floating indicators in the game (damage, EXP, tech points, etc.)
  * Handles creation, updates, and cleanup
  */
+@singleton()
 export class FloatingIndicatorManager {
-    private static instance: FloatingIndicatorManager;
     private floatingIndicators: FloatingIndicator[] = [];
-    private scene: THREE.Scene;
 
-    private constructor(scene: THREE.Scene) {
+    constructor(private readonly scene: THREE.Scene) {
         this.scene = scene;
-    }
-
-    public static getInstance(scene: THREE.Scene): FloatingIndicatorManager {
-        return this.instance || (this.instance = new this(scene));
     }
 
     /**

@@ -3,13 +3,11 @@ import * as CANNON from 'cannon-es';
 import { EXRLoader } from 'three/examples/jsm/loaders/EXRLoader.js';
 import { Enemy } from '../enemies/Enemy';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
-import { AssetManager } from '../AssetManager';
-import { Teleporter } from '../Teleporter';
-import { Player } from '../Player';
+import { Teleporter } from '../props/Teleporter';
+import { Player } from '../player/Player';
 import { Npc } from '../npcs/Npc';
-import { BossEnemy } from '../enemies/BossEnemy';
 import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
-import { createWallMaterial, createObstacleMaterial, createFloorMaterial, updateWallUniforms } from '../WallShaderUtils';
+import { createWallMaterial, createObstacleMaterial, createFloorMaterial, updateWallUniforms } from '../items/shader-utils/WallShaderUtils';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { DungeonRoom, DungeonLayout, Corridor } from './RoomBasedDungeonGenerator';
 import { WALL_HEIGHT, WALL_THICKNESS, CORRIDOR_WIDTH } from './RoomBasedDungeonGenerator';
@@ -20,14 +18,20 @@ import type { StageMinimapLayout } from './StageMinimapLayout';
 import { ItemDropManager } from '../items/ItemDropManager';
 import { MinimapDrop } from '../items/minimap/MinimapDrop';
 import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
-import { AudioManager } from '../AudioManager';
-import { ModelProp } from '../ModelProp';
+import { ModelProp } from '../props/ModelProp';
 import { DEFAULT_ENEMY_TYPE, EnemyType } from '../enemies/EnemyType';
 import {
     DUNGEON_PROP_ASSET_PATHS,
     getDungeonPropAssetPaths,
 } from './DungeonPropCatalog';
 import type { DungeonPropDefinition } from './DungeonPropCatalog';
+import { TeleporterFactory } from '../props/TeleporterFactory';
+import { ModelPropFactory } from '../props/ModelPropFactory';
+import { EnemyFactory } from '../enemies/EnemyFactory';
+import { AudioManager } from '../AudioManager';
+import { LootChestFactory } from '../items/LootChestFactory';
+import { BreakableBarrelFactory } from '../items/BreakableBarrelFactory';
+import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
 
 /**
  * Tiny Y offset applied to north/south walls (those running along X) to
@@ -56,6 +60,13 @@ const SPAWN_DEGENERATE_DISTANCE_THRESHOLD = 0.001;
  */
 const ENEMY_SPAWN_INACTIVE_DURATION = 0.5;
 
+export interface StageMetadata {
+    id: string;
+    name: string;
+    description: string;
+    requiredProgress: number;
+}
+
 /**
  * Base class for all dungeon stages
  * Each dungeon stage should extend this and implement the load() method
@@ -71,11 +82,6 @@ export abstract class BaseStage {
     static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
         throw new Error('getMetadata() must be implemented in derived class');
     }
-
-    protected scene: THREE.Scene;
-    protected physicsWorld: CANNON.World;
-    protected physicsMaterial: CANNON.Material;
-    protected assetManager: AssetManager;
 
     // Collection of teleporters. Main teleporter to exit the stage is at index 0
     teleporters: Teleporter[] = [];
@@ -151,15 +157,18 @@ export abstract class BaseStage {
     private bossForceFieldSpawned: Set<number> = new Set();
 
     constructor(
-        scene: THREE.Scene,
-        physicsWorld: CANNON.World,
-        physicsMaterial: CANNON.Material
-    ) {
-        this.scene = scene;
-        this.physicsWorld = physicsWorld;
-        this.physicsMaterial = physicsMaterial;
-        this.assetManager = AssetManager.Instance;
-    }
+        protected readonly scene: THREE.Scene,
+        protected readonly physicsWorld: CANNON.World,
+        protected readonly physicsMaterial: CANNON.Material,
+        protected readonly teleporterFactory: TeleporterFactory,
+        protected readonly modelPropFactory: ModelPropFactory,
+        protected readonly lootChestFactory: LootChestFactory,
+        protected readonly breakableBarrelFactory: BreakableBarrelFactory,
+        protected readonly electricTrapFactory: ElectricTrapFactory,
+        protected readonly enemyFactory: EnemyFactory,
+        protected readonly audioManager: AudioManager,
+        protected readonly itemDropManager: ItemDropManager,
+    ) { }
 
     /**
      * Get list of assets required by this stage
@@ -351,10 +360,7 @@ export abstract class BaseStage {
      *                    non-interactive until {@link Teleporter.activate} is called.
      */
     protected createTeleporter(position: CANNON.Vec3, destination: string, startActive: boolean = true): void {
-        const teleporter = new Teleporter(
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
+        const teleporter = this.teleporterFactory.createTeleporter(
             position,
             destination,
             startActive
@@ -370,10 +376,7 @@ export abstract class BaseStage {
      * Always active – allows players to return to the lobby at any time.
      */
     protected createLobbyReturnTeleporter(layout: DungeonLayout): void {
-        const lobbyReturnTeleporter = new Teleporter(
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
+        const lobbyReturnTeleporter = this.teleporterFactory.createTeleporter(
             new CANNON.Vec3(layout.spawnPosition.x, layout.spawnElevation, layout.spawnPosition.z),
             'lobby', // Hard coded, since accessing the metadata here would introduce a circular dependency
             true,
@@ -398,11 +401,8 @@ export abstract class BaseStage {
     protected buildObstaclesFromLayout(layout: DungeonLayout): void {
         for (const obs of layout.obstacles) {
             if (obs.propModelName) {
-                this.props.push(new ModelProp(
+                this.props.push(this.modelPropFactory.createModelProp(
                     `props/${obs.propModelName}`,
-                    this.scene,
-                    this.physicsWorld,
-                    this.physicsMaterial,
                     new THREE.Vector3(obs.x, obs.y - obs.height / 2, obs.z),
                 ));
                 continue;
@@ -626,16 +626,13 @@ export abstract class BaseStage {
         spawn?: EnemySpawnPoint,
         enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ): void {
-        const enemy = new Enemy(
-            this.scene,
-            this.physicsWorld,
+        const enemy = this.enemyFactory.createEnemy(
             position,
-            this.physicsMaterial,
             {
                 ...this.getEnemyConfig(spawnType, spawn),
                 ...this.getEnemyTypeConfig(enemyType, spawnType, spawn),
             },
-            enemyType,
+            enemyType
         );
         this.enemies.push(enemy);
     }
@@ -648,11 +645,8 @@ export abstract class BaseStage {
         spawn?: EnemySpawnPoint,
         enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ): void {
-        const boss = new BossEnemy(
-            this.scene,
-            this.physicsWorld,
+        const boss = this.enemyFactory.createBossEnemy(
             position,
-            this.physicsMaterial,
             {
                 ...this.getBossConfig(spawn),
                 ...this.getEnemyTypeConfig(enemyType, EnemySpawnType.Boss, spawn),
@@ -660,7 +654,7 @@ export abstract class BaseStage {
             enemyType,
         );
         this.enemies.push(boss);
-        AudioManager.Instance.playBossSpawn();
+        this.audioManager.playBossSpawn();
     }
 
     /**
@@ -717,8 +711,7 @@ export abstract class BaseStage {
      */
     protected buildChestsFromLayout(layout: DungeonLayout): void {
         for (const cs of layout.chestSpawns) {
-            const chest = new LootChest(
-                this.scene, this.physicsWorld, this.physicsMaterial,
+            const chest = this.lootChestFactory.createLootChest(
                 new CANNON.Vec3(cs.x, cs.y, cs.z),
                 cs.itemQualityFactor,
             );
@@ -731,10 +724,7 @@ export abstract class BaseStage {
      */
     protected buildBarrelsFromLayout(layout: DungeonLayout): void {
         for (const bs of layout.barrelSpawns) {
-            const barrel = new BreakableBarrel(
-                this.scene, this.physicsWorld, this.physicsMaterial,
-                new CANNON.Vec3(bs.x, bs.y, bs.z),
-            );
+            const barrel = this.breakableBarrelFactory.createBreakableBarrel(new CANNON.Vec3(bs.x, bs.y, bs.z));
             this.breakableBarrels.push(barrel);
         }
     }
@@ -744,7 +734,7 @@ export abstract class BaseStage {
      */
     protected buildTrapsFromLayout(layout: DungeonLayout): void {
         for (const ts of layout.trapSpawns) {
-            const trap = new ElectricTrap(this.scene, {
+            const trap = this.electricTrapFactory.createElectricTrap({
                 x: ts.x,
                 y: ts.y,
                 z: ts.z,
@@ -765,7 +755,7 @@ export abstract class BaseStage {
     protected buildMinimapDropFromLayout(layout: DungeonLayout): void {
         if (!layout.mapItemSpawn) return;
         const pos = layout.mapItemSpawn;
-        ItemDropManager.Instance.addDrop(new MinimapDrop(this.scene, new CANNON.Vec3(pos.x, pos.y, pos.z)));
+        this.itemDropManager.addDrop(new MinimapDrop(this.scene, new CANNON.Vec3(pos.x, pos.y, pos.z)));
     }
 
     revealMinimap(): void {
@@ -1082,7 +1072,7 @@ export abstract class BaseStage {
         if (this.teleporters.length === 0 || this.teleporters[0].isActive) return;
         if (this.totalExpectedEnemies === 0) return;
         if (this.roomPendingSpawnData.size === 0 && this.enemies.length === 0) {
-            AudioManager.Instance.playStageCleared();
+            this.audioManager.playStageCleared();
             this.teleporters[0].activate();
         }
     }

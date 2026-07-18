@@ -56,7 +56,7 @@ import { InventoryManager } from './InventoryManager';
 import { AudioManager } from '../AudioManager';
 import { EquippableItem } from './EquippableItem';
 import { WeaponType } from './weapons/WeaponType';
-import { SkillTechType } from '../skills/SkillTechType';
+import { SkillTechType } from '../player/skills/SkillType';
 
 // jsdom does not implement scrollIntoView
 HTMLElement.prototype.scrollIntoView = vi.fn();

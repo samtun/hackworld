@@ -1,7 +1,6 @@
 import { WeaponItem } from './items/weapons/WeaponItem';
-import { SaveManagerUI } from './SaveManagerUI';
-import { PlayerRegistry } from './PlayerRegistry';
-import { InputManager } from './InputManager';
+import { SaveManagerUI } from './menus/SaveManagerUI';
+import { PlayerRegistry } from './player/PlayerRegistry';
 import { CardCollection } from './items/cards/CardCollection';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { CoreRepository } from './items/cores/CoreRepository';
@@ -10,8 +9,9 @@ import { ChipRepository } from './items/chips/ChipRepository';
 import { ChipItem } from './items/chips/ChipItem';
 import { NpcRegistry } from './npcs/NpcRegistry';
 import { GameProgressManager } from './GameProgressManager';
-import { Player } from './Player';
+import { Player } from './player/Player';
 import { TierManager } from './items/TierManager';
+import { singleton } from 'tsyringe';
 
 /**
  * Interface representing the complete save data structure
@@ -75,28 +75,47 @@ export interface SaveData {
 /**
  * Manager class for handling game save operations
  */
+@singleton()
 export class SaveManager {
-    private static instance: SaveManager; // Singleton
-
-    private saveManagerUi: SaveManagerUI
+    private readonly saveManagerUi: SaveManagerUI;
+    private readonly gameProgressManager: GameProgressManager;
+    private readonly cardCollection: CardCollection;
+    private readonly playerRegistry: PlayerRegistry;
+    private readonly weaponRepository: WeaponRepository;
+    private readonly coreRepository: CoreRepository;
+    private readonly chipRepository: ChipRepository;
+    private readonly npcRegistry: NpcRegistry;
+    private readonly tierManager: TierManager;
 
     private static readonly SAVE_VERSION = __APP_VERSION__;
     private static readonly LOCAL_STORAGE_KEY = 'hackworld_autosave';
     private static readonly RESET_FLAG_KEY = 'hackworld_resetting';
     private playTimeSeconds: number = 0;
     private loreIntroSeenFlag: boolean = false;
-    private playerRegistry: PlayerRegistry;
 
-    private constructor() {
-        this.saveManagerUi = SaveManagerUI.Instance;
-        this.playerRegistry = PlayerRegistry.Instance;
+    constructor(
+        saveManagerUi: SaveManagerUI,
+        gameProgressManager: GameProgressManager,
+        cardCollection: CardCollection,
+        playerRegistry: PlayerRegistry,
+        weaponRepository: WeaponRepository,
+        coreRepository: CoreRepository,
+        chipRepository: ChipRepository,
+        npcRegistry: NpcRegistry,
+        tierManager: TierManager,
+    ) {
+        this.saveManagerUi = saveManagerUi;
+        this.gameProgressManager = gameProgressManager;
+        this.cardCollection = cardCollection;
+        this.playerRegistry = playerRegistry;
+        this.weaponRepository = weaponRepository;
+        this.coreRepository = coreRepository;
+        this.chipRepository = chipRepository;
+        this.npcRegistry = npcRegistry;
+        this.tierManager = tierManager;
 
         // Clear reset flag if it exists (from a previous reset operation)
         sessionStorage.removeItem(SaveManager.RESET_FLAG_KEY);
-    }
-
-    public static get Instance(): SaveManager {
-        return this.instance || (this.instance = new this());
     }
 
     /** Returns true if the player has already seen/skipped the lore introduction. */
@@ -128,8 +147,8 @@ export class SaveManager {
     /*
      * Update method of the save manager UI
      */
-    update(input: InputManager): void {
-        this.saveManagerUi.update(input);
+    update(): void {
+        this.saveManagerUi.update();
     }
 
     /**
@@ -171,10 +190,7 @@ export class SaveManager {
             throw new Error('Cannot save: No active player found');
         }
 
-        const cardCollection = CardCollection.Instance;
-        const progressManager = GameProgressManager.Instance;
-
-        const saveData: SaveData = this.createSaveData(progressManager, player, cardCollection);
+        const saveData: SaveData = this.createSaveData(player);
 
         // Convert to JSON and download
         this.downloadSaveFile(saveData);
@@ -233,11 +249,8 @@ export class SaveManager {
                 return;
             }
 
-            const cardCollection = CardCollection.Instance;
-            const progressManager = GameProgressManager.Instance;
+            const saveData: SaveData = this.createSaveData(player);
 
-            const saveData: SaveData = this.createSaveData(progressManager, player, cardCollection);
-            
             // Save to localStorage
             localStorage.setItem(SaveManager.LOCAL_STORAGE_KEY, JSON.stringify(saveData));
             console.log('Game auto-saved to localStorage');
@@ -246,12 +259,12 @@ export class SaveManager {
         }
     }
 
-    private createSaveData(progressManager: GameProgressManager, player: Player, cardCollection: CardCollection): SaveData {
+    private createSaveData(player: Player): SaveData {
         return {
             version: SaveManager.SAVE_VERSION,
             timestamp: new Date().toISOString(),
             playtime: this.playTimeSeconds,
-            gameProgress: progressManager.progress,
+            gameProgress: this.gameProgressManager.progress,
             player: {
                 level: player.level,
                 exp: player.exp,
@@ -317,8 +330,8 @@ export class SaveManager {
                 tech: structuredClone((player as any).tech || {}),
                 skillTech: structuredClone(player.skillTech || {})
             },
-            cardCollection: cardCollection.getSaveData(),
-            npcDialogueShown: NpcRegistry.Instance.getShownDialogueList(),
+            cardCollection: this.cardCollection.getSaveData(),
+            npcDialogueShown: this.npcRegistry.getShownDialogueList(),
             loreIntroSeen: this.loreIntroSeenFlag,
         };
     }
@@ -448,7 +461,7 @@ export class SaveManager {
             }
 
             // Do nothing on cancel when loading from the SaveManager NPC
-            if (!this.checkVersionCompatibility(saveData, () => {})) {
+            if (!this.checkVersionCompatibility(saveData, () => { })) {
                 return;
             }
 
@@ -472,8 +485,7 @@ export class SaveManager {
         }
 
         // Load game progress
-        const progressManager = GameProgressManager.Instance;
-        progressManager.load(saveData.gameProgress || 0);
+        this.gameProgressManager.load(saveData.gameProgress || 0);
 
         // Load playtime
         this.playTimeSeconds = saveData.playtime || 0;
@@ -517,19 +529,16 @@ export class SaveManager {
 
         // Restore inventory
         player.inventory = [];
-        const weaponRepo = WeaponRepository.Instance;
-        const coreRepository = CoreRepository.Instance;
-        const chipRepository = ChipRepository.Instance;
 
         for (const itemData of saveData.player.inventory) {
             if (itemData.kind === WeaponItem.name) {
                 // Restore weapon by finding a weapon with matching properties
                 // We use weaponType and level to find the right weapon from the repository
                 if (itemData.weaponType && itemData.level) {
-                    const baseWeapon = weaponRepo.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
+                    const baseWeapon = this.weaponRepository.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
                     const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
                     if (itemData.tierName) {
-                        weaponItem.tier = TierManager.Instance.tiers.get(itemData.tierName)!;
+                        weaponItem.tier = this.tierManager.tiers.get(itemData.tierName)!;
                     }
                     if (itemData.isEquipped) {
                         weaponItem.isEquipped = true;
@@ -542,7 +551,7 @@ export class SaveManager {
             } else if (itemData.kind === CoreItem.name) {
                 // Restore core by name and level from repository
                 if (itemData.name && itemData.level) {
-                    const coreItem = coreRepository.getCoreByNameAndLevel(itemData.name, itemData.level);
+                    const coreItem = this.coreRepository.getCoreByNameAndLevel(itemData.name, itemData.level);
                     if (coreItem) {
                         if (itemData.isEquipped) {
                             coreItem.isEquipped = true;
@@ -553,7 +562,7 @@ export class SaveManager {
             } else if (itemData.kind === ChipItem.name) {
                 // Restore chip by name and level from repository
                 if (itemData.name && itemData.level) {
-                    const chipItem = chipRepository.getChipByNameAndLevel(itemData.name, itemData.level);
+                    const chipItem = this.chipRepository.getChipByNameAndLevel(itemData.name, itemData.level);
                     if (chipItem) {
                         if (itemData.isEquipped) {
                             chipItem.isEquipped = true;
@@ -571,16 +580,14 @@ export class SaveManager {
         this.playTimeSeconds = saveData.playtime;
 
         // Restore card collection
-        const cardCollection = CardCollection.Instance;
-        cardCollection.loadSaveData(saveData.cardCollection);
+        this.cardCollection.loadSaveData(saveData.cardCollection);
 
         // Restore NPC dialogue state (with fallback for old saves)
-        const npcRegistry = NpcRegistry.Instance;
         if (saveData.npcDialogueShown) {
-            npcRegistry.loadDialogueState(saveData.npcDialogueShown);
+            this.npcRegistry.loadDialogueState(saveData.npcDialogueShown);
         } else {
             // Old save file - reset to show all dialogues
-            npcRegistry.reset();
+            this.npcRegistry.reset();
         }
 
         // Restore lore intro seen flag

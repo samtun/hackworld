@@ -9,6 +9,14 @@ import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
+import { TeleporterFactory } from '../props/TeleporterFactory';
+import { AudioManager } from '../AudioManager';
+import { EnemyFactory } from '../enemies/EnemyFactory';
+import { BreakableBarrelFactory } from '../items/BreakableBarrelFactory';
+import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
+import { ItemDropManager } from '../items/ItemDropManager';
+import { LootChestFactory } from '../items/LootChestFactory';
+import { ModelPropFactory } from '../props/ModelPropFactory';
 
 export class SecurityCore extends StageWithLevels {
     private static id: string = 'securityCore';
@@ -150,9 +158,32 @@ export class SecurityCore extends StageWithLevels {
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
+        teleporterFactory: TeleporterFactory,
+        modelPropFactory: ModelPropFactory,
+        lootChestFactory: LootChestFactory,
+        breakableBarrelFactory: BreakableBarrelFactory,
+        electricTrapFactory: ElectricTrapFactory,
+        enemyFactory: EnemyFactory,
+        audioManager: AudioManager,
+        itemDropManager: ItemDropManager,
         stageId?: string,
     ) {
-        super(scene, physicsWorld, physicsMaterial, stageId, SecurityCore.id, SecurityCore.levelConfigs);
+        super(
+            scene,
+            physicsWorld,
+            physicsMaterial,
+            teleporterFactory,
+            modelPropFactory,
+            lootChestFactory,
+            breakableBarrelFactory,
+            electricTrapFactory,
+            enemyFactory,
+            audioManager,
+            itemDropManager,
+            stageId,
+            SecurityCore.id,
+            SecurityCore.levelConfigs
+        );
     }
 
     static getLevelStageIds(): readonly string[] {

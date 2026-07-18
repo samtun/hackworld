@@ -33,7 +33,7 @@ describe('Game audio scene flow', () => {
 
         (game as any).onInitialLoadComplete();
 
-        expect(game.input.initializeMobileControls).toHaveBeenCalledOnce();
+        expect(game.inputManager.initializeMobileControls).toHaveBeenCalledOnce();
         expect(AudioManager.Instance.setStageMusic).toHaveBeenCalledWith('startScreen');
     });
 

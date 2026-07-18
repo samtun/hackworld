@@ -1,20 +1,28 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 import { BaseStage } from './BaseStage';
-import { HealingStation } from '../HealingStation';
-import { Player } from '../Player';
+import { HealingStation } from '../props/HealingStation';
+import { Player } from '../player/Player';
 import { ChipTrader } from '../items/chips/ChipTrader';
 import { SaveManager } from '../SaveManager';
 import { XDataUpgradeManager } from '../items/xdata/XDataUpgradeManager';
 import { WeaponTrader } from '../items/weapons/WeaponTrader';
 import { Npc } from '../npcs/Npc';
-import { MainframeNpc } from '../npcs/MainframeNpc';
 import { CoreTrader } from '../items/cores/CoreTrader';
 import { CardManager } from '../items/cards/CardManager';
 import { ShaderUtils } from '../ShaderUtils';
 import { GameProgressManager } from '../GameProgressManager';
-import { ModelProp } from '../ModelProp';
 import type { StageMinimapLayout } from './StageMinimapLayout';
+import { HealingStationFactory } from '../props/HealingStationFactory';
+import { TeleporterFactory } from '../props/TeleporterFactory';
+import { AudioManager } from '../AudioManager';
+import { EnemyFactory } from '../enemies/EnemyFactory';
+import { BreakableBarrelFactory } from '../items/BreakableBarrelFactory';
+import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
+import { ItemDropManager } from '../items/ItemDropManager';
+import { LootChestFactory } from '../items/LootChestFactory';
+import { ModelPropFactory } from '../props/ModelPropFactory';
+import { NpcFactory } from '../npcs/NpcFactory';
 
 export class Lobby extends BaseStage {
     id = 'lobby';
@@ -50,14 +58,6 @@ export class Lobby extends BaseStage {
     coreTraderNpc?: Npc;
     cardCollectionNpc?: Npc;
 
-    // Managers
-    private weaponTraderManager?: WeaponTrader;
-    private chipTrader?: ChipTrader;
-    private coreTrader?: CoreTrader;
-    private saveManager?: SaveManager;
-    private xDataUpgradeManager?: XDataUpgradeManager;
-    private cardManager?: CardManager;
-
     private bannerTexture?: THREE.Texture | null = null;
     private static readonly minimapLayout: StageMinimapLayout = {
         rects: [{ x: 0, z: 0, width: 34, depth: 34, kind: 'room' }],
@@ -65,7 +65,7 @@ export class Lobby extends BaseStage {
     };
 
     // Healing Station
-    healingStation?: HealingStation;
+    private healingStation?: HealingStation;
     private healingStationPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0, 6);
     private upperLevelY: number = 6.75; // Y position for entities on the upper level
 
@@ -74,6 +74,43 @@ export class Lobby extends BaseStage {
 
     // Callback for Save Manager interaction (set by Game)
     saveManagerInteractionCallback?: () => void;
+
+    constructor(
+        scene: THREE.Scene,
+        physicsWorld: CANNON.World,
+        physicsMaterial: CANNON.Material,
+        teleporterFactory: TeleporterFactory,
+        modelPropFactory: ModelPropFactory,
+        lootChestFactory: LootChestFactory,
+        breakableBarrelFactory: BreakableBarrelFactory,
+        electricTrapFactory: ElectricTrapFactory,
+        enemyFactory: EnemyFactory,
+        audioManager: AudioManager,
+        itemDropManager: ItemDropManager,
+        private readonly npcFactory: NpcFactory,
+        private readonly gameProgressManager: GameProgressManager,
+        private readonly cardManager: CardManager,
+        private readonly weaponTrader: WeaponTrader,
+        private readonly chipTrader: ChipTrader,
+        private readonly coreTrader: CoreTrader,
+        private readonly saveManager: SaveManager,
+        private readonly xDataUpgradeManager: XDataUpgradeManager,
+        private readonly healingStationFactory: HealingStationFactory,
+    ) {
+        super(
+            scene,
+            physicsWorld,
+            physicsMaterial,
+            teleporterFactory,
+            modelPropFactory,
+            lootChestFactory,
+            breakableBarrelFactory,
+            electricTrapFactory,
+            enemyFactory,
+            audioManager,
+            itemDropManager,
+        );
+    }
 
     async load(): Promise<void> {
         this.clear();
@@ -84,11 +121,8 @@ export class Lobby extends BaseStage {
         // Update Mainframe dialogue on each load (in case progress changed)
         this.updateMainframeDialogue();
 
-        this.props.push(new ModelProp(
+        this.props.push(this.modelPropFactory.createModelProp(
             'lobby',
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
             undefined,
             undefined,
             (lobbyScene) => {
@@ -118,7 +152,7 @@ export class Lobby extends BaseStage {
         this.createTeleporter(new CANNON.Vec3(0, 0, -6), 'selection');
 
         // Healing Station
-        this.healingStation = new HealingStation(this.scene, this.physicsWorld, this.physicsMaterial, this.healingStationPosition);
+        this.healingStation = this.healingStationFactory.createHealingStation(this.healingStationPosition);
 
         // Create Mainframe NPC - Main quest giver
         this.createMainframeNpc();
@@ -143,7 +177,7 @@ export class Lobby extends BaseStage {
      * Create the Mainframe NPC with progressive dialogue based on game progress
      */
     private createMainframeNpc(): void {
-        this.mainframeNpc = new MainframeNpc(this.scene, this.physicsWorld, this.physicsMaterial, new CANNON.Vec3(38, 6.75, -30));
+        this.mainframeNpc = this.npcFactory.createMainframeNpc(new CANNON.Vec3(38, 6.75, -30));
         this.npcs.add(this.mainframeNpc);
     }
 
@@ -154,15 +188,13 @@ export class Lobby extends BaseStage {
             "If you are interested, the teleporter to the south can take you to our main server."
         ];
 
-        this.nylethNpc = new Npc(
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
+        this.nylethNpc = this.npcFactory.createNpc(
             "models/npc_placeholder.glb",
             "Nyleth",
             "Talk",
             new CANNON.Vec3(-30, this.upperLevelY, -30),
-            nylethDialogue
+            nylethDialogue,
+            () => { }
         );
         this.npcs.add(this.nylethNpc);
     }
@@ -174,17 +206,13 @@ export class Lobby extends BaseStage {
             "Step closer if you'd like to upgrade your stats!"
         ];
 
-        this.xDataUpgradeManager = XDataUpgradeManager.Instance;
-        this.xDataManagerNpc = new Npc(
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
+        this.xDataManagerNpc = this.npcFactory.createNpc(
             "models/xdata_terminal.glb",
             "XData Terminal",
             "Upgrade with X-Data",
             new CANNON.Vec3(18, 0, 0),
             xDataManagerDialogue,
-            () => this.xDataUpgradeManager?.show()
+            () => this.xDataUpgradeManager.show()
         );
         this.npcs.add(this.xDataManagerNpc);
     }
@@ -197,17 +225,13 @@ export class Lobby extends BaseStage {
             "Come closer when you're ready to save or load!"
         ];
 
-        this.saveManager = SaveManager.Instance;
-        this.saveManagerNpc = new Npc(
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
+        this.saveManagerNpc = this.npcFactory.createNpc(
             'models/npc_placeholder.glb',
             "Grant",
             "Save Game",
             new CANNON.Vec3(34, this.upperLevelY, 30),
             saveManagerDialogue,
-            () => this.saveManager?.show(),
+            () => this.saveManager.show(),
         );
         this.npcs.add(this.saveManagerNpc);
     }
@@ -219,17 +243,13 @@ export class Lobby extends BaseStage {
             "I've got all the chips you need."
         ];
 
-        this.chipTrader = ChipTrader.Instance;
-        this.chipTraderNpc = new Npc(
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
+        this.chipTraderNpc = this.npcFactory.createNpc(
             "models/npc_placeholder.glb",
             "Kelly",
             "Trade Chips",
             new CANNON.Vec3(-42, this.upperLevelY, 29),
             chipTraderDialogue,
-            () => this.chipTrader?.show()
+            () => this.chipTrader.show()
         );
         this.npcs.add(this.chipTraderNpc);
     }
@@ -240,17 +260,13 @@ export class Lobby extends BaseStage {
             "I've got just what you need."
         ];
 
-        this.coreTrader = CoreTrader.Instance;
-        this.coreTraderNpc = new Npc(
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
+        this.coreTraderNpc = this.npcFactory.createNpc(
             "models/npc_placeholder.glb",
             "Hank",
             "Trade Cores",
             new CANNON.Vec3(-46, this.upperLevelY, 21),
             coreTraderDialogue,
-            () => this.coreTrader?.show()
+            () => this.coreTrader.show()
         );
         this.npcs.add(this.coreTraderNpc);
     }
@@ -262,17 +278,13 @@ export class Lobby extends BaseStage {
             "Have a look at my fine collection of weapons."
         ];
 
-        this.weaponTraderManager = WeaponTrader.Instance;
-        this.weaponTraderNpc = new Npc(
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
+        this.weaponTraderNpc = this.npcFactory.createNpc(
             "models/trader_weapons.glb",
             "Orim",
             "Trade Weapons",
             new CANNON.Vec3(-42, this.upperLevelY, 17),
             weaponTraderDialogue,
-            () => this.weaponTraderManager?.show()
+            () => this.weaponTrader.show()
         );
         this.npcs.add(this.weaponTraderNpc);
     }
@@ -285,17 +297,13 @@ export class Lobby extends BaseStage {
             "Come see me when you find some packs!"
         ];
 
-        this.cardManager = CardManager.Instance;
-        this.cardCollectionNpc = new Npc(
-            this.scene,
-            this.physicsWorld,
-            this.physicsMaterial,
+        this.cardCollectionNpc = this.npcFactory.createNpc(
             "models/npc_placeholder.glb",
             "Irkel",
             "Card Collection",
             new CANNON.Vec3(38, this.upperLevelY, 28),
             cardCollectionNpcDialogue,
-            () => this.cardManager?.show()
+            () => this.cardManager.show()
         );
 
         this.npcs.add(this.cardCollectionNpc);
@@ -306,9 +314,8 @@ export class Lobby extends BaseStage {
      */
     private updateMainframeDialogue(): void {
         if (this.mainframeNpc) {
-            const progressManager = GameProgressManager.Instance;
             // mainframeNpc is a MainframeNpc instance and exposes updateDialogue
-            (this.mainframeNpc as any).updateDialogue(progressManager.progress);
+            (this.mainframeNpc as any).updateDialogue(this.gameProgressManager.progress);
         }
     }
 

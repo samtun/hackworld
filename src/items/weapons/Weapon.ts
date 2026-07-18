@@ -4,13 +4,7 @@ import { AssetManager } from '../../AssetManager.ts';
 import { BaseMesh } from '../../BaseMesh.ts';
 import { WeaponType } from './WeaponType';
 
-export interface WeaponLevel {
-    char: string; // greek character
-    requiredTech: number;
-    damagePercent: number; // percent value, e.g. 180 for 180%
-}
-
-export interface WeaponStats {
+interface WeaponStats {
     attackSpeed: number; // Duration in seconds
     range: number;
     attackAngle: number; // In radians
@@ -87,7 +81,6 @@ export class Weapon extends BaseMesh {
     stats: WeaponStats;
     damage: number; // Actual damage value for this weapon instance
 
-    private assetManager: AssetManager;
     onDamageFrame?: () => void; // Callback for when damage should be dealt
     onHit?: (event: any) => void; // Callback for when weapon hits something
 
@@ -103,17 +96,18 @@ export class Weapon extends BaseMesh {
     private hitboxActive: boolean = false;
 
     constructor(
+        private readonly assetManager: AssetManager,
         modelAsset: string,
         weaponType: WeaponType = WeaponType.SWORD,
         damage: number = 10,
         world?: CANNON.World) {
-        super(modelAsset);
+        super(modelAsset, assetManager);
         this.weaponType = weaponType;
         this.stats = Weapon.WEAPON_CONFIGS[weaponType];
         this.damage = damage;
-        this.assetManager = AssetManager.Instance;
         this.physicsWorld = world;
 
+        // TODO check if this is necessary, since we are loading the model via the super constructor
         // Load the weapon model (will use preloaded if available)
         this.loadWeaponModel(weaponType);
     }

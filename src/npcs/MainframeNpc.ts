@@ -2,18 +2,32 @@ import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Npc } from './Npc';
 import { GameProgressManager } from '../GameProgressManager';
+import { NpcRegistry } from './NpcRegistry';
+import { AssetManager } from '../AssetManager';
 
 export class MainframeNpc extends Npc {
     constructor(
+        private readonly gameProgressManager: GameProgressManager,
+        assetManager: AssetManager,
+        npcRegistry: NpcRegistry,
         scene: THREE.Scene,
-        world: CANNON.World,
+        physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
         position: CANNON.Vec3
     ) {
-        const progressManager = GameProgressManager.Instance;
-        const dialogue = MainframeNpc.getDialogueForProgress(progressManager.progress);
-
-        super(scene, world, physicsMaterial, "models/mainframe.glb", "The Mainframe", "Access System", position, dialogue);
+        const dialogue = MainframeNpc.getDialogueForProgress(gameProgressManager.progress);
+        super(
+            assetManager,
+            npcRegistry,
+            scene,
+            physicsWorld,
+            physicsMaterial,
+            "models/mainframe.glb",
+            "The Mainframe",
+            "Access System",
+            position,
+            dialogue
+        );
 
         // bind interaction callback to mainframe-specific logic
         this.interactionCallback = this.onInteract.bind(this);
@@ -24,7 +38,7 @@ export class MainframeNpc extends Npc {
     }
 
     private onInteract(): void {
-        const progressManager = GameProgressManager.Instance;
+        const progressManager = this.gameProgressManager;
         const currentProgress = progressManager.progress;
 
         if (currentProgress === 0 || (currentProgress > 0 && currentProgress % 2 === 0)) {

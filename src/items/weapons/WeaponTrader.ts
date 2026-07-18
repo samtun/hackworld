@@ -2,25 +2,32 @@ import { WeaponItem } from './WeaponItem';
 import { BaseTrader, TraderUIConfig } from '../BaseTrader';
 import { WeaponRepository } from './WeaponRepository';
 import { WeaponType } from './WeaponType';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 import { Item } from '../Item';
-import { InputManager } from '../../InputManager';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
 import { TierManager } from '../TierManager';
 import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 import { sortInventory } from '../ItemSorter';
 import { CardCollection } from '../cards/CardCollection';
 import { Album } from '../cards/Card';
+import { AudioManager } from '../../AudioManager';
+import { InputManager } from '../../controls/InputManager';
+import { MenuManager } from '../../ui/MenuManager';
+import { UIManager } from '../../ui/UIManager';
+import { singleton } from 'tsyringe';
 
 /** A.003 bonus: 8% buy discount and 8% sell bonus on weapons when collection A.003 is complete */
 const A003_DISCOUNT = 0.08;
 /** A.003 bonus: +5% tier chance boost for weapons spawned in trader inventory */
 const A003_TIER_CHANCE_BONUS = 0.05;
 
+@singleton()
 export class WeaponTrader extends BaseTrader {
-    static instance: WeaponTrader; // Singleton
+    private readonly weaponRepository: WeaponRepository;
+    private readonly weaponBonusCalculator: WeaponBonusCalculator;
+    private readonly tierManager: TierManager;
+    private readonly cardCollection: CardCollection;
 
-    private weaponRepository: WeaponRepository;
     private pendingInventoryInit: boolean = true;
 
     private static readonly ALL_WEAPON_TYPES = [
@@ -30,7 +37,16 @@ export class WeaponTrader extends BaseTrader {
         WeaponType.HAMMER,
     ];
 
-    private constructor() {
+    constructor(
+        weaponRepository: WeaponRepository,
+        weaponBonusCalculator: WeaponBonusCalculator,
+        tierManager: TierManager,
+        cardCollection: CardCollection,
+        audioManager: AudioManager,
+        menuManager: MenuManager,
+        uiManager: UIManager,
+        inputManager: InputManager,
+    ) {
         const cfg: TraderUIConfig = {
             title: 'TRADER',
             traderTitle: "Trader's Goods",
@@ -45,26 +61,25 @@ export class WeaponTrader extends BaseTrader {
                 text: TRADER_UI_COLORS.TEXT
             }
         };
-        super(cfg);
-        this.weaponRepository = WeaponRepository.Instance;
+        super(audioManager, menuManager, uiManager, inputManager, cfg);
+        this.weaponRepository = weaponRepository;
+        this.weaponBonusCalculator = weaponBonusCalculator;
+        this.tierManager = tierManager;
+        this.cardCollection = cardCollection;
         this.initializeTraderInventory();
-    }
-
-    public static get Instance(): WeaponTrader {
-        return this.instance || (this.instance = new this());
     }
 
     show() {
         super.show();
     }
 
-    update(player: Player, input?: InputManager) {
+    update(player: Player) {
         if (this.pendingInventoryInit) {
             this.refreshInventory(player);
             this.pendingInventoryInit = false;
             this.needsRender = true;
         }
-        super.update(player, input);
+        super.update(player);
     }
 
     protected initializeTraderInventory() {
@@ -73,14 +88,14 @@ export class WeaponTrader extends BaseTrader {
 
     protected getEffectiveBuyPrice(item: Item, _player: Player): number {
         const base = item.buyPrice ?? 0;
-        return CardCollection.Instance.isAlbumComplete(Album.A003)
+        return this.cardCollection.isAlbumComplete(Album.A003)
             ? Math.floor(base * (1 - A003_DISCOUNT))
             : base;
     }
 
     protected getEffectiveSellPrice(item: Item, _player: Player): number {
         const base = item.sellPrice ?? 0;
-        return CardCollection.Instance.isAlbumComplete(Album.A003)
+        return this.cardCollection.isAlbumComplete(Album.A003)
             ? Math.ceil(base * (1 + A003_DISCOUNT))
             : base;
     }
@@ -91,13 +106,12 @@ export class WeaponTrader extends BaseTrader {
      */
     private refreshInventory(player: Player): void {
         this.traderInventory = [];
-        const bonusCalc = WeaponBonusCalculator.Instance;
-        const a003Active = CardCollection.Instance.isAlbumComplete(Album.A003);
+        const a003Active = this.cardCollection.isAlbumComplete(Album.A003);
 
         // Random bonus entries
         // Loop 2 times over all tiers to get a good mix of potential weapon items
         for (let i = 0; i < 2; i++) {
-            for (const tier of TierManager.Instance.tiers.values()) {
+            for (const tier of this.tierManager.tiers.values()) {
                 const type = WeaponTrader.ALL_WEAPON_TYPES[
                     Math.floor(Math.random() * WeaponTrader.ALL_WEAPON_TYPES.length)
                 ];
@@ -111,7 +125,9 @@ export class WeaponTrader extends BaseTrader {
                     : tier.traderChance;
                 console.log(`Evaluating ${tier.name} tier for trader inventory: player level ${player.level}, tier min level ${tier.minLevel}, chance ${effectiveTierChance}, roll ${roll}`);
                 if (player.level >= tier.minLevel && roll < effectiveTierChance) {
-                    this.traderInventory.push(bonusCalc.applyWeaponBonus(weapon, bonusCalc.randomMultiplierForTier(tier)));
+                    const randomBonus = this.weaponBonusCalculator.randomMultiplierForTier(tier);
+                    this.traderInventory.push(
+                        this.weaponBonusCalculator.applyWeaponBonus(weapon, randomBonus));
                 } else {
                     // Tier chance did not fire – add the base weapon at standard pricing.
                     // Base weapons from the repository already carry the STABLE tier.

@@ -1,10 +1,10 @@
-import * as THREE from 'three';
 import { Enemy } from '../../enemies/Enemy';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
 import { MoneyDrop } from './MoneyDrop';
 import { ItemDropStrategy } from '../ItemDropManager';
+import { ItemDropFactory } from '../ItemDropFactory';
 
 export class MoneyDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.MONEY;
@@ -12,15 +12,17 @@ export class MoneyDropStrategy implements ItemDropStrategy {
         return 6;
     }
 
+    constructor(private readonly itemDropFactory: ItemDropFactory) { }
+
     /**
      * Try to drop money from enemy.
      * Always succeeds if called (money drop probability is handled in ItemDropManager).
      */
-    drop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null {        
+    drop(enemy: Enemy, player: Player): ItemDrop | null {
         const amount = this.determineMoneyAmount(player);
         const dropPosition = enemy.getDeathPosition();
         dropPosition.y += 0.5;
-        return new MoneyDrop(scene, dropPosition, amount);
+        return this.itemDropFactory.createMoneyDrop(dropPosition, amount);
     }
 
     /**

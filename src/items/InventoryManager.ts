@@ -1,5 +1,5 @@
-import { Player } from '../Player';
-import { InputManager } from '../InputManager';
+import { Player } from '../player/Player';
+import { InputManager } from '../controls/InputManager';
 import { shakeElement } from '../ui/UiUtils';
 import { StatType } from '../StatType';
 import { MenuManager, MENU_COLORS } from '../ui/MenuManager';
@@ -12,22 +12,22 @@ import { formatItemLabel } from './ItemDisplay';
 import { sortInventory } from './ItemSorter';
 import { WeaponType } from './weapons/WeaponType';
 import { WeaponItem } from './weapons/WeaponItem';
-import { SkillTechType } from '../skills/SkillTechType';
+import { SkillTechType } from '../player/skills/SkillType';
 import { TierManager } from './TierManager';
 import { ItemLevelHelper } from './ItemLevelHelper';
-import { MobileControlsManager } from '../MobileControlsManager';
+import { MobileControlsManager } from '../controls/MobileControlsManager';
 import { AudioManager } from '../AudioManager';
 import {
     ICON_HP, ICON_TP, ICON_STRENGTH, ICON_DEFENSE, ICON_AGILITY, ICON_LUCK,
     ICON_BITS, ICON_NEXTLVL, ICON_XDATA, ICON_BOOSTER,
     getWeaponIcon, getSkillTechIcon
 } from '../ui/StatIcons';
+import { singleton } from 'tsyringe';
 
 export { Item }; // Re-export Item for other files that might import it from here
 
+@singleton()
 export class InventoryManager {
-    private static instance: InventoryManager; // Singleton
-
     container!: HTMLDivElement;
     isVisible: boolean = false;
 
@@ -59,21 +59,19 @@ export class InventoryManager {
     private mobileToggleButton: HTMLButtonElement | null = null;
     private mobileSlider: HTMLDivElement | null = null;
 
-    private menuManager: MenuManager;
-    private uiManager: UIManager;
-
-    private constructor() {
-        this.menuManager = MenuManager.Instance;
-        this.uiManager = UIManager.Instance;
+    constructor(
+        private readonly menuManager: MenuManager,
+        private readonly uiManager: UIManager,
+        private readonly mobileControlsManager: MobileControlsManager,
+        private readonly audioManager: AudioManager,
+        private readonly tierManager: TierManager,
+        private readonly inputManager: InputManager,
+    ) {
         this.createUI();
     }
 
-    public static get Instance(): InventoryManager {
-        return this.instance || (this.instance = new this());
-    }
-
     private createUI() {
-        const isMobile = MobileControlsManager.Instance.isMobile;
+        const isMobile = this.mobileControlsManager.isMobile;
 
         // Main Container Overlay
         this.container = this.menuManager.createOverlay();
@@ -353,18 +351,18 @@ export class InventoryManager {
 
         // Reset selection when opening inventory
         if (this.isVisible) {
-            AudioManager.Instance.playUiOpen();
+            this.audioManager.playUiOpen();
             this.selectedIndex = 0;
             this.needsRender = true;
             this.pendingSort = true;
         } else {
-            AudioManager.Instance.playUiClose();
+            this.audioManager.playUiClose();
             // Hide centralized control hints when menu closes
             this.uiManager.hideControlHints();
         }
     }
 
-    update(player: Player, input?: InputManager) {
+    update(player: Player) {
         if (!this.isVisible) return;
 
         if (this.pendingSort) {
@@ -372,19 +370,16 @@ export class InventoryManager {
             this.pendingSort = false;
         }
 
-        // Handle keyboard/gamepad navigation
-        if (input) {
-            // Update centralized control hints based on input method
-            this.uiManager.showControlHints(getHint(HintConfigs.inventoryNavigate, input));
+        // Update centralized control hints based on input method
+        this.uiManager.showControlHints(getHint(HintConfigs.inventoryNavigate, this.inputManager));
 
-            const oldIndex = this.selectedIndex;
-            this.handleNavigation(player, input);
+        const oldIndex = this.selectedIndex;
+        this.handleNavigation(player);
 
-            // Mark for re-render if selection changed
-            if (oldIndex !== this.selectedIndex) {
-                AudioManager.Instance.playMenuNavigate();
-                this.needsRender = true;
-            }
+        // Mark for re-render if selection changed
+        if (oldIndex !== this.selectedIndex) {
+            this.audioManager.playMenuNavigate();
+            this.needsRender = true;
         }
 
         // Only re-render if needed
@@ -499,14 +494,14 @@ export class InventoryManager {
         });
     }
 
-    private handleNavigation(player: Player, input: InputManager) {
-        const navigateUp = input.isNavigateUpPressed();
-        const navigateDown = input.isNavigateDownPressed();
-        const select = input.isSelectPressed();
-        const cancel = input.isCancelPressed();
+    private handleNavigation(player: Player) {
+        const navigateUp = this.inputManager.isNavigateUpPressed();
+        const navigateDown = this.inputManager.isNavigateDownPressed();
+        const select = this.inputManager.isSelectPressed();
+        const cancel = this.inputManager.isCancelPressed();
 
         // Scroll stats panel with R-Thumbstick
-        const thumbstickY = input.getRightThumbstickY();
+        const thumbstickY = this.inputManager.getRightThumbstickY();
         if (thumbstickY !== 0 && this.statsScrollPanel) {
             this.statsScrollPanel.scrollTop += thumbstickY * 8;
         }
@@ -539,12 +534,12 @@ export class InventoryManager {
                 // Check if item can be equipped
                 if (item.canEquip(player)) {
                     item.equip(player);
-                    AudioManager.Instance.playEquip();
+                    this.audioManager.playEquip();
                     console.log(`Equipped item: ${item.name}`);
                     // Trigger re-render to update equipped indicator immediately
                     this.needsRender = true;
                 } else {
-                    AudioManager.Instance.playInsufficient();
+                    this.audioManager.playInsufficient();
                     // Item cannot be equipped - shake it
                     this.shakeItem(this.selectedIndex);
                 }
@@ -603,7 +598,7 @@ export class InventoryManager {
             </div>`;
 
         // Tech in 2-column grid
-        const techCap = TierManager.Instance.getTechCapForLevel(player.level);
+        const techCap = this.tierManager.getTechCapForLevel(player.level);
         const cappedTechColor = '#81ccfe';
         const defaultTechColor = '#fff';
         const swordTechColor = player.tech[WeaponType.SWORD] == techCap ? cappedTechColor : defaultTechColor;
@@ -620,9 +615,9 @@ export class InventoryManager {
                 <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.DUAL_BLADE)}<div><div style="font-size:13px; color:#aaa;">Double Sword</div><div style="color:${dualBladeTechColor}">${player.tech[WeaponType.DUAL_BLADE]} | <span style="font-style:italic;color:#BBB;">${weaponLevelChar(player.tech[WeaponType.DUAL_BLADE])}</span></div></div></div>
                 <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.LANCE)}<div><div style="font-size:13px; color:#aaa;">Lance</div><div style="color:${lanceTechColor}">${player.tech[WeaponType.LANCE]} | <span style="font-style:italic;color:#BBB;">${weaponLevelChar(player.tech[WeaponType.LANCE])}</span></div></div></div>
                 <div style="display:flex; align-items:center; gap:4px;">${getWeaponIcon(WeaponType.HAMMER)}<div><div style="font-size:13px; color:#aaa;">Hammer</div><div style="color:${hammerTechColor}">${player.tech[WeaponType.HAMMER]} | <span style="font-style:italic;color:#BBB;">${weaponLevelChar(player.tech[WeaponType.HAMMER])}</span></div></div></div>
-                <div style="display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.RECOVERY)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.RECOVERY}</div><div style="color:${recoveryTechColor}">${player.skillTech[SkillTechType.RECOVERY]} | <span style="font-style:italic;color:#BBB;">${TierManager.Instance.getSkillTierForTech(player.skillTech[SkillTechType.RECOVERY])}</span></div></div></div>
-                <div style="display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.BLAST)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.BLAST}</div><div style="color:${blastTechColor}">${player.skillTech[SkillTechType.BLAST]} | <span style="font-style:italic;color:#BBB;">${TierManager.Instance.getSkillTierForTech(player.skillTech[SkillTechType.BLAST])}</span></div></div></div>
-                <div style="grid-column:1/-1; display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.RANGED)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.RANGED}</div><div style="color:${rangedTechColor}">${player.skillTech[SkillTechType.RANGED]} | <span style="font-style:italic;color:#BBB;">${TierManager.Instance.getSkillTierForTech(player.skillTech[SkillTechType.RANGED])}</span></div></div></div>
+                <div style="display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.RECOVERY)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.RECOVERY}</div><div style="color:${recoveryTechColor}">${player.skillTech[SkillTechType.RECOVERY]} | <span style="font-style:italic;color:#BBB;">${this.tierManager.getSkillTierForTech(player.skillTech[SkillTechType.RECOVERY])}</span></div></div></div>
+                <div style="display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.BLAST)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.BLAST}</div><div style="color:${blastTechColor}">${player.skillTech[SkillTechType.BLAST]} | <span style="font-style:italic;color:#BBB;">${this.tierManager.getSkillTierForTech(player.skillTech[SkillTechType.BLAST])}</span></div></div></div>
+                <div style="grid-column:1/-1; display:flex; align-items:center; gap:4px;">${getSkillTechIcon(SkillTechType.RANGED)}<div><div style="font-size:13px; color:#aaa;">${SkillTechType.RANGED}</div><div style="color:${rangedTechColor}">${player.skillTech[SkillTechType.RANGED]} | <span style="font-style:italic;color:#BBB;">${this.tierManager.getSkillTierForTech(player.skillTech[SkillTechType.RANGED])}</span></div></div></div>
             </div>`;
 
         return miscHTML + statsHTML + techHTML;

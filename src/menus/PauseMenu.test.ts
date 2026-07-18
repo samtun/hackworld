@@ -1,0 +1,307 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+vi.mock('./AudioManager', () => ({
+    AudioManager: {
+        Instance: {
+            playMenuNavigate: vi.fn(),
+            playUiOpen: vi.fn(),
+            playUiClose: vi.fn(),
+            isMusicEnabled: vi.fn().mockReturnValue(true),
+            isSfxEnabled: vi.fn().mockReturnValue(true),
+            toggleMusicEnabled: vi.fn().mockReturnValue(false),
+            toggleSfxEnabled: vi.fn().mockReturnValue(false),
+        },
+    },
+}));
+
+import { PauseMenu, PauseMenuCallbacks, PERFORMANCE_MODE_STORAGE_KEY, CONTROL_HINTS_STORAGE_KEY } from './PauseMenu';
+import { InputManager } from '../controls/InputManager';
+import { AudioManager } from '../AudioManager';
+
+vi.mock('./MobileControlsManager', () => ({
+    MobileControlsManager: {
+        Instance: {
+            isMobile: false,
+            movementVector: { x: 0, y: 0 },
+            isAttackPressed: false,
+            isJumpPressed: false,
+            isCancelPressed: false,
+            isInventoryPressed: false,
+            isPausePressed: false,
+            isSkill1Pressed: false,
+            isSkill2Pressed: false,
+            isSkill3Pressed: false,
+            updateState: vi.fn(),
+        }
+    }
+}));
+
+function makeInputManager(): InputManager {
+    const im = Object.create(InputManager.prototype) as InputManager;
+    Object.assign(im, {
+        keys: {} as { [key: string]: boolean },
+        gamepadIndex: null,
+        mobileControls: undefined,
+        previousAttackState: false,
+        previousSelectState: false,
+        previousSkill1State: false,
+        previousSkill2State: false,
+        previousSkill3State: false,
+        previousBlockState: false,
+        previousPauseState: false,
+    });
+    return im;
+}
+
+function makeCallbacks(): PauseMenuCallbacks & { continueCalled: boolean; performanceMode: boolean; controlHints: boolean } {
+    const cbs = {
+        continueCalled: false,
+        performanceMode: false,
+        controlHints: true,
+        onContinue: () => { cbs.continueCalled = true; },
+        onTogglePerformanceMode: () => { cbs.performanceMode = !cbs.performanceMode; return cbs.performanceMode; },
+        onToggleControlHints: () => { cbs.controlHints = !cbs.controlHints; return cbs.controlHints; },
+    };
+    return cbs;
+}
+
+describe('PauseMenu', () => {
+    let input: InputManager;
+    let callbacks: ReturnType<typeof makeCallbacks>;
+    let menu: PauseMenu;
+
+    beforeEach(() => {
+        vi.clearAllMocks();
+        input = makeInputManager();
+        callbacks = makeCallbacks();
+        menu = new PauseMenu(input, false, true, callbacks);
+    });
+
+    afterEach(() => {
+        menu.destroy();
+    });
+
+    it('starts hidden', () => {
+        expect(menu.visible).toBe(false);
+    });
+
+    it('becomes visible after show()', () => {
+        menu.show();
+        expect(menu.visible).toBe(true);
+    });
+
+    it('plays the UI open sound when shown', () => {
+        menu.show();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+    });
+
+    it('becomes hidden after hide()', () => {
+        menu.show();
+        menu.hide();
+        expect(menu.visible).toBe(false);
+    });
+
+    it('plays the UI close sound when hidden', () => {
+        menu.show();
+        menu.hide();
+        expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
+    });
+
+    it('show() is idempotent when already visible', () => {
+        menu.show();
+        menu.show();
+        expect(menu.visible).toBe(true);
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+    });
+
+    it('hide() is idempotent when already hidden', () => {
+        menu.hide();
+        expect(menu.visible).toBe(false);
+        expect(AudioManager.Instance.playUiClose).not.toHaveBeenCalled();
+    });
+
+    it('creates an overlay element in the DOM', () => {
+        const overlay = document.querySelector('[data-pause-menu]');
+        expect(overlay).not.toBeNull();
+    });
+
+    it('renders the Execution Paused title', () => {
+        menu.show();
+        const overlay = document.querySelector('[data-pause-menu]');
+        expect(overlay?.textContent).toContain('Execution Paused');
+    });
+
+    it('renders Continue, Performance Mode, Show Control Hints, Music, and Sound Effects options', () => {
+        const overlay = document.querySelector('[data-pause-menu]');
+        const text = overlay?.textContent ?? '';
+        expect(text).toContain('Continue');
+        expect(text).toContain('Performance Mode');
+        expect(text).toContain('Show Control Hints');
+        expect(text).toContain('Music');
+        expect(text).toContain('Sound Effects');
+        expect(text).not.toContain('Restart Area');
+    });
+
+    it('shows Performance Mode status as "off" when performanceModeEnabled is false', () => {
+        const overlay = document.querySelector('[data-pause-menu]');
+        const text = overlay?.textContent ?? '';
+        expect(text).toContain('Performance Mode off');
+    });
+
+    it('shows Performance Mode status as "on" when performanceModeEnabled is true', () => {
+        menu.destroy();
+        menu = new PauseMenu(input, true, true, callbacks);
+        const overlay = document.querySelector('[data-pause-menu]');
+        const text = overlay?.textContent ?? '';
+        expect(text).toContain('Performance Mode on');
+    });
+
+    it('Performance Mode status span has the correct colour', () => {
+        const span = document.querySelector('[data-pause-menu] span[style*="color"]');
+        expect(span).not.toBeNull();
+        expect((span as HTMLElement)?.style.color).toContain('51, 221, 255');
+    });
+
+    it('shows Show Control Hints status as "yes" when controlHintsEnabled is true', () => {
+        const overlay = document.querySelector('[data-pause-menu]');
+        const text = overlay?.textContent ?? '';
+        expect(text).toContain('Show Control Hints: yes');
+    });
+
+    it('shows Show Control Hints status as "no" when controlHintsEnabled is false', () => {
+        menu.destroy();
+        menu = new PauseMenu(input, false, false, callbacks);
+        const overlay = document.querySelector('[data-pause-menu]');
+        const text = overlay?.textContent ?? '';
+        expect(text).toContain('Show Control Hints: no');
+    });
+
+    it('shows Music status as "on" when musicEnabled is true', () => {
+        const overlay = document.querySelector('[data-pause-menu]');
+        const text = overlay?.textContent ?? '';
+        expect(text).toContain('Music on');
+    });
+
+    it('shows Sound Effects status as "on" when sound effects are enabled', () => {
+        const overlay = document.querySelector('[data-pause-menu]');
+        const text = overlay?.textContent ?? '';
+        expect(text).toContain('Sound Effects on');
+    });
+
+    it('Control Hints status span has the correct colour', () => {
+        const spans = document.querySelectorAll('[data-pause-menu] span[style*="color"]');
+        // Second coloured span belongs to Control Hints
+        expect(spans.length).toBeGreaterThanOrEqual(2);
+        expect((spans[1] as HTMLElement)?.style.color).toContain('51, 221, 255');
+    });
+
+    it('destroy() removes overlay from DOM', () => {
+        const beforeCount = document.querySelectorAll('[data-pause-menu]').length;
+        menu.destroy();
+        const afterCount = document.querySelectorAll('[data-pause-menu]').length;
+        expect(afterCount).toBe(beforeCount - 1);
+    });
+
+    describe('PERFORMANCE_MODE_STORAGE_KEY export', () => {
+        it('exports the correct localStorage key', () => {
+            expect(PERFORMANCE_MODE_STORAGE_KEY).toBe('hackworld_performance_mode');
+        });
+    });
+
+    describe('CONTROL_HINTS_STORAGE_KEY export', () => {
+        it('exports the correct localStorage key', () => {
+            expect(CONTROL_HINTS_STORAGE_KEY).toBe('hackworld_control_hints');
+        });
+    });
+
+    it('plays the navigation sound when moving between pause menu options', () => {
+        (menu as any).navigate(1);
+        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
+    });
+
+    it('toggles music from the pause menu and updates the label', () => {
+        (AudioManager.Instance.toggleMusicEnabled as any).mockReturnValue(false);
+        (menu as any).selectedIndex = 4;
+
+        (menu as any).confirm();
+
+        expect(AudioManager.Instance.toggleMusicEnabled).toHaveBeenCalledOnce();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        expect(document.querySelector('[data-pause-menu]')?.textContent).toContain('Music off');
+    });
+
+    it('toggles sound effects from the pause menu and updates the label', () => {
+        (AudioManager.Instance.toggleSfxEnabled as any).mockReturnValue(false);
+        (AudioManager.Instance.isSfxEnabled as any).mockReturnValue(false);
+        (menu as any).selectedIndex = 5;
+
+        (menu as any).confirm();
+
+        expect(AudioManager.Instance.toggleSfxEnabled).toHaveBeenCalledOnce();
+        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        expect(document.querySelector('[data-pause-menu]')?.textContent).toContain('Sound Effects off');
+    });
+
+    describe('controller mapping popup', () => {
+        it('shows the controller mapping popup when the menu item is confirmed', () => {
+            (menu as any).selectedIndex = 1; // 'controllermapping'
+            (menu as any).confirm();
+
+            expect((menu as any).controllerMappingVisible).toBe(true);
+            expect((menu as any).controllerMappingEl.style.display).toBe('flex');
+        });
+
+        it('plays the UI open sound when showing the controller mapping popup', () => {
+            (menu as any).selectedIndex = 1;
+            (menu as any).confirm();
+
+            expect(AudioManager.Instance.playUiOpen).toHaveBeenCalled();
+        });
+
+        it('hides the controller mapping popup and plays close sound when hideControllerMapping is called', () => {
+            (menu as any).selectedIndex = 1;
+            (menu as any).confirm();
+            vi.clearAllMocks();
+
+            (menu as any).hideControllerMapping();
+
+            expect((menu as any).controllerMappingVisible).toBe(false);
+            expect((menu as any).controllerMappingEl.style.opacity).toBe('0');
+            expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
+        });
+
+        it('sets prevCancel to true when closing the popup so the pause menu does not also close', () => {
+            (menu as any).selectedIndex = 1;
+            (menu as any).confirm();
+
+            (menu as any).hideControllerMapping();
+
+            expect((menu as any).prevCancel).toBe(true);
+        });
+
+        it('renders the ESC/B close hint inside the controller mapping popup', () => {
+            const mappingEl = (menu as any).controllerMappingEl as HTMLDivElement;
+            expect(mappingEl.innerHTML).toContain('ESC');
+            expect(mappingEl.innerHTML).toContain('B');
+            expect(mappingEl.innerHTML).toContain('Close');
+        });
+
+        it('renders an img element with the controller mapping image source', () => {
+            const mappingEl = (menu as any).controllerMappingEl as HTMLDivElement;
+            const img = mappingEl.querySelector('img');
+            expect(img).not.toBeNull();
+            expect(img?.src).toContain('controller_mapping.png');
+        });
+
+        it('resets the controller mapping state when the pause menu is hidden', () => {
+            (menu as any).selectedIndex = 1;
+            (menu as any).confirm();
+            expect((menu as any).controllerMappingVisible).toBe(true);
+
+            menu.show();
+            menu.hide();
+
+            expect((menu as any).controllerMappingVisible).toBe(false);
+            expect((menu as any).controllerMappingEl.style.display).toBe('none');
+        });
+    });
+});

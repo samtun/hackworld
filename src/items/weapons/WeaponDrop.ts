@@ -36,7 +36,6 @@ export class WeaponDrop extends ItemDrop {
 
     constructor(
         weaponId: string,
-        scene: THREE.Scene,
         position: CANNON.Vec3,
         weaponType: WeaponType,
         weaponName: string,
@@ -44,7 +43,10 @@ export class WeaponDrop extends ItemDrop {
         buyPrice: number,
         sellPrice: number,
         level: number,
-        damageFactor: number
+        damageFactor: number,
+        scene: THREE.Scene,
+        private readonly assetManager: AssetManager,
+        private readonly tierManager: TierManager
     ) {
         super();
         this.weaponId = weaponId;
@@ -57,11 +59,11 @@ export class WeaponDrop extends ItemDrop {
         this.level = level;
 
         // Compute tier and store rim color for use in text label and inventory display
-        const tier = TierManager.Instance.getWeaponTierForMultiplier(damageFactor);
+        const tier = this.tierManager.getWeaponTierForMultiplier(damageFactor);
         this.tier = tier;
 
         // Create weapon visual
-        const gltfModel = AssetManager.Instance.get('models/weapon_drop.glb');
+        const gltfModel = this.assetManager.get('models/weapon_drop.glb');
         this.mesh = gltfModel.scene;
 
         // Apply tier-based color coding to "Rim" and "Inner" materials

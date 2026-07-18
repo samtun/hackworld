@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { InputManager } from './InputManager';
+import { InputManager } from './controls/InputManager';
 
 vi.mock('./MobileControlsManager', () => ({
     MobileControlsManager: {

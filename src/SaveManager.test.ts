@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SaveManager, SaveData } from './SaveManager';
 import { WeaponType } from './items/weapons/WeaponType';
-import { SkillTechType } from './skills/SkillTechType';
+import { SkillTechType } from './player/skills/SkillType';
 import { PlayerRegistry } from './PlayerRegistry';
 import { CardCollection } from './items/cards/CardCollection';
 import { GameProgressManager } from './GameProgressManager';

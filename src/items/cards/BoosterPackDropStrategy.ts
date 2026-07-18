@@ -1,9 +1,9 @@
-import * as THREE from 'three';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { BoosterPackDrop } from './BoosterPackDrop';
 import { Enemy } from '../../enemies/Enemy';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 import { ItemDropType } from '../ItemDropType';
+import { ItemDropFactory } from '../ItemDropFactory';
 
 export class BoosterPackDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.BOOSTER_PACK;
@@ -11,11 +11,13 @@ export class BoosterPackDropStrategy implements ItemDropStrategy {
         return 1;
     }
 
-    drop(scene: THREE.Scene, enemy: Enemy, _player: Player): import("../ItemDrop").ItemDrop | null {
+    constructor(private readonly itemDropFactory: ItemDropFactory) { }
+
+    drop(enemy: Enemy, _player: Player): import("../ItemDrop").ItemDrop | null {
         const dropPosition = enemy.getDeathPosition();
         dropPosition.y += 0.5;
 
-        const drop = new BoosterPackDrop(scene, dropPosition);
+        const drop = this.itemDropFactory.createBoosterPackDrop(dropPosition);
         console.log('Enemy dropped Booster Pack');
         return drop;
     }

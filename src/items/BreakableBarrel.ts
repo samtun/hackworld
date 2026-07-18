@@ -1,22 +1,18 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { Breakable } from './Breakable';
-import { Player } from '../Player';
+import { Player } from '../player/Player';
 import { ItemDrop } from './ItemDrop';
-import { WeaponDrop } from './weapons/WeaponDrop';
 import { WeaponRepository } from './weapons/WeaponRepository';
 import { WeaponType } from './weapons/WeaponType';
-import { ChipDrop } from './chips/ChipDrop';
 import { ChipRepository } from './chips/ChipRepository';
-import { CoreDrop } from './cores/CoreDrop';
 import { CoreRepository } from './cores/CoreRepository';
-import { MoneyDrop } from './bits/MoneyDrop';
 import { ItemLevelHelper } from './ItemLevelHelper';
 import { Tier, TierManager } from './TierManager';
 import { WeaponItem } from './weapons/WeaponItem';
-import { PotionDrop } from './potions/PotionDrop';
 import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
 import { AudioManager } from '../AudioManager';
+import { ItemDropFactory } from './ItemDropFactory';
 
 /** Configuration for a single breakable barrel placement. */
 export interface BreakableBarrelConfig {
@@ -86,6 +82,12 @@ export class BreakableBarrel implements Breakable {
     private animationDone: boolean = false;
 
     constructor(
+        private readonly audioManager: AudioManager,
+        private readonly weaponRepository: WeaponRepository,
+        private readonly chipRepository: ChipRepository,
+        private readonly coreRepository: CoreRepository,
+        private readonly tierManager: TierManager,
+        private readonly itemDropFactory: ItemDropFactory,
         scene: THREE.Scene,
         world: CANNON.World,
         physicsMaterial: CANNON.Material,
@@ -149,7 +151,7 @@ export class BreakableBarrel implements Breakable {
     onHit(): void {
         if (this.isDestroyed) return;
         this.isDestroyed = true;
-        AudioManager.Instance.playBarrelBreak();
+        this.audioManager.playBarrelBreak();
 
         // Remove original mesh and physics body immediately
         this.scene.remove(this.mesh);
@@ -279,7 +281,7 @@ export class BreakableBarrel implements Breakable {
      * Uses the same level/tier logic as enemy drops, minus XData and BoosterPacks.
      * @returns The created ItemDrop, or null if nothing drops.
      */
-    generateDrop(scene: THREE.Scene, player: Player): ItemDrop | null {
+    generateDrop(player: Player): ItemDrop | null {
         const dropPosition = new CANNON.Vec3(
             this.body.position.x,
             this.body.position.y,
@@ -289,25 +291,25 @@ export class BreakableBarrel implements Breakable {
         // Determine item to drop, or drop nothing
         const roll = Math.random() - player.luckDropChanceBonus;
         if (roll < BreakableBarrel.WEAPON_DROP_THRESHOLD) {
-            return this.generateWeaponDrop(scene, player, dropPosition);
+            return this.generateWeaponDrop(player, dropPosition);
         } else if (roll < BreakableBarrel.CHIP_DROP_THRESHOLD) {
-            return this.generateChipDrop(scene, player, dropPosition);
+            return this.generateChipDrop(player, dropPosition);
         } else if (roll < BreakableBarrel.CORE_DROP_THRESHOLD) {
-            return this.generateCoreDrop(scene, player, dropPosition);
+            return this.generateCoreDrop(player, dropPosition);
         } else if (roll < BreakableBarrel.MONEY_DROP_THRESHOLD) {
-            return this.generateMoneyDrop(scene, player, dropPosition);
+            return this.generateMoneyDrop(player, dropPosition);
         } else if (roll < BreakableBarrel.POTION_DROP_THRESHOLD) {
-            return this.generatePotionDrop(scene, player, dropPosition);
+            return this.generatePotionDrop(player, dropPosition);
         } else {
             return null;
         }
     }
 
-    private generateWeaponDrop(scene: THREE.Scene, player: Player, pos: CANNON.Vec3): ItemDrop | null {
+    private generateWeaponDrop(player: Player, pos: CANNON.Vec3): ItemDrop | null {
         const allTypes = [WeaponType.SWORD, WeaponType.DUAL_BLADE, WeaponType.LANCE, WeaponType.HAMMER];
         const weaponType = allTypes[Math.floor(Math.random() * allTypes.length)];
         const weaponLevel = this.determineWeaponLevel(player.getTechForWeapon(weaponType));
-        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, weaponLevel);
+        const weaponItem = this.weaponRepository.getWeaponByTypeAndLevel(weaponType, weaponLevel);
         if (!weaponItem) return null;
 
         // Generate a bonus multiplier capped to the maxTier
@@ -317,27 +319,27 @@ export class BreakableBarrel implements Breakable {
         const finalBuyPrice = Math.floor(weaponItem.buyPrice * damageFactor);
         const finalSellPrice = Math.floor(weaponItem.sellPrice * damageFactor);
 
-        return new WeaponDrop(
-            weaponItem.id, scene, pos, weaponType, weaponItem.name,
+        return this.itemDropFactory.createWeaponDrop(
+            weaponItem.id, pos, weaponType, weaponItem.name,
             finalDamage, finalBuyPrice, finalSellPrice, weaponLevel, damageFactor,
         );
     }
 
-    private generateChipDrop(scene: THREE.Scene, player: Player, pos: CANNON.Vec3): ItemDrop | null {
+    private generateChipDrop(player: Player, pos: CANNON.Vec3): ItemDrop | null {
         const level = ItemLevelHelper.determineDropLevel(player.level);
-        const chipItem = ChipRepository.Instance.getRandomChipOfLevel(level);
+        const chipItem = this.chipRepository.getRandomChipOfLevel(level);
         if (!chipItem) return null;
-        return new ChipDrop(scene, pos, chipItem.id, chipItem.name, chipItem.chipType, chipItem.buyPrice, chipItem.sellPrice, level);
+        return this.itemDropFactory.createChipDrop(pos, chipItem.id, chipItem.name, chipItem.chipType, chipItem.buyPrice, chipItem.sellPrice, level);
     }
 
-    private generateCoreDrop(scene: THREE.Scene, player: Player, pos: CANNON.Vec3): ItemDrop | null {
+    private generateCoreDrop(player: Player, pos: CANNON.Vec3): ItemDrop | null {
         const level = ItemLevelHelper.determineDropLevel(player.level);
-        const coreItem = CoreRepository.Instance.getRandomCoreOfLevel(level);
+        const coreItem = this.coreRepository.getRandomCoreOfLevel(level);
         if (!coreItem) return null;
-        return new CoreDrop(scene, pos, coreItem.id, coreItem.name, coreItem.buyPrice, coreItem.sellPrice, level);
+        return this.itemDropFactory.createCoreDrop(pos, coreItem.id, coreItem.name, coreItem.buyPrice, coreItem.sellPrice, level);
     }
 
-    private generateMoneyDrop(scene: THREE.Scene, player: Player, pos: CANNON.Vec3): ItemDrop {
+    private generateMoneyDrop(player: Player, pos: CANNON.Vec3): ItemDrop {
         const levelBonus = Math.pow(Math.log10(player.level), 2) / 400;
         const chances = [
             { amount: 500, baseChance: 0.01 },
@@ -348,15 +350,15 @@ export class BreakableBarrel implements Breakable {
         let cumulative = 0;
         for (const { amount, baseChance } of chances) {
             cumulative += Math.min(1.0, baseChance + levelBonus);
-            if (random < cumulative) return new MoneyDrop(scene, pos, amount);
+            if (random < cumulative) return this.itemDropFactory.createMoneyDrop(pos, amount);
         }
-        return new MoneyDrop(scene, pos, 10);
+        return this.itemDropFactory.createMoneyDrop(pos, 10);
     }
 
-    private generatePotionDrop(scene: THREE.Scene, player: Player, pos: CANNON.Vec3): PotionDrop {
+    private generatePotionDrop(player: Player, pos: CANNON.Vec3): ItemDrop {
         const potionType = Math.random() < 0.5 ? PotionType.HP : PotionType.TP;
         const level = determinePotionLevel(player.level);
-        return new PotionDrop(scene, pos, potionType, level);
+        return this.itemDropFactory.createPotionDrop(pos, potionType, level);
     }
 
     /**
@@ -378,7 +380,7 @@ export class BreakableBarrel implements Breakable {
      * Generate a weapon bonus multiplier capped so it does not exceed the maxTier.
      */
     private generateCappedBonusMultiplier(): number {
-        const tierManager = TierManager.Instance;
+        const tierManager = this.tierManager;
         const maxTierDef = tierManager.tiers.get(this.maxTier);
         // Default to OVERCLOCKED max percentage (+12%)
         const maxPercent = maxTierDef ? maxTierDef.maxPercent : 12;

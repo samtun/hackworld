@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { getHint, getKeyboardHint, HintConfigs, HintConfig } from './InputHints';
-import type { InputManager } from '../InputManager';
+import type { InputManager } from '../controls/InputManager';
 
 function makeInput(opts: { isMobile?: boolean; controllerConnected?: boolean }) {
     return {

@@ -1,9 +1,8 @@
 import * as THREE from 'three';
-import * as CANNON from 'cannon-es';
 import { Enemy } from './enemies/Enemy';
-import { Player } from './Player';
+import { Player } from './player/Player';
 import { AssetManager } from './AssetManager';
-import { BaseStage, Lobby, createStage } from './stages';
+import { BaseStage, Lobby } from './stages';
 import { Npc } from './npcs/Npc';
 import { ItemDropManager } from './items/ItemDropManager';
 import { ItemDropType } from './items/ItemDropType';
@@ -15,23 +14,14 @@ import { LootChest } from './items/LootChest';
 import { BreakableBarrel } from './items/BreakableBarrel';
 import type { StageMinimapLayout } from './stages/StageMinimapLayout';
 import { AudioManager } from './AudioManager';
+import { StageFactory } from './stages/StageFactory';
 
 export class World {
-    scene: THREE.Scene;
-    physicsWorld: CANNON.World;
-    physicsMaterial: CANNON.Material;
-    assetManager: AssetManager;
     onStageLoadStartCallback: () => void;
     onStageLoadCompleteCallback: () => void;
 
     // Current active stage
     currentStage?: BaseStage;
-
-    // Floating indicator manager (for damage, EXP, tech points, etc.)
-    public floatingIndicatorManager: FloatingIndicatorManager;
-
-    // Drop managers
-    private itemDropManager: ItemDropManager;
 
     // XData interaction callback (set by Game)
     private xDataInteractionCallback?: () => void;
@@ -47,22 +37,18 @@ export class World {
     private hasNotifiedStageCompletion: boolean = false;
 
     constructor(
-        scene: THREE.Scene,
-        physicsWorld: CANNON.World,
-        physicsMaterial: CANNON.Material,
+        private readonly scene: THREE.Scene,
+        private readonly stageFactory: StageFactory,
+        private readonly assetManager: AssetManager,
+        private readonly audioManager: AudioManager,
+        private readonly floatingIndicatorManager: FloatingIndicatorManager,
+        private readonly itemDropManager: ItemDropManager,
+        private readonly healingSystem: HealingSystem,
+        private readonly gameProgressManager: GameProgressManager,
         onInitialLoadComplete: () => void,
         onInitialLoadProgress: (loaded: number, total: number) => void,
         onStageLoadStartCallback: () => void,
         onStageLoadCompleteCallback: () => void,) {
-        this.scene = scene;
-        this.physicsWorld = physicsWorld;
-        this.physicsMaterial = physicsMaterial;
-        this.assetManager = AssetManager.Instance;
-
-        this.itemDropManager = ItemDropManager.Instance;
-
-        // Initialize floating indicator manager
-        this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
 
         // Create grid plane at y=-5
         this.gridPlaneMaterial = new THREE.ShaderMaterial({
@@ -261,7 +247,7 @@ export class World {
             this.hasNotifiedStageCompletion = false;
 
             // Create new stage instance
-            const newStage = createStage(stageId, this.scene, this.physicsWorld, this.physicsMaterial);
+            const newStage = this.stageFactory.createStage(stageId);
             if (!newStage) {
                 throw new Error(`Failed to create stage: ${stageId}`);
             }
@@ -285,8 +271,8 @@ export class World {
 
             // Load the stage
             this.currentStage = newStage;
-            await this.currentStage.load();
-            AudioManager.Instance.setStageMusic(stageId);
+            await this.currentStage?.load();
+            this.audioManager.setStageMusic(stageId);
         } catch (error) {
             console.error(`Error loading stage ${stageId}:`, error);
             throw error; // Re-throw to allow caller to handle
@@ -318,7 +304,7 @@ export class World {
         this.gridPlaneMaterial.uniforms.u_cameraPosition.value.copy(cameraPosition);
 
         // Update systems that operate across stages (healing, etc.)
-        HealingSystem.Instance.update(dt);
+        this.healingSystem.update(dt);
 
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
@@ -335,12 +321,12 @@ export class World {
                     // Try to drop an item
                     // The ItemDropManager will select one strategy based on probabilities
                     // and each strategy will check enemy.itemDropChance internally
-                    this.itemDropManager.tryDropItem(this.scene, e, player);
+                    this.itemDropManager.tryDropItem(e, player);
 
                     // Independently try to drop an HP or TP potion (5% base chance)
                     const potionPos = e.getDeathPosition();
                     potionPos.y += 0.5;
-                    this.itemDropManager.tryDropPotion(this.scene, potionPos, player, 0.05);
+                    this.itemDropManager.tryDropPotion(potionPos, player, 0.05);
                 };
             }
 
@@ -382,9 +368,8 @@ export class World {
             const requiredProgress = this.currentStage.getRequiredProgress();
 
             if (requiredProgress > 0) {
-                const progressManager = GameProgressManager.Instance;
-                progressManager.markBossDefeated(requiredProgress);
-                console.log(`Stage (requiredProgress=${requiredProgress}) completed! Progress now:`, progressManager.progress);
+                this.gameProgressManager.markBossDefeated(requiredProgress);
+                console.log(`Stage (requiredProgress=${requiredProgress}) completed! Progress now:`, this.gameProgressManager.progress);
             }
         }
     }
@@ -459,7 +444,7 @@ export class World {
      */
     destroyBarrel(barrel: BreakableBarrel, player: Player): void {
         barrel.onHit();
-        const drop = barrel.generateDrop(this.scene, player);
+        const drop = barrel.generateDrop(player);
         if (drop) {
             this.itemDropManager.addDrop(drop);
         }

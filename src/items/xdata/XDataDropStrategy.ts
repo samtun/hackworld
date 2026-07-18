@@ -1,15 +1,24 @@
-import * as THREE from 'three';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
 import { XDataDrop } from './XDataDrop';
 import { Enemy } from '../../enemies/Enemy';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 import { CardCollection } from '../cards/CardCollection';
 import { Album } from '../cards/Card';
+import { ItemDropFactory } from '../ItemDropFactory';
 
 export class XDataDropStrategy implements ItemDropStrategy {
+    private readonly cardCollection: CardCollection;
+    private readonly itemDropFactory: ItemDropFactory;
+
     readonly key = ItemDropType.XDATA;
+
+    constructor(cardCollection: CardCollection, itemDropFactory: ItemDropFactory) {
+        this.cardCollection = cardCollection;
+        this.itemDropFactory = itemDropFactory;
+    }
+
     public getDistributionWeight(enemy: Enemy, player: Player): number {
         // Low level players should not get any X-Data yet
         if (player.level < 10) return 0;
@@ -20,15 +29,15 @@ export class XDataDropStrategy implements ItemDropStrategy {
         return enemy.xDataDropChanceWeight * player.level / 100;
     }
 
-    drop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null {
-        const c001Active = CardCollection.Instance.isAlbumComplete(Album.C001);
+    drop(enemy: Enemy, player: Player): ItemDrop | null {
+        const c001Active = this.cardCollection.isAlbumComplete(Album.C001);
         const xDataAmount = this.determineAmount(player.level, enemy.xDataDropChanceWeight, c001Active);
         if (xDataAmount <= 0) return null;
 
         const dropPosition = enemy.getDeathPosition();
         dropPosition.y += 0.5;
 
-        const drop = new XDataDrop(scene, dropPosition, xDataAmount);
+        const drop = this.itemDropFactory.createXDataDrop(dropPosition, xDataAmount);
         console.log(`Enemy dropped ${xDataAmount} XData`);
         return drop;
     }

@@ -1,3 +1,5 @@
+import { singleton } from "tsyringe";
+
 /**
  * Tiers for weapons and skills.
  */
@@ -33,9 +35,8 @@ export interface WeaponTierDefinition {
  * Singleton manager for weapon and skill tier logic.
  * Owns the ordered tier definitions, weapon-tier lookups, and skill-tier lookups.
  */
+@singleton()
 export class TierManager {
-    private static instance: TierManager;
-
     /** Ordered Map of weapon tier definitions. */
     readonly tiers = new Map<Tier, WeaponTierDefinition>([
         [Tier.BROKEN, {
@@ -93,12 +94,6 @@ export class TierManager {
             minLevel: 40,
         }],
     ]);
-
-    private constructor() { }
-
-    public static get Instance(): TierManager {
-        return this.instance || (this.instance = new this());
-    }
 
     /**
      * Returns the tier definition that matches the given bonus multiplier.

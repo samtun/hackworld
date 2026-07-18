@@ -1,3 +1,4 @@
+import { singleton } from 'tsyringe';
 import { CoreItem } from './CoreItem';
 import coresData from './cores.json';
 
@@ -5,14 +6,13 @@ import coresData from './cores.json';
  * Centralized core repository - single source of truth for all cores in the game
  * Uses a tree structure: level -> core name -> CoreItem[]
  */
+@singleton()
 export class CoreRepository {
-    private static instance: CoreRepository; // Singleton
-
     // List structure: index corresponds to level - 1 (e.g. index 0 is level 1)
     // Each element is a Map: coreName -> CoreItem[]
     private coresByLevel: Map<string, CoreItem[]>[] = [];
 
-    private constructor() {
+    constructor() {
         this.loadCores();
     }
 
@@ -43,10 +43,6 @@ export class CoreRepository {
 
             levelMap.get(data.name)!.push(core);
         }
-    }
-
-    public static get Instance(): CoreRepository {
-        return this.instance || (this.instance = new this());
     }
 
     /**

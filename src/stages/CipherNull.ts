@@ -9,6 +9,14 @@ import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
+import { TeleporterFactory } from '../props/TeleporterFactory';
+import { BreakableBarrelFactory } from '../items/BreakableBarrelFactory';
+import { LootChestFactory } from '../items/LootChestFactory';
+import { ModelPropFactory } from '../props/ModelPropFactory';
+import { ItemDropManager } from '../items/ItemDropManager';
+import { AudioManager } from '../AudioManager';
+import { EnemyFactory } from '../enemies/EnemyFactory';
+import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
 
 export class CipherNull extends StageWithLevels {
     private static id: string = 'cipherNull';
@@ -139,9 +147,32 @@ export class CipherNull extends StageWithLevels {
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
+        teleporterFactory: TeleporterFactory,
+        modelPropFactory: ModelPropFactory,
+        lootChestFactory: LootChestFactory,
+        breakableBarrelFactory: BreakableBarrelFactory,
+        electricTrapFactory: ElectricTrapFactory,
+        enemyFactory: EnemyFactory,
+        audioManager: AudioManager,
+        itemDropManager: ItemDropManager,
         stageId?: string,
     ) {
-        super(scene, physicsWorld, physicsMaterial, stageId, CipherNull.id, CipherNull.levelConfigs);
+        super(
+            scene,
+            physicsWorld,
+            physicsMaterial,
+            teleporterFactory,
+            modelPropFactory,
+            lootChestFactory,
+            breakableBarrelFactory,
+            electricTrapFactory,
+            enemyFactory,
+            audioManager,
+            itemDropManager,
+            stageId,
+            CipherNull.id,
+            CipherNull.levelConfigs
+        );
     }
 
     static getLevelStageIds(): readonly string[] {

@@ -5,9 +5,9 @@ export abstract class BaseMesh {
     protected mesh: THREE.Group;
     protected mixers: THREE.AnimationMixer[] = [];
 
-    constructor(modelAsset: string) {
+    constructor(modelAsset: string, assetManager: AssetManager) {
         // Load model from assets
-        const gltfModel = AssetManager.Instance.get(modelAsset);
+        const gltfModel = assetManager.get(modelAsset);
 
         this.mesh = gltfModel.scene;
 

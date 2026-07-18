@@ -1,3 +1,5 @@
+import { singleton } from "tsyringe";
+
 type AudioBus = 'music' | 'sfx';
 type FootstepSource = 'player' | 'enemy';
 type CombatSource = 'player' | 'enemy';
@@ -22,10 +24,8 @@ const HEALING_STATION_SWIRL_FREQUENCIES = [659.25, 783.99, 880, 1046.5] as const
 export const MUSIC_ENABLED_STORAGE_KEY = 'hackworld_music_enabled';
 export const SFX_ENABLED_STORAGE_KEY = 'hackworld_sfx_enabled';
 
-
+@singleton()
 export class AudioManager {
-    private static instance: AudioManager;
-
     private audioContext: AudioContext | null = null;
     private masterGain: GainNode | null = null;
     private musicGain: GainNode | null = null;
@@ -41,11 +41,7 @@ export class AudioManager {
     private musicEnabled = true;
     private sfxEnabled = true;
 
-    public static get Instance(): AudioManager {
-        return this.instance || (this.instance = new this());
-    }
-
-    private constructor() {
+    constructor() {
         this.restoreSettings();
         this.registerUnlockHandlers();
     }
@@ -202,20 +198,20 @@ export class AudioManager {
         this.playTone(246.94, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0.05, 232.1236);
     }
 
-    playLaserBeamSkill(): void {
+    playRangedSkill(): void {
         this.playNoise(0.06, 0.025, 5200, 900, 0);
         this.playTone(720, 0.14, 'sawtooth', 0.07, ENVELOPE_MIN_GAIN, 0, 1440);
         this.playTone(1440, 0.08, 'triangle', 0.035, ENVELOPE_MIN_GAIN, 0.03, 1960);
     }
 
-    playHealingSkill(): void {
+    playRecoverySkill(): void {
         // glide ratio 1.04 applied to each note
         this.playTone(523.25, 0.16, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0, 544.18);
         this.playTone(659.25, 0.16, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0.04, 685.62);
         this.playTone(783.99, 0.16, 'triangle', 0.05, ENVELOPE_MIN_GAIN, 0.08, 815.3496);
     }
 
-    playAreaAttackSkill(): void {
+    playBlastSkill(): void {
         this.playNoise(0.08, 0.035, 1800, 140, 0);
         this.playTone(164.81, 0.16, 'sawtooth', 0.08, ENVELOPE_MIN_GAIN, 0, 110);
         this.playTone(246.94, 0.12, 'square', 0.045, ENVELOPE_MIN_GAIN, 0.04, 196);

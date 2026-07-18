@@ -17,13 +17,13 @@ export class MoneyDrop extends ItemDrop {
     private readonly FLOAT_AMPLITUDE: number = 0.15;
     private readonly ROTATION_SPEED: number = 2.0;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, amount: number) {
+    constructor(assetManager: AssetManager, scene: THREE.Scene, position: CANNON.Vec3, amount: number) {
         super();
         this.amount = amount;
         this.baseHeight = position.y;
 
-       const gltfModel = AssetManager.Instance.get('models/coin.glb');
-       this.mesh = gltfModel.scene;
+        const gltfModel = assetManager.get('models/coin.glb');
+        this.mesh = gltfModel.scene;
 
         // Positioning
         this.mesh.position.set(position.x, position.y, position.z);

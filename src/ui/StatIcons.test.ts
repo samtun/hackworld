@@ -30,7 +30,7 @@ import {
     ICON_CORE, ICON_CHIP,
 } from './StatIcons';
 import { WeaponType } from '../items/weapons/WeaponType';
-import { SkillTechType } from '../skills/SkillTechType';
+import { SkillTechType } from '../player/skills/SkillType';
 
 describe('getWeaponIcon', () => {
     it('returns non-empty string for SWORD', () => {

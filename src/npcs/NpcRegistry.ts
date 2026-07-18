@@ -1,3 +1,5 @@
+import { singleton } from "tsyringe";
+
 /**
  * NPC Registry - Singleton to track NPC dialogue state across stage loads
  * 
@@ -5,22 +7,10 @@
  * ensuring that dialogue is only shown on the first interaction even when
  * stages are reloaded (e.g., returning to lobby from a dungeon).
  */
+@singleton()
 export class NpcRegistry {
-    private static instance: NpcRegistry;
-
     // Track which NPCs have shown their dialogue by NPC name
     private shownDialogue: Set<string> = new Set<string>();
-
-    private constructor() {
-        // Private constructor for singleton
-    }
-
-    public static get Instance(): NpcRegistry {
-        if (!NpcRegistry.instance) {
-            NpcRegistry.instance = new NpcRegistry();
-        }
-        return NpcRegistry.instance;
-    }
 
     /**
      * Mark an NPC's dialogue as shown

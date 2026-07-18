@@ -1,13 +1,14 @@
-import { InputManager } from '../InputManager';
+import { InputManager } from '../controls/InputManager';
 import { Npc } from './Npc';
 import { resetInputDebounce } from '../ui/UiUtils';
 import { getHint, getKeyboardHint, HintConfigs } from '../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
 import { UIManager } from '../ui/UIManager';
 import { AudioManager } from '../AudioManager';
+import { singleton } from 'tsyringe';
 
+@singleton()
 export class NpcDialogueManager {
-    private static instance: NpcDialogueManager; // Singleton
     container!: HTMLDivElement;
     isVisible: boolean = false;
     currentNpc: Npc | null = null;
@@ -20,23 +21,18 @@ export class NpcDialogueManager {
     // Input tracking for debouncing
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
-    
+
     // Store InputManager for dynamic hints
     private currentInputManager?: InputManager;
-    
+
     // Callback to execute after dialogue completes
     private onDialogueCompleteCallback?: () => void;
 
-    private menuManager: MenuManager;
-    private uiManager: UIManager;
-
-    public static get Instance(): NpcDialogueManager {
-        return this.instance || (this.instance = new this());
-    }
-
-    private constructor() {
-        this.menuManager = MenuManager.Instance;
-        this.uiManager = UIManager.Instance;
+    constructor(
+        private readonly menuManager: MenuManager,
+        private readonly uiManager: UIManager,
+        private readonly audioManager: AudioManager,
+        private readonly inputManager: InputManager) {
         this.createUI();
     }
 
@@ -110,7 +106,7 @@ export class NpcDialogueManager {
 
         this.nameBox.innerText = this.currentNpc.name;
         this.dialogueText.innerText = this.currentNpc.dialogue[this.currentLineIndex];
-        AudioManager.Instance.playDialogueTick();
+        this.audioManager.playDialogueTick();
 
         // Update centralized control hints based on input method if InputManager is available
         if (input) {
@@ -132,14 +128,14 @@ export class NpcDialogueManager {
     /**
      * Update input handling
      */
-    update(input: InputManager) {
+    update() {
         // Always store input manager for dynamic hints, even when not visible
-        this.currentInputManager = input;
-        
+        this.currentInputManager = this.inputManager;
+
         if (!this.isVisible) return;
 
-        const select = input.isSelectPressed();
-        const cancel = input.isCancelPressed();
+        const select = this.inputManager.isSelectPressed();
+        const cancel = this.inputManager.isCancelPressed();
 
         // Exit dialogue on cancel
         if (cancel && !this.lastCancelState) {
@@ -155,14 +151,14 @@ export class NpcDialogueManager {
                     this.currentNpc.markDialogueShown();
                     const callback = this.onDialogueCompleteCallback;
                     this.hide();
-                    
+
                     // Execute callback after hiding dialogue
                     if (callback) {
                         callback();
                     }
                 } else {
                     // Show next line and update hints based on input method
-                    this.updateDialogue(input);
+                    this.updateDialogue(this.inputManager);
                 }
             }
         }

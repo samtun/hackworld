@@ -15,7 +15,7 @@ vi.mock('../AudioManager', () => ({
 
 import { Enemy, MAX_ENEMY_RADIUS, ENEMY_RADIUS_FACTOR } from './Enemy';
 import { AudioManager } from '../AudioManager';
-import { PLAYER_COLLISION_GROUP } from '../Player';
+import { PLAYER_COLLISION_GROUP } from '../player/Player';
 import { EnemyType, getEnemyTypeDefinition } from './EnemyType';
 
 const WORLD_COLLISION_GROUP = 1;
