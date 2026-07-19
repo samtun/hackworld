@@ -62,8 +62,8 @@ export class Player extends BaseMesh {
     private readonly LEVEL_HP_MULTIPLIER = 100.01; // HP increase by (100 + 0.01) * level
     private readonly LEVEL_TP_MULTIPLIER = 50.05; // TP increase by (50 + 0.05) * level
     private readonly EXP_BASE = 2500;
-    private readonly EXP_LINEAR_FACTOR = 30;
-    private readonly EXP_QUADRATIC_FACTOR = 0.07;
+    private readonly EXP_LINEAR_FACTOR = 300;
+    private readonly EXP_QUADRATIC_FACTOR = 0.2;
     private readonly LASER_UNLOCK_LEVEL = 10;
     private readonly HEAL_UNLOCK_LEVEL = 1;
     private readonly AREA_UNLOCK_LEVEL = 25;
