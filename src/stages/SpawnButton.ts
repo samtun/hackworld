@@ -22,7 +22,7 @@ export class SpawnButton {
     private mesh: THREE.Mesh;
 
     private static readonly SIZE = 1;
-    private static readonly INTERACTION_RANGE = 2.5;
+    private static readonly INTERACTION_RANGE = 1.5;
 
     constructor(
         scene: THREE.Scene,

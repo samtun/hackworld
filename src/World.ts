@@ -444,9 +444,6 @@ export class World {
      */
     destroyBarrel(barrel: BreakableBarrel, player: Player): void {
         barrel.onHit();
-        const drop = barrel.generateDrop(player);
-        if (drop) {
-            this.itemDropManager.addDrop(drop);
-        }
+        barrel.dropItem(player);
     }
 }

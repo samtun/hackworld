@@ -8,6 +8,7 @@ import { ChipRepository } from "./chips/ChipRepository";
 import { CoreRepository } from "./cores/CoreRepository";
 import { ItemDropFactory } from "./ItemDropFactory";
 import { TierManager } from "./TierManager";
+import { ItemDropManager } from "./ItemDropManager";
 
 @singleton()
 export class BreakableBarrelFactory {
@@ -20,7 +21,8 @@ export class BreakableBarrelFactory {
         private readonly chipRepository: ChipRepository,
         private readonly coreRepository: CoreRepository,
         private readonly tierManager: TierManager,
-        private readonly itemDropFactory: ItemDropFactory
+        private readonly itemDropFactory: ItemDropFactory,
+        private readonly itemDropManager: ItemDropManager
     ) { }
 
     public createBreakableBarrel(position: CANNON.Vec3): BreakableBarrel {
@@ -31,6 +33,7 @@ export class BreakableBarrelFactory {
             this.coreRepository,
             this.tierManager,
             this.itemDropFactory,
+            this.itemDropManager,
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,

@@ -13,6 +13,7 @@ import { WeaponItem } from './weapons/WeaponItem';
 import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
 import { AudioManager } from '../AudioManager';
 import { ItemDropFactory } from './ItemDropFactory';
+import { ItemDropManager } from './ItemDropManager';
 
 /** Configuration for a single breakable barrel placement. */
 export interface BreakableBarrelConfig {
@@ -88,6 +89,7 @@ export class BreakableBarrel implements Breakable {
         private readonly coreRepository: CoreRepository,
         private readonly tierManager: TierManager,
         private readonly itemDropFactory: ItemDropFactory,
+        private readonly itemDropManager: ItemDropManager,
         scene: THREE.Scene,
         world: CANNON.World,
         physicsMaterial: CANNON.Material,
@@ -281,7 +283,7 @@ export class BreakableBarrel implements Breakable {
      * Uses the same level/tier logic as enemy drops, minus XData and BoosterPacks.
      * @returns The created ItemDrop, or null if nothing drops.
      */
-    generateDrop(player: Player): ItemDrop | null {
+    dropItem(player: Player): void {
         const dropPosition = new CANNON.Vec3(
             this.body.position.x,
             this.body.position.y,
@@ -289,20 +291,24 @@ export class BreakableBarrel implements Breakable {
         );
 
         // Determine item to drop, or drop nothing
+        var drop: ItemDrop | null = null;
         const roll = Math.random() - player.luckDropChanceBonus;
         if (roll < BreakableBarrel.WEAPON_DROP_THRESHOLD) {
-            return this.generateWeaponDrop(player, dropPosition);
+            drop = this.generateWeaponDrop(player, dropPosition);
         } else if (roll < BreakableBarrel.CHIP_DROP_THRESHOLD) {
-            return this.generateChipDrop(player, dropPosition);
+            drop = this.generateChipDrop(player, dropPosition);
         } else if (roll < BreakableBarrel.CORE_DROP_THRESHOLD) {
-            return this.generateCoreDrop(player, dropPosition);
+            drop = this.generateCoreDrop(player, dropPosition);
         } else if (roll < BreakableBarrel.MONEY_DROP_THRESHOLD) {
-            return this.generateMoneyDrop(player, dropPosition);
+            drop = this.generateMoneyDrop(player, dropPosition);
         } else if (roll < BreakableBarrel.POTION_DROP_THRESHOLD) {
-            return this.generatePotionDrop(player, dropPosition);
+            drop = this.generatePotionDrop(player, dropPosition);
         } else {
-            return null;
+            return; // No drop
         }
+
+        if (!drop) return;
+        this.itemDropManager.addDrop(drop);
     }
 
     private generateWeaponDrop(player: Player, pos: CANNON.Vec3): ItemDrop | null {

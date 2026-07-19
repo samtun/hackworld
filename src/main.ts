@@ -9,6 +9,9 @@ import { CoreDropStrategy } from './items/cores/CoreDropStrategy';
 import { MoneyDropStrategy } from './items/bits/MoneyDropStrategy';
 import { ChipDropStrategy } from './items/chips/ChipDropStrategy';
 import { BoosterPackDropStrategy } from './items/cards/BoosterPackDropStrategy';
+import { MinimapDropStrategy } from "./items/minimap/MinimapDropStrategy";
+import { HPPotionDropStrategy } from "./items/potions/HPPotionDropStrategy";
+import { TPPotionDropStrategy } from "./items/potions/TPPotionDropStrategy";
 import { Game } from './Game';
 
 function debugContainer(targetClass: any) {
@@ -17,20 +20,20 @@ function debugContainer(targetClass: any) {
 
     console.log(`=== Debugging Dependencies für: ${targetClass.name} ===`);
     if (!dependencies) {
-        console.error(`❌ Keine Metadaten für ${targetClass.name} gefunden! Fehlt @injectable() oder @singleton()?`);
+        console.error(`❌ No metadata for ${targetClass.name} found! Missing @injectable() or @singleton()?`);
         return;
     }
 
     dependencies.forEach((dep: any, index: number) => {
         if (dep === undefined) {
-            console.error(`❌ Parameter bei Index ${index} in ${targetClass.name} ist UNDEFINED! Das ist der Übeltäter.`);
+            console.error(`❌ Parameter at index ${index} in ${targetClass.name} is UNDEFINED! That's the culprit.`);
         } else {
             console.log(`✅ Parameter ${index}: ${dep.name}`);
         }
     });
 }
 
-// Setze hier die Klasse ein, die fehlschlägt (z. B. deine WorldFactory)
+// Only for debugging the dependency injection container in development mode
 import { WorldFactory } from "./WorldFactory";
 
 
@@ -42,6 +45,9 @@ function setupDi() {
     container.registerSingleton("ItemDropStrategy", ChipDropStrategy);
     container.registerSingleton("ItemDropStrategy", MoneyDropStrategy);
     container.registerSingleton("ItemDropStrategy", BoosterPackDropStrategy);
+    container.registerSingleton("ItemDropStrategy", MinimapDropStrategy);
+    container.registerSingleton("ItemDropStrategy", HPPotionDropStrategy);
+    container.registerSingleton("ItemDropStrategy", TPPotionDropStrategy);
 }
 
 window.addEventListener('DOMContentLoaded', () => {

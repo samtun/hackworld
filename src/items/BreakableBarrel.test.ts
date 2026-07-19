@@ -53,7 +53,7 @@ vi.mock('three', () => {
             geometry = { dispose: vi.fn(), attributes: { position: mockPositionAttr }, computeVertexNormals: vi.fn() };
             material = new (class { dispose = vi.fn(); transparent = false; opacity = 1; })();
         },
-        Material: class {},
+        Material: class { },
     };
 });
 
@@ -65,8 +65,8 @@ vi.mock('cannon-es', () => {
     }
     return {
         Vec3,
-        Box: class {},
-        Cylinder: class {},
+        Box: class { },
+        Cylinder: class { },
         Body: class {
             addShape = vi.fn();
             position = new Vec3();
@@ -151,24 +151,24 @@ describe('BreakableBarrel', () => {
             const randomSpy = vi.spyOn(Math, 'random');
 
             randomSpy.mockReturnValueOnce(0.005);
-            expect(barrel.generateDrop({} as any, player)).toBe(weaponDrop);
+            expect(barrel.dropItem({} as any, player)).toBe(weaponDrop);
 
             randomSpy.mockReturnValueOnce(0.015);
-            expect(barrel.generateDrop({} as any, player)).toBe(chipDrop);
+            expect(barrel.dropItem({} as any, player)).toBe(chipDrop);
 
             randomSpy.mockReturnValueOnce(0.025);
-            expect(barrel.generateDrop({} as any, player)).toBe(coreDrop);
+            expect(barrel.dropItem({} as any, player)).toBe(coreDrop);
 
             randomSpy.mockReturnValueOnce(0.04);
-            barrel.generateDrop({} as any, player);
+            barrel.dropItem({} as any, player);
             expect((barrel as any).generateMoneyDrop).toHaveBeenCalledOnce();
 
             randomSpy.mockReturnValueOnce(0.33);
-            barrel.generateDrop({} as any, player);
+            barrel.dropItem({} as any, player);
             expect((barrel as any).generatePotionDrop).toHaveBeenCalledOnce();
 
             randomSpy.mockReturnValueOnce(0.74);
-            expect(barrel.generateDrop({} as any, player)).toBeNull();
+            expect(barrel.dropItem({} as any, player)).toBeNull();
 
             randomSpy.mockRestore();
         });

@@ -8,6 +8,7 @@ import { ItemDropType } from './ItemDropType';
 import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
 import { injectAll, singleton } from 'tsyringe';
 import { AudioManager } from '../AudioManager';
+import { PotionDrop } from './potions/PotionDrop';
 
 export interface ItemDropStrategy {
     // unique identifier for this strategy type
@@ -69,8 +70,12 @@ export class ItemDropManager {
 
         const drop = strategy.drop(enemy, player);
         if (drop) {
-            const arr = this.drops.get(strategy.key)!;
-            arr.push(drop);
+            const arr = this.drops.get(strategy.key);
+            if (arr) {
+                arr.push(drop);
+            } else {
+                console.warn(`No drop array found for key ${strategy.key}`);
+            }
         }
     }
 
@@ -86,14 +91,23 @@ export class ItemDropManager {
         const level = determinePotionLevel(player.level);
         const drop = this.itemDropFactory.createPotionDrop(position, potionType, level);
         const key = potionType === PotionType.HP ? ItemDropType.HP_POTION : ItemDropType.TP_POTION;
-        this.drops.get(key)!.push(drop);
+        this.addDropToArray(key, drop);
+    }
+
+    private addDropToArray(key: ItemDropType, drop: PotionDrop) {
+        const arr = this.drops.get(key);
+        if (arr) {
+            arr.push(drop);
+        } else {
+            console.warn(`No drop array found for key ${key}`);
+        }
     }
 
     // Common update logic for all drops: call each drop.update
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3) {
-        for (const [, arr] of this.drops.entries()) {
-            for (const d of arr) {
-                d.update(deltaTime, cameraPosition, playerPosition);
+        for (const [, entries] of this.drops.entries()) {
+            for (const drop of entries) {
+                drop.update(deltaTime, cameraPosition, playerPosition);
             }
         }
     }
@@ -113,6 +127,7 @@ export class ItemDropManager {
      * the manager so it receives updates and can be picked up.
      */
     addDrop(drop: ItemDrop): void {
+        console.log(`ItemDropManager: Adding drop of type ${drop.dropType}`);
         const arr = this.drops.get(drop.dropType);
         if (arr) {
             arr.push(drop);
