@@ -20,7 +20,7 @@ export class HealingSystem {
     }
 
     update(deltaTime: number) {
-        if (this.playerRegistry.hasActivePlayer()) {
+        if (!this.playerRegistry.hasActivePlayer()) {
             // Still update visuals (turn off healing on stations)
             for (const s of this.stations) s.setHealing(false);
             return;
