@@ -58,7 +58,7 @@ export class Player extends BaseMesh {
     public readonly CRITICAL_HIT_MULTIPLIER = 1.5;
 
     // Level system constants
-    private readonly MAX_LEVEL = 9999;
+    private readonly MAX_LEVEL = 999;
     private readonly LEVEL_HP_MULTIPLIER = 100.01; // HP increase by (100 + 0.01) * level
     private readonly LEVEL_TP_MULTIPLIER = 50.05; // TP increase by (50 + 0.05) * level
     private readonly EXP_BASE = 2500;
@@ -497,23 +497,23 @@ export class Player extends BaseMesh {
         return 1.0; // Default: no multiplier
     }
 
-    // Calculate strength multiplier using formula: 0.27 / log10(9999) * log10(x)
+    // Calculate strength multiplier using formula: log10(0.4 * x + 146) - 2.15 + 0.0002 * x
     private getStrengthMultiplier(): number {
         if (this.strength <= 0) return 0;
-        const multiplier = (this.STAT_FORMULA_NUMERATOR / Math.log10(this.STAT_FORMULA_LOG_BASE)) * Math.log10(this.strength);
+        const multiplier = Math.log10(0.4 * this.strength + 146) - 2.15 + 0.0002 * this.strength;
         return Math.max(0, multiplier);
     }
 
-    // Calculate defense multiplier using formula: 0.27 / log10(9999) * log10(x)
+    // Calculate defense multiplier using formula: log10(0.0035x + 20) - 1.29 + 0.00001x
     private getDefenseMultiplier(): number {
         if (this.defense <= 0) return 0;
-        const multiplier = (this.STAT_FORMULA_NUMERATOR / Math.log10(this.STAT_FORMULA_LOG_BASE)) * Math.log10(this.defense);
+        const multiplier = Math.log10(0.0035 * this.defense + 20) - 1.29 + 0.00001 * this.defense;
         return Math.max(0, multiplier);
     }
 
-    // Calculate critical hit chance using formula: 0.02 + (log10(agility + 50) * 7 - 11.9) * 0.01
+    // Calculate critical hit chance using formula: log10(0.0035x + 20) - 1.29 + 0.00001x
     public getCriticalChance(): number {
-        return 0.02 + (Math.log10(this.agility + 50) * 7 - 11.9) * 0.01;
+        return Math.log10(0.0035 * this.agility + 20) - 1.29 + 0.00001 * this.agility;
     }
 
     // Return current tech points for a given weapon type
