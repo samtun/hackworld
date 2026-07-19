@@ -52,8 +52,6 @@ export class Player extends BaseMesh {
     private readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
 
     // Stat effect formula constants
-    private readonly STAT_FORMULA_NUMERATOR = 0.27; // Numerator for strength/defense formulas
-    private readonly STAT_FORMULA_LOG_BASE = this.MAX_STAT_VALUE; // Log base for strength/defense formulas
     private readonly LUCK_DIVISOR = 40000; // Divisor for luck multiplier
     public readonly CRITICAL_HIT_MULTIPLIER = 1.5;
 
