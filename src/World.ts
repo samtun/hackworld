@@ -321,12 +321,16 @@ export class World {
                     // Try to drop an item
                     // The ItemDropManager will select one strategy based on probabilities
                     // and each strategy will check enemy.itemDropChance internally
-                    this.itemDropManager.tryDropItem(e, player);
+                    const itemDropped = this.itemDropManager.tryDropItem(e, player);
 
-                    // Independently try to drop an HP or TP potion (5% base chance)
+                    // Independently try to drop an HP or TP potion (8% base chance)
                     const potionPos = e.getDeathPosition();
                     potionPos.y += 0.5;
-                    this.itemDropManager.tryDropPotion(potionPos, player, 0.05);
+                    // If an item was dropped, offset the potion position slightly to avoid overlap
+                    if (itemDropped) {
+                        potionPos.x -= 0.75;
+                    }
+                    this.itemDropManager.tryDropPotion(potionPos, player, e.itemDropChance + player.luckDropChanceBonus);
                 };
             }
 

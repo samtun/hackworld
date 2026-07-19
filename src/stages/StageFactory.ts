@@ -61,7 +61,14 @@ export class StageFactory {
     ) { }
 
     public createStage(stageId: string): BaseStage {
-        switch (stageId) {
+        var depth = 1;
+        const depthMatch = stageId.match(/Depth(\d+)$/);
+        if (depthMatch) {
+            depth = parseInt(depthMatch[1], 10);
+        }
+
+        var stageIdWithoutDepth = stageId.replace(/Depth\d+$/, '');
+        switch (stageIdWithoutDepth) {
             case NetworkMatrix.getStageMetadata().id:
                 return new NetworkMatrix(
                     this.scene,
@@ -103,7 +110,7 @@ export class StageFactory {
                     this.enemyFactory,
                     this.audioManager,
                     this.itemDropManager,
-                    CipherNull.getStageMetadata().id
+                    depth == 1 ? CipherNull.getStageMetadata().id : CipherNull.getStageMetadata().id + `Depth${depth}`
                 );
             case SecurityCore.getStageMetadata().id:
                 return new SecurityCore(
@@ -118,7 +125,7 @@ export class StageFactory {
                     this.enemyFactory,
                     this.audioManager,
                     this.itemDropManager,
-                    SecurityCore.getStageMetadata().id
+                    depth == 1 ? SecurityCore.getStageMetadata().id : SecurityCore.getStageMetadata().id + `Depth${depth}`
                 );
             case KernelTerminus.getStageMetadata().id:
                 return new KernelTerminus(this.scene,
@@ -132,7 +139,7 @@ export class StageFactory {
                     this.enemyFactory,
                     this.audioManager,
                     this.itemDropManager,
-                    KernelTerminus.getStageMetadata().id
+                    depth == 1 ? KernelTerminus.getStageMetadata().id : KernelTerminus.getStageMetadata().id + `Depth${depth}`
                 );
             case GameTest.getStageMetadata().id:
                 return new GameTest(

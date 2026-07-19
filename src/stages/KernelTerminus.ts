@@ -133,7 +133,7 @@ export class KernelTerminus extends StageWithLevels {
     ]);
 
     private static readonly generationConfig: RoomGenerationConfig = {
-        combatRoomCount: { min: 14, max: 18 },
+        combatRoomCount: { min: 2, max: 2 },
         combatRoomSize: { minWidth: 14, maxWidth: 36, minDepth: 14, maxDepth: 36 },
         finalRoomSize: { minWidth: 24, maxWidth: 42, minDepth: 24, maxDepth: 42 },
         enemyCount: { min: 3, max: 8, areaPerEnemy: 55, eliteFraction: 0.45 },

@@ -60,23 +60,20 @@ export class ItemDropManager {
      * Selects from weighted probabilities from all drop types.
      * @returns true if an item was dropped, false otherwise
      */
-    tryDropItem(enemy: Enemy, player: Player): void {
+    tryDropItem(enemy: Enemy, player: Player): boolean {
         const strategy = this.selectRandomStrategy(enemy, player);
-        if (!strategy) return;
+        if (!strategy) return false;
 
         // Apply luck multiplier and collection bonus to drop chance
         const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus + player.collectionBonusItemDropChance;
-        if (Math.random() > effectiveDropChance) return;
+        if (Math.random() > effectiveDropChance) return false;
 
         const drop = strategy.drop(enemy, player);
         if (drop) {
-            const arr = this.drops.get(strategy.key);
-            if (arr) {
-                arr.push(drop);
-            } else {
-                console.warn(`No drop array found for key ${strategy.key}`);
-            }
+            this.addDropToArray(strategy.key, drop);
         }
+
+        return drop !== null && drop !== undefined;
     }
 
     /**
@@ -94,7 +91,7 @@ export class ItemDropManager {
         this.addDropToArray(key, drop);
     }
 
-    private addDropToArray(key: ItemDropType, drop: PotionDrop) {
+    private addDropToArray(key: ItemDropType, drop: ItemDrop): void {
         const arr = this.drops.get(key);
         if (arr) {
             arr.push(drop);
@@ -127,7 +124,6 @@ export class ItemDropManager {
      * the manager so it receives updates and can be picked up.
      */
     addDrop(drop: ItemDrop): void {
-        console.log(`ItemDropManager: Adding drop of type ${drop.dropType}`);
         const arr = this.drops.get(drop.dropType);
         if (arr) {
             arr.push(drop);
