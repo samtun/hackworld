@@ -44,7 +44,7 @@ export class RecoverySkill extends Skill {
         audioManager: AudioManager,
         uiManager: UIManager,
     ) {
-        super('Recovery', 5, 200, onCompletedCallback, 'images/ui_icons/heal.png', audioManager, uiManager);
+        super('Recovery', 5, 200, onCompletedCallback, 'images/ui_icons/recovery.png', audioManager, uiManager);
         this.assetManager = assetManager;
     }
 

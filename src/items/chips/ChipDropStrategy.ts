@@ -1,3 +1,4 @@
+import { singleton } from 'tsyringe';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { ChipDrop } from './ChipDrop';
 import { ChipRepository } from './ChipRepository';
@@ -8,6 +9,7 @@ import { ItemDropType } from '../ItemDropType';
 import { ItemDrop } from '../ItemDrop';
 import { ItemDropFactory } from '../ItemDropFactory';
 
+@singleton()
 export class ChipDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.CHIP;
 

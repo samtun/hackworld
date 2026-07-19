@@ -5,7 +5,7 @@ import { SkillFx } from './SkillFx';
 
 export class RecoveryFx extends SkillFx {
     constructor(duration: number, assetManager: AssetManager) {
-        super(duration, 'models/heal_fx.glb', assetManager);
+        super(duration, 'models/fx/recovery_fx.glb', assetManager);
     }
 
     public update(dt: number) {

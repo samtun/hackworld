@@ -1,5 +1,6 @@
-import { singleton } from "tsyringe";
+import { delay, inject, singleton } from "tsyringe";
 import * as CANNON from "cannon-es";
+import * as THREE from "three";
 import { Player } from "./Player";
 import { InputManager } from "../controls/InputManager";
 import { FloatingIndicatorManager } from "../FloatingIndicatorManager";
@@ -14,9 +15,9 @@ import { WeaponFactory } from "../items/ItemFactory";
 @singleton()
 export class PlayerFactory {
     constructor(
-        private readonly scene: THREE.Scene,
-        private readonly physicsWorld: CANNON.World,
-        private readonly physicsMaterial: CANNON.Material,
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
+        @inject(delay(() => CANNON.World)) private readonly physicsWorld: CANNON.World,
+        @inject(delay(() => CANNON.Material)) private readonly physicsMaterial: CANNON.Material,
         private readonly inputManager: InputManager,
         private readonly assetManager: AssetManager,
         private readonly floatingIndicatorManager: FloatingIndicatorManager,

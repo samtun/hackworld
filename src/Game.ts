@@ -376,7 +376,7 @@ export class Game {
         this.uiManager.hideDeathOverlay();
 
         // Fully reload the current stage to reset enemies and environment
-        if (this.currentScene !== 'startScreen' && this.currentScene !== Lobby.getMetadata().id) {
+        if (this.currentScene !== 'startScreen' && this.currentScene !== Lobby.getStageMetadata().id) {
             this.switchScene(this.currentScene);
         }
 
@@ -398,7 +398,7 @@ export class Game {
         this.player.respawn(new CANNON.Vec3(0, 0.5, 0));
 
         // Switch to lobby
-        this.switchScene(Lobby.getMetadata().id);
+        this.switchScene(Lobby.getStageMetadata().id);
 
         // Reset camera
         this.resetCameraPosition();
@@ -497,8 +497,8 @@ export class Game {
     }
 
     private continueAfterIntro() {
-        this.currentScene = Lobby.getMetadata().id;
-        this.audioManager.setStageMusic(Lobby.getMetadata().id);
+        this.currentScene = Lobby.getStageMetadata().id;
+        this.audioManager.setStageMusic(Lobby.getStageMetadata().id);
         this.inputManager.consumeJump();
         this.clock.getDelta(); // Reset clock
         this.isTransitioning = false;

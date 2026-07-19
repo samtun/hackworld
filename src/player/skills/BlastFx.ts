@@ -11,7 +11,7 @@ export class BlastFx extends SkillFx {
         range: number,
         waves: number,
         assetManager: AssetManager) {
-        super(duration, 'models/blast_fx.glb', assetManager);
+        super(duration, 'models/fx/blast_fx.glb', assetManager);
         this.range = range;
         this.waves = waves;
     }

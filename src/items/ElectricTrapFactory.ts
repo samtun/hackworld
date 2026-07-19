@@ -1,10 +1,11 @@
+import { delay, inject, singleton } from 'tsyringe';
 import { ElectricTrap, ElectricTrapConfig } from './ElectricTrap';
-import { singleton } from 'tsyringe';
+import * as THREE from 'three';
 
 @singleton()
 export class ElectricTrapFactory {
     constructor(
-        private readonly scene: THREE.Scene,
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
     ) { }
 
     public createElectricTrap(config: ElectricTrapConfig): ElectricTrap {

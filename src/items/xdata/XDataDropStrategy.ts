@@ -1,3 +1,4 @@
+import { singleton } from 'tsyringe';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { ItemDrop } from '../ItemDrop';
 import { ItemDropType } from '../ItemDropType';
@@ -8,6 +9,7 @@ import { CardCollection } from '../cards/CardCollection';
 import { Album } from '../cards/Card';
 import { ItemDropFactory } from '../ItemDropFactory';
 
+@singleton()
 export class XDataDropStrategy implements ItemDropStrategy {
     private readonly cardCollection: CardCollection;
     private readonly itemDropFactory: ItemDropFactory;

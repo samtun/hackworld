@@ -1,6 +1,6 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
-import { BaseStage } from './BaseStage';
+import { BaseStage, StageMetadata } from './BaseStage';
 import { HealingStation } from '../props/HealingStation';
 import { Player } from '../player/Player';
 import { ChipTrader } from '../items/chips/ChipTrader';
@@ -31,7 +31,7 @@ export class Lobby extends BaseStage {
     environmentMap: string = 'textures/environments/lobby_env.exr';
     spawnPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.4, 0);
 
-    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
+    static getStageMetadata(): StageMetadata {
         return {
             id: 'lobby',
             name: 'Lobby',

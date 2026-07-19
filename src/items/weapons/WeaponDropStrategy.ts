@@ -1,3 +1,4 @@
+import { singleton } from 'tsyringe';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { WeaponDrop } from './WeaponDrop';
 import { WeaponRepository } from './WeaponRepository';
@@ -9,6 +10,7 @@ import { ItemDropType } from '../ItemDropType';
 import { WeaponBonusCalculator } from './WeaponBonusCalculator';
 import { ItemDropFactory } from '../ItemDropFactory';
 
+@singleton()
 export class WeaponDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.WEAPON;
     // Threshold for becoming eligible for higher level drops (80% of next level requirement)

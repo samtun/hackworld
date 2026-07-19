@@ -79,8 +79,8 @@ export abstract class BaseStage {
     abstract spawnPosition: CANNON.Vec3;
 
     // Static method to get metadata without instantiation
-    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
-        throw new Error('getMetadata() must be implemented in derived class');
+    static getStageMetadata(): StageMetadata {
+        throw new Error('getStageMetadata() must be implemented in derived class');
     }
 
     // Collection of teleporters. Main teleporter to exit the stage is at index 0
@@ -191,7 +191,7 @@ export abstract class BaseStage {
      */
     getRequiredProgress(): number {
         const stageClass = this.constructor as typeof BaseStage;
-        return stageClass.getMetadata().requiredProgress;
+        return stageClass.getStageMetadata().requiredProgress;
     }
 
     /**

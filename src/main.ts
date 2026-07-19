@@ -9,8 +9,6 @@ import { CoreDropStrategy } from './items/cores/CoreDropStrategy';
 import { MoneyDropStrategy } from './items/bits/MoneyDropStrategy';
 import { ChipDropStrategy } from './items/chips/ChipDropStrategy';
 import { BoosterPackDropStrategy } from './items/cards/BoosterPackDropStrategy';
-import { CipherNull, KernelTerminus, NetworkMatrix, PacketForge, SecurityCore } from './stages';
-import { GameTest } from './stages/GameTest';
 import { Game } from './Game';
 
 function debugContainer(targetClass: any) {
@@ -44,21 +42,14 @@ function setupDi() {
     container.registerSingleton("ItemDropStrategy", ChipDropStrategy);
     container.registerSingleton("ItemDropStrategy", MoneyDropStrategy);
     container.registerSingleton("ItemDropStrategy", BoosterPackDropStrategy);
-
-    // Register mission stages
-    container.registerInstance("MissionStage", NetworkMatrix);
-    container.registerInstance("MissionStage", PacketForge);
-    container.registerInstance("MissionStage", CipherNull);
-    container.registerInstance("MissionStage", SecurityCore);
-    container.registerInstance("MissionStage", KernelTerminus);
-    if (import.meta.env.DEV) {
-        container.registerInstance("MissionStage", GameTest);
-    }
 }
 
 window.addEventListener('DOMContentLoaded', () => {
     setupDi();
-    debugContainer(WorldFactory);
+    if (import.meta.env.DEV) {
+        // Check dependency injection for WorldFactory in development mode
+        debugContainer(WorldFactory);
+    }
     const game = container.resolve(Game);
     // Expose game for debugging/testing
     (window as any).game = game;

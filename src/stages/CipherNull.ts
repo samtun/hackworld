@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { StageWithLevels } from './StageWithLevels';
@@ -17,7 +18,9 @@ import { ItemDropManager } from '../items/ItemDropManager';
 import { AudioManager } from '../AudioManager';
 import { EnemyFactory } from '../enemies/EnemyFactory';
 import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
+import { StageMetadata } from './BaseStage';
 
+@injectable()
 export class CipherNull extends StageWithLevels {
     private static id: string = 'cipherNull';
     private static name: string = 'Cipher Null';
@@ -41,7 +44,7 @@ export class CipherNull extends StageWithLevels {
             floorColor: 0x081720,
             hasBoss: true,
             enemyDifficultyMultiplier: 1.2,
-            teleporterDestination: Lobby.getMetadata().id,
+            teleporterDestination: Lobby.getStageMetadata().id,
             requiredProgress: 5,
         },
     };
@@ -179,7 +182,7 @@ export class CipherNull extends StageWithLevels {
         return [CipherNull.id, CipherNull.depth2Id] as const;
     }
 
-    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
+    static getStageMetadata(): StageMetadata {
         return {
             id: CipherNull.id,
             name: CipherNull.name,

@@ -1,5 +1,6 @@
-import { singleton } from "tsyringe";
+import { delay, inject, singleton } from "tsyringe";
 import * as CANNON from "cannon-es";
+import * as THREE from "three";
 import { Npc } from "./Npc";
 import { AssetManager } from "../AssetManager";
 import { GameProgressManager } from "../GameProgressManager";
@@ -9,9 +10,9 @@ import { NpcRegistry } from "./NpcRegistry";
 @singleton()
 export class NpcFactory {
     constructor(
-        private readonly scene: THREE.Scene,
-        private readonly physicsWorld: CANNON.World,
-        private readonly physicsMaterial: CANNON.Material,
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
+        @inject(delay(() => CANNON.World)) private readonly physicsWorld: CANNON.World,
+        @inject(delay(() => CANNON.Material)) private readonly physicsMaterial: CANNON.Material,
         private readonly assetManager: AssetManager,
         private readonly gameProgressManager: GameProgressManager,
         private readonly npcRegistry: NpcRegistry,

@@ -5,14 +5,14 @@ import { AudioManager } from "../AudioManager";
 import { HealingSystem } from "../systems/HealingSystem";
 import { ModelColliderLoader } from "../ModelColliderLoader";
 import { AssetManager } from "../AssetManager";
-import { singleton } from 'tsyringe';
+import { delay, inject, singleton } from 'tsyringe';
 
 @singleton()
 export class HealingStationFactory {
     constructor(
-        private readonly scene: THREE.Scene,
-        private readonly world: CANNON.World,
-        private readonly physicsMaterial: CANNON.Material,
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
+        @inject(delay(() => CANNON.World)) private readonly physicsWorld: CANNON.World,
+        @inject(delay(() => CANNON.Material)) private readonly physicsMaterial: CANNON.Material,
         private readonly healingSystem: HealingSystem,
         private readonly audioManager: AudioManager,
         private readonly modelColliderLoader: ModelColliderLoader,
@@ -23,7 +23,7 @@ export class HealingStationFactory {
         return new HealingStation(
             position,
             this.scene,
-            this.world,
+            this.physicsWorld,
             this.physicsMaterial,
             this.modelColliderLoader,
             this.assetManager,

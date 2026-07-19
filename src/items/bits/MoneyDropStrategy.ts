@@ -1,3 +1,4 @@
+import { singleton } from 'tsyringe';
 import { Enemy } from '../../enemies/Enemy';
 import { Player } from '../../player/Player';
 import { ItemDrop } from '../ItemDrop';
@@ -6,6 +7,7 @@ import { MoneyDrop } from './MoneyDrop';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { ItemDropFactory } from '../ItemDropFactory';
 
+@singleton()
 export class MoneyDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.MONEY;
     public getDistributionWeight(_enemy: Enemy, _player: Player): number {

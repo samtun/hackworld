@@ -1,4 +1,5 @@
-import { singleton } from "tsyringe";
+import { delay, inject, singleton } from "tsyringe";
+import * as THREE from "three";
 import * as CANNON from "cannon-es";
 import { AssetManager } from "../AssetManager";
 import { MoneyDrop } from "./bits/MoneyDrop";
@@ -16,7 +17,7 @@ import { XDataDrop } from "./xdata/XDataDrop";
 @singleton()
 export class ItemDropFactory {
     constructor(
-        private readonly scene: THREE.Scene,
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
         private readonly assetManager: AssetManager,
         private readonly tierManager: TierManager
     ) { }

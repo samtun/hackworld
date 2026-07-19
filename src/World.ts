@@ -177,7 +177,7 @@ export class World {
     private async initializeWorld(onInitialLoadComplete: () => void): Promise<void> {
         try {
             await this.preloadCommonAssets();
-            await this.loadStageById(Lobby.getMetadata().id);
+            await this.loadStageById(Lobby.getStageMetadata().id);
         } catch (error) {
             console.error('Failed to initialize world:', error);
         } finally {
@@ -211,10 +211,10 @@ export class World {
             // Characters
             'models/main_character.glb',
             // Effects
-            'models/heal_fx.glb',
-            'models/area_fx.glb',
-            'models/laser_fx.glb',
-            'models/dash_charge_fx.glb',
+            'models/fx/recovery_fx.glb',
+            'models/fx/blast_fx.glb',
+            'models/fx/ranged_fx.glb',
+            'models/fx/dash_charge_fx.glb',
             // Items
             'models/coin.glb',
             'models/weapon_drop.glb',
@@ -259,7 +259,7 @@ export class World {
             }
 
             // Add callbacks for lobby
-            if (stageId === Lobby.getMetadata().id) {
+            if (stageId === Lobby.getStageMetadata().id) {
                 const lobby = newStage as Lobby;
                 if (this.xDataInteractionCallback) {
                     lobby.xDataInteractionCallback = this.xDataInteractionCallback;

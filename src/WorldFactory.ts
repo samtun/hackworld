@@ -1,4 +1,5 @@
-import { singleton } from "tsyringe";
+import { inject, delay, singleton } from "tsyringe";
+import * as THREE from "three";
 import { AssetManager } from "./AssetManager";
 import { AudioManager } from "./AudioManager";
 import { FloatingIndicatorManager } from "./FloatingIndicatorManager";
@@ -11,7 +12,7 @@ import { World } from "./World";
 @singleton()
 export class WorldFactory {
     constructor(
-        private readonly scene: THREE.Scene,
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
         private readonly stageFactory: StageFactory,
         private readonly assetManager: AssetManager,
         private readonly audioManager: AudioManager,

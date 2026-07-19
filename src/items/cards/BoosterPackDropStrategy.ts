@@ -1,3 +1,4 @@
+import { singleton } from 'tsyringe';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { BoosterPackDrop } from './BoosterPackDrop';
 import { Enemy } from '../../enemies/Enemy';
@@ -5,6 +6,7 @@ import { Player } from '../../player/Player';
 import { ItemDropType } from '../ItemDropType';
 import { ItemDropFactory } from '../ItemDropFactory';
 
+@singleton()
 export class BoosterPackDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.BOOSTER_PACK;
     public getDistributionWeight(_enemy: Enemy, _player: Player): number {

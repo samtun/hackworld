@@ -22,7 +22,7 @@ import { CardCollection } from '../items/cards/CardCollection';
 import { Album } from '../items/cards/Card';
 import { BlobShadow } from '../BlobShadow';
 import { AudioManager } from '../AudioManager';
-import { container } from 'tsyringe';
+import { container, delay, inject } from 'tsyringe';
 import { PlayerActionType } from './PlayerActionType';
 import { SkillFactory } from './skills/SkillFactory';
 import { WeaponFactory } from '../items/ItemFactory';
@@ -268,8 +268,8 @@ export class Player extends BaseMesh {
         position: CANNON.Vec3,
         physicsMaterial: CANNON.Material,
         assetManager: AssetManager,
-        private readonly scene: THREE.Scene,
-        private readonly physicsWorld: CANNON.World,
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
+        @inject(delay(() => CANNON.World)) private readonly physicsWorld: CANNON.World,
         private readonly inputManager: InputManager,
         private readonly floatingIndicatorManager: FloatingIndicatorManager,
         private readonly tierManager: TierManager,
@@ -282,7 +282,7 @@ export class Player extends BaseMesh {
         super('models/main_character.glb', assetManager);
         this.id = crypto.randomUUID();
         this.position = position.clone() as any;
-        this.chargeFx = assetManager.get('models/dash_charge_fx.glb').scene.clone();
+        this.chargeFx = assetManager.get('models/fx/dash_charge_fx.glb').scene.clone();
         this.chargeFx.receiveShadow = false;
         this.chargeFx.traverse((node) => {
             if (!(node instanceof THREE.Mesh)) {

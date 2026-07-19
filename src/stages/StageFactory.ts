@@ -1,4 +1,4 @@
-import { singleton } from "tsyringe";
+import { delay, inject, singleton } from "tsyringe";
 import * as CANNON from "cannon-es";
 import { BaseStage } from "./BaseStage";
 import { TeleporterFactory } from "../props/TeleporterFactory";
@@ -24,12 +24,19 @@ import { WeaponTrader } from "../items/weapons/WeaponTrader";
 import { CardManager } from "../items/cards/CardManager";
 import { GameProgressManager } from "../GameProgressManager";
 import { NpcFactory } from "../npcs/NpcFactory";
+import * as THREE from "three";
+import { GameTest } from "./GameTest";
+import { ItemDropFactory } from "../items/ItemDropFactory";
+import { SpawnButtonFactory } from "./SpawnButtonFactory";
+import { ChipRepository } from "../items/chips/ChipRepository";
+import { CoreRepository } from "../items/cores/CoreRepository";
 
 @singleton()
 export class StageFactory {
-    constructor(private readonly scene: THREE.Scene,
-        private readonly physicsWorld: CANNON.World,
-        private readonly physicsMaterial: CANNON.Material,
+    constructor(
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
+        @inject(delay(() => CANNON.World)) private readonly physicsWorld: CANNON.World,
+        @inject(delay(() => CANNON.Material)) private readonly physicsMaterial: CANNON.Material,
         private readonly teleporterFactory: TeleporterFactory,
         private readonly healingStationFactory: HealingStationFactory,
         private readonly modelPropFactory: ModelPropFactory,
@@ -47,11 +54,15 @@ export class StageFactory {
         private readonly coreTrader: CoreTrader,
         private readonly saveManager: SaveManager,
         private readonly xDataUpgradeManager: XDataUpgradeManager,
+        private readonly spawnButtonFactory: SpawnButtonFactory,
+        private readonly itemDropFactory: ItemDropFactory,
+        private readonly coreItemRepository: CoreRepository,
+        private readonly chipItemRepository: ChipRepository
     ) { }
 
     public createStage(stageId: string): BaseStage {
         switch (stageId) {
-            case NetworkMatrix.getMetadata().id:
+            case NetworkMatrix.getStageMetadata().id:
                 return new NetworkMatrix(
                     this.scene,
                     this.physicsWorld,
@@ -65,7 +76,7 @@ export class StageFactory {
                     this.audioManager,
                     this.itemDropManager
                 );
-            case PacketForge.getMetadata().id:
+            case PacketForge.getStageMetadata().id:
                 return new PacketForge(
                     this.scene,
                     this.physicsWorld,
@@ -79,7 +90,7 @@ export class StageFactory {
                     this.audioManager,
                     this.itemDropManager
                 );
-            case CipherNull.getMetadata().id:
+            case CipherNull.getStageMetadata().id:
                 return new CipherNull(
                     this.scene,
                     this.physicsWorld,
@@ -92,9 +103,9 @@ export class StageFactory {
                     this.enemyFactory,
                     this.audioManager,
                     this.itemDropManager,
-                    CipherNull.getMetadata().id
+                    CipherNull.getStageMetadata().id
                 );
-            case SecurityCore.getMetadata().id:
+            case SecurityCore.getStageMetadata().id:
                 return new SecurityCore(
                     this.scene,
                     this.physicsWorld,
@@ -107,9 +118,9 @@ export class StageFactory {
                     this.enemyFactory,
                     this.audioManager,
                     this.itemDropManager,
-                    SecurityCore.getMetadata().id
+                    SecurityCore.getStageMetadata().id
                 );
-            case KernelTerminus.getMetadata().id:
+            case KernelTerminus.getStageMetadata().id:
                 return new KernelTerminus(this.scene,
                     this.physicsWorld,
                     this.physicsMaterial,
@@ -121,9 +132,27 @@ export class StageFactory {
                     this.enemyFactory,
                     this.audioManager,
                     this.itemDropManager,
-                    KernelTerminus.getMetadata().id
+                    KernelTerminus.getStageMetadata().id
                 );
-            case Lobby.getMetadata().id:
+            case GameTest.getStageMetadata().id:
+                return new GameTest(
+                    this.scene,
+                    this.physicsWorld,
+                    this.physicsMaterial,
+                    this.teleporterFactory,
+                    this.modelPropFactory,
+                    this.lootChestFactory,
+                    this.breakableBarrelFactory,
+                    this.electricTrapFactory,
+                    this.enemyFactory,
+                    this.audioManager,
+                    this.itemDropManager,
+                    this.spawnButtonFactory,
+                    this.itemDropFactory,
+                    this.coreItemRepository,
+                    this.chipItemRepository
+                );
+            case Lobby.getStageMetadata().id:
                 return new Lobby(
                     this.scene,
                     this.physicsWorld,

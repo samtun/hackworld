@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { StageWithLevels } from './StageWithLevels';
@@ -17,7 +18,9 @@ import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
 import { ItemDropManager } from '../items/ItemDropManager';
 import { LootChestFactory } from '../items/LootChestFactory';
 import { ModelPropFactory } from '../props/ModelPropFactory';
+import { StageMetadata } from './BaseStage';
 
+@injectable()
 export class SecurityCore extends StageWithLevels {
     private static id: string = 'securityCore';
     private static name: string = 'Security Core';
@@ -52,7 +55,7 @@ export class SecurityCore extends StageWithLevels {
             floorColor: 0x060412,
             hasBoss: true,
             enemyDifficultyMultiplier: 1.35,
-            teleporterDestination: Lobby.getMetadata().id,
+            teleporterDestination: Lobby.getStageMetadata().id,
             requiredProgress: 7,
         },
     };
@@ -190,7 +193,7 @@ export class SecurityCore extends StageWithLevels {
         return [SecurityCore.id, SecurityCore.depth2Id, SecurityCore.depth3Id] as const;
     }
 
-    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
+    static getStageMetadata(): StageMetadata {
         return {
             id: SecurityCore.id,
             name: SecurityCore.name,

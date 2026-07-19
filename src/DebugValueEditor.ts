@@ -1,3 +1,4 @@
+import { singleton } from 'tsyringe';
 import { Player } from './player/Player';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { CoreRepository } from './items/cores/CoreRepository';
@@ -15,6 +16,7 @@ import { UIManager } from './ui/UIManager';
  * Debug Value Editor - Development tool for live editing player stats and inventory
  * Only available in dev builds (import.meta.env.DEV)
  */
+@singleton()
 export class DebugValueEditor {
     private container: HTMLDivElement;
     private contentPanel: HTMLDivElement;

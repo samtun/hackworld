@@ -1,15 +1,15 @@
-import { singleton } from "tsyringe";
+import { delay, inject, singleton } from "tsyringe";
 import * as CANNON from "cannon-es";
 import { SpawnButton } from "./SpawnButton";
-import type { InputManager } from "../controls/InputManager";
-import type * as THREE from "three";
+import { InputManager } from "../controls/InputManager";
+import * as THREE from "three";
 
 @singleton()
 export class SpawnButtonFactory {
     constructor(
-        private readonly scene: THREE.Scene,
-        private readonly physicsWorld: CANNON.World,
-        private readonly physicsMaterial: CANNON.Material,
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
+        @inject(delay(() => CANNON.World)) private readonly physicsWorld: CANNON.World,
+        @inject(delay(() => CANNON.Material)) private readonly physicsMaterial: CANNON.Material,
         private readonly inputManager: InputManager,
     ) { }
 

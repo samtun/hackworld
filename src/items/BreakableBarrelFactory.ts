@@ -1,5 +1,6 @@
-import { singleton } from "tsyringe";
+import { delay, inject, singleton } from "tsyringe";
 import * as CANNON from "cannon-es";
+import * as THREE from "three";
 import { BreakableBarrel } from "./BreakableBarrel";
 import { AudioManager } from "../AudioManager";
 import { WeaponRepository } from "./weapons/WeaponRepository";
@@ -11,9 +12,9 @@ import { TierManager } from "./TierManager";
 @singleton()
 export class BreakableBarrelFactory {
     constructor(
-        private readonly scene: THREE.Scene,
-        private readonly physicsWorld: CANNON.World,
-        private readonly physicsMaterial: CANNON.Material,
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
+        @inject(delay(() => CANNON.World)) private readonly physicsWorld: CANNON.World,
+        @inject(delay(() => CANNON.Material)) private readonly physicsMaterial: CANNON.Material,
         private readonly audioManager: AudioManager,
         private readonly weaponRepository: WeaponRepository,
         private readonly chipRepository: ChipRepository,

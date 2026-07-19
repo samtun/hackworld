@@ -1,17 +1,23 @@
 import { InputManager } from '../controls/InputManager';
-import { BaseStage } from '../stages';
+import { KernelTerminus, SecurityCore, NetworkMatrix, PacketForge, CipherNull, StageMetadata, BaseStage } from '../stages';
 import { GameProgressManager } from '../GameProgressManager';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
 import { UIManager } from '../ui/UIManager';
 import { getHint, HintConfigs } from '../ui/InputHints';
 import { AudioManager } from '../AudioManager';
-import { injectAll, singleton } from 'tsyringe';
+import { singleton } from 'tsyringe';
+import { GameTest } from '../stages/GameTest';
+
+type BaseStageConstructor = {
+    new(...args: any[]): BaseStage;
+    getStageMetadata(): StageMetadata;
+};
 
 @singleton()
 export class DungeonSelectionManager {
     container!: HTMLDivElement;
     isVisible: boolean = false;
-    private dungeonMetadata: any[] = [];
+    private stageMetadata: StageMetadata[] = [];
 
     // UI Elements
     dungeonList!: HTMLDivElement;
@@ -30,14 +36,27 @@ export class DungeonSelectionManager {
     private onDungeonSelected?: (dungeonId: string) => void;
 
     constructor(
-        @injectAll('MissionStage') dungeonClasses: BaseStage[],
         private readonly menuManager: MenuManager,
         private readonly uiManager: UIManager,
         private readonly audioManager: AudioManager,
         private readonly gameProgressManager: GameProgressManager,
         private readonly inputManager: InputManager
     ) {
-        this.dungeonMetadata = dungeonClasses;
+        var stageClasses: BaseStageConstructor[] = [
+            NetworkMatrix,
+            PacketForge,
+            CipherNull,
+            SecurityCore,
+            KernelTerminus
+        ];
+        if (import.meta.env.DEV) {
+            stageClasses.push(GameTest);
+        }
+
+        this.stageMetadata = stageClasses.map((cls) => {
+            return cls.getStageMetadata();
+        });
+
         this.createUI();
     }
 
@@ -125,7 +144,7 @@ export class DungeonSelectionManager {
         this.dungeonElements = [];
 
         // Filter dungeons based on progress - only show unlocked ones
-        const unlockedDungeons = this.dungeonMetadata.filter((metadata) => {
+        const unlockedDungeons = this.stageMetadata.filter((metadata) => {
             if ((!import.meta.env.DEV && metadata.requiredProgress < 0) || metadata.requiredProgress === 0) {
                 // Skip stages with negative requiredProgress (like GameTest) and skip Lobby (0)
                 return false;
@@ -188,7 +207,7 @@ export class DungeonSelectionManager {
         const previousIndex = this.selectedIndex;
 
         // Get unlocked dungeons count using requiredProgress from metadata
-        const unlockedDungeonsMetadata = this.dungeonMetadata.filter((metadata) => {
+        const unlockedDungeonsMetadata = this.stageMetadata.filter((metadata) => {
             // Skip Lobby (requiredProgress=0) and dev-only stages (requiredProgress<0) in non-DEV mode
             if ((!import.meta.env.DEV && metadata.requiredProgress < 0) || metadata.requiredProgress === 0) return false;
             return this.gameProgressManager.progress >= metadata.requiredProgress;

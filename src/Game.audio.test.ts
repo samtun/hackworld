@@ -53,8 +53,8 @@ describe('Game audio scene flow', () => {
 
         (game as any).continueAfterIntro();
 
-        expect(game.currentScene).toBe(Lobby.getMetadata().id);
-        expect(AudioManager.Instance.setStageMusic).toHaveBeenCalledWith(Lobby.getMetadata().id);
+        expect(game.currentScene).toBe(Lobby.getStageMetadata().id);
+        expect(AudioManager.Instance.setStageMusic).toHaveBeenCalledWith(Lobby.getStageMetadata().id);
     });
 
     it.each([

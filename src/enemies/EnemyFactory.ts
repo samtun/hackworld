@@ -1,4 +1,6 @@
+import { delay, inject, singleton } from 'tsyringe';
 import * as CANNON from 'cannon-es';
+import * as THREE from 'three';
 import { Enemy, EnemyArchetypeConfig } from "./Enemy";
 import { EnemyType } from './EnemyType';
 import { BossEnemy } from './BossEnemy';
@@ -6,14 +8,14 @@ import { AssetManager } from '../AssetManager';
 import { AudioManager } from '../AudioManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { PlayerRegistry } from '../player/PlayerRegistry';
-import { singleton } from 'tsyringe';
+
 
 @singleton()
 export class EnemyFactory {
     constructor(
-        private readonly scene: THREE.Scene,
-        private readonly world: CANNON.World,
-        private readonly physicsMaterial: CANNON.Material,
+        @inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene,
+        @inject(delay(() => CANNON.World)) private readonly physicsWorld: CANNON.World,
+        @inject(delay(() => CANNON.Material)) private readonly physicsMaterial: CANNON.Material,
         private readonly audioManager: AudioManager,
         private readonly floatingIndicatorManager: FloatingIndicatorManager,
         private readonly playerRegistry: PlayerRegistry,
@@ -31,7 +33,7 @@ export class EnemyFactory {
             this.playerRegistry,
             this.assetManager,
             this.scene,
-            this.world,
+            this.physicsWorld,
             position,
             this.physicsMaterial,
             config,
@@ -49,7 +51,7 @@ export class EnemyFactory {
             this.playerRegistry,
             this.assetManager,
             this.scene,
-            this.world,
+            this.physicsWorld,
             position,
             this.physicsMaterial,
             config,

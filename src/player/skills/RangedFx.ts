@@ -14,7 +14,7 @@ export class RangedFx extends SkillFx {
         position: THREE.Vector3,
         forward: THREE.Vector3,
         assetManager: AssetManager) {
-        super(duration, 'models/ranged_fx.glb', assetManager);
+        super(duration, 'models/fx/ranged_fx.glb', assetManager);
         this.range = range;
         this.mesh.rotation.y = rotationY;
         this.initialPosition = position;

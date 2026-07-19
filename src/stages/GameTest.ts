@@ -1,6 +1,7 @@
+import { injectable } from 'tsyringe';
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
-import { BaseStage } from './BaseStage';
+import { BaseStage, StageMetadata } from './BaseStage';
 import { Lobby } from './Lobby';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import { WeaponType } from '../items/weapons/WeaponType';
@@ -80,6 +81,7 @@ const PROP_GRID_COLS = 4;
 
 // ─── GameTest ─────────────────────────────────────────────────────────────────
 
+@injectable()
 export class GameTest extends BaseStage {
     private static id: string = "gameTest";
     private static name: string = "Game Test";
@@ -106,7 +108,7 @@ export class GameTest extends BaseStage {
     private chestRespawnTimer = -1;
     private chestEmptied = false;
 
-    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
+    static getStageMetadata(): StageMetadata {
         return {
             id: GameTest.id,
             name: GameTest.name,
@@ -129,6 +131,8 @@ export class GameTest extends BaseStage {
         itemDropManager: ItemDropManager,
         private readonly spawnButtonFactory: SpawnButtonFactory,
         private readonly itemDropFactory: ItemDropFactory,
+        private readonly coreItemRepository: CoreRepository,
+        private readonly chipItemRepository: ChipRepository,
     ) {
         super(
             scene,
@@ -172,7 +176,7 @@ export class GameTest extends BaseStage {
         this.createFloorCollider();
 
         // Teleporter back to Lobby
-        this.createTeleporter(new CANNON.Vec3(0, 0, -3), Lobby.getMetadata().id);
+        this.createTeleporter(new CANNON.Vec3(0, 0, -3), Lobby.getStageMetadata().id);
 
         // Ground plane
         const geo = new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE);
@@ -315,16 +319,14 @@ export class GameTest extends BaseStage {
         nextRow();
 
         // Row 1: Core, Chip, Booster Pack
-        const coreRepo = CoreRepository.Instance;
-        const core = coreRepo.getCoreByNameAndLevel('Herald Core', 1);
+        const core = this.coreItemRepository.getCoreByNameAndLevel('Herald Core', 1);
         if (core) {
             this.addDropConfig(pos(), (position) =>
                 this.itemDropFactory.createCoreDrop(position, core.id, core.name, core.buyPrice, core.sellPrice, core.level));
         }
         next();
 
-        const chipRepo = ChipRepository.Instance;
-        const chip = chipRepo.getChipByNameAndLevel('Firewire', 1);
+        const chip = this.chipItemRepository.getChipByNameAndLevel('Firewire', 1);
         if (chip) {
             this.addDropConfig(pos(), (position) =>
                 this.itemDropFactory.createChipDrop(position, chip.id, chip.name, chip.chipType, chip.buyPrice, chip.sellPrice, chip.level));

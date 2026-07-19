@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { StageWithLevels } from './StageWithLevels';
@@ -17,7 +18,9 @@ import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
 import { ItemDropManager } from '../items/ItemDropManager';
 import { LootChestFactory } from '../items/LootChestFactory';
 import { ModelPropFactory } from '../props/ModelPropFactory';
+import { StageMetadata } from './BaseStage';
 
+@injectable()
 export class KernelTerminus extends StageWithLevels {
     private static id: string = 'kernelTerminus';
     private static name: string = 'Kernel Terminus';
@@ -54,7 +57,7 @@ export class KernelTerminus extends StageWithLevels {
             hasBoss: true,
             bossRoomCount: 2,
             enemyDifficultyMultiplier: 1.45,
-            teleporterDestination: Lobby.getMetadata().id,
+            teleporterDestination: Lobby.getStageMetadata().id,
             requiredProgress: 9,
         },
     };
@@ -187,13 +190,15 @@ export class KernelTerminus extends StageWithLevels {
             KernelTerminus.id,
             KernelTerminus.levelConfigs
         );
+
+        console.log("Creating KernelTerminus stage with ID:", stageId);
     }
 
     static getLevelStageIds(): readonly string[] {
         return [KernelTerminus.id, KernelTerminus.depth2Id, KernelTerminus.depth3Id] as const;
     }
 
-    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
+    static getStageMetadata(): StageMetadata {
         return {
             id: KernelTerminus.id,
             name: KernelTerminus.name,

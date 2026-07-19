@@ -4,7 +4,7 @@ import { FloatingIndicator, FloatingIndicatorConfig } from './FloatingIndicator'
 import { ItemDrop } from './items/ItemDrop';
 import { MoneyDrop } from './items/bits/MoneyDrop';
 import { XDataDrop } from './items/xdata/XDataDrop';
-import { singleton } from 'tsyringe';
+import { delay, inject, singleton } from 'tsyringe';
 
 /**
  * Manager for all floating indicators in the game (damage, EXP, tech points, etc.)
@@ -14,7 +14,7 @@ import { singleton } from 'tsyringe';
 export class FloatingIndicatorManager {
     private floatingIndicators: FloatingIndicator[] = [];
 
-    constructor(private readonly scene: THREE.Scene) {
+    constructor(@inject(delay(() => THREE.Scene)) private readonly scene: THREE.Scene) {
         this.scene = scene;
     }
 
