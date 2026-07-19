@@ -90,6 +90,7 @@ export class UIManager {
         mobileControlsManager: MobileControlsManager,
         private readonly playerUiFactory: PlayerUiFactory,
         private readonly startMenuFactory: StartMenuFactory,
+        private readonly inputManager: InputManager,
     ) {
         this.startScreen = document.getElementById('start-screen') as HTMLDivElement;
         this.fadeOverlay = document.getElementById('fade-overlay') as HTMLDivElement;
@@ -723,11 +724,11 @@ export class UIManager {
     /**
      * Handle death overlay controller input
      */
-    handleDeathOverlayInput(input: any): void {
+    handleDeathOverlayInput(): void {
         if (!this.deathOverlay || this.deathOverlay.style.display === 'none') return;
 
         // Navigate left (previous button)
-        const navigateLeft = input.isNavigateLeftPressed();
+        const navigateLeft = this.inputManager.isNavigateLeftPressed();
         if (navigateLeft && !this.lastNavigateLeftState) {
             if (this.deathOverlaySelectedIndex > 0) {
                 this.deathOverlaySelectedIndex--;
@@ -737,7 +738,7 @@ export class UIManager {
         this.lastNavigateLeftState = navigateLeft;
 
         // Navigate right (next button)
-        const navigateRight = input.isNavigateRightPressed();
+        const navigateRight = this.inputManager.isNavigateRightPressed();
         if (navigateRight && !this.lastNavigateRightState) {
             if (this.deathOverlaySelectedIndex < 1) {
                 this.deathOverlaySelectedIndex++;
@@ -747,7 +748,7 @@ export class UIManager {
         this.lastNavigateRightState = navigateRight;
 
         // Select button
-        const select = input.isSelectPressed();
+        const select = this.inputManager.isSelectPressed();
         if (select && !this.lastSelectState) {
             if (this.deathOverlaySelectedIndex === 0 && this.retryCallback) {
                 this.retryCallback();
@@ -829,16 +830,19 @@ export class UIManager {
         return this.skillUnlockOverlay?.style.display === 'flex';
     }
 
-    handleSkillUnlockOverlayInput(input: InputManager): void {
+    handleSkillUnlockOverlayInput(): void {
+        console.log("Handling skill unlock overlay input");
         if (!this.isSkillUnlockOverlayVisible()) return;
 
-        const select = input.isSelectPressed();
-        const cancel = input.isCancelPressed();
+        console.log("Skill unlock overlay is visible");
+        const select = this.inputManager.isSelectPressed();
+        const cancel = this.inputManager.isCancelPressed();
         const shouldClose = (select && !this.lastSkillUnlockSelectState) || (cancel && !this.lastSkillUnlockCancelState);
 
         this.lastSkillUnlockSelectState = select;
         this.lastSkillUnlockCancelState = cancel;
 
+        console.log(`Select: ${select}, Cancel: ${cancel}, ShouldClose: ${shouldClose}`);
         if (!shouldClose) return;
 
         this.skillUnlockOverlay.style.display = 'none';

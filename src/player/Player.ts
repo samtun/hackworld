@@ -1666,7 +1666,7 @@ export class Player extends BaseMesh {
         }
 
         // Apply luck multiplier to EXP gain
-        const luckBonusExp = amount * 0.05 * Math.log10(this.luck + 20); // +20 to smooth the curve for low luck values
+        const luckBonusExp = amount * 0.05 * Math.log10((this.luck + 20) / 20); // +20 to smooth the curve for low luck values
         const adjustedAmount = Math.floor(amount + luckBonusExp);
 
         this.exp += adjustedAmount;
@@ -1689,8 +1689,8 @@ export class Player extends BaseMesh {
         this.level++;
         this.emitSkillUnlockEvents(previousLevel, this.level);
 
-        // Award 4 stat points
-        this.statPointsAvailable += 4;
+        // Award 4 base stat points plus additional points depending on level (+1 per 25 levels, capped at 40)
+        this.statPointsAvailable += Math.min(4 + Math.floor(this.level / 25), 40);
 
         // Calculate new required EXP for next level
         if (this.level < this.MAX_LEVEL) {

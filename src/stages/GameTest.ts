@@ -263,7 +263,7 @@ export class GameTest extends BaseStage {
             maxHp: 1500,
             speed: 3.75,
             damage: 150,
-            baseExp: 250,
+            baseExp: 2500,
             itemDropChance: 0.30,
             techDropRateFactor: 1.3,
             xDataDropChanceWeight: 1.5,
@@ -272,7 +272,7 @@ export class GameTest extends BaseStage {
             blockChance: 0.2,
             size: 2.75,
             color: 0x663300,
-        } : {}, enemyType);
+        } : { baseExp: 100000, }, enemyType);
         enemy.update(0);
         this.enemies.push(enemy);
     }

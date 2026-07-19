@@ -432,8 +432,8 @@ export class Game {
         // Healing skill is unlocked at all times - unlock indeces start at 1
         if (skillIndex === 1) {
             this.uiManager.showSkillUnlockOverlay(
-                'Laser Skill Unlocked',
-                'Fires a focused ranged blast that pierces through enemies.',
+                'Ranged Skill Unlocked',
+                'Fires a focused ranged beam that pierces through enemies.',
                 '<span class="key-icon">Q</span> + <span class="key-icon">SPACE</span> / <span class="btn-icon xbox-lb">LB</span> + <span class="btn-icon xbox-a">A</span> / Mobile: Tap Laser HUD icon',
             );
             return;
@@ -441,7 +441,7 @@ export class Game {
 
         if (skillIndex === 2) {
             this.uiManager.showSkillUnlockOverlay(
-                'Area Skill Unlocked',
+                'Blast Skill Unlocked',
                 'Releases a high-damage expanding shockwave around the player.',
                 '<span class="key-icon">Q</span> + <span class="key-icon">K</span> / <span class="btn-icon xbox-lb">LB</span> + <span class="btn-icon xbox-x">X</span> / Mobile: Tap Area HUD icon',
             );
@@ -799,10 +799,12 @@ export class Game {
                 this.uiManager.update(this.player, dt);
 
                 // Handle death overlay input
-                this.uiManager.handleDeathOverlayInput(this.inputManager);
-                this.uiManager.handleSkillUnlockOverlayInput(this.inputManager);
+                this.uiManager.handleDeathOverlayInput();
             }
         }
+
+        // Handle skill unlock overlay input (even if a menu is open, so it can be closed)
+        this.uiManager.handleSkillUnlockOverlayInput();
 
         if (this.debugMode && this.physicsDebugger) {
             this.physicsDebugger.update();
