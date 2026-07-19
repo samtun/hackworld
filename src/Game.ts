@@ -33,6 +33,8 @@ import { XDataUpgradeManager } from './items/xdata/XDataUpgradeManager';
 import { MobileControlsManager } from './controls/MobileControlsManager';
 import { WorldFactory } from './WorldFactory';
 import { PauseMenuFactory } from './menus/PauseMenuFactory';
+import { ChipTrader } from './items/chips/ChipTrader';
+import { CoreTrader } from './items/cores/CoreTrader';
 
 @singleton()
 export class Game {
@@ -86,8 +88,8 @@ export class Game {
         private readonly dungeonSelectionManager: DungeonSelectionManager,
         private readonly inventoryManager: InventoryManager,
         private readonly WeaponTrader: WeaponTrader,
-        private readonly chipTrader: WeaponTrader,
-        private readonly coreTrader: WeaponTrader,
+        private readonly chipTrader: ChipTrader,
+        private readonly coreTrader: CoreTrader,
         private readonly npcDialogueManager: NpcDialogueManager,
         private readonly xDataUpgradeManager: XDataUpgradeManager,
         private readonly cardManager: CardManager,
