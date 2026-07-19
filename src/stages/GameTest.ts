@@ -272,7 +272,7 @@ export class GameTest extends BaseStage {
             blockChance: 0.2,
             size: 2.75,
             color: 0x663300,
-        } : { baseExp: 100000, }, enemyType);
+        } : { baseExp: 100, }, enemyType);
         enemy.update(0);
         this.enemies.push(enemy);
     }
