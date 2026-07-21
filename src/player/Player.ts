@@ -25,7 +25,7 @@ import { AudioManager } from '../AudioManager';
 import { container, delay, inject } from 'tsyringe';
 import { PlayerActionType } from './PlayerActionType';
 import { SkillFactory } from './skills/SkillFactory';
-import { WeaponFactory } from '../items/ItemFactory';
+import { WeaponFactory } from '../items/weapons/WeaponFactory';
 
 export const PLAYER_COLLISION_GROUP = 2;
 
@@ -280,7 +280,7 @@ export class Player extends BaseMesh {
         super('models/main_character.glb', assetManager);
         this.id = crypto.randomUUID();
         this.position = position.clone() as any;
-        this.chargeFx = assetManager.get('models/fx/dash_charge_fx.glb').scene.clone();
+        this.chargeFx = this.assetManager.get('models/fx/dash_charge_fx.glb').scene.clone();
         this.chargeFx.receiveShadow = false;
         this.chargeFx.traverse((node) => {
             if (!(node instanceof THREE.Mesh)) {

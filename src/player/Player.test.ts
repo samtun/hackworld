@@ -1,4 +1,6 @@
+import * as CANNON from 'cannon-es';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { Player } from './Player';
 import { StatType } from '../StatType';
 import { CoreItem } from '../items/cores/CoreItem';
@@ -10,162 +12,123 @@ import { CardCollection } from '../items/cards/CardCollection';
 import { Album } from '../items/cards/Card';
 import { Enemy } from '../enemies/Enemy';
 import { AudioManager } from '../AudioManager';
+import { SkillTechType } from './skills/SkillType';
+import { AssetManager } from '../AssetManager';
+import { InputManager } from '../controls/InputManager';
+import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
+import { WeaponRepository } from '../items/weapons/WeaponRepository';
+import { WeaponFactory } from '../items/weapons/WeaponFactory';
+import { SkillFactory } from './skills/SkillFactory';
+import { mock, mockDeep } from 'vitest-mock-extended';
+import * as THREE from 'three';
+import { container } from 'tsyringe';
+import { Weapon } from '../items/weapons/Weapon';
+import { RangedSkill } from './skills/RangedSkill';
+
+interface PlayerDependencyOverrides {
+    position?: CANNON.Vec3;
+    physicsMaterial?: CANNON.Material;
+    assetManager?: AssetManager;
+    scene?: THREE.Scene;
+    physicsWorld?: CANNON.World;
+    inputManager?: InputManager;
+    floatingIndicatorManager?: FloatingIndicatorManager;
+    tierManager?: TierManager;
+    weaponRepository?: WeaponRepository;
+    cardCollection?: CardCollection;
+    audioManager?: AudioManager;
+    skillFactory?: SkillFactory;
+    weaponFactory?: WeaponFactory;
+}
+
+const stableTier = {
+    name: Tier.STABLE,
+    minPercent: -3,
+    maxPercent: 3,
+    rimColor: '#ffffff',
+    innerColor: '#999999',
+    traderChance: 0.44,
+    minLevel: 0,
+};
 
 /**
  * Create a minimal Player instance for unit testing without instantiating
  * Three.js / Cannon-es objects (bypasses the constructor).
  */
-function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
-    const player = Object.create(Player.prototype) as Player;
+function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
+    container.clearInstances();
 
-    // Private readonly constants (normally assigned in class field initializers)
-    Object.assign(player, {
-        MAX_STAT_VALUE: 9999,
-        MAX_HP_VALUE: 999999,
-        MAX_TP_VALUE: 999999,
-        HP_TP_UPGRADE_AMOUNT: 5,
-        STRENGTH_DEFENSE_UPGRADE_AMOUNT: 1,
-        STAT_FORMULA_NUMERATOR: 0.27,
-        STAT_FORMULA_LOG_BASE: 9999,
-        LUCK_DIVISOR: 40000,
-        CRITICAL_HIT_MULTIPLIER: 1.5,
-        MAX_LEVEL: 9999,
-        LEVEL_HP_MULTIPLIER: 10.01,
-        LEVEL_TP_MULTIPLIER: 5.005,
-        EXP_BASE: 350,
-        EXP_LINEAR_FACTOR: 30,
-        EXP_QUADRATIC_FACTOR: 0.07,
-        LASER_UNLOCK_LEVEL: 10,
-        HEAL_UNLOCK_LEVEL: 1,
-        AREA_UNLOCK_LEVEL: 25,
-        TECH_POINT_CAP: 9999,
-        HIT_INVULNERABILITY: 1.0,
-        STUN_TIME: 0.5,
-        KNOCKBACK_FORCE: 80,
-        CHARGE_DURATION: 0.8,
-        WALK_SPEED: 6,
-        LEVEL_UP_PARTICLE_LIFETIME: 0.6,
-        LEVEL_UP_SHOCKWAVE_DELAY: 0.4,
-        LEVEL_UP_SHOCKWAVE_RANGE: 15,
-        SKILL_ANIMATION_MAX_DURATION: 2.0,
+    const dummyMesh = new THREE.Mesh(
+        new THREE.BufferGeometry(),
+        new THREE.MeshStandardMaterial({ color: 0xffffff })
+    );
 
-        // Base stats
-        baseHp: 170,
-        baseTp: 60,
-        baseStrength: 1,
-        baseDefense: 1,
-        baseAgility: 1,
-        baseLuck: 1,
+    const dummyRightHandBone = new THREE.Bone();
+    dummyRightHandBone.name = 'HandR'; // Der Name, den deine Player-Klasse sucht
 
-        // Current stats
-        level: 1,
-        exp: 0,
-        expRequired: 350,
-        maxHp: 170,
-        hp: 170,
-        maxTp: 60,
-        tp: 60,
-        strength: 1,
-        defense: 1,
-        agility: 1,
-        luck: 1,
-        invulnerableTimer: 0,
-        statPointsAvailable: 0,
-        xData: 0,
-        boosterPacks: 0,
-        bits: 0,
+    // 2. Baue die Dummy-Szene auf
+    const dummyScene = new THREE.Group();
+    dummyScene.add(dummyMesh);
+    dummyScene.add(dummyRightHandBone);
 
-        // Upgrade levels
-        strengthUpgrades: 0,
-        defenseUpgrades: 0,
-        hpUpgrades: 0,
-        tpUpgrades: 0,
-        agilityUpgrades: 0,
-        luckUpgrades: 0,
+    // 3. Bereite das GLTF-Mock vor
+    const gltfMock = mock<GLTF>();
+    gltfMock.scene = dummyScene;
 
-        // Stat points from leveling
-        strengthPoints: 0,
-        defensePoints: 0,
-        agilityPoints: 0,
-        luckPoints: 0,
+    const defaultAssetManagerMock = mockDeep<AssetManager>();
+    defaultAssetManagerMock.get.mockReturnValue(gltfMock);
 
-        // State flags
-        isDead: false,
-        isLevelingUp: false,
-        isDashing: false,
-        isChargingAttack: false,
-        shockwavePending: false,
-        levelUpShockwaveTimer: 0,
-        stunTimer: 0,
-        levelUpParticles: [],
-        levelUpParticleTimer: 0,
-        chargeParticles: [],
+    const defaultWeaponRepositoryMock = mock<WeaponRepository>();
+    defaultWeaponRepositoryMock.getWeaponById.mockReturnValue(mockDeep<WeaponItem>());
 
-        // Inventory & items
-        inventory: [],
-        currentWeaponType: WeaponType.SWORD,
-        tech: {
-            [WeaponType.SWORD]: 0,
-            [WeaponType.DUAL_BLADE]: 0,
-            [WeaponType.LANCE]: 0,
-            [WeaponType.HAMMER]: 0,
-        },
-        skillTech: {
-            RECOVERY: 0,
-            BLAST: 0,
-            RANGED: 0,
-        },
+    const defaultWeaponFactoryMock = mock<WeaponFactory>();
+    defaultWeaponFactoryMock.createWeapon.mockReturnValue(mockDeep<Weapon>());
 
-        // Mocked dependencies
-        floatingIndicatorManager: {
-            spawnDamage: vi.fn(),
-            spawnHeal: vi.fn(),
-            spawnTp: vi.fn(),
-            spawnTech: vi.fn(),
-        },
-        body: {
-            position: { x: 0, y: 0, z: 0, copy: vi.fn(), vsub: (_v: any) => ({ x: 0, y: 0, z: 0, length: () => 0, normalize: vi.fn() }) },
-            velocity: { x: 0, y: 0, z: 0, set: vi.fn() },
-            applyImpulse: vi.fn(),
-            type: 2, // CANNON.Body.DYNAMIC
-        },
-        weapon: {
-            stopAttack: vi.fn(),
-            isAttacking: false,
-            damage: 10,
-            weaponType: WeaponType.SWORD,
-        },
-        mesh: {
-            position: { x: 0, y: 0, z: 0, copy: vi.fn() },
-            quaternion: { slerp: vi.fn() },
-            children: [],
-            parent: null,
-            add: vi.fn(),
-            remove: vi.fn(),
-        },
-        position: { copy: vi.fn() },
-        world: { bodies: [] },
-        scene: {},
-        actions: {},
-        currentAction: null,
-        skills: [],
-        deathCallback: undefined,
+    const defaultSkillFactoryMock = mock<SkillFactory>();
+    defaultSkillFactoryMock.createSkill.mockReturnValue(mock<RangedSkill>());
 
-        // Block state
-        isBlocking: false,
-        blockTimer: 0,
-        BLOCK_DURATION: 0.5,
-        blockShield: { attachTo: vi.fn(), detach: vi.fn(), dispose: vi.fn() },
-        isGrounded: true,
+    const finalAssetManager = overrides.assetManager || defaultAssetManagerMock;
+    const finalWeaponRepository = overrides.weaponRepository || defaultWeaponRepositoryMock;
+    const finalWeaponFactory = overrides.weaponFactory || defaultWeaponFactoryMock;
+    const finalSkillFactory = overrides.skillFactory || defaultSkillFactoryMock;
 
-        // Blob shadow
-        blobShadow: { update: vi.fn(), cleanup: vi.fn(), visible: true, setScale: vi.fn() },
-    });
+    container.registerInstance(AssetManager, finalAssetManager);
+    container.registerInstance(WeaponRepository, finalWeaponRepository);
+    container.registerInstance(WeaponFactory, finalWeaponFactory);
+    container.registerInstance(SkillFactory, finalSkillFactory);
 
-    // Override syncPosition to avoid THREE.Vector3 creation
-    (player as any).syncPosition = vi.fn();
+    const {
+        position = new CANNON.Vec3(0, 0, 0),
+        physicsMaterial = mock<CANNON.Material>(),
+        scene = mockDeep<THREE.Scene>(),
+        assetManager = finalAssetManager,
+        physicsWorld = new CANNON.World(),
+        inputManager = mock<InputManager>(),
+        floatingIndicatorManager = mock<FloatingIndicatorManager>(),
+        tierManager = mock<TierManager>(),
+        weaponRepository = finalWeaponRepository,
+        cardCollection = mock<CardCollection>(),
+        audioManager = mock<AudioManager>(),
+        skillFactory = finalSkillFactory,
+        weaponFactory = finalWeaponFactory,
+    } = overrides;
 
-    Object.assign(player, overrides);
+    const player = new Player(
+        position,
+        physicsMaterial,
+        assetManager,
+        scene,
+        physicsWorld,
+        inputManager,
+        floatingIndicatorManager,
+        tierManager,
+        weaponRepository,
+        cardCollection,
+        audioManager,
+        skillFactory,
+        weaponFactory,
+    );
+
     return player;
 }
 
@@ -618,8 +581,10 @@ describe('Player.gainExp', () => {
     });
 
     it('plays the level-up sound when leveling up', () => {
+        const audioManagerMock = mock<AudioManager>();
+        const player = makePlayer({ audioManager: audioManagerMock });
         player.gainExp(330);
-        expect(AudioManager.Instance.playLevelUp).toHaveBeenCalledOnce();
+        expect(audioManagerMock.playLevelUp).toHaveBeenCalledOnce();
     });
 
     it('updates expRequired after level up', () => {
@@ -889,8 +854,11 @@ describe('Player.addStatPoint', () => {
     });
 
     it('plays the upgrade sound when a stat point is spent', () => {
+        const audioManagerMock = mock<AudioManager>();
+        const player = makePlayer({ audioManager: audioManagerMock });
+        player.statPointsAvailable = 5;
         player.addStatPoint(StatType.STRENGTH);
-        expect(AudioManager.Instance.playUpgrade).toHaveBeenCalledOnce();
+        expect(audioManagerMock.playUpgrade).toHaveBeenCalledOnce();
     });
 
     it('returns false when no points available', () => {
@@ -915,8 +883,6 @@ describe('Player.addStatPoint', () => {
 // ─── WeaponItem canEquip ───────────────────────────────────────────────────────
 
 describe('WeaponItem canEquip', () => {
-    const stableTier = TierManager.Instance.tiers.get(Tier.STABLE)!;
-
     it('allows equipping level-1 weapon with 0 tech', () => {
         const player = makePlayer();
         const weapon = new WeaponItem('w1', 'Sword', 100, 50, WeaponType.SWORD, 10, 'model.glb', stableTier, 1);
@@ -1072,20 +1038,16 @@ describe('Player.handleBlock', () => {
 // ─── Player.equipWeapon ───────────────────────────────────────────────────────
 
 describe('Player.equipWeapon', () => {
-    const stableTier = TierManager.Instance.tiers.get(Tier.STABLE)!;
-
     it('equips the weapon matching the given id from inventory', () => {
         const weapon = new WeaponItem('w1', 'Sword', 100, 50, WeaponType.SWORD, 10, 'model.glb', stableTier, 1);
-        const player = makePlayer({
-            inventory: [weapon],
-            setWeapon: vi.fn(),
-        });
+        const player = makePlayer();
+        player.inventory.push(weapon);
         player.equipWeapon('w1');
         expect(weapon.isEquipped).toBe(true);
     });
 
     it('does nothing when no item with the given id is found', () => {
-        const player = makePlayer({ inventory: [] });
+        const player = makePlayer();
         expect(() => player.equipWeapon('non-existent')).not.toThrow();
     });
 });
@@ -1095,14 +1057,15 @@ describe('Player.equipWeapon', () => {
 describe('Player.equipCore', () => {
     it('equips the core matching the given id from inventory', () => {
         const core = new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3 }, 1);
-        const recalc = vi.fn();
-        const player = makePlayer({ inventory: [core], level: 1, recalculateStats: recalc });
+        const player = makePlayer();
+        player.level = 1;
+        player.inventory.push(core);
         player.equipCore('core1');
         expect(core.isEquipped).toBe(true);
     });
 
     it('does nothing when no item with the given id is found', () => {
-        const player = makePlayer({ inventory: [] });
+        const player = makePlayer();
         expect(() => player.equipCore('non-existent')).not.toThrow();
     });
 });
@@ -1112,14 +1075,15 @@ describe('Player.equipCore', () => {
 describe('Player.equipChip', () => {
     it('equips the chip matching the given id from inventory', () => {
         const chip = new ChipItem('chip1', 'Firewire', 150, 75, 'firewire' as any, { weaponRangeMultiplier: 1.1 }, 1);
-        const recalc = vi.fn();
-        const player = makePlayer({ inventory: [chip], level: 1, recalculateStats: recalc });
+        const player = makePlayer();
+        player.inventory.push(chip);
+        player.level = 1;
         player.equipChip('chip1');
         expect(chip.isEquipped).toBe(true);
     });
 
     it('does nothing when no item with the given id is found', () => {
-        const player = makePlayer({ inventory: [] });
+        const player = makePlayer();
         expect(() => player.equipChip('non-existent')).not.toThrow();
     });
 });
@@ -1128,21 +1092,23 @@ describe('Player.equipChip', () => {
 
 describe('Player.getWeaponRangeMultiplier', () => {
     it('returns 1.0 when no chip is equipped', () => {
-        const player = makePlayer({ inventory: [] });
+        const player = makePlayer();
         expect(player.getWeaponRangeMultiplier()).toBe(1.0);
     });
 
     it('returns the multiplier from an equipped chip', () => {
         const chip = new ChipItem('chip1', 'Firewire', 150, 75, 'firewire' as any, { weaponRangeMultiplier: 1.15 }, 1);
         chip.isEquipped = true;
-        const player = makePlayer({ inventory: [chip] });
+        const player = makePlayer();
+        player.inventory.push(chip);
         expect(player.getWeaponRangeMultiplier()).toBe(1.15);
     });
 
     it('returns 1.0 when chip has no weaponRangeMultiplier stat', () => {
         const chip = new ChipItem('chip1', 'Overclock', 150, 75, 'overclock' as any, {}, 1);
         chip.isEquipped = true;
-        const player = makePlayer({ inventory: [chip] });
+        const player = makePlayer();
+        player.inventory.push(chip);
         expect(player.getWeaponRangeMultiplier()).toBe(1.0);
     });
 });
@@ -1151,14 +1117,15 @@ describe('Player.getWeaponRangeMultiplier', () => {
 
 describe('Player.getCriticalHitMultiplier', () => {
     it('returns base 1.5 when no chip is equipped', () => {
-        const player = makePlayer({ inventory: [] });
+        const player = makePlayer();
         expect(player.getCriticalHitMultiplier()).toBe(1.5);
     });
 
     it('returns boosted multiplier from an equipped Razorwire chip', () => {
         const chip = new ChipItem('chip1', 'Razorwire', 150, 50, 'razorwire' as any, { criticalDamageMultiplier: 1.20 }, 1);
         chip.isEquipped = true;
-        const player = makePlayer({ inventory: [chip] });
+        const player = makePlayer();
+        player.inventory.push(chip);
         // 1.5 * 1.20 = 1.80
         expect(player.getCriticalHitMultiplier()).toBeCloseTo(1.80, 4);
     });
@@ -1166,7 +1133,8 @@ describe('Player.getCriticalHitMultiplier', () => {
     it('returns base 1.5 when chip has no criticalDamageMultiplier stat', () => {
         const chip = new ChipItem('chip1', 'Firewire', 150, 75, 'firewire' as any, { weaponRangeMultiplier: 1.15 }, 1);
         chip.isEquipped = true;
-        const player = makePlayer({ inventory: [chip] });
+        const player = makePlayer();
+        player.inventory.push(chip);
         expect(player.getCriticalHitMultiplier()).toBe(1.5);
     });
 });
@@ -1175,21 +1143,23 @@ describe('Player.getCriticalHitMultiplier', () => {
 
 describe('Player.getHealingMultiplier', () => {
     it('returns 1.0 when no chip is equipped', () => {
-        const player = makePlayer({ inventory: [] });
+        const player = makePlayer();
         expect(player.getHealingMultiplier()).toBe(1.0);
     });
 
     it('returns the multiplier from an equipped Patchwork chip', () => {
         const chip = new ChipItem('chip1', 'Patchwork', 150, 50, 'patchwork' as any, { healingMultiplier: 1.30 }, 1);
         chip.isEquipped = true;
-        const player = makePlayer({ inventory: [chip] });
+        const player = makePlayer();
+        player.inventory.push(chip);
         expect(player.getHealingMultiplier()).toBe(1.30);
     });
 
     it('returns 1.0 when chip has no healingMultiplier stat', () => {
         const chip = new ChipItem('chip1', 'Overclock', 150, 75, 'overclock' as any, { walkSpeedMultiplier: 1.10 }, 1);
         chip.isEquipped = true;
-        const player = makePlayer({ inventory: [chip] });
+        const player = makePlayer();
+        player.inventory.push(chip);
         expect(player.getHealingMultiplier()).toBe(1.0);
     });
 });
@@ -1359,8 +1329,6 @@ describe('Player.tryIncrementWeaponTech', () => {
 
 // ─── tryIncrementSkillTech ────────────────────────────────────────────────────
 
-import { SkillTechType } from './skills/SkillType';
-
 describe('Player.tryIncrementSkillTech', () => {
     it('increments skill tech when random roll succeeds', () => {
         const player = makePlayer();
@@ -1499,54 +1467,72 @@ describe('Player collection bonus getters', () => {
     });
 
     beforeEach(() => {
-
-
+        player = makePlayer();
     });
 
     describe('collectionBonusItemDropChance', () => {
         it('returns 0 when no B-collections are complete', () => {
             const cardCollectionMock = mock<CardCollection>();
-            cardCollectionMock.isComplete.mockReturnValue(false);
-            player = makePlayer({ level: 1, luck: 1, LUCK_DIVISOR: 40000, cardCollection: cardCollectionMock });
+            cardCollectionMock.isAlbumComplete.mockReturnValue(false);
+            player = makePlayer({ cardCollection: cardCollectionMock });
+            player.level = 1;
+            player.luck = 1;
             expect(player.collectionBonusItemDropChance).toBe(0);
         });
 
         it('returns 0.02 when only B.001 is complete', () => {
-            mockComplete(Album.B001);
+            const cardCollectionMock = mock<CardCollection>();
+            cardCollectionMock.isAlbumComplete.calledWith(Album.B001).mockReturnValue(true);
+            player = makePlayer({ cardCollection: cardCollectionMock });
             expect(player.collectionBonusItemDropChance).toBeCloseTo(0.02);
         });
 
         it('returns 0.10 when B.001, B.002, and B.003 are all complete', () => {
-            mockComplete(Album.B001, Album.B002, Album.B003);
+            const cardCollectionMock = mock<CardCollection>();
+            cardCollectionMock.isAlbumComplete.calledWith(Album.B001).mockReturnValue(true);
+            cardCollectionMock.isAlbumComplete.calledWith(Album.B002).mockReturnValue(true);
+            cardCollectionMock.isAlbumComplete.calledWith(Album.B003).mockReturnValue(true);
+            player = makePlayer({ cardCollection: cardCollectionMock });
             expect(player.collectionBonusItemDropChance).toBeCloseTo(0.10);
         });
     });
 
     describe('collectionBonusWeaponDropFactor', () => {
         it('returns 0 when no B-collections are complete', () => {
-            mockComplete();
+            const cardCollectionMock = mock<CardCollection>();
+            cardCollectionMock.isAlbumComplete.mockReturnValue(false);
+            player = makePlayer({ cardCollection: cardCollectionMock });
             expect(player.collectionBonusWeaponDropFactor).toBe(0);
         });
 
         it('returns 0.02 when only B.002 is complete', () => {
-            mockComplete(Album.B002);
+            const cardCollectionMock = mock<CardCollection>();
+            cardCollectionMock.isAlbumComplete.calledWith(Album.B002).mockReturnValue(true);
+            player = makePlayer({ cardCollection: cardCollectionMock });
             expect(player.collectionBonusWeaponDropFactor).toBeCloseTo(0.02);
         });
 
         it('returns 0.07 when B.002 and B.003 are both complete', () => {
-            mockComplete(Album.B002, Album.B003);
+            const cardCollectionMock = mock<CardCollection>();
+            cardCollectionMock.isAlbumComplete.calledWith(Album.B002).mockReturnValue(true);
+            cardCollectionMock.isAlbumComplete.calledWith(Album.B003).mockReturnValue(true);
+            player = makePlayer({ cardCollection: cardCollectionMock });
             expect(player.collectionBonusWeaponDropFactor).toBeCloseTo(0.07);
         });
     });
 
     describe('collectionBonusSkillCooldownReduction', () => {
         it('returns 0 when C.002 is not complete', () => {
-            mockComplete();
+            const cardCollectionMock = mock<CardCollection>();
+            cardCollectionMock.isAlbumComplete.calledWith(Album.C002).mockReturnValue(false);
+            player = makePlayer({ cardCollection: cardCollectionMock });
             expect(player.collectionBonusSkillCooldownReduction).toBe(0);
         });
 
         it('returns 0.10 when C.002 is complete', () => {
-            mockComplete(Album.C002);
+            const cardCollectionMock = mock<CardCollection>();
+            cardCollectionMock.isAlbumComplete.calledWith(Album.C002).mockReturnValue(true);
+            player = makePlayer({ cardCollection: cardCollectionMock });
             expect(player.collectionBonusSkillCooldownReduction).toBeCloseTo(0.10);
         });
     });
@@ -1643,7 +1629,7 @@ describe('Player.executeLevelUpShockwave', () => {
 
 describe('Player.handleSkillAnimation', () => {
     it('returns false immediately when isUsingSkill is false', () => {
-        const player = makePlayer({ isUsingSkill: false, skillAnimationTimer: 0 });
+        const player = makePlayer();
         (player as any).haltMovement = vi.fn();
 
         const result = (player as any).handleSkillAnimation(0.1);
@@ -1652,28 +1638,33 @@ describe('Player.handleSkillAnimation', () => {
         expect((player as any).haltMovement).not.toHaveBeenCalled();
     });
 
-    it('returns true and halts movement while isUsingSkill is true within max duration', () => {
-        const player = makePlayer({ isUsingSkill: true, skillAnimationTimer: 0 });
-        (player as any).haltMovement = vi.fn();
+    it('halts movement while using skill', () => {
+        const inputManagerMock = mock<InputManager>();
+        inputManagerMock.getMovementVector.mockReturnValue(new THREE.Vector2(10, 10));
+        const player = makePlayer({ inputManager: inputManagerMock });
+        player.update(0.1); // Make player move
+        player.update(0.1); // Make player move
+        expect(player.position.x).toBeCloseTo(0.7071);
+        expect(player.position.y).toBe(0);
+        expect(player.position.z).toBeCloseTo(0.7071);
 
-        const result = (player as any).handleSkillAnimation(0.1);
+        inputManagerMock.isSkill1JustPressed.mockReturnValue(true);
+        player.update(0.1); // Trigger skill usage
 
-        expect(result).toBe(true);
-        expect((player as any).skillAnimationTimer).toBeCloseTo(0.1);
-        expect((player as any).haltMovement).toHaveBeenCalled();
+        expect(player.position.x).toBeCloseTo(0.7071);
+        expect(player.position.y).toBe(0);
+        expect(player.position.z).toBeCloseTo(0.7071);
     });
 
     it('force-releases the skill lock when skillAnimationTimer exceeds SKILL_ANIMATION_MAX_DURATION', () => {
-        const maxDuration = (makePlayer() as any).SKILL_ANIMATION_MAX_DURATION as number;
-        const player = makePlayer({ isUsingSkill: true, skillAnimationTimer: maxDuration - 0.01 });
-        (player as any).haltMovement = vi.fn();
+        const inputManagerMock = mock<InputManager>();
+        inputManagerMock.isSkill1JustPressed.mockReturnValue(true);
+        const player = makePlayer({ inputManager: inputManagerMock });
+        player.update(0.1); // triggers skill usage
+        player.update(2.1); // exceeds max duration
 
-        // One tick that pushes the timer over the limit
-        const result = (player as any).handleSkillAnimation(0.02);
-
-        expect(result).toBe(false);
-        expect((player as any).isUsingSkill).toBe(false);
-        expect((player as any).skillAnimationTimer).toBe(0);
+        expect(player.isUsingSkill).toBe(false);
+        expect(player.skillAnimationTimer).toBe(0);
     });
 });
 

@@ -10,7 +10,7 @@ import { AssetManager } from "../AssetManager";
 import { TierManager } from "../items/TierManager";
 import { WeaponRepository } from "../items/weapons/WeaponRepository";
 import { SkillFactory } from "./skills/SkillFactory";
-import { WeaponFactory } from "../items/ItemFactory";
+import { WeaponFactory } from "../items/weapons/WeaponFactory";
 
 @singleton()
 export class PlayerFactory {

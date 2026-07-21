@@ -1,8 +1,8 @@
 import { delay, inject, singleton } from "tsyringe";
 import * as CANNON from "cannon-es";
-import { AssetManager } from "../AssetManager";
-import { Weapon } from "./weapons/Weapon";
-import { WeaponType } from "./weapons/WeaponType";
+import { AssetManager } from "../../AssetManager";
+import { Weapon } from "./Weapon";
+import { WeaponType } from "./WeaponType";
 
 @singleton()
 export class WeaponFactory {
