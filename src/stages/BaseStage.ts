@@ -85,6 +85,7 @@ export abstract class BaseStage {
 
     // Collection of teleporters. Main teleporter to exit the stage is at index 0
     teleporters: Teleporter[] = [];
+    // TODO: check if this can be removed, since it contains the same bodies as the physics world bodies
     bodies: CANNON.Body[] = [];
     meshes: (THREE.Mesh | THREE.Group | THREE.Object3D)[] = [];
     enemies: Enemy[] = [];

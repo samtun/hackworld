@@ -280,7 +280,7 @@ export class Player extends BaseMesh {
         super('models/main_character.glb', assetManager);
         this.id = crypto.randomUUID();
         this.position = position.clone() as any;
-        this.chargeFx = this.assetManager.get('models/fx/dash_charge_fx.glb').scene.clone();
+        this.chargeFx = assetManager.get('models/fx/dash_charge_fx.glb').scene.clone();
         this.chargeFx.receiveShadow = false;
         this.chargeFx.traverse((node) => {
             if (!(node instanceof THREE.Mesh)) {
