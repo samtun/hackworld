@@ -48,7 +48,8 @@ export class Player extends BaseMesh {
     public readonly MAX_STAT_VALUE = 9999;
     private readonly MAX_HP_VALUE = 999999;
     private readonly MAX_TP_VALUE = 999999;
-    private readonly HP_TP_UPGRADE_AMOUNT = 15;
+    private readonly HP_UPGRADE_AMOUNT = 15;
+    private readonly TP_UPGRADE_AMOUNT = 12;
     private readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
 
     // Stat effect formula constants
@@ -430,8 +431,8 @@ export class Player extends BaseMesh {
         this.defense = Math.min(Math.floor(this.baseDefense + this.defenseUpgrades + this.defensePoints), this.MAX_STAT_VALUE);
         this.agility = Math.min(Math.floor(this.baseAgility + this.agilityUpgrades + this.agilityPoints), this.MAX_STAT_VALUE);
         this.luck = Math.min(Math.floor(this.baseLuck + this.luckUpgrades + this.luckPoints), this.MAX_STAT_VALUE);
-        this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelHpBonus, this.MAX_HP_VALUE);
-        this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelTpBonus, this.MAX_TP_VALUE);
+        this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * this.HP_UPGRADE_AMOUNT) + levelHpBonus, this.MAX_HP_VALUE);
+        this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * this.TP_UPGRADE_AMOUNT) + levelTpBonus, this.MAX_TP_VALUE);
 
         // Ensure current HP/TP don't exceed new max
         if (this.hp > this.maxHp) this.hp = this.maxHp;
@@ -505,7 +506,7 @@ export class Player extends BaseMesh {
     // Calculate defense multiplier using formula: log10(0.0035x + 20) - 1.29 + 0.00001x
     private getDefenseMultiplier(): number {
         if (this.defense <= 0) return 0;
-        const multiplier = Math.log10(0.0035 * this.defense + 20) - 1.29 + 0.00001 * this.defense;
+        const multiplier = Math.log10(0.0035 * this.defense + 20 - 0.505) - 1.29 + 0.00001 * this.defense;
         return Math.max(0, multiplier);
     }
 
@@ -1343,7 +1344,7 @@ export class Player extends BaseMesh {
 
         // Apply defense multiplier to reduce damage
         const defenseMultiplier = 1 - this.getDefenseMultiplier();
-        const reducedDamage = Math.max(1, Math.floor(amount * defenseMultiplier));
+        const reducedDamage = Math.max(1, Math.ceil(amount * defenseMultiplier));
 
         this.hp -= reducedDamage;
         this.floatingIndicatorManager.spawnDamage(this.body.position, reducedDamage, isCriticalHit ? 'rgb(213, 0, 181)' : '#ff2424ff');
@@ -1839,20 +1840,31 @@ export class Player extends BaseMesh {
                 break;
             case StatType.HP:
                 currentLevel = this.hpUpgrades;
-                currentValue = this.baseHp + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelHpBonus;
+                currentValue = this.baseHp + (this.hpUpgrades * this.HP_UPGRADE_AMOUNT) + levelHpBonus;
                 break;
             case StatType.TP:
                 currentLevel = this.tpUpgrades;
-                currentValue = this.baseTp + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT) + levelTpBonus;
+                currentValue = this.baseTp + (this.tpUpgrades * this.TP_UPGRADE_AMOUNT) + levelTpBonus;
                 break;
         }
 
         // Check if stat would exceed cap
-        const isHpOrTp = statType === StatType.HP || statType === StatType.TP;
-        const upgradeAmount = isHpOrTp
-            ? this.HP_TP_UPGRADE_AMOUNT
-            : this.STRENGTH_DEFENSE_UPGRADE_AMOUNT;
-        const maxStatValue = isHpOrTp ? (statType === StatType.HP ? this.MAX_HP_VALUE : this.MAX_TP_VALUE) : this.MAX_STAT_VALUE;
+        const upgradeAmount = (() => {
+            switch (statType) {
+                case StatType.HP: return this.HP_UPGRADE_AMOUNT;
+                case StatType.TP: return this.TP_UPGRADE_AMOUNT;
+                default: return this.STRENGTH_DEFENSE_UPGRADE_AMOUNT;
+            }
+        })();
+
+        const maxStatValue = (() => {
+            switch (statType) {
+                case StatType.HP: return this.MAX_HP_VALUE;
+                case StatType.TP: return this.MAX_TP_VALUE;
+                default: return this.MAX_STAT_VALUE;
+            }
+        })();
+
         if (currentValue + upgradeAmount > maxStatValue) {
             console.log(`${statType} is already at max value (${maxStatValue})`);
             return false;
@@ -1879,12 +1891,12 @@ export class Player extends BaseMesh {
                 case StatType.HP:
                     this.hpUpgrades++;
                     // Heal player when upgrading HP
-                    this.hp += this.HP_TP_UPGRADE_AMOUNT;
+                    this.hp += this.HP_UPGRADE_AMOUNT;
                     break;
                 case StatType.TP:
                     this.tpUpgrades++;
                     // Restore TP when upgrading
-                    this.tp += this.HP_TP_UPGRADE_AMOUNT;
+                    this.tp += this.TP_UPGRADE_AMOUNT;
                     break;
             }
 
@@ -1908,9 +1920,9 @@ export class Player extends BaseMesh {
             case StatType.DEFENSE:
                 return Math.min(this.baseDefense + this.defenseUpgrades + this.defensePoints, this.MAX_STAT_VALUE);
             case StatType.HP:
-                return Math.min(100 + (this.hpUpgrades * this.HP_TP_UPGRADE_AMOUNT), this.MAX_HP_VALUE);
+                return Math.min(100 + (this.hpUpgrades * this.HP_UPGRADE_AMOUNT), this.MAX_HP_VALUE);
             case StatType.TP:
-                return Math.min(100 + (this.tpUpgrades * this.HP_TP_UPGRADE_AMOUNT), this.MAX_TP_VALUE);
+                return Math.min(100 + (this.tpUpgrades * this.TP_UPGRADE_AMOUNT), this.MAX_TP_VALUE);
             case StatType.AGILITY:
                 return Math.min(this.baseAgility + this.agilityUpgrades + this.agilityPoints, this.MAX_STAT_VALUE);
             case StatType.LUCK:
