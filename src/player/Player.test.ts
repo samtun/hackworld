@@ -53,7 +53,6 @@ const stableTier = {
     minLevel: 0,
 };
 
-
 function createDefaultPhysicsWorld(defaultPhysicsMaterial: CANNON.Material = new CANNON.Material('defaultMaterial')): CANNON.World {
     const floorShape = new CANNON.Plane();
     const floorBody = new CANNON.Body({
@@ -68,13 +67,19 @@ function createDefaultPhysicsWorld(defaultPhysicsMaterial: CANNON.Material = new
     return defaultPhysicsWorld;
 }
 
-/**
- * Create a minimal Player instance for unit testing without instantiating
- * Three.js / Cannon-es objects (bypasses the constructor).
- */
-function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
-    container.clearInstances();
+function createWeapon(isAttacking: boolean) {
+    const dummyWeapon = new Weapon(
+        createDefaultAssetManager(),
+        "dummyWeapon",
+        WeaponType.SWORD,
+        10,
+        mock<CANNON.World>()
+    );
+    dummyWeapon.isAttacking = isAttacking;
+    return dummyWeapon;
+}
 
+function createDefaultAssetManager(): AssetManager {
     const dummyMesh = new THREE.Mesh(
         new THREE.BufferGeometry(),
         new THREE.MeshStandardMaterial({ color: 0xffffff })
@@ -94,9 +99,19 @@ function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
 
     const defaultAssetManagerMock = mockDeep<AssetManager>();
     defaultAssetManagerMock.get.mockReturnValue(gltfMock);
+    return defaultAssetManagerMock;
+}
 
+/**
+ * Create a minimal Player instance for unit testing without instantiating
+ * Three.js / Cannon-es objects (bypasses the constructor).
+ */
+function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
+    container.clearInstances();
+
+    const weaponItem = new WeaponItem('weapon1', 'Test Weapon', 100, 50, WeaponType.SWORD, 10, "test.glb", stableTier);
     const defaultWeaponRepositoryMock = mock<WeaponRepository>();
-    defaultWeaponRepositoryMock.getWeaponById.mockReturnValue(mockDeep<WeaponItem>());
+    defaultWeaponRepositoryMock.getWeaponById.mockReturnValue(weaponItem);
 
     const defaultSkillFactoryMock = mock<SkillFactory>();
     const recoverySkillMock = mock<RecoverySkill>();
@@ -111,16 +126,16 @@ function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
 
     const defaultPhysicsMaterial = new CANNON.Material('defaultMaterial');
 
-    const finalAssetManager = overrides.assetManager || defaultAssetManagerMock;
+    const finalAssetManager = overrides.assetManager || createDefaultAssetManager();
 
-    const defaultWeaponFactoryMock = mock<WeaponFactory>();
+    const defaultWeaponFactoryMock = mockDeep<WeaponFactory>();
     defaultWeaponFactoryMock.createWeapon.mockReturnValue(
-        new Weapon(finalAssetManager,
-            "dummyWeapon",
-            WeaponType.SWORD,
-            10,
-            mock<CANNON.World>()
-        ));
+        createWeapon(false)
+    );
+
+    const defaultInputManagerMock = mockDeep<InputManager>();
+    defaultInputManagerMock.getMovementVector.mockReturnValue(new THREE.Vector2(0, 0));
+    const finalInputManager = overrides.inputManager || defaultInputManagerMock;
 
     const finalWeaponRepository = overrides.weaponRepository || defaultWeaponRepositoryMock;
     const finalWeaponFactory = overrides.weaponFactory || defaultWeaponFactoryMock;
@@ -138,7 +153,7 @@ function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
         scene = mockDeep<THREE.Scene>(),
         assetManager = finalAssetManager,
         physicsWorld = finalPhysicsWorld,
-        inputManager = mock<InputManager>(),
+        inputManager = finalInputManager,
         floatingIndicatorManager = mock<FloatingIndicatorManager>(),
         tierManager = mock<TierManager>(),
         weaponRepository = finalWeaponRepository,
@@ -164,6 +179,10 @@ function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
         weaponFactory,
     );
 
+    // Set position and update to ensure the player is not considered "airborne" at the start of tests
+    player.move(new CANNON.Vec3(0, 0.4, 0));
+    player.update(0.016);
+
     return player;
 }
 
@@ -180,8 +199,8 @@ describe('Player.recalculateStats', () => {
         expect(player.defense).toBe(1);
         expect(player.agility).toBe(1);
         expect(player.luck).toBe(1);
-        expect(player.maxHp).toBe(170);
-        expect(player.maxTp).toBe(60);
+        expect(player.maxHp).toBe(1700);
+        expect(player.maxTp).toBe(600);
     });
 
     it('adds X-Data upgrade amounts to stats', () => {
@@ -203,29 +222,29 @@ describe('Player.recalculateStats', () => {
     it('applies HP upgrade bonus', () => {
         (player as any).hpUpgrades = 4;
         player.recalculateStats();
-        // 170 + 4*5 = 190
-        expect(player.maxHp).toBe(190);
+        // 1700 + 4*15 = 1760
+        expect(player.maxHp).toBe(1760);
     });
 
     it('applies TP upgrade bonus', () => {
         (player as any).tpUpgrades = 6;
         player.recalculateStats();
-        // 60 + 6*5 = 90
-        expect(player.maxTp).toBe(90);
+        // 600 + 6*12 = 672
+        expect(player.maxTp).toBe(672);
     });
 
     it('adds level-based HP bonus', () => {
         (player as any).level = 2;
         player.recalculateStats();
-        // Math.floor(10.01 * (2-1)) = 10
-        expect(player.maxHp).toBe(180);
+        // Math.floor(100.01 * (2-1)) = 100
+        expect(player.maxHp).toBe(1800);
     });
 
     it('adds level-based TP bonus', () => {
         (player as any).level = 2;
         player.recalculateStats();
-        // Math.floor(5.005 * (2-1)) = 5
-        expect(player.maxTp).toBe(65);
+        // Math.floor(50.05 * (2-1)) = 50
+        expect(player.maxTp).toBe(650);
     });
 
     it('caps stats at MAX_STAT_VALUE', () => {
@@ -235,11 +254,11 @@ describe('Player.recalculateStats', () => {
     });
 
     it('clamps current HP to new maxHp if it exceeds it', () => {
-        player.hp = 500;
-        player.maxHp = 500;
-        // After recalculate at level 1, maxHp becomes 170 so hp should clamp
+        player.hp = 5000;
+        player.maxHp = 5000;
+        // After recalculate at level 1, maxHp becomes 1700 so hp should clamp
         player.recalculateStats();
-        expect(player.hp).toBe(170);
+        expect(player.hp).toBe(1700);
     });
 
     it('applies equipped core stat bonuses', () => {
@@ -283,27 +302,29 @@ describe('Player.recalculateStats', () => {
 
 describe('Player.getCriticalChance', () => {
     it('returns the correct value at agility 1 (base)', () => {
-        // Formula: 0.02 + (log10(agility + 50) * 7 - 11.9) * 0.01
-        // 0.02 + (log10(51) * 7 - 11.9) * 0.01 ≈ 0.02053
+        // log10(0.0035 * 1 + 20) - 1.29 + 0.00001 * 1 ≈ 0.01111
         const player = makePlayer();
-        expect(player.getCriticalChance()).toBeCloseTo(0.02053, 4);
+        expect(player.getCriticalChance()).toBeCloseTo(0.01111, 4);
     });
 
     it('returns the correct value at agility 100', () => {
-        // 0.02 + (log10(150) * 7 - 11.9) * 0.01 ≈ 0.05333
-        const player = makePlayer({ agility: 100 } as any);
-        expect(player.getCriticalChance()).toBeCloseTo(0.05333, 4);
+        // log10(0.0035 * 100 + 20) - 1.29 + 0.00001 * 100 ≈ 0.019564414
+        const player = makePlayer();
+        player.agility = 100;
+        expect(player.getCriticalChance()).toBeCloseTo(0.01956, 4);
     });
 
     it('returns the correct value at agility 9999 (max)', () => {
-        // 0.02 + (log10(10049) * 7 - 11.9) * 0.01 ≈ 0.18115
-        const player = makePlayer({ agility: 9999 } as any);
-        expect(player.getCriticalChance()).toBeCloseTo(0.18115, 4);
+        // log10(0.0035 * 9999 + 20) - 1.29 + 0.00001 * 9999 ≈ 0.18115
+        const player = makePlayer();
+        player.agility = 9999;
+        expect(player.getCriticalChance()).toBeCloseTo(0.55032, 4);
     });
 
     it('increases with agility', () => {
         const low = makePlayer();
-        const high = makePlayer({ agility: 500 } as any);
+        const high = makePlayer();
+        high.agility = 500;
         expect(high.getCriticalChance()).toBeGreaterThan(low.getCriticalChance());
     });
 });
@@ -327,25 +348,30 @@ describe('Player.weaponDropBonusFactor', () => {
 
     it('caps at 1.5 at level 420 (the formula reaches 1.5 exactly at t=1.0)', () => {
         // t = (420 - 1) / (420 - 1) = 1.0 → factor = min(1 + 0.5 * 1, 1.5) = 1.5
-        const player = makePlayer({ level: 420 } as any);
+        const player = makePlayer();
+        player.level = 420;
         expect(player.weaponDropBonusFactor).toBe(1.5);
     });
 
     it('is still below 1.5 at level 419 (one below the cap threshold)', () => {
         // t = 418/419 < 1 → factor < 1.5; confirms the cap is exactly at level 420
-        const player = makePlayer({ level: 419 } as any);
+        const player = makePlayer();
+        player.level = 419;
         expect(player.weaponDropBonusFactor).toBeCloseTo(1.4976, 3);
         expect(player.weaponDropBonusFactor).toBeLessThan(1.5);
     });
 
     it('caps at 1.5 at very high levels', () => {
-        const player = makePlayer({ level: 9999 } as any);
+        const player = makePlayer();
+        player.level = 9999;
         expect(player.weaponDropBonusFactor).toBe(1.5);
     });
 
     it('increases monotonically with level', () => {
-        const p100 = makePlayer({ level: 100 } as any);
-        const p200 = makePlayer({ level: 200 } as any);
+        const p100 = makePlayer();
+        p100.level = 100;
+        const p200 = makePlayer();
+        p200.level = 200;
         expect(p200.weaponDropBonusFactor).toBeGreaterThan(p100.weaponDropBonusFactor);
     });
 });
@@ -402,18 +428,18 @@ describe('Player.takeDamage', () => {
     it('reduces HP by damage amount (no defense reduction at defense=1)', () => {
         player.takeDamage(30);
         // defense=1 → getDefenseMultiplier()=0 → no reduction
-        expect(player.hp).toBe(140);
+        expect(player.hp).toBe(1670);
     });
 
     it('ensures minimum 1 damage even with very high defense', () => {
-        (player as any).defense = 9999;
+        player.defense = 9999;
         player.takeDamage(1);
         // reducedDamage = Math.max(1, ...) ensures at least 1
-        expect(player.hp).toBe(169);
+        expect(player.hp).toBe(1699);
     });
 
     it('reduces damage with higher defense', () => {
-        (player as any).defense = 1000;
+        player.defense = 1000;
         const before = player.hp;
         player.takeDamage(100);
         expect(player.hp).toBeGreaterThan(before - 100); // damage is reduced
@@ -434,20 +460,15 @@ describe('Player.takeDamage', () => {
     });
 
     it('does not apply damage when invulnerable', () => {
-        player.invulnerableTimer = 0.5;
+        player.takeDamage(1); // Trigger invulnerability
         player.takeDamage(50);
-        expect(player.hp).toBe(170);
+        expect(player.hp).toBe(1699);
     });
 
     it('does not apply damage while leveling up', () => {
-        (player as any).isLevelingUp = true;
+        player.gainExp(2798); // Level up to 2
         player.takeDamage(50);
-        expect(player.hp).toBe(170);
-    });
-
-    it('sets invulnerability after taking damage', () => {
-        player.takeDamage(10);
-        expect(player.invulnerableTimer).toBe(1.0);
+        expect(player.hp).toBe(1800);
     });
 
     it('plays the player damage sound when damage is applied', () => {
@@ -515,20 +536,26 @@ describe('Player.die', () => {
 
 describe('Player.applyDeathPenalty', () => {
     it('deducts 10% of current bits', () => {
-        const player = makePlayer({ bits: 1000 } as any);
+        const player = makePlayer();
+        player.bits = 1000;
         player.applyDeathPenalty();
         expect(player.bits).toBe(900);
     });
 
     it('deducts 10% of expRequired from exp', () => {
         // expRequired=350, so penalty = floor(350 * 0.1) = 35
-        const player = makePlayer({ exp: 200, expRequired: 350 } as any);
+        const player = makePlayer();
+        player.exp = 200;
+        player.expRequired = 350;
         player.applyDeathPenalty();
         expect(player.exp).toBe(165);
     });
 
     it('returns the actual amounts deducted', () => {
-        const player = makePlayer({ bits: 500, expRequired: 400, exp: 100 } as any);
+        const player = makePlayer();
+        player.bits = 500;
+        player.expRequired = 400;
+        player.exp = 100;
         const { bitsLost, expLost } = player.applyDeathPenalty();
         expect(bitsLost).toBe(50);
         expect(expLost).toBe(40);
@@ -536,7 +563,8 @@ describe('Player.applyDeathPenalty', () => {
 
     it('returns zero bitsLost when bits is less than 10', () => {
         // floor(9 * 0.1) = floor(0.9) = 0, so no bits are deducted
-        const player = makePlayer({ bits: 9 } as any);
+        const player = makePlayer();
+        player.bits = 9;
         const { bitsLost } = player.applyDeathPenalty();
         expect(bitsLost).toBe(0);
         expect(player.bits).toBe(9);
@@ -595,11 +623,18 @@ describe('Player.gainExp', () => {
         player = makePlayer();
     });
 
-    it('increases exp correctly (with luck bonus)', () => {
-        // luck=1: adjustedAmount = floor(100 + 100 * 0.05 * log10(21)) = floor(106.611) = 106
-        const result = player.gainExp(100);
-        expect(result).toBe(106);
-        expect(player.exp).toBe(106);
+    it.each([
+        { luckAmount: 1, expGain: 1000, expected: 1001 },
+        { luckAmount: 2, expGain: 1000, expected: 1002 },
+        { luckAmount: 10, expGain: 1000, expected: 1008 },
+        { luckAmount: 100, expGain: 1000, expected: 1038 },
+        { luckAmount: 9999, expGain: 1000, expected: 1134 },
+        { luckAmount: 1, expGain: 100, expected: 100 }, // test of a smaller exp gain that does not get any additional exp due to rounding down
+    ])('increases exp correctly (with luck bonus)', ({ luckAmount, expGain, expected }) => {
+        player.luck = luckAmount;
+        const result = player.gainExp(expGain);
+        expect(result).toBe(expected);
+        expect(player.exp).toBe(expected);
     });
 
     it('does not gain exp at max level', () => {
@@ -611,47 +646,36 @@ describe('Player.gainExp', () => {
 
     it('levels up when exp reaches expRequired', () => {
         // At luck=1, gainExp(330) gives ~351 adjusted which exceeds expRequired(350)
-        player.gainExp(330);
+        player.gainExp(2798);
         expect(player.level).toBe(2);
     });
 
     it('awards 4 stat points on level up', () => {
-        player.gainExp(330);
+        player.gainExp(2798);
         expect(player.statPointsAvailable).toBe(4);
     });
 
     it('plays the level-up sound when leveling up', () => {
         const audioManagerMock = mock<AudioManager>();
         const player = makePlayer({ audioManager: audioManagerMock });
-        player.gainExp(330);
+        player.gainExp(2798);
         expect(audioManagerMock.playLevelUp).toHaveBeenCalledOnce();
     });
 
     it('updates expRequired after level up', () => {
-        player.gainExp(330);
-        // calculateExpRequired(2) = floor(350 + 2*30 + 4*0.07) = 410
-        expect(player.expRequired).toBe(410);
+        const expectedRemainingExp = 200;
+        // requiredExp for level 2, 3 and 4 = 2500 + 3100 + 3401 = 9001
+        player.gainExp(9001 + expectedRemainingExp);
+        expect(player.level).toBe(4);
+        expect(player.exp).toBe(Math.floor(expectedRemainingExp * 1.001) + Math.floor(9001 * 0.001)); // 0.001 is the luck bonus
     });
 
     it('restores HP to maxHp on level up', () => {
         player.hp = 10;
-        player.gainExp(330);
-        expect(player.hp).toBe(player.maxHp);
-    });
-
-    it('restores TP to maxTp on level up', () => {
         player.tp = 5;
-        player.gainExp(330);
+        player.gainExp(2798);
+        expect(player.hp).toBe(player.maxHp);
         expect(player.tp).toBe(player.maxTp);
-    });
-
-    it('carries over excess exp after level up', () => {
-        // gainExp(1000) → adjusted = floor(1000 + 66.11) = 1066
-        // Level up at level 1 (expRequired=350): excess = 1066 - 350 = 716
-        // Level up at level 2 (expRequired=410): excess = 716 - 410 = 306
-        // Level 3 requires 440 exp, so no further level up; exp = 306
-        player.gainExp(1000);
-        expect(player.exp).toBe(306);
     });
 
     it('can gain multiple levels in one call', () => {
@@ -691,22 +715,28 @@ describe('Player skill unlock progression', () => {
         expect(onSkillUnlocked).toHaveBeenNthCalledWith(2, 2);
     });
 
-    it('does not execute locked skills', () => {
-        const skill = { use: vi.fn().mockReturnValue(true), name: 'Laser' };
-        const player = makePlayer({
-            level: 1,
-            skills: [skill],
-            isUsingSkill: false,
-            isChargingAttack: false,
-            isDashing: false,
-            scene: {},
-            world: {},
-            weapon: { isAttacking: false },
-        } as any);
+    it('Only executes unlocked skills', () => {
+        const skill1 = mockDeep<RangedSkill>();
+        const skill2 = mockDeep<RangedSkill>();
+        const inputManagerMock = mockDeep<InputManager>();
+        inputManagerMock.getMovementVector.mockReturnValue(new THREE.Vector2(0, 0));
+        inputManagerMock.isSkill1JustPressed.mockReturnValue(true);
+        inputManagerMock.isSkill2JustPressed.mockReturnValue(false);
+        const player = makePlayer({ inputManager: inputManagerMock });
 
-        (player as any).useSkill(1);
+        player.skills[1] = skill2 as any; // Skill at index 1 is locked until level 10
 
-        expect(skill.use).not.toHaveBeenCalled();
+        // Trigger skill 1 execution
+        player.update(0.1);
+
+        inputManagerMock.isSkill1JustPressed.mockReturnValue(false);
+        inputManagerMock.isSkill2JustPressed.mockReturnValue(true);
+
+        // Trigger skill 2 execution
+        player.update(0.1);
+
+        expect(skill1.use).not.toHaveBeenCalled();
+        expect(skill2.use).not.toHaveBeenCalled();
     });
 });
 
@@ -740,7 +770,10 @@ describe('Player.collectBoosterPack', () => {
 describe('Player.upgradeWithXData', () => {
     let player: Player;
 
-    beforeEach(() => { player = makePlayer({ xData: 100 } as any); });
+    beforeEach(() => {
+        player = makePlayer();
+        player.xData = 100;
+    });
 
     it('upgrades strength and deducts X-Data cost', () => {
         const cost = player.getUpgradeCost(0); // level 0 → fibonacci[0] = 1
@@ -768,13 +801,13 @@ describe('Player.upgradeWithXData', () => {
         player.hp = 150;
         player.upgradeWithXData(StatType.HP);
         // hpUpgrades++ triggers hp += HP_TP_UPGRADE_AMOUNT (5)
-        expect(player.hp).toBe(155);
+        expect(player.hp).toBe(165);
     });
 
     it('upgrades TP and immediately restores by the upgrade amount', () => {
         player.tp = 30;
         player.upgradeWithXData(StatType.TP);
-        expect(player.tp).toBe(35);
+        expect(player.tp).toBe(42);
     });
 
     it('returns false when insufficient X-Data', () => {
@@ -823,55 +856,31 @@ describe('Player.getUpgradeCost', () => {
 // ─── calculateExpRequired (via gainExp / expRequired) ────────────────────────
 
 describe('Player.calculateExpRequired (via expRequired)', () => {
-    // Formula: floor(350 + level*30 + level^2 * 0.07)
-    // Level 1: floor(350 + 30 + 0.07) = 380
-    // Level 2: floor(350 + 60 + 0.28) = 410
-    // Level 10: floor(350 + 300 + 7.0) = 657
-
-    it('expRequired at level 1 equals floor(350 + 1*30 + 1^2*0.07) = 380', () => {
-        const player = makePlayer({ level: 1, expRequired: 0 } as any);
-        // recalculate via gainExp triggering levelUp which calls calculateExpRequired(newLevel)
-        // Instead, verify initial expRequired matches EXP_BASE (350) for level 0 pre-levelUp
-        // After leveling from 1→2, expRequired should be for level 2
-        (player as any).expRequired = 1; // trigger immediate level up
-        (player as any).exp = 0;
-        (player as any).recalculateStats = vi.fn();
-        (player as any).heal = vi.fn();
-        (player as any).isLevelingUp = false;
-        (player as any).fadeToAction = vi.fn();
-        (player as any).shockwavePending = false;
-        (player as any).levelUpShockwaveTimer = 0;
-        player.gainExp(1);
-        // After level up from 1→2, calculateExpRequired(2) = floor(350+60+0.28) = 410
-        expect((player as any).expRequired).toBe(410);
+    it('expRequired at level 2', () => {
+        const player = makePlayer();
+        player.gainExp(player.expRequired); // enough to level up to 2
+        expect((player as any).expRequired).toBe(3100);
     });
 
-    it('expRequired at level 2 equals floor(350 + 2*30 + 4*0.07) = 410', () => {
-        const player = makePlayer({ level: 2, expRequired: 1 } as any);
-        (player as any).exp = 0;
-        (player as any).recalculateStats = vi.fn();
-        (player as any).heal = vi.fn();
-        (player as any).isLevelingUp = false;
-        (player as any).fadeToAction = vi.fn();
-        (player as any).shockwavePending = false;
-        (player as any).levelUpShockwaveTimer = 0;
-        player.gainExp(1);
-        // After level up from 2→3, calculateExpRequired(3) = floor(350+90+0.63) = 440
-        expect((player as any).expRequired).toBe(440);
+    it('expRequired at level 3', () => {
+        const player = makePlayer();
+        player.level = 2;
+        player.gainExp(player.expRequired); // enough to level up to 3
+        expect((player as any).expRequired).toBe(3401);
     });
 
-    it('expRequired at level 10 equals floor(350 + 10*30 + 100*0.07) = 657', () => {
-        const player = makePlayer({ level: 10, expRequired: 1 } as any);
-        (player as any).exp = 0;
-        (player as any).recalculateStats = vi.fn();
-        (player as any).heal = vi.fn();
-        (player as any).isLevelingUp = false;
-        (player as any).fadeToAction = vi.fn();
-        (player as any).shockwavePending = false;
-        (player as any).levelUpShockwaveTimer = 0;
-        player.gainExp(1);
-        // After level up from 10→11, calculateExpRequired(11) = floor(350+330+8.47) = 688
-        expect((player as any).expRequired).toBe(688);
+    it('expRequired at level 101', () => {
+        const player = makePlayer();
+        player.level = 100;
+        player.gainExp(player.expRequired);
+        expect((player as any).expRequired).toBe(34840);
+    });
+
+    it('expRequired at level 998', () => {
+        const player = makePlayer();
+        player.level = 997;
+        player.gainExp(player.expRequired);
+        expect((player as any).expRequired).toBe(501100);
     });
 });
 
@@ -882,12 +891,13 @@ describe('Player.addStatPoint', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
-        player = makePlayer({ statPointsAvailable: 5 } as any);
+        player = makePlayer();
+        player.statPointsAvailable = 5;
     });
 
     it('adds a strength point and decrements statPointsAvailable', () => {
         player.addStatPoint(StatType.STRENGTH);
-        expect((player as any).strengthPoints).toBe(1);
+        expect(player.strengthPoints).toBe(1);
         expect(player.statPointsAvailable).toBe(4);
     });
 
@@ -900,7 +910,7 @@ describe('Player.addStatPoint', () => {
     });
 
     it('returns false when no points available', () => {
-        (player as any).statPointsAvailable = 0;
+        player.statPointsAvailable = 0;
         expect(player.addStatPoint(StatType.STRENGTH)).toBe(false);
     });
 
@@ -959,7 +969,7 @@ describe('CoreItem canEquip', () => {
     });
 
     it('allows equipping level-2 core at required player level', () => {
-        const player = makePlayer({ level: 10 } as any);
+        const player = makePlayer(); player.level = 10;
         const core = new CoreItem('c2', 'Core+', 200, 100, { strength: 10 }, 2);
         expect(core.canEquip(player)).toBe(true);
     });
@@ -986,39 +996,77 @@ describe('ChipItem canEquip', () => {
 
 describe('Player.startBlock', () => {
     it('sets isBlocking to true when grounded and not attacking', () => {
-        const player = makePlayer();
-        (player as any).startBlock();
+        const inputManagerMock = mockDeep<InputManager>();
+        inputManagerMock.isBlockPressed.mockReturnValue(true);
+        inputManagerMock.isBlockJustPressed.mockReturnValue(true);
+        inputManagerMock.getMovementVector.mockReturnValue(new THREE.Vector2(0, 0));
+        const player = makePlayer({ inputManager: inputManagerMock });
+        player.update(0.1);
         expect(player.isBlocking).toBe(true);
-        expect((player as any).blockTimer).toBe(0);
     });
 
     it('cannot block while attacking', () => {
-        const player = makePlayer();
-        (player as any).weapon.isAttacking = true;
-        (player as any).startBlock();
+        const weaponFactoryMock = mockDeep<WeaponFactory>();
+        weaponFactoryMock.createWeapon.mockReturnValue(
+            createWeapon(true)
+        );
+        const inputManagerMock = mockDeep<InputManager>();
+        inputManagerMock.isAttackPressed.mockReturnValue(true);
+        inputManagerMock.getMovementVector.mockReturnValue(new THREE.Vector2(0, 0));
+        const player = makePlayer({ inputManager: inputManagerMock, weaponFactory: weaponFactoryMock });
+        inputManagerMock.isBlockJustPressed.mockReturnValue(true);
+        player.update(0.1);
         expect(player.isBlocking).toBe(false);
     });
 
     it('cannot block while airborne', () => {
-        const player = makePlayer();
-        (player as any).isGrounded = false;
-        (player as any).startBlock();
+        const inputManagerMock = mockDeep<InputManager>();
+        inputManagerMock.isJumpPressed.mockReturnValue(true);
+        inputManagerMock.isBlockJustPressed.mockReturnValue(false);
+        inputManagerMock.getMovementVector.mockReturnValue(new THREE.Vector2(0, 0));
+
+        const physicsWorld = createDefaultPhysicsWorld();
+
+        const player = makePlayer({ inputManager: inputManagerMock, physicsWorld: physicsWorld });
+        physicsWorld.step(0.1); // Step physics world to make player body move upward due to jump
+        player.update(0.1);
+        expect(player.position.y).toBeGreaterThan(0.2); // make sure player is airborne
+
+        inputManagerMock.isBlockJustPressed.mockReturnValue(true);
+        player.update(0.1);
+
         expect(player.isBlocking).toBe(false);
     });
 
     it('cannot block while already blocking', () => {
-        const player = makePlayer();
-        player.isBlocking = true;
-        (player as any).blockTimer = 0.2;
-        (player as any).startBlock();
-        // blockTimer must remain unchanged (early return)
-        expect((player as any).blockTimer).toBe(0.2);
+        const inputManagerMock = mockDeep<InputManager>();
+        inputManagerMock.isBlockJustPressed.mockReturnValue(true);
+        inputManagerMock.getMovementVector.mockReturnValue(new THREE.Vector2(0, 0));
+        const player = makePlayer({ inputManager: inputManagerMock });
+        player.update(0.25);
+        inputManagerMock.isBlockJustPressed.mockReturnValue(false);
+
+        // Normal block start
+        expect(player.isBlocking).toBe(true);
+        player.update(0.26);
+
+        // After BLOCK_DURATION (0.5s), the block should end and updates with block pressed should NOT start a new block in the same time
+        expect(player.isBlocking).toBe(false);
+
+        inputManagerMock.isBlockJustPressed.mockReturnValue(true);
+        player.update(0.1);
+
+        // After the block has ended, pressing block again should start a new block
+        expect(player.isBlocking).toBe(true);
     });
 
     it('cannot block when dead', () => {
-        const player = makePlayer();
-        player.isDead = true;
-        (player as any).startBlock();
+        const inputManagerMock = mockDeep<InputManager>();
+        inputManagerMock.isBlockJustPressed.mockReturnValue(true);
+        inputManagerMock.getMovementVector.mockReturnValue(new THREE.Vector2(0, 0));
+        const player = makePlayer({ inputManager: inputManagerMock });
+        player.takeDamage(9999); // kill the player
+        player.update(0.1);
         expect(player.isBlocking).toBe(false);
     });
 });
@@ -1227,12 +1275,12 @@ describe('Player.heal with Patchwork chip', () => {
 
     it('does not exceed maxHp when healing with multiplier', () => {
         const player = makePlayer();
-        player.hp = 160;
+        player.hp = 1600;
         const chip = new ChipItem('chip1', 'Patchwork', 150, 50, 'patchwork' as any, { healingMultiplier: 1.40 }, 1);
         chip.isEquipped = true;
         player.inventory = [chip];
-        player.heal(50); // 50 * 1.40 = 70, but maxHp is 170, so capped to 170
-        expect(player.hp).toBe(170);
+        player.heal(80); // 80 * 1.40 = 112, but maxHp is 1700, so capped to 1700
+        expect(player.hp).toBe(1700);
     });
 });
 
@@ -1254,28 +1302,25 @@ describe('Player.getTechForWeapon', () => {
 // ─── Player.getSkillTier ──────────────────────────────────────────────────────
 
 describe('Player.getSkillTier', () => {
-    it('returns STABLE when skill tech is 0', () => {
-        const player = makePlayer();
-        expect(player.getSkillTier('RECOVERY' as any)).toBe(Tier.STABLE);
-    });
-
-    it('returns LEET when skill tech is at cap (9999)', () => {
-        const player = makePlayer();
-        (player as any).skillTech['BLAST'] = 9999;
-        expect(player.getSkillTier('BLAST' as any)).toBe(Tier.LEET);
-    });
-
-    it('returns ZERODAY when skill tech is below leet amount (1799)', () => {
-        const player = makePlayer();
-        (player as any).skillTech['BLAST'] = 1799;
-        expect(player.getSkillTier('BLAST' as any)).toBe(Tier.ZERODAY);
-    });
-
-    it('returns LEET when skill tech is at leet amount (1800)', () => {
-        const player = makePlayer();
-        (player as any).skillTech['BLAST'] = 1800;
-        expect(player.getSkillTier('BLAST' as any)).toBe(Tier.LEET);
-    });
+    it.each([
+        { skillLevel: Tier.STABLE, skillTechPoints: 0, skillType: SkillTechType.RECOVERY },
+        { skillLevel: Tier.MAINTAINED, skillTechPoints: 60, skillType: SkillTechType.RANGED },
+        { skillLevel: Tier.OVERCLOCKED, skillTechPoints: 280, skillType: SkillTechType.BLAST },
+        { skillLevel: Tier.ZERODAY, skillTechPoints: 880, skillType: SkillTechType.RECOVERY },
+        { skillLevel: Tier.LEET, skillTechPoints: 1800, skillType: SkillTechType.RANGED },
+        { skillLevel: Tier.STABLE, skillTechPoints: 59, skillType: SkillTechType.BLAST },
+        { skillLevel: Tier.MAINTAINED, skillTechPoints: 279, skillType: SkillTechType.RECOVERY },
+        { skillLevel: Tier.OVERCLOCKED, skillTechPoints: 879, skillType: SkillTechType.RANGED },
+        { skillLevel: Tier.ZERODAY, skillTechPoints: 1799, skillType: SkillTechType.BLAST },
+    ])('calls tierManager to determine skill level and passes current skill tech points',
+        ({ skillLevel, skillTechPoints, skillType }) => {
+            const tierManagerMock = mockDeep<TierManager>();
+            tierManagerMock.getSkillTierForTech.mockReturnValue(skillLevel);
+            const player = makePlayer({ tierManager: tierManagerMock });
+            player.skillTech[skillType] = skillTechPoints;
+            expect(player.getSkillTier(skillType)).toBe(skillLevel);
+            expect(tierManagerMock.getSkillTierForTech).toHaveBeenCalledWith(skillTechPoints);
+        });
 });
 
 // ─── Player.getBaseStatValue ──────────────────────────────────────────────────
@@ -1335,10 +1380,10 @@ describe('Player.tryIncrementWeaponTech', () => {
     it('does NOT increment past TECH_POINT_CAP', () => {
         const player = makePlayer();
         (player as any).currentWeaponType = WeaponType.SWORD;
-        (player as any).tech[WeaponType.SWORD] = 2500; // at cap
+        (player as any).tech[WeaponType.SWORD] = 9999; // at cap
         vi.spyOn(Math, 'random').mockReturnValue(0.001);
         player.tryIncrementWeaponTech(1.0);
-        expect((player as any).tech[WeaponType.SWORD]).toBe(2500);
+        expect((player as any).tech[WeaponType.SWORD]).toBe(9999);
         vi.restoreAllMocks();
     });
 
@@ -1459,7 +1504,10 @@ describe('Player.getBaseStatValue – defense / agility / luck', () => {
 
 describe('Player.addStatPoint – defense / agility / luck', () => {
     let player: Player;
-    beforeEach(() => { player = makePlayer({ statPointsAvailable: 5 } as any); });
+    beforeEach(() => {
+        player = makePlayer();
+        player.statPointsAvailable = 5;
+    });
 
     it('adds a defense point and decrements statPointsAvailable', () => {
         player.addStatPoint(StatType.DEFENSE);
@@ -1579,87 +1627,72 @@ describe('Player collection bonus getters', () => {
 // ─── executeLevelUpShockwave ─────────────────────────────────────────────────
 
 describe('Player.executeLevelUpShockwave', () => {
-    function makeEnemyBody(x: number, z: number, isDead = false, isDying = false) {
+    function makeEnemyBody(x: number, z: number, isDead = false, isDying = false): CANNON.Body {
         const enemy = Object.create(Enemy.prototype) as Enemy;
         Object.assign(enemy, { isDead, isDying, takeDamage: vi.fn() });
-        return {
-            position: { x, y: 0, z },
-            entity: enemy,
-        };
+        const body = new CANNON.Body({ mass: 1 });
+        body.position.set(x, 0.0, z);
+        (body as any).entity = enemy;
+        return body;
     }
 
-    it('damages enemies within 15m range', () => {
+    it('damages enemies within 10m range', () => {
         const nearBody = makeEnemyBody(5, 0);
-        const player = makePlayer({
-            world: { bodies: [nearBody] },
-        } as any);
-        (player as any).getHitDamage = vi.fn().mockReturnValue(50);
-        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
-        (player as any).body.position = { x: 0, y: 0, z: 0 };
+        const physicsWorld = createDefaultPhysicsWorld();
+        physicsWorld.bodies.push(nearBody);
+        const player = makePlayer({ physicsWorld: physicsWorld });
 
         (player as any).executeLevelUpShockwave();
 
-        expect((nearBody.entity as any).takeDamage).toHaveBeenCalledWith(50, false, player.body.position);
+        expect((nearBody as any).entity.takeDamage).toHaveBeenCalledWith(10, false, player.body.position);
     });
 
-    it('does not damage enemies beyond 15m range', () => {
+    it('does not damage enemies beyond 10m range', () => {
         const farBody = makeEnemyBody(20, 20);
-        const player = makePlayer({
-            world: { bodies: [farBody] },
-        } as any);
-        (player as any).getHitDamage = vi.fn().mockReturnValue(50);
-        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
-        (player as any).body.position = { x: 0, y: 0, z: 0 };
+        const physicsWorld = createDefaultPhysicsWorld();
+        physicsWorld.bodies.push(farBody);
+        const player = makePlayer({ physicsWorld: physicsWorld });
 
         (player as any).executeLevelUpShockwave();
 
-        expect((farBody.entity as any).takeDamage).not.toHaveBeenCalled();
+        expect((farBody as any).entity.takeDamage).not.toHaveBeenCalled();
     });
 
     it('damages near enemies and skips far enemies in mixed group', () => {
         const nearBody = makeEnemyBody(10, 0);
         const farBody = makeEnemyBody(0, 16);
-        const player = makePlayer({
-            world: { bodies: [nearBody, farBody] },
-        } as any);
-        (player as any).getHitDamage = vi.fn().mockReturnValue(50);
-        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
-        (player as any).body.position = { x: 0, y: 0, z: 0 };
+        const physicsWorld = createDefaultPhysicsWorld();
+        physicsWorld.bodies.push(nearBody, farBody);
+        const player = makePlayer({ physicsWorld: physicsWorld });
 
         (player as any).executeLevelUpShockwave();
 
-        expect((nearBody.entity as any).takeDamage).toHaveBeenCalled();
-        expect((farBody.entity as any).takeDamage).not.toHaveBeenCalled();
+        expect((nearBody as any).entity.takeDamage).toHaveBeenCalled();
+        expect((farBody as any).entity.takeDamage).not.toHaveBeenCalled();
     });
 
-    it('damages enemy at exactly 15m boundary', () => {
-        const boundaryBody = makeEnemyBody(15, 0);
-        const player = makePlayer({
-            world: { bodies: [boundaryBody] },
-        } as any);
-        (player as any).getHitDamage = vi.fn().mockReturnValue(50);
-        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
-        (player as any).body.position = { x: 0, y: 0, z: 0 };
+    it('damages enemy at exactly 10m boundary', () => {
+        const boundaryBody = makeEnemyBody(10, 0);
+        const physicsWorld = createDefaultPhysicsWorld();
+        physicsWorld.bodies.push(boundaryBody);
+        const player = makePlayer({ physicsWorld: physicsWorld });
 
         (player as any).executeLevelUpShockwave();
 
-        expect((boundaryBody.entity as any).takeDamage).toHaveBeenCalled();
+        expect((boundaryBody as any).entity.takeDamage).toHaveBeenCalled();
     });
 
     it('skips dead and dying enemies', () => {
         const deadBody = makeEnemyBody(5, 0, true, false);
         const dyingBody = makeEnemyBody(5, 0, false, true);
-        const player = makePlayer({
-            world: { bodies: [deadBody, dyingBody] },
-        } as any);
-        (player as any).getHitDamage = vi.fn().mockReturnValue(50);
-        (player as any).getCriticalChance = vi.fn().mockReturnValue(0);
-        (player as any).body.position = { x: 0, y: 0, z: 0 };
+        const physicsWorld = createDefaultPhysicsWorld();
+        physicsWorld.bodies.push(deadBody, dyingBody);
+        const player = makePlayer({ physicsWorld: physicsWorld });
 
         (player as any).executeLevelUpShockwave();
 
-        expect((deadBody.entity as any).takeDamage).not.toHaveBeenCalled();
-        expect((dyingBody.entity as any).takeDamage).not.toHaveBeenCalled();
+        expect((deadBody as any).entity.takeDamage).not.toHaveBeenCalled();
+        expect((dyingBody as any).entity.takeDamage).not.toHaveBeenCalled();
     });
 });
 
@@ -1677,7 +1710,7 @@ describe('Player.handleSkillAnimation', () => {
     });
 
     it('halts movement while using skill', () => {
-        const expectedPosition = new THREE.Vector3(0.07943282347242815, 0.5, 0.07943282347242815);
+        const expectedPosition = new THREE.Vector3(0.07943282347242815, 0.1, 0.07943282347242815);
         const inputManagerMock = mock<InputManager>();
         inputManagerMock.getMovementVector.mockReturnValue(new THREE.Vector2(10, 10));
         const physicsWorld = createDefaultPhysicsWorld();
@@ -1687,7 +1720,7 @@ describe('Player.handleSkillAnimation', () => {
         physicsWorld.step(0.1);
         player.update(0.1); // Make player move
         expect(player.position.x).toBeCloseTo(expectedPosition.x);
-        expect(player.position.y).toBe(expectedPosition.y);
+        expect(player.position.y).toBeCloseTo(expectedPosition.y);
         expect(player.position.z).toBeCloseTo(expectedPosition.z);
         expect(player.body.velocity.x).toBeGreaterThan(0);
         expect(player.body.velocity.y).toBe(0);
@@ -1697,7 +1730,7 @@ describe('Player.handleSkillAnimation', () => {
         player.update(0.1); // Trigger skill usage
 
         expect(player.position.x).toBeCloseTo(expectedPosition.x);
-        expect(player.position.y).toBe(expectedPosition.y);
+        expect(player.position.y).toBeCloseTo(expectedPosition.y);
         expect(player.position.z).toBeCloseTo(expectedPosition.z);
         expect(player.body.velocity.x).toBe(0);
         expect(player.body.velocity.y).toBe(0);
