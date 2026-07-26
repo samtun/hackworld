@@ -86,14 +86,12 @@ function createDefaultAssetManager(): AssetManager {
     );
 
     const dummyRightHandBone = new THREE.Bone();
-    dummyRightHandBone.name = 'HandR'; // Der Name, den deine Player-Klasse sucht
+    dummyRightHandBone.name = 'HandR';
 
-    // 2. Baue die Dummy-Szene auf
     const dummyScene = new THREE.Group();
     dummyScene.add(dummyMesh);
     dummyScene.add(dummyRightHandBone);
 
-    // 3. Bereite das GLTF-Mock vor
     const gltfMock = mock<GLTF>();
     gltfMock.scene = dummyScene;
 
@@ -103,8 +101,7 @@ function createDefaultAssetManager(): AssetManager {
 }
 
 /**
- * Create a minimal Player instance for unit testing without instantiating
- * Three.js / Cannon-es objects (bypasses the constructor).
+ * Create a minimal Player instance for unit testing.
  */
 function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
     container.clearInstances();
@@ -1754,9 +1751,10 @@ describe('Player.handleSkillAnimation', () => {
 
 describe('Player die() / respawn() skill-state cleanup', () => {
     function makePlayerForDeath() {
-        const player = makePlayer();
+        const inputManagerMock = mockDeep<InputManager>();
+        inputManagerMock.isSkill1JustPressed.mockReturnValue(true);
+        const player = makePlayer({ inputManager: inputManagerMock });
         player.hp = 1;
-        // TODO setup isUsingSkill and skillAnimationTimer to simulate skill usage
         return player;
     }
 
@@ -1764,6 +1762,7 @@ describe('Player die() / respawn() skill-state cleanup', () => {
         const player = makePlayerForDeath();
         (player as any).fadeToAction = vi.fn();
 
+        expect((player as any).isUsingSkill).toBe(true);
         (player as any).die();
 
         expect((player as any).isUsingSkill).toBe(false);
@@ -1774,6 +1773,7 @@ describe('Player die() / respawn() skill-state cleanup', () => {
         const player = makePlayerForDeath();
         player.isDead = true;
 
+        expect((player as any).isUsingSkill).toBe(true);
         const position = { x: 1, y: 0, z: 1 };
         player.respawn(position as any);
 
