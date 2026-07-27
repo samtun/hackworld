@@ -69,7 +69,7 @@ function makePlayer(tier = Tier.STABLE) {
     } as any;
 }
 
-describe('AreaAttackSkill', () => {
+describe('BlastSkill', () => {
     let skill: BlastSkill;
 
     beforeEach(() => {
@@ -79,7 +79,7 @@ describe('AreaAttackSkill', () => {
 
     describe('constructor', () => {
         it('sets name, cooldown, and tpCost', () => {
-            expect(skill.name).toBe('Area Attack');
+            expect(skill.name).toBe('Blast');
             expect(skill.cooldown).toBe(10);
             expect(skill.tpCost).toBe(300);
         });
@@ -90,7 +90,7 @@ describe('AreaAttackSkill', () => {
         const scene = { add: vi.fn(), remove: vi.fn() } as any;
         const world = { bodies: [] } as any;
         (skill as any).execute(player, scene, world);
-        expect(AudioManager.Instance.playBlastSkill).toHaveBeenCalledOnce();
+        expect(AudioManager.Instance.playAreaAttackSkill).toHaveBeenCalledOnce();
     });
 
     describe('getEffectiveTpCost()', () => {
