@@ -259,7 +259,7 @@ export class Enemy extends BaseMesh {
     private isCorneredForSpacing: boolean = false;
 
     /** Flat circular shadow below the enemy. */
-    public blobShadow!: BlobShadow;
+    public blobShadow: BlobShadow;
 
     // Callback for spawning damage numbers
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
@@ -273,7 +273,7 @@ export class Enemy extends BaseMesh {
         private readonly playerRegistry: PlayerRegistry,
         private readonly assetManager: AssetManager,
         scene: THREE.Scene,
-        world: CANNON.World,
+        physicsWorld: CANNON.World,
         position: CANNON.Vec3,
         physicsMaterial: CANNON.Material,
         config: Partial<EnemyArchetypeConfig> = {},
@@ -283,7 +283,7 @@ export class Enemy extends BaseMesh {
         super(enemyTypeDefinition.modelPath, assetManager);
 
         this.scene = scene;
-        this.world = world;
+        this.world = physicsWorld;
         this.physicsMaterial = physicsMaterial;
         this.enemyType = enemyType;
         this.enemyTypeDefinition = enemyTypeDefinition;
@@ -360,7 +360,7 @@ export class Enemy extends BaseMesh {
         this.body.addShape(shape);
         this.body.position.copy(position);
         (this.body as any).entity = this;
-        world.addBody(this.body);
+        physicsWorld.addBody(this.body);
 
         this.player = this.playerRegistry.activePlayers[0];
 
