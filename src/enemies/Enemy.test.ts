@@ -55,7 +55,7 @@ function createDefaultAssetManager(): AssetManager {
     const dummyScene = new THREE.Group();
     dummyScene.add(dummyMesh);
 
-    const gltfMock = mockDeep<GLTF>();
+    const gltfMock = mock<GLTF>();
     gltfMock.scene = dummyScene;
     gltfMock.animations = [
         mockDeep<THREE.AnimationClip>({ name: 'Idle' }),
