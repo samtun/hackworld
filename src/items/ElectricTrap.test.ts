@@ -35,7 +35,7 @@ vi.mock('three', () => {
         },
         BufferAttribute: class {
             needsUpdate = false;
-            constructor() {}
+            constructor() { }
         },
         ShaderMaterial: class {
             uniforms: any = {};
@@ -81,7 +81,7 @@ vi.mock('../ParticleShaderUtils', () => ({
 }));
 
 import { ElectricTrap, ElectricTrapConfig } from './ElectricTrap';
-import { Player } from '../Player';
+import { Player } from '../player/Player';
 import { Enemy } from '../enemies/Enemy';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────

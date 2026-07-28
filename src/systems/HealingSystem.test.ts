@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { HealingSystem } from './HealingSystem';
-import { PlayerRegistry } from '../PlayerRegistry';
+import { PlayerRegistry } from '../player/PlayerRegistry';
 import { IHealingStation } from './IHealingStation';
-import { Player } from '../Player';
+import { Player } from '../player/Player';
 import * as THREE from 'three';
 
 function makeStation(x = 0, y = 0, z = 0, radius = 3): IHealingStation {

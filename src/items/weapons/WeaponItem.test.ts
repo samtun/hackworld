@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { WeaponItem } from './WeaponItem';
 import { WeaponType } from './WeaponType';
 import { Tier, TierManager } from '../TierManager';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 
 function stableTier() {
     return TierManager.Instance.tiers.get(Tier.STABLE)!;

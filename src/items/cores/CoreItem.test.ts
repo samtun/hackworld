@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CoreItem } from './CoreItem';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 
 function makeCore(level = 1): CoreItem {
     return new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3, defense: 2 }, level);
