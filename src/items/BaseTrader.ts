@@ -307,7 +307,10 @@ export abstract class BaseTrader {
         this.handleNavigation(player);
         if (oldIndex !== this.selectedIndex || oldPanel !== this.activePanel) this.needsRender = true;
 
-        if (this.needsRender) { this.render(player); this.needsRender = false; }
+        if (this.needsRender) {
+            this.render(player);
+            this.needsRender = false;
+        }
     }
 
     protected render(player: Player) {
