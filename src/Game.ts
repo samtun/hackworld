@@ -281,7 +281,6 @@ export class Game {
 
     private onInitialLoadComplete(): void {
         this.uiManager.hideLoadingScreen();
-        this.uiManager.showStartScreen();
         this.initializeEntities();
         this.audioManager.setStageMusic('startScreen');
 
