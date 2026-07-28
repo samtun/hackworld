@@ -325,10 +325,11 @@ export class BreakableBarrel implements Breakable {
         const finalBuyPrice = Math.floor(weaponItem.buyPrice * damageFactor);
         const finalSellPrice = Math.floor(weaponItem.sellPrice * damageFactor);
 
-        return this.itemDropFactory.createWeaponDrop(
+        const drop = this.itemDropFactory.createWeaponDrop(
             weaponItem.id, pos, weaponType, weaponItem.name,
             finalDamage, finalBuyPrice, finalSellPrice, weaponLevel, damageFactor,
         );
+        return drop;
     }
 
     private generateChipDrop(player: Player, pos: CANNON.Vec3): ItemDrop | null {
