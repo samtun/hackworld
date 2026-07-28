@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../InputManager', () => ({
-    InputManager: { Instance: {
-        isNavigateUpPressed: vi.fn().mockReturnValue(false),
-        isNavigateDownPressed: vi.fn().mockReturnValue(false),
-        isSelectPressed: vi.fn().mockReturnValue(false),
-        isCancelPressed: vi.fn().mockReturnValue(false),
-    }}
+    InputManager: {
+        Instance: {
+            isNavigateUpPressed: vi.fn().mockReturnValue(false),
+            isNavigateDownPressed: vi.fn().mockReturnValue(false),
+            isSelectPressed: vi.fn().mockReturnValue(false),
+            isCancelPressed: vi.fn().mockReturnValue(false),
+        }
+    }
 }));
 vi.mock('../../ui/UiUtils', () => ({
     resetInputDebounce: vi.fn(),
@@ -17,24 +19,28 @@ vi.mock('../../ui/InputHints', () => ({
     HintConfigs: { upgradeClose: 'upgradeClose' },
 }));
 vi.mock('../../ui/MenuManager', () => ({
-    MenuManager: { Instance: {
-        createOverlay: vi.fn(() => {
-            const d = document.createElement('div');
-            d.style.display = 'none';
-            return d;
-        }),
-        createFlexWindow: vi.fn(() => document.createElement('div')),
-        createPanel: vi.fn(() => document.createElement('div')),
-        createTitle: vi.fn(() => document.createElement('div')),
-    }},
+    MenuManager: {
+        Instance: {
+            createOverlay: vi.fn(() => {
+                const d = document.createElement('div');
+                d.style.display = 'none';
+                return d;
+            }),
+            createFlexWindow: vi.fn(() => document.createElement('div')),
+            createPanel: vi.fn(() => document.createElement('div')),
+            createTitle: vi.fn(() => document.createElement('div')),
+        }
+    },
     MENU_COLORS: { COST_COLOR: '#ffd700', MAXED_COLOR: '#ff6666', TEXT: '#fff', TRANSPARENT: 'transparent', ITEM_SELECTED: '#888', ITEM_HOVER: '#666', XDATA_COLOR: '#00ffff', PANEL_BG: '#111', BORDER: '#333', SEPARATOR: '#444' },
     MENU_STYLES: { FONT_FAMILY: 'Arial', Z_INDEX: 1000, Z_INDEX_HINTS: 1100, BORDER_RADIUS: '8px', BORDER_WIDTH: '1px' },
 }));
 vi.mock('../../ui/UIManager', () => ({
-    UIManager: { Instance: {
-        showControlHints: vi.fn(),
-        hideControlHints: vi.fn(),
-    }}
+    UIManager: {
+        Instance: {
+            showControlHints: vi.fn(),
+            hideControlHints: vi.fn(),
+        }
+    }
 }));
 vi.mock('../../AudioManager', () => ({
     AudioManager: {
@@ -54,14 +60,14 @@ vi.mock('../../ui/StatIcons', () => ({
     ICON_BITS: '', ICON_NEXTLVL: '', ICON_XDATA: '', ICON_BOOSTER: '',
     getWeaponIcon: vi.fn().mockReturnValue(''), getSkillTechIcon: vi.fn().mockReturnValue(''),
 }));
-vi.mock('../../Player', () => ({ Player: class {} }));
+vi.mock('../../Player', () => ({ Player: class { } }));
 
 import { XDataUpgradeManager } from './XDataUpgradeManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
 import { AudioManager } from '../../AudioManager';
 
 // jsdom does not implement scrollIntoView
-HTMLElement.prototype.scrollIntoView = vi.fn();
+// HTMLElement.prototype.scrollIntoView = vi.fn();
 
 function makeManager() {
     const mgr = Object.create((XDataUpgradeManager as any).prototype) as any;

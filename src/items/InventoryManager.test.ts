@@ -59,7 +59,7 @@ import { WeaponType } from './weapons/WeaponType';
 import { SkillTechType } from '../player/skills/SkillType';
 
 // jsdom does not implement scrollIntoView
-HTMLElement.prototype.scrollIntoView = vi.fn();
+// HTMLElement.prototype.scrollIntoView = vi.fn();
 
 function makeInventoryManager() {
     const mgr = Object.create((InventoryManager as any).prototype) as any;

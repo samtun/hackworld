@@ -6,7 +6,7 @@ function makeMenuManager() {
     return MenuManager.Instance;
 }
 
-/** Normalise a CSS colour string the same way jsdom does. */
+/** Normalise a CSS colour string the same way happy-dom does. */
 function normalizeColor(color: string): string {
     const el = document.createElement('div');
     el.style.backgroundColor = color;
