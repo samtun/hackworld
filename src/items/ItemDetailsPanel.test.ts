@@ -5,16 +5,22 @@ import { CoreItem } from './cores/CoreItem';
 import { ChipItem } from './chips/ChipItem';
 import { ChipType } from './chips/Chip';
 import { WeaponType } from './weapons/WeaponType';
-import { Tier, TierManager } from './TierManager';
+import { Tier } from './TierManager';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function getTierDef(t: Tier) {
-    return TierManager.Instance.tiers.get(t)!;
-}
+const stableTier = {
+    name: Tier.STABLE,
+    minPercent: -3,
+    maxPercent: 3,
+    rimColor: '#ffffff',
+    innerColor: '#999999',
+    traderChance: 0.44,
+    minLevel: 0,
+};
 
 function makeWeapon(damage: number, id = 'w1'): WeaponItem {
-    return new WeaponItem(id, 'Sword', 100, 50, WeaponType.SWORD, damage, 'model.glb', getTierDef(Tier.STABLE), 1);
+    return new WeaponItem(id, 'Sword', 100, 50, WeaponType.SWORD, damage, 'model.glb', stableTier, 1);
 }
 
 function makeCore(stats: { strength?: number; defense?: number; agility?: number }, id = 'c1'): CoreItem {

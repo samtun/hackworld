@@ -27,15 +27,21 @@ import { CoreItem } from './cores/CoreItem';
 import { Item } from './Item';
 import { WeaponType } from './weapons/WeaponType';
 import { ChipType } from './chips/Chip';
-import { Tier, TierManager } from './TierManager';
+import { Tier } from './TierManager';
 import { ItemLevelHelper } from './ItemLevelHelper';
 
-function stableTier() {
-    return TierManager.Instance.tiers.get(Tier.STABLE)!;
-}
+const stableTier = {
+    name: Tier.STABLE,
+    minPercent: -3,
+    maxPercent: 3,
+    rimColor: '#ffffff',
+    innerColor: '#999999',
+    traderChance: 0.44,
+    minLevel: 0,
+};
 
 function makeWeapon(level = 1): WeaponItem {
-    return new WeaponItem('w1', 'Test Sword', 100, 50, WeaponType.SWORD, 10, 'model.glb', stableTier(), level);
+    return new WeaponItem('w1', 'Test Sword', 100, 50, WeaponType.SWORD, 10, 'model.glb', stableTier, level);
 }
 
 function makeChip(level = 1): ChipItem {

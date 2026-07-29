@@ -83,12 +83,7 @@ vi.mock('../ParticleShaderUtils', () => ({
 import { ElectricTrap, ElectricTrapConfig } from './ElectricTrap';
 import { Player } from '../player/Player';
 import { Enemy } from '../enemies/Enemy';
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-function makeScene() {
-    return { add: vi.fn(), remove: vi.fn() } as any;
-}
+import { mockDeep } from 'vitest-mock-extended';
 
 function makeConfig(overrides: Partial<ElectricTrapConfig> = {}): ElectricTrapConfig {
     return {
@@ -126,10 +121,10 @@ function makeEnemy(x: number, z: number, overrides: Partial<Enemy> = {}): Enemy 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('ElectricTrap', () => {
-    let scene: any;
+    let scene: THREE.Scene;
 
     beforeEach(() => {
-        scene = makeScene();
+        scene = mockDeep<THREE.Scene>();
     });
 
     // ------------------------------------------------------------------
