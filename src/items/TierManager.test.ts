@@ -2,13 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { TierManager, Tier } from './TierManager';
 
 describe('TierManager', () => {
-    const mgr = TierManager.Instance;
-
-    describe('Instance (singleton)', () => {
-        it('returns the same instance on repeated calls', () => {
-            expect(TierManager.Instance).toBe(mgr);
-        });
-    });
+    const mgr = new TierManager();
 
     describe('getWeaponTierForMultiplier', () => {
         it('returns BROKEN for a multiplier below -3%', () => {

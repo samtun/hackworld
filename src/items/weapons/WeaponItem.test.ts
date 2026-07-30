@@ -4,12 +4,8 @@ import { WeaponType } from './WeaponType';
 import { Tier, TierManager } from '../TierManager';
 import { Player } from '../../player/Player';
 
-function stableTier() {
-    return TierManager.Instance.tiers.get(Tier.STABLE)!;
-}
-
 function makeWeapon(level = 1, damage = 10, weaponType = WeaponType.SWORD): WeaponItem {
-    return new WeaponItem('w1', 'Test Sword', 100, 50, weaponType, damage, 'model.glb', stableTier(), level);
+    return new WeaponItem('w1', 'Test Sword', 100, 50, weaponType, damage, 'model.glb', new TierManager().tiers.get(Tier.STABLE)!, level);
 }
 
 function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
@@ -139,7 +135,7 @@ describe('WeaponItem', () => {
     describe('cloneWith', () => {
         it('returns a new weapon with overridden stats', () => {
             const weapon = makeWeapon(1, 10);
-            const overclocked = TierManager.Instance.tiers.get(Tier.OVERCLOCKED)!;
+            const overclocked = new TierManager().tiers.get(Tier.OVERCLOCKED)!;
             const cloned = weapon.cloneWith(15, 300, 150, overclocked);
             expect(cloned.damage).toBe(15);
             expect(cloned.buyPrice).toBe(300);

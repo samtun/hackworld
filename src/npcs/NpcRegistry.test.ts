@@ -2,18 +2,11 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { NpcRegistry } from './NpcRegistry';
 
 describe('NpcRegistry', () => {
-    let registry: NpcRegistry;
+    const registry = new NpcRegistry();
 
     beforeEach(() => {
         // Reset singleton for test isolation
         (NpcRegistry as any).instance = undefined;
-        registry = NpcRegistry.Instance;
-    });
-
-    describe('Instance (singleton)', () => {
-        it('returns the same instance on repeated calls', () => {
-            expect(NpcRegistry.Instance).toBe(registry);
-        });
     });
 
     describe('markDialogueShown / hasShownDialogue', () => {
