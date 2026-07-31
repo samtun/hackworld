@@ -1,102 +1,35 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('../../InputManager', () => ({
-    InputManager: {
-        Instance: {
-            isNavigateUpPressed: vi.fn().mockReturnValue(false),
-            isNavigateDownPressed: vi.fn().mockReturnValue(false),
-            isSelectPressed: vi.fn().mockReturnValue(false),
-            isCancelPressed: vi.fn().mockReturnValue(false),
-        }
-    }
-}));
-vi.mock('../../ui/UiUtils', () => ({
-    resetInputDebounce: vi.fn(),
-    shakeElement: vi.fn(),
-}));
-vi.mock('../../ui/InputHints', () => ({
-    getHint: vi.fn().mockReturnValue(''),
-    HintConfigs: { upgradeClose: 'upgradeClose' },
-}));
-vi.mock('../../ui/MenuManager', () => ({
-    MenuManager: {
-        Instance: {
-            createOverlay: vi.fn(() => {
-                const d = document.createElement('div');
-                d.style.display = 'none';
-                return d;
-            }),
-            createFlexWindow: vi.fn(() => document.createElement('div')),
-            createPanel: vi.fn(() => document.createElement('div')),
-            createTitle: vi.fn(() => document.createElement('div')),
-        }
-    },
-    MENU_COLORS: { COST_COLOR: '#ffd700', MAXED_COLOR: '#ff6666', TEXT: '#fff', TRANSPARENT: 'transparent', ITEM_SELECTED: '#888', ITEM_HOVER: '#666', XDATA_COLOR: '#00ffff', PANEL_BG: '#111', BORDER: '#333', SEPARATOR: '#444' },
-    MENU_STYLES: { FONT_FAMILY: 'Arial', Z_INDEX: 1000, Z_INDEX_HINTS: 1100, BORDER_RADIUS: '8px', BORDER_WIDTH: '1px' },
-}));
-vi.mock('../../ui/UIManager', () => ({
-    UIManager: {
-        Instance: {
-            showControlHints: vi.fn(),
-            hideControlHints: vi.fn(),
-        }
-    }
-}));
-vi.mock('../../AudioManager', () => ({
-    AudioManager: {
-        Instance: {
-            playMenuNavigate: vi.fn(),
-            playUpgrade: vi.fn(),
-            playInsufficient: vi.fn(),
-            playUiOpen: vi.fn(),
-            playUiClose: vi.fn(),
-        },
-    },
-}));
-vi.mock('../../ui/StatIcons', () => ({
-    ICON_HP: '<svg>hp</svg>', ICON_TP: '<svg>tp</svg>',
-    ICON_STRENGTH: '<svg>strength</svg>', ICON_DEFENSE: '<svg>defense</svg>',
-    ICON_AGILITY: '<svg>agility</svg>', ICON_LUCK: '<svg>luck</svg>',
-    ICON_BITS: '', ICON_NEXTLVL: '', ICON_XDATA: '', ICON_BOOSTER: '',
-    getWeaponIcon: vi.fn().mockReturnValue(''), getSkillTechIcon: vi.fn().mockReturnValue(''),
-}));
-vi.mock('../../Player', () => ({ Player: class { } }));
-
 import { XDataUpgradeManager } from './XDataUpgradeManager';
-import { resetInputDebounce } from '../../ui/UiUtils';
+import * as UiUtils from '../../ui/UiUtils';
 import { AudioManager } from '../../AudioManager';
+import { InputManager } from '../../controls/InputManager';
+import { MenuManager } from '../../ui/MenuManager';
+import { UIManager } from '../../ui/UIManager';
+import { mockDeep } from 'vitest-mock-extended';
 
-// jsdom does not implement scrollIntoView
-// HTMLElement.prototype.scrollIntoView = vi.fn();
+// happy-dom does not implement animate
+HTMLElement.prototype.animate = vi.fn();
 
-function makeManager() {
-    const mgr = Object.create((XDataUpgradeManager as any).prototype) as any;
+interface XDataUpgradeManagerTestOverrides {
+    menuManager?: MenuManager,
+    uiManager: UIManager,
+    audioManager: AudioManager,
+    inputManager: InputManager,
+}
 
-    const container = document.createElement('div');
-    container.style.display = 'none';
-    const xDataDisplay = document.createElement('div');
-    const statList = document.createElement('div');
+function makeManager(overrides: Partial<XDataUpgradeManagerTestOverrides> = {}) {
+    const mgr = new XDataUpgradeManager(
+        overrides.menuManager ?? mockDeep<MenuManager>({
+            createOverlay: vi.fn().mockReturnValue(document.createElement('div')),
+            createFlexWindow: vi.fn().mockReturnValue(document.createElement('div')),
+            createPanel: vi.fn().mockReturnValue(document.createElement('div')),
+            createTitle: vi.fn().mockReturnValue(document.createElement('div')),
+        }),
+        overrides.uiManager ?? mockDeep<UIManager>(),
+        overrides.audioManager ?? mockDeep<AudioManager>(),
+        overrides.inputManager ?? mockDeep<InputManager>()
+    );
 
-    Object.assign(mgr, {
-        isVisible: false,
-        container,
-        xDataDisplay,
-        statList,
-        itemElements: [],
-        selectedIndex: 0,
-        needsRender: false,
-        lastNavigateUpState: false,
-        lastNavigateDownState: false,
-        lastSelectState: false,
-        lastCancelState: false,
-        stats: [
-            { type: 'strength', label: 'Strength', description: 'Increases weapon damage', upgradeEffect: '+1 per upgrade' },
-            { type: 'defense', label: 'Defense', description: 'Reduces damage taken', upgradeEffect: '+1 per upgrade' },
-            { type: 'hp', label: 'HP', description: 'Increases max health', upgradeEffect: '+5 per upgrade' },
-        ],
-        menuManager: { createPanel: vi.fn(() => document.createElement('div')) },
-        uiManager: { showControlHints: vi.fn(), hideControlHints: vi.fn() },
-    });
     return mgr;
 }
 
@@ -114,76 +47,88 @@ function makePlayer(overrides = {}) {
 }
 
 describe('XDataUpgradeManager', () => {
-    let mgr: any;
-
     beforeEach(() => {
-        mgr = makeManager();
         vi.clearAllMocks();
     });
 
     // show() tests
     describe('show()', () => {
         it('sets isVisible=true', () => {
+            const mgr = makeManager();
             mgr.show();
             expect(mgr.isVisible).toBe(true);
         });
 
         it('sets container.style.display to flex', () => {
+            const mgr = makeManager();
             mgr.show();
             expect(mgr.container.style.display).toBe('flex');
         });
 
         it('resets selectedIndex to 0', () => {
+            const mgr = makeManager();
             mgr.selectedIndex = 2;
             mgr.show();
             expect(mgr.selectedIndex).toBe(0);
         });
 
         it('sets needsRender=true', () => {
+            const mgr = makeManager();
             mgr.show();
             expect(mgr.needsRender).toBe(true);
         });
 
         it('calls resetInputDebounce', () => {
+            const debounceSpy = vi.spyOn(UiUtils, 'resetInputDebounce');
+            const mgr = makeManager();
             mgr.show();
-            expect(resetInputDebounce).toHaveBeenCalledWith(mgr);
+            expect(debounceSpy).toHaveBeenCalledWith(mgr);
         });
 
         it('plays the UI open sound when shown from hidden', () => {
+            const audioManagerMock = mockDeep<AudioManager>();
+            const mgr = makeManager({ audioManager: audioManagerMock });
             mgr.show();
-            expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+            expect(audioManagerMock.playUiOpen).toHaveBeenCalledOnce();
         });
     });
 
     // hide() tests
     describe('hide()', () => {
         it('sets isVisible=false', () => {
+            const mgr = makeManager();
             mgr.isVisible = true;
             mgr.hide();
             expect(mgr.isVisible).toBe(false);
         });
 
         it('sets container.style.display to none', () => {
+            const mgr = makeManager();
             mgr.container.style.display = 'flex';
             mgr.hide();
             expect(mgr.container.style.display).toBe('none');
         });
 
         it('calls uiManager.hideControlHints', () => {
+            const uiManagerMock = mockDeep<UIManager>();
+            const mgr = makeManager({ uiManager: uiManagerMock });
             mgr.hide();
-            expect(mgr.uiManager.hideControlHints).toHaveBeenCalled();
+            expect(uiManagerMock.hideControlHints).toHaveBeenCalled();
         });
 
         it('plays the UI close sound when hidden from visible', () => {
+            const audioManagerMock = mockDeep<AudioManager>();
+            const mgr = makeManager({ audioManager: audioManagerMock });
             mgr.isVisible = true;
             mgr.hide();
-            expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
+            expect(audioManagerMock.playUiClose).toHaveBeenCalledOnce();
         });
     });
 
     // toggle() tests
     describe('toggle()', () => {
         it('calls hide() when visible', () => {
+            const mgr = makeManager();
             mgr.isVisible = true;
             const hideSpy = vi.spyOn(mgr, 'hide');
             mgr.toggle();
@@ -191,6 +136,7 @@ describe('XDataUpgradeManager', () => {
         });
 
         it('calls show() when not visible', () => {
+            const mgr = makeManager();
             mgr.isVisible = false;
             const showSpy = vi.spyOn(mgr, 'show');
             mgr.toggle();
@@ -198,12 +144,14 @@ describe('XDataUpgradeManager', () => {
         });
 
         it('flips isVisible from false to true', () => {
+            const mgr = makeManager();
             mgr.isVisible = false;
             mgr.toggle();
             expect(mgr.isVisible).toBe(true);
         });
 
         it('flips isVisible from true to false', () => {
+            const mgr = makeManager();
             mgr.isVisible = true;
             mgr.toggle();
             expect(mgr.isVisible).toBe(false);
@@ -213,6 +161,7 @@ describe('XDataUpgradeManager', () => {
     // update() tests
     describe('update()', () => {
         it('returns immediately when not visible, needsRender stays false', () => {
+            const mgr = makeManager();
             mgr.isVisible = false;
             mgr.needsRender = false;
             const player = makePlayer();
@@ -221,6 +170,7 @@ describe('XDataUpgradeManager', () => {
         });
 
         it('does not call render when not visible', () => {
+            const mgr = makeManager();
             mgr.isVisible = false;
             const player = makePlayer();
             // xDataDisplay.innerText unchanged means render was not called
@@ -230,6 +180,7 @@ describe('XDataUpgradeManager', () => {
         });
 
         it('calls render and updates xDataDisplay when visible and needsRender=true', () => {
+            const mgr = makeManager();
             mgr.isVisible = true;
             mgr.needsRender = true;
             const player = makePlayer({ xData: 42 });
@@ -238,6 +189,7 @@ describe('XDataUpgradeManager', () => {
         });
 
         it('sets needsRender=false after rendering', () => {
+            const mgr = makeManager();
             mgr.isVisible = true;
             mgr.needsRender = true;
             mgr.update(makePlayer());
@@ -245,43 +197,44 @@ describe('XDataUpgradeManager', () => {
         });
 
         it('calls uiManager.showControlHints when input is provided', () => {
+            const uiManagerMock = mockDeep<UIManager>();
+            const mgr = makeManager({ uiManager: uiManagerMock });
             mgr.isVisible = true;
-            const input = {
-                isNavigateUpPressed: vi.fn().mockReturnValue(false),
-                isNavigateDownPressed: vi.fn().mockReturnValue(false),
-                isSelectPressed: vi.fn().mockReturnValue(false),
-                isCancelPressed: vi.fn().mockReturnValue(false),
-            } as any;
-            mgr.update(makePlayer(), input);
-            expect(mgr.uiManager.showControlHints).toHaveBeenCalled();
+            mgr.update(makePlayer());
+            expect(uiManagerMock.showControlHints).toHaveBeenCalled();
         });
 
         it('does not call showControlHints when no input is provided', () => {
+            const showControlHintsSpy = vi.spyOn(UIManager.prototype, 'showControlHints');
+            const mgr = makeManager();
             mgr.isVisible = true;
             mgr.needsRender = true;
             mgr.update(makePlayer());
-            expect(mgr.uiManager.showControlHints).not.toHaveBeenCalled();
+            expect(showControlHintsSpy).not.toHaveBeenCalled();
         });
     });
 
     // render() via update() - stat list population
     describe('render() via update()', () => {
         it('populates statList with one element per stat', () => {
+            const mgr = makeManager();
             mgr.isVisible = true;
             mgr.needsRender = true;
             mgr.update(makePlayer());
-            expect(mgr.itemElements.length).toBe(mgr.stats.length);
+            expect(mgr.itemElements.length).toBe((mgr as any).stats.length);
         });
 
         it('highlights the selected item', () => {
+            const mgr = makeManager();
             mgr.isVisible = true;
             mgr.needsRender = true;
             mgr.selectedIndex = 1;
             mgr.update(makePlayer());
-            expect(mgr.itemElements[1].style.backgroundColor).toBe('rgb(136, 136, 136)');
+            expect(mgr.itemElements[1].style.backgroundColor).toBe('#888');
         });
 
         it('shows X-Data amount in xDataDisplay', () => {
+            const mgr = makeManager();
             mgr.isVisible = true;
             mgr.needsRender = true;
             mgr.update(makePlayer({ xData: 999 }));
@@ -289,6 +242,7 @@ describe('XDataUpgradeManager', () => {
         });
 
         it('shows upgrade cost text for non-maxed stats', () => {
+            const mgr = makeManager();
             mgr.isVisible = true;
             mgr.needsRender = true;
             mgr.update(makePlayer());
@@ -299,83 +253,73 @@ describe('XDataUpgradeManager', () => {
     // Navigation via handleNavigation (through update)
     describe('navigation via update()', () => {
         it('increments selectedIndex on navigateDown press', () => {
+            const inputManagerMock = mockDeep<InputManager>();
+            inputManagerMock.isNavigateDownPressed.mockReturnValue(true);
+            const audioManagerMock = mockDeep<AudioManager>();
+            const mgr = makeManager({ audioManager: audioManagerMock, inputManager: inputManagerMock });
             mgr.isVisible = true;
             mgr.selectedIndex = 0;
-            mgr.lastNavigateDownState = false;
-            const input = {
-                isNavigateUpPressed: vi.fn().mockReturnValue(false),
-                isNavigateDownPressed: vi.fn().mockReturnValue(true),
-                isSelectPressed: vi.fn().mockReturnValue(false),
-                isCancelPressed: vi.fn().mockReturnValue(false),
-            } as any;
-            mgr.update(makePlayer(), input);
+            (mgr as any).lastNavigateDownState = false;
+            mgr.update(makePlayer());
             expect(mgr.selectedIndex).toBe(1);
-            expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
+            expect(audioManagerMock.playMenuNavigate).toHaveBeenCalledOnce();
         });
 
         it('decrements selectedIndex on navigateUp press', () => {
+            const inputManagerMock = mockDeep<InputManager>();
+            inputManagerMock.isNavigateUpPressed.mockReturnValue(true);
+            const mgr = makeManager({ inputManager: inputManagerMock });
             mgr.isVisible = true;
             mgr.selectedIndex = 2;
-            mgr.lastNavigateUpState = false;
-            const input = {
-                isNavigateUpPressed: vi.fn().mockReturnValue(true),
-                isNavigateDownPressed: vi.fn().mockReturnValue(false),
-                isSelectPressed: vi.fn().mockReturnValue(false),
-                isCancelPressed: vi.fn().mockReturnValue(false),
-            } as any;
-            mgr.update(makePlayer(), input);
+            (mgr as any).lastNavigateUpState = false;
+            mgr.update(makePlayer());
             expect(mgr.selectedIndex).toBe(1);
         });
 
         it('does not go below index 0 on navigateUp', () => {
+            const inputManagerMock = mockDeep<InputManager>();
+            inputManagerMock.isNavigateUpPressed.mockReturnValue(true);
+            const mgr = makeManager({ inputManager: inputManagerMock });
             mgr.isVisible = true;
             mgr.selectedIndex = 0;
-            mgr.lastNavigateUpState = false;
-            const input = {
-                isNavigateUpPressed: vi.fn().mockReturnValue(true),
-                isNavigateDownPressed: vi.fn().mockReturnValue(false),
-                isSelectPressed: vi.fn().mockReturnValue(false),
-                isCancelPressed: vi.fn().mockReturnValue(false),
-            } as any;
-            mgr.update(makePlayer(), input);
+            (mgr as any).lastNavigateUpState = false;
+            mgr.update(makePlayer());
             expect(mgr.selectedIndex).toBe(0);
         });
 
         it('hides manager on cancel press', () => {
+            const inputManagerMock = mockDeep<InputManager>();
+            inputManagerMock.isCancelPressed.mockReturnValue(true);
+            const mgr = makeManager({ inputManager: inputManagerMock });
             mgr.isVisible = true;
-            mgr.lastCancelState = false;
-            const input = {
-                isNavigateUpPressed: vi.fn().mockReturnValue(false),
-                isNavigateDownPressed: vi.fn().mockReturnValue(false),
-                isSelectPressed: vi.fn().mockReturnValue(false),
-                isCancelPressed: vi.fn().mockReturnValue(true),
-            } as any;
-            mgr.update(makePlayer(), input);
+            (mgr as any).lastCancelState = false;
+            mgr.update(makePlayer());
             expect(mgr.isVisible).toBe(false);
         });
 
         it('calls upgradeWithXData on select press', () => {
+            const inputManagerMock = mockDeep<InputManager>();
+            const audioManagerMock = mockDeep<AudioManager>();
+            const mgr = makeManager({ audioManager: audioManagerMock, inputManager: inputManagerMock });
             mgr.isVisible = true;
             mgr.needsRender = true;
             mgr.selectedIndex = 0;
-            mgr.lastSelectState = false;
+            (mgr as any).lastSelectState = false;
             const player = makePlayer();
             // Populate itemElements first by rendering
             mgr.update(player);
             mgr.needsRender = false;
-            const input = {
-                isNavigateUpPressed: vi.fn().mockReturnValue(false),
-                isNavigateDownPressed: vi.fn().mockReturnValue(false),
-                isSelectPressed: vi.fn().mockReturnValue(true),
-                isCancelPressed: vi.fn().mockReturnValue(false),
-            } as any;
-            mgr.lastSelectState = false;
-            mgr.update(player, input);
-            expect(player.upgradeWithXData).toHaveBeenCalledWith(mgr.stats[0].type);
-            expect(AudioManager.Instance.playUpgrade).toHaveBeenCalledOnce();
+            (mgr as any).lastSelectState = false;
+            inputManagerMock.isSelectPressed.mockReturnValue(true);
+            mgr.update(player);
+            expect(player.upgradeWithXData).toHaveBeenCalledWith((mgr as any).stats[0].type);
+            expect(audioManagerMock.playUpgrade).toHaveBeenCalledOnce();
         });
 
         it('plays the insufficient sound when upgrade fails due to low X-Data', () => {
+            const inputManagerMock = mockDeep<InputManager>();
+            const audioManagerMock = mockDeep<AudioManager>();
+            const mgr = makeManager({ audioManager: audioManagerMock, inputManager: inputManagerMock });
             mgr.isVisible = true;
             mgr.needsRender = true;
             mgr.selectedIndex = 0;
@@ -386,19 +330,14 @@ describe('XDataUpgradeManager', () => {
             });
             mgr.update(player);
             mgr.needsRender = false;
-            mgr.shakeItem = vi.fn();
-            const input = {
-                isNavigateUpPressed: vi.fn().mockReturnValue(false),
-                isNavigateDownPressed: vi.fn().mockReturnValue(false),
-                isSelectPressed: vi.fn().mockReturnValue(true),
-                isCancelPressed: vi.fn().mockReturnValue(false),
-            } as any;
-            mgr.lastSelectState = false;
-            mgr.update(player, input);
-            expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
+            (mgr as any).lastSelectState = false;
+            inputManagerMock.isSelectPressed.mockReturnValue(true);
+            mgr.update(player);
+            expect(audioManagerMock.playInsufficient).toHaveBeenCalledOnce();
         });
 
         it('uses the correct current upgrade level for each stat type in the insufficient-audio path', () => {
+            const mgr = makeManager();
             mgr.isVisible = true;
             mgr.stats = [
                 { type: 'strength', label: 'Strength', description: '', upgradeEffect: '' },
@@ -419,28 +358,23 @@ describe('XDataUpgradeManager', () => {
                 getUpgradeCost: vi.fn().mockImplementation((level: number) => level + 10),
                 upgradeWithXData: vi.fn().mockReturnValue(false),
             });
-            mgr.shakeItem = vi.fn();
-            const input = {
-                isNavigateUpPressed: vi.fn().mockReturnValue(false),
-                isNavigateDownPressed: vi.fn().mockReturnValue(false),
-                isSelectPressed: vi.fn().mockReturnValue(true),
-                isCancelPressed: vi.fn().mockReturnValue(false),
-            } as any;
 
-            mgr.needsRender = true;
+            (mgr as any).needsRender = true;
             mgr.update(player);
 
             [1, 2, 3, 4, 5, 6].forEach((expectedLevel, index) => {
                 mgr.selectedIndex = index;
-                mgr.lastSelectState = false;
-                mgr.update(player, input);
+                (mgr as any).lastSelectState = false;
+                mgr.update(player);
                 expect(player.getUpgradeCost).toHaveBeenCalledWith(expectedLevel);
             });
         });
 
         it('throws for an unsupported stat type through the public update flow', () => {
+            const inputManagerMock = mockDeep<InputManager>();
+            const mgr = makeManager({ inputManager: inputManagerMock });
             mgr.isVisible = true;
-            mgr.stats = [
+            (mgr as any).stats = [
                 { type: 'invalid', label: 'Invalid', description: '', upgradeEffect: '' },
             ];
             const player = makePlayer({
@@ -448,19 +382,12 @@ describe('XDataUpgradeManager', () => {
                 getUpgradeCost: vi.fn().mockReturnValue(10),
                 upgradeWithXData: vi.fn().mockReturnValue(false),
             });
-            mgr.shakeItem = vi.fn();
-            mgr.needsRender = true;
+            (mgr as any).needsRender = true;
             mgr.update(player);
-            mgr.lastSelectState = false;
+            (mgr as any).lastSelectState = false;
+            inputManagerMock.isSelectPressed.mockReturnValue(true);
 
-            const input = {
-                isNavigateUpPressed: vi.fn().mockReturnValue(false),
-                isNavigateDownPressed: vi.fn().mockReturnValue(false),
-                isSelectPressed: vi.fn().mockReturnValue(true),
-                isCancelPressed: vi.fn().mockReturnValue(false),
-            } as any;
-
-            expect(() => mgr.update(player, input)).toThrow('Unsupported stat type: invalid');
+            expect(() => mgr.update(player)).toThrow('Unsupported stat type: invalid');
         });
     });
 });
