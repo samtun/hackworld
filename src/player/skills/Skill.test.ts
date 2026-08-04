@@ -1,45 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('three', () => ({
-    Scene: class { },
-    Vector3: class { constructor(_x = 0, _y = 0, _z = 0) { } },
-    Mesh: class { },
-    MeshStandardMaterial: class { },
-    SphereGeometry: class { },
-    Material: class { },
-}));
-
-vi.mock('cannon-es', () => ({
-    Vec3: class { constructor(_x = 0, _y = 0, _z = 0) { } },
-    World: class { bodies = []; },
-    Body: class { },
-}));
-
-vi.mock('../ui/UIManager', () => ({
-    UIManager: {
-        Instance: { displayInsufficientTPWarning: vi.fn() }
-    }
-}));
-
-vi.mock('../AudioManager', () => ({
-    AudioManager: {
-        Instance: { playInsufficient: vi.fn() }
-    }
-}));
-
 import { Skill } from './Skill';
 import { UIManager } from '../../ui/UIManager';
 import { AudioManager } from '../../AudioManager';
 import type { Player } from '../Player';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { mockDeep } from 'vitest-mock-extended';
 
 // Minimal concrete subclass for testing
 class TestSkill extends Skill {
     executeCalled = false;
 
-    constructor(cooldown = 5, tpCost = 20) {
-        super('Test', cooldown, tpCost, vi.fn(), '');
+    constructor(cooldown = 5, tpCost = 20, audioManager = mockDeep<AudioManager>(), uiManager = mockDeep<UIManager>()) {
+        super('Test', cooldown, tpCost, vi.fn(), '', audioManager, uiManager);
     }
 
     protected execute(_player: Player, _scene: THREE.Scene, _world: CANNON.World): void {
@@ -60,6 +33,10 @@ class TestSkill extends Skill {
 
 function makePlayer(tp: number, maxTp = 100): Partial<Player> {
     return { tp, maxTp, hp: 100, maxHp: 100, collectionBonusSkillCooldownReduction: 0 } as Partial<Player>;
+}
+
+function makeTestSkillWithOverrides(audioManager = mockDeep<AudioManager>(), uiManager = mockDeep<UIManager>()): TestSkill {
+    return new TestSkill(5, 20, audioManager, uiManager);
 }
 
 describe('Skill', () => {
@@ -109,11 +86,14 @@ describe('Skill', () => {
         });
 
         it('returns false and calls displayInsufficientTPWarning when player lacks TP', () => {
+            const uiManagerMock = mockDeep<UIManager>();
+            const audioManagerMock = mockDeep<AudioManager>();
+            const skill = makeTestSkillWithOverrides(audioManagerMock, uiManagerMock);
             const player = makePlayer(5) as Player;
             const result = skill.use(player, scene, world);
             expect(result).toBe(false);
-            expect(UIManager.Instance.displayInsufficientTPWarning).toHaveBeenCalledOnce();
-            expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
+            expect(uiManagerMock.displayInsufficientTPWarning).toHaveBeenCalledOnce();
+            expect(audioManagerMock.playInsufficient).toHaveBeenCalledOnce();
         });
 
         it('returns true on success, deducts TP, starts cooldown, and calls execute', () => {

@@ -1,51 +1,21 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('three', () => {
-    class V3 {
-        x = 0; y = 0; z = 0;
-        constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
-        copy() { return this; }
-    }
-    return {
-        Scene: class { },
-        Vector3: V3,
-        Mesh: class { geometry = { dispose: vi.fn() }; material = { dispose: vi.fn() }; parent = null; traverse(_cb: any) { } scale = { copy: vi.fn() }; position = { set: vi.fn() }; },
-        MeshStandardMaterial: class { dispose = vi.fn(); opacity = 1; },
-        Material: class { },
-    };
-});
-
-vi.mock('cannon-es', () => ({
-    Vec3: class { x = 0; y = 0; z = 0; constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; } },
-    World: class { bodies = []; },
-    Body: class { },
-}));
-
-vi.mock('../ui/UIManager', () => ({
-    UIManager: { Instance: { displayInsufficientTPWarning: vi.fn() } }
-}));
-
-vi.mock('../AudioManager', () => ({
-    AudioManager: { Instance: { playAreaAttackSkill: vi.fn(), playInsufficient: vi.fn() } }
-}));
-
-vi.mock('../BaseMesh', () => ({
-    BaseMesh: class {
-        mesh = { traverse: vi.fn(), scale: { copy: vi.fn() }, position: { set: vi.fn() }, parent: null, rotation: {}, quaternion: {} };
-        update(_dt: number) { }
-        disposeMesh = vi.fn();
-    }
-}));
-
-vi.mock('../Player', () => ({ Player: class { } }));
-vi.mock('../enemies/Enemy', () => ({ Enemy: class { } }));
-
 import { BlastSkill } from './BlastSkill';
 import { AudioManager } from '../../AudioManager';
 import { Enemy } from '../../enemies/Enemy';
 import { Tier } from '../../items/TierManager';
 import { SkillTechType } from './SkillType';
 import type { Player } from '../Player';
+import * as THREE from 'three';
+import { GLTF } from 'three/examples/jsm/Addons.js';
+import { mock, mockDeep } from 'vitest-mock-extended';
+import { AssetManager } from '../../AssetManager';
+
+interface BlastSkillTestOverrides {
+    onCompletedCallback?: () => void;
+    assetManager?: any;
+    audioManager?: AudioManager;
+    uiManager?: any;
+}
 
 function makeEnemy(x: number, z: number) {
     const enemy = Object.create(Enemy.prototype);
@@ -59,7 +29,7 @@ function makeEnemy(x: number, z: number) {
 function makePlayer(tier = Tier.STABLE) {
     return {
         getSkillTier: vi.fn().mockReturnValue(tier),
-        tp: 300, maxTp: 300,
+        tp: 3000, maxTp: 3300,
         position: { x: 0, y: 0, z: 0 },
         body: { position: { x: 0, y: 0, z: 0 } },
         getCriticalChance: vi.fn().mockReturnValue(0),
@@ -69,12 +39,38 @@ function makePlayer(tier = Tier.STABLE) {
     } as any;
 }
 
+function createDefaultAssetManager(): AssetManager {
+    const dummyMesh = new THREE.Mesh(
+        new THREE.BufferGeometry(),
+        new THREE.MeshStandardMaterial({ color: 0xffffff })
+    );
+
+    const dummyScene = new THREE.Group();
+    dummyScene.add(dummyMesh);
+
+    const gltfMock = mock<GLTF>();
+    gltfMock.scene = dummyScene;
+
+    const defaultAssetManagerMock = mockDeep<AssetManager>();
+    defaultAssetManagerMock.get.mockReturnValue(gltfMock);
+    return defaultAssetManagerMock;
+}
+
+function makeBlastSkill(overrides: BlastSkillTestOverrides = {}): BlastSkill {
+    return new BlastSkill(
+        overrides.onCompletedCallback ?? vi.fn(),
+        overrides.assetManager ?? createDefaultAssetManager(),
+        overrides.audioManager ?? mockDeep<AudioManager>(),
+        overrides.uiManager ?? mockDeep<any>()
+    );
+}
+
 describe('BlastSkill', () => {
     let skill: BlastSkill;
 
     beforeEach(() => {
         vi.clearAllMocks();
-        skill = new BlastSkill(vi.fn());
+        skill = makeBlastSkill();
     });
 
     describe('constructor', () => {
@@ -86,11 +82,13 @@ describe('BlastSkill', () => {
     });
 
     it('plays the area attack skill sound when executed', () => {
+        const audioManagerMock = mockDeep<AudioManager>();
         const player = makePlayer(Tier.STABLE);
         const scene = { add: vi.fn(), remove: vi.fn() } as any;
         const world = { bodies: [] } as any;
-        (skill as any).execute(player, scene, world);
-        expect(AudioManager.Instance.playAreaAttackSkill).toHaveBeenCalledOnce();
+        const skill = makeBlastSkill({ audioManager: audioManagerMock });
+        skill.use(player, scene, world);
+        expect(audioManagerMock.playBlastSkill).toHaveBeenCalledOnce();
     });
 
     describe('getEffectiveTpCost()', () => {
@@ -119,7 +117,7 @@ describe('BlastSkill', () => {
             const player = makePlayer(tier);
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [] } as any;
-            (skill as any).execute(player, scene, world);
+            skill.use(player, scene, world);
             expect((skill as any).effectiveDamage).toBe(damage);
             expect((skill as any).effectiveWaves).toBe(waves);
         });
@@ -128,7 +126,7 @@ describe('BlastSkill', () => {
             const player = makePlayer(Tier.STABLE);
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [] } as any;
-            (skill as any).execute(player, scene, world);
+            skill.use(player, scene, world);
             expect((skill as any).isBeingExecuted).toBe(true);
         });
 
@@ -137,7 +135,7 @@ describe('BlastSkill', () => {
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [] } as any;
             (skill as any).effectTimer = 0.5;
-            (skill as any).execute(player, scene, world);
+            skill.use(player, scene, world);
             expect((skill as any).effectTimer).toBe(0);
         });
     });
@@ -147,7 +145,7 @@ describe('BlastSkill', () => {
             const player = makePlayer(Tier.STABLE);
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [] } as any;
-            (skill as any).execute(player, scene, world);
+            skill.use(player, scene, world);
             skill.update(0.2);
             expect((skill as any).effectTimer).toBeCloseTo(0.2);
         });
@@ -156,7 +154,7 @@ describe('BlastSkill', () => {
             const player = makePlayer(Tier.STABLE);
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [] } as any;
-            (skill as any).execute(player, scene, world);
+            skill.use(player, scene, world);
             skill.update(100); // Far exceeds DURATION of 0.8s
             expect((skill as any).isBeingExecuted).toBe(false);
         });
@@ -173,7 +171,7 @@ describe('BlastSkill', () => {
             const farEnemy = makeEnemy(20, 0);
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [nearEnemy.body, farEnemy.body] } as any;
-            (skill as any).execute(player, scene, world);
+            skill.use(player, scene, world);
 
             // Update to about half the duration so wave is expanded
             skill.update(0.4);
@@ -189,7 +187,7 @@ describe('BlastSkill', () => {
 
             // Simulate residual effectTimer from a previous interrupted execution
             (skill as any).effectTimer = 0.7;
-            (skill as any).execute(player, scene, world);
+            skill.use(player, scene, world);
 
             // First update with a small dt should produce a small scale, not hit far enemies
             skill.update(0.016);
@@ -206,14 +204,14 @@ describe('BlastSkill', () => {
 
         it('calls onCompletedCallback', () => {
             const callback = vi.fn();
-            const s = new BlastSkill(callback);
-            (s as any).cleanup();
+            const skill = makeBlastSkill({ onCompletedCallback: callback });
+            skill.cleanup();
             expect(callback).toHaveBeenCalled();
         });
 
         it('resets effectTimer to 0', () => {
             (skill as any).effectTimer = 0.5;
-            (skill as any).cleanup();
+            skill.cleanup();
             expect((skill as any).effectTimer).toBe(0);
         });
     });

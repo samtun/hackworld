@@ -1,76 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('three', () => {
-    class V3 {
-        x = 0; y = 0; z = 0;
-        constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
-        set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; return this; }
-        copy(v: any) { this.x = v.x; this.y = v.y; this.z = v.z; return this; }
-        clone() { return new V3(this.x, this.y, this.z); }
-        multiplyScalar() { return this; }
-    }
-    class FakeMesh {
-        position = new V3();
-        quaternion = { copy: vi.fn() };
-        geometry = { dispose: vi.fn() };
-        material = { dispose: vi.fn(), opacity: 1, transparent: false, emissive: {} };
-        parent = null;
-        remove = vi.fn();
-        traverse(_cb: any) { }
-    }
-    return {
-        Mesh: FakeMesh,
-        Vector3: V3,
-        SphereGeometry: class { dispose = vi.fn(); },
-        MeshStandardMaterial: class { dispose = vi.fn(); opacity = 1; transparent = false; emissive = {}; },
-        Material: class { },
-        Scene: class { add = vi.fn(); remove = vi.fn(); children = []; },
-        MathUtils: { randFloat: (a: number, b: number) => (a + b) / 2, randInt: (a: number, _b: number) => a },
-    };
-});
-
-vi.mock('cannon-es', () => ({
-    Vec3: class { x = 0; y = 0; z = 0; constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; } },
-    World: class { addBody = vi.fn(); removeBody = vi.fn(); },
-}));
-
-vi.mock('../BaseMesh', () => ({
-    BaseMesh: class {
-        mesh = {
-            position: { x: 0, y: 0, z: 0, copy: vi.fn(), set: vi.fn() },
-            quaternion: { copy: vi.fn() },
-            scale: { copy: vi.fn() },
-            parent: null,
-            add: vi.fn(), remove: vi.fn(),
-            traverse: vi.fn(),
-        };
-        body = { position: { x: 0, y: 0, z: 0 }, velocity: { x: 0, y: 0, z: 0 } };
-        disposeMesh = vi.fn();
-        update(_dt: number) { }
-        scene: any; world: any;
-    }
-}));
-
-vi.mock('../ui/UIManager', () => ({
-    UIManager: { Instance: { displayInsufficientTPWarning: vi.fn() } }
-}));
-
-vi.mock('../AudioManager', () => ({
-    AudioManager: { Instance: { playRecoverySkill: vi.fn(), playInsufficient: vi.fn() } }
-}));
-
-vi.mock('../Player', () => ({ Player: class { } }));
-
+import * as THREE from 'three';
 import { RecoverySkill } from './RecoverySkill';
 import { AudioManager } from '../../AudioManager';
+import { AssetManager } from '../../AssetManager';
 import { Tier } from '../../items/TierManager';
 import { SkillTechType } from './SkillType';
 import type { Player } from '../Player';
+import { UIManager } from '../../ui/UIManager';
+import { mock, mockDeep } from 'vitest-mock-extended';
+import { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+
+interface RecoverySkillTestOverrides {
+    onCompletedCallback?: () => void,
+    assetManager?: AssetManager,
+    audioManager?: AudioManager,
+    uiManager?: UIManager,
+}
 
 function makePlayer(tier = Tier.STABLE, hp = 50, maxHp = 100) {
     return {
         id: 'p1',
-        tp: 100, maxTp: 100,
+        tp: 1000, maxTp: 1000,
         hp, maxHp,
         skills: [],
         getSkillTier: vi.fn().mockReturnValue(tier),
@@ -81,12 +31,38 @@ function makePlayer(tier = Tier.STABLE, hp = 50, maxHp = 100) {
     } as any;
 }
 
+function createDefaultAssetManager(): AssetManager {
+    const dummyMesh = new THREE.Mesh(
+        new THREE.BufferGeometry(),
+        new THREE.MeshStandardMaterial({ color: 0xffffff })
+    );
+
+    const dummyScene = new THREE.Group();
+    dummyScene.add(dummyMesh);
+
+    const gltfMock = mock<GLTF>();
+    gltfMock.scene = dummyScene;
+
+    const defaultAssetManagerMock = mockDeep<AssetManager>();
+    defaultAssetManagerMock.get.mockReturnValue(gltfMock);
+    return defaultAssetManagerMock;
+}
+
+function makeRecoverySkill(overrides: RecoverySkillTestOverrides = {}) {
+    return new RecoverySkill(
+        overrides.onCompletedCallback || vi.fn(),
+        overrides.assetManager || createDefaultAssetManager(),
+        overrides.audioManager || mockDeep<AudioManager>(),
+        overrides.uiManager || mockDeep<UIManager>()
+    );
+}
+
 describe('RecoverySkill', () => {
     let skill: RecoverySkill;
 
     beforeEach(() => {
         vi.clearAllMocks();
-        skill = new RecoverySkill(vi.fn());
+        skill = makeRecoverySkill();
     });
 
     describe('constructor', () => {
@@ -98,11 +74,13 @@ describe('RecoverySkill', () => {
     });
 
     it('plays the healing skill sound when executed', () => {
+        const audioManager = mockDeep<AudioManager>();
         const player = makePlayer(Tier.STABLE);
         const scene = { add: vi.fn(), remove: vi.fn() } as any;
         const world = {} as any;
-        (skill as any).execute(player, scene, world);
-        expect(AudioManager.Instance.playRecoverySkill).toHaveBeenCalledOnce();
+        const skill = makeRecoverySkill({ audioManager: audioManager });
+        skill.use(player, scene, world);
+        expect(audioManager.playRecoverySkill).toHaveBeenCalledOnce();
     });
 
     describe('getEffectiveTpCost()', () => {
@@ -247,8 +225,8 @@ describe('RecoverySkill', () => {
 
         it('calls onCompletedCallback', () => {
             const callback = vi.fn();
-            const s = new HealingSkill(callback);
-            (s as any).cleanup();
+            const skill = makeRecoverySkill({ onCompletedCallback: callback });
+            (skill as any).cleanup();
             expect(callback).toHaveBeenCalled();
         });
 
