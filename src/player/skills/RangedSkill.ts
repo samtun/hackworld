@@ -45,7 +45,7 @@ export class RangedSkill extends Skill {
         audioManager: AudioManager,
         uiManager: UIManager,
     ) {
-        super('Ranged Beam', 5, 250, onCompletedCallback, 'images/ui_icons/ranged.png', audioManager, uiManager);
+        super('Ranged', 5, 250, onCompletedCallback, 'images/ui_icons/ranged.png', audioManager, uiManager);
         this.assetManager = assetManager;
     }
 
