@@ -327,8 +327,8 @@ export class SaveManager {
                     }
                     return structuredClone(i);
                 }),
-                tech: structuredClone((player as any).tech || {}),
-                skillTech: structuredClone(player.skillTech || {})
+                tech: structuredClone(player.tech),
+                skillTech: structuredClone(player.skillTech)
             },
             cardCollection: this.cardCollection.getSaveData(),
             npcDialogueShown: this.npcRegistry.getShownDialogueList(),

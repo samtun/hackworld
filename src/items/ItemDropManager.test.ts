@@ -428,7 +428,7 @@ describe('WeaponDropStrategy.pickup', () => {
 
 describe('ItemDropManager.pickup', () => {
     beforeEach(() => {
-        vi.resetAllMocks();
+        vi.restoreAllMocks();
     });
 
     it('delegates to strategy.pickup and removes the drop from storage', () => {

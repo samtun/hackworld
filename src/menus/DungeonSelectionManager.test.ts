@@ -1,82 +1,36 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('./InputManager', () => ({
-    InputManager: { Instance: {} }
-}));
-vi.mock('./ui/MenuManager', () => ({
-    MenuManager: {
-        Instance: {
-            createOverlay: vi.fn(() => { const d = document.createElement('div'); d.style.display = 'none'; return d; }),
-            createFlexWindow: vi.fn(() => document.createElement('div')),
-            createPanel: vi.fn(() => document.createElement('div')),
-        }
-    },
-    MENU_COLORS: { ITEM_SELECTED: '#888', TRANSPARENT: 'transparent', SEPARATOR: '#BBBBBB', TEXT: '#fff' },
-    MENU_STYLES: { FONT_FAMILY: 'Arial' },
-}));
-vi.mock('./ui/UIManager', () => ({
-    UIManager: {
-        Instance: {
-            showControlHints: vi.fn(),
-            hideControlHints: vi.fn(),
-        }
-    }
-}));
-vi.mock('./ui/InputHints', () => ({
-    getHint: vi.fn().mockReturnValue(''),
-    HintConfigs: { menuNavigate: 'menuNavigate' },
-}));
-vi.mock('./GameProgressManager', () => ({
-    GameProgressManager: { Instance: { progress: 5 } }
-}));
-vi.mock('./AudioManager', () => ({
-    AudioManager: {
-        Instance: {
-            playMenuNavigate: vi.fn(),
-            playUiOpen: vi.fn(),
-            playUiClose: vi.fn(),
-        },
-    },
-}));
-vi.mock('./stages', () => ({
-    AVAILABLE_DUNGEONS: [],
-    BaseStage: class {
-        static getMetadata() { return { id: 'test', name: 'Test', description: 'Test Stage', requiredProgress: 1 }; }
-    }
-}));
-
 import { DungeonSelectionManager } from './DungeonSelectionManager';
 import { GameProgressManager } from '../GameProgressManager';
 import { UIManager } from '../ui/UIManager';
 import { AudioManager } from '../AudioManager';
+import { MenuManager } from '../ui/MenuManager';
+import { InputManager } from '../controls/InputManager';
+import { mockDeep } from 'vitest-mock-extended';
 
-function makeDungeonManager(overrides: Record<string, unknown> = {}) {
-    const mgr = Object.create((DungeonSelectionManager as any).prototype) as any;
+interface DungeonSelectionTestOverrides {
+    menuManager?: MenuManager,
+    uiManager?: UIManager,
+    audioManager?: AudioManager,
+    gameProgressManager?: GameProgressManager,
+    inputManager?: InputManager
+}
 
-    const container = document.createElement('div');
-    container.style.display = 'none';
-    const dungeonList = document.createElement('div');
-    container.appendChild(dungeonList);
+function makeDungeonManager(overrides: DungeonSelectionTestOverrides = {}) {
+    const {
+        menuManager = mockDeep<MenuManager>(),
+        uiManager = mockDeep<UIManager>(),
+        audioManager = mockDeep<AudioManager>(),
+        gameProgressManager = makeGameProgressManager(),
+        inputManager = mockDeep<InputManager>(),
+    } = overrides;
 
-    Object.assign(mgr, {
-        isVisible: false,
-        container,
-        dungeonList,
-        selectedIndex: 0,
-        dungeonElements: [],
-        needsRender: false,
-        dungeonClasses: [],
-        lastNavigateUpState: false,
-        lastNavigateDownState: false,
-        lastSelectState: false,
-        lastCancelState: false,
-        waitForRelease: false,
-        onDungeonSelected: undefined,
-        menuManager: {},
-        uiManager: UIManager.Instance,
-        ...overrides,
-    });
-    return mgr;
+    return new DungeonSelectionManager(
+        menuManager,
+        uiManager,
+        audioManager,
+        gameProgressManager,
+        inputManager
+    );
 }
 
 function makeFakeDungeon(name = 'Test Dungeon', description = 'A test dungeon', requiredProgress = 1, id = 'dungeon1') {
@@ -95,16 +49,21 @@ function makeInput(overrides: Record<string, unknown> = {}) {
     } as any;
 }
 
+function makeGameProgressManager(progress: number = 0) {
+    return mockDeep<GameProgressManager>({
+        progress: progress
+    });
+}
+
 describe('DungeonSelectionManager', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         (import.meta.env as any).DEV = false;
-        (GameProgressManager.Instance as any).progress = 5;
     });
 
     describe('show()', () => {
         it('sets isVisible to true and display to flex', () => {
-            const mgr = makeDungeonManager();
+            const mgr = makeDungeonManager({ gameProgressManager: makeGameProgressManager(5) });
             const cb = vi.fn();
             mgr.show(cb);
             expect(mgr.isVisible).toBe(true);
@@ -112,7 +71,8 @@ describe('DungeonSelectionManager', () => {
         });
 
         it('resets selectedIndex to 0 and sets needsRender', () => {
-            const mgr = makeDungeonManager({ selectedIndex: 3 });
+            const mgr = makeDungeonManager({ gameProgressManager: makeGameProgressManager(5) });
+            mgr.selectedIndex = 3;
             mgr.show(vi.fn());
             expect(mgr.selectedIndex).toBe(0);
             // needsRender may be reset after render() inside show(), but render was called
