@@ -9,7 +9,6 @@ import { AssetManager } from '../AssetManager';
 import { AudioManager } from '../AudioManager';
 import { NpcRegistry } from '../npcs/NpcRegistry';
 
-
 interface TeleporterDependencyOverrides {
     scene?: THREE.Scene;
     physicsWorld?: CANNON.World;
