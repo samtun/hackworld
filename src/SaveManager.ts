@@ -87,7 +87,6 @@ export class SaveManager {
     private readonly npcRegistry: NpcRegistry;
     private readonly tierManager: TierManager;
 
-    private static readonly SAVE_VERSION = __APP_VERSION__;
     private static readonly LOCAL_STORAGE_KEY = 'hackworld_autosave';
     private static readonly RESET_FLAG_KEY = 'hackworld_resetting';
     private playTimeSeconds: number = 0;
@@ -261,7 +260,7 @@ export class SaveManager {
 
     private createSaveData(player: Player): SaveData {
         return {
-            version: SaveManager.SAVE_VERSION,
+            version: __APP_VERSION__,
             timestamp: new Date().toISOString(),
             playtime: this.playTimeSeconds,
             gameProgress: this.gameProgressManager.progress,
@@ -340,7 +339,7 @@ export class SaveManager {
      * Returns the major version number from a semver string (e.g. "1.2.3" → 1).
      * Returns NaN if the version string is not valid semver.
      */
-    private static getMajorVersion(version: string): number {
+    private getMajorVersion(version: string): number {
         return parseInt(version.split('.')[0], 10);
     }
 
@@ -353,9 +352,9 @@ export class SaveManager {
      */
     private checkVersionCompatibility(saveData: SaveData, onIncompatibleCancel: () => void): boolean {
         const saveVersion = saveData.version ?? '0.0.0';
-        const gameVersion = SaveManager.SAVE_VERSION;
-        const saveMajor = SaveManager.getMajorVersion(saveVersion);
-        const gameMajor = SaveManager.getMajorVersion(gameVersion);
+        const gameVersion = __APP_VERSION__;
+        const saveMajor = this.getMajorVersion(saveVersion);
+        const gameMajor = this.getMajorVersion(gameVersion);
 
         // Only enforce compatibility when both versions are valid semver
         if (!isNaN(saveMajor) && !isNaN(gameMajor) && saveMajor !== gameMajor) {

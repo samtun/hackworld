@@ -14,7 +14,8 @@ import { ChipItem } from './items/chips/ChipItem';
 import { ChipRepository } from './items/chips/ChipRepository';
 import { TierManager, WeaponTierDefinition } from './items/TierManager';
 import { SaveManagerUI } from './menus/SaveManagerUI';
-import { mockDeep } from 'vitest-mock-extended';
+import { mock, mockDeep } from 'vitest-mock-extended';
+import { Player } from './player/Player';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -43,7 +44,7 @@ function makeSaveManager(overrides: SaveManagerTestOverrides = {}): SaveManager 
         saveManagerUi = mockDeep<SaveManagerUI>(),
         gameProgressManager = mockDeep<GameProgressManager>(),
         cardCollection = mockDeep<CardCollection>(),
-        playerRegistry = mockDeep<PlayerRegistry>(),
+        playerRegistry = makePlayerRegistryWithPlayer(),
         weaponRepository = mockDeep<WeaponRepository>(),
         coreRepository = mockDeep<CoreRepository>(),
         chipRepository = mockDeep<ChipRepository>(),
@@ -66,7 +67,7 @@ function makeSaveManager(overrides: SaveManagerTestOverrides = {}): SaveManager 
 
 /** Create a minimal player-like object with the fields SaveManager reads. */
 function makePlayerStub(overrides: Record<string, unknown> = {}) {
-    return {
+    const playerMock = mock<Player>({
         level: 5,
         exp: 120,
         expRequired: 500,
@@ -89,22 +90,41 @@ function makePlayerStub(overrides: Record<string, unknown> = {}) {
         agilityPoints: 0,
         luckPoints: 0,
         body: { position: { x: 1, y: 2, z: 3 } },
-        inventory: [],
-        tech: {
-            [WeaponType.SWORD]: 50,
-            [WeaponType.DUAL_BLADE]: 0,
-            [WeaponType.LANCE]: 0,
-            [WeaponType.HAMMER]: 0,
-        },
-        skillTech: {
-            [SkillTechType.RECOVERY]: 10,
-            [SkillTechType.BLAST]: 0,
-            [SkillTechType.RANGED]: 5,
-        },
         recalculateStats: vi.fn(),
         setWeapon: vi.fn(),
+        inventory: [],
         ...overrides,
-    } as any;
+    });
+
+    const techData = {
+        [WeaponType.SWORD]: 50,
+        [WeaponType.DUAL_BLADE]: 0,
+        [WeaponType.LANCE]: 0,
+        [WeaponType.HAMMER]: 0,
+    };
+
+    const skillTechData = {
+        [SkillTechType.RECOVERY]: 10,
+        [SkillTechType.BLAST]: 0,
+        [SkillTechType.RANGED]: 5,
+    };
+
+    // Durch Object.defineProperty umgehen wir den Proxy-Handler von vitest-mock-extended
+    Object.defineProperty(playerMock, 'tech', {
+        get: () => ({ ...techData }), // Liefert jedes Mal ein frisches Plain Object
+        set: (value) => { Object.assign(techData, value); },
+        configurable: true,
+        enumerable: true
+    });
+
+    Object.defineProperty(playerMock, 'skillTech', {
+        get: () => ({ ...skillTechData }),
+        set: (value) => { Object.assign(skillTechData, value); },
+        configurable: true,
+        enumerable: true
+    });
+
+    return playerMock;
 }
 
 /** Stub global storage APIs for tests that need them. */
@@ -418,8 +438,7 @@ describe('SaveManager – version compatibility', () => {
     beforeEach(() => {
         stubStorage();
 
-        // Set a known semver game version so major version comparisons are deterministic
-        // TODO: Reimplement with instance of SaveManager... (SaveManager as any).SAVE_VERSION = '1.50.0';
+        vi.stubGlobal('__APP_VERSION__', '1.50.0');
 
         confirmSpy = vi.fn();
         reloadSpy = vi.fn();
@@ -506,12 +525,12 @@ describe('SaveManager – version compatibility', () => {
     });
 
     it('skips version check when game version is not valid semver (e.g. dev build)', () => {
-        // Simulate a dev/test build where __APP_VERSION__ is not a semver string
-        (SaveManager as any).SAVE_VERSION = 'dev';
         const data = makeSaveData({ version: '2.0.0' });
         localStorage.setItem('hackworld_autosave', JSON.stringify(data));
         const player = makePlayerStub();
         const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        // Simulate a dev/test build where __APP_VERSION__ is not a semver string
+        vi.stubGlobal('__APP_VERSION__', 'dev');
         mgr.loadFromLocalStorage();
         expect(confirmSpy).not.toHaveBeenCalled();
         expect(player.level).toBe(1);
@@ -770,7 +789,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
 
         const player = makePlayerStub();
         const playerRegistry = makePlayerRegistryWithPlayer(player);
-        const mgr = makeSaveManager({ playerRegistry: playerRegistry });
+        const mgr = makeSaveManager({ playerRegistry: playerRegistry, coreRepository: coreRepository });
         (mgr as any).loadSaveData(data);
         expect(player.inventory).toHaveLength(1);
         expect(player.inventory[0]).toBe(fakeCoreItem);
@@ -787,7 +806,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
 
         const player = makePlayerStub();
         const playerRegistry = makePlayerRegistryWithPlayer(player);
-        const mgr = makeSaveManager({ playerRegistry: playerRegistry });
+        const mgr = makeSaveManager({ playerRegistry: playerRegistry, coreRepository: coreRepository });
         (mgr as any).loadSaveData(data);
         expect(player.inventory[0].isEquipped).toBe(true);
     });
@@ -803,7 +822,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
 
         const player = makePlayerStub();
         const playerRegistry = makePlayerRegistryWithPlayer(player);
-        const mgr = makeSaveManager({ playerRegistry: playerRegistry });
+        const mgr = makeSaveManager({ playerRegistry: playerRegistry, chipRepository: chipRepository });
         (mgr as any).loadSaveData(data);
         expect(player.inventory).toHaveLength(1);
         expect(player.inventory[0]).toBe(fakeChipItem);
@@ -819,7 +838,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
 
         const player = makePlayerStub();
         const playerRegistry = makePlayerRegistryWithPlayer(player);
-        const mgr = makeSaveManager({ playerRegistry: playerRegistry });
+        const mgr = makeSaveManager({ playerRegistry: playerRegistry, coreRepository: coreRepository });
         (mgr as any).loadSaveData(data);
         expect(player.inventory).toHaveLength(0);
     });
