@@ -1,36 +1,100 @@
 import { describe, expect, it, vi } from 'vitest';
 import * as THREE from 'three';
-
-vi.mock('./ParticleShaderUtils', () => ({
-    createParticleShaderMaterial: vi.fn(),
-    updateParticleScaleFactor: vi.fn(),
-}));
-
-vi.mock('./AudioManager', () => ({
-    AudioManager: {
-        Instance: {
-            playTeleport: vi.fn(),
-        },
-    },
-}));
-
-vi.mock('./npcs/Npc', () => ({
-    Npc: class {
-        update(): void {}
-        cleanup(): void {}
-    },
-}));
-
+import * as CANNON from 'cannon-es';
 import { Teleporter } from './Teleporter';
+import { GLTF } from 'three/examples/jsm/Addons.js';
+import { container } from 'tsyringe';
+import { mock, mockDeep } from 'vitest-mock-extended';
+import { AssetManager } from '../AssetManager';
+import { AudioManager } from '../AudioManager';
+import { NpcRegistry } from '../npcs/NpcRegistry';
 
-function makeTeleporterForParticleUpdate(options?: {
+
+interface TeleporterDependencyOverrides {
+    scene?: THREE.Scene;
+    physicsWorld?: CANNON.World;
+    physicsMaterial?: CANNON.Material;
+    position?: CANNON.Vec3;
+    destination?: string;
+    startActive?: boolean;
+    hint?: string;
+    audioManager?: AudioManager;
+    assetManager?: AssetManager;
+    npcRegistry?: NpcRegistry;
+}
+
+function createDefaultAssetManager(): AssetManager {
+    const dummyMesh = new THREE.Mesh(
+        new THREE.BufferGeometry(),
+        new THREE.MeshStandardMaterial({ color: 0xffffff })
+    );
+
+    const dummyRightHandBone = new THREE.Bone();
+    dummyRightHandBone.name = 'HandR';
+
+    const dummyScene = new THREE.Group();
+    dummyScene.add(dummyMesh);
+    dummyScene.add(dummyRightHandBone);
+
+    const gltfMock = mock<GLTF>();
+    gltfMock.scene = dummyScene;
+
+    const defaultAssetManagerMock = mockDeep<AssetManager>();
+    defaultAssetManagerMock.get.mockReturnValue(gltfMock);
+    return defaultAssetManagerMock;
+}
+
+function createDefaultPhysicsWorld(defaultPhysicsMaterial: CANNON.Material = new CANNON.Material('defaultMaterial')): CANNON.World {
+    const floorShape = new CANNON.Plane();
+    const floorBody = new CANNON.Body({
+        mass: 0,
+        material: defaultPhysicsMaterial,
+    });
+    floorBody.addShape(floorShape);
+    floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+
+    const defaultPhysicsWorld = new CANNON.World();
+    defaultPhysicsWorld.addBody(floorBody);
+    return defaultPhysicsWorld;
+}
+
+function makeTeleporterForParticleUpdate(overrides: TeleporterDependencyOverrides = {}, options?: {
     playerNearby?: boolean;
     lifetime?: number;
     initialSize?: number;
 }): any {
-    const teleporter = Object.create(Teleporter.prototype) as any;
+    const defaultPhysicsMaterial = new CANNON.Material('defaultMaterial');
+    const finalAssetManager = overrides.assetManager || createDefaultAssetManager();
+    const finalPhysicsWorld = overrides.physicsWorld || createDefaultPhysicsWorld(defaultPhysicsMaterial);
+
+    container.registerInstance(AssetManager, finalAssetManager);
+
+    const {
+        position = new CANNON.Vec3(0, 0, 0),
+        scene = mockDeep<THREE.Scene>(),
+        physicsWorld = finalPhysicsWorld,
+        physicsMaterial = defaultPhysicsMaterial,
+        audioManager = mockDeep<AudioManager>(),
+        assetManager = finalAssetManager,
+        npcRegistry = mockDeep<NpcRegistry>(),
+    } = overrides;
+
+    const fullTeleporter = new Teleporter(
+        scene,
+        physicsWorld,
+        physicsMaterial,
+        position,
+        "test",
+        false,
+        "Teleport",
+        audioManager,
+        assetManager,
+        npcRegistry,
+    );
+
     const lifetime = options?.lifetime ?? 1;
     const initialSize = options?.initialSize ?? 0.3;
+    const teleporter = fullTeleporter as any;
 
     teleporter.time = 0;
     teleporter.PARTICLE_COUNT = 1;
@@ -78,8 +142,8 @@ function makeTeleporterForParticleUpdate(options?: {
 
 describe('Teleporter particle size and speed', () => {
     it('applies a smaller size factor when player is not nearby', () => {
-        const nearbyTeleporter = makeTeleporterForParticleUpdate({ playerNearby: true, lifetime: 1, initialSize: 0.3 });
-        const farTeleporter = makeTeleporterForParticleUpdate({ playerNearby: false, lifetime: 1, initialSize: 0.3 });
+        const nearbyTeleporter = makeTeleporterForParticleUpdate({}, { playerNearby: true, lifetime: 1, initialSize: 0.3 });
+        const farTeleporter = makeTeleporterForParticleUpdate({}, { playerNearby: false, lifetime: 1, initialSize: 0.3 });
         const playerPosition = new THREE.Vector3(0, 0, 0);
 
         nearbyTeleporter.updateWithPlayerPosition(0.1, playerPosition);
@@ -94,8 +158,8 @@ describe('Teleporter particle size and speed', () => {
     });
 
     it('moves particles faster along negative Z when player is nearby', () => {
-        const nearbyTeleporter = makeTeleporterForParticleUpdate({ playerNearby: true, lifetime: 1 });
-        const farTeleporter = makeTeleporterForParticleUpdate({ playerNearby: false, lifetime: 1 });
+        const nearbyTeleporter = makeTeleporterForParticleUpdate({}, { playerNearby: true, lifetime: 1 });
+        const farTeleporter = makeTeleporterForParticleUpdate({}, { playerNearby: false, lifetime: 1 });
         const playerPosition = new THREE.Vector3(0, 0, 0);
 
         nearbyTeleporter.updateWithPlayerPosition(0.1, playerPosition);
@@ -110,7 +174,7 @@ describe('Teleporter particle size and speed', () => {
     });
 
     it('shrinks particle size as lifetime decreases', () => {
-        const teleporter = makeTeleporterForParticleUpdate({ playerNearby: true, lifetime: 1.2, initialSize: 0.3 });
+        const teleporter = makeTeleporterForParticleUpdate({}, { playerNearby: true, lifetime: 1.2, initialSize: 0.3 });
         const playerPosition = new THREE.Vector3(0, 0, 0);
 
         teleporter.updateWithPlayerPosition(0.1, playerPosition);
@@ -123,7 +187,7 @@ describe('Teleporter particle size and speed', () => {
     });
 
     it('marks position and size attributes for geometry updates', () => {
-        const teleporter = makeTeleporterForParticleUpdate({ playerNearby: true, lifetime: 1 });
+        const teleporter = makeTeleporterForParticleUpdate({}, { playerNearby: true, lifetime: 1 });
         const playerPosition = new THREE.Vector3(0, 0, 0);
 
         teleporter.updateWithPlayerPosition(0.1, playerPosition);

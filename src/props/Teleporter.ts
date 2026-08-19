@@ -54,7 +54,7 @@ export class Teleporter extends Npc {
 
     constructor(
         scene: THREE.Scene,
-        world: CANNON.World,
+        physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
         position: CANNON.Vec3,
         destination: string,
@@ -69,7 +69,7 @@ export class Teleporter extends Npc {
             assetManager,
             npcRegistry,
             scene,
-            world,
+            physicsWorld,
             physicsMaterial,
             'models/teleporter.glb',
             `Teleporter_${destination}`,
