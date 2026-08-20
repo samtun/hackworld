@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { HealingSystem } from './HealingSystem';
 import { PlayerRegistry } from '../player/PlayerRegistry';
 import { IHealingStation } from './IHealingStation';
@@ -27,81 +27,102 @@ function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
     return player;
 }
 
+function makePlayerRegistry(players: Player[] = []): PlayerRegistry {
+    const registry = {
+        activePlayers: players,
+        hasActivePlayer: vi.fn(() => players.length > 0),
+    } as unknown as PlayerRegistry;
+
+    return registry;
+}
+
 describe('HealingSystem', () => {
-    let system: HealingSystem;
-
-    beforeEach(() => {
-        // Reset singleton state
-        (HealingSystem as any).instance = undefined;
-        system = HealingSystem.Instance;
-
-        // Reset PlayerRegistry
-        (PlayerRegistry as any).instance = undefined;
-    });
-
-    describe('Instance (singleton)', () => {
-        it('returns the same instance on repeated calls', () => {
-            expect(HealingSystem.Instance).toBe(system);
-        });
-    });
-
     describe('register / unregister', () => {
         it('registers a station and it receives update calls', () => {
+            const playerRegistry = makePlayerRegistry();
+            const system = new HealingSystem(playerRegistry);
             const station = makeStation();
+
             system.register(station);
             system.update(0.016);
+
             expect(station.setHealing).toHaveBeenCalled();
         });
 
         it('unregisters a station so it no longer receives update calls', () => {
+            const playerRegistry = makePlayerRegistry();
+            const system = new HealingSystem(playerRegistry);
             const station = makeStation();
+
             system.register(station);
             system.unregister(station);
             system.update(0.016);
+
             expect(station.setHealing).not.toHaveBeenCalled();
         });
     });
 
     describe('update with no players', () => {
         it('calls setHealing(false) on all stations when no players are present', () => {
+            const playerRegistry = makePlayerRegistry();
+            const system = new HealingSystem(playerRegistry);
             const station = makeStation();
+
             system.register(station);
             system.update(0.016);
+
             expect(station.setHealing).toHaveBeenCalledWith(false);
         });
     });
 
     describe('update with a player in range', () => {
         it('calls setHealing(true) when a player is within the station radius', () => {
+            const player = makePlayer({ position: new THREE.Vector3(1, 0, 0) });
+            const playerRegistry = makePlayerRegistry([player]);
+            const system = new HealingSystem(playerRegistry);
             const station = makeStation(0, 0, 0, 3);
+
             system.register(station);
-
-            const player = makePlayer({ position: new THREE.Vector3(1, 0, 0) }); // dist=1, within radius 3
-            PlayerRegistry.Instance.addPlayer(player);
-
             system.update(0.016);
+
             expect(station.setHealing).toHaveBeenCalledWith(true);
         });
 
         it('heals the player when hp < maxHp', () => {
-            const station = makeStation(0, 0, 0, 3);
-            system.register(station);
-
             const heal = vi.fn();
-            const player = makePlayer({ hp: 50, maxHp: 100, tp: 25, maxTp: 50, position: new THREE.Vector3(0, 0, 0), heal });
-            PlayerRegistry.Instance.addPlayer(player);
+            const player = makePlayer({
+                hp: 50,
+                maxHp: 100,
+                tp: 25,
+                maxTp: 50,
+                position: new THREE.Vector3(0, 0, 0),
+                heal,
+            });
+            const playerRegistry = makePlayerRegistry([player]);
+            const system = new HealingSystem(playerRegistry);
+            const station = makeStation(0, 0, 0, 3);
 
+            system.register(station);
             system.update(0.1);
+
             expect(heal).toHaveBeenCalled();
         });
 
         it('accumulates small TP heals across updates', () => {
-            const station = makeStation(0, 0, 0, 3);
-            system.register(station);
-
             const heal = vi.fn();
-            const player = makePlayer({ hp: 0, maxHp: 0, tp: 0, maxTp: 50, position: new THREE.Vector3(0, 0, 0), heal });
-            PlayerRegistry.Instance.addPlayer(player);
+            const player = makePlayer({
+                hp: 0,
+                maxHp: 0,
+                tp: 0,
+                maxTp: 50,
+                position: new THREE.Vector3(0, 0, 0),
+                heal,
+            });
+            const playerRegistry = makePlayerRegistry([player]);
+            const system = new HealingSystem(playerRegistry);
+            const station = makeStation(0, 0, 0, 3);
+
+            system.register(station);
 
             // 50 * (0.016 / 2.5) = 0.32 TP per frame; after 4 frames this is 1.28, so heal(0, 1) triggers.
             system.update(0.016);
@@ -114,27 +135,36 @@ describe('HealingSystem', () => {
         });
 
         it('does not heal the player when hp and tp are both full', () => {
-            const station = makeStation(0, 0, 0, 3);
-            system.register(station);
-
             const heal = vi.fn();
-            const player = makePlayer({ hp: 100, maxHp: 100, tp: 50, maxTp: 50, position: new THREE.Vector3(0, 0, 0), heal });
-            PlayerRegistry.Instance.addPlayer(player);
+            const player = makePlayer({
+                hp: 100,
+                maxHp: 100,
+                tp: 50,
+                maxTp: 50,
+                position: new THREE.Vector3(0, 0, 0),
+                heal,
+            });
+            const playerRegistry = makePlayerRegistry([player]);
+            const system = new HealingSystem(playerRegistry);
+            const station = makeStation(0, 0, 0, 3);
 
+            system.register(station);
             system.update(0.1);
+
             expect(heal).not.toHaveBeenCalled();
         });
     });
 
     describe('update with a player out of range', () => {
         it('calls setHealing(false) when player is outside radius', () => {
+            const player = makePlayer({ position: new THREE.Vector3(10, 0, 0) });
+            const playerRegistry = makePlayerRegistry([player]);
+            const system = new HealingSystem(playerRegistry);
             const station = makeStation(0, 0, 0, 2);
+
             system.register(station);
-
-            const player = makePlayer({ position: new THREE.Vector3(10, 0, 0) }); // dist=10, outside radius 2
-            PlayerRegistry.Instance.addPlayer(player);
-
             system.update(0.016);
+
             expect(station.setHealing).toHaveBeenCalledWith(false);
         });
     });
