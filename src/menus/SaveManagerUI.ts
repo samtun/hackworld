@@ -19,12 +19,12 @@ export class SaveManagerUI {
     private resetCallback?: () => void;
 
     // UI Elements
-    private saveButton!: HTMLDivElement;
-    private loadButton!: HTMLDivElement;
-    private resetButton!: HTMLDivElement;
-    private fileInput!: HTMLInputElement;
-    private playtimeDisplay!: HTMLDivElement;
-    private saveStatusText!: HTMLDivElement;
+    private saveButton: HTMLDivElement;
+    private loadButton: HTMLDivElement;
+    private resetButton: HTMLDivElement;
+    private fileInput: HTMLInputElement;
+    private playtimeDisplay: HTMLDivElement;
+    private saveStatusText: HTMLDivElement;
     private autoCloseTimer?: number;
     private lastSelectState: boolean = false;
     private lastNavigateLeftState: boolean = false;
@@ -37,10 +37,6 @@ export class SaveManagerUI {
         private readonly audioManager: AudioManager,
         private readonly inputManager: InputManager,
     ) {
-        this.createUI();
-    }
-
-    private createUI(): void {
         // Main Container Overlay - using MenuManager
         this.container = this.menuManager.createOverlay();
         document.body.appendChild(this.container);

@@ -1,95 +1,36 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('./InputManager', () => ({
-    InputManager: {
-        Instance: {
-            isNavigateLeftPressed: vi.fn().mockReturnValue(false),
-            isNavigateRightPressed: vi.fn().mockReturnValue(false),
-            isSelectPressed: vi.fn().mockReturnValue(false),
-            isCancelPressed: vi.fn().mockReturnValue(false),
-        },
-    },
-}));
-vi.mock('./ui/UiUtils', () => ({
-    resetInputDebounce: vi.fn(),
-    shakeElement: vi.fn(),
-}));
-vi.mock('./ui/InputHints', () => ({
-    getHint: vi.fn().mockReturnValue(''),
-}));
-vi.mock('./ui/MenuManager', () => ({
-    MenuManager: {
-        Instance: {
-            createOverlay: vi.fn(() => document.createElement('div')),
-            createFlexWindow: vi.fn(() => document.createElement('div')),
-            createTitle: vi.fn(() => document.createElement('div')),
-            createButton: vi.fn(() => document.createElement('div')),
-        },
-    },
-    MENU_COLORS: { COST_COLOR: '#ffd700' },
-    MENU_STYLES: { FONT_FAMILY: 'Arial', Z_INDEX: 1000, Z_INDEX_HINTS: 1100 },
-}));
-vi.mock('./ui/UIManager', () => ({
-    UIManager: {
-        Instance: {
-            showControlHints: vi.fn(),
-            hideControlHints: vi.fn(),
-        },
-    },
-}));
-vi.mock('./AudioManager', () => ({
-    AudioManager: {
-        Instance: {
-            playMenuNavigate: vi.fn(),
-            playUiOpen: vi.fn(),
-            playUiClose: vi.fn(),
-        },
-    },
-}));
-
 import { SaveManagerUI } from './SaveManagerUI';
 import { AudioManager } from '../AudioManager';
+import { InputManager } from '../controls/InputManager';
+import { UIManager } from '../ui/UIManager';
+import { MenuManager } from '../ui/MenuManager';
+import { mockDeep } from 'vitest-mock-extended';
 
-function makeSaveManagerUI(overrides: Record<string, unknown> = {}) {
-    const ui = Object.create((SaveManagerUI as any).prototype) as any;
-    Object.assign(ui, {
-        isVisible: false,
-        container: Object.assign(document.createElement('div'), { style: { display: 'none' } }),
-        saveButton: document.createElement('div'),
-        loadButton: document.createElement('div'),
-        resetButton: document.createElement('div'),
-        fileInput: document.createElement('input'),
-        playtimeDisplay: document.createElement('div'),
-        saveStatusText: Object.assign(document.createElement('div'), { style: { display: 'none' } }),
-        autoCloseTimer: undefined,
-        lastSelectState: false,
-        lastNavigateLeftState: false,
-        lastNavigateRightState: false,
-        selectedButton: 'save',
-        saveCallback: undefined,
-        loadCallback: undefined,
-        resetCallback: undefined,
-        menuManager: { highlightButton: vi.fn(), unhighlightButton: vi.fn(), createButton: vi.fn(() => document.createElement('div')) },
-        uiManager: { showControlHints: vi.fn(), hideControlHints: vi.fn() },
-        updateButtonHighlight: vi.fn(),
-        ...overrides,
-    });
-    return ui;
+interface SaveManagerUITestOverrides {
+    menuManager?: MenuManager,
+    uiManager?: UIManager,
+    audioManager?: AudioManager,
+    inputManager?: InputManager,
 }
 
-function makeInput(overrides: Partial<{
-    isNavigateLeftPressed: () => boolean;
-    isNavigateRightPressed: () => boolean;
-    isSelectPressed: () => boolean;
-    isCancelPressed: () => boolean;
-}> = {}) {
-    return {
-        isNavigateLeftPressed: vi.fn().mockReturnValue(false),
-        isNavigateRightPressed: vi.fn().mockReturnValue(false),
-        isSelectPressed: vi.fn().mockReturnValue(false),
-        isCancelPressed: vi.fn().mockReturnValue(false),
-        ...overrides,
-    };
+function makeSaveManagerUI(overrides: SaveManagerUITestOverrides = {}) {
+    const {
+        menuManager = overrides.menuManager ?? mockDeep<MenuManager>({
+            createOverlay: vi.fn().mockReturnValue(document.createElement('div')),
+            createFlexWindow: vi.fn().mockReturnValue(document.createElement('div')),
+            createTitle: vi.fn().mockReturnValue(document.createElement('div')),
+        }),
+        uiManager = overrides.uiManager ?? mockDeep<UIManager>(),
+        audioManager = overrides.audioManager ?? mockDeep<AudioManager>(),
+        inputManager = overrides.inputManager ?? mockDeep<InputManager>(),
+    } = overrides;
+
+    return new SaveManagerUI(
+        menuManager,
+        uiManager,
+        audioManager,
+        inputManager
+    );
 }
 
 beforeEach(() => {
@@ -117,34 +58,36 @@ describe('show', () => {
         const onLoad = vi.fn();
         const onReset = vi.fn();
         ui.show('01:00:00', onSave, onLoad, onReset);
-        expect(ui.saveCallback).toBe(onSave);
-        expect(ui.loadCallback).toBe(onLoad);
-        expect(ui.resetCallback).toBe(onReset);
+        expect((ui as any).saveCallback).toBe(onSave);
+        expect((ui as any).loadCallback).toBe(onLoad);
+        expect((ui as any).resetCallback).toBe(onReset);
     });
 
     it('updates playtimeDisplay.textContent with given playtime', () => {
         const ui = makeSaveManagerUI();
         ui.show('02:34:56', vi.fn(), vi.fn(), vi.fn());
-        expect(ui.playtimeDisplay.textContent).toBe('Playtime: 02:34:56');
+        expect((ui as any).playtimeDisplay.textContent).toBe('Playtime: 02:34:56');
     });
 
     it('hides saveStatusText', () => {
         const ui = makeSaveManagerUI();
-        ui.saveStatusText.style.display = 'block';
+        (ui as any).saveStatusText.style.display = 'block';
         ui.show('00:00:00', vi.fn(), vi.fn(), vi.fn());
-        expect(ui.saveStatusText.style.display).toBe('none');
+        expect((ui as any).saveStatusText.style.display).toBe('none');
     });
 
     it('resets selectedButton to save', () => {
-        const ui = makeSaveManagerUI({ selectedButton: 'reset' });
+        const ui = makeSaveManagerUI();
+        (ui as any).selectedButton = 'reset';
         ui.show('00:00:00', vi.fn(), vi.fn(), vi.fn());
-        expect(ui.selectedButton).toBe('save');
+        expect((ui as any).selectedButton).toBe('save');
     });
 
     it('plays the UI open sound when shown from hidden', () => {
-        const ui = makeSaveManagerUI();
+        const audioManager = mockDeep<AudioManager>();
+        const ui = makeSaveManagerUI({ audioManager });
         ui.show('00:00:00', vi.fn(), vi.fn(), vi.fn());
-        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        expect(audioManager.playUiOpen).toHaveBeenCalledOnce();
     });
 });
 
@@ -152,7 +95,8 @@ describe('show', () => {
 
 describe('hide', () => {
     it('sets isVisible to false', () => {
-        const ui = makeSaveManagerUI({ isVisible: true });
+        const ui = makeSaveManagerUI();
+        (ui as any).isVisible = true;
         ui.hide();
         expect(ui.isVisible).toBe(false);
     });
@@ -165,36 +109,36 @@ describe('hide', () => {
     });
 
     it('clears all callbacks', () => {
-        const ui = makeSaveManagerUI({
-            saveCallback: vi.fn(),
-            loadCallback: vi.fn(),
-            resetCallback: vi.fn(),
-        });
+        const ui = makeSaveManagerUI();
+        ui.show('00:00:00', vi.fn(), vi.fn(), vi.fn());
         ui.hide();
-        expect(ui.saveCallback).toBeUndefined();
-        expect(ui.loadCallback).toBeUndefined();
-        expect(ui.resetCallback).toBeUndefined();
+        expect((ui as any).saveCallback).toBeUndefined();
+        expect((ui as any).loadCallback).toBeUndefined();
+        expect((ui as any).resetCallback).toBeUndefined();
     });
 
     it('calls uiManager.hideControlHints', () => {
-        const ui = makeSaveManagerUI();
+        const uiManager = mockDeep<UIManager>();
+        const ui = makeSaveManagerUI({ uiManager: uiManager });
         ui.hide();
-        expect(ui.uiManager.hideControlHints).toHaveBeenCalledOnce();
+        expect(uiManager.hideControlHints).toHaveBeenCalledOnce();
     });
 
     it('clears autoCloseTimer if set', () => {
         vi.useFakeTimers();
         const ui = makeSaveManagerUI();
-        ui.autoCloseTimer = window.setTimeout(() => { }, 9999);
+        (ui as any).autoCloseTimer = window.setTimeout(() => { }, 9999);
         ui.hide();
-        expect(ui.autoCloseTimer).toBeUndefined();
+        expect((ui as any).autoCloseTimer).toBeUndefined();
         vi.useRealTimers();
     });
 
     it('plays the UI close sound when hidden from visible', () => {
-        const ui = makeSaveManagerUI({ isVisible: true });
+        const audioManager = mockDeep<AudioManager>();
+        const ui = makeSaveManagerUI({ audioManager: audioManager });
+        ui.show('00:00:00', vi.fn(), vi.fn(), vi.fn());
         ui.hide();
-        expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
+        expect(audioManager.playUiClose).toHaveBeenCalledOnce();
     });
 });
 
@@ -202,10 +146,11 @@ describe('hide', () => {
 
 describe('update visibility guard', () => {
     it('does nothing when isVisible is false', () => {
-        const ui = makeSaveManagerUI({ isVisible: false });
-        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
-        expect(ui.selectedButton).toBe('save'); // unchanged
+        const inputManager = mockDeep<InputManager>();
+        inputManager.isNavigateRightPressed.mockReturnValue(true);
+        const ui = makeSaveManagerUI({ inputManager: inputManager });
+        ui.update();
+        expect((ui as any).selectedButton).toBe('save'); // unchanged
     });
 });
 
@@ -216,62 +161,123 @@ describe('update navigation', () => {
         vi.useFakeTimers();
     });
 
-    it('navigates right from save to load', () => {
-        const ui = makeSaveManagerUI({ isVisible: true, selectedButton: 'save', lastNavigateRightState: false });
-        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
-        expect(ui.selectedButton).toBe('load');
-        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
-    });
+    function showSaveManagerUiAndResetDebounce(ui: SaveManagerUI) {
+        ui.show('00:00:00', vi.fn(), vi.fn(), vi.fn());
+        ui.update(); // Update once to ensure input debounce is reset
+    }
 
-    it('navigates right from load to reset', () => {
-        const ui = makeSaveManagerUI({ isVisible: true, selectedButton: 'load', lastNavigateRightState: false });
-        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
-        expect(ui.selectedButton).toBe('reset');
-    });
+    it('navigates right from save to load to reset, no further and back to save', () => {
+        const audioManager = mockDeep<AudioManager>();
+        const inputManager = mockDeep<InputManager>();
+        const ui = makeSaveManagerUI({ audioManager: audioManager, inputManager: inputManager });
+        showSaveManagerUiAndResetDebounce(ui);
 
-    it('cannot navigate right past reset', () => {
-        const ui = makeSaveManagerUI({ isVisible: true, selectedButton: 'reset', lastNavigateRightState: false });
-        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
-        expect(ui.selectedButton).toBe('reset');
-    });
+        // 1. RIGHT: Trigger first right navigation to move from save -> load
+        inputManager.isNavigateRightPressed.mockReturnValue(true);
+        ui.update();
 
-    it('navigates left from load to save', () => {
-        const ui = makeSaveManagerUI({ isVisible: true, selectedButton: 'load', lastNavigateLeftState: false });
-        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
-        expect(ui.selectedButton).toBe('save');
-        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
-    });
+        // reset debounce to allow another navigation
+        inputManager.isNavigateRightPressed.mockReturnValue(false);
+        ui.update();
+        expect(audioManager.playMenuNavigate).toHaveBeenCalledOnce();
+        expect((ui as any).selectedButton).toBe('load');
 
-    it('navigates left from reset to load', () => {
-        const ui = makeSaveManagerUI({ isVisible: true, selectedButton: 'reset', lastNavigateLeftState: false });
-        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
-        expect(ui.selectedButton).toBe('load');
-    });
+        // 2. RIGHT:Trigger second right navigation to move from load -> reset
+        inputManager.isNavigateRightPressed.mockReturnValue(true);
+        ui.update();
+        expect((ui as any).selectedButton).toBe('reset');
+        expect(audioManager.playMenuNavigate).toHaveBeenCalledTimes(2);
 
-    it('cannot navigate left past save', () => {
-        const ui = makeSaveManagerUI({ isVisible: true, selectedButton: 'save', lastNavigateLeftState: false });
-        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
-        expect(ui.selectedButton).toBe('save');
+        // reset debounce to allow another navigation
+        inputManager.isNavigateRightPressed.mockReturnValue(false);
+        ui.update();
+
+        // 3. RIGHT: Trigger third right navigation to check no further movement past reset
+        inputManager.isNavigateRightPressed.mockReturnValue(true);
+        ui.update();
+        expect((ui as any).selectedButton).toBe('reset');
+        expect(audioManager.playMenuNavigate).toHaveBeenCalledTimes(2);
+
+        // reset debounce to allow another navigation
+        inputManager.isNavigateRightPressed.mockReturnValue(false);
+        ui.update();
+
+        // 1. LEFT: Trigger left navigation to move from reset -> load
+        inputManager.isNavigateLeftPressed.mockReturnValue(true);
+        ui.update();
+        expect((ui as any).selectedButton).toBe('load');
+        expect(audioManager.playMenuNavigate).toHaveBeenCalledTimes(3);
+
+        // reset debounce to allow another navigation
+        inputManager.isNavigateLeftPressed.mockReturnValue(false);
+        ui.update();
+
+        // 2. LEFT: Trigger left navigation to move from load -> save
+        inputManager.isNavigateLeftPressed.mockReturnValue(true);
+        ui.update();
+        expect((ui as any).selectedButton).toBe('save');
+        expect(audioManager.playMenuNavigate).toHaveBeenCalledTimes(4);
+
+        // reset debounce to allow another navigation
+        inputManager.isNavigateLeftPressed.mockReturnValue(false);
+        ui.update();
+
+        // 3. LEFT: Trigger left navigation to check no further movement past save
+        inputManager.isNavigateLeftPressed.mockReturnValue(true);
+        ui.update();
+        expect((ui as any).selectedButton).toBe('save');
+        expect(audioManager.playMenuNavigate).toHaveBeenCalledTimes(4);
     });
 
     it('debounces right navigation (held = no change)', () => {
-        const ui = makeSaveManagerUI({ isVisible: true, selectedButton: 'save', lastNavigateRightState: true });
-        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
-        expect(ui.selectedButton).toBe('save');
+        const audioManager = mockDeep<AudioManager>();
+        const inputManager = mockDeep<InputManager>();
+        const ui = makeSaveManagerUI({ audioManager: audioManager, inputManager: inputManager });
+        showSaveManagerUiAndResetDebounce(ui);
+        inputManager.isNavigateRightPressed.mockReturnValue(true);
+
+        // Update 3 times to simulate holding the right navigation button
+        ui.update();
+        ui.update();
+        ui.update();
+
+        // Expect the selection to only have changed once, and the audio to have played once
+        expect((ui as any).selectedButton).toBe('load');
+        expect(audioManager.playMenuNavigate).toHaveBeenCalledOnce();
     });
 
     it('debounces left navigation (held = no change)', () => {
-        const ui = makeSaveManagerUI({ isVisible: true, selectedButton: 'load', lastNavigateLeftState: true });
-        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
-        expect(ui.selectedButton).toBe('load');
+        const audioManager = mockDeep<AudioManager>();
+        const inputManager = mockDeep<InputManager>();
+        const ui = makeSaveManagerUI({ audioManager: audioManager, inputManager: inputManager });
+        showSaveManagerUiAndResetDebounce(ui);
+        inputManager.isNavigateRightPressed.mockReturnValue(true);
+
+        // 1. RIGHT: Trigger first right navigation to move from save -> load
+        inputManager.isNavigateRightPressed.mockReturnValue(true);
+        ui.update();
+
+        // reset debounce to allow another navigation
+        inputManager.isNavigateRightPressed.mockReturnValue(false);
+        ui.update();
+
+        // 2. RIGHT:Trigger second right navigation to move from load -> reset
+        inputManager.isNavigateRightPressed.mockReturnValue(true);
+        ui.update();
+
+        // reset debounce to allow another navigation
+        inputManager.isNavigateRightPressed.mockReturnValue(false);
+        ui.update();
+
+        // Update 3 times to simulate holding the left navigation button
+        inputManager.isNavigateLeftPressed.mockReturnValue(true);
+        ui.update();
+        ui.update();
+        ui.update();
+
+        // Expect the selection to only have changed once, and the audio to have played once
+        expect((ui as any).selectedButton).toBe('load');
+        expect(audioManager.playMenuNavigate).toHaveBeenCalledTimes(3);
     });
 });
 
