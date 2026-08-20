@@ -41,9 +41,9 @@ export class PauseMenu {
     private performanceStatusEl!: HTMLSpanElement;
     private controlHintsEnabled: boolean;
     private controlHintsStatusEl!: HTMLSpanElement;
-    private musicEnabled = this.audioManager.isMusicEnabled();
+    private musicEnabled = false;
     private musicStatusEl!: HTMLSpanElement;
-    private sfxEnabled = this.audioManager.isSfxEnabled();
+    private sfxEnabled = false;
     private sfxStatusEl!: HTMLSpanElement;
     private selectedIndex: number = 0;
 
@@ -71,6 +71,7 @@ export class PauseMenu {
         this.performanceModeEnabled = performanceModeEnabled;
         this.controlHintsEnabled = controlHintsEnabled;
         this.callbacks = callbacks;
+        this.refreshAudioSettingsState();
 
         this.items = [
             { id: 'continue', label: 'Continue', buildEl: (item) => this.buildSimpleItem(item) },
@@ -422,10 +423,7 @@ export class PauseMenu {
                 this.updateControlHintsLabel();
                 break;
             case 'music':
-                this.musicEnabled = this.audioManager.toggleMusicEnabled();
-                if (this.audioManager.isSfxEnabled()) {
-                    this.audioManager.playUiOpen();
-                }
+                this.musicEnabled = this.toggleMusicWithFeedback();
                 this.updateMusicLabel();
                 break;
             case 'sfx':
@@ -466,18 +464,21 @@ export class PauseMenu {
     }
 
     private toggleSfxWithFeedback(): boolean {
-        const sfxWasEnabled = this.sfxEnabled;
-        if (sfxWasEnabled) {
-            this.audioManager.playUiOpen();
-        }
-
-        this.audioManager.toggleSfxEnabled();
-        const nextSfxEnabled = this.audioManager.isSfxEnabled();
-        if (!sfxWasEnabled) {
+        const nextSfxEnabled = this.audioManager.toggleSfxEnabled();
+        if (nextSfxEnabled != this.sfxEnabled) {
             this.audioManager.playUiOpen();
         }
 
         return nextSfxEnabled;
+    }
+
+    private toggleMusicWithFeedback(): boolean {
+        const nextMusicEnabled = this.audioManager.toggleMusicEnabled();
+        if (nextMusicEnabled != this.musicEnabled) {
+            this.audioManager.playUiOpen();
+        }
+
+        return nextMusicEnabled;
     }
 
     private refreshAudioSettingsState(): void {
