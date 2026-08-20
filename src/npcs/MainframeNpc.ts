@@ -38,13 +38,12 @@ export class MainframeNpc extends Npc {
     }
 
     private onInteract(): void {
-        const progressManager = this.gameProgressManager;
-        const currentProgress = progressManager.progress;
+        const currentProgress = this.gameProgressManager.progress;
 
         if (currentProgress === 0 || (currentProgress > 0 && currentProgress % 2 === 0)) {
-            progressManager.advanceProgress();
-            console.log('Mainframe: New stage unlocked! Progress now:', progressManager.progress);
-            this.updateDialogue(progressManager.progress);
+            this.gameProgressManager.advanceProgress();
+            console.log('Mainframe: New stage unlocked! Progress now:', this.gameProgressManager.progress);
+            this.updateDialogue(this.gameProgressManager.progress);
         }
     }
 

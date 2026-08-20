@@ -1,41 +1,29 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-
-vi.mock('./AudioManager', () => ({
-    AudioManager: {
-        Instance: {
-            playMenuNavigate: vi.fn(),
-        },
-    },
-}));
-
 import { StartMenu } from './StartMenu';
 import { AudioManager } from '../AudioManager';
-
-function makeInput() {
-    return {
-        isNavigateUpPressed: vi.fn().mockReturnValue(false),
-        isNavigateDownPressed: vi.fn().mockReturnValue(false),
-        isSelectPressed: vi.fn().mockReturnValue(false),
-    } as any;
-}
+import { mock } from 'vitest-mock-extended';
+import { InputManager } from '../controls/InputManager';
 
 describe('StartMenu', () => {
-    let container: HTMLDivElement;
-    let menu: StartMenu;
-
     beforeEach(() => {
-        container = document.createElement('div');
-        document.body.appendChild(container);
-        menu = new StartMenu(container, makeInput(), true, vi.fn());
+        // 1. Fake timers to test requestAnimationFrame
+        vi.useFakeTimers();
     });
 
     afterEach(() => {
-        menu.destroy();
-        container.remove();
+        vi.useRealTimers();
     });
 
     it('plays the navigation sound when moving between start menu options', () => {
-        (menu as any).navigate(1);
-        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
+        const audioManager = mock<AudioManager>();
+        const inputManager = mock<InputManager>();
+        inputManager.isNavigateDownPressed.mockReturnValue(true);
+        new StartMenu(inputManager, audioManager, document.createElement('div'), false, vi.fn());
+
+        // Start animation loop and progress 1 frame
+        requestAnimationFrame(vi.fn());
+        vi.advanceTimersByTime(16);
+
+        expect(audioManager.playMenuNavigate).toHaveBeenCalledOnce();
     });
 });

@@ -290,57 +290,58 @@ describe('update select', () => {
 
     it('calls saveCallback when save is selected and select pressed', () => {
         const onSave = vi.fn();
-        const ui = makeSaveManagerUI({
-            isVisible: true,
-            selectedButton: 'save',
-            lastSelectState: false,
-            saveCallback: onSave,
-        });
-        const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
+        const audioManager = mockDeep<AudioManager>();
+        const inputManager = mockDeep<InputManager>();
+        inputManager.isSelectPressed.mockReturnValue(true);
+        const ui = makeSaveManagerUI({ audioManager: audioManager, inputManager: inputManager });
+        (ui as any).saveCallback = onSave;
+        (ui as any).isVisible = true;
+        (ui as any).selectedButton = 'save';
+        (ui as any).lastSelectState = false;
+
+        ui.update();
         expect(onSave).toHaveBeenCalledOnce();
-        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        expect(audioManager.playUiOpen).toHaveBeenCalledOnce();
     });
 
     it('calls resetCallback when reset is selected and select pressed', () => {
         const onReset = vi.fn();
-        const ui = makeSaveManagerUI({
-            isVisible: true,
-            selectedButton: 'reset',
-            lastSelectState: false,
-            resetCallback: onReset,
-        });
-        const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
+        const audioManager = mockDeep<AudioManager>();
+        const inputManager = mockDeep<InputManager>();
+        inputManager.isSelectPressed.mockReturnValue(true);
+        const ui = makeSaveManagerUI({ audioManager: audioManager, inputManager: inputManager });
+        (ui as any).resetCallback = onReset;
+        (ui as any).isVisible = true;
+        (ui as any).selectedButton = 'reset';
+        (ui as any).lastSelectState = false;
+
+        ui.update();
         expect(onReset).toHaveBeenCalledOnce();
-        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        expect(audioManager.playUiOpen).toHaveBeenCalledOnce();
     });
 
     it('clicks fileInput when load is selected and select pressed', () => {
-        const fileInput = document.createElement('input');
-        const clickSpy = vi.spyOn(fileInput, 'click');
-        const ui = makeSaveManagerUI({
-            isVisible: true,
-            selectedButton: 'load',
-            lastSelectState: false,
-            fileInput,
-        });
-        const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
+        const audioManager = mockDeep<AudioManager>();
+        const inputManager = mockDeep<InputManager>();
+        inputManager.isSelectPressed.mockReturnValue(true);
+        const ui = makeSaveManagerUI({ audioManager: audioManager, inputManager: inputManager });
+        (ui as any).isVisible = true;
+        (ui as any).selectedButton = 'load';
+        (ui as any).lastSelectState = false;
+        const clickSpy = vi.spyOn((ui as any).fileInput, 'click');
+
+        ui.update();
         expect(clickSpy).toHaveBeenCalledOnce();
-        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        expect(audioManager.playUiOpen).toHaveBeenCalledOnce();
     });
 
     it('debounces select (held = no action)', () => {
         const onSave = vi.fn();
-        const ui = makeSaveManagerUI({
-            isVisible: true,
-            selectedButton: 'save',
-            lastSelectState: true,
-            saveCallback: onSave,
-        });
-        const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
+        const inputManager = mockDeep<InputManager>();
+        inputManager.isSelectPressed.mockReturnValue(true);
+        const ui = makeSaveManagerUI({ inputManager: inputManager });
+        ui.show('01:00:00', onSave, vi.fn(), vi.fn());
+        ui.update();
         expect(onSave).not.toHaveBeenCalled();
     });
 });
@@ -349,18 +350,21 @@ describe('update select', () => {
 
 describe('update cancel', () => {
     it('calls hide when cancel is pressed', () => {
-        const ui = makeSaveManagerUI({ isVisible: true });
+        const inputManager = mockDeep<InputManager>();
+        const ui = makeSaveManagerUI({ inputManager: inputManager });
         const hideSpy = vi.spyOn(ui, 'hide');
-        const input = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
-        ui.update(input);
+        ui.show('01:00:00', vi.fn(), vi.fn(), vi.fn());
+
+        inputManager.isCancelPressed.mockReturnValue(true);
+        ui.update();
         expect(hideSpy).toHaveBeenCalledOnce();
     });
 
     it('does not call hide when cancel is not pressed', () => {
-        const ui = makeSaveManagerUI({ isVisible: true });
+        const ui = makeSaveManagerUI();
         const hideSpy = vi.spyOn(ui, 'hide');
-        const input = makeInput();
-        ui.update(input);
+        ui.show('01:00:00', vi.fn(), vi.fn(), vi.fn());
+        ui.update();
         expect(hideSpy).not.toHaveBeenCalled();
     });
 });
