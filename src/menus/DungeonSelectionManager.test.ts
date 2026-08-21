@@ -16,7 +16,7 @@ interface DungeonSelectionTestOverrides {
     isVisible?: boolean,
     needsRender?: boolean,
     selectedIndex?: number,
-    stageClasses?: Array<{ getStageMetadata: ReturnType<typeof vi.fn> }>,
+    stageClasses?: Array<{ getStageMetadata: () => { id: string; name: string; description: string; requiredProgress: number } }>,
     onDungeonSelected?: (dungeonId: string) => void,
     waitForRelease?: boolean,
     lastNavigateDownState?: boolean,

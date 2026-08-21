@@ -6,7 +6,6 @@ import { WeaponType } from './WeaponType';
 import { AssetManager } from '../../AssetManager';
 import { mock, mockDeep } from 'vitest-mock-extended';
 import { GLTF } from 'three/examples/jsm/Addons.js';
-import { BaseMesh } from '../../BaseMesh';
 
 interface WeaponTestOverrides {
     assetManager?: AssetManager,
