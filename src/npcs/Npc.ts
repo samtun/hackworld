@@ -27,7 +27,7 @@ export class Npc extends BaseMesh {
         assetManager: AssetManager,
         private readonly npcRegistry: NpcRegistry,
         scene: THREE.Scene,
-        world: CANNON.World,
+        physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
         modelAsset: string,
         name: string,
@@ -64,7 +64,7 @@ export class Npc extends BaseMesh {
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
         this.body.addShape(shape);
         scene.add(this.mesh);
-        world.addBody(this.body);
+        physicsWorld.addBody(this.body);
 
         // Blob shadow – always visible; static NPC, positioned once using a downward
         // raycast to find the correct floor height (handles elevated rooms).
@@ -73,7 +73,7 @@ export class Npc extends BaseMesh {
         const npcRayEnd = new CANNON.Vec3(position.x, this.body.position.y - NPC_SHADOW_RAY_DOWN, position.z);
         const npcRay = new CANNON.Ray(npcRayStart, npcRayEnd);
         const npcRayResult = new CANNON.RaycastResult();
-        npcRay.intersectWorld(world, { mode: CANNON.Ray.CLOSEST, result: npcRayResult, skipBackfaces: true });
+        npcRay.intersectWorld(physicsWorld, { mode: CANNON.Ray.CLOSEST, result: npcRayResult, skipBackfaces: true });
         if (npcRayResult.hasHit && npcRayResult.body !== this.body) {
             const normal = new THREE.Vector3(
                 npcRayResult.hitNormalWorld.x,
