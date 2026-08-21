@@ -11,7 +11,7 @@ describe('GameTest', () => {
 
     describe('getMetadata', () => {
         it('returns correct id, name, description and requiredProgress', () => {
-            const meta = GameTest.getMetadata();
+            const meta = GameTest.getStageMetadata();
             expect(meta.id).toBe('gameTest');
             expect(meta.name).toBe('Game Test');
             expect(meta.description).toBe('A test stage for game mechanics');

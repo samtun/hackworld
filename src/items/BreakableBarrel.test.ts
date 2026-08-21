@@ -1,132 +1,156 @@
-import { describe, it, expect, vi } from 'vitest';
-
-const audioManagerMock = vi.hoisted(() => ({
-    playBarrelBreak: vi.fn(),
-}));
-
-vi.mock('../AudioManager', () => ({
-    AudioManager: {
-        Instance: audioManagerMock,
-    },
-}));
-
-// ─── Mocks ────────────────────────────────────────────────────────────────────
-
-vi.mock('three', () => {
-    class V3 {
-        x = 0; y = 0; z = 0;
-        constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
-        set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; }
-    }
-    class Euler {
-        x = 0; y = 0; z = 0;
-        set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; }
-    }
-    const mockPositionAttr = {
-        count: 0,
-        getX: vi.fn().mockReturnValue(0),
-        getY: vi.fn().mockReturnValue(0),
-        getZ: vi.fn().mockReturnValue(0),
-        setX: vi.fn(),
-        setZ: vi.fn(),
-        needsUpdate: false,
-    };
-    return {
-        Vector3: V3,
-        BoxGeometry: class { dispose = vi.fn(); },
-        CylinderGeometry: class {
-            dispose = vi.fn();
-            attributes = { position: mockPositionAttr };
-            computeVertexNormals = vi.fn();
-        },
-        MeshStandardMaterial: class {
-            color = { setHex: vi.fn() };
-            dispose = vi.fn();
-            transparent = false;
-            opacity = 1;
-        },
-        Mesh: class {
-            position = new V3();
-            rotation = new Euler();
-            castShadow = false;
-            receiveShadow = false;
-            geometry = { dispose: vi.fn(), attributes: { position: mockPositionAttr }, computeVertexNormals: vi.fn() };
-            material = new (class { dispose = vi.fn(); transparent = false; opacity = 1; })();
-        },
-        Material: class { },
-    };
-});
-
-vi.mock('cannon-es', () => {
-    class Vec3 {
-        x = 0; y = 0; z = 0;
-        constructor(x = 0, y = 0, z = 0) { this.x = x; this.y = y; this.z = z; }
-        set(x: number, y: number, z: number) { this.x = x; this.y = y; this.z = z; }
-    }
-    return {
-        Vec3,
-        Box: class { },
-        Cylinder: class { },
-        Body: class {
-            addShape = vi.fn();
-            position = new Vec3();
-        },
-    };
-});
-
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
 import { BreakableBarrel } from './BreakableBarrel';
+import { AudioManager } from '../AudioManager';
+import { ChipRepository } from './chips/ChipRepository';
+import { CoreRepository } from './cores/CoreRepository';
+import { ItemDropFactory } from './ItemDropFactory';
+import { ItemDropManager } from './ItemDropManager';
+import { TierManager, Tier } from './TierManager';
+import { WeaponRepository } from './weapons/WeaponRepository';
+import { mockDeep } from 'vitest-mock-extended';
+import { WeaponItem } from './weapons/WeaponItem';
+import { ItemDrop } from './ItemDrop';
+import { WeaponDrop } from './weapons/WeaponDrop';
+import { ChipDrop } from './chips/ChipDrop';
+import { CoreDrop } from './cores/CoreDrop';
+import { MoneyDrop } from './bits/MoneyDrop';
+import { PotionDrop } from './potions/PotionDrop';
+import { ChipItem } from './chips/ChipItem';
+import { CoreItem } from './cores/CoreItem';
 
-function makeBarrel(): { barrel: BreakableBarrel; scene: any; world: any } {
-    const scene = { add: vi.fn(), remove: vi.fn() } as any;
-    const world = { addBody: vi.fn(), removeBody: vi.fn() } as any;
-    const CANNON = require('cannon-es');
-    const barrel = new BreakableBarrel(scene, world, {} as any, new CANNON.Vec3(5, 0, 5));
-    return { barrel, scene, world };
+interface BreakableBarrelTestOverrides {
+    audioManager?: AudioManager,
+    weaponRepository?: WeaponRepository,
+    chipRepository?: ChipRepository,
+    coreRepository?: CoreRepository,
+    tierManager?: TierManager,
+    itemDropFactory?: ItemDropFactory,
+    itemDropManager?: ItemDropManager,
+    scene?: THREE.Scene,
+    physicsWorld?: CANNON.World,
+    physicsMaterial?: CANNON.Material,
+    position?: CANNON.Vec3,
+    maxTier?: Tier,
+}
+
+const overclockedTier = {
+    name: Tier.OVERCLOCKED,
+    minPercent: -3,
+    maxPercent: 3,
+    rimColor: '#ffffff',
+    innerColor: '#999999',
+    traderChance: 0.44,
+    minLevel: 0,
+};
+
+function createDefaultPhysicsWorld(defaultPhysicsMaterial: CANNON.Material = new CANNON.Material('defaultMaterial')): CANNON.World {
+    const floorShape = new CANNON.Plane();
+    const floorBody = new CANNON.Body({
+        mass: 0,
+        material: defaultPhysicsMaterial,
+    });
+    floorBody.addShape(floorShape);
+    floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+
+    const defaultPhysicsWorld = new CANNON.World();
+    defaultPhysicsWorld.addBody(floorBody);
+    return defaultPhysicsWorld;
+}
+
+function makeBreakableBarrel(overrides: BreakableBarrelTestOverrides = {}): BreakableBarrel {
+    const defaultPhysicsMaterial = new CANNON.Material('defaultMaterial');
+    const {
+        audioManager = mockDeep<AudioManager>(),
+        weaponRepository = mockDeep<WeaponRepository>(),
+        chipRepository = mockDeep<ChipRepository>(),
+        coreRepository = mockDeep<CoreRepository>(),
+        tierManager = mockDeep<TierManager>(),
+        itemDropFactory = mockDeep<ItemDropFactory>(),
+        itemDropManager = mockDeep<ItemDropManager>(),
+        scene = mockDeep<THREE.Scene>(),
+        physicsWorld = createDefaultPhysicsWorld(),
+        physicsMaterial = defaultPhysicsMaterial,
+        position = new CANNON.Vec3(5, 0, 5),
+        maxTier = overclockedTier,
+    } = overrides;
+    return new BreakableBarrel(
+        audioManager,
+        weaponRepository,
+        chipRepository,
+        coreRepository,
+        tierManager,
+        itemDropFactory,
+        itemDropManager,
+        scene,
+        physicsWorld,
+        physicsMaterial,
+        position,
+        maxTier as Tier
+    );
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
 
 describe('BreakableBarrel', () => {
+    afterEach(() => {
+        vi.restoreAllMocks();
+    });
+
     it('starts not destroyed', () => {
-        const { barrel } = makeBarrel();
+        const barrel = makeBreakableBarrel();
         expect(barrel.isDestroyed).toBe(false);
     });
 
     it('sets entity reference on body', () => {
-        const { barrel } = makeBarrel();
+        const barrel = makeBreakableBarrel();
         expect((barrel.body as any).entity).toBe(barrel);
     });
 
     it('onHit sets isDestroyed to true and removes mesh + body', () => {
-        const { barrel, scene, world } = makeBarrel();
-        audioManagerMock.playBarrelBreak.mockClear();
+        const audioManager = mockDeep<AudioManager>();
+        const scene = mockDeep<THREE.Scene>();
+        const physicsWorld = createDefaultPhysicsWorld();
+        const barrel = makeBreakableBarrel({ scene: scene, physicsWorld: physicsWorld, audioManager: audioManager });
+        const removeBodySpy = vi.spyOn(physicsWorld, 'removeBody');
+        audioManager.playBarrelBreak.mockClear();
         barrel.onHit();
+
         expect(barrel.isDestroyed).toBe(true);
-        expect(audioManagerMock.playBarrelBreak).toHaveBeenCalledOnce();
+        expect(audioManager.playBarrelBreak).toHaveBeenCalledOnce();
         expect(scene.remove).toHaveBeenCalled();
-        expect(world.removeBody).toHaveBeenCalled();
+        expect(removeBodySpy).toHaveBeenCalled();
     });
 
     it('onHit is idempotent (second call is ignored)', () => {
-        const { barrel, scene } = makeBarrel();
-        audioManagerMock.playBarrelBreak.mockClear();
+        const scene = mockDeep<THREE.Scene>();
+        const audioManager = mockDeep<AudioManager>();
+        const barrel = makeBreakableBarrel({ scene: scene, audioManager: audioManager });
+        audioManager.playBarrelBreak.mockClear();
+
         barrel.onHit();
         const removeCalls = scene.remove.mock.calls.length;
         barrel.onHit();
-        expect(audioManagerMock.playBarrelBreak).toHaveBeenCalledOnce();
+        expect(audioManager.playBarrelBreak).toHaveBeenCalledOnce();
         // Second onHit should not add more scene.remove calls (only fragment cleanup later)
         expect(scene.remove.mock.calls.length).toBe(removeCalls);
     });
 
     it('cleanup removes mesh and body when not destroyed', () => {
-        const { barrel, scene, world } = makeBarrel();
+        const scene = mockDeep<THREE.Scene>();
+        const physicsWorld = createDefaultPhysicsWorld();
+        const barrel = makeBreakableBarrel({ scene: scene, physicsWorld: physicsWorld });
+        const removeBodySpy = vi.spyOn(physicsWorld, 'removeBody');
+
         barrel.cleanup();
         expect(scene.remove).toHaveBeenCalled();
-        expect(world.removeBody).toHaveBeenCalled();
+        expect(removeBodySpy).toHaveBeenCalled();
     });
 
     it('cleanup does not double-remove when already destroyed', () => {
-        const { barrel, scene } = makeBarrel();
+        const scene = mockDeep<THREE.Scene>();
+        const barrel = makeBreakableBarrel({ scene });
         barrel.onHit();
         // Finish the animation first
         barrel.update(1.2);
@@ -137,38 +161,74 @@ describe('BreakableBarrel', () => {
     });
 
     describe('generateDrop', () => {
-        it('only allows weapon/chip/core in the rare roll ranges', () => {
-            const { barrel } = makeBarrel();
-            const player = { luckDropChanceBonus: 0 } as any;
-            const weaponDrop = {} as any;
-            const chipDrop = {} as any;
-            const coreDrop = {} as any;
-            vi.spyOn(barrel as any, 'generateWeaponDrop').mockReturnValue(weaponDrop);
-            vi.spyOn(barrel as any, 'generateChipDrop').mockReturnValue(chipDrop);
-            vi.spyOn(barrel as any, 'generateCoreDrop').mockReturnValue(coreDrop);
-            vi.spyOn(barrel as any, 'generateMoneyDrop').mockReturnValue({} as any);
-            vi.spyOn(barrel as any, 'generatePotionDrop').mockReturnValue({} as any);
+        it('generates drops with according drop chances', () => {
+            const weaponDrop = { id: "weapon" } as unknown as WeaponDrop;
+            const chipDrop = {} as ChipDrop;
+            const coreDrop = {} as CoreDrop;
+            const moneyDrop = {} as MoneyDrop;
+            const potionDrop = {} as PotionDrop;
+
+            const weaponRepository = mockDeep<WeaponRepository>();
+            weaponRepository.getWeaponByTypeAndLevel.mockReturnValue({
+                id: "myId",
+                name: "weapon",
+                damage: 1,
+                buyPrice: 2,
+                sellPrice: 3
+            } as WeaponItem);
+
+            const chipRepository = mockDeep<ChipRepository>();
+            chipRepository.getRandomChipOfLevel.mockReturnValue({} as ChipItem);
+
+            const coreRepository = mockDeep<CoreRepository>();
+            coreRepository.getRandomCoreOfLevel.mockReturnValue({} as CoreItem);
+
+            const itemDropFactory = mockDeep<ItemDropFactory>();
+            itemDropFactory.createWeaponDrop.mockReturnValue(weaponDrop);
+            itemDropFactory.createChipDrop.mockReturnValue(chipDrop);
+            itemDropFactory.createCoreDrop.mockReturnValue(coreDrop);
+            itemDropFactory.createMoneyDrop.mockReturnValue(moneyDrop);
+            itemDropFactory.createPotionDrop.mockReturnValue(potionDrop);
+
+            const itemDropManager = mockDeep<ItemDropManager>();
+            const barrel = makeBreakableBarrel({
+                weaponRepository: weaponRepository,
+                chipRepository: chipRepository,
+                coreRepository: coreRepository,
+                itemDropFactory: itemDropFactory,
+                itemDropManager: itemDropManager,
+            });
+
+            const player = {
+                luckDropChanceBonus: 0,
+                getTechForWeapon: () => 1,
+            } as any;
+
             const randomSpy = vi.spyOn(Math, 'random');
 
             randomSpy.mockReturnValueOnce(0.005);
-            expect(barrel.dropItem({} as any, player)).toBe(weaponDrop);
+            barrel.dropItem(player);
+            expect(itemDropManager.addDrop).toHaveBeenCalledWith(weaponDrop);
 
             randomSpy.mockReturnValueOnce(0.015);
-            expect(barrel.dropItem({} as any, player)).toBe(chipDrop);
+            barrel.dropItem(player);
+            expect(itemDropManager.addDrop).toHaveBeenCalledWith(chipDrop);
 
             randomSpy.mockReturnValueOnce(0.025);
-            expect(barrel.dropItem({} as any, player)).toBe(coreDrop);
+            barrel.dropItem(player);
+            expect(itemDropManager.addDrop).toHaveBeenCalledWith(coreDrop);
 
             randomSpy.mockReturnValueOnce(0.04);
-            barrel.dropItem({} as any, player);
-            expect((barrel as any).generateMoneyDrop).toHaveBeenCalledOnce();
+            barrel.dropItem(player);
+            expect(itemDropManager.addDrop).toHaveBeenCalledWith(moneyDrop);
 
             randomSpy.mockReturnValueOnce(0.33);
-            barrel.dropItem({} as any, player);
-            expect((barrel as any).generatePotionDrop).toHaveBeenCalledOnce();
+            barrel.dropItem(player);
+            expect(itemDropManager.addDrop).toHaveBeenCalledWith(potionDrop);
 
+            itemDropManager.addDrop.mockReset();
             randomSpy.mockReturnValueOnce(0.74);
-            expect(barrel.dropItem({} as any, player)).toBeNull();
+            expect(itemDropManager.addDrop).not.toHaveBeenCalled();
 
             randomSpy.mockRestore();
         });
@@ -176,7 +236,8 @@ describe('BreakableBarrel', () => {
 
     describe('destruction animation', () => {
         it('spawns 8 fragment meshes on hit', () => {
-            const { barrel, scene } = makeBarrel();
+            const scene = mockDeep<THREE.Scene>();
+            const barrel = makeBreakableBarrel({ scene: scene });
             barrel.onHit();
             // 1 call for removing original mesh + 8 calls for adding fragments
             const addCalls = scene.add.mock.calls.length;
@@ -185,7 +246,8 @@ describe('BreakableBarrel', () => {
         });
 
         it('fragments are not removed before FADE_END', () => {
-            const { barrel, scene } = makeBarrel();
+            const scene = mockDeep<THREE.Scene>();
+            const barrel = makeBreakableBarrel({ scene: scene });
             barrel.onHit();
             const removeCalls = scene.remove.mock.calls.length;
             barrel.update(0.5);
@@ -193,7 +255,7 @@ describe('BreakableBarrel', () => {
         });
 
         it('opacity stays at 1 before 0.8s', () => {
-            const { barrel } = makeBarrel();
+            const barrel = makeBreakableBarrel();
             barrel.onHit();
             barrel.update(0.5);
             // Access private fragments via cast to check opacity
@@ -203,7 +265,7 @@ describe('BreakableBarrel', () => {
         });
 
         it('opacity is between 0 and 1 during fade window (0.8s–1.1s)', () => {
-            const { barrel } = makeBarrel();
+            const barrel = makeBreakableBarrel();
             barrel.onHit();
             barrel.update(0.95);
             const frags = (barrel as any).fragments;
@@ -212,7 +274,8 @@ describe('BreakableBarrel', () => {
         });
 
         it('fragments are disposed after 1.1s', () => {
-            const { barrel, scene } = makeBarrel();
+            const scene = mockDeep<THREE.Scene>();
+            const barrel = makeBreakableBarrel({ scene: scene });
             barrel.onHit();
             barrel.update(1.2);
             const frags = (barrel as any).fragments;
@@ -222,14 +285,16 @@ describe('BreakableBarrel', () => {
         });
 
         it('update is a no-op when barrel is not destroyed', () => {
-            const { barrel, scene } = makeBarrel();
+            const scene = mockDeep<THREE.Scene>();
+            const barrel = makeBreakableBarrel({ scene: scene });
             barrel.update(1.0);
             // Only the constructor add call
             expect(scene.add).toHaveBeenCalledTimes(1);
         });
 
         it('update is a no-op after animation is done', () => {
-            const { barrel, scene } = makeBarrel();
+            const scene = mockDeep<THREE.Scene>();
+            const barrel = makeBreakableBarrel({ scene: scene });
             barrel.onHit();
             barrel.update(1.2);
             const removeCalls = scene.remove.mock.calls.length;
@@ -238,7 +303,8 @@ describe('BreakableBarrel', () => {
         });
 
         it('cleanup disposes in-flight fragments', () => {
-            const { barrel, scene } = makeBarrel();
+            const scene = mockDeep<THREE.Scene>();
+            const barrel = makeBreakableBarrel({ scene: scene });
             barrel.onHit();
             barrel.update(0.3);
             const frags = (barrel as any).fragments;
@@ -250,7 +316,7 @@ describe('BreakableBarrel', () => {
         });
 
         it('fragments move downward under gravity', () => {
-            const { barrel } = makeBarrel();
+            const barrel = makeBreakableBarrel();
             barrel.onHit();
             const frags = (barrel as any).fragments;
             const initialY = frags[0].mesh.position.y;
