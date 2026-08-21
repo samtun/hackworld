@@ -169,10 +169,11 @@ describe('InventoryManager', () => {
         });
 
         it('calls hideControlHints when closing', () => {
-            const mgr = makeInventoryManager();
+            const uiManager = mockDeep<UIManager>();
+            const mgr = makeInventoryManager({ uiManager: uiManager });
             mgr.isVisible = true;
             mgr.toggle();
-            expect(mgr.uiManager.hideControlHints).toHaveBeenCalled();
+            expect(uiManager.hideControlHints).toHaveBeenCalled();
         });
 
         it('plays the shared close sound when closing', () => {

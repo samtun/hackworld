@@ -5,7 +5,7 @@ import * as THREE from 'three';
 import { Enemy, MAX_ENEMY_RADIUS, ENEMY_RADIUS_FACTOR, EnemyArchetypeConfig, DEFAULT_ENEMY_ARCHETYPE } from './Enemy';
 import { AudioManager } from '../AudioManager';
 import { Player, PLAYER_COLLISION_GROUP } from '../player/Player';
-import { DEFAULT_ENEMY_TYPE, EnemyType, getEnemyTypeDefinition } from './EnemyType';
+import { DEFAULT_ENEMY_TYPE, EnemyType } from './EnemyType';
 import { AssetManager } from '../AssetManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { PlayerRegistry } from '../player/PlayerRegistry';
@@ -434,9 +434,6 @@ describe('Enemy ranged combat behavior', () => {
     it('moves closer instead of holding position when line of sight is blocked', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
         enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
         enemy.computeMovement = vi.fn().mockReturnValue({ dirX: 1, dirZ: 0 });
@@ -455,9 +452,6 @@ describe('Enemy ranged combat behavior', () => {
     it('moves closer instead of holding position when line of sight is blocked and enemy is within preferred distance band', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
         enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
         enemy.computeMovement = vi.fn().mockReturnValue({ dirX: 1, dirZ: 0 });
@@ -476,9 +470,6 @@ describe('Enemy ranged combat behavior', () => {
     it('retreats when the player gets too close to a ranged enemy', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
 
         const movement = enemy.computeCombatMovement(
@@ -535,9 +526,6 @@ describe('Enemy ranged combat behavior', () => {
     it('only starts ranged attacks once the player is at stand-off range', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
 
         expect(enemy.canAttackPlayer(5.5)).toBe(false);
@@ -548,8 +536,6 @@ describe('Enemy ranged combat behavior', () => {
     it('fires a visible ranged projectile during the ranged attack window without using the melee hitbox', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
         }) as any;
         enemy.body.position = new CANNON.Vec3(0, 1, 0);
         enemy.player = {
@@ -580,8 +566,6 @@ describe('Enemy ranged combat behavior', () => {
     it('keeps traveling until it hits a retreating player instead of stopping at the original range', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
         }) as any;
         enemy.body.position = new CANNON.Vec3(0, 1, 0);
         enemy.player = {
@@ -620,8 +604,6 @@ describe('Enemy ranged combat behavior', () => {
     it('stops the projectile when it hits a solid obstacle before the player', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
         }) as any;
         enemy.body.position = new CANNON.Vec3(0, 1, 0);
         enemy.player = {
@@ -667,8 +649,6 @@ describe('Enemy ranged combat behavior', () => {
     it('expires the projectile after its fixed lifetime when it hits nothing', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
         }) as any;
         enemy.body.position = new CANNON.Vec3(0, 1, 0);
         enemy.player = {
@@ -701,9 +681,6 @@ describe('Enemy ranged combat behavior', () => {
     it('can still launch a ranged attack while retreating', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
         enemy.player = {
             agility: 1,
@@ -729,9 +706,6 @@ describe('Enemy ranged combat behavior', () => {
     it('does not start a ranged attack through an occluding obstacle while retreating', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
         enemy.player = {
             agility: 1,
@@ -758,9 +732,6 @@ describe('Enemy ranged combat behavior', () => {
     it('requires a clear line of sight before a ranged enemy can attack', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
         enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
 

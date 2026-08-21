@@ -16,7 +16,7 @@ interface DungeonSelectionTestOverrides {
     isVisible?: boolean,
     needsRender?: boolean,
     selectedIndex?: number,
-    dungeonClasses?: Array<{ getMetadata: ReturnType<typeof vi.fn> }>,
+    stageClasses?: Array<{ getStageMetadata: ReturnType<typeof vi.fn> }>,
     onDungeonSelected?: (dungeonId: string) => void,
     waitForRelease?: boolean,
     lastNavigateDownState?: boolean,
@@ -58,7 +58,7 @@ function makeAudioManager(): AudioManager {
     } as unknown as AudioManager;
 }
 
-function makeDungeonManager(overrides: DungeonSelectionTestOverrides = {}) {
+function makeDungeonManager(overrides: DungeonSelectionTestOverrides = {}): DungeonSelectionManager {
     const {
         menuManager = makeMenuManager(),
         uiManager = makeUiManager(),
@@ -81,14 +81,14 @@ function makeDungeonManager(overrides: DungeonSelectionTestOverrides = {}) {
     if (overrides.onDungeonSelected !== undefined) (mgr as any).onDungeonSelected = overrides.onDungeonSelected;
     if (overrides.waitForRelease !== undefined) (mgr as any).waitForRelease = overrides.waitForRelease;
     if (overrides.lastNavigateDownState !== undefined) (mgr as any).lastNavigateDownState = overrides.lastNavigateDownState;
-    if (overrides.dungeonClasses) (mgr as any).stageMetadata = overrides.dungeonClasses.map((cls) => cls.getMetadata());
+    if (overrides.stageClasses) (mgr as any).stageMetadata = overrides.stageClasses.map((cls) => cls.getStageMetadata());
 
     return mgr;
 }
 
 function makeFakeDungeon(name = 'Test Dungeon', description = 'A test dungeon', requiredProgress = 1, id = 'dungeon1') {
     return {
-        getMetadata: vi.fn().mockReturnValue({ id, name, description, requiredProgress }),
+        getStageMetadata: vi.fn().mockReturnValue({ id, name, description, requiredProgress }),
     };
 }
 
@@ -138,13 +138,13 @@ describe('DungeonSelectionManager', () => {
             const mgr = makeDungeonManager();
             const cb = vi.fn();
             mgr.show(cb);
-            expect(mgr.onDungeonSelected).toBe(cb);
+            expect((mgr as any).onDungeonSelected).toBe(cb);
         });
 
         it('sets waitForRelease to true', () => {
             const mgr = makeDungeonManager();
             mgr.show(vi.fn());
-            expect(mgr.waitForRelease).toBe(true);
+            expect((mgr as any).waitForRelease).toBe(true);
         });
 
         it('plays the UI open sound when shown from hidden', () => {
@@ -213,21 +213,21 @@ describe('DungeonSelectionManager', () => {
 
     describe('render()', () => {
         it('shows no-connection message when no dungeons unlocked', () => {
-            const mgr = makeDungeonManager({ dungeonClasses: [] });
+            const mgr = makeDungeonManager({ stageClasses: [] });
             (mgr as any).render();
             expect(mgr.dungeonList.querySelector('.no-connection-message')).not.toBeNull();
         });
 
         it('builds dungeonElements for unlocked dungeons', () => {
             const fake = makeFakeDungeon();
-            const mgr = makeDungeonManager({ dungeonClasses: [fake] });
+            const mgr = makeDungeonManager({ stageClasses: [fake] });
             (mgr as any).render();
             expect(mgr.dungeonElements.length).toBe(1);
         });
 
         it('clears dungeonList before re-render', () => {
             const fake = makeFakeDungeon();
-            const mgr = makeDungeonManager({ dungeonClasses: [fake] });
+            const mgr = makeDungeonManager({ stageClasses: [fake] });
             (mgr as any).render();
             (mgr as any).render();
             expect(mgr.dungeonElements.length).toBe(1);
@@ -236,14 +236,14 @@ describe('DungeonSelectionManager', () => {
         it('skips dungeons requiring more progress than current', () => {
             const gameProgressManager = makeGameProgressManager(0);
             const fake = makeFakeDungeon('Locked', 'locked', 5);
-            const mgr = makeDungeonManager({ gameProgressManager, dungeonClasses: [fake] });
+            const mgr = makeDungeonManager({ gameProgressManager, stageClasses: [fake] });
             (mgr as any).render();
             expect(mgr.dungeonList.querySelector('.no-connection-message')).not.toBeNull();
         });
 
         it('skips dungeons with requiredProgress=0 (Lobby)', () => {
             const fake = makeFakeDungeon('Lobby', 'lobby', 0);
-            const mgr = makeDungeonManager({ dungeonClasses: [fake] });
+            const mgr = makeDungeonManager({ stageClasses: [fake] });
             (mgr as any).render();
             expect(mgr.dungeonList.querySelector('.no-connection-message')).not.toBeNull();
         });
@@ -251,7 +251,7 @@ describe('DungeonSelectionManager', () => {
         it('skips negative requiredProgress stages in non-DEV mode', () => {
             (import.meta.env as any).DEV = false;
             const fake = makeFakeDungeon('DevOnly', 'dev', -1);
-            const mgr = makeDungeonManager({ dungeonClasses: [fake] });
+            const mgr = makeDungeonManager({ stageClasses: [fake] });
             (mgr as any).render();
             expect(mgr.dungeonList.querySelector('.no-connection-message')).not.toBeNull();
         });
@@ -259,7 +259,7 @@ describe('DungeonSelectionManager', () => {
         it('renders multiple dungeons', () => {
             const fake1 = makeFakeDungeon('DungeonA', 'desc', 1, 'a');
             const fake2 = makeFakeDungeon('DungeonB', 'desc', 2, 'b');
-            const mgr = makeDungeonManager({ dungeonClasses: [fake1, fake2] });
+            const mgr = makeDungeonManager({ stageClasses: [fake1, fake2] });
             (mgr as any).render();
             expect(mgr.dungeonElements.length).toBe(2);
         });
@@ -271,7 +271,7 @@ describe('DungeonSelectionManager', () => {
             const fake1 = makeFakeDungeon('A', 'a', 1, 'a');
             const fake2 = makeFakeDungeon('B', 'b', 1, 'b');
             const inputManager = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
-            const mgr = makeDungeonManager({ audioManager, inputManager, dungeonClasses: [fake1, fake2], selectedIndex: 0 });
+            const mgr = makeDungeonManager({ audioManager, inputManager, stageClasses: [fake1, fake2], selectedIndex: 0 });
             (mgr as any).handleNavigation();
             expect(mgr.selectedIndex).toBe(1);
             expect(audioManager.playMenuNavigate).toHaveBeenCalledOnce();
@@ -280,7 +280,7 @@ describe('DungeonSelectionManager', () => {
         it('does not go below 0 when navigating up at index 0', () => {
             const fake = makeFakeDungeon();
             const inputManager = makeInput({ isNavigateUpPressed: vi.fn().mockReturnValue(true) });
-            const mgr = makeDungeonManager({ inputManager, dungeonClasses: [fake], selectedIndex: 0 });
+            const mgr = makeDungeonManager({ inputManager, stageClasses: [fake], selectedIndex: 0 });
             (mgr as any).handleNavigation();
             expect(mgr.selectedIndex).toBe(0);
         });
@@ -289,7 +289,7 @@ describe('DungeonSelectionManager', () => {
             const fake1 = makeFakeDungeon('A', 'a', 1, 'a');
             const fake2 = makeFakeDungeon('B', 'b', 1, 'b');
             const inputManager = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
-            const mgr = makeDungeonManager({ inputManager, dungeonClasses: [fake1, fake2], selectedIndex: 1 });
+            const mgr = makeDungeonManager({ inputManager, stageClasses: [fake1, fake2], selectedIndex: 1 });
             (mgr as any).handleNavigation();
             expect(mgr.selectedIndex).toBe(1);
         });
@@ -298,7 +298,7 @@ describe('DungeonSelectionManager', () => {
             const fake1 = makeFakeDungeon('A', 'a', 1, 'a');
             const fake2 = makeFakeDungeon('B', 'b', 1, 'b');
             const inputManager = makeInput({ isNavigateUpPressed: vi.fn().mockReturnValue(true) });
-            const mgr = makeDungeonManager({ inputManager, dungeonClasses: [fake1, fake2], selectedIndex: 1 });
+            const mgr = makeDungeonManager({ inputManager, stageClasses: [fake1, fake2], selectedIndex: 1 });
             (mgr as any).handleNavigation();
             expect(mgr.selectedIndex).toBe(0);
         });
@@ -309,7 +309,7 @@ describe('DungeonSelectionManager', () => {
             const inputManager = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
             const mgr = makeDungeonManager({
                 inputManager,
-                dungeonClasses: [fake],
+                stageClasses: [fake],
                 selectedIndex: 0,
                 onDungeonSelected: cb,
                 waitForRelease: false,
@@ -324,7 +324,7 @@ describe('DungeonSelectionManager', () => {
             const inputManager = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
             const mgr = makeDungeonManager({
                 inputManager,
-                dungeonClasses: [fake],
+                stageClasses: [fake],
                 selectedIndex: 0,
                 onDungeonSelected: cb,
                 waitForRelease: true,
@@ -336,7 +336,7 @@ describe('DungeonSelectionManager', () => {
         it('calls hide on cancel', () => {
             const fake = makeFakeDungeon();
             const inputManager = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
-            const mgr = makeDungeonManager({ inputManager, dungeonClasses: [fake] });
+            const mgr = makeDungeonManager({ inputManager, stageClasses: [fake] });
             const hideSpy = vi.spyOn(mgr, 'hide');
             (mgr as any).handleNavigation();
             expect(hideSpy).toHaveBeenCalled();
@@ -344,7 +344,7 @@ describe('DungeonSelectionManager', () => {
 
         it('calls hide on cancel even when no dungeons available', () => {
             const inputManager = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
-            const mgr = makeDungeonManager({ inputManager, dungeonClasses: [] });
+            const mgr = makeDungeonManager({ inputManager, stageClasses: [] });
             const hideSpy = vi.spyOn(mgr, 'hide');
             (mgr as any).handleNavigation();
             expect(hideSpy).toHaveBeenCalled();
@@ -356,7 +356,7 @@ describe('DungeonSelectionManager', () => {
             const inputManager = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
             const mgr = makeDungeonManager({
                 inputManager,
-                dungeonClasses: [fake1, fake2],
+                stageClasses: [fake1, fake2],
                 selectedIndex: 0,
                 lastNavigateDownState: true,
             });

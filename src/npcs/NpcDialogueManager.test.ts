@@ -6,7 +6,6 @@ import { AudioManager } from '../AudioManager';
 import { InputManager } from '../controls/InputManager';
 import { MenuManager } from '../ui/MenuManager';
 import { mock, mockDeep } from 'vitest-mock-extended';
-import { call } from 'three/examples/jsm/nodes/Nodes.js';
 
 interface NpcDialogueManagerTestOverrides {
     menuManager?: MenuManager,

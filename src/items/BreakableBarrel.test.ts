@@ -11,7 +11,6 @@ import { TierManager, Tier } from './TierManager';
 import { WeaponRepository } from './weapons/WeaponRepository';
 import { mockDeep } from 'vitest-mock-extended';
 import { WeaponItem } from './weapons/WeaponItem';
-import { ItemDrop } from './ItemDrop';
 import { WeaponDrop } from './weapons/WeaponDrop';
 import { ChipDrop } from './chips/ChipDrop';
 import { CoreDrop } from './cores/CoreDrop';

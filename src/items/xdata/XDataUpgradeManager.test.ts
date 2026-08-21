@@ -339,7 +339,7 @@ describe('XDataUpgradeManager', () => {
         it('uses the correct current upgrade level for each stat type in the insufficient-audio path', () => {
             const mgr = makeManager();
             mgr.isVisible = true;
-            mgr.stats = [
+            (mgr as any).stats = [
                 { type: 'strength', label: 'Strength', description: '', upgradeEffect: '' },
                 { type: 'defense', label: 'Defense', description: '', upgradeEffect: '' },
                 { type: 'agility', label: 'Agility', description: '', upgradeEffect: '' },

@@ -271,7 +271,7 @@ export class Enemy extends BaseMesh {
         private readonly audioManager: AudioManager,
         private readonly floatingIndicatorManager: FloatingIndicatorManager,
         private readonly playerRegistry: PlayerRegistry,
-        private readonly assetManager: AssetManager,
+        assetManager: AssetManager,
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
         position: CANNON.Vec3,
@@ -345,7 +345,7 @@ export class Enemy extends BaseMesh {
         this.mesh.scale.setScalar(sizeScale);
 
         // Setup animations
-        this.setupAnimations();
+        this.setupAnimations(assetManager);
 
         // Physics
         const shape = new CANNON.Cylinder(this.radius, this.radius, this.size, 8);
@@ -368,13 +368,13 @@ export class Enemy extends BaseMesh {
         this.blobShadow = new BlobShadow(scene, 0.5 * sizeScale);
     }
 
-    protected setupAnimations() {
+    protected setupAnimations(assetManager: AssetManager) {
         // Clear BaseMesh mixer to avoid conflict
         this.mixers = [];
 
         this.mixer = new THREE.AnimationMixer(this.mesh);
 
-        const gltf = this.assetManager.get(this.enemyTypeDefinition.modelPath);
+        const gltf = assetManager.get(this.enemyTypeDefinition.modelPath);
         const animations = gltf.animations;
 
         if (animations && animations.length > 0) {

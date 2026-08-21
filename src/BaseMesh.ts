@@ -20,6 +20,24 @@ export abstract class BaseMesh {
         }
     }
 
+    protected replaceModel(modelPath: string) {
+        try {
+            // Try to use preloaded asset first
+            let gltf = this.assetManager.get(modelPath);
+            const model = gltf.scene.clone();
+
+            // Clear any existing children and dispose resources
+            this.disposeMesh();
+
+            // Add the loaded model to the weapon group
+            this.mesh.add(model);
+
+            console.log(`Loaded model: ${modelPath}`);
+        } catch (error) {
+            throw new Error(`Failed to load model ${modelPath}: ${error}`);
+        }
+    }
+
     private disposeMeshRecursive(group: THREE.Group): void {
         // Remove and dispose all children
         while (group.children.length > 0) {

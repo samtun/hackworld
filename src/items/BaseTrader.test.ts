@@ -85,7 +85,7 @@ function makeSellableItem(id: string, buyPrice: number, sellPrice: number): Item
         clone: vi.fn(function (this: any) {
             return { ...this, id: `${id}_clone`, clone: this.clone };
         }),
-    } as any;
+    } as unknown as Item;
 }
 
 /** An equippable item (e.g. weapon) for testing */
@@ -166,7 +166,7 @@ describe('BaseTrader – buy transaction', () => {
         (trader as any).handleTransaction(player);
 
         const bought = player.inventory[0];
-        expect((bought as EquippableItem).isEquipped).toBe(false);
+        expect((bought as unknown as EquippableItem).isEquipped).toBe(false);
     });
 
     it('adjusts selectedIndex when last item is bought', () => {
@@ -200,12 +200,12 @@ describe('BaseTrader – sell transaction', () => {
     beforeEach(() => {
         trader = makeTrader();
         trader.activePanel = TraderPanel.PLAYER;
-        player = makePlayer({ bits: 100, inventory: [] as Item[] });
+        player = makePlayer({ bits: 100, inventory: [] });
     });
 
     it('credits player bits with sell price', () => {
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
@@ -214,7 +214,7 @@ describe('BaseTrader – sell transaction', () => {
 
     it('removes the item from player inventory', () => {
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
@@ -223,7 +223,7 @@ describe('BaseTrader – sell transaction', () => {
 
     it('adds a clone of the sold item to trader inventory', () => {
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
@@ -235,7 +235,7 @@ describe('BaseTrader – sell transaction', () => {
         trader = makeTrader({ audioManager: audioManagerMock });
         trader.activePanel = TraderPanel.PLAYER;
         const item = makeEquippableItem('e2', 200, 80, true); // equipped
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
@@ -246,7 +246,7 @@ describe('BaseTrader – sell transaction', () => {
 
     it('can sell an un-equipped equippable item', () => {
         const item = makeEquippableItem('e3', 200, 80, false); // not equipped
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
@@ -259,7 +259,7 @@ describe('BaseTrader – sell transaction', () => {
         trader = makeTrader({ audioManager: audioManagerMock });
         trader.activePanel = TraderPanel.PLAYER;
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 

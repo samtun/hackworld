@@ -86,7 +86,7 @@ describe('MainframeNpc', () => {
         { progress: 4 },
         { progress: 6 },
         { progress: 8 },
-    ]) ('Advances progress when interacting at even progress', ({ progress }) => {
+    ])('Advances progress when interacting at even progress', ({ progress }) => {
         const gameProgressManager = mock<GameProgressManager>({
             progress: progress
         });
@@ -105,9 +105,9 @@ describe('MainframeNpc', () => {
         { progress: 5 },
         { progress: 7 },
         { progress: 9 },
-    ]) ('Does not advance progress when interacting at odd progress', ({ progress }) => {
+    ])('Does not advance progress when interacting at odd progress', ({ progress }) => {
         const gameProgressManager = mock<GameProgressManager>({
-            progress: 3
+            progress: progress
         });
         const npc = makeMainframeNpc({ gameProgressManager: gameProgressManager });
         const updateDialogueSpy = vi.spyOn(npc, 'updateDialogue');

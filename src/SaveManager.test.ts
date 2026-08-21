@@ -16,6 +16,7 @@ import { TierManager, WeaponTierDefinition } from './items/TierManager';
 import { SaveManagerUI } from './menus/SaveManagerUI';
 import { mock, mockDeep } from 'vitest-mock-extended';
 import { Player } from './player/Player';
+import { EquippableItem } from './items/EquippableItem';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -808,7 +809,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
         const playerRegistry = makePlayerRegistryWithPlayer(player);
         const mgr = makeSaveManager({ playerRegistry: playerRegistry, coreRepository: coreRepository });
         (mgr as any).loadSaveData(data);
-        expect(player.inventory[0].isEquipped).toBe(true);
+        expect((player.inventory[0] as EquippableItem).isEquipped).toBe(true);
     });
 
     it('restores a ChipItem from inventory', () => {

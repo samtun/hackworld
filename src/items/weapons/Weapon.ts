@@ -96,40 +96,16 @@ export class Weapon extends BaseMesh {
     private hitboxActive: boolean = false;
 
     constructor(
-        private readonly assetManager: AssetManager,
+        assetManager: AssetManager,
         modelAsset: string,
         weaponType: WeaponType = WeaponType.SWORD,
         damage: number = 10,
-        world?: CANNON.World) {
+        physicsWorld?: CANNON.World) {
         super(modelAsset, assetManager);
         this.weaponType = weaponType;
         this.stats = Weapon.WEAPON_CONFIGS[weaponType];
         this.damage = damage;
-        this.physicsWorld = world;
-
-        // TODO check if this is necessary, since we are loading the model via the super constructor
-        // Load the weapon model (will use preloaded if available)
-        this.loadWeaponModel(weaponType);
-    }
-
-    private async loadWeaponModel(type: WeaponType): Promise<void> {
-        const modelPath = Weapon.WEAPON_MODEL_PATHS[type];
-
-        try {
-            // Try to use preloaded asset first
-            let gltf = this.assetManager.get(modelPath);
-            const model = gltf.scene.clone();
-
-            // Clear any existing children and dispose resources
-            this.disposeMesh();
-
-            // Add the loaded model to the weapon group
-            this.mesh.add(model);
-
-            console.log(`Loaded weapon model: ${type}`);
-        } catch (error) {
-            throw new Error(`Failed to load weapon model ${type}: ${error}`);
-        }
+        this.physicsWorld = physicsWorld;
     }
 
     attack(rangeMultiplier: number = 1.0): boolean {
@@ -264,6 +240,6 @@ export class Weapon extends BaseMesh {
         parent.add(this.mesh);
 
         // Load the new weapon model
-        this.loadWeaponModel(newType);
+        this.replaceModel(Weapon.WEAPON_MODEL_PATHS[newType]);
     }
 }

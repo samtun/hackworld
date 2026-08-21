@@ -49,7 +49,7 @@ function makeItemDropManager(overrides: ItemDropManagerTestOverride = {}): ItemD
             makeWeaponDropStrategy(undefined, itemDropFactory),
             makeChipDropStrategy(undefined, itemDropFactory),
             makeCoreDropStrategy(undefined, itemDropFactory),
-            makeXDataDropStrategy(itemDropFactory),
+            makeXDataDropStrategy(undefined, itemDropFactory),
             makeMoneyDropStrategy(itemDropFactory),
             makeBoosterPackDropStrategy(itemDropFactory),
             new MinimapDropStrategy(),

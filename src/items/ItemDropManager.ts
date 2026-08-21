@@ -8,7 +8,6 @@ import { ItemDropType } from './ItemDropType';
 import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
 import { injectAll, singleton } from 'tsyringe';
 import { AudioManager } from '../AudioManager';
-import { PotionDrop } from './potions/PotionDrop';
 
 export interface ItemDropStrategy {
     // unique identifier for this strategy type
