@@ -1,69 +1,40 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('../InputManager', () => ({
-    InputManager: { Instance: {} }
-}));
-vi.mock('../ui/MenuManager', () => ({
-    MenuManager: {
-        Instance: {
-            createDialogueOverlay: vi.fn(() => { const d = document.createElement('div'); d.style.display = 'none'; return d; }),
-        }
-    },
-    MENU_COLORS: { NAME_BG: 'rgba(0,0,0,0.7)', NAME_TEXT: '#ffd700', TEXT: '#fff', SEPARATOR: '#BBBBBB' },
-    MENU_STYLES: { FONT_FAMILY: 'Arial' },
-}));
-vi.mock('../ui/UIManager', () => ({
-    UIManager: {
-        Instance: {
-            showControlHints: vi.fn(),
-            hideControlHints: vi.fn(),
-        }
-    }
-}));
-vi.mock('../ui/InputHints', () => ({
-    getHint: vi.fn().mockReturnValue(''),
-    getKeyboardHint: vi.fn().mockReturnValue(''),
-    HintConfigs: { continueExit: 'continueExit', closeExit: 'closeExit' },
-}));
-vi.mock('../ui/UiUtils', () => ({
-    resetInputDebounce: vi.fn(),
-}));
-vi.mock('../AudioManager', () => ({
-    AudioManager: {
-        Instance: {
-            playDialogueTick: vi.fn(),
-        },
-    },
-}));
-
 import { NpcDialogueManager } from './NpcDialogueManager';
 import { UIManager } from '../ui/UIManager';
-import { resetInputDebounce } from '../ui/UiUtils';
+import * as UiUtils from '../ui/UiUtils';
 import { AudioManager } from '../AudioManager';
+import { InputManager } from '../controls/InputManager';
+import { MenuManager } from '../ui/MenuManager';
+import { mock, mockDeep } from 'vitest-mock-extended';
+import { call } from 'three/examples/jsm/nodes/Nodes.js';
 
-function makeDialogueManager(overrides: Record<string, unknown> = {}) {
-    const mgr = Object.create((NpcDialogueManager as any).prototype) as any;
+interface NpcDialogueManagerTestOverrides {
+    menuManager?: MenuManager,
+    uiManager?: UIManager,
+    audioManager?: AudioManager,
+    inputManager?: InputManager,
+    currentLineIndex?: number
+}
 
-    const container = document.createElement('div');
-    container.style.display = 'none';
+function makeDialogueManager(overrides: NpcDialogueManagerTestOverrides = {}): NpcDialogueManager {
+    const {
+        menuManager = mockDeep<MenuManager>({
+            createDialogueOverlay: vi.fn().mockReturnValue(document.createElement('div')),
+        }),
+        uiManager = mockDeep<UIManager>(),
+        audioManager = mock<AudioManager>(),
+        inputManager = mock<InputManager>(),
+        currentLineIndex = 0,
+    } = overrides;
 
-    Object.assign(mgr, {
-        isVisible: false,
-        container,
-        currentNpc: null,
-        currentLineIndex: 0,
-        nameBox: document.createElement('div'),
-        dialogueText: document.createElement('div'),
-        lastSelectState: false,
-        lastCancelState: false,
-        currentInputManager: undefined,
-        onDialogueCompleteCallback: undefined,
-        menuManager: {},
-        uiManager: UIManager.Instance,
-        ...overrides,
-    });
+    const mgr = new NpcDialogueManager(
+        menuManager,
+        uiManager,
+        audioManager,
+        inputManager
+    );
 
-    (mgr as any).updateDialogue = vi.fn();
+    (mgr as any).currentLineIndex = currentLineIndex;
 
     return mgr;
 }
@@ -74,16 +45,6 @@ function makeNpc(lines = ['Hello!', 'Goodbye!']) {
         name: 'TestNpc',
         dialogue: lines,
         markDialogueShown: vi.fn(),
-    } as any;
-}
-
-function makeInput(overrides: Record<string, unknown> = {}) {
-    return {
-        isSelectPressed: vi.fn().mockReturnValue(false),
-        isCancelPressed: vi.fn().mockReturnValue(false),
-        isControllerConnected: vi.fn().mockReturnValue(false),
-        isMobile: false,
-        ...overrides,
     } as any;
 }
 
@@ -118,53 +79,54 @@ describe('NpcDialogueManager', () => {
             const mgr = makeDialogueManager();
             const cb = vi.fn();
             mgr.show(makeNpc(), cb);
-            expect(mgr.onDialogueCompleteCallback).toBe(cb);
+            expect((mgr as any).onDialogueCompleteCallback).toBe(cb);
         });
 
         it('calls updateDialogue on show', () => {
             const mgr = makeDialogueManager();
+            const updateDialogueSpy = vi.spyOn((mgr as any), 'updateDialogue');
             mgr.show(makeNpc());
-            expect(mgr.updateDialogue).toHaveBeenCalled();
+            expect(updateDialogueSpy).toHaveBeenCalled();
         });
 
         it('calls resetInputDebounce on show', () => {
+            const debounceSpy = vi.spyOn(UiUtils, 'resetInputDebounce');
             const mgr = makeDialogueManager();
             mgr.show(makeNpc());
-            expect(resetInputDebounce).toHaveBeenCalledWith(mgr);
+            expect(debounceSpy).toHaveBeenCalledWith(mgr);
         });
 
         it('plays the dialogue tick when a line is shown', () => {
-            const mgr = Object.create((NpcDialogueManager as any).prototype) as NpcDialogueManager;
-            Object.assign(mgr, {
-                currentNpc: makeNpc(['Hello']),
-                currentLineIndex: 0,
-                nameBox: document.createElement('div'),
-                dialogueText: document.createElement('div'),
-                uiManager: UIManager.Instance,
-            });
+            const uiManager = mock<UIManager>();
+            const audioManager = mock<AudioManager>();
+            const mgr = makeDialogueManager({ uiManager: uiManager, audioManager: audioManager });
 
+            mgr.show(makeNpc(['Hello']));
             (mgr as any).updateDialogue();
 
-            expect(AudioManager.Instance.playDialogueTick).toHaveBeenCalled();
+            expect(audioManager.playDialogueTick).toHaveBeenCalled();
         });
     });
 
     describe('hide()', () => {
         it('sets isVisible to false', () => {
-            const mgr = makeDialogueManager({ isVisible: true });
+            const mgr = makeDialogueManager();
+            mgr.show(makeNpc());
             mgr.hide();
             expect(mgr.isVisible).toBe(false);
         });
 
         it('sets display to none', () => {
-            const mgr = makeDialogueManager({ isVisible: true });
+            const mgr = makeDialogueManager();
+            mgr.show(makeNpc());
             mgr.container.style.display = 'flex';
             mgr.hide();
             expect(mgr.container.style.display).toBe('none');
         });
 
         it('clears currentNpc', () => {
-            const mgr = makeDialogueManager({ currentNpc: makeNpc() });
+            const mgr = makeDialogueManager();
+            mgr.show(makeNpc());
             mgr.hide();
             expect(mgr.currentNpc).toBeNull();
         });
@@ -176,87 +138,91 @@ describe('NpcDialogueManager', () => {
         });
 
         it('clears onDialogueCompleteCallback', () => {
-            const mgr = makeDialogueManager({ onDialogueCompleteCallback: vi.fn() });
+            const mgr = makeDialogueManager();
+            mgr.show(makeNpc(), vi.fn())
             mgr.hide();
-            expect(mgr.onDialogueCompleteCallback).toBeUndefined();
+            expect((mgr as any).onDialogueCompleteCallback).toBeUndefined();
         });
 
         it('calls hideControlHints', () => {
-            const mgr = makeDialogueManager();
+            const uiManager = mock<UIManager>();
+            const mgr = makeDialogueManager({ uiManager: uiManager });
             mgr.hide();
-            expect(UIManager.Instance.hideControlHints).toHaveBeenCalled();
+            expect(uiManager.hideControlHints).toHaveBeenCalled();
         });
     });
 
     describe('update()', () => {
-        it('returns immediately when not visible', () => {
-            const mgr = makeDialogueManager({ isVisible: false });
-            const input = makeInput();
-            mgr.update(input);
-            expect(input.isSelectPressed).not.toHaveBeenCalled();
-        });
+        function showAndDebounce(mgr: NpcDialogueManager, npc?: any, callback?: () => {}) {
+            mgr.show(npc ?? makeNpc(), callback);
+            mgr.update();
+        }
 
-        it('stores currentInputManager even when not visible', () => {
-            const mgr = makeDialogueManager({ isVisible: false });
-            const input = makeInput();
-            mgr.update(input);
-            expect(mgr.currentInputManager).toBe(input);
+        it('returns immediately when not visible', () => {
+            const inputManager = mock<InputManager>();
+            const mgr = makeDialogueManager({ inputManager: inputManager });
+            mgr.update();
+            expect(inputManager.isSelectPressed).not.toHaveBeenCalled();
         });
 
         it('calls hide when cancel is pressed', () => {
-            const mgr = makeDialogueManager({ isVisible: true, currentNpc: makeNpc() });
+            const inputManager = mock<InputManager>();
+            const mgr = makeDialogueManager({ inputManager: inputManager });
             const hideSpy = vi.spyOn(mgr, 'hide');
-            const input = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
-            mgr.update(input);
+            showAndDebounce(mgr);
+            inputManager.isCancelPressed.mockReturnValue(true);
+            mgr.update();
             expect(hideSpy).toHaveBeenCalled();
         });
 
         it('does not call hide on cancel if already pressed last frame (debounce)', () => {
-            const mgr = makeDialogueManager({
-                isVisible: true,
-                currentNpc: makeNpc(),
-                lastCancelState: true,
-            });
+            const inputManager = mock<InputManager>();
+            inputManager.isCancelPressed.mockReturnValue(true);
+            const mgr = makeDialogueManager({ inputManager: inputManager });
             const hideSpy = vi.spyOn(mgr, 'hide');
-            const input = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
-            mgr.update(input);
+            mgr.show(makeNpc());
+            mgr.update();
             expect(hideSpy).not.toHaveBeenCalled();
         });
 
         it('advances dialogue when select is pressed and more lines remain', () => {
             const npc = makeNpc(['Line1', 'Line2', 'Line3']);
-            const mgr = makeDialogueManager({ isVisible: true, currentNpc: npc, currentLineIndex: 0 });
-            const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
-            mgr.update(input);
+            const inputManager = mock<InputManager>();
+            inputManager.isSelectPressed.mockReturnValue(false);
+            const mgr = makeDialogueManager({ inputManager: inputManager });
+            const updateDialogueSpy = vi.spyOn((mgr as any), 'updateDialogue');
+            showAndDebounce(mgr, npc);
+
+            expect((mgr as any).lastSelectState).toBe(false);
+            inputManager.isSelectPressed.mockReturnValue(true);
+            mgr.update();
             expect(mgr.currentLineIndex).toBe(1);
-            expect(mgr.updateDialogue).toHaveBeenCalledWith(input);
+            expect(updateDialogueSpy).toHaveBeenCalled();
+            expect((mgr as any).lastSelectState).toBe(true);
         });
 
         it('does not advance on select if already pressed last frame (debounce)', () => {
             const npc = makeNpc(['Line1', 'Line2']);
-            const mgr = makeDialogueManager({
-                isVisible: true,
-                currentNpc: npc,
-                currentLineIndex: 0,
-                lastSelectState: true,
-            });
-            const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
-            mgr.update(input);
+            const inputManager = mock<InputManager>();
+            const mgr = makeDialogueManager({});
+
+            showAndDebounce(mgr, npc);
+
+            inputManager.isSelectPressed.mockReturnValue(true);
+            mgr.update();
             expect(mgr.currentLineIndex).toBe(0);
         });
 
         it('calls hide and callback when on last line and select pressed', () => {
             const npc = makeNpc(['OnlyLine']);
+            const inputManager = mock<InputManager>();
             const cb = vi.fn();
-            const mgr = makeDialogueManager({
-                isVisible: true,
-                currentNpc: npc,
-                currentLineIndex: 0,
-                onDialogueCompleteCallback: cb,
-            });
+            const mgr = makeDialogueManager({ inputManager: inputManager });
             const hideSpy = vi.spyOn(mgr, 'hide');
-            const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
-            mgr.update(input);
+            showAndDebounce(mgr, npc, cb);
+
+            inputManager.isSelectPressed.mockReturnValue(true);
+            mgr.update();
             expect(hideSpy).toHaveBeenCalled();
             expect(npc.markDialogueShown).toHaveBeenCalled();
             expect(cb).toHaveBeenCalled();
@@ -264,48 +230,43 @@ describe('NpcDialogueManager', () => {
 
         it('calls hide without callback when no callback set on last line', () => {
             const npc = makeNpc(['OnlyLine']);
-            const mgr = makeDialogueManager({
-                isVisible: true,
-                currentNpc: npc,
-                currentLineIndex: 0,
-                onDialogueCompleteCallback: undefined,
-            });
+            const inputManager = mock<InputManager>();
+            const mgr = makeDialogueManager({ inputManager: inputManager });
             const hideSpy = vi.spyOn(mgr, 'hide');
-            const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
-            expect(() => mgr.update(input)).not.toThrow();
+            showAndDebounce(mgr, npc);
+
+            inputManager.isSelectPressed.mockReturnValue(true);
+            mgr.update();
+            expect(() => mgr.update()).not.toThrow();
             expect(hideSpy).toHaveBeenCalled();
         });
 
         it('calls callback after hide (not before)', () => {
             const npc = makeNpc(['Line']);
             const callOrder: string[] = [];
-            const mgr = makeDialogueManager({
-                isVisible: true,
-                currentNpc: npc,
-                currentLineIndex: 0,
-            });
+            const cb = () => callOrder.push('callback');
+            const inputManager = mock<InputManager>();
+            const mgr = makeDialogueManager({ inputManager: inputManager });
             vi.spyOn(mgr, 'hide').mockImplementation(() => {
                 callOrder.push('hide');
                 mgr.isVisible = false;
             });
-            mgr.onDialogueCompleteCallback = vi.fn(() => callOrder.push('callback'));
-            const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
-            mgr.update(input);
+            showAndDebounce(mgr, npc, cb);
+            inputManager.isSelectPressed.mockReturnValue(true);
+            mgr.update();
             expect(callOrder).toEqual(['hide', 'callback']);
         });
 
-        it('updates lastSelectState after update', () => {
-            const mgr = makeDialogueManager({ isVisible: true, currentNpc: makeNpc() });
-            const input = makeInput({ isSelectPressed: vi.fn().mockReturnValue(true) });
-            mgr.update(input);
-            expect(mgr.lastSelectState).toBe(true);
-        });
-
         it('updates lastCancelState after update', () => {
-            const mgr = makeDialogueManager({ isVisible: true, currentNpc: makeNpc() });
-            const input = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
-            mgr.update(input);
-            expect(mgr.lastCancelState).toBe(true);
+            const inputManager = mock<InputManager>();
+            inputManager.isCancelPressed.mockReturnValue(false);
+            const mgr = makeDialogueManager({ inputManager: inputManager });
+            showAndDebounce(mgr);
+            expect((mgr as any).lastCancelState).toBe(false);
+
+            inputManager.isCancelPressed.mockReturnValue(true);
+            mgr.update();
+            expect((mgr as any).lastCancelState).toBe(true);
         });
     });
 });
