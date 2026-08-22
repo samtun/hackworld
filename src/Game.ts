@@ -36,6 +36,13 @@ import { PauseMenuFactory } from './menus/PauseMenuFactory';
 import { ChipTrader } from './items/chips/ChipTrader';
 import { CoreTrader } from './items/cores/CoreTrader';
 
+interface InteractiveEntity {
+    type: InteractiveEntityType;
+    data?: any;
+    hint: string;
+    action: () => void;
+}
+
 @singleton()
 export class Game {
     private world: World;
@@ -519,83 +526,66 @@ export class Game {
             || (this.mobileControlsManager.isAttackPressed);
     }
 
-    animate() {
-        requestAnimationFrame(() => this.animate());
+    private updateStartScreen(): boolean {
+        if (this.currentScene !== 'startScreen') {
+            return false;
+        }
 
-        if (this.currentScene === 'startScreen') {
-            this.uiManager.showStartScreen();
-            // Show the main menu after START is pressed (but not while already transitioning
-            // or while the menu is already visible)
-            if (!this.isTransitioning && !this.uiManager.isStartMenuShowing() &&
-                (this.isStartScreenAdvancePressed() || this.uiManager.startScreenTapped)) {
-                this.isTransitioning = true;
-                this.uiManager.showStartMenu(
-                    this.saveManager.hasLocalStorageSave(),
-                    (option, file) => this.onStartMenuSelect(option, file),
-                );
-            }
+        this.uiManager.showStartScreen();
+        // Show the main menu after START is pressed (but not while already transitioning
+        // or while the menu is already visible)
+        if (!this.isTransitioning && !this.uiManager.isStartMenuShowing() &&
+            (this.isStartScreenAdvancePressed() || this.uiManager.startScreenTapped)) {
+            this.isTransitioning = true;
+            this.uiManager.showStartMenu(
+                this.saveManager.hasLocalStorageSave(),
+                (option, file) => this.onStartMenuSelect(option, file),
+            );
+        }
+
+        return true;
+    }
+
+    private updateDebugInput(): void {
+        if (!import.meta.env.DEV) {
             return;
         }
 
-        // Lore introduction is active — the LoreIntroduction class handles its own rendering
-        if (this.currentScene === 'lore') {
-            // Act as if a menu is open on the lore introduction screen so the introduction can be skipped with the B button
-            this.inputManager.menuOpen = true;
-            return;
-        }
-
-        const dt = this.clock.getDelta();
-
-        // Update playtime (only when not on start screen and not paused by menus)
-        if (!this.isAnyMenuOpen()) {
-            this.saveManager.updatePlaytime(dt);
-        }
-
-        // Clean up debug meshes list occasionally (e.g. every frame is fine for small lists, or check length)
-        if (this.debugMeshes.length > 0) {
-            this.debugMeshes = this.debugMeshes.filter(m => m.parent !== null);
-        }
-
-        // Input Handling for UI
-        // Debug Mode: Check for L3 (left thumbstick press) for dev builds only
-        // L3 toggles the debug value editor (expand/collapse)
-        // R3 toggles debug mode completely (like F8)
-        if (import.meta.env.DEV) {
-            // L3: Toggle debug value editor
-            const isL3Pressed = this.inputManager.isL3Pressed();
-            if (isL3Pressed && !this.wasL3Pressed) {
-                if (this.debugValueEditor) {
-                    if (this.debugValueEditor.isVisible) {
-                        // Toggle expanded/collapsed state
-                        this.debugValueEditor.toggle();
-                        this.debugValueEditor.hide();
-                    } else {
-                        // Show and expand the editor
-                        this.debugValueEditor.show();
-                        this.debugValueEditor.expand();
-                        console.log('Debug Mode: ON (via L3 button)');
-                    }
-                }
-            }
-            this.wasL3Pressed = isL3Pressed;
-
-            // R3: Full debug mode toggle (like F8)
-            const isR3Pressed = this.inputManager.isR3Pressed();
-            if (isR3Pressed && !this.wasR3Pressed) {
-                this.debugMode = !this.debugMode;
-
-                // Toggle debug value editor visibility (colliders handled by editor callback)
-                if (this.debugMode) {
-                    this.debugValueEditor?.show();
+        // L3: Toggle debug value editor
+        const isL3Pressed = this.inputManager.isL3Pressed();
+        if (isL3Pressed && !this.wasL3Pressed) {
+            if (this.debugValueEditor) {
+                if (this.debugValueEditor.isVisible) {
+                    // Toggle expanded/collapsed state
+                    this.debugValueEditor.toggle();
+                    this.debugValueEditor.hide();
                 } else {
-                    this.debugValueEditor?.hide();
+                    // Show and expand the editor
+                    this.debugValueEditor.show();
+                    this.debugValueEditor.expand();
+                    console.log('Debug Mode: ON (via L3 button)');
                 }
-
-                console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'} (via R3 button)`);
             }
-            this.wasR3Pressed = isR3Pressed;
         }
+        this.wasL3Pressed = isL3Pressed;
 
+        // R3: Full debug mode toggle (like F8)
+        const isR3Pressed = this.inputManager.isR3Pressed();
+        if (isR3Pressed && !this.wasR3Pressed) {
+            this.debugMode = !this.debugMode;
+            // Toggle debug value editor visibility (colliders handled by editor callback)
+            if (this.debugMode) {
+                this.debugValueEditor?.show();
+            } else {
+                this.debugValueEditor?.hide();
+            }
+
+            console.log(`Debug Mode: ${this.debugMode ? 'ON' : 'OFF'} (via R3 button)`);
+        }
+        this.wasR3Pressed = isR3Pressed;
+    }
+
+    private updateMenuInput(): void {
         // Check inventory toggle
         const isInventoryPressed = this.inputManager.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
@@ -617,190 +607,218 @@ export class Game {
             }
         }
         this.wasPausePressed = isPausePressed;
+    }
 
+    private updateVisibleMenus(): boolean {
         // Update inventory if visible (pass input for navigation)
         if (this.inventoryManager.isVisible) {
             this.inventoryManager.update(this.player);
         }
-
         // Update trader if visible
         if (this.WeaponTrader.isVisible) {
             this.WeaponTrader.update(this.player);
         }
-
         // Update dungeon selection if visible
         if (this.dungeonSelectionManager.isVisible) {
             this.dungeonSelectionManager.update();
         }
 
-        // Update NPC dialogue if visible
         const wasDialogueVisible = this.npcDialogueManager.isVisible;
-        if (this.npcDialogueManager.isVisible) {
+        // Update NPC dialogue if visible
+        if (wasDialogueVisible) {
             this.npcDialogueManager.update();
         }
-
         // Update X-Data upgrade if visible
         if (this.xDataUpgradeManager.isVisible) {
             this.xDataUpgradeManager.update(this.player);
         }
-
         // Update chip trader if visible
         if (this.chipTrader.isVisible) {
             this.chipTrader.update(this.player);
         }
-
         // Update core trader if visible
         if (this.coreTrader.isVisible) {
             this.coreTrader.update(this.player);
         }
-
         // Update save manager if visible
         if (this.saveManager.isVisible) {
             this.saveManager.update();
         }
-
         // Update card manager if visible
         if (this.cardManager.isVisible) {
             this.cardManager.update(this.player);
         }
 
-        // Update mobile skills button visibility based on any menu being open
         if (this.mobileControlsManager.isMobile) {
+            // Update mobile skills button visibility based on any menu being open
             this.mobileControlsManager.setSkillsButtonVisible(!this.isAnyMenuOpen());
         }
 
-        // Check if player is near any interactive entity (to prevent jumping while interacting)
+        return wasDialogueVisible;
+    }
+
+    private findNearbyInteractive(anyMenuOpen: boolean): InteractiveEntity | null {
+        if (anyMenuOpen) {
+            return null;
+        }
+
+        // Auto-pickup XData, money, and potion drops
+        const autoPickupDrop = this.world.checkNearestAutoPickupDrop(this.player.position);
+        if (autoPickupDrop && autoPickupDrop.canPickup(this.player)) {
+            this.world.pickupDrop(autoPickupDrop, this.player);
+        }
+
+        // Check NPCs
+        for (const npc of this.world.getAllNpcs()) {
+            if (npc.isPlayerNearby(this.player.position)) {
+                return {
+                    type: InteractiveEntityType.NPC,
+                    data: npc,
+                    hint: npc.getInteractionHint(this.inputManager),
+                    action: () => {
+                        if (!npc.hasShownDialogue() && npc.dialogue.length > 0) {
+                            this.npcDialogueManager.show(npc, () => {
+                                if (npc.interactionCallback) {
+                                    npc.interact();
+                                }
+                            });
+                        } else if (npc.interactionCallback) {
+                            npc.interact();
+                        } else {
+                            this.npcDialogueManager.show(npc);
+                        }
+                    }
+                };
+            }
+        }
+
+        // Check weapon / chip / core / booster pack drops (higher priority than traders)
+        const interactiveDrop = this.world.checkNearestInteractiveDrop(this.player.position);
+        if (interactiveDrop) {
+            return {
+                type: interactiveDrop.interactiveType,
+                data: interactiveDrop,
+                hint: getHint(HintConfigs.pickUp, this.inputManager),
+                action: () => this.world.pickupDrop(interactiveDrop, this.player)
+            };
+        }
+
+        // Check loot chests (unopened only)
+        for (const chest of this.world.getLootChests()) {
+            if (!chest.isOpened && chest.isPlayerNearby(this.player.position)) {
+                chest.prepareLoot(this.player);
+                return {
+                    type: InteractiveEntityType.CHEST,
+                    data: chest,
+                    hint: chest.getInteractionHint(this.inputManager),
+                    action: () => chest.open(this.player)
+                };
+            }
+        }
+
+        return null;
+    }
+
+    private updateGameLogic(dt: number, anyMenuOpen: boolean, isNearInteractive: boolean): void {
+        // Prevent updates when in a menu
+        if (this.pauseMenu.visible) {
+            return;
+        }
+
+        // Camera Follow
+        const targetX = this.player.position.x + this.cameraOffset.x;
+        const targetY = this.player.position.y + this.cameraOffset.y;
+        const targetZ = this.player.position.z + this.cameraOffset.z;
+        const lerpFactor = Math.min(5 * dt, 1);
+
+        this.camera.position.x += (targetX - this.camera.position.x) * lerpFactor;
+        this.camera.position.y += (targetY - this.camera.position.y) * lerpFactor;
+        this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
+        this.floatingIndicatorCamera.position.x += (targetX - this.floatingIndicatorCamera.position.x) * lerpFactor;
+        this.floatingIndicatorCamera.position.y += (targetY - this.floatingIndicatorCamera.position.y) * lerpFactor;
+        this.floatingIndicatorCamera.position.z += (targetZ - this.floatingIndicatorCamera.position.z) * lerpFactor;
+
+        if (!anyMenuOpen) {
+            this.physicsWorld.step(1 / 60, dt, 3);
+            // Prevent jumping in the frame(s) immediately after interacting
+            this.player.update(dt, isNearInteractive || this.wasJustInteracted);
+            this.world.update(dt, this.player, this.camera.position);
+
+            const minimapState = this.world.getCurrentMinimapState();
+            this.uiManager.setMinimapState(minimapState.layout, minimapState.visible);
+            this.uiManager.update(this.player, dt);
+            // Handle death overlay input
+            this.uiManager.handleDeathOverlayInput();
+        }
+    }
+
+    private handleInteraction(nearbyInteractive: InteractiveEntity | null, wasDialogueVisible: boolean): void {
+        const isSelectPressed = this.inputManager.isSelectPressed();
+        if (nearbyInteractive) {
+            this.uiManager.showInteractionHint(true, nearbyInteractive.hint);
+            // Check for interaction - prevent if just opened a menu or dialogue was just closed
+            const shouldPreventInteraction = this.wasJustInteracted ||
+                (nearbyInteractive.type === InteractiveEntityType.NPC && wasDialogueVisible);
+
+            if (isSelectPressed && !this.wasSelectPressed && !shouldPreventInteraction) {
+                nearbyInteractive.action();
+                // Set flag if we just interacted to prevent immediate action
+                this.wasJustInteracted = true;
+            }
+        } else {
+            // Hide hint if not near anything interactive
+            this.uiManager.showInteractionHint(false);
+        }
+
+        // Reset trader just opened flag when select is released
+        if (!isSelectPressed && this.wasJustInteracted) {
+            this.wasJustInteracted = false;
+        }
+        this.wasSelectPressed = isSelectPressed;
+    }
+
+    animate(): void {
+        requestAnimationFrame(() => this.animate());
+
+        if (this.updateStartScreen()) {
+            return;
+        }
+
+        // Lore introduction is active — the LoreIntroduction class handles its own rendering
+        if (this.currentScene === 'lore') {
+            // Act as if a menu is open on the lore introduction screen so the introduction can be skipped with the B button
+            this.inputManager.menuOpen = true;
+            return;
+        }
+
+        const dt = this.clock.getDelta();
+
+        if (!this.isAnyMenuOpen()) {
+            this.saveManager.updatePlaytime(dt);
+        }
+
+        if (this.debugMeshes.length > 0) {
+            this.debugMeshes = this.debugMeshes.filter(m => m.parent !== null);
+        }
+
+        this.updateDebugInput();
+        this.updateMenuInput();
+        const wasDialogueVisible = this.updateVisibleMenus();
         const anyMenuOpen = this.isAnyMenuOpen();
 
-        // Keep InputManager informed so B button knows whether to act as block or cancel
         this.inputManager.menuOpen = anyMenuOpen;
 
-        // Suppress jump and block when a menu just closed so the A/B-button press that
-        // confirmed/cancelled the menu action does not also make the player jump or block.
         if (this.wasAnyMenuOpen && !anyMenuOpen) {
             this.inputManager.consumeJump();
             this.inputManager.consumeCancel();
         }
         this.wasAnyMenuOpen = anyMenuOpen;
 
-        // Define interactive entity types
-        interface InteractiveEntity {
-            type: InteractiveEntityType;
-            data?: any;
-            hint: string;
-            action: () => void;
-        }
-
-        let nearbyInteractive: InteractiveEntity | null = null;
-
-        if (!anyMenuOpen) {
-            // Auto-pickup XData, money, and potion drops
-            const autoPickupDrop = this.world.checkNearestAutoPickupDrop(this.player.position);
-            if (autoPickupDrop && autoPickupDrop.canPickup(this.player)) {
-                this.world.pickupDrop(autoPickupDrop, this.player);
-            }
-
-            // Check NPCs
-            const allNpcs = this.world.getAllNpcs();
-            for (const npc of allNpcs) {
-                if (npc.isPlayerNearby(this.player.position)) {
-                    nearbyInteractive = {
-                        type: InteractiveEntityType.NPC,
-                        data: npc,
-                        hint: npc.getInteractionHint(this.inputManager),
-                        action: () => {
-                            // If dialogue hasn't been shown yet, show it first
-                            if (!npc.hasShownDialogue() && npc.dialogue.length > 0) {
-                                // Show dialogue, then call the interaction callback when complete
-                                this.npcDialogueManager.show(npc, () => {
-                                    if (npc.interactionCallback) {
-                                        npc.interact();
-                                    }
-                                });
-                            } else {
-                                // Dialogue already shown or no dialogue - go straight to callback
-                                if (npc.interactionCallback) {
-                                    npc.interact();
-                                } else {
-                                    // Fallback for NPCs with no callback (dialogue only NPCs) - show dialogue again
-                                    this.npcDialogueManager.show(npc);
-                                }
-                            }
-                        }
-                    };
-                    break;
-                }
-            }
-
-            // Check weapon / chip / core / booster pack drops (higher priority than traders)
-            if (!nearbyInteractive) {
-                const interactiveDrop = this.world.checkNearestInteractiveDrop(this.player.position);
-                if (interactiveDrop) {
-                    nearbyInteractive = {
-                        type: interactiveDrop.interactiveType,
-                        data: interactiveDrop,
-                        hint: getHint(HintConfigs.pickUp, this.inputManager),
-                        action: () => {
-                            this.world.pickupDrop(interactiveDrop, this.player);
-                        }
-                    };
-                }
-            }
-
-            // Check loot chests (unopened only)
-            if (!nearbyInteractive) {
-                for (const chest of this.world.getLootChests()) {
-                    if (!chest.isOpened && chest.isPlayerNearby(this.player.position)) {
-                        chest.prepareLoot(this.player);
-                        nearbyInteractive = {
-                            type: InteractiveEntityType.CHEST,
-                            data: chest,
-                            hint: chest.getInteractionHint(this.inputManager),
-                            action: () => {
-                                chest.open(this.player);
-                            }
-                        };
-                        break;
-                    }
-                }
-            }
-        }
+        const nearbyInteractive = this.findNearbyInteractive(anyMenuOpen);
 
         const isNearInteractive = nearbyInteractive !== null;
 
-        // Update Game Logic
-        // Prevent updates when in a menu
-        if (!this.pauseMenu.visible) {
-            // Camera Follow
-            const targetX = this.player.position.x + this.cameraOffset.x;
-            const targetY = this.player.position.y + this.cameraOffset.y;
-            const targetZ = this.player.position.z + this.cameraOffset.z;
-
-            const lerpFactor = Math.min(5 * dt, 1);
-            this.camera.position.x += (targetX - this.camera.position.x) * lerpFactor;
-            this.camera.position.y += (targetY - this.camera.position.y) * lerpFactor;
-            this.camera.position.z += (targetZ - this.camera.position.z) * lerpFactor;
-            this.floatingIndicatorCamera.position.x += (targetX - this.floatingIndicatorCamera.position.x) * lerpFactor;
-            this.floatingIndicatorCamera.position.y += (targetY - this.floatingIndicatorCamera.position.y) * lerpFactor;
-            this.floatingIndicatorCamera.position.z += (targetZ - this.floatingIndicatorCamera.position.z) * lerpFactor;
-
-            if (!anyMenuOpen) {
-                this.physicsWorld.step(1 / 60, dt, 3);
-
-                // Prevent jumping in the frame(s) immediately after interacting
-                const preventJump = isNearInteractive || this.wasJustInteracted;
-                this.player.update(dt, preventJump);
-                this.world.update(dt, this.player, this.camera.position);
-
-                const minimapState = this.world.getCurrentMinimapState();
-                this.uiManager.setMinimapState(minimapState.layout, minimapState.visible);
-
-                this.uiManager.update(this.player, dt);
-
-                // Handle death overlay input
-                this.uiManager.handleDeathOverlayInput();
-            }
-        }
+        this.updateGameLogic(dt, anyMenuOpen, isNearInteractive);
 
         // Handle skill unlock overlay input (even if a menu is open, so it can be closed)
         this.uiManager.handleSkillUnlockOverlayInput();
@@ -814,33 +832,7 @@ export class Game {
             this.debugValueEditor.update(this.player, dt);
         }
 
-        // Handle interactions (use variables we already calculated)
-        const isSelectPressed = this.inputManager.isSelectPressed();
-
-        if (nearbyInteractive) {
-            this.uiManager.showInteractionHint(true, nearbyInteractive.hint);
-
-            // Check for interaction - prevent if just opened a menu or dialogue was just closed
-            const shouldPreventInteraction = this.wasJustInteracted ||
-                (nearbyInteractive.type === InteractiveEntityType.NPC && wasDialogueVisible);
-
-            if (isSelectPressed && !this.wasSelectPressed && !shouldPreventInteraction) {
-                nearbyInteractive.action();
-
-                // Set flag if we just interacted to prevent immediate action
-                this.wasJustInteracted = true;
-            }
-        } else {
-            // Hide hint if not near anything interactive
-            this.uiManager.showInteractionHint(false);
-        }
-
-        // Reset trader just opened flag when select is released
-        if (!isSelectPressed && this.wasJustInteracted) {
-            this.wasJustInteracted = false;
-        }
-
-        this.wasSelectPressed = isSelectPressed;
+        this.handleInteraction(nearbyInteractive, wasDialogueVisible);
         this.composer.render();
     }
 }
