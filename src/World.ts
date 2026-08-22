@@ -288,16 +288,11 @@ export class World {
         return this.currentStage?.enemies || [];
     }
 
-    update(dt: number, player: Player, cameraPosition: THREE.Vector3, anyMenuOpen: boolean) {
+    update(dt: number, player: Player, cameraPosition: THREE.Vector3) {
         if (!this.currentStage) return;
 
         // Update stage (teleporters, etc.)
-        this.currentStage.update(dt, player, anyMenuOpen, cameraPosition);
-
-        if (anyMenuOpen) {
-            // If any menu is open, skip all other updates
-            return;
-        }
+        this.currentStage.update(dt, player, cameraPosition);
 
         // Update grid plane shader time uniform
         this.gridPlaneMaterial.uniforms.u_time.value += dt;

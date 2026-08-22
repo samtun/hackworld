@@ -65,7 +65,7 @@ describe('BaseStage teleporter activation audio', () => {
             dungeonRooms: [mockDeep<DungeonRoom>()]
         });
 
-        stage.update(16, player, false, new THREE.Vector3());
+        stage.update(16, player, new THREE.Vector3());
 
         expect(audioManager.playStageCleared).toHaveBeenCalledOnce();
         expect(teleporter.activate).toHaveBeenCalledOnce();

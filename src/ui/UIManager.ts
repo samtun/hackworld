@@ -831,8 +831,9 @@ export class UIManager {
     }
 
     handleSkillUnlockOverlayInput(): void {
-        console.log("Handling skill unlock overlay input");
-        if (!this.isSkillUnlockOverlayVisible()) return;
+        if (!this.isSkillUnlockOverlayVisible()) {
+            return;
+        }
 
         console.log("Skill unlock overlay is visible");
         const select = this.inputManager.isSelectPressed();

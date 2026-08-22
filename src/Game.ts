@@ -789,8 +789,8 @@ export class Game {
 
                 // Prevent jumping in the frame(s) immediately after interacting
                 const preventJump = isNearInteractive || this.wasJustInteracted;
-                this.player.update(dt, preventJump, anyMenuOpen);
-                this.world.update(dt, this.player, this.camera.position, anyMenuOpen);
+                this.player.update(dt, preventJump);
+                this.world.update(dt, this.player, this.camera.position);
 
                 const minimapState = this.world.getCurrentMinimapState();
                 this.uiManager.setMinimapState(minimapState.layout, minimapState.visible);

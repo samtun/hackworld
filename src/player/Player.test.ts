@@ -1736,14 +1736,15 @@ describe('Player.handleSkillAnimation', () => {
 
     it('force-releases the skill lock when skillAnimationTimer exceeds SKILL_ANIMATION_MAX_DURATION', () => {
         const inputManagerMock = mock<InputManager>();
+        inputManagerMock.getMovementVector.mockReturnValue(new THREE.Vector2());
         inputManagerMock.isSkill1JustPressed.mockReturnValue(true);
         const player = makePlayer({ inputManager: inputManagerMock });
         player.update(0.1); // triggers skill usage
+        inputManagerMock.isSkill1JustPressed.mockReturnValue(false);
         player.update(2.1); // exceeds max duration
 
-        // TODO rewrite to public checks or remove test
-        //expect(player.isUsingSkill).toBe(false);
-        //expect(player.skillAnimationTimer).toBe(0);
+        expect((player as any).isUsingSkill).toBe(false);
+        expect((player as any).skillAnimationTimer).toBe(0);
     });
 });
 

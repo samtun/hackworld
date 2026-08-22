@@ -198,8 +198,8 @@ export class GameTest extends BaseStage {
     //  Update
     // ───────────────────────────────────────────────────────────────────────────
 
-    update(dt: number, player: Player, anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
-        super.update(dt, player, anyMenuOpen, cameraPosition);
+    update(dt: number, player: Player, cameraPosition?: THREE.Vector3): void {
+        super.update(dt, player, cameraPosition);
 
         this.tickDropRespawns(dt);
         this.tickBarrelRespawn(dt);
