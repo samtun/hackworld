@@ -85,8 +85,8 @@ export abstract class BaseStage {
 
     // Collection of teleporters. Main teleporter to exit the stage is at index 0
     teleporters: Teleporter[] = [];
-    // TODO: check if this can be removed, since it contains the same bodies as the physics world bodies
-    bodies: CANNON.Body[] = [];
+    // list of body ids to remove them when not in use anymore
+    bodies: number[] = [];
     meshes: (THREE.Mesh | THREE.Group | THREE.Object3D)[] = [];
     enemies: Enemy[] = [];
     mixers: THREE.AnimationMixer[] = [];
@@ -233,7 +233,7 @@ export abstract class BaseStage {
                 this.scene.remove(ff.mesh);
                 ff.mesh.geometry.dispose();
                 (ff.mesh.material as THREE.Material).dispose();
-                this.physicsWorld.removeBody(ff.body);
+                this.removePhysicsBody(ff.body);
             }
         }
         this.bossForceFields.clear();
@@ -259,7 +259,7 @@ export abstract class BaseStage {
         this.enemies = [];
 
         // Remove physics bodies
-        for (const body of this.bodies) {
+        for (const body of this.physicsWorld.bodies.filter((pBody) => this.bodies.includes(pBody.id))) {
             this.physicsWorld.removeBody(body);
         }
         this.bodies = [];
@@ -336,8 +336,7 @@ export abstract class BaseStage {
         if (rot) {
             body.quaternion.copy(rot);
         }
-        this.physicsWorld.addBody(body);
-        this.bodies.push(body);
+        this.addPhysicsBody(body);
     }
 
     /**
@@ -351,8 +350,17 @@ export abstract class BaseStage {
         });
         floorBody.addShape(floorShape);
         floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
-        this.physicsWorld.addBody(floorBody);
-        this.bodies.push(floorBody);
+        this.addPhysicsBody(floorBody);
+    }
+
+    private addPhysicsBody(body: CANNON.Body) {
+        this.physicsWorld.addBody(body);
+        this.bodies.push(body.id);
+    }
+
+    private removePhysicsBody(body: CANNON.Body) {
+        this.physicsWorld.removeBody(body);
+        delete this.bodies[body.id];
     }
 
     /**
@@ -426,8 +434,7 @@ export abstract class BaseStage {
             const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
             body.addShape(shape);
             body.position.set(obs.x, obs.y, obs.z);
-            this.physicsWorld.addBody(body);
-            this.bodies.push(body);
+            this.addPhysicsBody(body);
         }
     }
 
@@ -463,8 +470,7 @@ export abstract class BaseStage {
             const colliderH = wall.colliderHeight ?? wall.height;
             const colliderCenterY = wallBottom + colliderH / 2;
             body.position.set(wall.centerX, colliderCenterY + yOffset, wall.centerZ);
-            this.physicsWorld.addBody(body);
-            this.bodies.push(body);
+            this.addPhysicsBody(body);
         }
     }
 
@@ -494,8 +500,7 @@ export abstract class BaseStage {
                 const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
                 body.addShape(shape);
                 body.position.set(room.centerX, room.elevation - FLOOR_THICKNESS / 2, room.centerZ);
-                this.physicsWorld.addBody(body);
-                this.bodies.push(body);
+                this.addPhysicsBody(body);
             }
 
             for (const niche of room.niches) {
@@ -514,8 +519,7 @@ export abstract class BaseStage {
                     const nicheBody = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
                     nicheBody.addShape(nicheShape);
                     nicheBody.position.set(niche.centerX, room.elevation - FLOOR_THICKNESS / 2, niche.centerZ);
-                    this.physicsWorld.addBody(nicheBody);
-                    this.bodies.push(nicheBody);
+                    this.addPhysicsBody(nicheBody);
                 }
             }
         }
@@ -542,8 +546,7 @@ export abstract class BaseStage {
                     const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
                     body.addShape(shape);
                     body.position.set(cor.centerX, cor.elevationStart - FLOOR_THICKNESS / 2, cor.centerZ);
-                    this.physicsWorld.addBody(body);
-                    this.bodies.push(body);
+                    this.addPhysicsBody(body);
                 }
             } else {
                 // Ramp corridor – modify vertex Y values for the slope
@@ -584,8 +587,7 @@ export abstract class BaseStage {
                 } else {
                     rampBody.quaternion.setFromEuler(-rampAngle, 0, 0);
                 }
-                this.physicsWorld.addBody(rampBody);
-                this.bodies.push(rampBody);
+                this.addPhysicsBody(rampBody);
             }
         }
     }
@@ -825,11 +827,7 @@ export abstract class BaseStage {
      * procedural room layout is active – room-based enemy aggro, automatic
      * teleporter activation, and wall transparency shader uniforms.
      */
-    update(dt: number, player: Player, anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
-        if (anyMenuOpen) {
-            return;
-        }
-
+    update(dt: number, player: Player, cameraPosition?: THREE.Vector3): void {
         this.teleporters.forEach(teleporter => teleporter.updateWithPlayerPosition(dt, player.position));
 
         // Update mixers
@@ -1034,7 +1032,7 @@ export abstract class BaseStage {
             const body = new CANNON.Body({ mass: 0, material: this.physicsMaterial });
             body.addShape(shape);
             body.position.set(ffX, ffY, ffZ);
-            this.physicsWorld.addBody(body);
+            this.addPhysicsBody(body);
 
             fields.push({ mesh, body });
         }
@@ -1054,7 +1052,7 @@ export abstract class BaseStage {
             this.scene.remove(ff.mesh);
             ff.mesh.geometry.dispose();
             (ff.mesh.material as THREE.Material).dispose();
-            this.physicsWorld.removeBody(ff.body);
+            this.removePhysicsBody(ff.body);
         }
         this.bossForceFields.delete(roomId);
     }
