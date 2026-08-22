@@ -765,11 +765,7 @@ export class Player extends BaseMesh {
         }
     }
 
-    update(dt: number, isNearInteractive: boolean = false, isAnyMenuOpen: boolean = false) {
-        if (isAnyMenuOpen) {
-            return; // Skip update if any menu is open
-        }
-
+    update(dt: number, isNearInteractive: boolean = false) {
         // Update animations
         if (this.mixer) {
             this.mixer.update(dt);
