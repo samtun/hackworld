@@ -6,7 +6,8 @@ export default defineConfig({
         __FRESH_START__: JSON.stringify(false),
     },
     test: {
-        environment: 'jsdom',
+        environment: 'happy-dom',
+        setupFiles: ['./vitest.setup.ts'],
         include: ['src/**/*.test.ts'],
         coverage: {
             provider: 'v8',

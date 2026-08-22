@@ -1,5 +1,6 @@
+import { injectable } from 'tsyringe';
 import * as CANNON from 'cannon-es';
-import { BaseStage } from './BaseStage';
+import { BaseStage, StageMetadata } from './BaseStage';
 import { Lobby } from './Lobby';
 import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
@@ -8,6 +9,7 @@ import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
+@injectable()
 export class NetworkMatrix extends BaseStage {
     private static id: string = "networkMatrix";
     private static name: string = "Network Matrix";
@@ -79,7 +81,7 @@ export class NetworkMatrix extends BaseStage {
         },
     };
 
-    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
+    static getStageMetadata(): StageMetadata {
         return {
             id: NetworkMatrix.id,
             name: NetworkMatrix.name,
@@ -138,7 +140,7 @@ export class NetworkMatrix extends BaseStage {
 
         // Teleporter in the final room – starts inactive until all enemies are defeated
         const tp = layout.teleporterPosition;
-        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getMetadata().id, false);
+        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getStageMetadata().id, false);
 
         // Lobby return teleporter at spawn – always active so players can leave at any time
         this.createLobbyReturnTeleporter(layout);

@@ -2,19 +2,22 @@ import { WeaponType } from './WeaponType';
 import { WeaponItem } from './WeaponItem';
 import weaponsData from './weapons.json';
 import { Tier, TierManager } from '../TierManager';
+import { singleton } from 'tsyringe';
 
 /**
  * Centralized weapon repository - single source of truth for all weapons in the game
  * Uses a tree structure: level -> weaponType -> WeaponItem[]
  */
+@singleton()
 export class WeaponRepository {
-    private static instance: WeaponRepository; // Singleton
+    private readonly tierManager: TierManager;
 
     // List structure: index corresponds to level - 1 (e.g. index 0 is level 1)
     // Each element is a Map: weaponType -> WeaponItem[]
     private weaponsByLevel: Map<WeaponType, WeaponItem[]>[] = [];
 
-    private constructor() {
+    constructor(tierManager: TierManager) {
+        this.tierManager = tierManager;
         this.loadWeapons();
     }
 
@@ -49,16 +52,12 @@ export class WeaponRepository {
                 type,
                 data.damage,
                 data.model,
-                TierManager.Instance.tiers.get(Tier.STABLE)!,
+                this.tierManager.tiers.get(Tier.STABLE)!,
                 data.level,
             );
 
             levelMap.get(type)!.push(weapon);
         }
-    }
-
-    public static get Instance(): WeaponRepository {
-        return this.instance || (this.instance = new this());
     }
 
     /**

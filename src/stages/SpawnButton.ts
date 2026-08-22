@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { InputManager } from '../InputManager';
+import { InputManager } from '../controls/InputManager';
 import { getHint } from '../ui/InputHints';
 
 /**
@@ -22,12 +22,13 @@ export class SpawnButton {
     private mesh: THREE.Mesh;
 
     private static readonly SIZE = 1;
-    private static readonly INTERACTION_RANGE = 2.5;
+    private static readonly INTERACTION_RANGE = 1.5;
 
     constructor(
         scene: THREE.Scene,
         world: CANNON.World,
         physicsMaterial: CANNON.Material,
+        private readonly inputManager: InputManager,
         position: CANNON.Vec3,
         name: string,
         hintText: string,
@@ -66,12 +67,12 @@ export class SpawnButton {
         return dist < SpawnButton.INTERACTION_RANGE;
     }
 
-    getInteractionHint(inputManager: InputManager): string {
+    getInteractionHint(): string {
         const hintConfig = {
             keyboard: `<span class="key-icon">ENTER</span> ${this.interactionHint}`,
             controller: `<span class="btn-icon xbox-a">A</span> ${this.interactionHint}`,
         };
-        return getHint(hintConfig, inputManager);
+        return getHint(hintConfig, this.inputManager);
     }
 
     hasShownDialogue(): boolean {

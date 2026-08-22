@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { StageWithLevels } from './StageWithLevels';
@@ -9,7 +10,17 @@ import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
+import { TeleporterFactory } from '../props/TeleporterFactory';
+import { AudioManager } from '../AudioManager';
+import { EnemyFactory } from '../enemies/EnemyFactory';
+import { BreakableBarrelFactory } from '../items/BreakableBarrelFactory';
+import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
+import { ItemDropManager } from '../items/ItemDropManager';
+import { LootChestFactory } from '../items/LootChestFactory';
+import { ModelPropFactory } from '../props/ModelPropFactory';
+import { StageMetadata } from './BaseStage';
 
+@injectable()
 export class KernelTerminus extends StageWithLevels {
     private static id: string = 'kernelTerminus';
     private static name: string = 'Kernel Terminus';
@@ -46,7 +57,7 @@ export class KernelTerminus extends StageWithLevels {
             hasBoss: true,
             bossRoomCount: 2,
             enemyDifficultyMultiplier: 1.45,
-            teleporterDestination: Lobby.getMetadata().id,
+            teleporterDestination: Lobby.getStageMetadata().id,
             requiredProgress: 9,
         },
     };
@@ -122,7 +133,7 @@ export class KernelTerminus extends StageWithLevels {
     ]);
 
     private static readonly generationConfig: RoomGenerationConfig = {
-        combatRoomCount: { min: 14, max: 18 },
+        combatRoomCount: { min: 2, max: 2 },
         combatRoomSize: { minWidth: 14, maxWidth: 36, minDepth: 14, maxDepth: 36 },
         finalRoomSize: { minWidth: 24, maxWidth: 42, minDepth: 24, maxDepth: 42 },
         enemyCount: { min: 3, max: 8, areaPerEnemy: 55, eliteFraction: 0.45 },
@@ -153,16 +164,41 @@ export class KernelTerminus extends StageWithLevels {
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
+        teleporterFactory: TeleporterFactory,
+        modelPropFactory: ModelPropFactory,
+        lootChestFactory: LootChestFactory,
+        breakableBarrelFactory: BreakableBarrelFactory,
+        electricTrapFactory: ElectricTrapFactory,
+        enemyFactory: EnemyFactory,
+        audioManager: AudioManager,
+        itemDropManager: ItemDropManager,
         stageId?: string,
     ) {
-        super(scene, physicsWorld, physicsMaterial, stageId, KernelTerminus.id, KernelTerminus.levelConfigs);
+        super(
+            scene,
+            physicsWorld,
+            physicsMaterial,
+            teleporterFactory,
+            modelPropFactory,
+            lootChestFactory,
+            breakableBarrelFactory,
+            electricTrapFactory,
+            enemyFactory,
+            audioManager,
+            itemDropManager,
+            stageId,
+            KernelTerminus.id,
+            KernelTerminus.levelConfigs
+        );
+
+        console.log("Creating KernelTerminus stage with ID:", stageId);
     }
 
     static getLevelStageIds(): readonly string[] {
         return [KernelTerminus.id, KernelTerminus.depth2Id, KernelTerminus.depth3Id] as const;
     }
 
-    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
+    static getStageMetadata(): StageMetadata {
         return {
             id: KernelTerminus.id,
             name: KernelTerminus.name,

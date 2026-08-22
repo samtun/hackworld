@@ -6,14 +6,67 @@ import { CoreItem } from './cores/CoreItem';
 import { ChipItem } from './chips/ChipItem';
 import { ChipType } from './chips/Chip';
 import { WeaponType } from './weapons/WeaponType';
-import { Tier, TierManager } from './TierManager';
+import { Tier, WeaponTierDefinition } from './TierManager';
 
-function getTierDef(t: Tier) {
-    return TierManager.Instance.tiers.get(t)!;
-}
+const tiers = new Map<Tier, WeaponTierDefinition>([
+    [Tier.BROKEN, {
+        name: Tier.BROKEN,
+        minPercent: -Infinity,
+        maxPercent: -3,
+        rimColor: '#66DDDD',
+        innerColor: '#66DDDD',
+        traderChance: 0.30,
+        minLevel: 0,
+    }],
+    [Tier.STABLE, {
+        name: Tier.STABLE,
+        minPercent: -3,
+        maxPercent: 3,
+        rimColor: '#ffffff',
+        innerColor: '#999999',
+        traderChance: 0.44,
+        minLevel: 0,
+    }],
+    [Tier.MAINTAINED, {
+        name: Tier.MAINTAINED,
+        minPercent: 3,
+        maxPercent: 8,
+        rimColor: '#8f8fe9',
+        innerColor: '#5454b3',
+        traderChance: 0.15,
+        minLevel: 0,
+    }],
+    [Tier.OVERCLOCKED, {
+        name: Tier.OVERCLOCKED,
+        minPercent: 8,
+        maxPercent: 12,
+        rimColor: '#06cf6b',
+        innerColor: '#00965a',
+        traderChance: 0.10,
+        minLevel: 0,
+    }],
+    [Tier.ZERODAY, {
+        name: Tier.ZERODAY,
+        minPercent: 12,
+        maxPercent: 16,
+        rimColor: '#fd0076',
+        innerColor: '#b00555',
+        traderChance: 0.06,
+        minLevel: 20,
+    }],
+    [Tier.LEET, {
+        name: Tier.LEET,
+        minPercent: 16,
+        maxPercent: Infinity,
+        rimColor: '#ffae00',
+        innerColor: '#9d6c02',
+        traderChance: 0.02,
+        minLevel: 40,
+    }],
+]);
 
-function weapon(level: number, t: Tier = Tier.STABLE, type: WeaponType = WeaponType.SWORD): WeaponItem {
-    return new WeaponItem(crypto.randomUUID(), 'Sword', 100, 50, type, 10, 'model.glb', getTierDef(t), level);
+function weapon(level: number, tier: Tier = Tier.STABLE, type: WeaponType = WeaponType.SWORD): WeaponItem {
+    return new WeaponItem(crypto.randomUUID(), 'Sword', 100, 50, type, 10, 'model.glb', tiers.get(tier)!, level);
 }
 
 function core(level: number): CoreItem {

@@ -1,5 +1,5 @@
 import { Enemy } from '../../enemies/Enemy';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 import { ItemDrop } from '../ItemDrop';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { ItemDropType } from '../ItemDropType';

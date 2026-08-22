@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite'
-import packageJson from './package.json'
+import { defineConfig } from 'vite';
+import swc from 'unplugin-swc';
+import packageJson from './package.json'; // Sicherstellen, dass packageJson importiert ist
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
   const isFresh = mode === 'fresh' || process.argv.includes('--fresh');
 
@@ -11,5 +11,21 @@ export default defineConfig(({ mode }) => {
       __APP_VERSION__: JSON.stringify(packageJson.version),
       __FRESH_START__: JSON.stringify(isFresh),
     },
+    plugins: [
+      // swc muss vor allen anderen Schritten laufen, um die Metadaten zu generieren
+      swc.vite({
+        tsconfigFile: true,
+        jsc: {
+          parser: {
+            syntax: "typescript",
+            decorators: true,
+          },
+          transform: {
+            legacyDecorator: true,
+            decoratorMetadata: true, // Zwingend erforderlich für TSyringe
+          },
+        },
+      }),
+    ],
   };
-})
+});

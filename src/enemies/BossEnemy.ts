@@ -3,6 +3,10 @@ import * as CANNON from 'cannon-es';
 import { Enemy, ENEMY_RADIUS_FACTOR } from './Enemy';
 import type { EnemyArchetypeConfig } from './Enemy';
 import { DEFAULT_ENEMY_TYPE, type EnemyType } from './EnemyType';
+import { AssetManager } from '../AssetManager';
+import { AudioManager } from '../AudioManager';
+import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
+import { PlayerRegistry } from '../player/PlayerRegistry';
 
 enum BossAttackType {
     Melee1 = 'Melee1',
@@ -14,13 +18,17 @@ export class BossEnemy extends Enemy {
     private attacks: BossAttackType[] = [BossAttackType.Melee1, BossAttackType.Melee2, BossAttackType.Ranged];
     private currentAttackType: BossAttackType = BossAttackType.Melee1;
     private nextAttackIndex: number = 0;
-    
+
     // Health bar UI
     private healthBarContainer: HTMLDivElement | null = null;
     private healthBarFill: HTMLDivElement | null = null;
     private healthBarVisible: boolean = false;
 
     constructor(
+        audioManager: AudioManager,
+        floatingIndicatorManager: FloatingIndicatorManager,
+        playerRegistry: PlayerRegistry,
+        assetManager: AssetManager,
         scene: THREE.Scene,
         world: CANNON.World,
         position: CANNON.Vec3,
@@ -28,21 +36,30 @@ export class BossEnemy extends Enemy {
         config: Partial<EnemyArchetypeConfig> = {},
         enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ) {
-        super(scene, world, position, physicsMaterial, {
-            maxHp: 5000,
-            speed: 4.5,
-            damage: 250,
-            baseExp: 1200,
-            itemDropChance: 1,
-            techDropRateFactor: 1.6,
-            xDataDropChanceWeight: 3,
-            criticalChance: 0.07,
-            criticalHitMultiplier: 1.5,
-            blockChance: 0.2,
-            size: 3.5,
-            color: 0x000000,
-            ...config,
-        }, enemyType);
+        super(
+            audioManager,
+            floatingIndicatorManager,
+            playerRegistry,
+            assetManager,
+            scene,
+            world,
+            position,
+            physicsMaterial,
+            {
+                maxHp: 5000,
+                speed: 4.5,
+                damage: 250,
+                baseExp: 1200,
+                itemDropChance: 1,
+                techDropRateFactor: 1.6,
+                xDataDropChanceWeight: 3,
+                criticalChance: 0.07,
+                criticalHitMultiplier: 1.5,
+                blockChance: 0.2,
+                size: 3.5,
+                color: 0x000000,
+                ...config,
+            }, enemyType);
 
         // Create health bar UI
         this.setupHealthBar();
@@ -74,7 +91,7 @@ export class BossEnemy extends Enemy {
         titleDiv.style.fontFamily = '"Space Grotesk", Arial, sans-serif';
         titleDiv.textContent = 'CORRUPTED CIPHER CLAW';
         titleDiv.style.color = '#ff4444';
-        titleDiv.style.fontSize = '18px'; 
+        titleDiv.style.fontSize = '18px';
         titleDiv.style.fontWeight = 'bold';
         titleDiv.style.textAlign = 'center';
         this.healthBarContainer.appendChild(titleDiv);
@@ -106,7 +123,7 @@ export class BossEnemy extends Enemy {
      */
     private setHealthBarVisible(visible: boolean): void {
         if (!this.healthBarContainer || this.healthBarVisible === visible) return;
-        
+
         this.healthBarVisible = visible;
         this.healthBarContainer.style.opacity = visible ? '1' : '0';
         this.healthBarContainer.style.pointerEvents = visible ? 'auto' : 'none';

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ItemDropManager } from './ItemDropManager';
+import * as CANNON from 'cannon-es';
+import { ItemDropManager, ItemDropStrategy } from './ItemDropManager';
 import { ItemDropType } from './ItemDropType';
 import { MoneyDropStrategy } from './bits/MoneyDropStrategy';
 import { BoosterPackDropStrategy } from './cards/BoosterPackDropStrategy';
@@ -7,19 +8,146 @@ import { XDataDropStrategy } from './xdata/XDataDropStrategy';
 import { WeaponDropStrategy } from './weapons/WeaponDropStrategy';
 import { ChipDropStrategy } from './chips/ChipDropStrategy';
 import { CoreDropStrategy } from './cores/CoreDropStrategy';
-import { HPPotionDropStrategy, TPPotionDropStrategy } from './potions/PotionDropStrategies';
+import { HPPotionDropStrategy } from './potions/HPPotionDropStrategy';
+import { TPPotionDropStrategy } from './potions/TPPotionDropStrategy';
 import { CardCollection } from './cards/CardCollection';
 import { Album } from './cards/Card';
+import { AudioManager } from '../AudioManager';
+import { ItemDropFactory } from './ItemDropFactory';
+import { mock, mockDeep } from 'vitest-mock-extended';
+import { MinimapDropStrategy } from './minimap/MinimapDropStrategy';
+import { WeaponBonusCalculator } from './weapons/WeaponBonusCalculator';
+import { WeaponRepository } from './weapons/WeaponRepository';
+import { ChipRepository } from './chips/ChipRepository';
+import { CoreRepository } from './cores/CoreRepository';
+import { ChipItem } from './chips/ChipItem';
+import { ChipType, ChipStats } from './chips/Chip';
+import { WeaponItem } from './weapons/WeaponItem';
+import { WeaponType } from './weapons/WeaponType';
+import { Tier, WeaponTierDefinition } from './TierManager';
+import { CoreItem } from './cores/CoreItem';
+import { CoreStats } from './cores/Core';
+import { XDataDrop } from './xdata/XDataDrop';
+import { MoneyDrop } from './bits/MoneyDrop';
+import { WeaponDrop } from './weapons/WeaponDrop';
+import { ChipDrop } from './chips/ChipDrop';
+import { CoreDrop } from './cores/CoreDrop';
+import { BoosterPackDrop } from './cards/BoosterPackDrop';
+import { PotionDrop } from './potions/PotionDrop';
 
-const audioManagerMock = vi.hoisted(() => ({
-    playItemPickup: vi.fn(),
-}));
+interface ItemDropManagerTestOverride {
+    itemDropFactory?: ItemDropFactory,
+    audioManager?: AudioManager,
+    strategies?: ItemDropStrategy[],
+}
 
-vi.mock('../AudioManager', () => ({
-    AudioManager: {
-        Instance: audioManagerMock,
-    },
-}));
+function makeItemDropManager(overrides: ItemDropManagerTestOverride = {}): ItemDropManager {
+    const {
+        itemDropFactory = makeItemDropFactory(),
+        audioManager = mockDeep<AudioManager>(),
+        strategies = [
+            makeWeaponDropStrategy(undefined, itemDropFactory),
+            makeChipDropStrategy(undefined, itemDropFactory),
+            makeCoreDropStrategy(undefined, itemDropFactory),
+            makeXDataDropStrategy(undefined, itemDropFactory),
+            makeMoneyDropStrategy(itemDropFactory),
+            makeBoosterPackDropStrategy(itemDropFactory),
+            new MinimapDropStrategy(),
+            new HPPotionDropStrategy(),
+            new TPPotionDropStrategy(),
+        ],
+    } = overrides;
+
+    return new ItemDropManager(itemDropFactory, audioManager, strategies);
+}
+
+function makeItemDropFactory(): ItemDropFactory {
+    return mockDeep<ItemDropFactory>({
+        createWeaponDrop: vi.fn((
+            weaponId: string,
+            _position: CANNON.Vec3,
+            weaponType: WeaponType,
+            weaponName: string,
+            damage: number,
+            _buyPrice: number,
+            _sellPrice: number,
+            level: number,
+            _damageFactor: number) => mock<WeaponDrop>({ weaponName: weaponName, weaponId: weaponId, level: level, weaponType: weaponType, damage: damage })),
+        createChipDrop: vi.fn((
+            _: CANNON.Vec3,
+            chipId: string,
+            name: string,
+            chipType: ChipType,
+            buyPrice: number,
+            sellPrice: number,
+            level: number) => mock<ChipDrop>({ chipId: chipId, chipName: name, chipType: chipType, buyPrice: buyPrice, sellPrice: sellPrice, level: level })),
+        createCoreDrop: vi.fn((
+            _: CANNON.Vec3,
+            coreId: string,
+            name: string,
+            buyPrice: number,
+            sellPrice: number,
+            level: number) => mock<CoreDrop>({ coreId: coreId, coreName: name, buyPrice: buyPrice, sellPrice: sellPrice, level: level })),
+        createXDataDrop: vi.fn((_: CANNON.Vec3, amount: number) => mock<XDataDrop>({ amount: amount })),
+        createMoneyDrop: vi.fn((_: CANNON.Vec3, amount: number) => mock<MoneyDrop>({ amount: amount })),
+        createBoosterPackDrop: vi.fn((_: CANNON.Vec3) => mock<BoosterPackDrop>({})),
+        createPotionDrop: vi.fn((_: CANNON.Vec3, potionType: any, level: number) => mock<PotionDrop>({ potionType: potionType, level: level })),
+    });
+}
+
+function makeMoneyDropStrategy(itemDropFactory?: ItemDropFactory): MoneyDropStrategy {
+    return new MoneyDropStrategy(itemDropFactory ?? makeItemDropFactory());
+}
+
+function makeBoosterPackDropStrategy(itemDropFactory?: ItemDropFactory): BoosterPackDropStrategy {
+    return new BoosterPackDropStrategy(itemDropFactory ?? makeItemDropFactory());
+}
+
+function makeXDataDropStrategy(cardCollection?: CardCollection, itemDropFactory?: ItemDropFactory): XDataDropStrategy {
+    return new XDataDropStrategy(cardCollection ?? mockDeep<CardCollection>(), itemDropFactory ?? makeItemDropFactory());
+}
+
+function makeCoreDropStrategy(coreRepository?: CoreRepository, itemDropFactory?: ItemDropFactory): CoreDropStrategy {
+    return new CoreDropStrategy(
+        itemDropFactory ?? makeItemDropFactory(),
+        coreRepository ?? mockDeep<CoreRepository>({
+            getCoreById: vi.fn((id: string) => new CoreItem(id, 'Herald Core', 100, 50, { attack: 1, defense: 1, speed: 1 } as CoreStats, 1)),
+        })
+    );
+}
+
+function makeChipDropStrategy(chipRepositoryMock?: ChipRepository, itemDropFactory?: ItemDropFactory): ChipDropStrategy {
+    return new ChipDropStrategy(
+        itemDropFactory ?? makeItemDropFactory(),
+        chipRepositoryMock ?? mockDeep<ChipRepository>({
+            getChipById: vi.fn((id: string) => new ChipItem(id, 'Firewire', 100, 50, ChipType.FIREWIRE, {} as ChipStats, 1)),
+        }),
+    );
+}
+
+function makeWeaponDropStrategy(weaponRepository?: WeaponRepository, itemDropFactory?: ItemDropFactory): WeaponDropStrategy {
+    const weaponTierDefinition = {
+        name: Tier.STABLE,
+        minPercent: -3,
+        maxPercent: 3,
+        rimColor: '#ffffff',
+        innerColor: '#999999',
+        traderChance: 0.44,
+        minLevel: 0,
+    } as WeaponTierDefinition;
+    return new WeaponDropStrategy(
+        weaponRepository ?? mockDeep<WeaponRepository>({
+            getWeaponById: vi.fn((id: string) => (new WeaponItem(id, 'Aegis Sword', 100, 50, WeaponType.SWORD, 10, 'Test Model', weaponTierDefinition, 1))),
+        }),
+        itemDropFactory ?? makeItemDropFactory(),
+        mockDeep<WeaponBonusCalculator>({
+            applyWeaponBonus: vi.fn((weaponItem: WeaponItem, bonusMultiplier: number) => {
+                weaponItem.damage = Math.floor(weaponItem.damage * bonusMultiplier);
+                return weaponItem;
+            }),
+        })
+    );
+}
 
 /** Minimal Enemy stub for strategy tests */
 function makeEnemyStub(overrides: Record<string, unknown> = {}) {
@@ -65,27 +193,29 @@ function makePlayerStub(overrides: Record<string, unknown> = {}) {
 // ─── XDataDropStrategy ─────────────────────────────────────────────────────────
 
 describe('XDataDropStrategy.getDistributionWeight', () => {
-    const strategy = new XDataDropStrategy();
-
     it('returns 0 for players below level 10', () => {
-        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub({ level: 9 }))).toBe(0);
+        const xDataDropStrategy = makeXDataDropStrategy();
+        expect(xDataDropStrategy.getDistributionWeight(makeEnemyStub(), makePlayerStub({ level: 9 }))).toBe(0);
     });
 
     it('returns a non-zero weight for players at level 10', () => {
-        expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub({ level: 10 }))).toBeGreaterThan(0);
+        const xDataDropStrategy = makeXDataDropStrategy();
+        expect(xDataDropStrategy.getDistributionWeight(makeEnemyStub(), makePlayerStub({ level: 10 }))).toBeGreaterThan(0);
     });
 
     it('scales linearly between level 10 and 100', () => {
+        const xDataDropStrategy = makeXDataDropStrategy();
         const enemy = makeEnemyStub({ xDataDropChanceWeight: 1 });
-        const w50 = strategy.getDistributionWeight(enemy, makePlayerStub({ level: 50 }));
-        const w100 = strategy.getDistributionWeight(enemy, makePlayerStub({ level: 100 }));
+        const w50 = xDataDropStrategy.getDistributionWeight(enemy, makePlayerStub({ level: 50 }));
+        const w100 = xDataDropStrategy.getDistributionWeight(enemy, makePlayerStub({ level: 100 }));
         expect(w50).toBeCloseTo(0.5, 5);
         expect(w100).toBe(1);
     });
 
     it('caps weight at enemy.xDataDropChanceWeight for level >= 100', () => {
+        const xDataDropStrategy = makeXDataDropStrategy();
         const enemy = makeEnemyStub({ xDataDropChanceWeight: 3 });
-        expect(strategy.getDistributionWeight(enemy, makePlayerStub({ level: 200 }))).toBe(3);
+        expect(xDataDropStrategy.getDistributionWeight(enemy, makePlayerStub({ level: 200 }))).toBe(3);
     });
 });
 
@@ -93,10 +223,10 @@ describe('XDataDropStrategy.getDistributionWeight', () => {
 
 describe('XDataDropStrategy.pickup', () => {
     it('calls player.collectXData with the drop amount', () => {
-        const strategy = new XDataDropStrategy();
+        const xDataDropStrategy = makeXDataDropStrategy();
         const player = makePlayerStub();
         const drop = { amount: 5 } as any;
-        strategy.pickup(drop, player);
+        xDataDropStrategy.pickup(drop, player);
         expect(player.collectXData).toHaveBeenCalledWith(5);
     });
 });
@@ -105,12 +235,12 @@ describe('XDataDropStrategy.pickup', () => {
 
 describe('BoosterPackDropStrategy', () => {
     it('has weight 1', () => {
-        const strategy = new BoosterPackDropStrategy();
+        const strategy = makeBoosterPackDropStrategy();
         expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(1);
     });
 
     it('pickup calls player.collectBoosterPack', () => {
-        const strategy = new BoosterPackDropStrategy();
+        const strategy = makeBoosterPackDropStrategy();
         const player = makePlayerStub();
         strategy.pickup({} as any, player);
         expect(player.collectBoosterPack).toHaveBeenCalledOnce();
@@ -120,7 +250,7 @@ describe('BoosterPackDropStrategy', () => {
 // ─── MoneyDropStrategy ────────────────────────────────────────────────────────
 
 describe('MoneyDropStrategy', () => {
-    const strategy = new MoneyDropStrategy();
+    const strategy = makeMoneyDropStrategy();
 
     it('has distribution weight 6', () => {
         expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(6);
@@ -138,7 +268,7 @@ describe('MoneyDropStrategy', () => {
 
 describe('WeaponDropStrategy', () => {
     it('has distribution weight 2.5', () => {
-        const strategy = new WeaponDropStrategy();
+        const strategy = makeWeaponDropStrategy();
         expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(2.5);
     });
 });
@@ -147,7 +277,7 @@ describe('WeaponDropStrategy', () => {
 
 describe('ChipDropStrategy', () => {
     it('has distribution weight 2', () => {
-        const strategy = new ChipDropStrategy();
+        const strategy = makeChipDropStrategy();
         expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(2);
     });
 });
@@ -156,7 +286,7 @@ describe('ChipDropStrategy', () => {
 
 describe('CoreDropStrategy', () => {
     it('has distribution weight 2', () => {
-        const strategy = new CoreDropStrategy();
+        const strategy = makeCoreDropStrategy();
         expect(strategy.getDistributionWeight(makeEnemyStub(), makePlayerStub())).toBe(2);
     });
 });
@@ -164,13 +294,8 @@ describe('CoreDropStrategy', () => {
 // ─── ItemDropManager – strategy registration ──────────────────────────────────
 
 describe('ItemDropManager – registered strategies', () => {
-    beforeEach(() => {
-        // Reset singleton so each test gets a fresh instance
-        (ItemDropManager as any).instance = undefined;
-    });
-
     it('registers all expected drop types', () => {
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         const expected = Object.values(ItemDropType);
         for (const type of expected) {
             // checkInteraction should not throw for any registered type
@@ -182,17 +307,13 @@ describe('ItemDropManager – registered strategies', () => {
 // ─── ItemDropManager – tryDropItem respects drop chance ───────────────────────
 
 describe('ItemDropManager.tryDropItem', () => {
-    beforeEach(() => {
-        (ItemDropManager as any).instance = undefined;
-    });
-
     it('does not drop when random roll exceeds drop chance', () => {
         // Random > effectiveDropChance (0.05 + ~0) → no drop
         vi.spyOn(Math, 'random').mockReturnValue(0.9);
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         const enemy = makeEnemyStub();
         const player = makePlayerStub();
-        mgr.tryDropItem({} as any, enemy, player);
+        mgr.tryDropItem(enemy, player);
         // No drops should be stored
         expect(mgr.checkInteraction(ItemDropType.MONEY, { x: 0, y: 0, z: 0, distanceTo: () => 0 } as any)).toBeNull();
         vi.restoreAllMocks();
@@ -202,18 +323,14 @@ describe('ItemDropManager.tryDropItem', () => {
 // ─── ItemDropManager – checkInteraction ───────────────────────────────────────
 
 describe('ItemDropManager.checkInteraction', () => {
-    beforeEach(() => {
-        (ItemDropManager as any).instance = undefined;
-    });
-
     it('returns null when no drops are present', () => {
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         const result = mgr.checkInteraction(ItemDropType.MONEY, { x: 0, y: 0, z: 0, distanceTo: () => 0 } as any);
         expect(result).toBeNull();
     });
 
     it('returns null when drop is out of range', () => {
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         // Manually inject a drop that is far away
         const farDrop = {
             mesh: { position: { x: 100, y: 0, z: 100 } },
@@ -226,7 +343,7 @@ describe('ItemDropManager.checkInteraction', () => {
     });
 
     it('returns the drop when player is within pickup radius', () => {
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         const nearDrop = {
             mesh: { position: { x: 0, y: 0, z: 0 } },
             update: vi.fn(),
@@ -242,7 +359,7 @@ describe('ItemDropManager.checkInteraction', () => {
 
 describe('ChipDropStrategy.pickup', () => {
     it('adds the chip to player inventory', () => {
-        const strategy = new ChipDropStrategy();
+        const strategy = makeChipDropStrategy();
         const player = makePlayerStub();
         // firewire_alpha is the known chip id at level 1
         strategy.pickup({ chipId: 'firewire_alpha' } as any, player);
@@ -251,7 +368,10 @@ describe('ChipDropStrategy.pickup', () => {
     });
 
     it('does nothing when chip id is not found', () => {
-        const strategy = new ChipDropStrategy();
+        const chipRepositoryMock = mockDeep<ChipRepository>({
+            getChipById: vi.fn((_: string) => undefined),
+        });
+        const strategy = makeChipDropStrategy(chipRepositoryMock);
         const player = makePlayerStub();
         strategy.pickup({ chipId: 'non-existent-chip-id' } as any, player);
         expect(player.inventory).toHaveLength(0);
@@ -262,7 +382,7 @@ describe('ChipDropStrategy.pickup', () => {
 
 describe('CoreDropStrategy.pickup', () => {
     it('adds the core to player inventory', () => {
-        const strategy = new CoreDropStrategy();
+        const strategy = makeCoreDropStrategy();
         const player = makePlayerStub();
         // herald_core_alpha is the known core id at level 1
         strategy.pickup({ coreId: 'herald_core_alpha' } as any, player);
@@ -271,7 +391,10 @@ describe('CoreDropStrategy.pickup', () => {
     });
 
     it('does nothing when core id is not found', () => {
-        const strategy = new CoreDropStrategy();
+        const coreRepositoryMock = mockDeep<CoreRepository>({
+            getCoreById: vi.fn((_: string) => undefined),
+        });
+        const strategy = makeCoreDropStrategy(coreRepositoryMock);
         const player = makePlayerStub();
         strategy.pickup({ coreId: 'non-existent-core-id' } as any, player);
         expect(player.inventory).toHaveLength(0);
@@ -282,7 +405,7 @@ describe('CoreDropStrategy.pickup', () => {
 
 describe('WeaponDropStrategy.pickup', () => {
     it('adds the weapon to player inventory', () => {
-        const strategy = new WeaponDropStrategy();
+        const strategy = makeWeaponDropStrategy();
         const player = makePlayerStub();
         // aegis_sword_alpha is a known weapon at level 1 with damage 10
         strategy.pickup({ weaponId: 'aegis_sword_alpha', damage: 10 } as any, player);
@@ -291,7 +414,10 @@ describe('WeaponDropStrategy.pickup', () => {
     });
 
     it('does nothing when weapon id is not found', () => {
-        const strategy = new WeaponDropStrategy();
+        const weaponRepositoryMock = mockDeep<WeaponRepository>({
+            getWeaponById: vi.fn((_: string) => undefined),
+        });
+        const strategy = makeWeaponDropStrategy(weaponRepositoryMock);
         const player = makePlayerStub();
         strategy.pickup({ weaponId: 'non-existent-weapon-id', damage: 10 } as any, player);
         expect(player.inventory).toHaveLength(0);
@@ -302,12 +428,12 @@ describe('WeaponDropStrategy.pickup', () => {
 
 describe('ItemDropManager.pickup', () => {
     beforeEach(() => {
-        (ItemDropManager as any).instance = undefined;
-        audioManagerMock.playItemPickup.mockClear();
+        vi.restoreAllMocks();
     });
 
     it('delegates to strategy.pickup and removes the drop from storage', () => {
-        const mgr = ItemDropManager.Instance;
+        const audioManagerMock = mockDeep<AudioManager>();
+        const mgr = makeItemDropManager({ audioManager: audioManagerMock });
         const mockDrop = {
             mesh: { position: { x: 0, y: 0, z: 0 } },
             cleanup: vi.fn(),
@@ -328,7 +454,7 @@ describe('ItemDropManager.pickup', () => {
     });
 
     it('does nothing for an unregistered key', () => {
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         const mockDrop = { cleanup: vi.fn() };
         const player = makePlayerStub();
         expect(() => mgr.pickup('UNKNOWN_TYPE' as any, {} as any, mockDrop as any, player)).not.toThrow();
@@ -338,12 +464,8 @@ describe('ItemDropManager.pickup', () => {
 // ─── ItemDropManager.update ───────────────────────────────────────────────────
 
 describe('ItemDropManager.update', () => {
-    beforeEach(() => {
-        (ItemDropManager as any).instance = undefined;
-    });
-
     it('calls update on each stored drop', () => {
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         const mockUpdate = vi.fn();
         const mockDrop = { update: mockUpdate };
 
@@ -360,12 +482,8 @@ describe('ItemDropManager.update', () => {
 // ─── ItemDropManager.clear ────────────────────────────────────────────────────
 
 describe('ItemDropManager.clear', () => {
-    beforeEach(() => {
-        (ItemDropManager as any).instance = undefined;
-    });
-
     it('calls cleanup on all drops and empties storage', () => {
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         const mockCleanup = vi.fn();
         const mockDrop1 = { cleanup: mockCleanup };
         const mockDrop2 = { cleanup: mockCleanup };
@@ -381,60 +499,59 @@ describe('ItemDropManager.clear', () => {
 // ─── XDataDropStrategy – C.001 bonus ─────────────────────────────────────────
 
 describe('XDataDropStrategy – C.001 bonus', () => {
-    const strategy = new XDataDropStrategy();
-    const mockScene = { add: vi.fn() } as any;
-
     afterEach(() => {
         vi.restoreAllMocks();
     });
 
     it('without C.001, roll 0.24 yields 5 XData (below mediumAmountLimit 0.25)', () => {
-        vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockReturnValue(false);
+        const strategy = makeXDataDropStrategy();
         vi.spyOn(Math, 'random').mockReturnValue(0.24);
         const enemy = { xDataDropChanceWeight: 1, getDeathPosition: () => ({ x: 0, y: 0.5, z: 0 }) } as any;
         const player = { level: 50, collectXData: vi.fn() } as any;
-        const drop = strategy.drop(mockScene, enemy, player);
+        const drop = strategy.drop(enemy, player);
         expect((drop as any)?.amount).toBe(5);
     });
 
     it('without C.001, roll 0.27 yields 1 XData (above mediumAmountLimit 0.25)', () => {
-        vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockReturnValue(false);
+        const strategy = makeXDataDropStrategy();
         vi.spyOn(Math, 'random').mockReturnValue(0.27);
         const enemy = { xDataDropChanceWeight: 1, getDeathPosition: () => ({ x: 0, y: 0.5, z: 0 }) } as any;
         const player = { level: 50, collectXData: vi.fn() } as any;
-        const drop = strategy.drop(mockScene, enemy, player);
+        const drop = strategy.drop(enemy, player);
         expect((drop as any)?.amount).toBe(1);
     });
 
     it('with C.001, roll 0.27 yields 5 XData (mediumAmountLimit boosted to 0.30)', () => {
-        vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockImplementation(
-            (a) => a === Album.C001
-        );
+        const cardCollectionMock = mockDeep<CardCollection>({
+            isAlbumComplete: vi.fn((a: Album) => a === Album.C001),
+        });
+        const strategy = makeXDataDropStrategy(cardCollectionMock);
         vi.spyOn(Math, 'random').mockReturnValue(0.27);
         const enemy = { xDataDropChanceWeight: 1, getDeathPosition: () => ({ x: 0, y: 0.5, z: 0 }) } as any;
         const player = { level: 50, collectXData: vi.fn() } as any;
-        const drop = strategy.drop(mockScene, enemy, player);
+        const drop = strategy.drop(enemy, player);
         expect((drop as any)?.amount).toBe(5);
     });
 
     it('with C.001 at level 100, roll 0.04 yields 100 XData (veryHighAmountLimit boosted from 0 to 0.05)', () => {
-        vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockImplementation(
-            (a) => a === Album.C001
-        );
+        const cardCollectionMock = mockDeep<CardCollection>({
+            isAlbumComplete: vi.fn((a: Album) => a === Album.C001),
+        });
+        const strategy = makeXDataDropStrategy(cardCollectionMock);
         vi.spyOn(Math, 'random').mockReturnValue(0.04);
         // low-weight enemy so isHighChance is false, but level >= 100 + C.001 should still fire
         const enemy = { xDataDropChanceWeight: 1, getDeathPosition: () => ({ x: 0, y: 0.5, z: 0 }) } as any;
         const player = { level: 100, collectXData: vi.fn() } as any;
-        const drop = strategy.drop(mockScene, enemy, player);
+        const drop = strategy.drop(enemy, player);
         expect((drop as any)?.amount).toBe(100);
     });
 
     it('without C.001 at level 100 with low-weight enemy, roll 0.04 yields 20 XData (veryHighAmountLimit stays 0)', () => {
-        vi.spyOn(CardCollection.Instance, 'isAlbumComplete').mockReturnValue(false);
+        const strategy = makeXDataDropStrategy();
         vi.spyOn(Math, 'random').mockReturnValue(0.04);
         const enemy = { xDataDropChanceWeight: 1, getDeathPosition: () => ({ x: 0, y: 0.5, z: 0 }) } as any;
         const player = { level: 100, collectXData: vi.fn() } as any;
-        const drop = strategy.drop(mockScene, enemy, player);
+        const drop = strategy.drop(enemy, player);
         expect((drop as any)?.amount).toBe(20);
     });
 });
@@ -494,9 +611,9 @@ describe('ItemDropManager.tryDropPotion', () => {
 
     it('does not drop when random roll exceeds base chance', () => {
         vi.spyOn(Math, 'random').mockReturnValue(0.9);
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         const player = makePlayerStub();
-        mgr.tryDropPotion({} as any, { x: 0, y: 1, z: 0 } as any, player, 0.05);
+        mgr.tryDropPotion({ x: 0, y: 1, z: 0 } as any, player, 0.05);
         expect(mgr.checkInteraction(ItemDropType.HP_POTION, { x: 0, y: 0, z: 0, distanceTo: () => 0 } as any)).toBeNull();
         expect(mgr.checkInteraction(ItemDropType.TP_POTION, { x: 0, y: 0, z: 0, distanceTo: () => 0 } as any)).toBeNull();
     });
@@ -505,18 +622,18 @@ describe('ItemDropManager.tryDropPotion', () => {
         // First random: 0.01 < 0.05 → passes base chance
         // Second random: 0.3 < 0.5 → HP potion
         vi.spyOn(Math, 'random').mockReturnValueOnce(0.01).mockReturnValueOnce(0.3);
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         const player = makePlayerStub({ level: 50 });
-        mgr.tryDropPotion({ add: vi.fn() } as any, { x: 0, y: 1, z: 0 } as any, player, 0.05);
+        mgr.tryDropPotion({ x: 0, y: 1, z: 0 } as any, player, 0.05);
         const drop = mgr.checkInteraction(ItemDropType.HP_POTION, { x: 0, y: 1, z: 0, distanceTo: () => 0 } as any);
         expect(drop).not.toBeNull();
     });
 
     it('drops a TP potion when second roll >= 0.5', () => {
         vi.spyOn(Math, 'random').mockReturnValueOnce(0.01).mockReturnValueOnce(0.7);
-        const mgr = ItemDropManager.Instance;
+        const mgr = makeItemDropManager();
         const player = makePlayerStub({ level: 50 });
-        mgr.tryDropPotion({ add: vi.fn() } as any, { x: 0, y: 1, z: 0 } as any, player, 0.05);
+        mgr.tryDropPotion({ x: 0, y: 1, z: 0 } as any, player, 0.05);
         const drop = mgr.checkInteraction(ItemDropType.TP_POTION, { x: 0, y: 1, z: 0, distanceTo: () => 0 } as any);
         expect(drop).not.toBeNull();
     });

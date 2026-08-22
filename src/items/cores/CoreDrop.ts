@@ -22,7 +22,16 @@ export class CoreDrop extends ItemDrop {
     private readonly FLOAT_SPEED: number = 1.0;
     private readonly FLOAT_AMPLITUDE: number = 0.14;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, coreId: string, coreName: string, buyPrice: number, sellPrice: number, level: number) {
+    constructor(
+        scene: THREE.Scene,
+        assetManager: AssetManager,
+        position: CANNON.Vec3,
+        coreId: string,
+        coreName: string,
+        buyPrice: number,
+        sellPrice: number,
+        level: number,
+    ) {
         super();
         this.coreId = coreId;
         this.coreName = coreName;
@@ -31,7 +40,7 @@ export class CoreDrop extends ItemDrop {
         this.level = level;
         this.baseHeight = position.y;
 
-        const gltfModel = AssetManager.Instance.get('models/core_drop.glb');
+        const gltfModel = assetManager.get('models/core_drop.glb');
         this.mesh = gltfModel.scene;
 
         // Create text label using shared method

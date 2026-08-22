@@ -1,101 +1,113 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import CannonDebugger from 'cannon-es-debugger';
-import { Player } from './Player';
+import { Player } from './player/Player';
 import { World } from './World';
-import { InputManager } from './InputManager';
+import { InputManager } from './controls/InputManager';
 import { UIManager } from './ui/UIManager';
 import { Lobby } from './stages';
-import { InventoryManager } from './items/InventoryManager';
-import { WeaponTrader } from './items/weapons/WeaponTrader';
-import { ChipTrader } from './items/chips/ChipTrader';
-import { DungeonSelectionManager } from './DungeonSelectionManager';
-import { NpcDialogueManager } from './npcs/NpcDialogueManager';
-import { XDataUpgradeManager } from './items/xdata/XDataUpgradeManager';
 import { DebugValueEditor } from './DebugValueEditor';
-import { SaveManager } from './SaveManager';
-import { PlayerRegistry } from './PlayerRegistry';
-import { CoreTrader } from './items/cores/CoreTrader';
-import { CardManager } from './items/cards/CardManager';
+import { PlayerRegistry } from './player/PlayerRegistry';
 import { InteractiveEntityType } from './InteractiveEntityType';
 import { getHint, HintConfigs } from './ui/InputHints';
-import { Teleporter } from './Teleporter';
+import { Teleporter } from './props/Teleporter';
 import { LoreIntroduction } from './LoreIntroduction';
-import { StartMenuOption } from './StartMenu';
-import { PauseMenu, PERFORMANCE_MODE_STORAGE_KEY, CONTROL_HINTS_STORAGE_KEY } from './PauseMenu';
+import { StartMenuOption } from './menus/StartMenu';
+import { PauseMenu, PERFORMANCE_MODE_STORAGE_KEY, CONTROL_HINTS_STORAGE_KEY } from './menus/PauseMenu';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { SSAOPass } from 'three/examples/jsm/postprocessing/SSAOPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { AudioManager } from './AudioManager';
+import { container, delay, inject, singleton } from 'tsyringe';
+import { Breakable } from './items/Breakable';
+import { SaveManager } from './SaveManager';
+import { PlayerFactory } from './player/PlayerFactory';
+import { DungeonSelectionManager } from './menus/DungeonSelectionManager';
+import { InventoryManager } from './items/InventoryManager';
+import { WeaponTrader } from './items/weapons/WeaponTrader';
+import { NpcDialogueManager } from './npcs/NpcDialogueManager';
+import { CardManager } from './items/cards/CardManager';
+import { XDataUpgradeManager } from './items/xdata/XDataUpgradeManager';
+import { MobileControlsManager } from './controls/MobileControlsManager';
+import { WorldFactory } from './WorldFactory';
+import { PauseMenuFactory } from './menus/PauseMenuFactory';
+import { ChipTrader } from './items/chips/ChipTrader';
+import { CoreTrader } from './items/cores/CoreTrader';
 
+@singleton()
 export class Game {
-    scene: THREE.Scene;
-    camera: THREE.PerspectiveCamera;
-    floatingIndicatorCamera: THREE.PerspectiveCamera; // Separate camera for floating indicators to render on a different layer
-    renderer: THREE.WebGLRenderer;
-    composer: EffectComposer;
-    ssaoPass!: SSAOPass;
-    bloomPass!: UnrealBloomPass;
-    physicsWorld: CANNON.World;
-    defaultMaterial: CANNON.Material;
+    private world: World;
+    private scene: THREE.Scene;
+    private camera: THREE.PerspectiveCamera;
+    private floatingIndicatorCamera: THREE.PerspectiveCamera; // Separate camera for floating indicators to render on a different layer
+    private renderer: THREE.WebGLRenderer;
+    private composer: EffectComposer;
+    private ssaoPass!: SSAOPass;
+    private bloomPass!: UnrealBloomPass;
+    private physicsWorld: CANNON.World;
+    private defaultMaterial: CANNON.Material;
 
-    player!: Player;
-    world: World;
-    input: InputManager;
-    ui: UIManager;
-    pauseMenu!: PauseMenu;
-    inventory!: InventoryManager;
-    trader!: WeaponTrader;
-    chipTrader!: ChipTrader;
-    coreTrader!: CoreTrader;
-    dungeonSelection!: DungeonSelectionManager;
-    npcDialogue!: NpcDialogueManager;
-    xDataUpgrade!: XDataUpgradeManager;
-    saveManager!: SaveManager;
-    cardManager!: CardManager;
-    playerRegistry!: PlayerRegistry;
+    private pauseMenu: PauseMenu;
 
-    clock!: THREE.Clock;
-    currentScene: string = 'startScreen';
+    private player!: Player;
+
+    private clock: THREE.Clock = new THREE.Clock();
+    private currentScene: string = 'startScreen';
 
     // Debug
-    physicsDebugger: any;
-    debugMode: boolean = false;
-    debugMeshes: THREE.Mesh[] = [];
-    debugValueEditor?: DebugValueEditor;
+    private physicsDebugger: any;
+    private debugMode: boolean = false;
+    private debugMeshes: THREE.Mesh[] = [];
 
     // Input State
-    wasInventoryPressed: boolean = false;
-    wasSelectPressed: boolean = false;
-    wasSelectAndStartPressed: boolean = false;
-    wasL3Pressed: boolean = false; // Track L3 button for debug value editor toggle
-    wasR3Pressed: boolean = false; // Track R3 button for debug mode toggle
-    wasJustInteracted: boolean = false; // Prevent immediate action (e.g. pickup or NPC interaction)
-    wasPausePressed: boolean = false; // Track pause button for edge detection (independent of Player.updateState)
-    wasAnyMenuOpen: boolean = false; // Track menu state for jump suppression after menu close
-    isTransitioning: boolean = false;
-
-    // Spawn position constants
-    // private static readonly LOBBY_SPAWN_POSITION = new CANNON.Vec3(0, 0.5, 0);
+    private wasInventoryPressed: boolean = false;
+    private wasSelectPressed: boolean = false;
+    private wasL3Pressed: boolean = false; // Track L3 button for debug value editor toggle
+    private wasR3Pressed: boolean = false; // Track R3 button for debug mode toggle
+    private wasJustInteracted: boolean = false; // Prevent immediate action (e.g. pickup or NPC interaction)
+    private wasPausePressed: boolean = false; // Track pause button for edge detection (independent of Player.updateState)
+    private wasAnyMenuOpen: boolean = false; // Track menu state for jump suppression after menu close
+    private isTransitioning: boolean = false;
 
     // Last teleporter position for respawn (starts at lobby spawn)
-    lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
+    private lastTeleporterPosition: CANNON.Vec3 = new CANNON.Vec3(0, 0.5, 0);
 
     // Camera follow offset
-    cameraOffset: THREE.Vector3 = new THREE.Vector3(7, 9, 7);
+    private cameraOffset: THREE.Vector3 = new THREE.Vector3(7, 9, 7);
 
-    constructor() {
-        // Setup Three.js
+    constructor(
+        private readonly inputManager: InputManager,
+        private readonly audioManager: AudioManager,
+        private readonly playerRegistry: PlayerRegistry,
+        private readonly playerFactory: PlayerFactory,
+        private readonly uiManager: UIManager,
+        private readonly saveManager: SaveManager,
+        private readonly debugValueEditor: DebugValueEditor,
+        private readonly dungeonSelectionManager: DungeonSelectionManager,
+        private readonly inventoryManager: InventoryManager,
+        private readonly WeaponTrader: WeaponTrader,
+        private readonly chipTrader: ChipTrader,
+        private readonly coreTrader: CoreTrader,
+        private readonly npcDialogueManager: NpcDialogueManager,
+        private readonly xDataUpgradeManager: XDataUpgradeManager,
+        private readonly cardManager: CardManager,
+        private readonly worldFactory: WorldFactory,
+        // Inject MobileControlsManager lazy so that the mobile state is captured correctly
+        @inject(delay(() => MobileControlsManager)) private readonly mobileControlsManager: MobileControlsManager,
+        pauseMenuFactory: PauseMenuFactory) {
+
+        // Setup Three.js scene
         this.scene = new THREE.Scene();
+        container.registerInstance(THREE.Scene, this.scene);
         this.scene.background = null;
 
         const bgGeometry = new THREE.PlaneGeometry(9999, 9999);
         bgGeometry.rotateX(-Math.PI / 2);
         const bgMaterial = new THREE.MeshBasicMaterial({
             color: 0x121212,
-            depthWrite: false // Wichtig, damit es wirklich im Hintergrund bleibt
+            depthWrite: false // Makes sure this stays in the background
         });
         const bgMesh = new THREE.Mesh(bgGeometry, bgMaterial);
         bgMesh.position.y = -10;
@@ -168,6 +180,7 @@ export class Game {
         // Setup Physics
         this.physicsWorld = new CANNON.World();
         this.physicsWorld.gravity.set(0, -25, 0); // Stronger gravity for snappier gameplay feel
+        container.registerInstance(CANNON.World, this.physicsWorld);
 
         // Create physics material with no friction (player movement handles slope sliding manually)
         this.defaultMaterial = new CANNON.Material('default');
@@ -176,25 +189,44 @@ export class Game {
             restitution: 0
         });
         this.physicsWorld.addContactMaterial(defaultContactMaterial);
-
-        // Setup Game Objects
-        this.input = InputManager.Instance;
-        this.ui = UIManager.Instance;
+        container.registerInstance(CANNON.Material, this.defaultMaterial);
 
         // Restore Control Hints setting from localStorage (default: shown)
         const savedControlHints = localStorage.getItem(CONTROL_HINTS_STORAGE_KEY);
         if (savedControlHints === 'false') {
-            this.ui.controlHintsEnabled = false;
+            this.uiManager.controlHintsEnabled = false;
         }
 
-        this.world = new World(this.scene, this.physicsWorld, this.defaultMaterial,
+        this.world = this.worldFactory.createWorld(
             () => this.onInitialLoadComplete(),
-            (loaded, total) => this.onInitialLoadProgress(loaded, total),
+            (loaded: number, total: number) => this.onInitialLoadProgress(loaded, total),
             // onStageLoadStartCallback
-            () => this.ui.showLoadingScreen(),
+            () => this.uiManager.showLoadingScreen(),
             // onStageLoadCompleteCallback,
-            () => this.ui.hideLoadingScreen());
+            () => this.uiManager.hideLoadingScreen());
 
+        this.pauseMenu = pauseMenuFactory.createPauseMenu(
+            !this.ssaoPass.enabled, this.uiManager.controlHintsEnabled,
+            {
+                onContinue: () => { },
+                onTogglePerformanceMode: () => {
+                    this.ssaoPass.enabled = !this.ssaoPass.enabled;
+                    const perfMode = !this.ssaoPass.enabled;
+                    this.bloomPass.enabled = !perfMode;
+                    localStorage.setItem(PERFORMANCE_MODE_STORAGE_KEY, String(perfMode));
+
+                    return perfMode;
+                },
+                onToggleControlHints: () => {
+                    this.uiManager.controlHintsEnabled = !this.uiManager.controlHintsEnabled;
+                    if (!this.uiManager.controlHintsEnabled) {
+                        this.uiManager.hideControlHints();
+                    }
+                    localStorage.setItem(CONTROL_HINTS_STORAGE_KEY, String(this.uiManager.controlHintsEnabled));
+                    return this.uiManager.controlHintsEnabled;
+                },
+            }
+        );
         // Resize Handler
         window.addEventListener('resize', () => this.onWindowResize(), false);
 
@@ -202,7 +234,7 @@ export class Game {
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState === 'hidden') {
                 // Only auto-save if we're not on the start screen, have saveManager initialized, and have an active player
-                if (this.currentScene !== 'startScreen' && this.saveManager && this.playerRegistry?.activePlayers[0]) {
+                if (this.currentScene !== 'startScreen' && this.saveManager && this.playerRegistry.hasActivePlayer()) {
                     this.saveManager.saveToLocalStorage();
                 }
             }
@@ -219,7 +251,7 @@ export class Game {
             });
 
             // Create debug value editor
-            this.debugValueEditor = new DebugValueEditor();
+            this.debugValueEditor = debugValueEditor;
 
             // Subscribe to collider toggle from debug editor
             this.debugValueEditor.onCollidersToggle = (visible: boolean) => {
@@ -248,40 +280,30 @@ export class Game {
     }
 
     private onInitialLoadComplete(): void {
-        this.input.initializeMobileControls();
-        this.ui.hideLoadingScreen();
-        this.ui.showStartScreen();
+        this.uiManager.hideLoadingScreen();
         this.initializeEntities();
-        AudioManager.Instance.setStageMusic('startScreen');
+        this.audioManager.setStageMusic('startScreen');
 
         // Start Loop
         this.animate();
     }
 
     private onInitialLoadProgress(loaded: number, total: number): void {
-        this.ui.updateLoadingProgress(loaded, total)
+        this.uiManager.updateLoadingProgress(loaded, total)
     }
 
     initializeEntities() {
-        this.inventory = InventoryManager.Instance;
-        this.npcDialogue = NpcDialogueManager.Instance;
-        this.xDataUpgrade = XDataUpgradeManager.Instance;
-        this.chipTrader = ChipTrader.Instance;
-        this.coreTrader = CoreTrader.Instance;
-        this.dungeonSelection = DungeonSelectionManager.Instance;
-        this.trader = WeaponTrader.Instance;
-        this.saveManager = SaveManager.Instance;
-        this.cardManager = CardManager.Instance;
         this.clock = new THREE.Clock();
 
         // Set up player
-        this.playerRegistry = PlayerRegistry.Instance;
         const initialSpawn = this.world.currentStage ? this.world.currentStage.spawnPosition : new CANNON.Vec3(0, 0.4, 0);
-        this.playerRegistry.addPlayer(new Player(this.scene, this.physicsWorld, initialSpawn, this.input, this.defaultMaterial));
+        this.player = this.playerFactory.createPlayer(initialSpawn);
+        this.playerRegistry.addPlayer(this.player);
+
         this.player = this.playerRegistry.activePlayers[0];
         this.player.setDeathCallback(() => this.handlePlayerDeath());
         this.player.onSkillUnlocked = (skillIndex: number) => this.handleSkillUnlocked(skillIndex);
-        this.player.onBreakableHit = (breakable) => {
+        this.player.onBreakableHit = (breakable: Breakable) => {
             // Find the barrel that matches this breakable and destroy it
             for (const barrel of this.world.getBreakableBarrels()) {
                 if (barrel === breakable) {
@@ -292,33 +314,12 @@ export class Game {
         };
 
         // Register player with UI so skill indicators are created
-        this.ui.registerPlayer(this.player);
-
-        // Create pause menu
-        this.pauseMenu = new PauseMenu(this.input, !this.ssaoPass.enabled, this.ui.controlHintsEnabled, {
-            onContinue: () => { },
-            onTogglePerformanceMode: () => {
-                this.ssaoPass.enabled = !this.ssaoPass.enabled;
-                const perfMode = !this.ssaoPass.enabled;
-                this.bloomPass.enabled = !perfMode;
-                localStorage.setItem(PERFORMANCE_MODE_STORAGE_KEY, String(perfMode));
-
-                return perfMode;
-            },
-            onToggleControlHints: () => {
-                this.ui.controlHintsEnabled = !this.ui.controlHintsEnabled;
-                if (!this.ui.controlHintsEnabled) {
-                    this.ui.hideControlHints();
-                }
-                localStorage.setItem(CONTROL_HINTS_STORAGE_KEY, String(this.ui.controlHintsEnabled));
-                return this.ui.controlHintsEnabled;
-            },
-        });
+        this.uiManager.registerPlayer(this.player);
 
         // Set up teleporter callback for handling teleporter interactions
         Teleporter.setTeleporterCallback((destination: string) => {
             if (destination === 'selection') {
-                this.dungeonSelection.show((dungeonId: string) => {
+                this.dungeonSelectionManager.show((dungeonId: string) => {
                     this.switchScene(dungeonId);
                 });
             } else {
@@ -360,7 +361,7 @@ export class Game {
         // cannot quit the game on the death screen to avoid the punishment.
         const penalty = this.player.applyDeathPenalty();
 
-        this.ui.showDeathOverlay(
+        this.uiManager.showDeathOverlay(
             () => this.respawnPlayer(),
             () => this.returnToLobby(),
             penalty
@@ -373,10 +374,10 @@ export class Game {
      */
     respawnPlayer() {
         console.log('Game: Respawning player at last teleporter');
-        this.ui.hideDeathOverlay();
+        this.uiManager.hideDeathOverlay();
 
         // Fully reload the current stage to reset enemies and environment
-        if (this.currentScene !== 'startScreen' && this.currentScene !== Lobby.getMetadata().id) {
+        if (this.currentScene !== 'startScreen' && this.currentScene !== Lobby.getStageMetadata().id) {
             this.switchScene(this.currentScene);
         }
 
@@ -389,7 +390,7 @@ export class Game {
      */
     returnToLobby() {
         console.log('Game: Returning to lobby');
-        this.ui.hideDeathOverlay();
+        this.uiManager.hideDeathOverlay();
 
         // Respawn player at lobby spawn point without updating lastTeleporterPosition
         // We don't update lastTeleporterPosition here because death returns shouldn't
@@ -398,7 +399,7 @@ export class Game {
         this.player.respawn(new CANNON.Vec3(0, 0.5, 0));
 
         // Switch to lobby
-        this.switchScene(Lobby.getMetadata().id);
+        this.switchScene(Lobby.getStageMetadata().id);
 
         // Reset camera
         this.resetCameraPosition();
@@ -413,33 +414,33 @@ export class Game {
      * Check if any UI menu is currently open
      */
     private isAnyMenuOpen(): boolean {
-        return this.inventory.isVisible ||
-            this.trader.isVisible ||
+        return this.inventoryManager.isVisible ||
+            this.WeaponTrader.isVisible ||
             this.chipTrader.isVisible ||
             this.coreTrader.isVisible ||
-            this.dungeonSelection.isVisible ||
-            this.npcDialogue.isVisible ||
-            this.xDataUpgrade.isVisible ||
+            this.dungeonSelectionManager.isVisible ||
+            this.npcDialogueManager.isVisible ||
+            this.xDataUpgradeManager.isVisible ||
             this.saveManager.isVisible ||
             this.cardManager.isVisible ||
             this.pauseMenu.visible ||
-            this.ui.isSkillUnlockOverlayVisible();
+            this.uiManager.isSkillUnlockOverlayVisible();
     }
 
     private handleSkillUnlocked(skillIndex: number): void {
         // Healing skill is unlocked at all times - unlock indeces start at 1
         if (skillIndex === 1) {
-            this.ui.showSkillUnlockOverlay(
-                'Laser Skill Unlocked',
-                'Fires a focused ranged blast that pierces through enemies.',
+            this.uiManager.showSkillUnlockOverlay(
+                'Ranged Skill Unlocked',
+                'Fires a focused ranged beam that pierces through enemies.',
                 '<span class="key-icon">Q</span> + <span class="key-icon">SPACE</span> / <span class="btn-icon xbox-lb">LB</span> + <span class="btn-icon xbox-a">A</span> / Mobile: Tap Laser HUD icon',
             );
             return;
         }
 
         if (skillIndex === 2) {
-            this.ui.showSkillUnlockOverlay(
-                'Area Skill Unlocked',
+            this.uiManager.showSkillUnlockOverlay(
+                'Blast Skill Unlocked',
                 'Releases a high-damage expanding shockwave around the player.',
                 '<span class="key-icon">Q</span> + <span class="key-icon">K</span> / <span class="btn-icon xbox-lb">LB</span> + <span class="btn-icon xbox-x">X</span> / Mobile: Tap Area HUD icon',
             );
@@ -491,47 +492,44 @@ export class Game {
             this.continueAfterIntro();
         } else {
             this.currentScene = 'lore';
-            const loreIntro = new LoreIntroduction(this.input, () => this.continueAfterIntro());
+            const loreIntro = new LoreIntroduction(this.inputManager, this.saveManager, () => this.continueAfterIntro());
             loreIntro.show();
         }
     }
 
     private continueAfterIntro() {
-        this.currentScene = Lobby.getMetadata().id;
-        AudioManager.Instance.setStageMusic(Lobby.getMetadata().id);
-        this.input.initializeMobileControls();
-        this.input.consumeJump();
+        this.currentScene = Lobby.getStageMetadata().id;
+        this.audioManager.setStageMusic(Lobby.getStageMetadata().id);
+        this.inputManager.consumeJump();
         this.clock.getDelta(); // Reset clock
         this.isTransitioning = false;
     }
 
     private isStartScreenAdvancePressed(): boolean {
-        if (this.input.isStartPressed()) {
+        if (this.inputManager.isStartPressed()) {
             return true;
         }
 
-        const mobileControls = this.input.mobileControls;
-        if (!mobileControls?.isMobile) {
+        if (!this.mobileControlsManager.isMobile) {
             return false;
         }
 
-        return (mobileControls.isJumpPressed ?? false)
-            || (mobileControls.isCancelPressed ?? false)
-            || (mobileControls.isAttackPressed ?? false);
+        return (this.mobileControlsManager.isJumpPressed)
+            || (this.mobileControlsManager.isCancelPressed)
+            || (this.mobileControlsManager.isAttackPressed);
     }
 
     animate() {
         requestAnimationFrame(() => this.animate());
 
         if (this.currentScene === 'startScreen') {
-            this.ui.showStartScreen();
+            this.uiManager.showStartScreen();
             // Show the main menu after START is pressed (but not while already transitioning
             // or while the menu is already visible)
-            if (!this.isTransitioning && !this.ui.isStartMenuShowing() &&
-                (this.isStartScreenAdvancePressed() || this.ui.startScreenTapped)) {
+            if (!this.isTransitioning && !this.uiManager.isStartMenuShowing() &&
+                (this.isStartScreenAdvancePressed() || this.uiManager.startScreenTapped)) {
                 this.isTransitioning = true;
-                this.ui.showStartMenu(
-                    this.input,
+                this.uiManager.showStartMenu(
                     this.saveManager.hasLocalStorageSave(),
                     (option, file) => this.onStartMenuSelect(option, file),
                 );
@@ -542,7 +540,7 @@ export class Game {
         // Lore introduction is active — the LoreIntroduction class handles its own rendering
         if (this.currentScene === 'lore') {
             // Act as if a menu is open on the lore introduction screen so the introduction can be skipped with the B button
-            this.input.menuOpen = true;
+            this.inputManager.menuOpen = true;
             return;
         }
 
@@ -564,7 +562,7 @@ export class Game {
         // R3 toggles debug mode completely (like F8)
         if (import.meta.env.DEV) {
             // L3: Toggle debug value editor
-            const isL3Pressed = this.input.isL3Pressed();
+            const isL3Pressed = this.inputManager.isL3Pressed();
             if (isL3Pressed && !this.wasL3Pressed) {
                 if (this.debugValueEditor) {
                     if (this.debugValueEditor.isVisible) {
@@ -582,7 +580,7 @@ export class Game {
             this.wasL3Pressed = isL3Pressed;
 
             // R3: Full debug mode toggle (like F8)
-            const isR3Pressed = this.input.isR3Pressed();
+            const isR3Pressed = this.inputManager.isR3Pressed();
             if (isR3Pressed && !this.wasR3Pressed) {
                 this.debugMode = !this.debugMode;
 
@@ -599,11 +597,11 @@ export class Game {
         }
 
         // Check inventory toggle
-        const isInventoryPressed = this.input.isInventoryPressed();
+        const isInventoryPressed = this.inputManager.isInventoryPressed();
         if (isInventoryPressed && !this.wasInventoryPressed) {
             // Don't allow toggling inventory while any other UI is open
-            if (!this.isAnyMenuOpen() || this.inventory.isVisible) {
-                this.inventory.toggle();
+            if (!this.isAnyMenuOpen() || this.inventoryManager.isVisible) {
+                this.inventoryManager.toggle();
             }
         }
         this.wasInventoryPressed = isInventoryPressed;
@@ -612,76 +610,76 @@ export class Game {
         // Uses local wasPausePressed for edge detection because Player.updateState()
         // is not called while menus are open (preventMovement early-return).
         // Only opens the menu here; PauseMenu's own inputLoop handles closing.
-        const isPausePressed = this.input.isPausePressed();
+        const isPausePressed = this.inputManager.isPausePressed();
         if (isPausePressed && !this.wasPausePressed) {
-            if (!this.pauseMenu.visible && !this.isAnyMenuOpen() && !this.ui.isDeathOverlayVisible()) {
+            if (!this.pauseMenu.visible && !this.isAnyMenuOpen() && !this.uiManager.isDeathOverlayVisible()) {
                 this.pauseMenu.show();
             }
         }
         this.wasPausePressed = isPausePressed;
 
         // Update inventory if visible (pass input for navigation)
-        if (this.inventory.isVisible) {
-            this.inventory.update(this.player, this.input);
+        if (this.inventoryManager.isVisible) {
+            this.inventoryManager.update(this.player);
         }
 
         // Update trader if visible
-        if (this.trader.isVisible) {
-            this.trader.update(this.player, this.input);
+        if (this.WeaponTrader.isVisible) {
+            this.WeaponTrader.update(this.player);
         }
 
         // Update dungeon selection if visible
-        if (this.dungeonSelection.isVisible) {
-            this.dungeonSelection.update(this.input);
+        if (this.dungeonSelectionManager.isVisible) {
+            this.dungeonSelectionManager.update();
         }
 
         // Update NPC dialogue if visible
-        const wasDialogueVisible = this.npcDialogue.isVisible;
-        if (this.npcDialogue.isVisible) {
-            this.npcDialogue.update(this.input);
+        const wasDialogueVisible = this.npcDialogueManager.isVisible;
+        if (this.npcDialogueManager.isVisible) {
+            this.npcDialogueManager.update();
         }
 
         // Update X-Data upgrade if visible
-        if (this.xDataUpgrade.isVisible) {
-            this.xDataUpgrade.update(this.player, this.input);
+        if (this.xDataUpgradeManager.isVisible) {
+            this.xDataUpgradeManager.update(this.player);
         }
 
         // Update chip trader if visible
         if (this.chipTrader.isVisible) {
-            this.chipTrader.update(this.player, this.input);
+            this.chipTrader.update(this.player);
         }
 
         // Update core trader if visible
         if (this.coreTrader.isVisible) {
-            this.coreTrader.update(this.player, this.input);
+            this.coreTrader.update(this.player);
         }
 
         // Update save manager if visible
         if (this.saveManager.isVisible) {
-            this.saveManager.update(this.input);
+            this.saveManager.update();
         }
 
         // Update card manager if visible
         if (this.cardManager.isVisible) {
-            this.cardManager.update(this.player, this.input);
+            this.cardManager.update(this.player);
         }
 
         // Update mobile skills button visibility based on any menu being open
-        if (this.input.mobileControls) {
-            this.input.mobileControls.setSkillsButtonVisible(!this.isAnyMenuOpen());
+        if (this.mobileControlsManager.isMobile) {
+            this.mobileControlsManager.setSkillsButtonVisible(!this.isAnyMenuOpen());
         }
 
         // Check if player is near any interactive entity (to prevent jumping while interacting)
         const anyMenuOpen = this.isAnyMenuOpen();
 
         // Keep InputManager informed so B button knows whether to act as block or cancel
-        this.input.menuOpen = anyMenuOpen;
+        this.inputManager.menuOpen = anyMenuOpen;
 
         // Suppress jump and block when a menu just closed so the A/B-button press that
         // confirmed/cancelled the menu action does not also make the player jump or block.
         if (this.wasAnyMenuOpen && !anyMenuOpen) {
-            this.input.consumeJump();
-            this.input.consumeCancel();
+            this.inputManager.consumeJump();
+            this.inputManager.consumeCancel();
         }
         this.wasAnyMenuOpen = anyMenuOpen;
 
@@ -709,12 +707,12 @@ export class Game {
                     nearbyInteractive = {
                         type: InteractiveEntityType.NPC,
                         data: npc,
-                        hint: npc.getInteractionHint(this.input),
+                        hint: npc.getInteractionHint(this.inputManager),
                         action: () => {
                             // If dialogue hasn't been shown yet, show it first
                             if (!npc.hasShownDialogue() && npc.dialogue.length > 0) {
                                 // Show dialogue, then call the interaction callback when complete
-                                this.npcDialogue.show(npc, () => {
+                                this.npcDialogueManager.show(npc, () => {
                                     if (npc.interactionCallback) {
                                         npc.interact();
                                     }
@@ -725,7 +723,7 @@ export class Game {
                                     npc.interact();
                                 } else {
                                     // Fallback for NPCs with no callback (dialogue only NPCs) - show dialogue again
-                                    this.npcDialogue.show(npc);
+                                    this.npcDialogueManager.show(npc);
                                 }
                             }
                         }
@@ -741,7 +739,7 @@ export class Game {
                     nearbyInteractive = {
                         type: interactiveDrop.interactiveType,
                         data: interactiveDrop,
-                        hint: getHint(HintConfigs.pickUp, this.input),
+                        hint: getHint(HintConfigs.pickUp, this.inputManager),
                         action: () => {
                             this.world.pickupDrop(interactiveDrop, this.player);
                         }
@@ -757,7 +755,7 @@ export class Game {
                         nearbyInteractive = {
                             type: InteractiveEntityType.CHEST,
                             data: chest,
-                            hint: chest.getInteractionHint(this.input),
+                            hint: chest.getInteractionHint(this.inputManager),
                             action: () => {
                                 chest.open(this.player);
                             }
@@ -791,19 +789,21 @@ export class Game {
 
                 // Prevent jumping in the frame(s) immediately after interacting
                 const preventJump = isNearInteractive || this.wasJustInteracted;
-                this.player.update(dt, preventJump, anyMenuOpen);
-                this.world.update(dt, this.player, this.camera.position, anyMenuOpen);
+                this.player.update(dt, preventJump);
+                this.world.update(dt, this.player, this.camera.position);
 
                 const minimapState = this.world.getCurrentMinimapState();
-                this.ui.setMinimapState(minimapState.layout, minimapState.visible);
+                this.uiManager.setMinimapState(minimapState.layout, minimapState.visible);
 
-                this.ui.update(this.player, dt);
+                this.uiManager.update(this.player, dt);
 
                 // Handle death overlay input
-                this.ui.handleDeathOverlayInput(this.input);
-                this.ui.handleSkillUnlockOverlayInput(this.input);
+                this.uiManager.handleDeathOverlayInput();
             }
         }
+
+        // Handle skill unlock overlay input (even if a menu is open, so it can be closed)
+        this.uiManager.handleSkillUnlockOverlayInput();
 
         if (this.debugMode && this.physicsDebugger) {
             this.physicsDebugger.update();
@@ -815,10 +815,10 @@ export class Game {
         }
 
         // Handle interactions (use variables we already calculated)
-        const isSelectPressed = this.input.isSelectPressed();
+        const isSelectPressed = this.inputManager.isSelectPressed();
 
         if (nearbyInteractive) {
-            this.ui.showInteractionHint(true, nearbyInteractive.hint);
+            this.uiManager.showInteractionHint(true, nearbyInteractive.hint);
 
             // Check for interaction - prevent if just opened a menu or dialogue was just closed
             const shouldPreventInteraction = this.wasJustInteracted ||
@@ -832,7 +832,7 @@ export class Game {
             }
         } else {
             // Hide hint if not near anything interactive
-            this.ui.showInteractionHint(false);
+            this.uiManager.showInteractionHint(false);
         }
 
         // Reset trader just opened flag when select is released

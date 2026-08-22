@@ -2,13 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { CoreRepository } from './CoreRepository';
 
 describe('CoreRepository', () => {
-    const repo = CoreRepository.Instance;
-
-    describe('Instance (singleton)', () => {
-        it('returns the same instance on repeated calls', () => {
-            expect(CoreRepository.Instance).toBe(repo);
-        });
-    });
+    const repo = new CoreRepository();
 
     describe('getAllCores', () => {
         it('returns a non-empty list of cores', () => {

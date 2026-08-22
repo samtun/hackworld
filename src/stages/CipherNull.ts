@@ -1,3 +1,4 @@
+import { injectable } from 'tsyringe';
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { StageWithLevels } from './StageWithLevels';
@@ -9,7 +10,17 @@ import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
+import { TeleporterFactory } from '../props/TeleporterFactory';
+import { BreakableBarrelFactory } from '../items/BreakableBarrelFactory';
+import { LootChestFactory } from '../items/LootChestFactory';
+import { ModelPropFactory } from '../props/ModelPropFactory';
+import { ItemDropManager } from '../items/ItemDropManager';
+import { AudioManager } from '../AudioManager';
+import { EnemyFactory } from '../enemies/EnemyFactory';
+import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
+import { StageMetadata } from './BaseStage';
 
+@injectable()
 export class CipherNull extends StageWithLevels {
     private static id: string = 'cipherNull';
     private static name: string = 'Cipher Null';
@@ -33,7 +44,7 @@ export class CipherNull extends StageWithLevels {
             floorColor: 0x081720,
             hasBoss: true,
             enemyDifficultyMultiplier: 1.2,
-            teleporterDestination: Lobby.getMetadata().id,
+            teleporterDestination: Lobby.getStageMetadata().id,
             requiredProgress: 5,
         },
     };
@@ -139,16 +150,39 @@ export class CipherNull extends StageWithLevels {
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
+        teleporterFactory: TeleporterFactory,
+        modelPropFactory: ModelPropFactory,
+        lootChestFactory: LootChestFactory,
+        breakableBarrelFactory: BreakableBarrelFactory,
+        electricTrapFactory: ElectricTrapFactory,
+        enemyFactory: EnemyFactory,
+        audioManager: AudioManager,
+        itemDropManager: ItemDropManager,
         stageId?: string,
     ) {
-        super(scene, physicsWorld, physicsMaterial, stageId, CipherNull.id, CipherNull.levelConfigs);
+        super(
+            scene,
+            physicsWorld,
+            physicsMaterial,
+            teleporterFactory,
+            modelPropFactory,
+            lootChestFactory,
+            breakableBarrelFactory,
+            electricTrapFactory,
+            enemyFactory,
+            audioManager,
+            itemDropManager,
+            stageId,
+            CipherNull.id,
+            CipherNull.levelConfigs
+        );
     }
 
     static getLevelStageIds(): readonly string[] {
         return [CipherNull.id, CipherNull.depth2Id] as const;
     }
 
-    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
+    static getStageMetadata(): StageMetadata {
         return {
             id: CipherNull.id,
             name: CipherNull.name,
@@ -217,7 +251,7 @@ export class CipherNull extends StageWithLevels {
         );
         this.setMinimapLayout(layout.minimapLayout, false);
 
-        this.spawnPosition.set(layout.spawnPosition.x, layout.spawnElevation + 0.4, layout.spawnPosition.z);
+        this.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
         this.dungeonRooms = layout.rooms;
 
         this.buildFloorFromLayout(layout, this.levelConfig.floorColor);

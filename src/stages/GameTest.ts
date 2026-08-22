@@ -1,37 +1,33 @@
+import { injectable } from 'tsyringe';
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
-import { BaseStage } from './BaseStage';
+import { BaseStage, StageMetadata } from './BaseStage';
 import { Lobby } from './Lobby';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
-import { WeaponDrop } from '../items/weapons/WeaponDrop';
 import { WeaponType } from '../items/weapons/WeaponType';
-import { PotionDrop } from '../items/potions/PotionDrop';
 import { PotionType } from '../items/potions/PotionDefinitions';
 import { ItemDropManager } from '../items/ItemDropManager';
 import { ItemDrop } from '../items/ItemDrop';
-import { Player } from '../Player';
-import { SpawnButton } from './SpawnButton';
+import { Player } from '../player/Player';
 import { Npc } from '../npcs/Npc';
-import { CoreDrop } from '../items/cores/CoreDrop';
 import { CoreRepository } from '../items/cores/CoreRepository';
-import { ChipDrop } from '../items/chips/ChipDrop';
 import { ChipRepository } from '../items/chips/ChipRepository';
-import { MoneyDrop } from '../items/bits/MoneyDrop';
-import { XDataDrop } from '../items/xdata/XDataDrop';
-import { BoosterPackDrop } from '../items/cards/BoosterPackDrop';
-import { BreakableBarrel } from '../items/BreakableBarrel';
-import { LootChest } from '../items/LootChest';
-import { Enemy } from '../enemies/Enemy';
-import { BossEnemy } from '../enemies/BossEnemy';
 import { ElectricTrap } from '../items/ElectricTrap';
 import { AudioManager } from '../AudioManager';
 import { DEFAULT_ENEMY_TYPE, type EnemyType } from '../enemies/EnemyType';
 import type { EnemySpawnPoint } from './RoomBasedDungeonGenerator';
-import { ModelProp } from '../ModelProp';
 import {
     DUNGEON_PROP_ASSET_PATHS,
     DUNGEON_PROP_DEFINITIONS,
 } from './DungeonPropCatalog';
+import { BreakableBarrelFactory } from '../items/BreakableBarrelFactory';
+import { EnemyFactory } from '../enemies/EnemyFactory';
+import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
+import { LootChestFactory } from '../items/LootChestFactory';
+import { ModelPropFactory } from '../props/ModelPropFactory';
+import { TeleporterFactory } from '../props/TeleporterFactory';
+import { SpawnButtonFactory } from './SpawnButtonFactory';
+import { ItemDropFactory } from '../items/ItemDropFactory';
 
 // ─── Interfaces ───────────────────────────────────────────────────────────────
 
@@ -39,7 +35,7 @@ import {
 interface TestDropSpawnConfig {
     position: CANNON.Vec3;
     /** Factory that creates a fresh drop instance at the configured position. */
-    create: (scene: THREE.Scene, position: CANNON.Vec3) => ItemDrop;
+    create: (position: CANNON.Vec3) => ItemDrop;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -85,6 +81,7 @@ const PROP_GRID_COLS = 4;
 
 // ─── GameTest ─────────────────────────────────────────────────────────────────
 
+@injectable()
 export class GameTest extends BaseStage {
     private static id: string = "gameTest";
     private static name: string = "Game Test";
@@ -111,7 +108,7 @@ export class GameTest extends BaseStage {
     private chestRespawnTimer = -1;
     private chestEmptied = false;
 
-    static getMetadata(): { id: string; name: string; description: string; requiredProgress: number } {
+    static getStageMetadata(): StageMetadata {
         return {
             id: GameTest.id,
             name: GameTest.name,
@@ -119,6 +116,39 @@ export class GameTest extends BaseStage {
             requiredProgress: -1,
         };
     }
+
+    constructor(
+        scene: THREE.Scene,
+        physicsWorld: CANNON.World,
+        physicsMaterial: CANNON.Material,
+        teleporterFactory: TeleporterFactory,
+        modelPropFactory: ModelPropFactory,
+        lootChestFactory: LootChestFactory,
+        breakableBarrelFactory: BreakableBarrelFactory,
+        electricTrapFactory: ElectricTrapFactory,
+        enemyFactory: EnemyFactory,
+        audioManager: AudioManager,
+        itemDropManager: ItemDropManager,
+        private readonly spawnButtonFactory: SpawnButtonFactory,
+        private readonly itemDropFactory: ItemDropFactory,
+        private readonly coreItemRepository: CoreRepository,
+        private readonly chipItemRepository: ChipRepository,
+    ) {
+        super(
+            scene,
+            physicsWorld,
+            physicsMaterial,
+            teleporterFactory,
+            modelPropFactory,
+            lootChestFactory,
+            breakableBarrelFactory,
+            electricTrapFactory,
+            enemyFactory,
+            audioManager,
+            itemDropManager,
+        );
+    }
+
 
     getRequiredAssets(): string[] {
         return [
@@ -146,7 +176,7 @@ export class GameTest extends BaseStage {
         this.createFloorCollider();
 
         // Teleporter back to Lobby
-        this.createTeleporter(new CANNON.Vec3(0, 0, -3), Lobby.getMetadata().id);
+        this.createTeleporter(new CANNON.Vec3(0, 0, -3), Lobby.getStageMetadata().id);
 
         // Ground plane
         const geo = new THREE.PlaneGeometry(FLOOR_SIZE, FLOOR_SIZE);
@@ -168,8 +198,8 @@ export class GameTest extends BaseStage {
     //  Update
     // ───────────────────────────────────────────────────────────────────────────
 
-    update(dt: number, player: Player, anyMenuOpen: boolean, cameraPosition?: THREE.Vector3): void {
-        super.update(dt, player, anyMenuOpen, cameraPosition);
+    update(dt: number, player: Player, cameraPosition?: THREE.Vector3): void {
+        super.update(dt, player, cameraPosition);
 
         this.tickDropRespawns(dt);
         this.tickBarrelRespawn(dt);
@@ -184,12 +214,12 @@ export class GameTest extends BaseStage {
         const spawnZ = BUTTON_AREA_Z + ENEMY_SPAWN_OFFSET_Z;
 
         const addButton = (xOffset: number, label: string, color: number, spawn: (pos: CANNON.Vec3) => void) => {
-            const btn = new SpawnButton(
-                this.scene, this.physicsWorld, this.physicsMaterial,
+            const btn = this.spawnButtonFactory.createSpawnButton(
                 new CANNON.Vec3(BUTTON_AREA_X + xOffset, 0, BUTTON_AREA_Z),
                 label, `Spawn ${label}`, color,
                 () => spawn(new CANNON.Vec3(BUTTON_AREA_X + xOffset, 0.5, spawnZ)),
             );
+
             // SpawnButton duck-types the Npc interface used by Game.ts interaction loop
             this.npcs.add(btn as unknown as Npc);
         };
@@ -229,11 +259,11 @@ export class GameTest extends BaseStage {
         _spawn?: EnemySpawnPoint,
         enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ): void {
-        const enemy = new Enemy(this.scene, this.physicsWorld, position, this.physicsMaterial, spawnType === EnemySpawnType.Elite ? {
+        const enemy = this.enemyFactory.createEnemy(position, spawnType === EnemySpawnType.Elite ? {
             maxHp: 1500,
             speed: 3.75,
             damage: 150,
-            baseExp: 250,
+            baseExp: 2500,
             itemDropChance: 0.30,
             techDropRateFactor: 1.3,
             xDataDropChanceWeight: 1.5,
@@ -242,7 +272,7 @@ export class GameTest extends BaseStage {
             blockChance: 0.2,
             size: 2.75,
             color: 0x663300,
-        } : {}, enemyType);
+        } : { baseExp: 100, }, enemyType);
         enemy.update(0);
         this.enemies.push(enemy);
     }
@@ -252,10 +282,10 @@ export class GameTest extends BaseStage {
         _spawn?: EnemySpawnPoint,
         enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
     ): void {
-        const boss = new BossEnemy(this.scene, this.physicsWorld, position, this.physicsMaterial, {}, enemyType);
+        const boss = this.enemyFactory.createBossEnemy(position, {}, enemyType);
         boss.update(0);
         this.enemies.push(boss);
-        AudioManager.Instance.playBossSpawn();
+        this.audioManager.playBossSpawn();
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -281,57 +311,55 @@ export class GameTest extends BaseStage {
             { damage: 120, level: 1, factor: 1.20 },  // Leet
         ];
         for (const wc of weaponConfigs) {
-            this.addDropConfig(pos(), (scene, p) =>
-                new WeaponDrop('aegis_sword_alpha', scene, p, WeaponType.SWORD,
+            this.addDropConfig(pos(), (position) =>
+                this.itemDropFactory.createWeaponDrop('aegis_sword_alpha', position, WeaponType.SWORD,
                     'Aegis Sword', wc.damage, AEGIS_SWORD_BUY_PRICE, AEGIS_SWORD_SELL_PRICE, wc.level, wc.factor));
             next();
         }
         nextRow();
 
         // Row 1: Core, Chip, Booster Pack
-        const coreRepo = CoreRepository.Instance;
-        const core = coreRepo.getCoreByNameAndLevel('Herald Core', 1);
+        const core = this.coreItemRepository.getCoreByNameAndLevel('Herald Core', 1);
         if (core) {
-            this.addDropConfig(pos(), (scene, p) =>
-                new CoreDrop(scene, p, core.id, core.name, core.buyPrice, core.sellPrice, core.level));
+            this.addDropConfig(pos(), (position) =>
+                this.itemDropFactory.createCoreDrop(position, core.id, core.name, core.buyPrice, core.sellPrice, core.level));
         }
         next();
 
-        const chipRepo = ChipRepository.Instance;
-        const chip = chipRepo.getChipByNameAndLevel('Firewire', 1);
+        const chip = this.chipItemRepository.getChipByNameAndLevel('Firewire', 1);
         if (chip) {
-            this.addDropConfig(pos(), (scene, p) =>
-                new ChipDrop(scene, p, chip.id, chip.name, chip.chipType, chip.buyPrice, chip.sellPrice, chip.level));
+            this.addDropConfig(pos(), (position) =>
+                this.itemDropFactory.createChipDrop(position, chip.id, chip.name, chip.chipType, chip.buyPrice, chip.sellPrice, chip.level));
         }
         next();
 
-        this.addDropConfig(pos(), (scene, p) => new BoosterPackDrop(scene, p));
+        this.addDropConfig(pos(), (position) => this.itemDropFactory.createBoosterPackDrop(position));
         nextRow();
 
         // Row 2: Money – all available amounts
         for (const amount of [10, 100, 200, 500]) {
-            this.addDropConfig(pos(), (scene, p) => new MoneyDrop(scene, p, amount));
+            this.addDropConfig(pos(), (position) => this.itemDropFactory.createMoneyDrop(position, amount));
             next();
         }
         nextRow();
 
         // Row 3: XData – all available amounts
         for (const amount of [1, 5, 20, 100]) {
-            this.addDropConfig(pos(), (scene, p) => new XDataDrop(scene, p, amount));
+            this.addDropConfig(pos(), (position) => this.itemDropFactory.createXDataDrop(position, amount));
             next();
         }
         nextRow();
 
         // Row 4: HP Potions (levels 1–6)
         for (let level = 1; level <= 6; level++) {
-            this.addDropConfig(pos(), (scene, p) => new PotionDrop(scene, p, PotionType.HP, level));
+            this.addDropConfig(pos(), (position) => this.itemDropFactory.createPotionDrop(position, PotionType.HP, level));
             next();
         }
         nextRow();
 
         // Row 5: TP Potions (levels 1–6)
         for (let level = 1; level <= 6; level++) {
-            this.addDropConfig(pos(), (scene, p) => new PotionDrop(scene, p, PotionType.TP, level));
+            this.addDropConfig(pos(), (position) => this.itemDropFactory.createPotionDrop(position, PotionType.TP, level));
             next();
         }
 
@@ -344,15 +372,15 @@ export class GameTest extends BaseStage {
     /** Register a drop config and remember it for respawning. */
     private addDropConfig(
         position: CANNON.Vec3,
-        create: (scene: THREE.Scene, position: CANNON.Vec3) => ItemDrop,
+        create: (position: CANNON.Vec3) => ItemDrop,
     ): void {
         this.dropSpawnConfigs.push({ position, create });
     }
 
     /** Create a drop from config, register with ItemDropManager, and track it. */
     private spawnTestDrop(config: TestDropSpawnConfig): void {
-        const drop = config.create(this.scene, config.position.clone());
-        ItemDropManager.Instance.addDrop(drop);
+        const drop = config.create(config.position.clone());
+        this.itemDropManager.addDrop(drop);
         this.activeDrops.set(drop, config);
     }
 
@@ -366,15 +394,13 @@ export class GameTest extends BaseStage {
     }
 
     private spawnBarrel(): void {
-        const barrel = new BreakableBarrel(
-            this.scene, this.physicsWorld, this.physicsMaterial, BARREL_POS);
+        const barrel = this.breakableBarrelFactory.createBreakableBarrel(BARREL_POS);
         this.breakableBarrels.push(barrel);
         this.barrelDestroyed = false;
     }
 
     private spawnChest(): void {
-        const chest = new LootChest(
-            this.scene, this.physicsWorld, this.physicsMaterial, CHEST_POS);
+        const chest = this.lootChestFactory.createLootChest(CHEST_POS);
         this.lootChests.push(chest);
         this.chestEmptied = false;
     }
@@ -423,11 +449,8 @@ export class GameTest extends BaseStage {
             const row = Math.floor(i / PROP_GRID_COLS);
             const x = PROP_GRID_X - col * PROP_GRID_SPACING;
             const z = PROP_GRID_Z - row * PROP_GRID_SPACING;
-            this.props.push(new ModelProp(
+            this.props.push(this.modelPropFactory.createModelProp(
                 `props/${modelName}`,
-                this.scene,
-                this.physicsWorld,
-                this.physicsMaterial,
                 new THREE.Vector3(x, 0, z),
             ));
         });

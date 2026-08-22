@@ -1,5 +1,5 @@
 import { EquippableItem } from '../EquippableItem';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 import { CoreStats } from './Core';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 

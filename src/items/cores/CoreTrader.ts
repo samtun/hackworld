@@ -1,24 +1,33 @@
 import { CoreItem } from './CoreItem';
 import { BaseTrader, TraderUIConfig } from '../BaseTrader';
 import { CoreRepository } from './CoreRepository';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 import { Item } from '../Item';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
 import { CardCollection } from '../cards/CardCollection';
 import { Album } from '../cards/Card';
-import { InputManager } from '../../InputManager';
+import { InputManager } from '../../controls/InputManager';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import { AudioManager } from '../../AudioManager';
+import { MenuManager } from '../../ui/MenuManager';
+import { UIManager } from '../../ui/UIManager';
+import { singleton } from 'tsyringe';
 
 /** A.002 bonus: 5% buy discount and 5% sell bonus on cores when collection A.002 is complete */
 const A002_DISCOUNT = 0.05;
 
+@singleton()
 export class CoreTrader extends BaseTrader {
-    private static instance: CoreTrader; // Singleton
-
-    private coreRepository: CoreRepository;
     private pendingInventoryInit: boolean = true;
 
-    private constructor() {
+    constructor(
+        private readonly cardCollection: CardCollection,
+        private readonly coreRepository: CoreRepository,
+        audioManager: AudioManager,
+        menuManager: MenuManager,
+        uiManager: UIManager,
+        inputManager: InputManager,
+    ) {
         const cfg: TraderUIConfig = {
             title: 'CORE TRADER',
             traderTitle: "Core Trader's Goods",
@@ -33,22 +42,17 @@ export class CoreTrader extends BaseTrader {
                 text: TRADER_UI_COLORS.TEXT
             }
         };
-        super(cfg);
-        this.coreRepository = CoreRepository.Instance;
+        super(audioManager, menuManager, uiManager, inputManager, cfg);
         this.initializeTraderInventory();
     }
 
-    public static get Instance(): CoreTrader {
-        return this.instance || (this.instance = new this());
-    }
-
-    update(player: Player, input?: InputManager) {
+    update(player: Player) {
         if (this.pendingInventoryInit) {
             this.refreshInventory(player);
             this.pendingInventoryInit = false;
             this.needsRender = true;
         }
-        super.update(player, input);
+        super.update(player);
     }
 
     protected initializeTraderInventory() {
@@ -83,19 +87,19 @@ export class CoreTrader extends BaseTrader {
 
     protected getEffectiveBuyPrice(item: Item, _player: Player): number {
         const base = item.buyPrice ?? 0;
-        return CardCollection.Instance.isAlbumComplete(Album.A002)
+        return this.cardCollection.isAlbumComplete(Album.A002)
             ? Math.floor(base * (1 - A002_DISCOUNT))
             : base;
     }
 
     protected getEffectiveSellPrice(item: Item, _player: Player): number {
         const base = item.sellPrice ?? 0;
-        return CardCollection.Instance.isAlbumComplete(Album.A002)
+        return this.cardCollection.isAlbumComplete(Album.A002)
             ? Math.ceil(base * (1 + A002_DISCOUNT))
             : base;
     }
 
     protected filterPlayerInventory(player: Player): Item[] {
-        return player.inventory.filter(item => item instanceof CoreItem);
+        return player.inventory.filter((item: Item) => item instanceof CoreItem);
     }
 }

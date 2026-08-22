@@ -2,7 +2,7 @@
 // Use an AI image generator (e.g. Midjourney, DALL-E, Stable Diffusion) with the prompts
 // provided as comments before each slide entry below. Recommended resolution: 1920×1080, 16:9.
 
-import { InputManager } from './InputManager';
+import { InputManager } from './controls/InputManager';
 import { SaveManager } from './SaveManager';
 
 interface LoreSlide {
@@ -107,7 +107,6 @@ export class LoreIntroduction {
     private readonly skipHintEl: HTMLDivElement;
     private readonly skipRingCircle: SVGCircleElement;
     private readonly onComplete: () => void;
-    private readonly input: InputManager;
 
     private displayTimeoutId?: ReturnType<typeof setTimeout>;
     private transitionTimeoutId?: ReturnType<typeof setTimeout>;
@@ -119,8 +118,10 @@ export class LoreIntroduction {
     private skipPressStartTime: number | null = null;
     private animationFrameId?: number;
 
-    constructor(input: InputManager, onComplete: () => void) {
-        this.input = input;
+    constructor(
+        private readonly input: InputManager,
+        private readonly saveManager: SaveManager,
+        onComplete: () => void) {
         this.onComplete = onComplete;
 
         // Full-screen black container — sits above the game canvas during the intro
@@ -407,7 +408,7 @@ export class LoreIntroduction {
 
     /** Marks the intro as seen, removes the overlay and fires the completion callback. */
     private complete(): void {
-        SaveManager.Instance.markLoreIntroSeen();
+        this.saveManager.markLoreIntroSeen();
         this.destroy();
         this.onComplete();
     }

@@ -1,3 +1,5 @@
+import { singleton } from "tsyringe";
+
 /**
  * MenuManager - Centralized system for creating and managing menu UIs
  * Provides unified styling, constants, and factory methods for all menus
@@ -67,15 +69,8 @@ export interface PanelConfig {
 /**
  * MenuManager - Singleton for creating unified menu components
  */
+@singleton()
 export class MenuManager {
-    private static instance: MenuManager;
-
-    private constructor() { }
-
-    public static get Instance(): MenuManager {
-        return this.instance || (this.instance = new this());
-    }
-
     /**
      * Create a fixed-position overlay (for menus that use fixed positioning)
      */

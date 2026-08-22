@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Player } from '../Player';
+import { Player } from '../player/Player';
 import { Enemy } from '../enemies/Enemy';
-import { createParticleShaderMaterial, updateParticleScaleFactor } from '../ParticleShaderUtils';
+import { createParticleShaderMaterial, updateParticleScaleFactor } from './shader-utils/ParticleShaderUtils';
 
 /** Configuration for placing an electric trap in a dungeon room. */
 export interface ElectricTrapConfig {
@@ -94,13 +94,10 @@ export class ElectricTrap {
     /** Cooldown tracker: entity → seconds until next allowed damage tick. */
     private damageCooldowns: Map<object, number> = new Map();
 
-    private scene: THREE.Scene;
-
     constructor(
-        scene: THREE.Scene,
+        private readonly scene: THREE.Scene,
         config: ElectricTrapConfig,
     ) {
-        this.scene = scene;
         this.centerX = config.x;
         this.centerZ = config.z;
         this.elevation = config.y;

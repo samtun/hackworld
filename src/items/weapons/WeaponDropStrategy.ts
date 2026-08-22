@@ -1,14 +1,16 @@
-import * as THREE from 'three';
+import { singleton } from 'tsyringe';
 import { ItemDropStrategy } from '../ItemDropManager';
 import { WeaponDrop } from './WeaponDrop';
 import { WeaponRepository } from './WeaponRepository';
 import { WeaponType } from './WeaponType';
 import { Enemy } from '../../enemies/Enemy';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 import { WeaponItem } from './WeaponItem';
 import { ItemDropType } from '../ItemDropType';
 import { WeaponBonusCalculator } from './WeaponBonusCalculator';
+import { ItemDropFactory } from '../ItemDropFactory';
 
+@singleton()
 export class WeaponDropStrategy implements ItemDropStrategy {
     readonly key = ItemDropType.WEAPON;
     // Threshold for becoming eligible for higher level drops (80% of next level requirement)
@@ -17,10 +19,16 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         return 2.5;
     }
 
-    drop(scene: THREE.Scene, enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
+    constructor(
+        private readonly weaponRepository: WeaponRepository,
+        private readonly itemDropFactory: ItemDropFactory,
+        private readonly weaponBonusCalculator: WeaponBonusCalculator
+    ) { }
+
+    drop(enemy: Enemy, player: Player): import("../ItemDrop").ItemDrop | null {
         const weaponType = this.selectRandomWeaponType(player.currentWeaponType);
         const weaponLevel = this.determineWeaponLevel(player.getTechForWeapon(weaponType));
-        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, weaponLevel);
+        const weaponItem = this.weaponRepository.getWeaponByTypeAndLevel(weaponType, weaponLevel);
 
         const random = Math.random();
         // avoid NaN when base is negative and exponent is non-integer
@@ -43,9 +51,8 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const dropPosition = enemy.getDeathPosition();
         dropPosition.y += 0.5;
 
-        const wd = new WeaponDrop(
+        const wd = this.itemDropFactory.createWeaponDrop(
             weaponItem.id,
-            scene,
             dropPosition,
             weaponType,
             weaponItem.name,
@@ -125,7 +132,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
     }
 
     pickup(drop: WeaponDrop, player: Player): void {
-        const baseWeapon = WeaponRepository.Instance.getWeaponById(drop.weaponId);
+        const baseWeapon = this.weaponRepository.getWeaponById(drop.weaponId);
         if (!baseWeapon) {
             console.warn(`Weapon not found for ${drop.weaponId}`);
             return;
@@ -134,7 +141,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         // Re-apply the bonus from the drop using the shared calculator so that
         // tier assignment follows the same "only when damage changes" rule.
         const bonusMultiplier = drop.damage / baseWeapon.damage;
-        const weaponItem = WeaponBonusCalculator.Instance.applyWeaponBonus(baseWeapon, bonusMultiplier);
+        const weaponItem = this.weaponBonusCalculator.applyWeaponBonus(baseWeapon, bonusMultiplier);
 
         player.inventory.push(weaponItem);
         console.log(`Picked up ${weaponItem.name} with ${weaponItem.damage} damage`);

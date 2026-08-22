@@ -2,13 +2,16 @@ import { WeaponItem } from './WeaponItem';
 import { WeaponTierDefinition, Tier, TierManager } from '../TierManager';
 import { CardCollection } from '../cards/CardCollection';
 import { Album } from '../cards/Card';
+import { singleton } from 'tsyringe';
 
 /**
  * Centralises all weapon bonus/tier calculations.
  * Single source of truth used by both the drop pickup path and the weapon trader.
  */
+@singleton()
 export class WeaponBonusCalculator {
-    private static instance: WeaponBonusCalculator; // Singleton
+    private readonly cardCollection: CardCollection;
+    private readonly tierManager: TierManager;
 
     /** Practical lower bound (%) for the open-ended BROKEN tier */
     private static readonly BROKEN_FLOOR_PERCENT = -15;
@@ -17,17 +20,19 @@ export class WeaponBonusCalculator {
     /** C.003 collection bonus added to TOP_CEIL_PERCENT */
     private static readonly C003_TOP_CEIL_BONUS = 10;
 
-    private constructor() {}
-
-    public static get Instance(): WeaponBonusCalculator {
-        return this.instance || (this.instance = new this());
+    constructor(
+        cardCollection: CardCollection,
+        tierManager: TierManager
+    ) {
+        this.cardCollection = cardCollection;
+        this.tierManager = tierManager;
     }
 
     /**
      * Returns the effective top ceiling percent, boosted by +10 when C.003 is complete.
      */
     private getTopCeilPercent(): number {
-        if (CardCollection.Instance.isAlbumComplete(Album.C003)) {
+        if (this.cardCollection.isAlbumComplete(Album.C003)) {
             return WeaponBonusCalculator.TOP_CEIL_PERCENT + WeaponBonusCalculator.C003_TOP_CEIL_BONUS;
         }
         return WeaponBonusCalculator.TOP_CEIL_PERCENT;
@@ -59,14 +64,14 @@ export class WeaponBonusCalculator {
                 weapon.damage,
                 weapon.buyPrice,
                 weapon.sellPrice,
-                TierManager.Instance.tiers.get(Tier.STABLE)!,
+                this.tierManager.tiers.get(Tier.STABLE)!,
             );
         }
 
         // Use the actual applied ratio (after floor-rounding) for tier lookup so
         // that the displayed tier matches the real damage change, not the raw roll.
         const damageFactor = finalDamage / weapon.damage;
-        const tier = TierManager.Instance.getWeaponTierForMultiplier(damageFactor);
+        const tier = this.tierManager.getWeaponTierForMultiplier(damageFactor);
         return weapon.cloneWith(
             finalDamage,
             Math.floor(weapon.buyPrice * damageFactor),

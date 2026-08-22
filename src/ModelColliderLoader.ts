@@ -1,5 +1,6 @@
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
+import { singleton } from 'tsyringe';
 
 /**
  * ModelColliderLoader - Singleton for loading 3D models and their physics colliders.
@@ -10,18 +11,8 @@ import * as THREE from 'three';
  *
  * Both assets must be preloaded via AssetManager before calling these methods.
  */
+@singleton()
 export class ModelColliderLoader {
-    private static instance: ModelColliderLoader;
-
-    private constructor() { }
-
-    public static get Instance(): ModelColliderLoader {
-        if (!ModelColliderLoader.instance) {
-            ModelColliderLoader.instance = new ModelColliderLoader();
-        }
-        return ModelColliderLoader.instance;
-    }
-
     /**
      * Traverses all meshes in a pre-loaded collider scene and creates a static box collider
      * for each one. Each body is added to the physics world immediately.
