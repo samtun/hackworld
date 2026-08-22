@@ -1,3 +1,30 @@
+# [3.49.0](https://github.com/samtun/hackworld/compare/v3.48.0...v3.49.0) (2026-08-22)
+
+
+### Bug Fixes
+
+* drop strategy registration ([a1c150a](https://github.com/samtun/hackworld/commit/a1c150a9a932f5b728501c6dcb81cb8926a41585))
+* first test in Player tests ([33225d0](https://github.com/samtun/hackworld/commit/33225d0565efdf80d6bedd10c73a28473b6362b6))
+* fixed game startup and injection order ([f1f2adc](https://github.com/samtun/hackworld/commit/f1f2adccb1c96973d69f1386ee2bca108c573b45))
+* healingsystem ([83e37d4](https://github.com/samtun/hackworld/commit/83e37d4fb01f7211860052875132a1c36c4eca0b))
+* player imports in tests ([242c324](https://github.com/samtun/hackworld/commit/242c324b20ac280d76dce6bc822478ac839b553e))
+* reduce list of bodies in BaseStage to list of ids and fix CipherNull spawn position ([feac819](https://github.com/samtun/hackworld/commit/feac8191e9e6dca3462def2748d9fbc7e99eb9f0))
+* remaining smaller issues ([afd001c](https://github.com/samtun/hackworld/commit/afd001c519c60bbb530587c5d5cadebd8c0ba4b9))
+* required exp scaling ([084a1f5](https://github.com/samtun/hackworld/commit/084a1f5bae195c6a353f35f52913ca86a6071378))
+* stage depth ([793da85](https://github.com/samtun/hackworld/commit/793da85c66b794edb5e2d8deb0bed59e0d07d08b))
+* traders ([472489b](https://github.com/samtun/hackworld/commit/472489b485af46845532a93f55439a1c2be4a80a))
+* various minor fixes ([72a3c4a](https://github.com/samtun/hackworld/commit/72a3c4ad446ff74f68fa860f480e608c1659a9eb))
+* vi function test call ([f1aff8d](https://github.com/samtun/hackworld/commit/f1aff8daff4678a6a74e1fdf3411cc86af0bdcfd))
+
+
+### Features
+
+* adjust TP xdata upgrade amount ([376dc25](https://github.com/samtun/hackworld/commit/376dc256d0a489506275acac5e46ff7646c3c651))
+* adjust xDataUpgradeManager wording ([43bf09a](https://github.com/samtun/hackworld/commit/43bf09a144868b6ebb23bc890a8cce404f4b0d9e))
+* improve exp and stat point gain bonus and test enemies ([e62ed8a](https://github.com/samtun/hackworld/commit/e62ed8a8c2df6b1fe4c2e3ee3e8ca47b6231df1b))
+* improve stat bonus curves ([539f93c](https://github.com/samtun/hackworld/commit/539f93cda54c797046d7743d8d02f061966494b6))
+* switch to DI instead of static singletons (broken) ([0bf35bb](https://github.com/samtun/hackworld/commit/0bf35bb62ce3ed0c1319e3d072c76e691b460715))
+
 # [3.48.0](https://github.com/samtun/hackworld/compare/v3.47.0...v3.48.0) (2026-07-07)
 
 
