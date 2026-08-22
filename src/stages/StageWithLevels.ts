@@ -3,6 +3,14 @@ import * as CANNON from 'cannon-es';
 import { BaseStage } from './BaseStage';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
+import { TeleporterFactory } from '../props/TeleporterFactory';
+import { BreakableBarrelFactory } from '../items/BreakableBarrelFactory';
+import { LootChestFactory } from '../items/LootChestFactory';
+import { ModelPropFactory } from '../props/ModelPropFactory';
+import { ElectricTrapFactory } from '../items/ElectricTrapFactory';
+import { EnemyFactory } from '../enemies/EnemyFactory';
+import { AudioManager } from '../AudioManager';
+import { ItemDropManager } from '../items/ItemDropManager';
 
 export interface StageLevelConfig {
     id: string;
@@ -39,11 +47,31 @@ export abstract class StageWithLevels extends BaseStage {
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
+        teleporterFactory: TeleporterFactory,
+        modelPropFactory: ModelPropFactory,
+        lootChestFactory: LootChestFactory,
+        breakableBarrelFactory: BreakableBarrelFactory,
+        electricTrapFactory: ElectricTrapFactory,
+        enemyFactory: EnemyFactory,
+        audioManager: AudioManager,
+        itemDropManager: ItemDropManager,
         stageId: string | undefined,
         defaultStageId: string,
         levelConfigs: Record<string, StageLevelConfig>,
     ) {
-        super(scene, physicsWorld, physicsMaterial);
+        super(
+            scene,
+            physicsWorld,
+            physicsMaterial,
+            teleporterFactory,
+            modelPropFactory,
+            lootChestFactory,
+            breakableBarrelFactory,
+            electricTrapFactory,
+            enemyFactory,
+            audioManager,
+            itemDropManager
+        );
         this.levelConfig = StageWithLevels.resolveLevelConfig(stageId, defaultStageId, levelConfigs);
         this.id = this.levelConfig.id;
         this.name = this.levelConfig.name;

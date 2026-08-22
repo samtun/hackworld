@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
 import { BaseMesh } from '../BaseMesh.ts';
-import { InputManager } from '../InputManager';
+import { InputManager } from '../controls/InputManager.ts';
 import { getHint } from '../ui/InputHints';
 import { NpcRegistry } from './NpcRegistry';
 import { BlobShadow } from '../BlobShadow';
+import { AssetManager } from '../AssetManager.ts';
 
 /** Distance above the NPC body centre from which the shadow raycast starts. */
 const NPC_SHADOW_RAY_UP = 1;
@@ -23,8 +24,10 @@ export class Npc extends BaseMesh {
     public blobShadow!: BlobShadow;
 
     constructor(
+        assetManager: AssetManager,
+        private readonly npcRegistry: NpcRegistry,
         scene: THREE.Scene,
-        world: CANNON.World,
+        physicsWorld: CANNON.World,
         physicsMaterial: CANNON.Material,
         modelAsset: string,
         name: string,
@@ -33,7 +36,7 @@ export class Npc extends BaseMesh {
         dialogue: string[],
         interactionCallback?: () => void
     ) {
-        super(modelAsset);
+        super(modelAsset, assetManager);
 
         this.name = name;
         this.interactionHint = interactionHint;
@@ -61,7 +64,7 @@ export class Npc extends BaseMesh {
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
         this.body.addShape(shape);
         scene.add(this.mesh);
-        world.addBody(this.body);
+        physicsWorld.addBody(this.body);
 
         // Blob shadow – always visible; static NPC, positioned once using a downward
         // raycast to find the correct floor height (handles elevated rooms).
@@ -70,7 +73,7 @@ export class Npc extends BaseMesh {
         const npcRayEnd = new CANNON.Vec3(position.x, this.body.position.y - NPC_SHADOW_RAY_DOWN, position.z);
         const npcRay = new CANNON.Ray(npcRayStart, npcRayEnd);
         const npcRayResult = new CANNON.RaycastResult();
-        npcRay.intersectWorld(world, { mode: CANNON.Ray.CLOSEST, result: npcRayResult, skipBackfaces: true });
+        npcRay.intersectWorld(physicsWorld, { mode: CANNON.Ray.CLOSEST, result: npcRayResult, skipBackfaces: true });
         if (npcRayResult.hasHit && npcRayResult.body !== this.body) {
             const normal = new THREE.Vector3(
                 npcRayResult.hitNormalWorld.x,
@@ -129,14 +132,14 @@ export class Npc extends BaseMesh {
      * Check if this NPC's dialogue has been shown
      */
     hasShownDialogue(): boolean {
-        return NpcRegistry.Instance.hasShownDialogue(this.name);
+        return this.npcRegistry.hasShownDialogue(this.name);
     }
 
     /**
      * Mark this NPC's dialogue as shown
      */
     markDialogueShown(): void {
-        NpcRegistry.Instance.markDialogueShown(this.name);
+        this.npcRegistry.markDialogueShown(this.name);
     }
 
     cleanup(scene: THREE.Scene, world: CANNON.World): void {

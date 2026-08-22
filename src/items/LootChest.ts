@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Player } from '../Player';
-import { InputManager } from '../InputManager';
+import { Player } from '../player/Player';
+import { InputManager } from '../controls/InputManager';
 import { WeaponRepository } from './weapons/WeaponRepository';
 import { WeaponType } from './weapons/WeaponType';
 import { WeaponItem } from './weapons/WeaponItem';
@@ -13,14 +13,10 @@ import { ItemLevelHelper } from './ItemLevelHelper';
 import { getHint, HintConfigs } from '../ui/InputHints';
 import { ItemDrop } from './ItemDrop';
 import { ItemDropManager } from './ItemDropManager';
-import { WeaponDrop } from './weapons/WeaponDrop';
-import { ChipDrop } from './chips/ChipDrop';
-import { CoreDrop } from './cores/CoreDrop';
-import { PotionDrop } from './potions/PotionDrop';
 import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
-import { MoneyDrop } from './bits/MoneyDrop';
 import { Tier } from './TierManager';
 import { AudioManager } from '../AudioManager';
+import { ItemDropFactory } from './ItemDropFactory';
 
 /** Intermediate descriptor for a chest loot entry. */
 export type ChestLootEntry =
@@ -79,6 +75,13 @@ export class LootChest {
     private static readonly INTERACTION_RANGE = 2.5;
 
     constructor(
+        private readonly audioManager: AudioManager,
+        private readonly itemDropManager: ItemDropManager,
+        private readonly weaponRepository: WeaponRepository,
+        private readonly weaponBonusCalculator: WeaponBonusCalculator,
+        private readonly chipRepository: ChipRepository,
+        private readonly coreRepository: CoreRepository,
+        private readonly itemDropFactory: ItemDropFactory,
         scene: THREE.Scene,
         world: CANNON.World,
         physicsMaterial: CANNON.Material,
@@ -167,7 +170,7 @@ export class LootChest {
         this.isOpened = true;
         this.prepareLoot(player);
         this.showOpenedLid();
-        AudioManager.Instance.playChestOpen();
+        this.audioManager.playChestOpen();
         this.spawnDrops(this.lootEntries!);
     }
 
@@ -212,7 +215,7 @@ export class LootChest {
         const centerZ = chestPos.z + 1;
 
         const count = loot.length;
-        const dropManager = ItemDropManager.Instance;
+        const dropManager = this.itemDropManager;
 
         for (let i = 0; i < count; i++) {
             // Spread items along X, centered on the chest
@@ -233,27 +236,27 @@ export class LootChest {
     private createDrop(entry: ChestLootEntry, position: CANNON.Vec3): ItemDrop | null {
         switch (entry.type) {
             case 'weapon':
-                return new WeaponDrop(
-                    entry.weaponId, this.scene, position,
+                return this.itemDropFactory.createWeaponDrop(
+                    entry.weaponId, position,
                     entry.weaponType, entry.name, entry.damage,
                     entry.buyPrice, entry.sellPrice, entry.level, entry.damageFactor,
                 );
             case 'chip':
-                return new ChipDrop(
-                    this.scene, position,
+                return this.itemDropFactory.createChipDrop(
+                    position,
                     entry.chipId, entry.name, entry.chipType,
                     entry.buyPrice, entry.sellPrice, entry.level,
                 );
             case 'core':
-                return new CoreDrop(
-                    this.scene, position,
+                return this.itemDropFactory.createCoreDrop(
+                    position,
                     entry.coreId, entry.name,
                     entry.buyPrice, entry.sellPrice, entry.level,
                 );
             case 'potion':
-                return new PotionDrop(this.scene, position, entry.potionType, entry.level);
+                return this.itemDropFactory.createPotionDrop(position, entry.potionType, entry.level);
             case 'money':
-                return new MoneyDrop(this.scene, position, entry.amount);
+                return this.itemDropFactory.createMoneyDrop(position, entry.amount);
         }
     }
 
@@ -315,11 +318,11 @@ export class LootChest {
             }
         }
 
-        const weaponItem = WeaponRepository.Instance.getWeaponByTypeAndLevel(weaponType, baseLevel);
+        const weaponItem = this.weaponRepository.getWeaponByTypeAndLevel(weaponType, baseLevel);
         if (!weaponItem) return null;
 
         const bonusMultiplier = this.generateQualityBoostedMultiplier(qualityFactor);
-        const result = WeaponBonusCalculator.Instance.applyWeaponBonus(weaponItem, bonusMultiplier);
+        const result = this.weaponBonusCalculator.applyWeaponBonus(weaponItem, bonusMultiplier);
         const damageFactor = weaponItem.damage > 0 ? result.damage / weaponItem.damage : 1;
 
         return {
@@ -338,7 +341,7 @@ export class LootChest {
 
     private generateChipEntry(player: Player): ChestLootEntry | null {
         const level = ItemLevelHelper.determineDropLevel(player.level);
-        const chipItem = ChipRepository.Instance.getRandomChipOfLevel(level);
+        const chipItem = this.chipRepository.getRandomChipOfLevel(level);
         if (!chipItem) return null;
         return {
             type: 'chip',
@@ -353,7 +356,7 @@ export class LootChest {
 
     private generateCoreEntry(player: Player): ChestLootEntry | null {
         const level = ItemLevelHelper.determineDropLevel(player.level);
-        const coreItem = CoreRepository.Instance.getRandomCoreOfLevel(level);
+        const coreItem = this.coreRepository.getRandomCoreOfLevel(level);
         if (!coreItem) return null;
         return {
             type: 'core',

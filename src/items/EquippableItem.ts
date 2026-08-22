@@ -1,5 +1,5 @@
 import { Item } from './Item';
-import { Player } from '../Player';
+import { Player } from '../player/Player';
 
 export abstract class EquippableItem extends Item {
     isEquipped: boolean = false;

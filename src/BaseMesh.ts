@@ -5,9 +5,9 @@ export abstract class BaseMesh {
     protected mesh: THREE.Group;
     protected mixers: THREE.AnimationMixer[] = [];
 
-    constructor(modelAsset: string) {
+    constructor(modelAsset: string, private readonly assetManager: AssetManager) {
         // Load model from assets
-        const gltfModel = AssetManager.Instance.get(modelAsset);
+        const gltfModel = this.assetManager.get(modelAsset);
 
         this.mesh = gltfModel.scene;
 
@@ -17,6 +17,24 @@ export abstract class BaseMesh {
             const action = mixer.clipAction(gltfModel.animations[0]);
             action.play();
             this.mixers.push(mixer);
+        }
+    }
+
+    protected replaceModel(modelPath: string) {
+        try {
+            // Try to use preloaded asset first
+            let gltf = this.assetManager.get(modelPath);
+            const model = gltf.scene.clone();
+
+            // Clear any existing children and dispose resources
+            this.disposeMesh();
+
+            // Add the loaded model to the weapon group
+            this.mesh.add(model);
+
+            console.log(`Loaded model: ${modelPath}`);
+        } catch (error) {
+            throw new Error(`Failed to load model ${modelPath}: ${error}`);
         }
     }
 

@@ -1,5 +1,5 @@
 import { EquippableItem } from '../EquippableItem';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 import { ChipType, ChipStats } from './Chip';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 

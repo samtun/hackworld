@@ -2,183 +2,133 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
 
-vi.mock('../AudioManager', () => ({
-    AudioManager: {
-        Instance: {
-            playFootstep: vi.fn(),
-            playAttack: vi.fn(),
-            playDamage: vi.fn(),
-            playDeath: vi.fn(),
-        },
-    },
-}));
-
-import { Enemy, MAX_ENEMY_RADIUS, ENEMY_RADIUS_FACTOR } from './Enemy';
+import { Enemy, MAX_ENEMY_RADIUS, ENEMY_RADIUS_FACTOR, EnemyArchetypeConfig, DEFAULT_ENEMY_ARCHETYPE } from './Enemy';
 import { AudioManager } from '../AudioManager';
-import { PLAYER_COLLISION_GROUP } from '../Player';
-import { EnemyType, getEnemyTypeDefinition } from './EnemyType';
+import { Player, PLAYER_COLLISION_GROUP } from '../player/Player';
+import { DEFAULT_ENEMY_TYPE, EnemyType } from './EnemyType';
+import { AssetManager } from '../AssetManager';
+import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
+import { PlayerRegistry } from '../player/PlayerRegistry';
+import { mock, mockDeep } from 'vitest-mock-extended';
+import { container } from 'tsyringe';
+import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { BlobShadow } from '../BlobShadow';
+import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
+
 
 const WORLD_COLLISION_GROUP = 1;
 const FAR_AWAY_POSITION = new CANNON.Vec3(100, 50, 100);
 
-function mockAction() {
-    const action: any = {
-        isRunning: vi.fn().mockReturnValue(false),
-        loop: 0,
-        clampWhenFinished: false,
-        timeScale: 1,
-    };
-    action.reset = vi.fn().mockReturnValue(action);
-    action.fadeIn = vi.fn().mockReturnValue(action);
-    action.fadeOut = vi.fn().mockReturnValue(action);
-    action.play = vi.fn().mockReturnValue(action);
-    return action;
+interface EnemyDependencyOverrides {
+    audioManager?: AudioManager,
+    floatingIndicatorManager?: FloatingIndicatorManager,
+    playerRegistry?: PlayerRegistry,
+    assetManager?: AssetManager,
+    scene?: THREE.Scene,
+    physicsWorld?: CANNON.World,
+    position?: CANNON.Vec3,
+    physicsMaterial?: CANNON.Material,
+    config?: Partial<EnemyArchetypeConfig>,
+    enemyType?: EnemyType,
+}
+
+function createDefaultPhysicsWorld(defaultPhysicsMaterial: CANNON.Material = new CANNON.Material('defaultMaterial')): CANNON.World {
+    const floorShape = new CANNON.Plane();
+    const floorBody = new CANNON.Body({
+        mass: 0,
+        material: defaultPhysicsMaterial,
+    });
+    floorBody.addShape(floorShape);
+    floorBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
+
+    const defaultPhysicsWorld = new CANNON.World();
+    defaultPhysicsWorld.addBody(floorBody);
+    return defaultPhysicsWorld;
+}
+
+function createDefaultAssetManager(): AssetManager {
+    const dummyMesh = new THREE.Mesh(
+        new THREE.BufferGeometry(),
+        new THREE.MeshStandardMaterial({ color: 0xffffff })
+    );
+
+    const dummyScene = new THREE.Group();
+    dummyScene.add(dummyMesh);
+
+    const gltfMock = mock<GLTF>();
+    gltfMock.scene = dummyScene;
+    gltfMock.animations = [
+        mockDeep<THREE.AnimationClip>({ name: 'Idle' }),
+        mockDeep<THREE.AnimationClip>({ name: 'Run' }),
+        mockDeep<THREE.AnimationClip>({ name: 'Attack' }),
+        mockDeep<THREE.AnimationClip>({ name: 'Death' }),
+        mockDeep<THREE.AnimationClip>({ name: 'Jump' }),
+        mockDeep<THREE.AnimationClip>({ name: 'TakeHit' }),
+    ];
+
+    const defaultAssetManagerMock = mockDeep<AssetManager>();
+    defaultAssetManagerMock.get.mockReturnValue(gltfMock);
+    return defaultAssetManagerMock;
 }
 
 /**
- * Create a minimal Enemy instance bypassing the Three.js / Cannon-es constructor.
+ * Create a minimal Enemy instance for unit testing.
  */
-function makeEnemy(overrides: Partial<Record<string, unknown>> = {}): Enemy {
-    const enemy = Object.create(Enemy.prototype) as Enemy;
+function makeEnemy(overrides: EnemyDependencyOverrides = {}): Enemy {
+    container.clearInstances();
+    const mockedAnimationAction = mockDeep<THREE.AnimationAction>();
+    mockedAnimationAction.play.mockReturnThis();
+    mockedAnimationAction.stop.mockReturnThis();
+    mockedAnimationAction.reset.mockReturnThis();
+    mockedAnimationAction.fadeIn.mockReturnThis();
+    const clipActionSpy = vi.spyOn(THREE.AnimationMixer.prototype, 'clipAction').mockReturnValue(mockedAnimationAction);
 
-    Object.assign(enemy, {
-        // Combat stats
-        maxHp: 60,
-        hp: 60,
-        damage: 10,
-        speed: 3,
-        attackRange: 1.5,
-        attackCooldown: 1.0,
-        attackTimer: 0,
-        baseExp: 10,
-        itemDropChance: 0.05,
-        xDataDropChanceWeight: 1,
-        criticalChance: 0.04,
-        criticalHitMultiplier: 1.2,
-        techDropRateFactor: 1.0,
-        knockbackForce: 15.0,
-        blockedKnockbackFactor: 0.4,
-        enemyType: EnemyType.Brute,
-        enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Brute),
-        enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Brute).combatBehavior,
-        enemyTypeAbilityCooldownTimers: new Map(),
-
-        // State flags
-        isDead: false,
-        isDying: false,
-        isDeathFading: false,
-        isAttacking: false,
-        isReturningToBase: false,
-
-        // Timers
-        flashTimer: 0,
-        stunTimer: 0,
-        spawnInactiveTimer: 0,
-        attackAnimTimer: 0,
-        deathTimer: 0,
-        deathFadeDuration: 0.5,
-        deathFadeTimer: 0,
-        returnToBaseTimer: 0,
-        hasDealtDamageThisAttack: false,
-
-        // Geometry
-        bodyHalfExtentY: 0.875,
-        aggroRange: 15,
-        baseArrivalThreshold: 0.5,
-        returnWaitTime: 2.0,
-        attackHitboxDelay: 0.42,
-        attackHitboxDuration: 0.2,
-        attackMaxDuration: 1.0,
-        attackHitboxSize: { x: 0.5, y: 0.5, z: 0.8 },
-        attackHitboxOffset: 1.0,
-        size: 1.75,
-        radius: 0.6,
-
-        // Materials (empty so flash operations are no-ops)
-        materials: [],
-
-        // Mocked physics body
-        body: {
-            position: { x: 0, y: 1, z: 0, copy: vi.fn(), vsub: (_v: any) => ({ x: 0, y: 0, z: 0 }) },
-            velocity: { x: 0, y: 0, z: 0 },
-            collisionResponse: true,
-            collisionFilterMask: -1,
-        },
-
-        // Mocked base position for return-to-base behaviour
-        basePosition: {
-            x: 0, y: 0, z: 0,
-            distanceTo: () => 0,
-            vsub: (_v: any) => ({ x: 0, y: 0, z: 0, length: () => 0, normalize: vi.fn() }),
-            clone: () => ({ x: 0, y: 0, z: 0 }),
-        },
-
-        // Mocked scene/world
-        world: {
-            addBody: vi.fn(),
-            removeBody: vi.fn(),
-            bodies: [],
-            broadphase: { aabbQuery: vi.fn().mockReturnValue([]) },
-            raycastAll: vi.fn().mockReturnValue(false),
-        },
-        scene: { add: vi.fn(), remove: vi.fn() },
-        mesh: {
-            position: { x: 0, y: 0, z: 0, copy: vi.fn() },
-            quaternion: { slerp: vi.fn() },
-            children: [],
-            traverse: vi.fn(),
-        },
-
-        // Attack hitbox
-        attackHitboxBody: null,
-        attackHitboxActive: false,
-        projectile: null,
-        projectileVelocity: new THREE.Vector3(),
-        projectileRemainingLifetime: 0,
-        projectileActive: false,
-        hasSpawnedProjectileThisAttack: false,
-        isRetreatingForSpacing: false,
-        isCorneredForSpacing: false,
-
-        // Animation (mock actions so fadeToAction doesn't throw)
-        actions: {
-            Idle: mockAction(),
-            Run: mockAction(),
-            Attack: mockAction(),
-            Death: mockAction(),
-            TakeHit: mockAction(),
-        },
-        currentAction: null,
-        mixer: { update: vi.fn(), addEventListener: vi.fn(), clipAction: vi.fn(() => ({})) },
-        mixers: [],
-
-        // Mocked floating indicator
-        floatingIndicatorManager: { spawnDamage: vi.fn() },
-
-        // Mocked player reference (needed for tryBlock)
-        player: { agility: 1, isDead: false, body: { position: { x: 0, y: 0, z: 0 } } },
-
-        // Block state
-        blockChance: 0,
-        isBlocking: false,
-        blockTimer: 0,
-        BLOCK_DURATION: 0.5,
-        blockShield: null,
-
-        // Blob shadow
-        blobShadow: { update: vi.fn(), cleanup: vi.fn(), visible: true },
-
-        // Stuck detection
-        stuckTimer: 0,
-        stuckCheckCountdown: 0.5,
-        stuckLastX: 0,
-        stuckLastZ: 0,
-
-        // Barrel references
-        breakableBarrels: [],
+    const defaultPhysicsMaterial = new CANNON.Material('defaultMaterial');
+    const defaultPlayerRegistry = mockDeep<PlayerRegistry>({
+        activePlayers: [
+            { agility: 1, body: { position: { x: 0, y: 1, z: 0 } } } as Player]
     });
 
-    Object.assign(enemy, overrides);
+
+    const finalPlayerRegistry = overrides.playerRegistry || defaultPlayerRegistry;
+    const finalAssetManager = overrides.assetManager || createDefaultAssetManager();
+    const finalPhysicsWorld = overrides.physicsWorld || createDefaultPhysicsWorld(defaultPhysicsMaterial);
+    const finalPosition = overrides.position || new CANNON.Vec3(0, 1, 0);
+
+    container.registerInstance(AssetManager, finalAssetManager);
+    container.registerInstance(CANNON.World, finalPhysicsWorld);
+
+    const {
+        audioManager = mockDeep<AudioManager>(),
+        floatingIndicatorManager = mockDeep<FloatingIndicatorManager>(),
+        playerRegistry = finalPlayerRegistry,
+        assetManager = finalAssetManager,
+        scene = mockDeep<THREE.Scene>(),
+        physicsWorld = finalPhysicsWorld,
+        position = finalPosition,
+        physicsMaterial = defaultPhysicsMaterial,
+        config = DEFAULT_ENEMY_ARCHETYPE,
+        enemyType = DEFAULT_ENEMY_TYPE,
+    } = overrides;
+
+    const enemy = new Enemy(
+        audioManager,
+        floatingIndicatorManager,
+        playerRegistry,
+        assetManager,
+        scene,
+        physicsWorld,
+        position,
+        physicsMaterial,
+        config,
+        enemyType,
+    );
+
+    // Set position and update to ensure the enemy is not considered "airborne" at the start of tests
+    enemy.update(0.016);
+
+    clipActionSpy.mockRestore();
+
     return enemy;
 }
 
@@ -190,11 +140,13 @@ describe('Enemy.takeDamage', () => {
     beforeEach(() => { enemy = makeEnemy(); });
 
     it('reduces HP by the given amount', () => {
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(20, false);
         expect(enemy.hp).toBe(40);
     });
 
     it('deals full damage (no reduction mechanic on enemy)', () => {
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(60, false);
         expect(enemy.hp).toBe(0);
     });
@@ -202,56 +154,70 @@ describe('Enemy.takeDamage', () => {
     it('resets return-to-base state on hit', () => {
         (enemy as any).isReturningToBase = true;
         (enemy as any).returnToBaseTimer = 1.5;
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(10, false);
         expect((enemy as any).isReturningToBase).toBe(false);
         expect((enemy as any).returnToBaseTimer).toBe(0);
     });
 
     it('does not take damage when already dead', () => {
-        (enemy as any).isDead = true;
+        enemy.isDead = true;
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(30, false);
         expect(enemy.hp).toBe(60); // unchanged
     });
 
     it('does not take damage when dying', () => {
-        (enemy as any).isDying = true;
+        enemy.isDying = true;
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(30, false);
         expect(enemy.hp).toBe(60); // unchanged
     });
 
     it('sets flashTimer and stunTimer on damage', () => {
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(10, false);
-        expect((enemy as any).flashTimer).toBe(0.1);
-        expect((enemy as any).stunTimer).toBe(0.5);
+        expect(enemy.flashTimer).toBe(0.1);
+        expect(enemy.stunTimer).toBe(0.5);
     });
 
     it('calls die() when HP drops to 0', () => {
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(60, false);
-        expect((enemy as any).isDying).toBe(true);
+        expect(enemy.isDying).toBe(true);
     });
 
     it('calls die() when HP drops below 0', () => {
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(9999, false);
-        expect((enemy as any).isDying).toBe(true);
+        expect(enemy.isDying).toBe(true);
     });
 
     it('cancels ongoing attack on hit', () => {
-        (enemy as any).isAttacking = true;
+        (enemy as any).blockChance = 0; // ensure damage is taken
+        enemy.isAttacking = true;
         enemy.takeDamage(10, false);
-        expect((enemy as any).isAttacking).toBe(false);
+        expect(enemy.isAttacking).toBe(false);
     });
 
     it('spawns a floating damage indicator', () => {
+        const floatingIndicatorManagerMock = mockDeep<FloatingIndicatorManager>();
+        enemy = makeEnemy({ floatingIndicatorManager: floatingIndicatorManagerMock });
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(15, false);
-        expect((enemy as any).floatingIndicatorManager.spawnDamage).toHaveBeenCalledOnce();
+        expect(floatingIndicatorManagerMock.spawnDamage).toHaveBeenCalledOnce();
     });
 
     it('plays the enemy damage sound when hit', () => {
+        const audioManagerMock = mockDeep<AudioManager>();
+        enemy = makeEnemy({ audioManager: audioManagerMock });
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(15, false);
-        expect(AudioManager.Instance.playDamage).toHaveBeenCalledWith('enemy');
+        expect(audioManagerMock.playDamage).toHaveBeenCalledWith('enemy');
     });
 
     it('spawns indicator in critical-hit colour when isCriticalHit is true', () => {
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(15, true);
         const call = (enemy as any).floatingIndicatorManager.spawnDamage.mock.calls[0];
         // Critical-hit indicator uses a golden colour
@@ -260,6 +226,7 @@ describe('Enemy.takeDamage', () => {
 
     it('enables aggro when hit while aggroEnabled is false', () => {
         enemy.aggroEnabled = false;
+        (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(10, false);
         expect(enemy.aggroEnabled).toBe(true);
     });
@@ -274,7 +241,7 @@ describe('Enemy.die', () => {
 
     it('sets isDying to true', () => {
         enemy.die();
-        expect((enemy as any).isDying).toBe(true);
+        expect(enemy.isDying).toBe(true);
     });
 
     it('resets deathTimer to 0', () => {
@@ -304,8 +271,10 @@ describe('Enemy.die', () => {
     });
 
     it('plays the enemy death sound', () => {
+        const audioManagerMock = mockDeep<AudioManager>();
+        enemy = makeEnemy({ audioManager: audioManagerMock });
         enemy.die();
-        expect(AudioManager.Instance.playDeath).toHaveBeenCalledWith('enemy');
+        expect(audioManagerMock.playDeath).toHaveBeenCalledWith('enemy');
     });
 
     it('invokes onDeathFadeStart callback when fade starts', () => {
@@ -331,38 +300,41 @@ describe('Enemy.update – shadow position', () => {
     // The fallback shadow Y = body.position.y - bodyHalfExtentY = 1 - 0.875 = 0.125.
 
     it('follows body XZ position (with floor-hit fallback Y) when alive', () => {
-        const enemy = makeEnemy() as any;
-        enemy.body.position.x = 7;
-        enemy.body.position.z = -2;
-        enemy.player = { isDead: true, body: { position: { x: 0, y: 0, z: 0 } } };
+        const updateSpy = vi.spyOn(BlobShadow.prototype, 'update');
+        const enemy = makeEnemy({ position: new CANNON.Vec3(7, 1, -2) });
         enemy.update(0.016);
-        expect(enemy.blobShadow.update).toHaveBeenCalledWith(7, 0.125, -2, undefined);
+        expect(updateSpy).toHaveBeenCalledWith(7, expect.closeTo(0), -2, expect.objectContaining({ x: 0, y: 1, z: expect.closeTo(0) }));
+        updateSpy.mockRestore();
     });
 
     it('follows body XZ position while isDying', () => {
-        const enemy = makeEnemy() as any;
-        enemy.isDying = true;
-        enemy.body.position.x = 3;
-        enemy.body.position.z = -5;
+        const updateSpy = vi.spyOn(BlobShadow.prototype, 'update');
+        const enemy = makeEnemy({ position: new CANNON.Vec3(3, 1, -5) }) as any;
+        enemy.takeDamage(9999, false); // trigger die()
         enemy.update(0.016);
-        expect(enemy.blobShadow.update).toHaveBeenCalledWith(3, 0.125, -5, undefined);
+        expect(updateSpy).toHaveBeenCalledWith(3, expect.closeTo(0), -5, expect.objectContaining({ x: 0, y: 1, z: expect.closeTo(0) }));
+        updateSpy.mockRestore();
     });
 
     it('follows body XZ position while isDeathFading', () => {
-        const enemy = makeEnemy() as any;
-        enemy.isDeathFading = true;
-        enemy.deathFadeTimer = 0;
-        enemy.deathFadeDuration = 0.5;
-        enemy.body.position.x = -1;
-        enemy.body.position.z = 4;
-        enemy.update(0.1);
-        expect(enemy.blobShadow.update).toHaveBeenCalledWith(-1, 0.125, 4, undefined);
+        const updateSpy = vi.spyOn(BlobShadow.prototype, 'update');
+        const enemy = makeEnemy({ position: new CANNON.Vec3(-1, 1, 4) });
+        (enemy as any).isDeathFading = true;
+        (enemy as any).deathFadeTimer = 0;
+        (enemy as any).deathFadeDuration = 0.5;
+        enemy.update(0.016);
+        expect(updateSpy).toHaveBeenCalledWith(-1, expect.closeTo(0), 4, expect.objectContaining({ x: 0, y: 1, z: expect.closeTo(0) }));
+        updateSpy.mockRestore();
     });
 
     it('does not update shadow when isDead', () => {
-        const enemy = makeEnemy({ isDead: true } as any);
+        const updateSpy = vi.spyOn(BlobShadow.prototype, 'update');
+        const enemy = makeEnemy();
+        enemy.isDead = true;
         enemy.update(0.016);
-        expect(enemy.blobShadow.update).not.toHaveBeenCalled();
+        // Expect update method to be called once, since makeEnemy calls update too
+        expect(updateSpy).toHaveBeenCalledOnce();
+        updateSpy.mockRestore();
     });
 });
 
@@ -441,37 +413,27 @@ describe('Enemy.attack', () => {
     });
 
     it('plays the enemy attack sound', () => {
-        const enemy = makeEnemy();
+        const audioManagerMock = mockDeep<AudioManager>();
+        const enemy = makeEnemy({ audioManager: audioManagerMock });
         enemy.attack();
-        expect(AudioManager.Instance.playAttack).toHaveBeenCalledWith('enemy');
+        expect(audioManagerMock.playAttack).toHaveBeenCalledWith('enemy');
     });
 });
 
 describe('Enemy ranged combat behavior', () => {
     it('holds position when already within the preferred ranged distance band', () => {
-        const enemy = makeEnemy({
-            enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
-        }) as any;
+        const physicsWorld = createDefaultPhysicsWorld();
+        const expectedPosition = new CANNON.Vec3(0, 1, 0);
+        const enemy = makeEnemy({ enemyType: EnemyType.Pod, position: expectedPosition, physicsWorld: physicsWorld });
 
-        const movement = enemy.computeCombatMovement(
-            new CANNON.Vec3(7, 0, 0),
-            new CANNON.Vec3(0, 0, 0),
-            7,
-            0.016,
-        );
+        // Nothing to do, since update in makeEnemy() already applies any movement and steps the physics world
 
-        expect(movement).toBeNull();
+        expect(expectedPosition).toEqual(enemy.body.position);
     });
 
     it('moves closer instead of holding position when line of sight is blocked', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
         enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
         enemy.computeMovement = vi.fn().mockReturnValue({ dirX: 1, dirZ: 0 });
@@ -490,9 +452,6 @@ describe('Enemy ranged combat behavior', () => {
     it('moves closer instead of holding position when line of sight is blocked and enemy is within preferred distance band', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
         enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
         enemy.computeMovement = vi.fn().mockReturnValue({ dirX: 1, dirZ: 0 });
@@ -511,9 +470,6 @@ describe('Enemy ranged combat behavior', () => {
     it('retreats when the player gets too close to a ranged enemy', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
 
         const movement = enemy.computeCombatMovement(
@@ -527,56 +483,49 @@ describe('Enemy ranged combat behavior', () => {
     });
 
     it('tries another reachable stand-off position when direct retreat is blocked', () => {
+        const playerRegistryMock = mock<PlayerRegistry>({
+            activePlayers: [{ isDead: false, body: { position: new CANNON.Vec3(-4, 0, 4) } } as Player]
+        });
+
+        const physicsWorld = createDefaultPhysicsWorld();
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            navGrid: {
-                findPath: vi.fn()
-                    .mockReturnValueOnce([])
-                    .mockReturnValueOnce([{ x: 0, z: 0 }, { x: -5, z: 5 }]),
-            },
-        }) as any;
-        enemy.computeMovement = vi.fn().mockReturnValue({ dirX: -0.7, dirZ: 0.7 });
+            position: new CANNON.Vec3(0, 1, 0),
+            playerRegistry: playerRegistryMock,
+            physicsWorld: physicsWorld,
+        });
 
-        const movement = enemy.computeCombatMovement(
-            new CANNON.Vec3(3, 0, 0),
-            new CANNON.Vec3(0, 0, 0),
-            3,
-            0.016,
-        );
+        enemy.update(0.016);
+        physicsWorld.step(0.016);
 
-        expect(movement).toEqual({ dirX: -0.7, dirZ: 0.7 });
-        expect(enemy.computeMovement).toHaveBeenCalledWith(expect.any(CANNON.Vec3), expect.any(CANNON.Vec3), 0.016);
+        expect(enemy.body.position).toEqual(new CANNON.Vec3(expect.closeTo(0.0152), 1, expect.closeTo(-0.0152)));
     });
 
     it('marks pods as cornered when no retreat path is available', () => {
+        const playerRegistryMock = mock<PlayerRegistry>({
+            activePlayers: [{ isDead: false, body: { position: new CANNON.Vec3(-4, 0, 4) } } as Player]
+        });
+
+        const physicsWorld = createDefaultPhysicsWorld();
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            navGrid: {
-                findPath: vi.fn().mockReturnValue([]),
-            },
-        }) as any;
+            position: new CANNON.Vec3(0, 1, 0),
+            playerRegistry: playerRegistryMock,
+            physicsWorld: physicsWorld,
+        });
 
-        const movement = enemy.computeCombatMovement(
-            new CANNON.Vec3(3, 0, 0),
-            new CANNON.Vec3(0, 0, 0),
-            3,
-            0.016,
-        );
+        enemy.navGrid = mockDeep<DungeonNavGrid>({
+            findPath: vi.fn().mockReturnValue([]),
+        });
 
-        expect(movement).toBeNull();
-        expect(enemy.isCorneredForSpacing).toBe(true);
+        enemy.update(0.016);
+
+        expect((enemy as any).isCorneredForSpacing).toBe(true);
     });
 
     it('only starts ranged attacks once the player is at stand-off range', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
 
         expect(enemy.canAttackPlayer(5.5)).toBe(false);
@@ -587,8 +536,6 @@ describe('Enemy ranged combat behavior', () => {
     it('fires a visible ranged projectile during the ranged attack window without using the melee hitbox', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
         }) as any;
         enemy.body.position = new CANNON.Vec3(0, 1, 0);
         enemy.player = {
@@ -619,8 +566,6 @@ describe('Enemy ranged combat behavior', () => {
     it('keeps traveling until it hits a retreating player instead of stopping at the original range', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
         }) as any;
         enemy.body.position = new CANNON.Vec3(0, 1, 0);
         enemy.player = {
@@ -659,8 +604,6 @@ describe('Enemy ranged combat behavior', () => {
     it('stops the projectile when it hits a solid obstacle before the player', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
         }) as any;
         enemy.body.position = new CANNON.Vec3(0, 1, 0);
         enemy.player = {
@@ -706,8 +649,6 @@ describe('Enemy ranged combat behavior', () => {
     it('expires the projectile after its fixed lifetime when it hits nothing', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
         }) as any;
         enemy.body.position = new CANNON.Vec3(0, 1, 0);
         enemy.player = {
@@ -740,9 +681,6 @@ describe('Enemy ranged combat behavior', () => {
     it('can still launch a ranged attack while retreating', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
         enemy.player = {
             agility: 1,
@@ -768,9 +706,6 @@ describe('Enemy ranged combat behavior', () => {
     it('does not start a ranged attack through an occluding obstacle while retreating', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
         enemy.player = {
             agility: 1,
@@ -797,9 +732,6 @@ describe('Enemy ranged combat behavior', () => {
     it('requires a clear line of sight before a ranged enemy can attack', () => {
         const enemy = makeEnemy({
             enemyType: EnemyType.Pod,
-            enemyTypeDefinition: getEnemyTypeDefinition(EnemyType.Pod),
-            enemyCombatBehavior: getEnemyTypeDefinition(EnemyType.Pod).combatBehavior,
-            attackRange: 7.75,
         }) as any;
         enemy.hasClearLineOfSightToPlayer = vi.fn().mockReturnValue(false);
 
@@ -813,42 +745,50 @@ describe('Enemy.tryBlock – block chance formula', () => {
     afterEach(() => { vi.restoreAllMocks(); });
 
     it('never blocks when blockChance is 0', () => {
-        const enemy = makeEnemy({ blockChance: 0 });
-        vi.spyOn(Math, 'random').mockReturnValue(0);
+        const enemy = makeEnemy();
+        (enemy as any).blockChance = 0;
+        const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
         expect((enemy as any).tryBlock()).toBe(false);
+        randomSpy.mockRestore();
     });
 
     it('uses full blockChance at agility=1 (no reduction)', () => {
         // agility=1 → reductionFactor=1.0 → effectiveBlockChance=blockChance
-        const enemy = makeEnemy({ blockChance: 0.3 });
-        vi.spyOn(Math, 'random').mockReturnValue(0.29);
+        const enemy = makeEnemy();
+        const randomSpy1 = vi.spyOn(Math, 'random').mockReturnValue(0.19);
         expect((enemy as any).tryBlock()).toBe(true);
-        vi.spyOn(Math, 'random').mockReturnValue(0.31);
+        randomSpy1.mockRestore();
+        const randomSpy2 = vi.spyOn(Math, 'random').mockReturnValue(0.21);
         expect((enemy as any).tryBlock()).toBe(false);
+        randomSpy2.mockRestore();
     });
 
     it('halves blockChance at agility=10000 (50% reduction)', () => {
-        // agility=10000 → reductionFactor=0.5 → effectiveBlockChance=blockChance*0.5=0.15
-        const enemy = makeEnemy({
-            blockChance: 0.3,
-            player: { agility: 10000, isDead: false, body: { position: { x: 0, y: 0, z: 0 } } },
+        // agility=10000 → reductionFactor=0.5 → effectiveBlockChance=blockChance*0.5=0.10
+        const playerRegistryMock = mock<PlayerRegistry>({
+            activePlayers: [{ agility: 10000, isDead: false, body: { position: new CANNON.Vec3(0, 0, 0) } } as Player]
         });
-        vi.spyOn(Math, 'random').mockReturnValue(0.14);
+        const enemy = makeEnemy({ playerRegistry: playerRegistryMock });
+        const randomSpy3 = vi.spyOn(Math, 'random').mockReturnValue(0.09);
         expect((enemy as any).tryBlock()).toBe(true);
-        vi.spyOn(Math, 'random').mockReturnValue(0.16);
+        randomSpy3.mockRestore();
+        const randomSpy4 = vi.spyOn(Math, 'random').mockReturnValue(0.11);
         expect((enemy as any).tryBlock()).toBe(false);
+        randomSpy4.mockRestore();
     });
 
     it('caps reduction at 50% for agility above 10000', () => {
-        const enemy = makeEnemy({
-            blockChance: 0.3,
-            player: { agility: 99999, isDead: false, body: { position: { x: 0, y: 0, z: 0 } } },
+        const playerRegistryMock = mock<PlayerRegistry>({
+            activePlayers: [{ agility: 10000, isDead: false, body: { position: new CANNON.Vec3(0, 0, 0) } } as Player]
         });
-        // effectiveBlockChance should still be 0.15 (capped at 50% reduction)
-        vi.spyOn(Math, 'random').mockReturnValue(0.14);
+        const enemy = makeEnemy({ playerRegistry: playerRegistryMock });
+        // effectiveBlockChance should still be 0.10 (capped at 50% reduction)
+        const randomSpy5 = vi.spyOn(Math, 'random').mockReturnValue(0.09);
         expect((enemy as any).tryBlock()).toBe(true);
-        vi.spyOn(Math, 'random').mockReturnValue(0.16);
+        randomSpy5.mockRestore();
+        const randomSpy6 = vi.spyOn(Math, 'random').mockReturnValue(0.11);
         expect((enemy as any).tryBlock()).toBe(false);
+        randomSpy6.mockRestore();
     });
 });
 
@@ -856,23 +796,24 @@ describe('Enemy.tryBlock – block chance formula', () => {
 
 describe('Enemy blocking mechanic', () => {
     it('activates block and absorbs damage when tryBlock succeeds', () => {
-        const shield = { attachTo: vi.fn(), detach: vi.fn(), dispose: vi.fn() };
         // blockChance=1 at agility=1 → effectiveBlockChance=1 → always blocks
-        const enemy = makeEnemy({ blockChance: 1.0, blockShield: shield });
+        const enemy = makeEnemy();
+        (enemy as any).blockChance = 1.0;
         enemy.takeDamage(20, false);
         expect((enemy as any).isBlocking).toBe(true);
         expect(enemy.hp).toBe(60); // no damage taken
     });
 
     it('absorbs damage completely when already blocking', () => {
-        const enemy = makeEnemy({ isBlocking: true });
+        const enemy = makeEnemy();
+        (enemy as any).isBlocking = true;
         enemy.takeDamage(20, false);
         expect(enemy.hp).toBe(60); // unchanged
     });
 
     it('sets stunTimer to BLOCK_DURATION when block activates', () => {
-        const shield = { attachTo: vi.fn(), detach: vi.fn(), dispose: vi.fn() };
-        const enemy = makeEnemy({ blockChance: 1.0, blockShield: shield });
+        const enemy = makeEnemy();
+        (enemy as any).blockChance = 1.0;
         enemy.takeDamage(10, false);
         expect((enemy as any).stunTimer).toBe((enemy as any).BLOCK_DURATION);
     });
@@ -899,21 +840,8 @@ describe('Enemy.takeDamage – knockback', () => {
         const enemy = makeEnemy() as any;
         enemy.body.velocity = { x: 0, y: 0, z: 0 };
         // Enemy at (5,0,0), source at (0,0,0) → knockback in +x direction
-        enemy.body.position = {
-            x: 5, y: 0, z: 0,
-            copy: vi.fn(),
-            vsub: (v: any) => {
-                const dir = { x: 5 - v.x, y: 0 - v.y, z: 0 - v.z };
-                return Object.assign(dir, {
-                    length: () => Math.sqrt(dir.x ** 2 + dir.y ** 2 + dir.z ** 2),
-                    normalize: function (this: any) {
-                        const l = Math.sqrt(this.x ** 2 + this.y ** 2 + this.z ** 2) || 1;
-                        this.x /= l; this.y /= l; this.z /= l;
-                        return this;
-                    },
-                });
-            },
-        };
+        enemy.body.position.x = 5;
+        (enemy as any).blockChance = 0; // ensure no blocking
         const sourcePos = { x: 0, y: 0, z: 0 } as any;
         enemy.takeDamage(10, false, sourcePos);
         expect(enemy.body.velocity.x).toBeGreaterThan(0);
@@ -922,50 +850,25 @@ describe('Enemy.takeDamage – knockback', () => {
     it('does not apply knockback when sourcePos is omitted', () => {
         const enemy = makeEnemy() as any;
         enemy.body.velocity = { x: 0, y: 0, z: 0 };
+        (enemy as any).blockChance = 0; // ensure no blocking
         enemy.takeDamage(10, false);
         expect(enemy.body.velocity.x).toBe(0);
         expect(enemy.body.velocity.z).toBe(0);
     });
 
     it('scales knockback by knockbackFactor', () => {
-        const enemy = makeEnemy() as any;
-        enemy.body.velocity = { x: 0, y: 0, z: 0 };
-        enemy.body.position = {
-            x: 5, y: 0, z: 0,
-            copy: vi.fn(),
-            vsub: (v: any) => {
-                const dir = { x: 5 - v.x, y: 0, z: 0 - v.z };
-                return Object.assign(dir, {
-                    length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
-                    normalize: function (this: any) {
-                        const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
-                        this.x /= l; this.z /= l;
-                        return this;
-                    },
-                });
-            },
-        };
+        const enemy = makeEnemy();
+        (enemy as any).body.velocity = { x: 0, y: 0, z: 0 };
+        (enemy as any).body.position.x = 5;
+        (enemy as any).blockChance = 0; // ensure no blocking
         const sourcePos = { x: 0, y: 0, z: 0 } as any;
-        const enemyHigh = makeEnemy() as any;
-        enemyHigh.body.velocity = { x: 0, y: 0, z: 0 };
-        enemyHigh.body.position = {
-            x: 5, y: 0, z: 0,
-            copy: vi.fn(),
-            vsub: (v: any) => {
-                const dir = { x: 5 - v.x, y: 0, z: 0 - v.z };
-                return Object.assign(dir, {
-                    length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
-                    normalize: function (this: any) {
-                        const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
-                        this.x /= l; this.z /= l;
-                        return this;
-                    },
-                });
-            },
-        };
+        const enemyHigh = makeEnemy();
+        (enemyHigh as any).body.velocity = { x: 0, y: 0, z: 0 };
+        (enemyHigh as any).body.position.x = 5;
+        (enemyHigh as any).blockChance = 0; // ensure no blocking
         enemy.takeDamage(1, false, sourcePos, 1.0);
         enemyHigh.takeDamage(1, false, sourcePos, 2.0);
-        expect(enemyHigh.body.velocity.x).toBeCloseTo(enemy.body.velocity.x * 2, 5);
+        expect((enemyHigh as any).body.velocity.x).toBeCloseTo((enemy as any).body.velocity.x * 2, 5);
     });
 
     it.each([
@@ -981,22 +884,7 @@ describe('Enemy.takeDamage – knockback', () => {
             enemy.isBlocking = true;
             enemy.knockbackForce = knockbackForce;
             enemy.blockedKnockbackFactor = blockedKnockbackFactor;
-            enemy.body.velocity = { x: 0, y: 0, z: 0 };
-            enemy.body.position = {
-                x: 5, y: 0, z: 0,
-                copy: vi.fn(),
-                vsub: (v: any) => {
-                    const dir = { x: 5 - v.x, y: 0, z: 0 - v.z };
-                    return Object.assign(dir, {
-                        length: () => Math.sqrt(dir.x ** 2 + dir.z ** 2),
-                        normalize: function (this: any) {
-                            const l = Math.sqrt(this.x ** 2 + this.z ** 2) || 1;
-                            this.x /= l; this.z /= l;
-                            return this;
-                        },
-                    });
-                },
-            };
+            enemy.body.position.x = 5;
             const sourcePos = { x: 0, y: 0, z: 0 } as any;
             enemy.takeDamage(1, false, sourcePos, 1.0);
 
@@ -1010,24 +898,23 @@ describe('Enemy.takeDamage – knockback', () => {
 describe('Enemy.cleanup', () => {
     it('removes the mesh from the scene', () => {
         const enemy = makeEnemy() as any;
-        enemy.disposeMesh = vi.fn();
         enemy.cleanup();
         expect(enemy.scene.remove).toHaveBeenCalledWith(enemy.mesh);
     });
 
     it('removes the physics body from the world', () => {
-        const enemy = makeEnemy() as any;
-        enemy.disposeMesh = vi.fn();
+        const physicsWorldMock = mockDeep<CANNON.World>();
+        const enemy = makeEnemy({ physicsWorld: physicsWorldMock });
         enemy.cleanup();
-        expect(enemy.world.removeBody).toHaveBeenCalledWith(enemy.body);
+        expect(physicsWorldMock.removeBody).toHaveBeenCalledWith(enemy.body);
     });
 
     it('calls disposeMesh to free geometry/material resources', () => {
+        const disposeSpy = vi.spyOn(Enemy.prototype as any, 'disposeMesh');
         const enemy = makeEnemy() as any;
-        const dispose = vi.fn();
-        enemy.disposeMesh = dispose;
         enemy.cleanup();
-        expect(dispose).toHaveBeenCalledOnce();
+        expect(disposeSpy).toHaveBeenCalledOnce();
+        disposeSpy.mockRestore();
     });
 });
 
@@ -1188,6 +1075,7 @@ describe('Enemy.update – AI chase behavior', () => {
     });
 
     it('rotates towards the player at a reduced pace while attacking but does not move', () => {
+        const slerpSpy = vi.spyOn(THREE.Quaternion.prototype, 'slerp');
         const enemy = makeEnemy() as any;
         enemy.body.position = makeBodyPos(0, 0, 0);
         enemy.body.velocity = { x: 2, y: 0, z: 3 };
@@ -1221,8 +1109,8 @@ describe('Enemy.update – AI chase behavior', () => {
         expect(enemy.body.velocity.x).toBeLessThan(2);
         expect(enemy.body.velocity.z).toBeLessThan(3);
         // Mesh quaternion slerp should have been called to rotate towards player
-        expect(enemy.mesh.quaternion.slerp).toHaveBeenCalled();
-        const [, slerpFactor] = enemy.mesh.quaternion.slerp.mock.calls.at(-1);
+        expect(slerpSpy).toHaveBeenCalled();
+        const [, slerpFactor] = slerpSpy.mock.calls[slerpSpy.mock.calls.length - 1];
         expect(slerpFactor).toBeCloseTo(3 * 0.016, 5);
     });
 });

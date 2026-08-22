@@ -12,13 +12,7 @@ describe('CardCollection', () => {
     beforeEach(() => {
         // Reset the singleton for each test by clearing the instance
         (CardCollection as any).instance = undefined;
-        collection = CardCollection.Instance;
-    });
-
-    describe('Instance (singleton)', () => {
-        it('returns the same instance on repeated calls', () => {
-            expect(CardCollection.Instance).toBe(collection);
-        });
+        collection = new CardCollection();
     });
 
     describe('addCard', () => {

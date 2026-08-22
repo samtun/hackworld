@@ -1,11 +1,12 @@
-import { Player } from '../../Player';
-import { InputManager } from '../../InputManager';
+import { Player } from '../../player/Player';
+import { InputManager } from '../../controls/InputManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
 import { StatType } from '../../StatType';
 import { getHint, HintConfigs } from '../../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../../ui/MenuManager';
 import { UIManager } from '../../ui/UIManager';
 import { AudioManager } from '../../AudioManager';
+import { singleton } from 'tsyringe';
 
 interface StatInfo {
     type: StatType;
@@ -14,9 +15,8 @@ interface StatInfo {
     upgradeEffect: string;
 }
 
+@singleton()
 export class XDataUpgradeManager {
-    private static instance: XDataUpgradeManager // Singleton
-
     container!: HTMLDivElement;
     isVisible: boolean = false;
 
@@ -41,21 +41,17 @@ export class XDataUpgradeManager {
         { type: StatType.DEFENSE, label: 'Defense', description: 'Reduces damage taken', upgradeEffect: '+1 per upgrade' },
         { type: StatType.AGILITY, label: 'Agility', description: 'Increases critical hit chance', upgradeEffect: '+1 per upgrade' },
         { type: StatType.LUCK, label: 'Luck', description: 'Increases drop rates and EXP gain', upgradeEffect: '+1 per upgrade' },
-        { type: StatType.HP, label: 'HP', description: 'Increases max health', upgradeEffect: '+5 per upgrade' },
-        { type: StatType.TP, label: 'TP', description: 'Increases max tech points', upgradeEffect: '+5 per upgrade' }
+        { type: StatType.HP, label: 'HP', description: 'Increases max health', upgradeEffect: '+15 per upgrade' },
+        { type: StatType.TP, label: 'TP', description: 'Increases max tech points', upgradeEffect: '+12 per upgrade' }
     ];
 
-    private menuManager: MenuManager;
-    private uiManager: UIManager;
-
-    private constructor() {
-        this.menuManager = MenuManager.Instance;
-        this.uiManager = UIManager.Instance;
+    constructor(
+        private readonly menuManager: MenuManager,
+        private readonly uiManager: UIManager,
+        private readonly audioManager: AudioManager,
+        private readonly inputManager: InputManager,
+    ) {
         this.createUI();
-    }
-
-    public static get Instance(): XDataUpgradeManager {
-        return this.instance || (this.instance = new this());
     }
 
     private createUI() {
@@ -115,7 +111,7 @@ export class XDataUpgradeManager {
         // Reset input debounce state to ignore lingering button presses
         resetInputDebounce(this as any);
         if (!wasVisible) {
-            AudioManager.Instance.playUiOpen();
+            this.audioManager.playUiOpen();
         }
     }
 
@@ -126,7 +122,7 @@ export class XDataUpgradeManager {
         // Hide centralized control hints when menu closes
         this.uiManager.hideControlHints();
         if (wasVisible) {
-            AudioManager.Instance.playUiClose();
+            this.audioManager.playUiClose();
         }
     }
 
@@ -138,21 +134,18 @@ export class XDataUpgradeManager {
         }
     }
 
-    update(player: Player, input?: InputManager) {
+    update(player: Player) {
         if (!this.isVisible) return;
 
-        // Handle keyboard/gamepad navigation
-        if (input) {
-            // Update centralized control hints based on input method
-            this.uiManager.showControlHints(getHint(HintConfigs.upgradeClose, input));
+        // Update centralized control hints based on input method
+        this.uiManager.showControlHints(getHint(HintConfigs.upgradeClose, this.inputManager));
 
-            const oldIndex = this.selectedIndex;
-            this.handleNavigation(player, input);
+        const oldIndex = this.selectedIndex;
+        this.handleNavigation(player, this.inputManager);
 
-            // Mark for re-render if selection changed
-            if (oldIndex !== this.selectedIndex) {
-                this.needsRender = true;
-            }
+        // Mark for re-render if selection changed
+        if (oldIndex !== this.selectedIndex) {
+            this.needsRender = true;
         }
 
         // Only re-render if needed
@@ -295,7 +288,7 @@ export class XDataUpgradeManager {
         }
 
         if (this.selectedIndex !== previousIndex) {
-            AudioManager.Instance.playMenuNavigate();
+            this.audioManager.playMenuNavigate();
         }
 
         // Select/Upgrade stat (with debouncing)
@@ -306,14 +299,14 @@ export class XDataUpgradeManager {
             if (success) {
                 // Trigger re-render to update display
                 this.needsRender = true;
-                AudioManager.Instance.playUpgrade();
+                this.audioManager.playUpgrade();
             } else {
                 // Shake animation for failed upgrade
                 this.shakeItem(this.selectedIndex);
                 const currentLevel = this.getCurrentUpgradeLevel(player, selectedStat.type);
                 const cost = player.getUpgradeCost(currentLevel);
                 if (player.xData < cost) {
-                    AudioManager.Instance.playInsufficient();
+                    this.audioManager.playInsufficient();
                 }
             }
         }

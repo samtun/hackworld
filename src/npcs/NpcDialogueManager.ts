@@ -1,13 +1,14 @@
-import { InputManager } from '../InputManager';
+import { InputManager } from '../controls/InputManager';
 import { Npc } from './Npc';
 import { resetInputDebounce } from '../ui/UiUtils';
-import { getHint, getKeyboardHint, HintConfigs } from '../ui/InputHints';
+import { getHint, HintConfigs } from '../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
 import { UIManager } from '../ui/UIManager';
 import { AudioManager } from '../AudioManager';
+import { singleton } from 'tsyringe';
 
+@singleton()
 export class NpcDialogueManager {
-    private static instance: NpcDialogueManager; // Singleton
     container!: HTMLDivElement;
     isVisible: boolean = false;
     currentNpc: Npc | null = null;
@@ -20,23 +21,15 @@ export class NpcDialogueManager {
     // Input tracking for debouncing
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
-    
-    // Store InputManager for dynamic hints
-    private currentInputManager?: InputManager;
-    
+
     // Callback to execute after dialogue completes
     private onDialogueCompleteCallback?: () => void;
 
-    private menuManager: MenuManager;
-    private uiManager: UIManager;
-
-    public static get Instance(): NpcDialogueManager {
-        return this.instance || (this.instance = new this());
-    }
-
-    private constructor() {
-        this.menuManager = MenuManager.Instance;
-        this.uiManager = UIManager.Instance;
+    constructor(
+        private readonly menuManager: MenuManager,
+        private readonly uiManager: UIManager,
+        private readonly audioManager: AudioManager,
+        private readonly inputManager: InputManager) {
         this.createUI();
     }
 
@@ -84,7 +77,7 @@ export class NpcDialogueManager {
         this.currentLineIndex = 0;
         this.onDialogueCompleteCallback = onComplete;
         this.container.style.display = 'flex';
-        this.updateDialogue(this.currentInputManager);
+        this.updateDialogue();
         // Reset input state to prevent immediate action on open
         resetInputDebounce(this as any);
     }
@@ -105,41 +98,28 @@ export class NpcDialogueManager {
     /**
      * Update dialogue display
      */
-    private updateDialogue(input?: InputManager) {
+    private updateDialogue() {
         if (!this.currentNpc) return;
 
         this.nameBox.innerText = this.currentNpc.name;
         this.dialogueText.innerText = this.currentNpc.dialogue[this.currentLineIndex];
-        AudioManager.Instance.playDialogueTick();
+        this.audioManager.playDialogueTick();
 
-        // Update centralized control hints based on input method if InputManager is available
-        if (input) {
-            if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
-                this.uiManager.showControlHints(getHint(HintConfigs.continueExit, input));
-            } else {
-                this.uiManager.showControlHints(getHint(HintConfigs.closeExit, input));
-            }
+        if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
+            this.uiManager.showControlHints(getHint(HintConfigs.continueExit, this.inputManager));
         } else {
-            // Fallback to keyboard hints if InputManager not available
-            if (this.currentLineIndex < this.currentNpc.dialogue.length - 1) {
-                this.uiManager.showControlHints(getKeyboardHint(HintConfigs.continueExit));
-            } else {
-                this.uiManager.showControlHints(getKeyboardHint(HintConfigs.closeExit));
-            }
+            this.uiManager.showControlHints(getHint(HintConfigs.closeExit, this.inputManager));
         }
     }
 
     /**
      * Update input handling
      */
-    update(input: InputManager) {
-        // Always store input manager for dynamic hints, even when not visible
-        this.currentInputManager = input;
-        
+    update() {
         if (!this.isVisible) return;
 
-        const select = input.isSelectPressed();
-        const cancel = input.isCancelPressed();
+        const select = this.inputManager.isSelectPressed();
+        const cancel = this.inputManager.isCancelPressed();
 
         // Exit dialogue on cancel
         if (cancel && !this.lastCancelState) {
@@ -155,14 +135,14 @@ export class NpcDialogueManager {
                     this.currentNpc.markDialogueShown();
                     const callback = this.onDialogueCompleteCallback;
                     this.hide();
-                    
+
                     // Execute callback after hiding dialogue
                     if (callback) {
                         callback();
                     }
                 } else {
                     // Show next line and update hints based on input method
-                    this.updateDialogue(input);
+                    this.updateDialogue();
                 }
             }
         }

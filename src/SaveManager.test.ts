@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SaveManager, SaveData } from './SaveManager';
 import { WeaponType } from './items/weapons/WeaponType';
-import { SkillTechType } from './skills/SkillTechType';
-import { PlayerRegistry } from './PlayerRegistry';
+import { SkillTechType } from './player/skills/SkillType';
+import { PlayerRegistry } from './player/PlayerRegistry';
 import { CardCollection } from './items/cards/CardCollection';
 import { GameProgressManager } from './GameProgressManager';
 import { NpcRegistry } from './npcs/NpcRegistry';
@@ -12,60 +12,63 @@ import { CoreItem } from './items/cores/CoreItem';
 import { CoreRepository } from './items/cores/CoreRepository';
 import { ChipItem } from './items/chips/ChipItem';
 import { ChipRepository } from './items/chips/ChipRepository';
-import { TierManager } from './items/TierManager';
-
-// ─── Module mocks ──────────────────────────────────────────────────────────────
-
-// SaveManagerUI creates DOM elements – stub it out entirely.
-vi.mock('./SaveManagerUI', () => ({
-    SaveManagerUI: {
-        Instance: {
-            isVisible: false,
-            show: vi.fn(),
-            hide: vi.fn(),
-            update: vi.fn(),
-        },
-    },
-}));
-
-vi.mock('./items/weapons/WeaponRepository', () => ({
-    WeaponRepository: {
-        Instance: {
-            getWeaponByTypeAndLevel: vi.fn(),
-        },
-    },
-}));
-
-vi.mock('./items/cores/CoreRepository', () => ({
-    CoreRepository: {
-        Instance: {
-            getCoreByNameAndLevel: vi.fn(),
-        },
-    },
-}));
-
-vi.mock('./items/chips/ChipRepository', () => ({
-    ChipRepository: {
-        Instance: {
-            getChipByNameAndLevel: vi.fn(),
-        },
-    },
-}));
-
-vi.mock('./items/TierManager', () => ({
-    TierManager: {
-        Instance: {
-            tiers: new Map([['Stable', { name: 'Stable' }]]),
-        },
-    },
-    Tier: { STABLE: 'Stable' },
-}));
+import { TierManager, WeaponTierDefinition } from './items/TierManager';
+import { SaveManagerUI } from './menus/SaveManagerUI';
+import { mock, mockDeep } from 'vitest-mock-extended';
+import { Player } from './player/Player';
+import { EquippableItem } from './items/EquippableItem';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────────
 
+interface SaveManagerTestOverrides {
+    saveManagerUi?: SaveManagerUI,
+    gameProgressManager?: GameProgressManager,
+    cardCollection?: CardCollection,
+    playerRegistry?: PlayerRegistry,
+    weaponRepository?: WeaponRepository,
+    coreRepository?: CoreRepository,
+    chipRepository?: ChipRepository,
+    npcRegistry?: NpcRegistry,
+    tierManager?: TierManager,
+}
+
+function makePlayerRegistryWithPlayer(player?: ReturnType<typeof makePlayerStub>) {
+    return mockDeep<PlayerRegistry>({
+        activePlayers: [
+            player || makePlayerStub(),
+        ],
+    });
+}
+
+function makeSaveManager(overrides: SaveManagerTestOverrides = {}): SaveManager {
+    const {
+        saveManagerUi = mockDeep<SaveManagerUI>(),
+        gameProgressManager = mockDeep<GameProgressManager>(),
+        cardCollection = mockDeep<CardCollection>(),
+        playerRegistry = makePlayerRegistryWithPlayer(),
+        weaponRepository = mockDeep<WeaponRepository>(),
+        coreRepository = mockDeep<CoreRepository>(),
+        chipRepository = mockDeep<ChipRepository>(),
+        npcRegistry = mockDeep<NpcRegistry>(),
+        tierManager = mockDeep<TierManager>(),
+    } = overrides;
+
+    return new SaveManager(
+        saveManagerUi,
+        gameProgressManager,
+        cardCollection,
+        playerRegistry,
+        weaponRepository,
+        coreRepository,
+        chipRepository,
+        npcRegistry,
+        tierManager,
+    );
+}
+
 /** Create a minimal player-like object with the fields SaveManager reads. */
 function makePlayerStub(overrides: Record<string, unknown> = {}) {
-    return {
+    const playerMock = mock<Player>({
         level: 5,
         exp: 120,
         expRequired: 500,
@@ -88,27 +91,41 @@ function makePlayerStub(overrides: Record<string, unknown> = {}) {
         agilityPoints: 0,
         luckPoints: 0,
         body: { position: { x: 1, y: 2, z: 3 } },
-        inventory: [],
-        tech: {
-            [WeaponType.SWORD]: 50,
-            [WeaponType.DUAL_BLADE]: 0,
-            [WeaponType.LANCE]: 0,
-            [WeaponType.HAMMER]: 0,
-        },
-        skillTech: {
-            [SkillTechType.RECOVERY]: 10,
-            [SkillTechType.BLAST]: 0,
-            [SkillTechType.RANGED]: 5,
-        },
         recalculateStats: vi.fn(),
         setWeapon: vi.fn(),
+        inventory: [],
         ...overrides,
-    } as any;
-}
+    });
 
-/** Reset the SaveManager singleton (allows fresh construction per test). */
-function resetSaveManager() {
-    (SaveManager as any).instance = undefined;
+    const techData = {
+        [WeaponType.SWORD]: 50,
+        [WeaponType.DUAL_BLADE]: 0,
+        [WeaponType.LANCE]: 0,
+        [WeaponType.HAMMER]: 0,
+    };
+
+    const skillTechData = {
+        [SkillTechType.RECOVERY]: 10,
+        [SkillTechType.BLAST]: 0,
+        [SkillTechType.RANGED]: 5,
+    };
+
+    // Durch Object.defineProperty umgehen wir den Proxy-Handler von vitest-mock-extended
+    Object.defineProperty(playerMock, 'tech', {
+        get: () => ({ ...techData }), // Liefert jedes Mal ein frisches Plain Object
+        set: (value) => { Object.assign(techData, value); },
+        configurable: true,
+        enumerable: true
+    });
+
+    Object.defineProperty(playerMock, 'skillTech', {
+        get: () => ({ ...skillTechData }),
+        set: (value) => { Object.assign(skillTechData, value); },
+        configurable: true,
+        enumerable: true
+    });
+
+    return playerMock;
 }
 
 /** Stub global storage APIs for tests that need them. */
@@ -135,7 +152,6 @@ function stubStorage() {
 
 describe('SaveManager – playtime', () => {
     beforeEach(() => {
-        resetSaveManager();
         stubStorage();
     });
 
@@ -144,36 +160,38 @@ describe('SaveManager – playtime', () => {
     });
 
     it('starts at 0 playtime', () => {
-        expect(SaveManager.Instance.getPlaytime()).toBe(0);
+        const saveManager = makeSaveManager();
+        expect(saveManager.getPlaytime()).toBe(0);
     });
 
     it('accumulates playtime via updatePlaytime', () => {
-        const mgr = SaveManager.Instance;
-        mgr.updatePlaytime(10);
-        mgr.updatePlaytime(5.5);
-        expect(mgr.getPlaytime()).toBeCloseTo(15.5, 5);
+        const saveManager = makeSaveManager();
+        saveManager.updatePlaytime(10);
+        saveManager.updatePlaytime(5.5);
+        expect(saveManager.getPlaytime()).toBeCloseTo(15.5, 5);
     });
 
     it('formats 0 seconds as 00:00:00', () => {
-        expect(SaveManager.Instance.getFormattedPlaytime()).toBe('00:00:00');
+        const saveManager = makeSaveManager();
+        expect(saveManager.getFormattedPlaytime()).toBe('00:00:00');
     });
 
     it('formats 3661 seconds as 01:01:01', () => {
-        const mgr = SaveManager.Instance;
-        mgr.updatePlaytime(3661);
-        expect(mgr.getFormattedPlaytime()).toBe('01:01:01');
+        const saveManager = makeSaveManager();
+        saveManager.updatePlaytime(3661);
+        expect(saveManager.getFormattedPlaytime()).toBe('01:01:01');
     });
 
     it('formats 3600 seconds as 01:00:00', () => {
-        const mgr = SaveManager.Instance;
-        mgr.updatePlaytime(3600);
-        expect(mgr.getFormattedPlaytime()).toBe('01:00:00');
+        const saveManager = makeSaveManager();
+        saveManager.updatePlaytime(3600);
+        expect(saveManager.getFormattedPlaytime()).toBe('01:00:00');
     });
 
     it('formats 90 seconds as 00:01:30', () => {
-        const mgr = SaveManager.Instance;
-        mgr.updatePlaytime(90);
-        expect(mgr.getFormattedPlaytime()).toBe('00:01:30');
+        const saveManager = makeSaveManager();
+        saveManager.updatePlaytime(90);
+        expect(saveManager.getFormattedPlaytime()).toBe('00:01:30');
     });
 });
 
@@ -181,20 +199,20 @@ describe('SaveManager – playtime', () => {
 
 describe('SaveManager – lore intro flag', () => {
     beforeEach(() => {
-        resetSaveManager();
         stubStorage();
     });
 
     afterEach(() => { vi.unstubAllGlobals(); });
 
     it('starts as not seen', () => {
-        expect(SaveManager.Instance.isLoreIntroSeen()).toBe(false);
+        const saveManager = makeSaveManager();
+        expect(saveManager.isLoreIntroSeen()).toBe(false);
     });
 
     it('marks the intro as seen', () => {
-        const mgr = SaveManager.Instance;
-        mgr.markLoreIntroSeen();
-        expect(mgr.isLoreIntroSeen()).toBe(true);
+        const saveManager = makeSaveManager();
+        saveManager.markLoreIntroSeen();
+        expect(saveManager.isLoreIntroSeen()).toBe(true);
     });
 });
 
@@ -202,25 +220,27 @@ describe('SaveManager – lore intro flag', () => {
 
 describe('SaveManager – localStorage helpers', () => {
     beforeEach(() => {
-        resetSaveManager();
         stubStorage();
     });
 
     afterEach(() => { vi.unstubAllGlobals(); });
 
     it('hasLocalStorageSave returns false when no save exists', () => {
-        expect(SaveManager.Instance.hasLocalStorageSave()).toBe(false);
+        const saveManager = makeSaveManager();
+        expect(saveManager.hasLocalStorageSave()).toBe(false);
     });
 
     it('hasLocalStorageSave returns true after a save is written', () => {
         localStorage.setItem('hackworld_autosave', JSON.stringify({ version: 'test' }));
-        expect(SaveManager.Instance.hasLocalStorageSave()).toBe(true);
+        const saveManager = makeSaveManager();
+        expect(saveManager.hasLocalStorageSave()).toBe(true);
     });
 
     it('clearLocalStorage removes the autosave', () => {
         localStorage.setItem('hackworld_autosave', '{}');
-        SaveManager.Instance.clearLocalStorage();
-        expect(SaveManager.Instance.hasLocalStorageSave()).toBe(false);
+        const saveManager = makeSaveManager();
+        saveManager.clearLocalStorage();
+        expect(saveManager.hasLocalStorageSave()).toBe(false);
     });
 });
 
@@ -228,24 +248,17 @@ describe('SaveManager – localStorage helpers', () => {
 
 describe('SaveManager – saveToLocalStorage / createSaveData', () => {
     beforeEach(() => {
-        resetSaveManager();
         stubStorage();
-
-        // Inject the player stub into PlayerRegistry
-        (PlayerRegistry as any).instance = undefined;
-        PlayerRegistry.Instance.addPlayer(makePlayerStub());
     });
 
     afterEach(() => {
         vi.unstubAllGlobals();
-        (PlayerRegistry as any).instance = undefined;
-        (CardCollection as any).instance = undefined;
-        (GameProgressManager as any).instance = undefined;
-        (NpcRegistry as any).instance = undefined;
     });
 
     it('writes a valid JSON object to localStorage', () => {
-        SaveManager.Instance.saveToLocalStorage();
+        const playerRegistryMock = makePlayerRegistryWithPlayer();
+        const saveManager = makeSaveManager({ playerRegistry: playerRegistryMock });
+        saveManager.saveToLocalStorage();
         const raw = localStorage.getItem('hackworld_autosave');
         expect(raw).not.toBeNull();
         const data = JSON.parse(raw!);
@@ -253,8 +266,9 @@ describe('SaveManager – saveToLocalStorage / createSaveData', () => {
     });
 
     it('persists all player stats and properties in the save data', () => {
-        SaveManager.Instance.markLoreIntroSeen();
-        SaveManager.Instance.saveToLocalStorage();
+        const saveManager = makeSaveManager();
+        saveManager.markLoreIntroSeen();
+        saveManager.saveToLocalStorage();
         const data: SaveData = JSON.parse(localStorage.getItem('hackworld_autosave')!);
         expect(data.player.level).toBe(5);
         expect(data.player.money).toBe(1000);
@@ -271,23 +285,12 @@ describe('SaveManager – saveToLocalStorage / createSaveData', () => {
 // ─── loadSaveData (tested via the internal method + loadFromLocalStorage) ─────
 
 describe('SaveManager – loadSaveData', () => {
-    let player: ReturnType<typeof makePlayerStub>;
-
     beforeEach(() => {
-        resetSaveManager();
         stubStorage();
-
-        player = makePlayerStub();
-        (PlayerRegistry as any).instance = undefined;
-        PlayerRegistry.Instance.addPlayer(player);
     });
 
     afterEach(() => {
         vi.unstubAllGlobals();
-        (PlayerRegistry as any).instance = undefined;
-        (CardCollection as any).instance = undefined;
-        (GameProgressManager as any).instance = undefined;
-        (NpcRegistry as any).instance = undefined;
     });
 
     function makeSaveData(overrides: Partial<SaveData> = {}): SaveData {
@@ -338,7 +341,8 @@ describe('SaveManager – loadSaveData', () => {
     }
 
     it('restores all player stats and properties from save data', () => {
-        const mgr = SaveManager.Instance;
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
         const data = makeSaveData();
         (mgr as any).loadSaveData(data);
         expect(player.level).toBe(10);
@@ -353,7 +357,7 @@ describe('SaveManager – loadSaveData', () => {
     });
 
     it('restores lore intro as false when flag is absent (old save)', () => {
-        const mgr = SaveManager.Instance;
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer() });
         const data = makeSaveData();
         delete (data as any).loreIntroSeen;
         (mgr as any).loadSaveData(data);
@@ -361,29 +365,34 @@ describe('SaveManager – loadSaveData', () => {
     });
 
     it('calls recalculateStats after load', () => {
-        const mgr = SaveManager.Instance;
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
         const data = makeSaveData();
         (mgr as any).loadSaveData(data);
         expect(player.recalculateStats).toHaveBeenCalled();
     });
 
     it('returns true from loadFromLocalStorage when save exists', () => {
+        const player = makePlayerStub();
         const data = makeSaveData();
         localStorage.setItem('hackworld_autosave', JSON.stringify(data));
-        const mgr = SaveManager.Instance;
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
         const loaded = mgr.loadFromLocalStorage();
         expect(loaded).toBe(true);
         expect(player.level).toBe(10);
     });
 
     it('returns false from loadFromLocalStorage when no save exists', () => {
-        const mgr = SaveManager.Instance;
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
         expect(mgr.loadFromLocalStorage()).toBe(false);
     });
 
     it('autosave round-trip preserves key player stats', () => {
         // Save
-        SaveManager.Instance.saveToLocalStorage();
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        mgr.saveToLocalStorage();
 
         // Reset player to different values
         player.level = 1;
@@ -391,7 +400,7 @@ describe('SaveManager – loadSaveData', () => {
         player.xData = 0;
 
         // Load
-        SaveManager.Instance.loadFromLocalStorage();
+        mgr.loadFromLocalStorage();
         expect(player.level).toBe(5);
         expect(player.bits).toBe(1000);
         expect(player.xData).toBe(50);
@@ -401,7 +410,6 @@ describe('SaveManager – loadSaveData', () => {
 // ─── Version compatibility check ──────────────────────────────────────────────
 
 describe('SaveManager – version compatibility', () => {
-    let player: ReturnType<typeof makePlayerStub>;
     let confirmSpy: ReturnType<typeof vi.fn>;
     let reloadSpy: ReturnType<typeof vi.fn>;
 
@@ -429,15 +437,9 @@ describe('SaveManager – version compatibility', () => {
     }
 
     beforeEach(() => {
-        resetSaveManager();
         stubStorage();
 
-        player = makePlayerStub();
-        (PlayerRegistry as any).instance = undefined;
-        PlayerRegistry.Instance.addPlayer(player);
-
-        // Set a known semver game version so major version comparisons are deterministic
-        (SaveManager as any).SAVE_VERSION = '1.50.0';
+        vi.stubGlobal('__APP_VERSION__', '1.50.0');
 
         confirmSpy = vi.fn();
         reloadSpy = vi.fn();
@@ -456,7 +458,9 @@ describe('SaveManager – version compatibility', () => {
     it('loads without prompt when major versions match', () => {
         const data = makeSaveData({ version: '1.5.3' });
         localStorage.setItem('hackworld_autosave', JSON.stringify(data));
-        SaveManager.Instance.loadFromLocalStorage();
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        mgr.loadFromLocalStorage();
         expect(confirmSpy).not.toHaveBeenCalled();
         expect(player.level).toBe(1);
     });
@@ -465,7 +469,9 @@ describe('SaveManager – version compatibility', () => {
         confirmSpy.mockReturnValue(true);
         const data = makeSaveData({ version: '2.0.0' });
         localStorage.setItem('hackworld_autosave', JSON.stringify(data));
-        const loaded = SaveManager.Instance.loadFromLocalStorage();
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        const loaded = mgr.loadFromLocalStorage();
         expect(confirmSpy).toHaveBeenCalledOnce();
         expect(reloadSpy).toHaveBeenCalledOnce();
         expect(loaded).toBe(false);
@@ -475,7 +481,9 @@ describe('SaveManager – version compatibility', () => {
         confirmSpy.mockReturnValue(false);
         const data = makeSaveData({ version: '2.0.0' });
         localStorage.setItem('hackworld_autosave', JSON.stringify(data));
-        const loaded = SaveManager.Instance.loadFromLocalStorage();
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        const loaded = mgr.loadFromLocalStorage();
         expect(confirmSpy).toHaveBeenCalledOnce();
         expect(reloadSpy).toHaveBeenCalledOnce();
         expect(loaded).toBe(false);
@@ -485,7 +493,9 @@ describe('SaveManager – version compatibility', () => {
         confirmSpy.mockReturnValue(false);
         const data = makeSaveData({ version: '2.0.0' });
         const file = new File([JSON.stringify(data)], 'save.json', { type: 'application/json' });
-        await SaveManager.Instance.load(file);
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        await mgr.load(file);
         expect(confirmSpy).toHaveBeenCalledOnce();
         expect(reloadSpy).not.toHaveBeenCalled();
         // Player level should remain unchanged since load was aborted
@@ -496,7 +506,9 @@ describe('SaveManager – version compatibility', () => {
         confirmSpy.mockReturnValue(true);
         const data = makeSaveData({ version: '2.0.0' });
         const file = new File([JSON.stringify(data)], 'save.json', { type: 'application/json' });
-        await SaveManager.Instance.load(file);
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        await mgr.load(file);
         expect(confirmSpy).toHaveBeenCalledOnce();
         expect(reloadSpy).toHaveBeenCalledOnce();
     });
@@ -505,18 +517,22 @@ describe('SaveManager – version compatibility', () => {
         confirmSpy.mockReturnValue(false);
         const data = makeSaveData({ version: '2.0.0' });
         localStorage.setItem('hackworld_autosave', JSON.stringify(data));
-        SaveManager.Instance.loadFromLocalStorage();
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        mgr.loadFromLocalStorage();
         const message: string = confirmSpy.mock.calls[0][0];
         expect(message).toContain('v2.0.0');
         expect(message).toContain('1.50.0');
     });
 
     it('skips version check when game version is not valid semver (e.g. dev build)', () => {
-        // Simulate a dev/test build where __APP_VERSION__ is not a semver string
-        (SaveManager as any).SAVE_VERSION = 'dev';
         const data = makeSaveData({ version: '2.0.0' });
         localStorage.setItem('hackworld_autosave', JSON.stringify(data));
-        SaveManager.Instance.loadFromLocalStorage();
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        // Simulate a dev/test build where __APP_VERSION__ is not a semver string
+        vi.stubGlobal('__APP_VERSION__', 'dev');
+        mgr.loadFromLocalStorage();
         expect(confirmSpy).not.toHaveBeenCalled();
         expect(player.level).toBe(1);
     });
@@ -529,15 +545,11 @@ describe('SaveManager – resetGame()', () => {
     let reloadSpy: ReturnType<typeof vi.fn>;
 
     beforeEach(() => {
-        resetSaveManager();
         stubStorage();
         confirmSpy = vi.fn();
         reloadSpy = vi.fn();
         vi.stubGlobal('confirm', confirmSpy);
         vi.stubGlobal('window', { location: { reload: reloadSpy } });
-
-        (PlayerRegistry as any).instance = undefined;
-        PlayerRegistry.Instance.addPlayer(makePlayerStub());
     });
 
     afterEach(() => {
@@ -551,17 +563,21 @@ describe('SaveManager – resetGame()', () => {
     it('clears localStorage and reloads when user confirms', () => {
         confirmSpy.mockReturnValue(true);
         localStorage.setItem('hackworld_autosave', '{"version":"test"}');
-        SaveManager.Instance.resetGame();
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        mgr.resetGame();
         expect(reloadSpy).toHaveBeenCalledOnce();
-        expect(SaveManager.Instance.hasLocalStorageSave()).toBe(false);
+        expect(mgr.hasLocalStorageSave()).toBe(false);
     });
 
     it('does not reload when user cancels', () => {
         confirmSpy.mockReturnValue(false);
         localStorage.setItem('hackworld_autosave', '{"version":"test"}');
-        SaveManager.Instance.resetGame();
+        const player = makePlayerStub();
+        const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
+        mgr.resetGame();
         expect(reloadSpy).not.toHaveBeenCalled();
-        expect(SaveManager.Instance.hasLocalStorageSave()).toBe(true);
+        expect(mgr.hasLocalStorageSave()).toBe(true);
     });
 });
 
@@ -569,25 +585,15 @@ describe('SaveManager – resetGame()', () => {
 
 describe('SaveManager – save() with WeaponItem in inventory', () => {
     beforeEach(() => {
-        resetSaveManager();
         stubStorage();
         vi.stubGlobal('URL', {
             createObjectURL: vi.fn(() => 'blob:fake'),
             revokeObjectURL: vi.fn(),
         });
-
-        (PlayerRegistry as any).instance = undefined;
-        (CardCollection as any).instance = undefined;
-        (GameProgressManager as any).instance = undefined;
-        (NpcRegistry as any).instance = undefined;
     });
 
     afterEach(() => {
         vi.unstubAllGlobals();
-        (PlayerRegistry as any).instance = undefined;
-        (CardCollection as any).instance = undefined;
-        (GameProgressManager as any).instance = undefined;
-        (NpcRegistry as any).instance = undefined;
     });
 
     it('serializes a WeaponItem in inventory with kind=WeaponItem', () => {
@@ -602,9 +608,9 @@ describe('SaveManager – save() with WeaponItem in inventory', () => {
         }
 
         const player = makePlayerStub({ inventory: [wi] });
-        PlayerRegistry.Instance.addPlayer(player);
-
-        const saved = SaveManager.Instance.save();
+        const playerRegistryMock = makePlayerRegistryWithPlayer(player);
+        const mgr = makeSaveManager({ playerRegistry: playerRegistryMock });
+        const saved = mgr.save();
         expect(saved.player.inventory).toHaveLength(1);
         const entry = saved.player.inventory[0];
         expect(entry.kind).toBe('WeaponItem');
@@ -626,9 +632,10 @@ describe('SaveManager – save() with WeaponItem in inventory', () => {
         }
 
         const player = makePlayerStub({ inventory: [wi] });
-        PlayerRegistry.Instance.addPlayer(player);
+        const playerRegistryMock = makePlayerRegistryWithPlayer(player);
+        const mgr = makeSaveManager({ playerRegistry: playerRegistryMock });
 
-        const saved = SaveManager.Instance.save();
+        const saved = mgr.save();
         expect(saved.player.inventory[0].isEquipped).toBe(true);
     });
 
@@ -639,9 +646,10 @@ describe('SaveManager – save() with WeaponItem in inventory', () => {
         });
 
         const player = makePlayerStub({ inventory: [ci] });
-        PlayerRegistry.Instance.addPlayer(player);
+        const playerRegistryMock = makePlayerRegistryWithPlayer(player);
+        const mgr = makeSaveManager({ playerRegistry: playerRegistryMock });
 
-        const saved = SaveManager.Instance.save();
+        const saved = mgr.save();
         expect(saved.player.inventory[0].kind).toBe('CoreItem');
         expect(saved.player.inventory[0].name).toBe('Test Core');
     });
@@ -653,9 +661,10 @@ describe('SaveManager – save() with WeaponItem in inventory', () => {
         });
 
         const player = makePlayerStub({ inventory: [chi] });
-        PlayerRegistry.Instance.addPlayer(player);
+        const playerRegistryMock = makePlayerRegistryWithPlayer(player);
+        const mgr = makeSaveManager({ playerRegistry: playerRegistryMock });
 
-        const saved = SaveManager.Instance.save();
+        const saved = mgr.save();
         expect(saved.player.inventory[0].kind).toBe('ChipItem');
         expect(saved.player.inventory[0].name).toBe('Test Chip');
     });
@@ -664,8 +673,6 @@ describe('SaveManager – save() with WeaponItem in inventory', () => {
 // ─── loadSaveData() with inventory items ─────────────────────────────────────
 
 describe('SaveManager – loadSaveData() with inventory items', () => {
-    let player: ReturnType<typeof makePlayerStub>;
-
     function makeMinimalSaveData(inventory: any[]): SaveData {
         return {
             version: 'test',
@@ -688,24 +695,17 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
     }
 
     beforeEach(() => {
-        resetSaveManager();
         stubStorage();
-
-        player = makePlayerStub();
-        (PlayerRegistry as any).instance = undefined;
-        PlayerRegistry.Instance.addPlayer(player);
     });
 
     afterEach(() => {
         vi.unstubAllGlobals();
-        (PlayerRegistry as any).instance = undefined;
-        (CardCollection as any).instance = undefined;
-        (GameProgressManager as any).instance = undefined;
-        (NpcRegistry as any).instance = undefined;
         vi.clearAllMocks();
     });
 
     it('restores a WeaponItem from inventory and pushes it to player.inventory', () => {
+        const weaponRepository = mockDeep<WeaponRepository>();
+        const tierManager = mockDeep<TierManager>();
         const fakeWeaponItem = Object.create(WeaponItem.prototype) as any;
         Object.assign(fakeWeaponItem, {
             id: 'w1', name: 'Sword Alpha', weaponType: WeaponType.SWORD,
@@ -715,8 +715,16 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
                 damage: 20, level: 1, isEquipped: false, tier: { name: 'Stable' },
             }),
         });
-        (WeaponRepository.Instance.getWeaponByTypeAndLevel as any).mockReturnValue(fakeWeaponItem);
-        (TierManager.Instance.tiers as any).get = vi.fn().mockReturnValue({ name: 'Stable' });
+        weaponRepository.getWeaponByTypeAndLevel.mockReturnValue(fakeWeaponItem);
+        tierManager.tiers.get.mockReturnValue({ name: 'Stable' } as WeaponTierDefinition);
+        const player = makePlayerStub();
+        const playerRegistry = makePlayerRegistryWithPlayer(player);
+
+        const mgr = makeSaveManager({
+            playerRegistry: playerRegistry,
+            weaponRepository: weaponRepository,
+            tierManager: tierManager,
+        });
 
         const data = makeMinimalSaveData([{
             kind: 'WeaponItem', id: 'w1', name: 'Sword Alpha',
@@ -724,7 +732,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
             model: 'models/sword.glb', level: 1, isEquipped: false, tierName: 'Stable',
         }]);
 
-        (SaveManager.Instance as any).loadSaveData(data);
+        (mgr as any).loadSaveData(data);
         expect(player.inventory).toHaveLength(1);
     });
 
@@ -736,8 +744,18 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
         Object.assign(fakeWeaponItem, {
             cloneWith: vi.fn().mockReturnValue(clonedItem),
         });
-        (WeaponRepository.Instance.getWeaponByTypeAndLevel as any).mockReturnValue(fakeWeaponItem);
-        (TierManager.Instance.tiers as any).get = vi.fn().mockReturnValue({ name: 'Stable' });
+        const player = makePlayerStub();
+        const playerRegistry = makePlayerRegistryWithPlayer(player);
+        const weaponRepository = mockDeep<WeaponRepository>();
+        const tierManager = mockDeep<TierManager>();
+        weaponRepository.getWeaponByTypeAndLevel.mockReturnValue(fakeWeaponItem);
+        tierManager.tiers.get.mockReturnValue({ name: 'Stable' } as WeaponTierDefinition);
+
+        const mgr = makeSaveManager({
+            playerRegistry: playerRegistry,
+            weaponRepository: weaponRepository,
+            tierManager: tierManager,
+        });
 
         const data = makeMinimalSaveData([{
             kind: 'WeaponItem', id: 'w2', name: 'Lance Beta',
@@ -745,7 +763,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
             model: 'models/lance.glb', level: 2, isEquipped: true, tierName: 'Stable',
         }]);
 
-        (SaveManager.Instance as any).loadSaveData(data);
+        (mgr as any).loadSaveData(data);
         expect(player.setWeapon).toHaveBeenCalledWith(clonedItem);
     });
 
@@ -754,56 +772,75 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
             kind: 'WeaponItem', id: 'bad', name: 'Broken',
             // missing weaponType and level
         }]);
-        (SaveManager.Instance as any).loadSaveData(data);
+        const player = makePlayerStub();
+        const playerRegistry = makePlayerRegistryWithPlayer(player);
+        const mgr = makeSaveManager({ playerRegistry: playerRegistry });
+        (mgr as any).loadSaveData(data);
         expect(player.inventory).toHaveLength(0);
     });
 
     it('restores a CoreItem from inventory', () => {
         const fakeCoreItem = { id: 'c1', name: 'Test Core', level: 1, isEquipped: false };
-        (CoreRepository.Instance.getCoreByNameAndLevel as any).mockReturnValue(fakeCoreItem);
+        const coreRepository = mockDeep<CoreRepository>();
+        coreRepository.getCoreByNameAndLevel.mockReturnValue(fakeCoreItem as CoreItem);
 
         const data = makeMinimalSaveData([{
             kind: 'CoreItem', id: 'c1', name: 'Test Core', level: 1, isEquipped: false,
         }]);
 
-        (SaveManager.Instance as any).loadSaveData(data);
+        const player = makePlayerStub();
+        const playerRegistry = makePlayerRegistryWithPlayer(player);
+        const mgr = makeSaveManager({ playerRegistry: playerRegistry, coreRepository: coreRepository });
+        (mgr as any).loadSaveData(data);
         expect(player.inventory).toHaveLength(1);
         expect(player.inventory[0]).toBe(fakeCoreItem);
     });
 
     it('marks CoreItem as equipped when isEquipped=true', () => {
         const fakeCoreItem = { id: 'c1', name: 'Core', level: 1, isEquipped: false };
-        (CoreRepository.Instance.getCoreByNameAndLevel as any).mockReturnValue(fakeCoreItem);
+        const coreRepository = mockDeep<CoreRepository>();
+        coreRepository.getCoreByNameAndLevel.mockReturnValue(fakeCoreItem as CoreItem);
 
         const data = makeMinimalSaveData([{
             kind: 'CoreItem', id: 'c1', name: 'Core', level: 1, isEquipped: true,
         }]);
 
-        (SaveManager.Instance as any).loadSaveData(data);
-        expect(player.inventory[0].isEquipped).toBe(true);
+        const player = makePlayerStub();
+        const playerRegistry = makePlayerRegistryWithPlayer(player);
+        const mgr = makeSaveManager({ playerRegistry: playerRegistry, coreRepository: coreRepository });
+        (mgr as any).loadSaveData(data);
+        expect((player.inventory[0] as EquippableItem).isEquipped).toBe(true);
     });
 
     it('restores a ChipItem from inventory', () => {
         const fakeChipItem = { id: 'ch1', name: 'Speed Chip', level: 2, isEquipped: false };
-        (ChipRepository.Instance.getChipByNameAndLevel as any).mockReturnValue(fakeChipItem);
+        const chipRepository = mockDeep<ChipRepository>();
+        chipRepository.getChipByNameAndLevel.mockReturnValue(fakeChipItem as ChipItem);
 
         const data = makeMinimalSaveData([{
             kind: 'ChipItem', id: 'ch1', name: 'Speed Chip', level: 2, isEquipped: false,
         }]);
 
-        (SaveManager.Instance as any).loadSaveData(data);
+        const player = makePlayerStub();
+        const playerRegistry = makePlayerRegistryWithPlayer(player);
+        const mgr = makeSaveManager({ playerRegistry: playerRegistry, chipRepository: chipRepository });
+        (mgr as any).loadSaveData(data);
         expect(player.inventory).toHaveLength(1);
         expect(player.inventory[0]).toBe(fakeChipItem);
     });
 
-    it('skips CoreItem when repository returns null (name not found)', () => {
-        (CoreRepository.Instance.getCoreByNameAndLevel as any).mockReturnValue(null);
+    it('skips CoreItem when repository returns undefined (name not found)', () => {
+        const coreRepository = mockDeep<CoreRepository>();
+        coreRepository.getCoreByNameAndLevel.mockReturnValue(undefined);
 
         const data = makeMinimalSaveData([{
             kind: 'CoreItem', id: 'c2', name: 'Unknown Core', level: 1, isEquipped: false,
         }]);
 
-        (SaveManager.Instance as any).loadSaveData(data);
+        const player = makePlayerStub();
+        const playerRegistry = makePlayerRegistryWithPlayer(player);
+        const mgr = makeSaveManager({ playerRegistry: playerRegistry, coreRepository: coreRepository });
+        (mgr as any).loadSaveData(data);
         expect(player.inventory).toHaveLength(0);
     });
 });

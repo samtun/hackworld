@@ -1,7 +1,7 @@
 import { Item } from './Item';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
-import { Player } from '../Player';
-import { InputManager } from '../InputManager';
+import { Player } from '../player/Player';
+import { InputManager } from '../controls/InputManager';
 import { resetInputDebounce, shakeElement } from '../ui/UiUtils';
 import { formatItemLabel } from './ItemDisplay';
 import { TradeMode } from './TradeMode';
@@ -64,13 +64,15 @@ export abstract class BaseTrader {
     protected pendingSort: boolean = false;
 
     protected uiConfig: TraderUIConfig;
-    protected menuManager: MenuManager;
-    protected uiManager: UIManager;
 
-    constructor(uiConfig?: TraderUIConfig) {
+    constructor(
+        private readonly audioManager: AudioManager,
+        private readonly menuManager: MenuManager,
+        private readonly uiManager: UIManager,
+        private readonly inputManager: InputManager,
+        uiConfig?: TraderUIConfig
+    ) {
         this.uiConfig = uiConfig || {};
-        this.menuManager = MenuManager.Instance;
-        this.uiManager = UIManager.Instance;
         this.createUI();
     }
 
@@ -273,7 +275,7 @@ export abstract class BaseTrader {
         sortInventory(this.traderInventory);
         resetInputDebounce(this as any);
         if (!wasVisible) {
-            AudioManager.Instance.playUiOpen();
+            this.audioManager.playUiOpen();
         }
     }
 
@@ -283,13 +285,13 @@ export abstract class BaseTrader {
         this.container.style.display = 'none';
         this.uiManager.hideControlHints();
         if (wasVisible) {
-            AudioManager.Instance.playUiClose();
+            this.audioManager.playUiClose();
         }
     }
 
     toggle() { if (this.isVisible) this.hide(); else this.show(); }
 
-    update(player: Player, input?: InputManager) {
+    update(player: Player) {
         if (!this.isVisible) return;
 
         if (this.pendingSort) {
@@ -297,16 +299,18 @@ export abstract class BaseTrader {
             this.pendingSort = false;
         }
 
-        if (input) {
-            // Update centralized control hints based on input method
-            this.uiManager.showControlHints(getHint(HintConfigs.buySellClose, input));
+        // Update centralized control hints based on input method
+        this.uiManager.showControlHints(getHint(HintConfigs.buySellClose, this.inputManager));
 
-            const oldIndex = this.selectedIndex;
-            const oldPanel = this.activePanel;
-            this.handleNavigation(player, input);
-            if (oldIndex !== this.selectedIndex || oldPanel !== this.activePanel) this.needsRender = true;
+        const oldIndex = this.selectedIndex;
+        const oldPanel = this.activePanel;
+        this.handleNavigation(player);
+        if (oldIndex !== this.selectedIndex || oldPanel !== this.activePanel) this.needsRender = true;
+
+        if (this.needsRender) {
+            this.render(player);
+            this.needsRender = false;
         }
-        if (this.needsRender) { this.render(player); this.needsRender = false; }
     }
 
     protected render(player: Player) {
@@ -357,13 +361,13 @@ export abstract class BaseTrader {
         if (isActive && this.itemElements[this.selectedIndex]) this.itemElements[this.selectedIndex].scrollIntoView({ behavior: 'auto', block: 'nearest' });
     }
 
-    protected handleNavigation(player: Player, input: InputManager) {
-        const navigateUp = input.isNavigateUpPressed();
-        const navigateDown = input.isNavigateDownPressed();
-        const navigateLeft = input.isNavigateLeftPressed();
-        const navigateRight = input.isNavigateRightPressed();
-        const select = input.isSelectPressed();
-        const cancel = (input as any).isCancelPressed ? (input as any).isCancelPressed() : false;
+    protected handleNavigation(player: Player) {
+        const navigateUp = this.inputManager.isNavigateUpPressed();
+        const navigateDown = this.inputManager.isNavigateDownPressed();
+        const navigateLeft = this.inputManager.isNavigateLeftPressed();
+        const navigateRight = this.inputManager.isNavigateRightPressed();
+        const select = this.inputManager.isSelectPressed();
+        const cancel = (this.inputManager as any).isCancelPressed ? (this.inputManager as any).isCancelPressed() : false;
         const previousIndex = this.selectedIndex;
         const previousPanel = this.activePanel;
         if (cancel) { this.hide(); return; }
@@ -391,7 +395,7 @@ export abstract class BaseTrader {
         }
 
         if (this.selectedIndex !== previousIndex || this.activePanel !== previousPanel) {
-            AudioManager.Instance.playMenuNavigate();
+            this.audioManager.playMenuNavigate();
         }
 
         if (select && !this.lastSelectState) this.handleTransaction(player);
@@ -419,11 +423,11 @@ export abstract class BaseTrader {
                     this.traderInventory.splice(this.selectedIndex, 1);
                     if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) this.selectedIndex--;
                     this.needsRender = true;
-                    AudioManager.Instance.playBuy();
+                    this.audioManager.playBuy();
                 } else {
                     // Player doesn't have enough money - shake the item
                     this.shakeItem(this.selectedIndex);
-                    AudioManager.Instance.playInsufficient();
+                    this.audioManager.playInsufficient();
                 }
             }
         } else {
@@ -432,7 +436,7 @@ export abstract class BaseTrader {
             if (item && item.sellPrice !== undefined) {
                 if (item instanceof EquippableItem && item.isEquipped) {
                     this.shakeItem(this.selectedIndex);
-                    AudioManager.Instance.playInsufficient();
+                    this.audioManager.playInsufficient();
                     return;
                 }
                 player.bits += this.getEffectiveSellPrice(item, player);
@@ -443,7 +447,7 @@ export abstract class BaseTrader {
                 if (idx !== -1) player.inventory.splice(idx, 1);
                 if (this.selectedIndex >= playerItems.length - 1 && this.selectedIndex > 0) this.selectedIndex--;
                 this.needsRender = true;
-                AudioManager.Instance.playSell();
+                this.audioManager.playSell();
             }
         }
     }

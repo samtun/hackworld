@@ -4,13 +4,7 @@ import { AssetManager } from '../../AssetManager.ts';
 import { BaseMesh } from '../../BaseMesh.ts';
 import { WeaponType } from './WeaponType';
 
-export interface WeaponLevel {
-    char: string; // greek character
-    requiredTech: number;
-    damagePercent: number; // percent value, e.g. 180 for 180%
-}
-
-export interface WeaponStats {
+interface WeaponStats {
     attackSpeed: number; // Duration in seconds
     range: number;
     attackAngle: number; // In radians
@@ -87,7 +81,6 @@ export class Weapon extends BaseMesh {
     stats: WeaponStats;
     damage: number; // Actual damage value for this weapon instance
 
-    private assetManager: AssetManager;
     onDamageFrame?: () => void; // Callback for when damage should be dealt
     onHit?: (event: any) => void; // Callback for when weapon hits something
 
@@ -103,39 +96,16 @@ export class Weapon extends BaseMesh {
     private hitboxActive: boolean = false;
 
     constructor(
+        assetManager: AssetManager,
         modelAsset: string,
         weaponType: WeaponType = WeaponType.SWORD,
         damage: number = 10,
-        world?: CANNON.World) {
-        super(modelAsset);
+        physicsWorld?: CANNON.World) {
+        super(modelAsset, assetManager);
         this.weaponType = weaponType;
         this.stats = Weapon.WEAPON_CONFIGS[weaponType];
         this.damage = damage;
-        this.assetManager = AssetManager.Instance;
-        this.physicsWorld = world;
-
-        // Load the weapon model (will use preloaded if available)
-        this.loadWeaponModel(weaponType);
-    }
-
-    private async loadWeaponModel(type: WeaponType): Promise<void> {
-        const modelPath = Weapon.WEAPON_MODEL_PATHS[type];
-
-        try {
-            // Try to use preloaded asset first
-            let gltf = this.assetManager.get(modelPath);
-            const model = gltf.scene.clone();
-
-            // Clear any existing children and dispose resources
-            this.disposeMesh();
-
-            // Add the loaded model to the weapon group
-            this.mesh.add(model);
-
-            console.log(`Loaded weapon model: ${type}`);
-        } catch (error) {
-            throw new Error(`Failed to load weapon model ${type}: ${error}`);
-        }
+        this.physicsWorld = physicsWorld;
     }
 
     attack(rangeMultiplier: number = 1.0): boolean {
@@ -270,6 +240,6 @@ export class Weapon extends BaseMesh {
         parent.add(this.mesh);
 
         // Load the new weapon model
-        this.loadWeaponModel(newType);
+        this.replaceModel(Weapon.WEAPON_MODEL_PATHS[newType]);
     }
 }

@@ -24,7 +24,17 @@ export class ChipDrop extends ItemDrop {
     private readonly FLOAT_SPEED: number = 1.2;
     private readonly FLOAT_AMPLITUDE: number = 0.12;
 
-    constructor(scene: THREE.Scene, position: CANNON.Vec3, chipId: string, chipName: string, chipType: ChipType, buyPrice: number, sellPrice: number, level: number) {
+    constructor(
+        scene: THREE.Scene,
+        assetManager: AssetManager,
+        position: CANNON.Vec3,
+        chipId: string,
+        chipName: string,
+        chipType: ChipType,
+        buyPrice: number,
+        sellPrice: number,
+        level: number,
+    ) {
         super();
         this.chipId = chipId;
         this.chipName = chipName;
@@ -34,7 +44,7 @@ export class ChipDrop extends ItemDrop {
         this.level = level;
         this.baseHeight = position.y;
 
-        const gltfModel = AssetManager.Instance.get('models/chip_drop.glb');
+        const gltfModel = assetManager.get('models/chip_drop.glb');
         this.mesh = gltfModel.scene;
 
         // Create text label using shared method

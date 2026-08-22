@@ -1,5 +1,5 @@
-import { Player } from '../../Player';
-import { InputManager } from '../../InputManager';
+import { Player } from '../../player/Player';
+import { InputManager } from '../../controls/InputManager';
 import { resetInputDebounce } from '../../ui/UiUtils';
 import { Card, CardDefinitions, CardRarity, Album } from './Card';
 import { CardCollection } from './CardCollection';
@@ -8,10 +8,10 @@ import { getHint, HintConfigs } from '../../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../../ui/MenuManager';
 import { UIManager } from '../../ui/UIManager';
 import { AudioManager } from '../../AudioManager';
+import { singleton } from 'tsyringe';
 
+@singleton()
 export class CardManager {
-    private static instance: CardManager;
-
     container!: HTMLDivElement;
     isVisible: boolean = false;
 
@@ -37,20 +37,16 @@ export class CardManager {
     private lastSelectState: boolean = false;
     private lastCancelState: boolean = false;
 
-    private cardCollection: CardCollection;
     private currentInputManager?: InputManager; // Store input manager for dynamic hints
-    private menuManager: MenuManager;
-    private uiManager: UIManager;
 
-    private constructor() {
-        this.cardCollection = CardCollection.Instance;
-        this.menuManager = MenuManager.Instance;
-        this.uiManager = UIManager.Instance;
+    constructor(
+        private readonly cardCollection: CardCollection,
+        private readonly menuManager: MenuManager,
+        private readonly uiManager: UIManager,
+        private readonly audioManager: AudioManager,
+        private readonly inputManager: InputManager
+    ) {
         this.createUI();
-    }
-
-    public static get Instance(): CardManager {
-        return this.instance || (this.instance = new this());
     }
 
     private createUI() {
@@ -535,7 +531,7 @@ export class CardManager {
         this.selectedMenuIndex = 0;
         this.needsRender = true;
         resetInputDebounce(this as any);
-        AudioManager.Instance.playUiOpen();
+        this.audioManager.playUiOpen();
     }
 
     public hide() {
@@ -544,7 +540,7 @@ export class CardManager {
         this.container.style.display = 'none';
         this.uiManager.hideControlHints();
         resetInputDebounce(this as any);
-        AudioManager.Instance.playUiClose();
+        this.audioManager.playUiClose();
     }
 
     private render(player: Player) {
@@ -571,19 +567,16 @@ export class CardManager {
         }
     }
 
-    public update(player: Player, input: InputManager) {
+    public update(player: Player) {
         if (!this.isVisible) return;
 
-        // Store input manager for dynamic hints
-        this.currentInputManager = input;
-
         // Update centralized control hints based on input method
-        this.uiManager.showControlHints(getHint(HintConfigs.menuNavigate, input));
+        this.uiManager.showControlHints(getHint(HintConfigs.menuNavigate, this.inputManager));
 
-        const navigateUp = input.isNavigateUpPressed();
-        const navigateDown = input.isNavigateDownPressed();
-        const select = input.isSelectPressed();
-        const cancel = input.isCancelPressed();
+        const navigateUp = this.inputManager.isNavigateUpPressed();
+        const navigateDown = this.inputManager.isNavigateDownPressed();
+        const select = this.inputManager.isSelectPressed();
+        const cancel = this.inputManager.isCancelPressed();
 
         // Debounced navigation
         if (navigateUp && !this.lastNavigateUpState) {
@@ -622,13 +615,13 @@ export class CardManager {
             const previousIndex = this.selectedMenuIndex;
             this.selectedMenuIndex = Math.max(0, this.selectedMenuIndex - 1);
             if (this.selectedMenuIndex !== previousIndex) {
-                AudioManager.Instance.playMenuNavigate();
+                this.audioManager.playMenuNavigate();
             }
         } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
             const previousIndex = this.selectedAlbumIndex;
             this.selectedAlbumIndex = Math.max(0, this.selectedAlbumIndex - 1);
             if (this.selectedAlbumIndex !== previousIndex) {
-                AudioManager.Instance.playMenuNavigate();
+                this.audioManager.playMenuNavigate();
             }
         }
     }
@@ -638,14 +631,14 @@ export class CardManager {
             const previousIndex = this.selectedMenuIndex;
             this.selectedMenuIndex = Math.min(1, this.selectedMenuIndex + 1);
             if (this.selectedMenuIndex !== previousIndex) {
-                AudioManager.Instance.playMenuNavigate();
+                this.audioManager.playMenuNavigate();
             }
         } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
             const maxIndex = CardDefinitions.getAlbums().length - 1;
             const previousIndex = this.selectedAlbumIndex;
             this.selectedAlbumIndex = Math.min(maxIndex, this.selectedAlbumIndex + 1);
             if (this.selectedAlbumIndex !== previousIndex) {
-                AudioManager.Instance.playMenuNavigate();
+                this.audioManager.playMenuNavigate();
             }
         }
     }
@@ -653,7 +646,7 @@ export class CardManager {
     private handleSelect(player: Player) {
         if (this.viewMode === ViewMode.MENU) {
             if (this.selectedMenuIndex === 0 && player.boosterPacks > 0) {
-                AudioManager.Instance.playUiOpen();
+                this.audioManager.playUiOpen();
                 // Open pack - generate 4 random cards
                 player.boosterPacks -= 1;
                 this.revealedCards = [];
@@ -667,7 +660,7 @@ export class CardManager {
                 // Start flipping immediately
                 this.startCardFlipAnimation(player);
             } else if (this.selectedMenuIndex === 1) {
-                AudioManager.Instance.playUiOpen();
+                this.audioManager.playUiOpen();
                 // View albums
                 this.viewMode = ViewMode.VIEW_ALBUMS;
                 this.selectedAlbumIndex = 0;
@@ -675,12 +668,12 @@ export class CardManager {
         } else if (this.viewMode === ViewMode.OPEN_PACK) {
             const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
             if (allFlipped && !this.flippingInProgress) {
-                AudioManager.Instance.playUiClose();
+                this.audioManager.playUiClose();
                 // Return to menu after all cards are flipped
                 this.viewMode = ViewMode.MENU;
             }
         } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
-            AudioManager.Instance.playUiOpen();
+            this.audioManager.playUiOpen();
             // Open specific album
             const albums = CardDefinitions.getAlbums();
             this.currentAlbum = albums[this.selectedAlbumIndex];
@@ -706,7 +699,7 @@ export class CardManager {
             if (!alreadyComplete.has(album) && this.cardCollection.isAlbumComplete(album)) {
                 const reward = CardManager.ALBUM_REWARDS[album] ?? '';
                 this.uiManager.showAlbumCompleteBanner(album, reward);
-                AudioManager.Instance.playAlbumComplete();
+                this.audioManager.playAlbumComplete();
             }
         }
 
@@ -715,7 +708,7 @@ export class CardManager {
             // Wait 400ms between each card flip
             await new Promise(resolve => setTimeout(resolve, 400));
             this.flippedCardIndices.add(i);
-            AudioManager.Instance.playCardReveal(this.revealedCards[i].rarity);
+            this.audioManager.playCardReveal(this.revealedCards[i].rarity);
             // Re-render to show the flipped state
             this.render(player);
         }
@@ -731,14 +724,14 @@ export class CardManager {
             // Allow canceling after all cards are flipped
             const allFlipped = this.flippedCardIndices.size === this.revealedCards.length;
             if (allFlipped && !this.flippingInProgress) {
-                AudioManager.Instance.playUiClose();
+                this.audioManager.playUiClose();
                 this.viewMode = ViewMode.MENU;
             }
         } else if (this.viewMode === ViewMode.VIEW_ALBUMS) {
-            AudioManager.Instance.playUiClose();
+            this.audioManager.playUiClose();
             this.viewMode = ViewMode.MENU;
         } else if (this.viewMode === ViewMode.VIEW_ALBUM) {
-            AudioManager.Instance.playUiClose();
+            this.audioManager.playUiClose();
             this.viewMode = ViewMode.VIEW_ALBUMS;
         }
     }

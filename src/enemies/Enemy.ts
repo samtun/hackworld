@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Player, PLAYER_COLLISION_GROUP } from '../Player';
+import { Player, PLAYER_COLLISION_GROUP } from '../player/Player';
 import { BaseMesh } from '../BaseMesh';
-import { PlayerRegistry } from '../PlayerRegistry';
+import { PlayerRegistry } from '../player/PlayerRegistry';
 import { AssetManager } from '../AssetManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { BlockShield } from '../BlockShield';
@@ -259,10 +259,7 @@ export class Enemy extends BaseMesh {
     private isCorneredForSpacing: boolean = false;
 
     /** Flat circular shadow below the enemy. */
-    public blobShadow!: BlobShadow;
-
-    private floatingIndicatorManager: FloatingIndicatorManager;
-
+    public blobShadow: BlobShadow;
 
     // Callback for spawning damage numbers
     onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
@@ -271,25 +268,28 @@ export class Enemy extends BaseMesh {
     onDeathFadeStart?: (enemy: Enemy) => void;
 
     constructor(
+        private readonly audioManager: AudioManager,
+        private readonly floatingIndicatorManager: FloatingIndicatorManager,
+        private readonly playerRegistry: PlayerRegistry,
+        assetManager: AssetManager,
         scene: THREE.Scene,
-        world: CANNON.World,
+        physicsWorld: CANNON.World,
         position: CANNON.Vec3,
         physicsMaterial: CANNON.Material,
         config: Partial<EnemyArchetypeConfig> = {},
-        enemyType: EnemyType = DEFAULT_ENEMY_TYPE,
+        enemyType: EnemyType = DEFAULT_ENEMY_TYPE
     ) {
         const enemyTypeDefinition = getEnemyTypeDefinition(enemyType);
-        super(enemyTypeDefinition.modelPath);
+        super(enemyTypeDefinition.modelPath, assetManager);
 
         this.scene = scene;
-        this.world = world;
+        this.world = physicsWorld;
         this.physicsMaterial = physicsMaterial;
         this.enemyType = enemyType;
         this.enemyTypeDefinition = enemyTypeDefinition;
         this.enemyCombatBehavior = enemyTypeDefinition.combatBehavior ?? {
             attackMode: EnemyAttackMode.Melee,
         };
-        this.floatingIndicatorManager = FloatingIndicatorManager.getInstance(scene);
 
         // Pre-seed cooldown timers so abilities don't fire immediately on spawn.
         for (const ability of enemyTypeDefinition.movementAbilities ?? []) {
@@ -345,7 +345,7 @@ export class Enemy extends BaseMesh {
         this.mesh.scale.setScalar(sizeScale);
 
         // Setup animations
-        this.setupAnimations();
+        this.setupAnimations(assetManager);
 
         // Physics
         const shape = new CANNON.Cylinder(this.radius, this.radius, this.size, 8);
@@ -360,21 +360,21 @@ export class Enemy extends BaseMesh {
         this.body.addShape(shape);
         this.body.position.copy(position);
         (this.body as any).entity = this;
-        world.addBody(this.body);
+        physicsWorld.addBody(this.body);
 
-        this.player = PlayerRegistry.Instance.activePlayers[0];
+        this.player = this.playerRegistry.activePlayers[0];
 
         // Blob shadow – always visible
         this.blobShadow = new BlobShadow(scene, 0.5 * sizeScale);
     }
 
-    protected setupAnimations() {
+    protected setupAnimations(assetManager: AssetManager) {
         // Clear BaseMesh mixer to avoid conflict
         this.mixers = [];
 
         this.mixer = new THREE.AnimationMixer(this.mesh);
 
-        const gltf = AssetManager.Instance.get(this.enemyTypeDefinition.modelPath);
+        const gltf = assetManager.get(this.enemyTypeDefinition.modelPath);
         const animations = gltf.animations;
 
         if (animations && animations.length > 0) {
@@ -1352,7 +1352,7 @@ export class Enemy extends BaseMesh {
         this.hasSpawnedProjectileThisAttack = false;
 
         console.log("Enemy attacks!");
-        AudioManager.Instance.playAttack('enemy');
+        this.audioManager.playAttack('enemy');
         this.fadeToAction(EnemyActionType.Attack, 0.1);
     }
 
@@ -1418,7 +1418,7 @@ export class Enemy extends BaseMesh {
         this.isReturningToBase = false;
         this.returnToBaseTimer = 0;
         this.floatingIndicatorManager.spawnDamage(this.body.position, amount, isCriticalHit ? '#bf860c' : '#fdc650ff');
-        AudioManager.Instance.playDamage('enemy');
+        this.audioManager.playDamage('enemy');
 
         // Flash white
         this.setFlashColor(0xffffff);
@@ -1459,7 +1459,7 @@ export class Enemy extends BaseMesh {
         this.body.collisionFilterMask &= ~PLAYER_COLLISION_GROUP;
         this.body.velocity.x = 0;
         this.body.velocity.z = 0;
-        AudioManager.Instance.playDeath('enemy');
+        this.audioManager.playDeath('enemy');
 
         // Play death animation
         this.fadeToAction(EnemyActionType.Death, 0.1);
@@ -1472,7 +1472,7 @@ export class Enemy extends BaseMesh {
         }
 
         if (this.footstepTimer <= 0) {
-            AudioManager.Instance.playFootstep('enemy');
+            this.audioManager.playFootstep('enemy');
             this.footstepTimer = 0.4;
             return;
         }

@@ -1,11 +1,12 @@
-import { Player } from './Player';
+import { singleton } from 'tsyringe';
+import { Player } from './player/Player';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { CoreRepository } from './items/cores/CoreRepository';
 import { ChipRepository } from './items/chips/ChipRepository';
 import { WeaponType } from './items/weapons/WeaponType';
 import { ItemLevelHelper } from './items/ItemLevelHelper';
 import { GameProgressManager } from './GameProgressManager';
-import { SkillTechType } from './skills/SkillTechType';
+import { SkillTechType } from './player/skills/SkillType';
 import { Album, CardDefinitions } from './items/cards/Card';
 import { CardCollection } from './items/cards/CardCollection';
 import { CardManager } from './items/cards/CardManager';
@@ -15,6 +16,7 @@ import { UIManager } from './ui/UIManager';
  * Debug Value Editor - Development tool for live editing player stats and inventory
  * Only available in dev builds (import.meta.env.DEV)
  */
+@singleton()
 export class DebugValueEditor {
     private container: HTMLDivElement;
     private contentPanel: HTMLDivElement;
@@ -39,14 +41,27 @@ export class DebugValueEditor {
     // Store player reference for button callbacks
     private player: Player | null = null;
 
-    private weaponRepository: WeaponRepository;
-    private chipRepository: ChipRepository;
-    private coreRepository: CoreRepository;
+    private readonly weaponRepository: WeaponRepository;
+    private readonly chipRepository: ChipRepository;
+    private readonly coreRepository: CoreRepository;
+    private readonly cardCollection: CardCollection;
+    private readonly gameProgressManager: GameProgressManager;
+    private readonly uiManager: UIManager;
 
-    constructor() {
-        this.weaponRepository = WeaponRepository.Instance;
-        this.chipRepository = ChipRepository.Instance;
-        this.coreRepository = CoreRepository.Instance;
+    constructor(
+        weaponRepository: WeaponRepository,
+        chipRepository: ChipRepository,
+        coreRepository: CoreRepository,
+        cardCollection: CardCollection,
+        gameProgressManager: GameProgressManager,
+        uiManager: UIManager
+    ) {
+        this.weaponRepository = weaponRepository;
+        this.chipRepository = chipRepository;
+        this.coreRepository = coreRepository;
+        this.cardCollection = cardCollection;
+        this.gameProgressManager = gameProgressManager;
+        this.uiManager = uiManager;
 
         this.container = this.createContainer();
         this.toggleButton = this.createToggleButton();
@@ -589,8 +604,8 @@ export class DebugValueEditor {
             const selected = albumSelect.value as Album;
             if (!selected) return;
             const cards = CardDefinitions.getAlbumCards(selected);
-            cards.forEach(card => CardCollection.Instance.addCard(card));
-            UIManager.Instance.showAlbumCompleteBanner(selected, CardManager.getAlbumReward(selected));
+            cards.forEach(card => this.cardCollection.addCard(card));
+            this.uiManager.showAlbumCompleteBanner(selected, CardManager.getAlbumReward(selected));
             console.log(`Completed album ${selected}`);
             albumSelect.value = '';
         });
@@ -696,8 +711,7 @@ export class DebugValueEditor {
         this.updateInputValue('money', player.bits);
 
         // Update game progress
-        const progressManager = GameProgressManager.Instance;
-        this.updateInputValue('gameProgress', progressManager.progress);
+        this.updateInputValue('gameProgress', this.gameProgressManager.progress);
 
         const playerTech = (player as any).tech || {};
         this.updateInputValue('swordTech', playerTech[WeaponType.SWORD] || 0);
@@ -717,8 +731,7 @@ export class DebugValueEditor {
 
         // Apply game progress changes
         this.applyInputValue('gameProgress', (val) => {
-            const progressManager = GameProgressManager.Instance;
-            progressManager.progress = Math.max(0, val);
+            this.gameProgressManager.progress = Math.max(0, val);
         });
 
         this.applyInputValue('swordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.SWORD] = Math.max(0, val); });

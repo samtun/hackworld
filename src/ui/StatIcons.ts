@@ -1,5 +1,5 @@
 import { WeaponType } from '../items/weapons/WeaponType';
-import { SkillTechType } from '../skills/SkillTechType';
+import { SkillTechType } from '../player/skills/SkillType';
 
 // SVG files imported as raw strings via Vite's ?raw loader
 import hpRaw from '../assets/icons/hp.svg?raw';
@@ -34,32 +34,32 @@ function makeIcon(svgRaw: string): string {
 
 // ─── Stat Icons ───────────────────────────────────────────────────────────────
 
-export const ICON_HP       = makeIcon(hpRaw);
-export const ICON_TP       = makeIcon(tpRaw);
+export const ICON_HP = makeIcon(hpRaw);
+export const ICON_TP = makeIcon(tpRaw);
 export const ICON_STRENGTH = makeIcon(strengthRaw);
-export const ICON_DEFENSE  = makeIcon(defenseRaw);
-export const ICON_AGILITY  = makeIcon(agilityRaw);
-export const ICON_LUCK     = makeIcon(luckRaw);
+export const ICON_DEFENSE = makeIcon(defenseRaw);
+export const ICON_AGILITY = makeIcon(agilityRaw);
+export const ICON_LUCK = makeIcon(luckRaw);
 
 // ─── Misc / Currency Icons ────────────────────────────────────────────────────
 
-export const ICON_BITS    = makeIcon(bitsRaw);
+export const ICON_BITS = makeIcon(bitsRaw);
 export const ICON_NEXTLVL = makeIcon(nextLevelRaw);
-export const ICON_XDATA   = makeIcon(xdataRaw);
+export const ICON_XDATA = makeIcon(xdataRaw);
 export const ICON_BOOSTER = makeIcon(boosterRaw);
 
 // ─── Weapon Icons (also used as weapon tech icons) ────────────────────────────
 
-export const ICON_SWORD      = makeIcon(swordRaw);
+export const ICON_SWORD = makeIcon(swordRaw);
 export const ICON_DUAL_BLADE = makeIcon(dualBladeRaw);
-export const ICON_LANCE      = makeIcon(lanceRaw);
-export const ICON_HAMMER     = makeIcon(hammerRaw);
+export const ICON_LANCE = makeIcon(lanceRaw);
+export const ICON_HAMMER = makeIcon(hammerRaw);
 
 // ─── Skill Tech Icons ─────────────────────────────────────────────────────────
 
 export const ICON_RECOVERY = makeIcon(recoveryRaw);
-export const ICON_BLAST    = makeIcon(blastRaw);
-export const ICON_RANGED   = makeIcon(rangedRaw);
+export const ICON_BLAST = makeIcon(blastRaw);
+export const ICON_RANGED = makeIcon(rangedRaw);
 
 // ─── Item Type Icons ──────────────────────────────────────────────────────────
 
@@ -76,10 +76,10 @@ export const ICON_CHIP = makeIcon(chipRaw);
  */
 export function getWeaponIcon(weaponType: WeaponType): string {
     switch (weaponType) {
-        case WeaponType.SWORD:      return ICON_SWORD;
+        case WeaponType.SWORD: return ICON_SWORD;
         case WeaponType.DUAL_BLADE: return ICON_DUAL_BLADE;
-        case WeaponType.LANCE:      return ICON_LANCE;
-        case WeaponType.HAMMER:     return ICON_HAMMER;
+        case WeaponType.LANCE: return ICON_LANCE;
+        case WeaponType.HAMMER: return ICON_HAMMER;
         default: return '';
     }
 }
@@ -90,8 +90,8 @@ export function getWeaponIcon(weaponType: WeaponType): string {
 export function getSkillTechIcon(skillTechType: SkillTechType): string {
     switch (skillTechType) {
         case SkillTechType.RECOVERY: return ICON_RECOVERY;
-        case SkillTechType.BLAST:    return ICON_BLAST;
-        case SkillTechType.RANGED:   return ICON_RANGED;
+        case SkillTechType.BLAST: return ICON_BLAST;
+        case SkillTechType.RANGED: return ICON_RANGED;
         default: return '';
     }
 }

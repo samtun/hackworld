@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { ChipItem } from './ChipItem';
 import { ChipType } from './Chip';
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
 
 function makeChip(level = 1): ChipItem {
     return new ChipItem('c1', 'Firewire', 150, 75, ChipType.FIREWIRE, { weaponRangeMultiplier: 1.10 }, level);

@@ -1,3 +1,4 @@
+import { singleton } from 'tsyringe';
 import { ChipType } from './Chip';
 import { ChipItem } from './ChipItem';
 import chipsData from './chips.json';
@@ -6,14 +7,13 @@ import chipsData from './chips.json';
  * Centralized chip repository - single source of truth for all chips in the game
  * Uses a tree structure: level -> chipType -> ChipItem[]
  */
+@singleton()
 export class ChipRepository {
-    private static instance: ChipRepository; // Singleton
-
     // List structure: index corresponds to level - 1 (e.g. index 0 is level 1)
     // Each element is a Map: chipType -> ChipItem[]
     private chipsByLevel: Map<ChipType, ChipItem[]>[] = [];
 
-    private constructor() {
+    constructor() {
         this.loadChips();
     }
 
@@ -52,10 +52,6 @@ export class ChipRepository {
 
             levelMap.get(type)!.push(chip);
         }
-    }
-
-    public static get Instance(): ChipRepository {
-        return this.instance || (this.instance = new this());
     }
 
     /**

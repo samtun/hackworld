@@ -1,19 +1,12 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { ItemDropFactory } from './ItemDropFactory';
 import { Enemy } from '../enemies/Enemy';
-import { Player } from '../Player';
+import { Player } from '../player/Player';
 import { ItemDrop } from './ItemDrop';
 import { ItemDropType } from './ItemDropType';
-import { WeaponDropStrategy } from './weapons/WeaponDropStrategy';
-import { ChipDropStrategy } from './chips/ChipDropStrategy';
-import { CoreDropStrategy } from './cores/CoreDropStrategy';
-import { BoosterPackDropStrategy } from './cards/BoosterPackDropStrategy';
-import { MinimapDropStrategy } from './minimap/MinimapDropStrategy';
-import { XDataDropStrategy } from './xdata/XDataDropStrategy';
-import { MoneyDropStrategy } from './bits/MoneyDropStrategy';
-import { HPPotionDropStrategy, TPPotionDropStrategy } from './potions/PotionDropStrategies';
-import { PotionDrop } from './potions/PotionDrop';
 import { PotionType, determinePotionLevel } from './potions/PotionDefinitions';
+import { injectAll, singleton } from 'tsyringe';
 import { AudioManager } from '../AudioManager';
 
 export interface ItemDropStrategy {
@@ -21,36 +14,25 @@ export interface ItemDropStrategy {
     readonly key: ItemDropType;
     getDistributionWeight(enemy: Enemy, player: Player): number; // probability weight for this drop type
     // returns the created drop object or null when no drop occurred
-    drop(scene: THREE.Scene, enemy: Enemy, player: Player): ItemDrop | null;
+    drop(enemy: Enemy, player: Player): ItemDrop | null;
     // perform pickup logic (add item to inventory); do NOT cleanup the drop visuals/bodies
     pickup(drop: ItemDrop, player: Player): void;
 }
 
+@singleton()
 export class ItemDropManager {
-    private static instance: ItemDropManager;
-    private drops: Map<ItemDropType, ItemDrop[]> = new Map();
-    private itemDropStrategies: ItemDropStrategy[] = [];
+    private readonly drops: Map<ItemDropType, ItemDrop[]> = new Map();
+    private readonly itemDropStrategies: ItemDropStrategy[] = [];
 
-    private constructor() {
-        // Register all item drop strategies
-        this.registerStrategy(new WeaponDropStrategy());
-        this.registerStrategy(new ChipDropStrategy());
-        this.registerStrategy(new CoreDropStrategy());
-        this.registerStrategy(new BoosterPackDropStrategy());
-        this.registerStrategy(new MinimapDropStrategy());
-        this.registerStrategy(new XDataDropStrategy());
-        this.registerStrategy(new MoneyDropStrategy());
-        this.registerStrategy(new HPPotionDropStrategy());
-        this.registerStrategy(new TPPotionDropStrategy());
-    }
-
-    public static get Instance(): ItemDropManager {
-        return this.instance || (this.instance = new this());
-    }
-
-    registerStrategy(strategy: ItemDropStrategy) {
-        this.itemDropStrategies.push(strategy);
-        this.drops.set(strategy.key, []);
+    constructor(
+        private readonly itemDropFactory: ItemDropFactory,
+        private readonly audioManager: AudioManager,
+        @injectAll("ItemDropStrategy") strategies: ItemDropStrategy[],
+    ) {
+        this.itemDropStrategies = strategies;
+        for (const strategy of strategies) {
+            this.drops.set(strategy.key, []);
+        }
     }
 
     private selectRandomStrategy(enemy: Enemy, player: Player): ItemDropStrategy | undefined {
@@ -77,19 +59,20 @@ export class ItemDropManager {
      * Selects from weighted probabilities from all drop types.
      * @returns true if an item was dropped, false otherwise
      */
-    tryDropItem(scene: THREE.Scene, enemy: Enemy, player: Player): void {
+    tryDropItem(enemy: Enemy, player: Player): boolean {
         const strategy = this.selectRandomStrategy(enemy, player);
-        if (!strategy) return;
+        if (!strategy) return false;
 
         // Apply luck multiplier and collection bonus to drop chance
         const effectiveDropChance = enemy.itemDropChance + player.luckDropChanceBonus + player.collectionBonusItemDropChance;
-        if (Math.random() > effectiveDropChance) return;
+        if (Math.random() > effectiveDropChance) return false;
 
-        const drop = strategy.drop(scene, enemy, player);
+        const drop = strategy.drop(enemy, player);
         if (drop) {
-            const arr = this.drops.get(strategy.key)!;
-            arr.push(drop);
+            this.addDropToArray(strategy.key, drop);
         }
+
+        return drop !== null && drop !== undefined;
     }
 
     /**
@@ -97,21 +80,30 @@ export class ItemDropManager {
      * of the normal weighted item-drop system.
      * @param baseChance probability (0–1) of a potion dropping (e.g. 0.05)
      */
-    tryDropPotion(scene: THREE.Scene, position: CANNON.Vec3, player: Player, baseChance: number): void {
+    tryDropPotion(position: CANNON.Vec3, player: Player, baseChance: number): void {
         if (Math.random() > baseChance) return;
 
         const potionType = Math.random() < 0.5 ? PotionType.HP : PotionType.TP;
         const level = determinePotionLevel(player.level);
-        const drop = new PotionDrop(scene, position, potionType, level);
+        const drop = this.itemDropFactory.createPotionDrop(position, potionType, level);
         const key = potionType === PotionType.HP ? ItemDropType.HP_POTION : ItemDropType.TP_POTION;
-        this.drops.get(key)!.push(drop);
+        this.addDropToArray(key, drop);
+    }
+
+    private addDropToArray(key: ItemDropType, drop: ItemDrop): void {
+        const arr = this.drops.get(key);
+        if (arr) {
+            arr.push(drop);
+        } else {
+            console.warn(`No drop array found for key ${key}`);
+        }
     }
 
     // Common update logic for all drops: call each drop.update
     update(deltaTime: number, cameraPosition: THREE.Vector3, playerPosition: THREE.Vector3) {
-        for (const [, arr] of this.drops.entries()) {
-            for (const d of arr) {
-                d.update(deltaTime, cameraPosition, playerPosition);
+        for (const [, entries] of this.drops.entries()) {
+            for (const drop of entries) {
+                drop.update(deltaTime, cameraPosition, playerPosition);
             }
         }
     }
@@ -143,7 +135,7 @@ export class ItemDropManager {
         if (!strategy) return;
 
         strategy.pickup(drop, player);
-        AudioManager.Instance.playItemPickup();
+        this.audioManager.playItemPickup();
 
         // cleanup visuals and physics body
         drop.cleanup(scene);

@@ -1,55 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-vi.mock('../ui/InputHints', () => ({
-    getHint: vi.fn().mockReturnValue(''),
-    HintConfigs: { buySellClose: {} },
-}));
-vi.mock('../ui/UiUtils', () => ({
-    resetInputDebounce: vi.fn(),
-    shakeElement: vi.fn(),
-}));
-vi.mock('../ui/MenuManager', () => ({
-    MenuManager: {
-        Instance: {
-            createOverlay: vi.fn(() => document.createElement('div')),
-            createGridWindow: vi.fn(() => document.createElement('div')),
-            createPanel: vi.fn(() => document.createElement('div')),
-        },
-    },
-    MENU_COLORS: {
-        PANEL_TRADER: '#000', PANEL_PLAYER: '#000', COST_COLOR: '#ffd700',
-        TEXT: '#fff', SEPARATOR: '#333', WINDOW_BG: '#111',
-        ITEM_SELECTED: '#444', TRANSPARENT: 'transparent',
-    },
-    MENU_STYLES: { FONT_FAMILY: 'Arial', Z_INDEX: 1000 },
-}));
-vi.mock('../ui/UIManager', () => ({
-    UIManager: { Instance: { showControlHints: vi.fn(), hideControlHints: vi.fn() } },
-}));
-vi.mock('../AudioManager', () => ({
-    AudioManager: {
-        Instance: {
-            playMenuNavigate: vi.fn(),
-            playBuy: vi.fn(),
-            playSell: vi.fn(),
-            playInsufficient: vi.fn(),
-            playUiOpen: vi.fn(),
-            playUiClose: vi.fn(),
-        },
-    },
-}));
-vi.mock('./ItemDetailsPanel', () => ({
-    ItemDetailsPanel: { generateHTML: vi.fn().mockReturnValue('<div>details</div>') },
-}));
-vi.mock('./ItemDisplay', () => ({
-    formatItemLabel: vi.fn((item: any) => item?.name || 'item'),
-}));
-
-import { BaseTrader } from './BaseTrader';
+import { BaseTrader, TraderUIConfig } from './BaseTrader';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { TraderPanel } from './TraderPanel';
 import { AudioManager } from '../AudioManager';
+import { mockDeep } from 'vitest-mock-extended';
+import { Player } from '../player/Player';
+import { MenuManager } from '../ui/MenuManager';
+import { InputManager } from '../controls/InputManager';
+import { UIManager } from '../ui/UIManager';
 
 // Every suite in this file shares the same singleton-style mocks, so reset
 // them for each test case before assertions run.
@@ -65,48 +24,55 @@ class TestTrader extends BaseTrader {
     }
 }
 
+interface TestTraderOverrides {
+    audioManager?: AudioManager;
+    menuManager?: MenuManager;
+    uiManager?: UIManager;
+    inputManager?: InputManager;
+    traderUiConfig?: TraderUIConfig;
+}
+
 /**
  * Build a TestTrader via Object.create, bypassing the constructor to avoid DOM
  * creation in the node test environment.
  */
-function makeTrader(): TestTrader {
-    const trader = Object.create(TestTrader.prototype) as TestTrader;
+function makeTrader(overrides: TestTraderOverrides = {}): TestTrader {
+    const {
+        audioManager = mockDeep<AudioManager>(),
+        menuManager = mockDeep<MenuManager>({
+            createOverlay: () => document.createElement('div'),
+            createGridWindow: () => document.createElement('div'),
+            createPanel: () => document.createElement('div'),
+        }),
+        uiManager = mockDeep<UIManager>(),
+        inputManager = mockDeep<InputManager>(),
+        traderUiConfig = {},
+    } = overrides;
+
+    const trader = new TestTrader(
+        audioManager,
+        menuManager,
+        uiManager,
+        inputManager,
+        traderUiConfig
+    );
+
     Object.assign(trader, {
         isVisible: true,
         selectedIndex: 0,
         activePanel: TraderPanel.TRADER,
-        needsRender: false,
-        traderInventory: [] as Item[],
-        itemElements: [],
-        traderSelectedIndex: 0,
-        playerSelectedIndex: 0,
-        lastNavigateUpState: false,
-        lastNavigateDownState: false,
-        lastNavigateLeftState: false,
-        lastNavigateRightState: false,
-        lastSelectState: false,
-        // Minimal UI stubs so render() / shakeItem() don't throw
-        container: {},
-        traderList: { innerHTML: '' },
-        playerList: { innerHTML: '' },
-        playerMoneyText: { innerText: '' },
-        itemDetailsPanel: { innerHTML: '' },
-        traderPanel: {},
-        playerPanel: {},
-        // Stub manager singletons used by BaseTrader.render / BaseTrader.hide
-        menuManager: {},
-        uiManager: { hideControlHints: vi.fn(), showControlHints: vi.fn() },
     });
     return trader;
 }
 
 /** Minimal player stub */
 function makePlayer(overrides: Record<string, unknown> = {}) {
-    return {
+    const playerMock = mockDeep<Player>({
         bits: 500,
         inventory: [] as Item[],
-        ...overrides,
-    } as any;
+    });
+    Object.assign(playerMock, overrides);
+    return playerMock;
 }
 
 /** A simple sellable Item for testing */
@@ -119,7 +85,7 @@ function makeSellableItem(id: string, buyPrice: number, sellPrice: number): Item
         clone: vi.fn(function (this: any) {
             return { ...this, id: `${id}_clone`, clone: this.clone };
         }),
-    } as any;
+    } as unknown as Item;
 }
 
 /** An equippable item (e.g. weapon) for testing */
@@ -180,6 +146,8 @@ describe('BaseTrader – buy transaction', () => {
     });
 
     it('does not sell if player lacks funds', () => {
+        const audioManagerMock = mockDeep<AudioManager>();
+        trader = makeTrader({ audioManager: audioManagerMock });
         const item = makeSellableItem('i1', 300, 150);
         trader.traderInventory = [item];
 
@@ -188,7 +156,7 @@ describe('BaseTrader – buy transaction', () => {
         expect(player.bits).toBe(200); // unchanged
         expect(player.inventory.length).toBe(0);
         expect(trader.traderInventory.length).toBe(1);
-        expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
+        expect(audioManagerMock.playInsufficient).toHaveBeenCalledOnce();
     });
 
     it('marks bought equippable item as not equipped', () => {
@@ -198,7 +166,7 @@ describe('BaseTrader – buy transaction', () => {
         (trader as any).handleTransaction(player);
 
         const bought = player.inventory[0];
-        expect((bought as EquippableItem).isEquipped).toBe(false);
+        expect((bought as unknown as EquippableItem).isEquipped).toBe(false);
     });
 
     it('adjusts selectedIndex when last item is bought', () => {
@@ -212,12 +180,14 @@ describe('BaseTrader – buy transaction', () => {
     });
 
     it('plays the buy sound after a successful purchase', () => {
+        const audioManagerMock = mockDeep<AudioManager>();
+        trader = makeTrader({ audioManager: audioManagerMock });
         const item = makeSellableItem('i1', 100, 50);
         trader.traderInventory = [item];
 
         (trader as any).handleTransaction(player);
 
-        expect(AudioManager.Instance.playBuy).toHaveBeenCalledOnce();
+        expect(audioManagerMock.playBuy).toHaveBeenCalledOnce();
     });
 });
 
@@ -230,12 +200,12 @@ describe('BaseTrader – sell transaction', () => {
     beforeEach(() => {
         trader = makeTrader();
         trader.activePanel = TraderPanel.PLAYER;
-        player = makePlayer({ bits: 100, inventory: [] as Item[] });
+        player = makePlayer({ bits: 100, inventory: [] });
     });
 
     it('credits player bits with sell price', () => {
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
@@ -244,7 +214,7 @@ describe('BaseTrader – sell transaction', () => {
 
     it('removes the item from player inventory', () => {
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
@@ -253,7 +223,7 @@ describe('BaseTrader – sell transaction', () => {
 
     it('adds a clone of the sold item to trader inventory', () => {
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
@@ -261,19 +231,22 @@ describe('BaseTrader – sell transaction', () => {
     });
 
     it('does not sell an equipped item', () => {
+        const audioManagerMock = mockDeep<AudioManager>();
+        trader = makeTrader({ audioManager: audioManagerMock });
+        trader.activePanel = TraderPanel.PLAYER;
         const item = makeEquippableItem('e2', 200, 80, true); // equipped
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
         expect(player.bits).toBe(100); // unchanged
         expect(player.inventory.length).toBe(1);
-        expect(AudioManager.Instance.playInsufficient).toHaveBeenCalledOnce();
+        expect(audioManagerMock.playInsufficient).toHaveBeenCalledOnce();
     });
 
     it('can sell an un-equipped equippable item', () => {
         const item = makeEquippableItem('e3', 200, 80, false); // not equipped
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
@@ -282,12 +255,15 @@ describe('BaseTrader – sell transaction', () => {
     });
 
     it('plays the sell sound after a successful sale', () => {
+        const audioManagerMock = mockDeep<AudioManager>();
+        trader = makeTrader({ audioManager: audioManagerMock });
+        trader.activePanel = TraderPanel.PLAYER;
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory = [item];
+        player.inventory.push(item);
 
         (trader as any).handleTransaction(player);
 
-        expect(AudioManager.Instance.playSell).toHaveBeenCalledOnce();
+        expect(audioManagerMock.playSell).toHaveBeenCalledOnce();
     });
 });
 
@@ -321,9 +297,11 @@ describe('BaseTrader – trader inventory', () => {
  * Build a TestTrader with a container that has a proper style object
  * so show() and hide() don't throw.
  */
-function makeTraderWithDOM(): TestTrader {
-    const trader = makeTrader();
-    (trader as any).container = { style: { display: 'none' } };
+function makeTraderWithDOM(overrides: TestTraderOverrides = {}): TestTrader {
+    const trader = makeTrader(overrides);
+    const container = document.createElement('div');
+    container.style.display = 'none';
+    (trader as any).container = container;
     return trader;
 }
 
@@ -373,10 +351,11 @@ describe('BaseTrader.show', () => {
     });
 
     it('plays the UI open sound when shown from hidden', () => {
-        const trader = makeTraderWithDOM();
+        const audioManagerMock = mockDeep<AudioManager>();
+        const trader = makeTraderWithDOM({ audioManager: audioManagerMock });
         trader.isVisible = false;
         (trader as any).show();
-        expect(AudioManager.Instance.playUiOpen).toHaveBeenCalledOnce();
+        expect(audioManagerMock.playUiOpen).toHaveBeenCalledOnce();
     });
 });
 
@@ -402,10 +381,11 @@ describe('BaseTrader.hide', () => {
     });
 
     it('plays the UI close sound when hidden from visible', () => {
-        const trader = makeTraderWithDOM();
+        const audioManagerMock = mockDeep<AudioManager>();
+        const trader = makeTraderWithDOM({ audioManager: audioManagerMock });
         trader.isVisible = true;
         (trader as any).hide();
-        expect(AudioManager.Instance.playUiClose).toHaveBeenCalledOnce();
+        expect(audioManagerMock.playUiClose).toHaveBeenCalledOnce();
     });
 });
 
@@ -441,162 +421,182 @@ describe('BaseTrader.toggle', () => {
     });
 });
 
-// ─── handleNavigation ─────────────────────────────────────────────────────────
-
-function makeInput(overrides: Partial<{
-    isNavigateUpPressed: () => boolean;
-    isNavigateDownPressed: () => boolean;
-    isNavigateLeftPressed: () => boolean;
-    isNavigateRightPressed: () => boolean;
-    isSelectPressed: () => boolean;
-    isCancelPressed: () => boolean;
-}> = {}) {
-    return {
-        isNavigateUpPressed: vi.fn().mockReturnValue(false),
-        isNavigateDownPressed: vi.fn().mockReturnValue(false),
-        isNavigateLeftPressed: vi.fn().mockReturnValue(false),
-        isNavigateRightPressed: vi.fn().mockReturnValue(false),
-        isSelectPressed: vi.fn().mockReturnValue(false),
-        isCancelPressed: vi.fn().mockReturnValue(false),
-        ...overrides,
-    } as any;
-}
-
 function makeNavPlayer() {
     return { bits: 1000, inventory: [] as Item[] } as any;
 }
 
 describe('BaseTrader.handleNavigation – up/down', () => {
-    let trader: any;
-
-    beforeEach(() => {
-        trader = makeTraderWithDOM() as any;
+    function makeTraderWithInventory(overrides: TestTraderOverrides = {}) {
+        const trader = makeTraderWithDOM(overrides);
         trader.traderInventory = [
             makeSellableItem('a', 50, 25),
             makeSellableItem('b', 50, 25),
             makeSellableItem('c', 50, 25),
         ];
         trader.selectedIndex = 1;
-    });
+        return trader;
+    }
 
     it('decrements selectedIndex on navigate up', () => {
-        const input = makeInput({ isNavigateUpPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateUpPressed: vi.fn().mockReturnValue(true),
+        });
+
+        const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
+        trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(0);
     });
 
     it('does not go below 0 on navigate up', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateUpPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
         trader.selectedIndex = 0;
-        const input = makeInput({ isNavigateUpPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(0);
     });
 
     it('increments selectedIndex on navigate down', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateDownPressed: vi.fn().mockReturnValue(true),
+        });
+        const audioManagerMock = mockDeep<AudioManager>();
+        const trader = makeTraderWithInventory({ inputManager: inputManagerMock, audioManager: audioManagerMock });
         trader.selectedIndex = 0;
-        const input = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(1);
-        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
+        expect(audioManagerMock.playMenuNavigate).toHaveBeenCalledOnce();
     });
 
     it('does not exceed last item index on navigate down', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateDownPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
         trader.selectedIndex = 2; // last index
-        const input = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(2);
     });
 
     it('debounces up navigation when key is held', () => {
-        trader.lastNavigateUpState = true;
-        const input = makeInput({ isNavigateUpPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateUpPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
+        (trader as any).lastNavigateUpState = true;
+        trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(1); // unchanged
     });
 
     it('debounces down navigation when key is held', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateDownPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
         trader.selectedIndex = 0;
-        trader.lastNavigateDownState = true;
-        const input = makeInput({ isNavigateDownPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        (trader as any).lastNavigateDownState = true;
+        trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(0); // unchanged
     });
 });
 
 describe('BaseTrader.handleNavigation – panel switching', () => {
-    let trader: any;
-
-    beforeEach(() => {
-        trader = makeTraderWithDOM() as any;
+    function makeTraderWithSellableItem(overrides: TestTraderOverrides = {}) {
+        const trader = makeTraderWithDOM(overrides);
         trader.traderInventory = [makeSellableItem('x', 50, 25)];
         trader.selectedIndex = 0;
-        trader.traderSelectedIndex = 0;
-        trader.playerSelectedIndex = 0;
-    });
+        return trader;
+    }
 
     it('switches activePanel to PLAYER on navigate right', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateRightPressed: vi.fn().mockReturnValue(true),
+        });
+        const audioManagerMock = mockDeep<AudioManager>();
+        const trader = makeTraderWithSellableItem({ inputManager: inputManagerMock, audioManager: audioManagerMock });
         trader.activePanel = TraderPanel.TRADER;
-        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        trader.update(makeNavPlayer());
         expect(trader.activePanel).toBe(TraderPanel.PLAYER);
-        expect(AudioManager.Instance.playMenuNavigate).toHaveBeenCalledOnce();
+        expect(audioManagerMock.playMenuNavigate).toHaveBeenCalledOnce();
     });
 
     it('restores saved playerSelectedIndex when switching to PLAYER panel', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateRightPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithDOM({ inputManager: inputManagerMock });
         trader.activePanel = TraderPanel.TRADER;
         trader.selectedIndex = 2;
-        trader.playerSelectedIndex = 3;
-        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        (trader as any).playerSelectedIndex = 3;
+        trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(3);
     });
 
     it('saves traderSelectedIndex when switching to PLAYER panel', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateRightPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithDOM({ inputManager: inputManagerMock });
         trader.activePanel = TraderPanel.TRADER;
         trader.selectedIndex = 2;
-        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
-        expect(trader.traderSelectedIndex).toBe(2);
+        trader.update(makeNavPlayer());
+        expect((trader as any).traderSelectedIndex).toBe(2);
     });
 
     it('switches activePanel to TRADER on navigate left', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateLeftPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithSellableItem({ inputManager: inputManagerMock });
         trader.activePanel = TraderPanel.PLAYER;
-        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        trader.update(makeNavPlayer());
         expect(trader.activePanel).toBe(TraderPanel.TRADER);
     });
 
     it('restores saved traderSelectedIndex when switching to TRADER panel', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateLeftPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithSellableItem({ inputManager: inputManagerMock });
         trader.activePanel = TraderPanel.PLAYER;
         trader.selectedIndex = 5;
-        trader.traderSelectedIndex = 2;
-        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        (trader as any).traderSelectedIndex = 2;
+        trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(2);
     });
 
     it('saves playerSelectedIndex when switching to TRADER panel', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateLeftPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithSellableItem({ inputManager: inputManagerMock });
         trader.activePanel = TraderPanel.PLAYER;
         trader.selectedIndex = 5;
-        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
-        expect(trader.playerSelectedIndex).toBe(5);
+        trader.update(makeNavPlayer());
+        expect((trader as any).playerSelectedIndex).toBe(5);
     });
 
     it('does not switch panel when already on TRADER and navigate left is pressed', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateLeftPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithSellableItem({ inputManager: inputManagerMock });
         trader.activePanel = TraderPanel.TRADER;
         trader.selectedIndex = 2;
-        const input = makeInput({ isNavigateLeftPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        trader.update(makeNavPlayer());
         expect(trader.activePanel).toBe(TraderPanel.TRADER);
         expect(trader.selectedIndex).toBe(2);
     });
 
     it('does not switch panel when already on PLAYER and navigate right is pressed', () => {
+        const inputManagerMock = mockDeep<InputManager>({
+            isNavigateRightPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithSellableItem({ inputManager: inputManagerMock });
         trader.activePanel = TraderPanel.PLAYER;
         trader.selectedIndex = 3;
-        const input = makeInput({ isNavigateRightPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        trader.update(makeNavPlayer());
         expect(trader.activePanel).toBe(TraderPanel.PLAYER);
         expect(trader.selectedIndex).toBe(3);
     });
@@ -604,19 +604,23 @@ describe('BaseTrader.handleNavigation – panel switching', () => {
 
 describe('BaseTrader.handleNavigation – cancel', () => {
     it('calls hide() when cancel is pressed', () => {
-        const trader = makeTraderWithDOM() as any;
+        const inputManagerMock = mockDeep<InputManager>({
+            isCancelPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithDOM({ inputManager: inputManagerMock });
         const hideSpy = vi.spyOn(trader, 'hide');
-        const input = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        trader.update(makeNavPlayer());
         expect(hideSpy).toHaveBeenCalledOnce();
     });
 
     it('does not change selectedIndex when cancel is pressed', () => {
-        const trader = makeTraderWithDOM() as any;
+        const inputManagerMock = mockDeep<InputManager>({
+            isCancelPressed: vi.fn().mockReturnValue(true),
+        });
+        const trader = makeTraderWithDOM({ inputManager: inputManagerMock });
         trader.selectedIndex = 1;
-        vi.spyOn(trader, 'hide').mockImplementation(() => {});
-        const input = makeInput({ isCancelPressed: vi.fn().mockReturnValue(true) });
-        (trader as any).handleNavigation(makeNavPlayer(), input);
+        vi.spyOn(trader, 'hide').mockImplementation(() => { });
+        trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(1);
     });
 });

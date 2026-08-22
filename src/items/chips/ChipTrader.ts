@@ -1,14 +1,18 @@
-import { Player } from '../../Player';
+import { Player } from '../../player/Player';
+import { CardCollection } from '../cards/CardCollection';
 import { Item } from '../Item';
 import { ChipItem } from './ChipItem';
 import { ChipType } from './Chip';
 import { ChipRepository } from './ChipRepository';
 import { BaseTrader } from '../BaseTrader';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
-import { CardCollection } from '../cards/CardCollection';
 import { Album } from '../cards/Card';
-import { InputManager } from '../../InputManager';
+import { InputManager } from '../../controls/InputManager';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import { singleton } from 'tsyringe';
+import { AudioManager } from '../../AudioManager';
+import { MenuManager } from '../../ui/MenuManager';
+import { UIManager } from '../../ui/UIManager';
 
 /** A.001 bonus: 5% buy discount and 5% sell bonus on chips when collection A.001 is complete */
 const A001_DISCOUNT = 0.05;
@@ -16,14 +20,19 @@ const A001_DISCOUNT = 0.05;
 /** Chip types that should NOT appear in the trader inventory (drop-only items) */
 const TRADER_EXCLUDED_CHIP_TYPES: ChipType[] = [ChipType.RAZORWIRE, ChipType.DATAMINE];
 
+@singleton()
 export class ChipTrader extends BaseTrader {
-    private static instance: ChipTrader; // Singleton
-
-    private chipRepository: ChipRepository;
     private pendingInventoryInit: boolean = true;
 
-    private constructor() {
-        super({
+    constructor(
+        private readonly cardCollection: CardCollection,
+        private readonly chipRepository: ChipRepository,
+        audioManager: AudioManager,
+        menuManager: MenuManager,
+        uiManager: UIManager,
+        inputManager: InputManager,
+    ) {
+        const traderUIConfig = {
             title: 'CHIP TRADER',
             traderTitle: "Chip Trader's Goods",
             playerTitle: 'Your Inventory',
@@ -36,22 +45,18 @@ export class ChipTrader extends BaseTrader {
                 moneyColor: TRADER_UI_COLORS.MONEY_COLOR,
                 text: TRADER_UI_COLORS.TEXT
             }
-        });
-        this.chipRepository = ChipRepository.Instance;
+        };
+        super(audioManager, menuManager, uiManager, inputManager, traderUIConfig);
         this.initializeTraderInventory();
     }
 
-    public static get Instance(): ChipTrader {
-        return this.instance || (this.instance = new this());
-    }
-
-    update(player: Player, input?: InputManager) {
+    update(player: Player) {
         if (this.pendingInventoryInit) {
             this.refreshInventory(player);
             this.pendingInventoryInit = false;
             this.needsRender = true;
         }
-        super.update(player, input);
+        super.update(player);
     }
 
     protected initializeTraderInventory() {
@@ -87,14 +92,14 @@ export class ChipTrader extends BaseTrader {
 
     protected getEffectiveBuyPrice(item: Item, _player: Player): number {
         const base = item.buyPrice ?? 0;
-        return CardCollection.Instance.isAlbumComplete(Album.A001)
+        return this.cardCollection.isAlbumComplete(Album.A001)
             ? Math.floor(base * (1 - A001_DISCOUNT))
             : base;
     }
 
     protected getEffectiveSellPrice(item: Item, _player: Player): number {
         const base = item.sellPrice ?? 0;
-        return CardCollection.Instance.isAlbumComplete(Album.A001)
+        return this.cardCollection.isAlbumComplete(Album.A001)
             ? Math.ceil(base * (1 + A001_DISCOUNT))
             : base;
     }

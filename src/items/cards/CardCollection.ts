@@ -1,3 +1,4 @@
+import { singleton } from 'tsyringe';
 import { Album } from './Card';
 import { Card, CardDefinitions } from './Card';
 
@@ -5,9 +6,8 @@ import { Card, CardDefinitions } from './Card';
  * Manages the player's card collection
  * Tracks which cards have been collected
  */
+@singleton()
 export class CardCollection {
-    private static instance: CardCollection;
-    
     // Set of collected card IDs in format "album-slot" (e.g., "A.001-1")
     private collectedCards: Set<string> = new Set();
 
@@ -17,12 +17,6 @@ export class CardCollection {
     isAlbumComplete(album: Album): boolean {
         const progress = this.getAlbumProgress(album);
         return progress.total > 0 && progress.collected === progress.total;
-    }
-
-    private constructor() {}
-
-    public static get Instance(): CardCollection {
-        return this.instance || (this.instance = new this());
     }
 
     /**

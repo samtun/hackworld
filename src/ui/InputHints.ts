@@ -1,4 +1,4 @@
-import { InputManager } from '../InputManager';
+import { InputManager } from '../controls/InputManager';
 
 /**
  * Utility module for generating dynamic input hints based on connected input method
