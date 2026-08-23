@@ -1,3 +1,13 @@
+# [4.0.0](https://github.com/samtun/hackworld/compare/v3.49.0...v4.0.0) (2026-08-23)
+
+
+* feat!: switch from singletons to di container ([5eef6b6](https://github.com/samtun/hackworld/commit/5eef6b6aad28a1dfbfdf96d3bc7b53cd6e96d1dd))
+
+
+### BREAKING CHANGES
+
+* switch from singletons to di container
+
 # [3.49.0](https://github.com/samtun/hackworld/compare/v3.48.0...v3.49.0) (2026-08-22)
 
 
