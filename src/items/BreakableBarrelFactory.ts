@@ -9,6 +9,7 @@ import { CoreRepository } from "./cores/CoreRepository";
 import { ItemDropFactory } from "./ItemDropFactory";
 import { TierManager } from "./TierManager";
 import { ItemDropManager } from "./ItemDropManager";
+import { PhysicsBodyMetadataManager } from "../PhysicsBodyMetadata";
 
 @singleton()
 export class BreakableBarrelFactory {
@@ -22,7 +23,8 @@ export class BreakableBarrelFactory {
         private readonly coreRepository: CoreRepository,
         private readonly tierManager: TierManager,
         private readonly itemDropFactory: ItemDropFactory,
-        private readonly itemDropManager: ItemDropManager
+        private readonly itemDropManager: ItemDropManager,
+        private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager
     ) { }
 
     public createBreakableBarrel(position: CANNON.Vec3): BreakableBarrel {
@@ -34,6 +36,7 @@ export class BreakableBarrelFactory {
             this.tierManager,
             this.itemDropFactory,
             this.itemDropManager,
+            this.physicsBodyMetadataManager,
             this.scene,
             this.physicsWorld,
             this.physicsMaterial,

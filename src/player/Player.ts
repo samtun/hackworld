@@ -13,11 +13,12 @@ import { WeaponRepository } from '../items/weapons/WeaponRepository';
 import { BaseMesh } from '../BaseMesh';
 import { StatType } from '../StatType';
 import { Skill } from './skills/Skill';
-import { Breakable, isBreakable } from '../items/Breakable';
+import { Breakable } from '../items/Breakable';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { SkillTechType } from './skills/SkillType';
 import { Tier, TierManager } from '../items/TierManager';
 import { BlockShield } from '../BlockShield';
+import { PhysicsBodyKind, PhysicsBodyMetadataManager } from '../PhysicsBodyMetadata';
 import { CardCollection } from '../items/cards/CardCollection';
 import { Album } from '../items/cards/Card';
 import { BlobShadow } from '../BlobShadow';
@@ -277,6 +278,7 @@ export class Player extends BaseMesh {
         private readonly audioManager: AudioManager,
         private readonly skillFactory: SkillFactory,
         private readonly weaponFactory: WeaponFactory,
+        private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager,
     ) {
         super('models/main_character.glb', assetManager);
         this.id = crypto.randomUUID();
@@ -328,11 +330,11 @@ export class Player extends BaseMesh {
         // Initialize weapon visual (after bone references are set)
         this.weapon = this.weaponFactory.createWeapon(swordItem.model, swordItem.weaponType, swordItem.damage);
         this.weapon.onHit = (e: any) => {
-            const entity = e.body.entity;
-            if (entity && entity instanceof Enemy) {
-                this.handleAttackHit(entity);
-            } else if (isBreakable(entity) && !entity.isDestroyed) {
-                this.handleBreakableHit(entity);
+            const metadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(e.body);
+            if (metadata?.kind === PhysicsBodyKind.Enemy) {
+                this.handleAttackHit(metadata.entity);
+            } else if (metadata?.kind === PhysicsBodyKind.Breakable && !metadata.entity.isDestroyed) {
+                this.handleBreakableHit(metadata.entity);
             }
         };
         this.setWeapon(swordItem);
@@ -858,8 +860,8 @@ export class Player extends BaseMesh {
         const hitboxZ = this.body.position.z;
 
         for (const body of this.body.world!.bodies) {
-            const entity = (body as any).entity;
-            if (!entity) continue;
+            const metadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(body);
+            if (!metadata || metadata.kind === PhysicsBodyKind.EnemyAttackHitbox) continue;
 
             const dx = body.position.x - hitboxX;
             const dy = body.position.y - hitboxY;
@@ -867,10 +869,10 @@ export class Player extends BaseMesh {
             const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
 
             if (dist <= this.DASH_HITBOX_RADIUS) {
-                if (entity instanceof Enemy) {
-                    this.handleDashHit(entity);
-                } else if (isBreakable(entity) && !entity.isDestroyed) {
-                    this.handleBreakableHit(entity);
+                if (metadata.kind === PhysicsBodyKind.Enemy) {
+                    this.handleDashHit(metadata.entity);
+                } else if (metadata.kind === PhysicsBodyKind.Breakable && !metadata.entity.isDestroyed) {
+                    this.handleBreakableHit(metadata.entity);
                 }
             }
         }
@@ -1059,8 +1061,9 @@ export class Player extends BaseMesh {
             const weaponRadius = weaponShape ? weaponShape.radiusTop : 0.5;
 
             for (const body of this.body.world!.bodies) {
-                const entity = (body as any).entity;
-                if (isBreakable(entity) && !entity.isDestroyed) {
+                const metadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(body);
+                if (metadata?.kind === PhysicsBodyKind.Breakable && !metadata.entity.isDestroyed) {
+                    const entity = metadata.entity;
                     const dx = body.position.x - weaponPos.x;
                     const dy = body.position.y - weaponPos.y;
                     const dz = body.position.z - weaponPos.z;
@@ -1755,8 +1758,9 @@ export class Player extends BaseMesh {
      */
     private executeLevelUpShockwave(): void {
         for (const body of this.physicsWorld.bodies) {
-            const entity = (body as any).entity;
-            if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
+            const metadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(body);
+            if (metadata?.kind === PhysicsBodyKind.Enemy && !metadata.entity.isDead && !metadata.entity.isDying) {
+                const entity = metadata.entity;
                 const dx = body.position.x - this.body.position.x;
                 const dz = body.position.z - this.body.position.z;
                 const distance = Math.sqrt(dx * dx + dz * dz);

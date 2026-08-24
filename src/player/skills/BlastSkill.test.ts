@@ -6,9 +6,13 @@ import { Tier } from '../../items/TierManager';
 import { SkillTechType } from './SkillType';
 import type { Player } from '../Player';
 import * as THREE from 'three';
+import * as CANNON from 'cannon-es';
 import { GLTF } from 'three/examples/jsm/Addons.js';
 import { mock, mockDeep } from 'vitest-mock-extended';
 import { AssetManager } from '../../AssetManager';
+import { PhysicsBodyMetadataManager } from '../../PhysicsBodyMetadata';
+
+const physicsBodyMetadataManager = new PhysicsBodyMetadataManager();
 
 interface BlastSkillTestOverrides {
     onCompletedCallback?: () => void;
@@ -22,7 +26,8 @@ function makeEnemy(x: number, z: number) {
     enemy.isDead = false;
     enemy.isDying = false;
     enemy.takeDamage = vi.fn();
-    const body = { position: { x, y: 0, z }, entity: enemy };
+    const body = { position: { x, y: 0, z } } as unknown as CANNON.Body;
+    physicsBodyMetadataManager.registerEnemyBody(body, enemy);
     return { enemy, body };
 }
 
@@ -61,7 +66,8 @@ function makeBlastSkill(overrides: BlastSkillTestOverrides = {}): BlastSkill {
         overrides.onCompletedCallback ?? vi.fn(),
         overrides.assetManager ?? createDefaultAssetManager(),
         overrides.audioManager ?? mockDeep<AudioManager>(),
-        overrides.uiManager ?? mockDeep<any>()
+        overrides.uiManager ?? mockDeep<any>(),
+        physicsBodyMetadataManager
     );
 }
 

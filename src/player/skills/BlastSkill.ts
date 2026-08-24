@@ -5,11 +5,11 @@ import { Enemy } from '../../enemies/Enemy';
 import { Skill } from './Skill';
 import { SkillTechType } from './SkillType';
 import { Tier } from '../../items/TierManager';
-import { isBreakable } from '../../items/Breakable';
 import { AudioManager } from '../../AudioManager';
 import { BlastFx } from './BlastFx';
 import { AssetManager } from '../../AssetManager';
 import { UIManager } from '../../ui/UIManager';
+import { PhysicsBodyKind, PhysicsBodyMetadataManager } from '../../PhysicsBodyMetadata';
 
 /**
  * Blast Skill
@@ -58,6 +58,7 @@ export class BlastSkill extends Skill {
         assetManager: AssetManager,
         audioManager: AudioManager,
         uiManager: UIManager,
+        private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager,
     ) {
         super('Blast', 10, 300, onCompletedCallback, 'images/ui_icons/blast.png', audioManager, uiManager);
         this.assetManager = assetManager;
@@ -123,8 +124,9 @@ export class BlastSkill extends Skill {
             this.fx?.update(dt);
 
             for (const body of this.world.bodies) {
-                const entity = (body as any).entity;
-                if (entity && entity instanceof Enemy && !this.hitEnemies.has(entity) && !entity.isDead && !entity.isDying) {
+                const metadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(body);
+                if (metadata?.kind === PhysicsBodyKind.Enemy && !this.hitEnemies.has(metadata.entity) && !metadata.entity.isDead && !metadata.entity.isDying) {
+                    const entity = metadata.entity;
                     const dx = body.position.x - this.player.body.position.x;
                     const dz = body.position.z - this.player.body.position.z;
                     const distance = Math.sqrt(dx * dx + dz * dz);
@@ -137,7 +139,8 @@ export class BlastSkill extends Skill {
                         this.player.tryIncrementSkillTech(SkillTechType.BLAST);
                         console.log(`Blast hit enemy for ${damage} damage`);
                     }
-                } else if (isBreakable(entity) && !entity.isDestroyed) {
+                } else if (metadata?.kind === PhysicsBodyKind.Breakable && !metadata.entity.isDestroyed) {
+                    const entity = metadata.entity;
                     const dx = body.position.x - this.player.body.position.x;
                     const dz = body.position.z - this.player.body.position.z;
                     const distance = Math.sqrt(dx * dx + dz * dz);

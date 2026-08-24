@@ -10,6 +10,7 @@ import type { DungeonNavGrid, NavWaypoint } from '../navigation/DungeonNavGrid';
 import { BlobShadow } from '../BlobShadow';
 import type { BreakableBarrel } from '../items/BreakableBarrel';
 import { AudioManager } from '../AudioManager';
+import { PhysicsBodyKind, PhysicsBodyMetadataManager } from '../PhysicsBodyMetadata';
 import {
     DEFAULT_ENEMY_TYPE,
     EnemyAttackMode,
@@ -271,6 +272,7 @@ export class Enemy extends BaseMesh {
         private readonly audioManager: AudioManager,
         private readonly floatingIndicatorManager: FloatingIndicatorManager,
         private readonly playerRegistry: PlayerRegistry,
+        private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager,
         assetManager: AssetManager,
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
@@ -359,7 +361,7 @@ export class Enemy extends BaseMesh {
         this.body.collisionFilterMask |= PLAYER_COLLISION_GROUP;
         this.body.addShape(shape);
         this.body.position.copy(position);
-        (this.body as any).entity = this;
+        this.physicsBodyMetadataManager.registerEnemyBody(this.body, this);
         physicsWorld.addBody(this.body);
 
         this.player = this.playerRegistry.activePlayers[0];
@@ -494,8 +496,7 @@ export class Enemy extends BaseMesh {
             material: this.physicsMaterial
         });
         this.attackHitboxBody.addShape(shape);
-        (this.attackHitboxBody as any).isEnemyAttackHitbox = true;
-        (this.attackHitboxBody as any).enemy = this;
+        this.physicsBodyMetadataManager.registerEnemyAttackHitbox(this.attackHitboxBody);
     }
 
     protected activateAttackHitbox() {
@@ -526,7 +527,6 @@ export class Enemy extends BaseMesh {
             this.body.position.z + forward.z * this.attackHitboxOffset
         );
     }
-
     /**
      * Get the distance from this enemy to the player
      */
@@ -1319,17 +1319,12 @@ export class Enemy extends BaseMesh {
     }
 
     private isProjectileBlockingBody(body: CANNON.Body): boolean {
-        const bodyMetadata = body as CANNON.Body & {
-            isAttackHitbox?: boolean;
-            isEnemyAttackHitbox?: boolean;
-            isTrigger?: boolean;
-        };
-
         if (body === this.body || body === this.player.body || body === this.attackHitboxBody) {
             return false;
         }
 
-        if (bodyMetadata.isAttackHitbox || bodyMetadata.isEnemyAttackHitbox || bodyMetadata.isTrigger) {
+        const bodyMetadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(body);
+        if (bodyMetadata?.kind === PhysicsBodyKind.EnemyAttackHitbox || body.isTrigger) {
             return false;
         }
 
@@ -1552,6 +1547,7 @@ export class Enemy extends BaseMesh {
         this.blobShadow.cleanup();
         this.scene.remove(this.mesh);
         this.world.removeBody(this.body);
+        this.physicsBodyMetadataManager.unregisterPhysicsBody(this.body);
         this.disposeMesh();
     }
 }

@@ -8,6 +8,7 @@ import { AssetManager } from '../AssetManager';
 import { AudioManager } from '../AudioManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { PlayerRegistry } from '../player/PlayerRegistry';
+import { PhysicsBodyMetadataManager } from '../PhysicsBodyMetadata';
 
 
 @singleton()
@@ -20,6 +21,7 @@ export class EnemyFactory {
         private readonly floatingIndicatorManager: FloatingIndicatorManager,
         private readonly playerRegistry: PlayerRegistry,
         private readonly assetManager: AssetManager,
+        private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager,
     ) { }
 
     public createEnemy(
@@ -31,6 +33,7 @@ export class EnemyFactory {
             this.audioManager,
             this.floatingIndicatorManager,
             this.playerRegistry,
+            this.physicsBodyMetadataManager,
             this.assetManager,
             this.scene,
             this.physicsWorld,
@@ -49,6 +52,7 @@ export class EnemyFactory {
             this.audioManager,
             this.floatingIndicatorManager,
             this.playerRegistry,
+            this.physicsBodyMetadataManager,
             this.assetManager,
             this.scene,
             this.physicsWorld,

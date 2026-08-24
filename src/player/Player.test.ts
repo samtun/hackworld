@@ -23,9 +23,12 @@ import { mock, mockDeep } from 'vitest-mock-extended';
 import * as THREE from 'three';
 import { container } from 'tsyringe';
 import { Weapon } from '../items/weapons/Weapon';
+import { PhysicsBodyMetadataManager } from '../PhysicsBodyMetadata';
 import { RangedSkill } from './skills/RangedSkill';
 import { RecoverySkill } from './skills/RecoverySkill';
 import { BlastSkill } from './skills/BlastSkill';
+
+const physicsBodyMetadataManager = new PhysicsBodyMetadataManager();
 
 interface PlayerDependencyOverrides {
     position?: CANNON.Vec3;
@@ -174,6 +177,7 @@ function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
         audioManager,
         skillFactory,
         weaponFactory,
+        physicsBodyMetadataManager,
     );
 
     // Set position and update to ensure the player is not considered "airborne" at the start of tests
@@ -1645,8 +1649,14 @@ describe('Player.executeLevelUpShockwave', () => {
         Object.assign(enemy, { isDead, isDying, takeDamage: vi.fn() });
         const body = new CANNON.Body({ mass: 1 });
         body.position.set(x, 0.0, z);
-        (body as any).entity = enemy;
+        physicsBodyMetadataManager.registerEnemyBody(body, enemy);
         return body;
+    }
+
+    function getEnemy(body: CANNON.Body): Enemy {
+        const metadata = physicsBodyMetadataManager.getPhysicsBodyMetadata(body);
+        if (!metadata || metadata.kind !== 'enemy') throw new Error('Expected enemy body metadata');
+        return metadata.entity;
     }
 
     it('damages enemies within 10m range', () => {
@@ -1657,7 +1667,7 @@ describe('Player.executeLevelUpShockwave', () => {
 
         (player as any).executeLevelUpShockwave();
 
-        expect((nearBody as any).entity.takeDamage).toHaveBeenCalledWith(10, false, player.body.position);
+        expect(getEnemy(nearBody).takeDamage).toHaveBeenCalledWith(10, false, player.body.position);
     });
 
     it('does not damage enemies beyond 10m range', () => {
@@ -1668,7 +1678,7 @@ describe('Player.executeLevelUpShockwave', () => {
 
         (player as any).executeLevelUpShockwave();
 
-        expect((farBody as any).entity.takeDamage).not.toHaveBeenCalled();
+        expect(getEnemy(farBody).takeDamage).not.toHaveBeenCalled();
     });
 
     it('damages near enemies and skips far enemies in mixed group', () => {
@@ -1680,8 +1690,8 @@ describe('Player.executeLevelUpShockwave', () => {
 
         (player as any).executeLevelUpShockwave();
 
-        expect((nearBody as any).entity.takeDamage).toHaveBeenCalled();
-        expect((farBody as any).entity.takeDamage).not.toHaveBeenCalled();
+        expect(getEnemy(nearBody).takeDamage).toHaveBeenCalled();
+        expect(getEnemy(farBody).takeDamage).not.toHaveBeenCalled();
     });
 
     it('damages enemy at exactly 10m boundary', () => {
@@ -1692,7 +1702,7 @@ describe('Player.executeLevelUpShockwave', () => {
 
         (player as any).executeLevelUpShockwave();
 
-        expect((boundaryBody as any).entity.takeDamage).toHaveBeenCalled();
+        expect(getEnemy(boundaryBody).takeDamage).toHaveBeenCalled();
     });
 
     it('skips dead and dying enemies', () => {
@@ -1704,8 +1714,8 @@ describe('Player.executeLevelUpShockwave', () => {
 
         (player as any).executeLevelUpShockwave();
 
-        expect((deadBody as any).entity.takeDamage).not.toHaveBeenCalled();
-        expect((dyingBody as any).entity.takeDamage).not.toHaveBeenCalled();
+        expect(getEnemy(deadBody).takeDamage).not.toHaveBeenCalled();
+        expect(getEnemy(dyingBody).takeDamage).not.toHaveBeenCalled();
     });
 });
 

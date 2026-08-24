@@ -5,11 +5,11 @@ import { Enemy } from '../../enemies/Enemy';
 import { Skill } from './Skill';
 import { SkillTechType } from './SkillType';
 import { Tier } from '../../items/TierManager';
-import { Breakable, isBreakable } from '../../items/Breakable';
 import { AudioManager } from '../../AudioManager';
 import { AssetManager } from '../../AssetManager';
 import { RangedFx } from './RangedFx';
 import { UIManager } from '../../ui/UIManager';
+import { PhysicsBodyKind, PhysicsBodyMetadataManager } from '../../PhysicsBodyMetadata';
 /**
  * Ranged Skill
  */
@@ -44,6 +44,7 @@ export class RangedSkill extends Skill {
         assetManager: AssetManager,
         audioManager: AudioManager,
         uiManager: UIManager,
+        private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager,
     ) {
         super('Ranged', 5, 250, onCompletedCallback, 'images/ui_icons/ranged.png', audioManager, uiManager);
         this.assetManager = assetManager;
@@ -186,8 +187,9 @@ export class RangedSkill extends Skill {
         if (!this.world || !this.player) return;
 
         for (const body of this.world.bodies) {
-            const entity = (body as any).entity;
-            if (entity && entity instanceof Enemy && !entity.isDead && !entity.isDying) {
+            const metadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(body);
+            if (metadata?.kind === PhysicsBodyKind.Enemy && !metadata.entity.isDead && !metadata.entity.isDying) {
+                const entity = metadata.entity;
                 if (hitEnemies.has(entity)) continue;
 
                 for (let distance = 0; distance <= currentLength; distance += 1) {
@@ -212,7 +214,8 @@ export class RangedSkill extends Skill {
                         break;
                     }
                 }
-            } else if (isBreakable(entity) && !entity.isDestroyed) {
+            } else if (metadata?.kind === PhysicsBodyKind.Breakable && !metadata.entity.isDestroyed) {
+                const entity = metadata.entity;
                 for (let distance = 0; distance <= currentLength; distance += 1) {
                     const checkPos = new CANNON.Vec3(
                         startPos.x + forward.x * distance,
@@ -223,7 +226,7 @@ export class RangedSkill extends Skill {
                     const dz = body.position.z - checkPos.z;
                     const distanceToBeam = Math.sqrt(dx * dx + dz * dz);
                     if (distanceToBeam <= this.effectiveRadius && this.player.onBreakableHit) {
-                        this.player.onBreakableHit(entity as Breakable);
+                        this.player.onBreakableHit(entity);
                         break;
                     }
                 }

@@ -18,6 +18,9 @@ import { MoneyDrop } from './bits/MoneyDrop';
 import { PotionDrop } from './potions/PotionDrop';
 import { ChipItem } from './chips/ChipItem';
 import { CoreItem } from './cores/CoreItem';
+import { PhysicsBodyKind, PhysicsBodyMetadataManager } from '../PhysicsBodyMetadata';
+
+const physicsBodyMetadataManager = new PhysicsBodyMetadataManager();
 
 interface BreakableBarrelTestOverrides {
     audioManager?: AudioManager,
@@ -82,6 +85,7 @@ function makeBreakableBarrel(overrides: BreakableBarrelTestOverrides = {}): Brea
         tierManager,
         itemDropFactory,
         itemDropManager,
+        physicsBodyMetadataManager,
         scene,
         physicsWorld,
         physicsMaterial,
@@ -104,7 +108,7 @@ describe('BreakableBarrel', () => {
 
     it('sets entity reference on body', () => {
         const barrel = makeBreakableBarrel();
-        expect((barrel.body as any).entity).toBe(barrel);
+        expect(physicsBodyMetadataManager.getPhysicsBodyMetadata(barrel.body)).toEqual({ kind: PhysicsBodyKind.Breakable, entity: barrel });
     });
 
     it('onHit sets isDestroyed to true and removes mesh + body', () => {

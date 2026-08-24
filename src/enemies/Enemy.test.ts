@@ -1,3 +1,4 @@
+import { PhysicsBodyMetadataManager } from '../PhysicsBodyMetadata';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as CANNON from 'cannon-es';
 import * as THREE from 'three';
@@ -115,6 +116,7 @@ function makeEnemy(overrides: EnemyDependencyOverrides = {}): Enemy {
         audioManager,
         floatingIndicatorManager,
         playerRegistry,
+        new PhysicsBodyMetadataManager(),
         assetManager,
         scene,
         physicsWorld,

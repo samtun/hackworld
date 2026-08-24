@@ -11,6 +11,7 @@ import { TierManager } from "../items/TierManager";
 import { WeaponRepository } from "../items/weapons/WeaponRepository";
 import { SkillFactory } from "./skills/SkillFactory";
 import { WeaponFactory } from "../items/weapons/WeaponFactory";
+import { PhysicsBodyMetadataManager } from "../PhysicsBodyMetadata";
 
 @singleton()
 export class PlayerFactory {
@@ -27,6 +28,7 @@ export class PlayerFactory {
         private readonly audioManager: AudioManager,
         private readonly skillFactory: SkillFactory,
         private readonly weaponFactory: WeaponFactory,
+        private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager,
     ) { }
 
     public createPlayer(spawnPosition: CANNON.Vec3): Player {
@@ -44,6 +46,7 @@ export class PlayerFactory {
             this.audioManager,
             this.skillFactory,
             this.weaponFactory,
+            this.physicsBodyMetadataManager,
         );
     }
 }

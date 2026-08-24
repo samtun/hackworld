@@ -9,6 +9,9 @@ import type { Player } from '../Player';
 import { GLTF } from 'three/examples/jsm/Addons.js';
 import { mock, mockDeep } from 'vitest-mock-extended';
 import { AssetManager } from '../../AssetManager';
+import { PhysicsBodyMetadataManager } from '../../PhysicsBodyMetadata';
+
+const physicsBodyMetadataManager = new PhysicsBodyMetadataManager();
 
 interface RangedSkillTestOverrides {
     onCompletedCallback?: () => void;
@@ -22,7 +25,8 @@ function makeEnemy(x: number, y: number, z: number) {
     enemy.isDead = false;
     enemy.isDying = false;
     enemy.takeDamage = vi.fn();
-    const body = { position: { x, y, z }, entity: enemy };
+    const body = { position: { x, y, z } } as any;
+    physicsBodyMetadataManager.registerEnemyBody(body, enemy);
     return { enemy, body };
 }
 
@@ -71,7 +75,8 @@ function makeRangedSkill(overrides: RangedSkillTestOverrides = {}): RangedSkill 
         overrides.onCompletedCallback ?? vi.fn(),
         overrides.assetManager ?? createDefaultAssetManager(),
         overrides.audioManager ?? mockDeep<AudioManager>(),
-        overrides.uiManager ?? mockDeep<any>()
+        overrides.uiManager ?? mockDeep<any>(),
+        physicsBodyMetadataManager
     );
 }
 

@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import { PhysicsBodyMetadataManager } from '../PhysicsBodyMetadata';
 import { Breakable } from './Breakable';
 import { Player } from '../player/Player';
 import { ItemDrop } from './ItemDrop';
@@ -90,6 +91,7 @@ export class BreakableBarrel implements Breakable {
         private readonly tierManager: TierManager,
         private readonly itemDropFactory: ItemDropFactory,
         private readonly itemDropManager: ItemDropManager,
+        private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager,
         scene: THREE.Scene,
         world: CANNON.World,
         physicsMaterial: CANNON.Material,
@@ -145,7 +147,7 @@ export class BreakableBarrel implements Breakable {
         });
         this.body.addShape(physShape);
         this.body.position.set(position.x, position.y + BreakableBarrel.COLLIDER_HEIGHT / 2, position.z);
-        (this.body as any).entity = this;
+        this.physicsBodyMetadataManager.registerBreakableBody(this.body, this);
         world.addBody(this.body);
     }
 
@@ -160,6 +162,7 @@ export class BreakableBarrel implements Breakable {
         this.mesh.geometry.dispose();
         (this.mesh.material as THREE.Material).dispose();
         this.world.removeBody(this.body);
+        this.physicsBodyMetadataManager.unregisterPhysicsBody(this.body);
 
         // Spawn fragment meshes that fall apart
         this.spawnFragments();

@@ -7,6 +7,7 @@ import { AssetManager } from '../AssetManager';
 import { AudioManager } from '../AudioManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { PlayerRegistry } from '../player/PlayerRegistry';
+import { PhysicsBodyMetadataManager } from '../PhysicsBodyMetadata';
 
 enum BossAttackType {
     Melee1 = 'Melee1',
@@ -28,6 +29,7 @@ export class BossEnemy extends Enemy {
         audioManager: AudioManager,
         floatingIndicatorManager: FloatingIndicatorManager,
         playerRegistry: PlayerRegistry,
+        physicsBodyMetadataManager: PhysicsBodyMetadataManager,
         assetManager: AssetManager,
         scene: THREE.Scene,
         world: CANNON.World,
@@ -40,6 +42,7 @@ export class BossEnemy extends Enemy {
             audioManager,
             floatingIndicatorManager,
             playerRegistry,
+            physicsBodyMetadataManager,
             assetManager,
             scene,
             world,
