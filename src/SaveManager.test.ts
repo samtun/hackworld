@@ -369,7 +369,7 @@ describe('SaveManager – loadSaveData', () => {
         const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
         const data = makeSaveData();
         (mgr as any).loadSaveData(data);
-        expect(player.recalculateStats).toHaveBeenCalled();
+        expect(player.recalculateStats).toHaveBeenCalledWith(true);
     });
 
     it('returns true from loadFromLocalStorage when save exists', () => {

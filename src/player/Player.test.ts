@@ -230,6 +230,22 @@ describe('Player.recalculateStats', () => {
         expect(player.maxTp).toBe(672);
     });
 
+    it('fully heals the player when called with healing flag', () => {
+        player.hp = 1;
+        player.tp = 1;
+        player.recalculateStats(true);
+        expect(player.hp).toBe(player.maxHp);
+        expect(player.tp).toBe(player.maxTp);
+    });
+
+    it('does not heal the player when called without healing flag', () => {
+        player.hp = 1;
+        player.tp = 1;
+        player.recalculateStats(false);
+        expect(player.hp).toBe(1);
+        expect(player.tp).toBe(1);
+    });
+
     it('adds level-based HP bonus', () => {
         (player as any).level = 2;
         player.recalculateStats();
