@@ -26,8 +26,6 @@ export interface SaveData {
         level: number;
         exp: number;
         expRequired: number;
-        maxHp: number;
-        maxTp: number;
         money: number;
         xData: number;
         boosterPacks: number;
@@ -268,8 +266,6 @@ export class SaveManager {
                 level: player.level,
                 exp: player.exp,
                 expRequired: player.expRequired,
-                maxHp: player.maxHp,
-                maxTp: player.maxTp,
                 money: player.bits,
                 xData: player.xData,
                 boosterPacks: player.boosterPacks,
@@ -493,10 +489,6 @@ export class SaveManager {
         player.level = saveData.player.level;
         player.exp = saveData.player.exp;
         player.expRequired = saveData.player.expRequired;
-        player.hp = saveData.player.maxHp;
-        player.maxHp = saveData.player.maxHp;
-        player.tp = saveData.player.maxTp;
-        player.maxTp = saveData.player.maxTp;
         player.bits = saveData.player.money;
         player.xData = saveData.player.xData;
         player.boosterPacks = saveData.player.boosterPacks;
@@ -573,7 +565,7 @@ export class SaveManager {
         }
 
         // Recalculate stats based on equipped items
-        player.recalculateStats();
+        player.recalculateStats(true);
 
         // Restore playtime
         this.playTimeSeconds = saveData.playtime;

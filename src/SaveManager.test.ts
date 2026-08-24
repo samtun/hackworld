@@ -303,8 +303,6 @@ describe('SaveManager – loadSaveData', () => {
                 level: 10,
                 exp: 200,
                 expRequired: 700,
-                maxHp: 250,
-                maxTp: 100,
                 money: 5000,
                 xData: 200,
                 boosterPacks: 5,
@@ -369,7 +367,7 @@ describe('SaveManager – loadSaveData', () => {
         const mgr = makeSaveManager({ playerRegistry: makePlayerRegistryWithPlayer(player) });
         const data = makeSaveData();
         (mgr as any).loadSaveData(data);
-        expect(player.recalculateStats).toHaveBeenCalled();
+        expect(player.recalculateStats).toHaveBeenCalledWith(true);
     });
 
     it('returns true from loadFromLocalStorage when save exists', () => {
@@ -420,7 +418,7 @@ describe('SaveManager – version compatibility', () => {
             playtime: 0,
             gameProgress: 0,
             player: {
-                level: 1, exp: 0, expRequired: 100, maxHp: 100, maxTp: 50, money: 0,
+                level: 1, exp: 0, expRequired: 100, money: 0,
                 xData: 0, boosterPacks: 0, statPointsAvailable: 0,
                 strengthUpgrades: 0, defenseUpgrades: 0, hpUpgrades: 0,
                 tpUpgrades: 0, agilityUpgrades: 0, luckUpgrades: 0,
@@ -680,7 +678,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
             playtime: 0,
             gameProgress: 0,
             player: {
-                level: 5, exp: 0, expRequired: 100, maxHp: 100, maxTp: 50,
+                level: 5, exp: 0, expRequired: 100,
                 money: 0, xData: 0, boosterPacks: 0, statPointsAvailable: 0,
                 strengthUpgrades: 0, defenseUpgrades: 0, hpUpgrades: 0,
                 tpUpgrades: 0, agilityUpgrades: 0, luckUpgrades: 0,

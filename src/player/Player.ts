@@ -421,7 +421,7 @@ export class Player extends BaseMesh {
         }
     }
 
-    public recalculateStats() {
+    public recalculateStats(heal: boolean = false) {
         // Calculate level multiplier
         const levelHpBonus = this.getLevelHpBonus();
         const levelTpBonus = this.getLevelTpBonus();
@@ -434,9 +434,14 @@ export class Player extends BaseMesh {
         this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * this.HP_UPGRADE_AMOUNT) + levelHpBonus, this.MAX_HP_VALUE);
         this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * this.TP_UPGRADE_AMOUNT) + levelTpBonus, this.MAX_TP_VALUE);
 
-        // Ensure current HP/TP don't exceed new max
-        if (this.hp > this.maxHp) this.hp = this.maxHp;
-        if (this.tp > this.maxTp) this.tp = this.maxTp;
+        if (heal) {
+            this.hp = this.maxHp;
+            this.tp = this.maxTp;
+        } else {
+            // Ensure current HP/TP don't exceed new max
+            if (this.hp > this.maxHp) this.hp = this.maxHp;
+            if (this.tp > this.maxTp) this.tp = this.maxTp;
+        }
 
         // Apply core modifiers if a core is equipped
         const equippedCore = this.inventory.find(item => item instanceof CoreItem && item.isEquipped) as CoreItem | undefined;
@@ -1693,10 +1698,7 @@ export class Player extends BaseMesh {
         }
 
         // Recalculate stats with level multiplier
-        this.recalculateStats();
-
-        // Heal player up to max HP and TP
-        this.heal(this.maxHp, this.maxTp);
+        this.recalculateStats(true);
 
         // Start level-up animation (movement blocked until animation completes)
         this.isLevelingUp = true;
