@@ -208,8 +208,21 @@ describe('Player.recalculateStats', () => {
         (player as any).strengthUpgrades = 5;
         (player as any).defenseUpgrades = 3;
         player.recalculateStats();
-        expect(player.strength).toBe(6); // baseStrength(1) + upgrades(5)
-        expect(player.defense).toBe(4);  // baseDefense(1) + upgrades(3)
+        expect(player.strength).toBe(6); // baseStrength(1) + five upgrades at 1 each
+        expect(player.defense).toBe(4);  // baseDefense(1) + three upgrades at 1 each
+    });
+
+    it('uses progressive X-Data amounts when recalculating stats', () => {
+        (player as any).strengthUpgrades = 11;
+        (player as any).defenseUpgrades = 21;
+        (player as any).agilityUpgrades = 31;
+        (player as any).luckUpgrades = 41;
+        player.recalculateStats();
+
+        expect(player.strength).toBe(13); // 1 + (10 * 1) + (1 * 2)
+        expect(player.defense).toBe(34); // 1 + (10 * 1) + (10 * 2) + (1 * 3)
+        expect(player.agility).toBe(65); // 1 + (10 * 1) + (10 * 2) + (10 * 3) + (1 * 4)
+        expect(player.luck).toBe(106); // 1 + (10 * 1) + (10 * 2) + (10 * 3) + (10 * 4) + (1 * 5)
     });
 
     it('adds stat points from leveling to stats', () => {
@@ -223,15 +236,15 @@ describe('Player.recalculateStats', () => {
     it('applies HP upgrade bonus', () => {
         (player as any).hpUpgrades = 4;
         player.recalculateStats();
-        // 1700 + 4*15 = 1760
-        expect(player.maxHp).toBe(1760);
+        // Four upgrades at 50 each
+        expect(player.maxHp).toBe(1900);
     });
 
     it('applies TP upgrade bonus', () => {
         (player as any).tpUpgrades = 6;
         player.recalculateStats();
-        // 600 + 6*12 = 672
-        expect(player.maxTp).toBe(672);
+        // Five upgrades at 50, followed by one at 100
+        expect(player.maxTp).toBe(950);
     });
 
     it('fully heals the player when called with healing flag', () => {
@@ -817,14 +830,31 @@ describe('Player.upgradeWithXData', () => {
     it('upgrades HP and immediately heals by the upgrade amount', () => {
         player.hp = 150;
         player.upgradeWithXData(StatType.HP);
-        // hpUpgrades++ triggers hp += HP_TP_UPGRADE_AMOUNT (5)
-        expect(player.hp).toBe(165);
+        expect(player.hp).toBe(200);
     });
 
     it('upgrades TP and immediately restores by the upgrade amount', () => {
         player.tp = 30;
         player.upgradeWithXData(StatType.TP);
-        expect(player.tp).toBe(42);
+        expect(player.tp).toBe(80);
+    });
+
+    it('scales HP/TP upgrades every five levels and caps at 1000', () => {
+        expect(player.getXDataUpgradeAmount(StatType.HP, 0)).toBe(50);
+        expect(player.getXDataUpgradeAmount(StatType.HP, 4)).toBe(50);
+        expect(player.getXDataUpgradeAmount(StatType.HP, 5)).toBe(100);
+        expect(player.getXDataUpgradeAmount(StatType.HP, 93)).toBe(950);
+        expect(player.getXDataUpgradeAmount(StatType.HP, 94)).toBe(1000);
+        expect(player.getXDataUpgradeAmount(StatType.TP, 100)).toBe(1000);
+    });
+
+    it('scales stat upgrades every ten levels and caps at five', () => {
+        expect(player.getXDataUpgradeAmount(StatType.STRENGTH, 0)).toBe(1);
+        expect(player.getXDataUpgradeAmount(StatType.STRENGTH, 9)).toBe(1);
+        expect(player.getXDataUpgradeAmount(StatType.STRENGTH, 10)).toBe(2);
+        expect(player.getXDataUpgradeAmount(StatType.STRENGTH, 30)).toBe(4);
+        expect(player.getXDataUpgradeAmount(StatType.STRENGTH, 40)).toBe(5);
+        expect(player.getXDataUpgradeAmount(StatType.STRENGTH, 100)).toBe(5);
     });
 
     it('returns false when insufficient X-Data', () => {
