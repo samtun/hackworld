@@ -49,9 +49,13 @@ export class Player extends BaseMesh {
     public readonly MAX_STAT_VALUE = 9999;
     private readonly MAX_HP_VALUE = 999999;
     private readonly MAX_TP_VALUE = 999999;
-    private readonly HP_UPGRADE_AMOUNT = 15;
-    private readonly TP_UPGRADE_AMOUNT = 12;
-    private readonly STRENGTH_DEFENSE_UPGRADE_AMOUNT = 1;
+    private readonly BASE_HP_TP_UPGRADE_AMOUNT = 50;
+    private readonly HP_TP_UPGRADE_STEP = 5;
+    private readonly MAX_HP_TP_UPGRADE_AMOUNT = 1000;
+    private readonly HP_TP_MAX_AMOUNT_UPGRADE_LEVEL = 94;
+    private readonly BASE_STAT_UPGRADE_AMOUNT = 1;
+    private readonly STAT_UPGRADE_STEP = 10;
+    private readonly MAX_STAT_UPGRADE_AMOUNT = 5;
 
     // Stat effect formula constants
     private readonly LUCK_DIVISOR = 40000; // Divisor for luck multiplier
@@ -429,12 +433,12 @@ export class Player extends BaseMesh {
         const levelTpBonus = this.getLevelTpBonus();
 
         // Start with base stats + X-Data upgrades + stat points, then apply level multiplier
-        this.strength = Math.min(Math.floor(this.baseStrength + this.strengthUpgrades + this.strengthPoints), this.MAX_STAT_VALUE);
-        this.defense = Math.min(Math.floor(this.baseDefense + this.defenseUpgrades + this.defensePoints), this.MAX_STAT_VALUE);
-        this.agility = Math.min(Math.floor(this.baseAgility + this.agilityUpgrades + this.agilityPoints), this.MAX_STAT_VALUE);
-        this.luck = Math.min(Math.floor(this.baseLuck + this.luckUpgrades + this.luckPoints), this.MAX_STAT_VALUE);
-        this.maxHp = Math.min(this.baseHp + (this.hpUpgrades * this.HP_UPGRADE_AMOUNT) + levelHpBonus, this.MAX_HP_VALUE);
-        this.maxTp = Math.min(this.baseTp + (this.tpUpgrades * this.TP_UPGRADE_AMOUNT) + levelTpBonus, this.MAX_TP_VALUE);
+        this.strength = Math.min(Math.floor(this.baseStrength + this.getTotalXDataUpgradeAmount(StatType.STRENGTH, this.strengthUpgrades) + this.strengthPoints), this.MAX_STAT_VALUE);
+        this.defense = Math.min(Math.floor(this.baseDefense + this.getTotalXDataUpgradeAmount(StatType.DEFENSE, this.defenseUpgrades) + this.defensePoints), this.MAX_STAT_VALUE);
+        this.agility = Math.min(Math.floor(this.baseAgility + this.getTotalXDataUpgradeAmount(StatType.AGILITY, this.agilityUpgrades) + this.agilityPoints), this.MAX_STAT_VALUE);
+        this.luck = Math.min(Math.floor(this.baseLuck + this.getTotalXDataUpgradeAmount(StatType.LUCK, this.luckUpgrades) + this.luckPoints), this.MAX_STAT_VALUE);
+        this.maxHp = Math.min(this.baseHp + this.getTotalXDataUpgradeAmount(StatType.HP, this.hpUpgrades) + levelHpBonus, this.MAX_HP_VALUE);
+        this.maxTp = Math.min(this.baseTp + this.getTotalXDataUpgradeAmount(StatType.TP, this.tpUpgrades) + levelTpBonus, this.MAX_TP_VALUE);
 
         if (heal) {
             this.hp = this.maxHp;
@@ -1814,6 +1818,35 @@ export class Player extends BaseMesh {
     }
 
     /**
+     * Get the amount added by the next X-Data upgrade at the given level.
+     */
+    public getXDataUpgradeAmount(statType: StatType, currentLevel: number): number {
+        if (statType === StatType.HP || statType === StatType.TP) {
+            if (currentLevel >= this.HP_TP_MAX_AMOUNT_UPGRADE_LEVEL) {
+                return this.MAX_HP_TP_UPGRADE_AMOUNT;
+            }
+
+            return Math.min(
+                this.BASE_HP_TP_UPGRADE_AMOUNT * (Math.floor(currentLevel / this.HP_TP_UPGRADE_STEP) + 1),
+                this.MAX_HP_TP_UPGRADE_AMOUNT,
+            );
+        }
+
+        return Math.min(
+            this.BASE_STAT_UPGRADE_AMOUNT * (Math.floor(currentLevel / this.STAT_UPGRADE_STEP) + 1),
+            this.MAX_STAT_UPGRADE_AMOUNT,
+        );
+    }
+
+    private getTotalXDataUpgradeAmount(statType: StatType, upgradeCount: number): number {
+        let total = 0;
+        for (let level = 0; level < upgradeCount; level++) {
+            total += this.getXDataUpgradeAmount(statType, level);
+        }
+        return total;
+    }
+
+    /**
      * Upgrade a stat using X-Data
      * Returns true if upgrade was successful, false if not enough X-Data or stat is at max (9999)
      */
@@ -1826,38 +1859,32 @@ export class Player extends BaseMesh {
         switch (statType) {
             case StatType.STRENGTH:
                 currentLevel = this.strengthUpgrades;
-                currentValue = this.baseStrength + this.strengthUpgrades + this.strengthPoints;
+                currentValue = this.getBaseStatValue(StatType.STRENGTH);
                 break;
             case StatType.DEFENSE:
                 currentLevel = this.defenseUpgrades;
-                currentValue = this.baseDefense + this.defenseUpgrades + this.defensePoints;
+                currentValue = this.getBaseStatValue(StatType.DEFENSE);
                 break;
             case StatType.AGILITY:
                 currentLevel = this.agilityUpgrades;
-                currentValue = this.baseAgility + this.agilityUpgrades + this.agilityPoints;
+                currentValue = this.getBaseStatValue(StatType.AGILITY);
                 break;
             case StatType.LUCK:
                 currentLevel = this.luckUpgrades;
-                currentValue = this.baseLuck + this.luckUpgrades + this.luckPoints;
+                currentValue = this.getBaseStatValue(StatType.LUCK);
                 break;
             case StatType.HP:
                 currentLevel = this.hpUpgrades;
-                currentValue = this.baseHp + (this.hpUpgrades * this.HP_UPGRADE_AMOUNT) + levelHpBonus;
+                currentValue = this.baseHp + this.getTotalXDataUpgradeAmount(StatType.HP, this.hpUpgrades) + levelHpBonus;
                 break;
             case StatType.TP:
                 currentLevel = this.tpUpgrades;
-                currentValue = this.baseTp + (this.tpUpgrades * this.TP_UPGRADE_AMOUNT) + levelTpBonus;
+                currentValue = this.baseTp + this.getTotalXDataUpgradeAmount(StatType.TP, this.tpUpgrades) + levelTpBonus;
                 break;
         }
 
         // Check if stat would exceed cap
-        const upgradeAmount = (() => {
-            switch (statType) {
-                case StatType.HP: return this.HP_UPGRADE_AMOUNT;
-                case StatType.TP: return this.TP_UPGRADE_AMOUNT;
-                default: return this.STRENGTH_DEFENSE_UPGRADE_AMOUNT;
-            }
-        })();
+        const upgradeAmount = this.getXDataUpgradeAmount(statType, currentLevel);
 
         const maxStatValue = (() => {
             switch (statType) {
@@ -1893,12 +1920,12 @@ export class Player extends BaseMesh {
                 case StatType.HP:
                     this.hpUpgrades++;
                     // Heal player when upgrading HP
-                    this.hp += this.HP_UPGRADE_AMOUNT;
+                    this.hp += upgradeAmount;
                     break;
                 case StatType.TP:
                     this.tpUpgrades++;
                     // Restore TP when upgrading
-                    this.tp += this.TP_UPGRADE_AMOUNT;
+                    this.tp += upgradeAmount;
                     break;
             }
 
@@ -1918,17 +1945,17 @@ export class Player extends BaseMesh {
     getBaseStatValue(statType: StatType): number {
         switch (statType) {
             case StatType.STRENGTH:
-                return Math.min(this.baseStrength + this.strengthUpgrades + this.strengthPoints, this.MAX_STAT_VALUE);
+                return Math.min(this.baseStrength + this.getTotalXDataUpgradeAmount(StatType.STRENGTH, this.strengthUpgrades) + this.strengthPoints, this.MAX_STAT_VALUE);
             case StatType.DEFENSE:
-                return Math.min(this.baseDefense + this.defenseUpgrades + this.defensePoints, this.MAX_STAT_VALUE);
+                return Math.min(this.baseDefense + this.getTotalXDataUpgradeAmount(StatType.DEFENSE, this.defenseUpgrades) + this.defensePoints, this.MAX_STAT_VALUE);
             case StatType.HP:
-                return Math.min(100 + (this.hpUpgrades * this.HP_UPGRADE_AMOUNT), this.MAX_HP_VALUE);
+                return Math.min(100 + this.getTotalXDataUpgradeAmount(StatType.HP, this.hpUpgrades), this.MAX_HP_VALUE);
             case StatType.TP:
-                return Math.min(100 + (this.tpUpgrades * this.TP_UPGRADE_AMOUNT), this.MAX_TP_VALUE);
+                return Math.min(100 + this.getTotalXDataUpgradeAmount(StatType.TP, this.tpUpgrades), this.MAX_TP_VALUE);
             case StatType.AGILITY:
-                return Math.min(this.baseAgility + this.agilityUpgrades + this.agilityPoints, this.MAX_STAT_VALUE);
+                return Math.min(this.baseAgility + this.getTotalXDataUpgradeAmount(StatType.AGILITY, this.agilityUpgrades) + this.agilityPoints, this.MAX_STAT_VALUE);
             case StatType.LUCK:
-                return Math.min(this.baseLuck + this.luckUpgrades + this.luckPoints, this.MAX_STAT_VALUE);
+                return Math.min(this.baseLuck + this.getTotalXDataUpgradeAmount(StatType.LUCK, this.luckUpgrades) + this.luckPoints, this.MAX_STAT_VALUE);
         }
     }
 
@@ -1946,16 +1973,16 @@ export class Player extends BaseMesh {
         let currentValue = 0;
         switch (statType) {
             case StatType.STRENGTH:
-                currentValue = this.baseStrength + this.strengthUpgrades + this.strengthPoints;
+                currentValue = this.getBaseStatValue(StatType.STRENGTH);
                 break;
             case StatType.DEFENSE:
-                currentValue = this.baseDefense + this.defenseUpgrades + this.defensePoints;
+                currentValue = this.getBaseStatValue(StatType.DEFENSE);
                 break;
             case StatType.AGILITY:
-                currentValue = this.baseAgility + this.agilityUpgrades + this.agilityPoints;
+                currentValue = this.getBaseStatValue(StatType.AGILITY);
                 break;
             case StatType.LUCK:
-                currentValue = this.baseLuck + this.luckUpgrades + this.luckPoints;
+                currentValue = this.getBaseStatValue(StatType.LUCK);
                 break;
             case StatType.HP:
             case StatType.TP:

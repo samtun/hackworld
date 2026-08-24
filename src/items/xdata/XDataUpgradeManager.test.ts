@@ -40,7 +40,9 @@ function makePlayer(overrides = {}) {
         hpUpgrades: 0, tpUpgrades: 0,
         maxHp: 170, maxTp: 60,
         getBaseStatValue: vi.fn().mockReturnValue(1),
+        getStatValue: vi.fn().mockReturnValue(1),
         getUpgradeCost: vi.fn().mockReturnValue(10),
+        getXDataUpgradeAmount: vi.fn().mockReturnValue(1),
         upgradeWithXData: vi.fn().mockReturnValue(true),
         ...overrides,
     } as any;

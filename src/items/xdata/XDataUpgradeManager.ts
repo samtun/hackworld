@@ -12,7 +12,6 @@ interface StatInfo {
     type: StatType;
     label: string;
     description: string;
-    upgradeEffect: string;
 }
 
 @singleton()
@@ -37,12 +36,12 @@ export class XDataUpgradeManager {
 
     // Stat options
     private stats: StatInfo[] = [
-        { type: StatType.STRENGTH, label: 'Strength', description: 'Increases weapon damage', upgradeEffect: '+1 per upgrade' },
-        { type: StatType.DEFENSE, label: 'Defense', description: 'Reduces damage taken', upgradeEffect: '+1 per upgrade' },
-        { type: StatType.AGILITY, label: 'Agility', description: 'Increases critical hit chance', upgradeEffect: '+1 per upgrade' },
-        { type: StatType.LUCK, label: 'Luck', description: 'Increases drop rates and EXP gain', upgradeEffect: '+1 per upgrade' },
-        { type: StatType.HP, label: 'HP', description: 'Increases max health', upgradeEffect: '+15 per upgrade' },
-        { type: StatType.TP, label: 'TP', description: 'Increases max tech points', upgradeEffect: '+12 per upgrade' }
+        { type: StatType.STRENGTH, label: 'Strength', description: 'Increases weapon damage' },
+        { type: StatType.DEFENSE, label: 'Defense', description: 'Reduces damage taken' },
+        { type: StatType.AGILITY, label: 'Agility', description: 'Increases critical hit chance' },
+        { type: StatType.LUCK, label: 'Luck', description: 'Increases drop rates and EXP gain' },
+        { type: StatType.HP, label: 'HP', description: 'Increases max health' },
+        { type: StatType.TP, label: 'TP', description: 'Increases max tech points' }
     ];
 
     constructor(
@@ -174,41 +173,38 @@ export class XDataUpgradeManager {
             switch (stat.type) {
                 case StatType.STRENGTH:
                     currentLevel = player.strengthUpgrades;
-                    baseValue = player.getBaseStatValue(StatType.STRENGTH);
+                    baseValue = player.strength;
                     isMaxed = baseValue >= 9999;
                     break;
                 case StatType.DEFENSE:
                     currentLevel = player.defenseUpgrades;
-                    baseValue = player.getBaseStatValue(StatType.DEFENSE);
+                    baseValue = player.defense;
                     isMaxed = baseValue >= 9999;
                     break;
                 case StatType.AGILITY:
                     currentLevel = player.agilityUpgrades;
-                    baseValue = player.getBaseStatValue(StatType.AGILITY);
+                    baseValue = player.agility;
                     isMaxed = baseValue >= 9999;
                     break;
                 case StatType.LUCK:
                     currentLevel = player.luckUpgrades;
-                    baseValue = player.getBaseStatValue(StatType.LUCK);
+                    baseValue = player.luck;
                     isMaxed = baseValue >= 9999;
                     break;
                 case StatType.HP:
-                    // Use actual maxHp instead of getBaseStatValue() to show current value
-                    // (important for debug tools and to avoid confusion when viewing stats)
                     currentLevel = player.hpUpgrades;
                     baseValue = player.maxHp;
-                    isMaxed = baseValue >= 9999;
+                    isMaxed = baseValue >= 999999;
                     break;
                 case StatType.TP:
-                    // Use actual maxTp instead of getBaseStatValue() to show current value
-                    // (important for debug tools and to avoid confusion when viewing stats)
                     currentLevel = player.tpUpgrades;
                     baseValue = player.maxTp;
-                    isMaxed = baseValue >= 9999;
+                    isMaxed = baseValue >= 999999;
                     break;
             }
 
             const cost = player.getUpgradeCost(currentLevel);
+            const upgradeAmount = player.getXDataUpgradeAmount(stat.type, currentLevel);
             const canAfford = player.xData >= cost;
             const isSelected = index === this.selectedIndex;
 
@@ -229,7 +225,7 @@ export class XDataUpgradeManager {
                     </div>
                     <div style="font-size: 14px; opacity: 0.8;">${stat.description}</div>
                     <div style="display: flex; justify-content: space-between; font-size: 14px;">
-                        <span>${stat.upgradeEffect}</span>
+                        <span>+${upgradeAmount} per upgrade</span>
                         <span>${statusText}</span>
                     </div>
                 </div>
