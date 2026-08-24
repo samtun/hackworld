@@ -1,3 +1,10 @@
+# [4.2.0](https://github.com/samtun/hackworld/compare/v4.1.0...v4.2.0) (2026-08-24)
+
+
+### Features
+
+* implement progressive X-Data upgrades for player stats and enhance upgrade calculations ([d4d119b](https://github.com/samtun/hackworld/commit/d4d119b590c5db840cc70ff5ae4b732fda918fb4))
+
 # [4.1.0](https://github.com/samtun/hackworld/compare/v4.0.0...v4.1.0) (2026-08-24)
 
 
