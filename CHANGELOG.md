@@ -1,3 +1,10 @@
+# [4.1.0](https://github.com/samtun/hackworld/compare/v4.0.0...v4.1.0) (2026-08-24)
+
+
+### Features
+
+* remove direct maxhp and maxtp assignments from save manager and save data ([bc51787](https://github.com/samtun/hackworld/commit/bc51787560b70b8cac72912f753e7210495487b2))
+
 # [4.0.0](https://github.com/samtun/hackworld/compare/v3.49.0...v4.0.0) (2026-08-23)
 
 
