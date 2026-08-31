@@ -18,7 +18,7 @@ import { UIManager } from '../../ui/UIManager';
 const A001_DISCOUNT = 0.05;
 
 /** Chip types that should NOT appear in the trader inventory (drop-only items) */
-const TRADER_EXCLUDED_CHIP_TYPES: ChipType[] = [];//ChipType.RAZORWIRE, ChipType.DATAMINE, ChipType.OVERCLOCK, ChipType.FIREWIRE, ChipType.PATCHWORK];
+const TRADER_EXCLUDED_CHIP_TYPES: ChipType[] = [ChipType.RAZORWIRE, ChipType.DATAMINE, ChipType.OVERCLOCK, ChipType.FIREWIRE, ChipType.PATCHWORK];
 
 @singleton()
 export class ChipTrader extends BaseTrader {
@@ -74,7 +74,7 @@ export class ChipTrader extends BaseTrader {
         const lowerLevel = Math.max(1, equippableLevel - 1);
 
         // Spawn 1-3 chips at the equippable level
-        const equippableCount = 10 + Math.floor(Math.random() * 3);
+        const equippableCount = 1 + Math.floor(Math.random() * 3);
         for (let i = 0; i < equippableCount; i++) {
             const chip = this.chipRepository.getRandomChipOfLevelExcluding(equippableLevel, TRADER_EXCLUDED_CHIP_TYPES);
             if (chip) this.traderInventory.push(chip);
@@ -82,7 +82,7 @@ export class ChipTrader extends BaseTrader {
 
         // Spawn 1-2 chips one level below (only if there is a level below)
         if (lowerLevel < equippableLevel) {
-            const lowerCount = 10 + Math.floor(Math.random() * 2);
+            const lowerCount = 1 + Math.floor(Math.random() * 2);
             for (let i = 0; i < lowerCount; i++) {
                 const chip = this.chipRepository.getRandomChipOfLevelExcluding(lowerLevel, TRADER_EXCLUDED_CHIP_TYPES);
                 if (chip) this.traderInventory.push(chip);
