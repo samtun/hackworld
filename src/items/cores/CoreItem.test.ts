@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CoreItem } from './CoreItem';
 import { Player } from '../../player/Player';
+import { CoreType } from './Core';
 
 function makeCore(level = 1): CoreItem {
-    return new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3, defense: 2 }, level);
+    return new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3, defense: 2 }, level, CoreType.HERALD);
 }
 
 function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {

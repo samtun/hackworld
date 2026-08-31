@@ -74,6 +74,16 @@ describe('CoreRepository', () => {
             }
         });
 
+        it('includes the new Phishing and Backdoor core lines', () => {
+            const phishing = repo.getCoresByName('Phishing Core');
+            const backdoor = repo.getCoresByName('Backdoor Core');
+
+            expect(phishing.length).toBe(6);
+            expect(backdoor.length).toBe(6);
+            expect(phishing.every(core => core.level >= 1 && core.level <= 6)).toBe(true);
+            expect(backdoor.every(core => core.level >= 1 && core.level <= 6)).toBe(true);
+        });
+
         it('returns empty array for an unknown name', () => {
             expect(repo.getCoresByName('NonExistentCore')).toEqual([]);
         });

@@ -18,7 +18,7 @@ import { UIManager } from '../../ui/UIManager';
 const A001_DISCOUNT = 0.05;
 
 /** Chip types that should NOT appear in the trader inventory (drop-only items) */
-const TRADER_EXCLUDED_CHIP_TYPES: ChipType[] = [ChipType.RAZORWIRE, ChipType.DATAMINE];
+const TRADER_EXCLUDED_CHIP_TYPES: ChipType[] = [ChipType.RAZORWIRE, ChipType.DATAMINE, ChipType.AMPLIFIER, ChipType.FOCUS];
 
 @singleton()
 export class ChipTrader extends BaseTrader {
