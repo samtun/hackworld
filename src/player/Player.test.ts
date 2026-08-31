@@ -1251,7 +1251,7 @@ describe('Player.getWeaponRangeMultiplier', () => {
 describe('Player.getCriticalHitMultiplier', () => {
     it('returns base 1.5 when no chip is equipped', () => {
         const player = makePlayer();
-        expect(player.getCriticalHitMultiplier()).toBe(1.5);
+        expect(player.getCriticalHitDamageMultiplier()).toBe(1.5);
     });
 
     it('returns boosted multiplier from an equipped Razorwire chip', () => {
@@ -1260,7 +1260,7 @@ describe('Player.getCriticalHitMultiplier', () => {
         const player = makePlayer();
         player.inventory.push(chip);
         // 1.5 * 1.20 = 1.80
-        expect(player.getCriticalHitMultiplier()).toBeCloseTo(1.80, 4);
+        expect(player.getCriticalHitDamageMultiplier()).toBeCloseTo(1.80, 4);
     });
 
     it('returns base 1.5 when chip has no criticalDamageMultiplier stat', () => {
@@ -1268,7 +1268,7 @@ describe('Player.getCriticalHitMultiplier', () => {
         chip.isEquipped = true;
         const player = makePlayer();
         player.inventory.push(chip);
-        expect(player.getCriticalHitMultiplier()).toBe(1.5);
+        expect(player.getCriticalHitDamageMultiplier()).toBe(1.5);
     });
 });
 

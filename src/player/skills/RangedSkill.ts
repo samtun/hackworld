@@ -206,7 +206,7 @@ export class RangedSkill extends Skill {
 
                     if (distanceToBeam <= this.effectiveRadius && Math.abs(dy) <= 2) {
                         const isCriticalHit = Math.random() < this.player.getCriticalChance();
-                        const damage = Math.floor(isCriticalHit ? this.effectiveDamage * this.player.getCriticalHitMultiplier() : this.effectiveDamage);
+                        const damage = Math.floor(isCriticalHit ? this.effectiveDamage * this.player.getCriticalHitDamageMultiplier() : this.effectiveDamage);
                         entity.takeDamage(damage, isCriticalHit, this.player.body.position);
                         hitEnemies.add(entity);
                         this.player.tryIncrementSkillTech(SkillTechType.RANGED);

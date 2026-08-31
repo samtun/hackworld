@@ -27,6 +27,7 @@ import { container, delay, inject } from 'tsyringe';
 import { PlayerActionType } from './PlayerActionType';
 import { SkillFactory } from './skills/SkillFactory';
 import { WeaponFactory } from '../items/weapons/WeaponFactory';
+import { ChipType } from '../items/chips/Chip';
 
 export const PLAYER_COLLISION_GROUP = 2;
 
@@ -465,44 +466,48 @@ export class Player extends BaseMesh {
         }
 
         // Apply chip modifiers if a chip is equipped
-        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
+        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped && item.chipType == ChipType.DATAMINE) as ChipItem | undefined;
         if (equippedChip) {
-            const chipStats = equippedChip.stats;
-            if (chipStats.luckMultiplier !== undefined) {
-                this.luck = Math.min(Math.floor(this.luck * chipStats.luckMultiplier), this.MAX_STAT_VALUE);
-            }
+            this.luck = Math.min(Math.floor(this.luck * (equippedChip.stats.luckMultiplier ?? 1.0)), this.MAX_STAT_VALUE);
         }
     }
 
     getWeaponRangeMultiplier(): number {
-        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
+        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped && item.chipType == ChipType.FIREWIRE) as ChipItem | undefined;
         if (equippedChip) {
-            const effectiveStats = equippedChip.stats;
-            if (effectiveStats.weaponRangeMultiplier !== undefined) {
-                return effectiveStats.weaponRangeMultiplier;
-            }
+            return equippedChip.stats.weaponRangeMultiplier ?? 1.0;
         }
         return 1.0; // Default: no multiplier
     }
 
-    getCriticalHitMultiplier(): number {
-        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
+    getCriticalHitDamageMultiplier(): number {
+        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped && item.chipType == ChipType.RAZORWIRE) as ChipItem | undefined;
         if (equippedChip) {
-            const effectiveStats = equippedChip.stats;
-            if (effectiveStats.criticalDamageMultiplier !== undefined) {
-                return this.CRITICAL_HIT_MULTIPLIER * effectiveStats.criticalDamageMultiplier;
-            }
+            return this.CRITICAL_HIT_MULTIPLIER * (equippedChip.stats.criticalDamageMultiplier ?? 1.0);
         }
         return this.CRITICAL_HIT_MULTIPLIER;
     }
 
-    getHealingMultiplier(): number {
-        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
+    getCriticalHitChanceBonus(): number {
+        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped && item.chipType == ChipType.FOCUS) as ChipItem | undefined;
         if (equippedChip) {
-            const effectiveStats = equippedChip.stats;
-            if (effectiveStats.healingMultiplier !== undefined) {
-                return effectiveStats.healingMultiplier;
-            }
+            return equippedChip.stats.critChanceBonus ?? 1.0;
+        }
+        return 1.0;
+    }
+
+    getHealingMultiplier(): number {
+        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped && item.chipType == ChipType.PATCHWORK) as ChipItem | undefined;
+        if (equippedChip) {
+            return equippedChip.stats.healingMultiplier ?? 1.0;
+        }
+        return 1.0; // Default: no multiplier
+    }
+
+    getSkillDamageBonus(): number {
+        const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped && item.chipType == ChipType.AMPLIFIER) as ChipItem | undefined;
+        if (equippedChip) {
+            return equippedChip.stats.skillDamageBonus ?? 1.0;
         }
         return 1.0; // Default: no multiplier
     }
@@ -523,7 +528,8 @@ export class Player extends BaseMesh {
 
     // Calculate critical hit chance using formula: log10(0.0035x + 20) - 1.29 + 0.00001x
     public getCriticalChance(): number {
-        return Math.log10(0.0035 * this.agility + 20) - 1.29 + 0.00001 * this.agility;
+        const chipBonus = (this.getCriticalHitChanceBonus() - 1.0); // Subtract 1.0 to get added percent
+        return chipBonus + Math.log10(0.0035 * this.agility + 20) - 1.29 + 0.00001 * this.agility;
     }
 
     // Return current tech points for a given weapon type
@@ -582,7 +588,7 @@ export class Player extends BaseMesh {
         const strengthMultiplier = 1 + this.getStrengthMultiplier();
         console.log(`Calculating damage: strengthMultiplier=${strengthMultiplier.toFixed(2)}`);
 
-        const critMultiplier = isCriticalHit ? this.getCriticalHitMultiplier() : 1.0;
+        const critMultiplier = isCriticalHit ? this.getCriticalHitDamageMultiplier() : 1.0;
 
         // Damage is directly from weapon (which already has level scaling in weapons.json)
         const damage = Math.floor(this.weapon.damage * baseMultiplier * strengthMultiplier * critMultiplier);
@@ -950,7 +956,7 @@ export class Player extends BaseMesh {
 
             // Apply walk speed multiplier from chips
             let effectiveSpeed = this.WALK_SPEED;
-            const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped) as ChipItem | undefined;
+            const equippedChip = this.inventory.find(item => item instanceof ChipItem && item.isEquipped && item.chipType == ChipType.OVERCLOCK) as ChipItem | undefined;
             if (equippedChip && equippedChip.stats.walkSpeedMultiplier !== undefined) {
                 effectiveSpeed *= equippedChip.stats.walkSpeedMultiplier;
             }

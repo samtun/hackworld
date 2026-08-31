@@ -328,5 +328,137 @@
         "buyPrice": 1200,
         "sellPrice": 400,
         "level": 6
+    },
+    {
+        "id": "focus_alpha",
+        "name": "Focus",
+        "chipType": "focus",
+        "stats": {
+            "critChanceMultiplier": 1.005
+        },
+        "buyPrice": 150,
+        "sellPrice": 50,
+        "level": 1
+    },
+    {
+        "id": "focus_beta",
+        "name": "Focus",
+        "chipType": "focus",
+        "stats": {
+            "critChanceMultiplier": 1.01
+        },
+        "buyPrice": 225,
+        "sellPrice": 75,
+        "level": 2
+    },
+    {
+        "id": "focus_gamma",
+        "name": "Focus",
+        "chipType": "focus",
+        "stats": {
+            "critChanceMultiplier": 1.015
+        },
+        "buyPrice": 300,
+        "sellPrice": 100,
+        "level": 3
+    },
+    {
+        "id": "focus_delta",
+        "name": "Focus",
+        "chipType": "focus",
+        "stats": {
+            "critChanceMultiplier": 1.02
+        },
+        "buyPrice": 450,
+        "sellPrice": 150,
+        "level": 4
+    },
+    {
+        "id": "focus_epsilon",
+        "name": "Focus",
+        "chipType": "focus",
+        "stats": {
+            "critChanceMultiplier": 1.025
+        },
+        "buyPrice": 750,
+        "sellPrice": 250,
+        "level": 5
+    },
+    {
+        "id": "focus_omega",
+        "name": "Focus",
+        "chipType": "focus",
+        "stats": {
+            "critChanceMultiplier": 1.03
+        },
+        "buyPrice": 1200,
+        "sellPrice": 400,
+        "level": 6
+    },
+    {
+        "id": "amplifier_alpha",
+        "name": "Amplifier",
+        "chipType": "amplifier",
+        "stats": {
+            "skillDamageBonus": 1.02
+        },
+        "buyPrice": 150,
+        "sellPrice": 50,
+        "level": 1
+    },
+    {
+        "id": "amplifier_beta",
+        "name": "Amplifier",
+        "chipType": "amplifier",
+        "stats": {
+            "skillDamageBonus": 1.05
+        },
+        "buyPrice": 225,
+        "sellPrice": 75,
+        "level": 2
+    },
+    {
+        "id": "amplifier_gamma",
+        "name": "Amplifier",
+        "chipType": "amplifier",
+        "stats": {
+            "skillDamageBonus": 1.08
+        },
+        "buyPrice": 300,
+        "sellPrice": 100,
+        "level": 3
+    },
+    {
+        "id": "amplifier_delta",
+        "name": "Amplifier",
+        "chipType": "amplifier",
+        "stats": {
+            "skillDamageBonus": 1.12
+        },
+        "buyPrice": 450,
+        "sellPrice": 150,
+        "level": 4
+    },
+    {
+        "id": "amplifier_epsilon",
+        "name": "Amplifier",
+        "chipType": "amplifier",
+        "stats": {
+            "skillDamageBonus": 1.16
+        },
+        "buyPrice": 750,
+        "sellPrice": 250,
+        "level": 5
+    },
+    {
+        "id": "amplifier_omega",
+        "name": "Amplifier",
+        "chipType": "amplifier",
+        "stats": {
+            "skillDamageBonus": 1.20
+        },
+        "buyPrice": 1200,
+        "sellPrice": 400,
+        "level": 6
     }
 ]

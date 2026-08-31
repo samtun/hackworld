@@ -155,6 +155,8 @@ export class ItemDetailsPanel {
             { key: 'luckMultiplier', label: 'Luck' },
             { key: 'criticalDamageMultiplier', label: 'Crit Damage' },
             { key: 'healingMultiplier', label: 'Healing' },
+            { key: 'skillDamageBonus', label: 'Skill damage bonus' },
+            { key: 'critChanceBonus', label: 'Critical hit chance bonus' }
         ];
 
         for (const { key, label } of multiplierDefs) {
