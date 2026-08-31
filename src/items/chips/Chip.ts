@@ -8,6 +8,12 @@ export enum ChipType {
     AMPLIFIER = 'amplifier'
 }
 
+export interface IChip {
+    readonly type: ChipType;
+    readonly effect: number;
+    getEffectValue(): number;
+}
+
 export interface ChipStats {
     weaponRangeMultiplier?: number; // Multiplier for weapon range (e.g., 1.1 for 10% increase)
     walkSpeedMultiplier?: number; // Multiplier for walk speed (e.g., 1.1 for 10% increase)

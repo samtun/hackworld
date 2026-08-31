@@ -1,19 +1,60 @@
 import { EquippableItem } from '../EquippableItem';
 import { Player } from '../../player/Player';
-import { ChipType, ChipStats } from './Chip';
+import { ChipType, ChipStats, IChip } from './Chip';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 
-export class ChipItem extends EquippableItem {
-    chipType: ChipType;
+export class ChipItem extends EquippableItem implements IChip {
+    private _type: ChipType;
     stats: ChipStats;
     // fixed numeric level for this chip instance (1 = α, 2 = β, ...)
     level: number;
 
     constructor(id: string, name: string, buyPrice: number, sellPrice: number, chipType: ChipType, stats: ChipStats, level: number = 1) {
         super(id, name, buyPrice, sellPrice);
-        this.chipType = chipType;
+        this._type = chipType;
         this.stats = stats;
         this.level = level;
+    }
+
+    get type(): ChipType {
+        return this._type;
+    }
+
+    set type(value: ChipType) {
+        this._type = value;
+    }
+
+    get chipType(): ChipType {
+        return this._type;
+    }
+
+    set chipType(value: ChipType) {
+        this._type = value;
+    }
+
+    get effect(): number {
+        return this.getEffectValue();
+    }
+
+    getEffectValue(): number {
+        switch (this._type) {
+            case ChipType.FIREWIRE:
+                return this.stats.weaponRangeMultiplier ?? 1.0;
+            case ChipType.OVERCLOCK:
+                return this.stats.walkSpeedMultiplier ?? 1.0;
+            case ChipType.DATAMINE:
+                return this.stats.luckMultiplier ?? 1.0;
+            case ChipType.RAZORWIRE:
+                return this.stats.criticalDamageMultiplier ?? 1.0;
+            case ChipType.PATCHWORK:
+                return this.stats.healingMultiplier ?? 1.0;
+            case ChipType.FOCUS:
+                return this.stats.critChanceBonus ?? 1.0;
+            case ChipType.AMPLIFIER:
+                return this.stats.skillDamageBonus ?? 1.0;
+            default:
+                return 1.0;
+        }
     }
 
     // Return level definition by numeric level (1-based). Throws if level <= 0.
@@ -66,7 +107,7 @@ export class ChipItem extends EquippableItem {
             this.name,
             this.baseBuyPrice,
             this.baseSellPrice,
-            this.chipType,
+            this._type,
             { ...this.stats }, // Deep copy stats
             this.level
         );

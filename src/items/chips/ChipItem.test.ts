@@ -51,6 +51,15 @@ describe('ChipItem', () => {
         });
     });
 
+    describe('chip effect contract', () => {
+        it('exposes the chip type and resolved effect value', () => {
+            const chip = new ChipItem('c1', 'Firewire', 150, 75, ChipType.FIREWIRE, { weaponRangeMultiplier: 1.15 }, 1);
+            expect(chip.type).toBe(ChipType.FIREWIRE);
+            expect(chip.effect).toBeCloseTo(1.15, 4);
+            expect(chip.getEffectValue()).toBeCloseTo(1.15, 4);
+        });
+    });
+
     describe('canEquip', () => {
         it('returns true when player level meets the requirement', () => {
             const chip = makeChip(1); // requires player level 1
