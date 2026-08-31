@@ -1,3 +1,18 @@
+# [4.3.0](https://github.com/samtun/hackworld/compare/v4.2.0...v4.3.0) (2026-08-31)
+
+
+### Bug Fixes
+
+* revert ChipTrader changes ([7c3d8c2](https://github.com/samtun/hackworld/commit/7c3d8c27a1c325e557c2ee2c017197b75dde381e))
+
+
+### Features
+
+* add IChip interface and add tests to new chip types ([519bc28](https://github.com/samtun/hackworld/commit/519bc28b56681ffd5f72f6c7e6b3c5081422d6fd))
+* add two new chip types ([70f0e7b](https://github.com/samtun/hackworld/commit/70f0e7b10bae1206faa68e2cb9d4136e3d68faa4))
+* change chip items that do not spawn in the ChipTrader inventory ([88e9d96](https://github.com/samtun/hackworld/commit/88e9d9629280d6a5db9823c4a8ca64c7eb05e4d4))
+* enhance core and chip mechanics with new steal effects and type handling ([a687ef0](https://github.com/samtun/hackworld/commit/a687ef0cec9b59f58adbafdcbace3b213afe847d))
+
 # [4.2.0](https://github.com/samtun/hackworld/compare/v4.1.0...v4.2.0) (2026-08-24)
 
 
