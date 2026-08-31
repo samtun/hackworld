@@ -2,6 +2,7 @@
     {
         "id": "herald_core_alpha",
         "name": "Herald Core",
+        "coreType": "herald",
         "stats": {
             "strength": 3,
             "defense": 2
@@ -13,6 +14,7 @@
     {
         "id": "herald_core_beta",
         "name": "Herald Core",
+        "coreType": "herald",
         "stats": {
             "strength": 10,
             "defense": 6
@@ -24,6 +26,7 @@
     {
         "id": "herald_core_gamma",
         "name": "Herald Core",
+        "coreType": "herald",
         "stats": {
             "strength": 16,
             "defense": 11
@@ -35,6 +38,7 @@
     {
         "id": "herald_core_delta",
         "name": "Herald Core",
+        "coreType": "herald",
         "stats": {
             "strength": 23,
             "defense": 15
@@ -46,6 +50,7 @@
     {
         "id": "herald_core_epsilon",
         "name": "Herald Core",
+        "coreType": "herald",
         "stats": {
             "strength": 29,
             "defense": 20
@@ -57,6 +62,7 @@
     {
         "id": "herald_core_omega",
         "name": "Herald Core",
+        "coreType": "herald",
         "stats": {
             "strength": 36,
             "defense": 24
@@ -68,6 +74,7 @@
     {
         "id": "swift_core_alpha",
         "name": "Swift Core",
+        "coreType": "swift",
         "stats": {
             "agility": 4,
             "defense": -2
@@ -79,6 +86,7 @@
     {
         "id": "swift_core_beta",
         "name": "Swift Core",
+        "coreType": "swift",
         "stats": {
             "agility": 13,
             "defense": -6
@@ -90,6 +98,7 @@
     {
         "id": "swift_core_gamma",
         "name": "Swift Core",
+        "coreType": "swift",
         "stats": {
             "agility": 22,
             "defense": -11
@@ -101,6 +110,7 @@
     {
         "id": "swift_core_delta",
         "name": "Swift Core",
+        "coreType": "swift",
         "stats": {
             "agility": 30,
             "defense": -15
@@ -112,6 +122,7 @@
     {
         "id": "swift_core_epsilon",
         "name": "Swift Core",
+        "coreType": "swift",
         "stats": {
             "agility": 39,
             "defense": -20
@@ -123,6 +134,7 @@
     {
         "id": "swift_core_omega",
         "name": "Swift Core",
+        "coreType": "swift",
         "stats": {
             "agility": 48,
             "defense": -24
@@ -134,6 +146,7 @@
     {
         "id": "defender_core_alpha",
         "name": "Defender Core",
+        "coreType": "defender",
         "stats": {
             "strength": -1,
             "defense": 4
@@ -145,6 +158,7 @@
     {
         "id": "defender_core_beta",
         "name": "Defender Core",
+        "coreType": "defender",
         "stats": {
             "strength": -3,
             "defense": 13
@@ -156,6 +170,7 @@
     {
         "id": "defender_core_gamma",
         "name": "Defender Core",
+        "coreType": "defender",
         "stats": {
             "strength": -5,
             "defense": 22
@@ -167,6 +182,7 @@
     {
         "id": "defender_core_delta",
         "name": "Defender Core",
+        "coreType": "defender",
         "stats": {
             "strength": -8,
             "defense": 30
@@ -178,6 +194,7 @@
     {
         "id": "defender_core_epsilon",
         "name": "Defender Core",
+        "coreType": "defender",
         "stats": {
             "strength": -10,
             "defense": 39
@@ -189,12 +206,157 @@
     {
         "id": "defender_core_omega",
         "name": "Defender Core",
+        "coreType": "defender",
         "stats": {
             "strength": -12,
             "defense": 48
         },
         "buyPrice": 1440,
         "sellPrice": 480,
+        "level": 6
+    },
+    {
+        "id": "phishing_core_alpha",
+        "name": "Phishing Core",
+        "coreType": "phishing",
+        "stats": {
+            "agility": 1,
+            "defense": 1
+        },
+        "buyPrice": 300,
+        "sellPrice": 100,
+        "level": 1
+    },
+    {
+        "id": "phishing_core_beta",
+        "name": "Phishing Core",
+        "coreType": "phishing",
+        "stats": {
+            "agility": 3,
+            "defense": 3
+        },
+        "buyPrice": 450,
+        "sellPrice": 150,
+        "level": 2
+    },
+    {
+        "id": "phishing_core_gamma",
+        "name": "Phishing Core",
+        "coreType": "phishing",
+        "stats": {
+            "agility": 5,
+            "defense": 5
+        },
+        "buyPrice": 600,
+        "sellPrice": 200,
+        "level": 3
+    },
+    {
+        "id": "phishing_core_delta",
+        "name": "Phishing Core",
+        "coreType": "phishing",
+        "stats": {
+            "agility": 7,
+            "defense": 7
+        },
+        "buyPrice": 900,
+        "sellPrice": 300,
+        "level": 4
+    },
+    {
+        "id": "phishing_core_epsilon",
+        "name": "Phishing Core",
+        "coreType": "phishing",
+        "stats": {
+            "agility": 9,
+            "defense": 9
+        },
+        "buyPrice": 1300,
+        "sellPrice": 433,
+        "level": 5
+    },
+    {
+        "id": "phishing_core_omega",
+        "name": "Phishing Core",
+        "coreType": "phishing",
+        "stats": {
+            "agility": 12,
+            "defense": 11
+        },
+        "buyPrice": 1900,
+        "sellPrice": 633,
+        "level": 6
+    },
+    {
+        "id": "backdoor_core_alpha",
+        "name": "Backdoor Core",
+        "coreType": "backdoor",
+        "stats": {
+            "strength": 1,
+            "agility": 1
+        },
+        "buyPrice": 320,
+        "sellPrice": 107,
+        "level": 1
+    },
+    {
+        "id": "backdoor_core_beta",
+        "name": "Backdoor Core",
+        "coreType": "backdoor",
+        "stats": {
+            "strength": 3,
+            "agility": 3
+        },
+        "buyPrice": 480,
+        "sellPrice": 160,
+        "level": 2
+    },
+    {
+        "id": "backdoor_core_gamma",
+        "name": "Backdoor Core",
+        "coreType": "backdoor",
+        "stats": {
+            "strength": 5,
+            "agility": 5
+        },
+        "buyPrice": 640,
+        "sellPrice": 213,
+        "level": 3
+    },
+    {
+        "id": "backdoor_core_delta",
+        "name": "Backdoor Core",
+        "coreType": "backdoor",
+        "stats": {
+            "strength": 7,
+            "agility": 7
+        },
+        "buyPrice": 960,
+        "sellPrice": 320,
+        "level": 4
+    },
+    {
+        "id": "backdoor_core_epsilon",
+        "name": "Backdoor Core",
+        "coreType": "backdoor",
+        "stats": {
+            "strength": 9,
+            "agility": 9
+        },
+        "buyPrice": 1380,
+        "sellPrice": 460,
+        "level": 5
+    },
+    {
+        "id": "backdoor_core_omega",
+        "name": "Backdoor Core",
+        "coreType": "backdoor",
+        "stats": {
+            "strength": 12,
+            "agility": 12
+        },
+        "buyPrice": 1980,
+        "sellPrice": 660,
         "level": 6
     }
 ]

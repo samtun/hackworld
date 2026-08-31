@@ -129,6 +129,17 @@ export class ItemDetailsPanel {
             details.push({ label, value, delta });
         }
 
+        const stealEffect = item.getStealEffect();
+        if (stealEffect) {
+            const chance = item.getHpStealChance() || item.getTpStealChance();
+            const chanceText = `${(chance * 100).toFixed(0)}%`;
+            const label = stealEffect.resource === 'hp' ? 'HP Steal' : 'TP Steal';
+            const effectText = stealEffect.resource === 'hp'
+                ? `${(stealEffect.amountPercent * 100).toFixed(1)}% max HP / hit`
+                : `${(stealEffect.amountPercent * 100).toFixed(1)}% max TP / hit`;
+            details.push({ label, value: `${chanceText} % chance for  ${effectText}` });
+        }
+
         details.push({ label: 'Price', value: `${item.sellPrice} bits` });
 
         return details;
@@ -156,7 +167,7 @@ export class ItemDetailsPanel {
             { key: 'criticalDamageMultiplier', label: 'Crit Damage' },
             { key: 'healingMultiplier', label: 'Healing' },
             { key: 'skillDamageBonus', label: 'Skill damage bonus' },
-            { key: 'critChanceBonus', label: 'Critical hit chance bonus' }
+            { key: 'critChanceMultiplier', label: 'Critical hit chance bonus' }
         ];
 
         for (const { key, label } of multiplierDefs) {

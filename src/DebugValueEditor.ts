@@ -3,6 +3,7 @@ import { Player } from './player/Player';
 import { WeaponRepository } from './items/weapons/WeaponRepository';
 import { CoreRepository } from './items/cores/CoreRepository';
 import { ChipRepository } from './items/chips/ChipRepository';
+import { ChipType } from './items/chips/Chip';
 import { WeaponType } from './items/weapons/WeaponType';
 import { ItemLevelHelper } from './items/ItemLevelHelper';
 import { GameProgressManager } from './GameProgressManager';
@@ -496,9 +497,14 @@ export class DebugValueEditor {
         const cores = this.coreRepository.getAllCores();
 
         const coreOptions = cores.map(core => {
-            const statsStr = Object.entries(core.stats)
+            let statsStr = Object.entries(core.stats)
                 .map(([key, val]) => `${key}: ${(val as number) > 0 ? '+' : ''}${val}`)
                 .join(', ');
+            const stealEffect = core.getStealEffect();
+            if (stealEffect != undefined) {
+                const chance = core.getHpStealChance() || core.getTpStealChance();
+                statsStr += `, ${(chance * 100).toFixed(2)}% chance for ${(stealEffect.amountPercent * 100).toFixed(2)}% ${stealEffect.resource} on hit`;
+            }
             return {
                 value: core.id,
                 text: `${core.name} ${ItemLevelHelper.getLevelChar(core.level)} (${statsStr})`
@@ -532,17 +538,27 @@ export class DebugValueEditor {
         const chips = this.chipRepository.getAllChips();
 
         const chipOptions = chips.map(chip => {
-            const effectsStr = Object.entries(chip.stats)
-                .map(([key, val]) => {
-                    if (key === 'weaponRangeMultiplier') {
-                        return `Weapon Range: +${(((val as number) - 1) * 100).toFixed(0)}%`;
-                    } else if (key === 'walkSpeedMultiplier') {
-                        return `Walk Speed: +${(((val as number) - 1) * 100).toFixed(0)}%`;
-                    }
-                    return '';
-                })
-                .filter(str => str !== '')
-                .join(', ');
+            let effectsStr = '';
+            if (chip.type === ChipType.FIREWIRE) {
+                effectsStr = `Weapon Range +${(((chip.stats.weaponRangeMultiplier as number) - 1) * 100).toFixed(0)}%`;
+            } else if (chip.type === ChipType.OVERCLOCK) {
+                effectsStr = `Walk Speed +${(((chip.stats.walkSpeedMultiplier as number) - 1) * 100).toFixed(0)}%`;
+            } else if (chip.type === ChipType.DATAMINE) {
+                effectsStr = `Luck  +${(((chip.stats.luckMultiplier as number) - 1) * 100).toFixed(0)}%`;
+            } else if (chip.type === ChipType.RAZORWIRE) {
+                effectsStr = `Crit Damage +${(((chip.stats.criticalDamageMultiplier as number) - 1) * 100).toFixed(0)}%`;
+            } else if (chip.type === ChipType.PATCHWORK) {
+                effectsStr = `Healing +${(((chip.stats.healingMultiplier as number) - 1) * 100).toFixed(0)}%`;
+            } else if (chip.type === ChipType.FOCUS) {
+                effectsStr = `Crit Chance +${(((chip.stats.critChanceMultiplier as number) - 1) * 100).toFixed(0)}%`;
+            } else if (chip.type === ChipType.AMPLIFIER) {
+                effectsStr = `Skill Damage +${(((chip.stats.skillDamageBonus as number) - 1) * 100).toFixed(0)}%`;
+            } else {
+                console.error('Unknown ChipType: ' + chip.type);
+                effectsStr = 'Unknown';
+            }
+            console.log(chip);
+
             return {
                 value: chip.id,
                 text: `${chip.name} ${ItemLevelHelper.getLevelChar(chip.level)} (${effectsStr})`

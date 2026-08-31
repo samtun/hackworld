@@ -1319,15 +1319,45 @@ export class Player extends BaseMesh {
         // Skip if we already hit this enemy during this attack
         if (this.attackHitEnemies.has(enemy)) return;
 
+        const wasBlocked = enemy.isBlocking;
         const isCriticalHit = Math.random() < this.getCriticalChance();
         const damage = this.getHitDamage(isCriticalHit);
         enemy.takeDamage(damage, isCriticalHit, this.body.position);
         console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
+        if (!wasBlocked && !enemy.isBlocking) {
+            this.applyCoreStealEffects();
+        }
+
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
         // Mark this enemy as hit during this attack
         this.attackHitEnemies.add(enemy);
+    }
+
+    private applyCoreStealEffects(): void {
+        const equippedCore = this.inventory.find(item => item instanceof CoreItem && item.isEquipped) as CoreItem | undefined;
+        if (!equippedCore) return;
+
+        const stealEffect = equippedCore.getStealEffect();
+        if (!stealEffect) return;
+
+        if (stealEffect.resource === 'hp') {
+            const stealChance = equippedCore.getHpStealChance();
+            if (Math.random() < stealChance) {
+                const stealAmount = Math.max(1, Math.floor(this.maxHp * stealEffect.amountPercent));
+                this.heal(stealAmount, 0, true);
+            }
+            return;
+        }
+
+        if (stealEffect.resource === 'tp') {
+            const stealChance = equippedCore.getTpStealChance();
+            if (Math.random() < stealChance) {
+                const stealAmount = Math.max(1, Math.floor(this.maxTp * stealEffect.amountPercent));
+                this.heal(0, stealAmount, true);
+            }
+        }
     }
 
     private handleBreakableHit(breakable: Breakable): void {

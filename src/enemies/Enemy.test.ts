@@ -808,7 +808,7 @@ describe('Enemy blocking mechanic', () => {
 
     it('absorbs damage completely when already blocking', () => {
         const enemy = makeEnemy();
-        (enemy as any).isBlocking = true;
+        (enemy as any)._isBlocking = true;
         enemy.takeDamage(20, false);
         expect(enemy.hp).toBe(60); // unchanged
     });
@@ -883,7 +883,7 @@ describe('Enemy.takeDamage – knockback', () => {
         'reduces knockback when blocking (force: $knockbackForce, factor: $blockedKnockbackFactor)',
         ({ knockbackForce, blockedKnockbackFactor }) => {
             const enemy = makeEnemy() as any;
-            enemy.isBlocking = true;
+            (enemy as any)._isBlocking = true;
             enemy.knockbackForce = knockbackForce;
             enemy.blockedKnockbackFactor = blockedKnockbackFactor;
             enemy.body.position.x = 5;

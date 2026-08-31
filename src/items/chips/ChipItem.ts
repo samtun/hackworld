@@ -49,7 +49,7 @@ export class ChipItem extends EquippableItem implements IChip {
             case ChipType.PATCHWORK:
                 return this.stats.healingMultiplier ?? 1.0;
             case ChipType.FOCUS:
-                return this.stats.critChanceBonus ?? 1.0;
+                return this.stats.critChanceMultiplier ?? 1.0;
             case ChipType.AMPLIFIER:
                 return this.stats.skillDamageBonus ?? 1.0;
             default:

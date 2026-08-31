@@ -28,6 +28,7 @@ import { RangedSkill } from './skills/RangedSkill';
 import { RecoverySkill } from './skills/RecoverySkill';
 import { BlastSkill } from './skills/BlastSkill';
 import { ChipType } from '../items/chips/Chip';
+import { CoreType } from '../items/cores/Core';
 
 const physicsBodyMetadataManager = new PhysicsBodyMetadataManager();
 
@@ -294,7 +295,7 @@ describe('Player.recalculateStats', () => {
 
     it('applies equipped core stat bonuses', () => {
         const core = new CoreItem('c1', 'Test Core', 100, 50,
-            { strength: 10, defense: 5 }, 1);
+            { strength: 10, defense: 5 }, 1, CoreType.HERALD);
         core.isEquipped = true;
         player.inventory = [core];
         player.recalculateStats();
@@ -304,7 +305,7 @@ describe('Player.recalculateStats', () => {
 
     it('applies equipped core agility bonus', () => {
         const core = new CoreItem('c1', 'Swift Core', 150, 50,
-            { agility: 22, defense: -11 }, 3);
+            { agility: 22, defense: -11 }, 3, CoreType.SWIFT);
         core.isEquipped = true;
         player.inventory = [core];
         player.recalculateStats();
@@ -408,6 +409,89 @@ describe('Player.weaponDropBonusFactor', () => {
 });
 
 // ─── heal ──────────────────────────────────────────────────────────────────────
+
+describe('Core hit steal effects', () => {
+    it('heals HP when a Phishing Core proc triggers on a successful enemy hit', () => {
+        const player = makePlayer();
+        player.maxHp = 1000;
+        player.hp = 500;
+        const core = new CoreItem('phishing_core_alpha', 'Phishing Core', 100, 50, { agility: 1 }, 1, CoreType.PHISHING);
+        core.isEquipped = true;
+        player.inventory = [core];
+
+        const enemy = {
+            isDead: false,
+            isDying: false,
+            techDropRateFactor: 1,
+            isBlocking: false,
+            hp: 100,
+            takeDamage: vi.fn((amount: number) => {
+                enemy.hp = Math.max(0, enemy.hp - amount);
+            })
+        } as unknown as Enemy;
+
+        vi.spyOn(Math, 'random').mockReturnValue(0.005);
+
+        (player as any).handleAttackHit(enemy);
+
+        expect(enemy.takeDamage).toHaveBeenCalled();
+        expect(player.hp).toBe(504);
+        vi.restoreAllMocks();
+    });
+
+    it('restores TP when a Backdoor Core proc triggers on a successful enemy hit', () => {
+        const player = makePlayer();
+        player.maxTp = 1000;
+        player.tp = 500;
+        const core = new CoreItem('backdoor_core_alpha', 'Backdoor Core', 100, 50, { defense: 1 }, 1, CoreType.BACKDOOR);
+        core.isEquipped = true;
+        player.inventory = [core];
+
+        const enemy = {
+            isDead: false,
+            isDying: false,
+            techDropRateFactor: 1,
+            isBlocking: false,
+            hp: 100,
+            takeDamage: vi.fn((amount: number) => {
+                enemy.hp = Math.max(0, enemy.hp - amount);
+            })
+        } as unknown as Enemy;
+
+        vi.spyOn(Math, 'random').mockReturnValue(0.01);
+
+        (player as any).handleAttackHit(enemy);
+
+        expect(enemy.takeDamage).toHaveBeenCalled();
+        expect(player.tp).toBe(502);
+        vi.restoreAllMocks();
+    });
+
+    it('does not trigger a steal when the enemy is blocking the hit', () => {
+        const player = makePlayer();
+        player.maxHp = 1000;
+        player.hp = 500;
+        const core = new CoreItem('phishing_core_alpha', 'Phishing Core', 100, 50, { agility: 1 }, 1, CoreType.PHISHING);
+        core.isEquipped = true;
+        player.inventory = [core];
+
+        const enemy = {
+            isDead: false,
+            isDying: false,
+            techDropRateFactor: 1,
+            isBlocking: true,
+            hp: 100,
+            takeDamage: vi.fn()
+        } as unknown as Enemy;
+
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+
+        (player as any).handleAttackHit(enemy);
+
+        expect(player.hp).toBe(500);
+        vi.restoreAllMocks();
+    });
+});
 
 describe('Player.heal', () => {
     let player: Player;
@@ -1005,20 +1089,20 @@ describe('WeaponItem canEquip', () => {
 describe('CoreItem canEquip', () => {
     it('allows equipping level-1 core at level 1', () => {
         const player = makePlayer();
-        const core = new CoreItem('c1', 'Core', 100, 50, { strength: 5 }, 1);
+        const core = new CoreItem('c1', 'Core', 100, 50, { strength: 5 }, 1, CoreType.HERALD);
         expect(core.canEquip(player)).toBe(true);
     });
 
     it('blocks equipping level-2 core below required player level', () => {
         const player = makePlayer(); // level 1
-        const core = new CoreItem('c2', 'Core+', 200, 100, { strength: 10 }, 2);
+        const core = new CoreItem('c2', 'Core+', 200, 100, { strength: 10 }, 2, CoreType.HERALD);
         // level-2 core requires player level 10
         expect(core.canEquip(player)).toBe(false);
     });
 
     it('allows equipping level-2 core at required player level', () => {
         const player = makePlayer(); player.level = 10;
-        const core = new CoreItem('c2', 'Core+', 200, 100, { strength: 10 }, 2);
+        const core = new CoreItem('c2', 'Core+', 200, 100, { strength: 10 }, 2, CoreType.HERALD);
         expect(core.canEquip(player)).toBe(true);
     });
 });
@@ -1190,7 +1274,7 @@ describe('Player.equipWeapon', () => {
 
 describe('Player.equipCore', () => {
     it('equips the core matching the given id from inventory', () => {
-        const core = new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3 }, 1);
+        const core = new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3 }, 1, CoreType.HERALD);
         const player = makePlayer();
         player.level = 1;
         player.inventory.push(core);
@@ -1341,7 +1425,7 @@ describe('Player.getCriticalHitChanceBonus', () => {
     });
 
     it('returns boosted multiplier from an equipped Focus chip', () => {
-        const chip = new ChipItem('chip1', 'Focus', 150, 50, ChipType.FOCUS, { critChanceBonus: 1.02 }, 1);
+        const chip = new ChipItem('chip1', 'Focus', 150, 50, ChipType.FOCUS, { critChanceMultiplier: 1.02 }, 1);
         chip.isEquipped = true;
         const player = makePlayer();
         player.inventory.push(chip);

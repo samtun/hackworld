@@ -26,7 +26,7 @@ import { WeaponItem } from './weapons/WeaponItem';
 import { WeaponType } from './weapons/WeaponType';
 import { Tier, WeaponTierDefinition } from './TierManager';
 import { CoreItem } from './cores/CoreItem';
-import { CoreStats } from './cores/Core';
+import { CoreStats, CoreType } from './cores/Core';
 import { XDataDrop } from './xdata/XDataDrop';
 import { MoneyDrop } from './bits/MoneyDrop';
 import { WeaponDrop } from './weapons/WeaponDrop';
@@ -111,7 +111,7 @@ function makeCoreDropStrategy(coreRepository?: CoreRepository, itemDropFactory?:
     return new CoreDropStrategy(
         itemDropFactory ?? makeItemDropFactory(),
         coreRepository ?? mockDeep<CoreRepository>({
-            getCoreById: vi.fn((id: string) => new CoreItem(id, 'Herald Core', 100, 50, { attack: 1, defense: 1, speed: 1 } as CoreStats, 1)),
+            getCoreById: vi.fn((id: string) => new CoreItem(id, 'Herald Core', 100, 50, { attack: 1, defense: 1, speed: 1 } as CoreStats, 1, CoreType.HERALD)),
         })
     );
 }

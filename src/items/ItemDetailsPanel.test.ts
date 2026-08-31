@@ -6,6 +6,7 @@ import { ChipItem } from './chips/ChipItem';
 import { ChipType } from './chips/Chip';
 import { WeaponType } from './weapons/WeaponType';
 import { Tier } from './TierManager';
+import { CoreType } from './cores/Core';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -24,7 +25,7 @@ function makeWeapon(damage: number, id = 'w1'): WeaponItem {
 }
 
 function makeCore(stats: { strength?: number; defense?: number; agility?: number }, id = 'c1'): CoreItem {
-    return new CoreItem(id, 'Herald Core', 200, 100, stats, 1);
+    return new CoreItem(id, 'Herald Core', 200, 100, stats, 1, CoreType.HERALD);
 }
 
 function makeChip(stats: { weaponRangeMultiplier?: number; walkSpeedMultiplier?: number; luckMultiplier?: number; criticalDamageMultiplier?: number; healingMultiplier?: number }, id = 'ch1'): ChipItem {

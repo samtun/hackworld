@@ -225,7 +225,10 @@ export class Enemy extends BaseMesh {
 
     // Block state
     protected blockChance: number = DEFAULT_ENEMY_ARCHETYPE.blockChance;
-    protected isBlocking: boolean = false;
+    protected _isBlocking: boolean = false;
+    public get isBlocking(): boolean {
+        return this._isBlocking;
+    };
     private blockTimer: number = 0;
     private readonly BLOCK_DURATION: number = 0.5;
     private blockShield: BlockShield | null = null;
@@ -469,7 +472,7 @@ export class Enemy extends BaseMesh {
         }
 
         // High priority: Blocking - holds idle pose, overrides move/attack
-        if (this.isBlocking) {
+        if (this._isBlocking) {
             return;
         }
 
@@ -753,10 +756,10 @@ export class Enemy extends BaseMesh {
 
     /** Advances the block timer and removes the shield once the block duration expires. */
     private updateBlockTimer(dt: number): void {
-        if (this.isBlocking) {
+        if (this._isBlocking) {
             this.blockTimer += dt;
             if (this.blockTimer >= this.BLOCK_DURATION) {
-                this.isBlocking = false;
+                this._isBlocking = false;
                 this.blockShield?.detach();
             }
         }
@@ -1410,7 +1413,7 @@ export class Enemy extends BaseMesh {
     }
 
     private activateBlock(): void {
-        this.isBlocking = true;
+        this._isBlocking = true;
         this.blockTimer = 0;
         // Immobilize enemy for block duration
         this.stunTimer = this.BLOCK_DURATION;
@@ -1430,7 +1433,7 @@ export class Enemy extends BaseMesh {
         // enemy fights back even when hit from outside its room.
         this.aggroEnabled = true;
 
-        if (!this.isBlocking && this.tryBlock()) {
+        if (!this._isBlocking && this.tryBlock()) {
             this.activateBlock();
         }
 
@@ -1440,7 +1443,7 @@ export class Enemy extends BaseMesh {
             knockbackDir.y = 0; // Keep it horizontal
             if (knockbackDir.length() > 0) {
                 knockbackDir.normalize();
-                if (this.isBlocking) {
+                if (this._isBlocking) {
                     // Reduce knockback when blocking
                     knockbackFactor *= this.blockedKnockbackFactor;
                 }
@@ -1451,7 +1454,7 @@ export class Enemy extends BaseMesh {
         }
 
         // If already blocking, absorb the hit (no damage, no knockback)
-        if (this.isBlocking) return;
+        if (this._isBlocking) return;
 
         this.hp -= amount;
 
@@ -1507,7 +1510,7 @@ export class Enemy extends BaseMesh {
     }
 
     private updateFootstepAudio(dt: number, isMoving: boolean): void {
-        if (!isMoving || this.isAttacking || this.isBlocking) {
+        if (!isMoving || this.isAttacking || this._isBlocking) {
             this.footstepTimer = 0;
             return;
         }

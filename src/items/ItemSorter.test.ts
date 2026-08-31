@@ -7,6 +7,7 @@ import { ChipItem } from './chips/ChipItem';
 import { ChipType } from './chips/Chip';
 import { WeaponType } from './weapons/WeaponType';
 import { Tier, WeaponTierDefinition } from './TierManager';
+import { CoreType } from './cores/Core';
 
 const tiers = new Map<Tier, WeaponTierDefinition>([
     [Tier.BROKEN, {
@@ -70,7 +71,7 @@ function weapon(level: number, tier: Tier = Tier.STABLE, type: WeaponType = Weap
 }
 
 function core(level: number): CoreItem {
-    return new CoreItem(crypto.randomUUID(), 'Herald Core', 200, 100, { strength: 3 }, level);
+    return new CoreItem(crypto.randomUUID(), 'Herald Core', 200, 100, { strength: 3 }, level, CoreType.HERALD);
 }
 
 function chip(level: number): ChipItem {

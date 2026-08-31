@@ -1,5 +1,6 @@
 import { singleton } from 'tsyringe';
 import { CoreItem } from './CoreItem';
+import { CoreType } from './Core';
 import coresData from './cores.json';
 
 /**
@@ -32,13 +33,20 @@ export class CoreRepository {
                 levelMap.set(data.name, []);
             }
 
+            const type = data.coreType as CoreType;
+            if (!Object.values(CoreType).includes(type)) {
+                console.warn(`Invalid core type '${data.coreType}' for core '${data.id}'`);
+                continue;
+            }
+
             const core = new CoreItem(
                 data.id,
                 data.name,
                 data.buyPrice,
                 data.sellPrice,
                 data.stats,
-                data.level
+                data.level,
+                type
             );
 
             levelMap.get(data.name)!.push(core);

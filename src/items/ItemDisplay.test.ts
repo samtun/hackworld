@@ -29,6 +29,7 @@ import { WeaponType } from './weapons/WeaponType';
 import { ChipType } from './chips/Chip';
 import { Tier } from './TierManager';
 import { ItemLevelHelper } from './ItemLevelHelper';
+import { CoreType } from './cores/Core';
 
 const stableTier = {
     name: Tier.STABLE,
@@ -49,7 +50,7 @@ function makeChip(level = 1): ChipItem {
 }
 
 function makeCore(level = 1): CoreItem {
-    return new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3, defense: 2 }, level);
+    return new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3, defense: 2 }, level, CoreType.HERALD);
 }
 
 class PlainItem extends Item {
