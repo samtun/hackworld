@@ -386,7 +386,7 @@ describe('XDataUpgradeManager', () => {
             });
             (mgr as any).needsRender = true;
             mgr.update(player);
-                (mgr as any).inputDebounceState.lastSelectState = false;
+            (mgr as any).inputDebounceState.lastSelectState = false;
             inputManagerMock.isSelectPressed.mockReturnValue(true);
 
             expect(() => mgr.update(player)).toThrow('Unsupported stat type: invalid');

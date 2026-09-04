@@ -26,9 +26,9 @@ export function shakeElement(element: HTMLElement): void {
         { transform: 'translateX(0px)' }
     ];
     const timing = { duration: 300, iterations: 1 };
-    try { 
-        element.animate(keyframes, timing); 
-    } catch (e) { 
-        /* ignore if not supported */ 
+    try {
+        element.animate(keyframes, timing);
+    } catch (e) {
+        /* ignore if not supported */
     }
 }
