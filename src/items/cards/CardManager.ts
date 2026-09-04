@@ -1,6 +1,6 @@
 import { Player } from '../../player/Player';
 import { InputManager } from '../../controls/InputManager';
-import { resetInputDebounce } from '../../ui/UiUtils';
+import { InputDebounceState, resetInputDebounce } from '../../ui/UiUtils';
 import { Card, CardDefinitions, CardRarity, Album } from './Card';
 import { CardCollection } from './CardCollection';
 import { ViewMode } from './ViewMode';
@@ -32,10 +32,12 @@ export class CardManager {
     needsRender: boolean = false;
 
     // Input tracking for debouncing
-    private lastNavigateUpState: boolean = false;
-    private lastNavigateDownState: boolean = false;
-    private lastSelectState: boolean = false;
-    private lastCancelState: boolean = false;
+    private inputDebounceState: InputDebounceState = {
+        lastNavigateUpState: false,
+        lastNavigateDownState: false,
+        lastSelectState: false,
+        lastCancelState: false,
+    };
 
     private currentInputManager?: InputManager; // Store input manager for dynamic hints
 
@@ -530,7 +532,7 @@ export class CardManager {
         this.viewMode = ViewMode.MENU;
         this.selectedMenuIndex = 0;
         this.needsRender = true;
-        resetInputDebounce(this as any);
+        resetInputDebounce(this.inputDebounceState);
         this.audioManager.playUiOpen();
     }
 
@@ -539,7 +541,7 @@ export class CardManager {
         this.isVisible = false;
         this.container.style.display = 'none';
         this.uiManager.hideControlHints();
-        resetInputDebounce(this as any);
+        resetInputDebounce(this.inputDebounceState);
         this.audioManager.playUiClose();
     }
 
@@ -579,29 +581,29 @@ export class CardManager {
         const cancel = this.inputManager.isCancelPressed();
 
         // Debounced navigation
-        if (navigateUp && !this.lastNavigateUpState) {
+        if (navigateUp && !this.inputDebounceState.lastNavigateUpState) {
             this.handleNavigateUp();
             this.needsRender = true;
         }
-        this.lastNavigateUpState = navigateUp;
+        this.inputDebounceState.lastNavigateUpState = navigateUp;
 
-        if (navigateDown && !this.lastNavigateDownState) {
+        if (navigateDown && !this.inputDebounceState.lastNavigateDownState) {
             this.handleNavigateDown();
             this.needsRender = true;
         }
-        this.lastNavigateDownState = navigateDown;
+        this.inputDebounceState.lastNavigateDownState = navigateDown;
 
-        if (select && !this.lastSelectState) {
+        if (select && !this.inputDebounceState.lastSelectState) {
             this.handleSelect(player);
             this.needsRender = true;
         }
-        this.lastSelectState = select;
+        this.inputDebounceState.lastSelectState = select;
 
-        if (cancel && !this.lastCancelState) {
+        if (cancel && !this.inputDebounceState.lastCancelState) {
             this.handleCancel();
             this.needsRender = true;
         }
-        this.lastCancelState = cancel;
+        this.inputDebounceState.lastCancelState = cancel;
 
         // Only re-render if needed
         if (this.needsRender) {

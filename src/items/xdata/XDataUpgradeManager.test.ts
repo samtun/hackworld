@@ -84,7 +84,7 @@ describe('XDataUpgradeManager', () => {
             const debounceSpy = vi.spyOn(UiUtils, 'resetInputDebounce');
             const mgr = makeManager();
             mgr.show();
-            expect(debounceSpy).toHaveBeenCalledWith(mgr);
+            expect(debounceSpy).toHaveBeenCalledWith((mgr as any).inputDebounceState);
         });
 
         it('plays the UI open sound when shown from hidden', () => {
@@ -261,7 +261,7 @@ describe('XDataUpgradeManager', () => {
             const mgr = makeManager({ audioManager: audioManagerMock, inputManager: inputManagerMock });
             mgr.isVisible = true;
             mgr.selectedIndex = 0;
-            (mgr as any).lastNavigateDownState = false;
+            (mgr as any).inputDebounceState.lastNavigateDownState = false;
             mgr.update(makePlayer());
             expect(mgr.selectedIndex).toBe(1);
             expect(audioManagerMock.playMenuNavigate).toHaveBeenCalledOnce();
@@ -273,7 +273,7 @@ describe('XDataUpgradeManager', () => {
             const mgr = makeManager({ inputManager: inputManagerMock });
             mgr.isVisible = true;
             mgr.selectedIndex = 2;
-            (mgr as any).lastNavigateUpState = false;
+            (mgr as any).inputDebounceState.lastNavigateUpState = false;
             mgr.update(makePlayer());
             expect(mgr.selectedIndex).toBe(1);
         });
@@ -284,7 +284,7 @@ describe('XDataUpgradeManager', () => {
             const mgr = makeManager({ inputManager: inputManagerMock });
             mgr.isVisible = true;
             mgr.selectedIndex = 0;
-            (mgr as any).lastNavigateUpState = false;
+            (mgr as any).inputDebounceState.lastNavigateUpState = false;
             mgr.update(makePlayer());
             expect(mgr.selectedIndex).toBe(0);
         });
@@ -294,7 +294,7 @@ describe('XDataUpgradeManager', () => {
             inputManagerMock.isCancelPressed.mockReturnValue(true);
             const mgr = makeManager({ inputManager: inputManagerMock });
             mgr.isVisible = true;
-            (mgr as any).lastCancelState = false;
+            (mgr as any).inputDebounceState.lastCancelState = false;
             mgr.update(makePlayer());
             expect(mgr.isVisible).toBe(false);
         });
@@ -306,12 +306,12 @@ describe('XDataUpgradeManager', () => {
             mgr.isVisible = true;
             mgr.needsRender = true;
             mgr.selectedIndex = 0;
-            (mgr as any).lastSelectState = false;
+            (mgr as any).inputDebounceState.lastSelectState = false;
             const player = makePlayer();
             // Populate itemElements first by rendering
             mgr.update(player);
             mgr.needsRender = false;
-            (mgr as any).lastSelectState = false;
+            (mgr as any).inputDebounceState.lastSelectState = false;
             inputManagerMock.isSelectPressed.mockReturnValue(true);
             mgr.update(player);
             expect(player.upgradeWithXData).toHaveBeenCalledWith((mgr as any).stats[0].type);
@@ -332,7 +332,7 @@ describe('XDataUpgradeManager', () => {
             });
             mgr.update(player);
             mgr.needsRender = false;
-            (mgr as any).lastSelectState = false;
+            (mgr as any).inputDebounceState.lastSelectState = false;
             inputManagerMock.isSelectPressed.mockReturnValue(true);
             mgr.update(player);
             expect(audioManagerMock.playInsufficient).toHaveBeenCalledOnce();
@@ -366,7 +366,7 @@ describe('XDataUpgradeManager', () => {
 
             [1, 2, 3, 4, 5, 6].forEach((expectedLevel, index) => {
                 mgr.selectedIndex = index;
-                (mgr as any).lastSelectState = false;
+                (mgr as any).inputDebounceState.lastSelectState = false;
                 mgr.update(player);
                 expect(player.getUpgradeCost).toHaveBeenCalledWith(expectedLevel);
             });
@@ -386,7 +386,7 @@ describe('XDataUpgradeManager', () => {
             });
             (mgr as any).needsRender = true;
             mgr.update(player);
-            (mgr as any).lastSelectState = false;
+                (mgr as any).inputDebounceState.lastSelectState = false;
             inputManagerMock.isSelectPressed.mockReturnValue(true);
 
             expect(() => mgr.update(player)).toThrow('Unsupported stat type: invalid');

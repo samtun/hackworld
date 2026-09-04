@@ -484,7 +484,7 @@ describe('BaseTrader.handleNavigation – up/down', () => {
             isNavigateUpPressed: vi.fn().mockReturnValue(true),
         });
         const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
-        (trader as any).lastNavigateUpState = true;
+        (trader as any).inputDebounceState.lastNavigateUpState = true;
         trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(1); // unchanged
     });
@@ -495,7 +495,7 @@ describe('BaseTrader.handleNavigation – up/down', () => {
         });
         const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
         trader.selectedIndex = 0;
-        (trader as any).lastNavigateDownState = true;
+        (trader as any).inputDebounceState.lastNavigateDownState = true;
         trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(0); // unchanged
     });

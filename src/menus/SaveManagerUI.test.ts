@@ -297,7 +297,7 @@ describe('update select', () => {
         (ui as any).saveCallback = onSave;
         (ui as any).isVisible = true;
         (ui as any).selectedButton = 'save';
-        (ui as any).lastSelectState = false;
+        (ui as any).inputDebounceState.lastSelectState = false;
 
         ui.update();
         expect(onSave).toHaveBeenCalledOnce();
@@ -313,7 +313,7 @@ describe('update select', () => {
         (ui as any).resetCallback = onReset;
         (ui as any).isVisible = true;
         (ui as any).selectedButton = 'reset';
-        (ui as any).lastSelectState = false;
+        (ui as any).inputDebounceState.lastSelectState = false;
 
         ui.update();
         expect(onReset).toHaveBeenCalledOnce();
@@ -327,7 +327,7 @@ describe('update select', () => {
         const ui = makeSaveManagerUI({ audioManager: audioManager, inputManager: inputManager });
         (ui as any).isVisible = true;
         (ui as any).selectedButton = 'load';
-        (ui as any).lastSelectState = false;
+        (ui as any).inputDebounceState.lastSelectState = false;
         const clickSpy = vi.spyOn((ui as any).fileInput, 'click');
 
         ui.update();

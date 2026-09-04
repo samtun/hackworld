@@ -1,6 +1,6 @@
 import { Player } from '../../player/Player';
 import { InputManager } from '../../controls/InputManager';
-import { resetInputDebounce } from '../../ui/UiUtils';
+import { InputDebounceState, resetInputDebounce } from '../../ui/UiUtils';
 import { StatType } from '../../StatType';
 import { getHint, HintConfigs } from '../../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../../ui/MenuManager';
@@ -29,10 +29,12 @@ export class XDataUpgradeManager {
     needsRender: boolean = false;
 
     // Input tracking for debouncing
-    private lastNavigateUpState: boolean = false;
-    private lastNavigateDownState: boolean = false;
-    private lastSelectState: boolean = false;
-    private lastCancelState: boolean = false;
+    private inputDebounceState: InputDebounceState = {
+        lastNavigateUpState: false,
+        lastNavigateDownState: false,
+        lastSelectState: false,
+        lastCancelState: false,
+    };
 
     // Stat options
     private stats: StatInfo[] = [
@@ -108,7 +110,7 @@ export class XDataUpgradeManager {
         this.selectedIndex = 0;
         this.needsRender = true;
         // Reset input debounce state to ignore lingering button presses
-        resetInputDebounce(this as any);
+        resetInputDebounce(this.inputDebounceState);
         if (!wasVisible) {
             this.audioManager.playUiOpen();
         }
@@ -263,21 +265,21 @@ export class XDataUpgradeManager {
         const previousIndex = this.selectedIndex;
 
         // Close on cancel (with debouncing)
-        if (cancel && !this.lastCancelState) {
+        if (cancel && !this.inputDebounceState.lastCancelState) {
             this.hide();
-            this.lastCancelState = true;
+            this.inputDebounceState.lastCancelState = true;
             return;
         }
 
         // Navigate up (with debouncing)
-        if (navigateUp && !this.lastNavigateUpState) {
+        if (navigateUp && !this.inputDebounceState.lastNavigateUpState) {
             if (this.selectedIndex > 0) {
                 this.selectedIndex--;
             }
         }
 
         // Navigate down (with debouncing)
-        if (navigateDown && !this.lastNavigateDownState) {
+        if (navigateDown && !this.inputDebounceState.lastNavigateDownState) {
             if (this.selectedIndex < this.stats.length - 1) {
                 this.selectedIndex++;
             }
@@ -288,7 +290,7 @@ export class XDataUpgradeManager {
         }
 
         // Select/Upgrade stat (with debouncing)
-        if (select && !this.lastSelectState) {
+        if (select && !this.inputDebounceState.lastSelectState) {
             const selectedStat = this.stats[this.selectedIndex];
             const success = player.upgradeWithXData(selectedStat.type);
 
@@ -308,10 +310,10 @@ export class XDataUpgradeManager {
         }
 
         // Update last states for debouncing
-        this.lastNavigateUpState = navigateUp;
-        this.lastNavigateDownState = navigateDown;
-        this.lastSelectState = select;
-        this.lastCancelState = cancel;
+        this.inputDebounceState.lastNavigateUpState = navigateUp;
+        this.inputDebounceState.lastNavigateDownState = navigateDown;
+        this.inputDebounceState.lastSelectState = select;
+        this.inputDebounceState.lastCancelState = cancel;
     }
 
     private getCurrentUpgradeLevel(player: Player, statType: StatType): number {
