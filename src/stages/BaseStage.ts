@@ -865,6 +865,10 @@ export abstract class BaseStage {
         }
     }
 
+    onWindowResize(): void {
+        this.teleporters.forEach(tp => tp.updateScaleFactor());
+    }
+
     /**
      * Spawn enemies for a room the first time the player enters it.
      * Any spawn point within {@link ENEMY_SAFE_SPAWN_RADIUS} of the player is

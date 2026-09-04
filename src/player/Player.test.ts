@@ -29,6 +29,7 @@ import { RecoverySkill } from './skills/RecoverySkill';
 import { BlastSkill } from './skills/BlastSkill';
 import { ChipType } from '../items/chips/Chip';
 import { CoreType } from '../items/cores/Core';
+import { VectorExtensions } from '../extensions/VectorExtensions';
 
 const physicsBodyMetadataManager = new PhysicsBodyMetadataManager();
 
@@ -46,6 +47,7 @@ interface PlayerDependencyOverrides {
     audioManager?: AudioManager;
     skillFactory?: SkillFactory;
     weaponFactory?: WeaponFactory;
+    vectorExtensions?: VectorExtensions;
 }
 
 const stableTier = {
@@ -163,6 +165,7 @@ function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
         audioManager = mock<AudioManager>(),
         skillFactory = finalSkillFactory,
         weaponFactory = finalWeaponFactory,
+        vectorExtensions = new VectorExtensions(),
     } = overrides;
 
     const player = new Player(
@@ -180,6 +183,7 @@ function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
         skillFactory,
         weaponFactory,
         physicsBodyMetadataManager,
+        vectorExtensions,
     );
 
     // Set position and update to ensure the player is not considered "airborne" at the start of tests

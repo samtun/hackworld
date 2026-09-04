@@ -2,6 +2,7 @@ import { EquippableItem } from '../EquippableItem';
 import { Player } from '../../player/Player';
 import { WeaponType } from './WeaponType';
 import { WeaponTierDefinition } from '../TierManager';
+import { WeaponInventorySaveData } from '../ItemSaveData';
 
 export class WeaponItem extends EquippableItem {
     weaponType: WeaponType;
@@ -105,6 +106,18 @@ export class WeaponItem extends EquippableItem {
             this.level,
         );
         return c;
+    }
+
+    toSaveData(): WeaponInventorySaveData {
+        return {
+            kind: 'WeaponItem',
+            id: this.id,
+            buyPrice: this.buyPrice,
+            sellPrice: this.sellPrice,
+            damage: this.damage,
+            isEquipped: this.isEquipped,
+            tierName: this.tier.name,
+        };
     }
 
     /**

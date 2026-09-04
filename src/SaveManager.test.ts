@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { SaveManager, SaveData } from './SaveManager';
+import { InventoryItemSaveData } from './items/ItemSaveData';
 import { WeaponType } from './items/weapons/WeaponType';
 import { SkillTechType } from './player/skills/SkillType';
 import { PlayerRegistry } from './player/PlayerRegistry';
@@ -12,7 +13,7 @@ import { CoreItem } from './items/cores/CoreItem';
 import { CoreRepository } from './items/cores/CoreRepository';
 import { ChipItem } from './items/chips/ChipItem';
 import { ChipRepository } from './items/chips/ChipRepository';
-import { TierManager, WeaponTierDefinition } from './items/TierManager';
+import { Tier, TierManager, WeaponTierDefinition } from './items/TierManager';
 import { SaveManagerUI } from './menus/SaveManagerUI';
 import { mock, mockDeep } from 'vitest-mock-extended';
 import { Player } from './player/Player';
@@ -612,10 +613,16 @@ describe('SaveManager – save() with WeaponItem in inventory', () => {
         expect(saved.player.inventory).toHaveLength(1);
         const entry = saved.player.inventory[0];
         expect(entry.kind).toBe('WeaponItem');
-        expect(entry.name).toBe('Test Sword');
-        expect(entry.weaponType).toBe(WeaponType.SWORD);
-        expect(entry.level).toBe(1);
+        if (entry.kind !== 'WeaponItem') {
+            throw new Error('Expected weapon save entry');
+        }
+        expect(entry.id).toBe('w1');
+        expect(entry.damage).toBe(25);
         expect(entry.isEquipped).toBe(false);
+        expect(entry.kind).toBe('WeaponItem');
+        expect(entry.tierName).toBe(Tier.STABLE);
+        expect(entry.buyPrice).toBe(100);
+        expect(entry.sellPrice).toBe(50);
     });
 
     it('marks isEquipped=true in serialized weapon when equipped', () => {
@@ -640,7 +647,7 @@ describe('SaveManager – save() with WeaponItem in inventory', () => {
     it('serializes a CoreItem with kind=CoreItem', () => {
         const ci = Object.create(CoreItem.prototype) as any;
         Object.assign(ci, {
-            id: 'c1', name: 'Test Core', level: 1, isEquipped: false,
+            id: 'c1', level: 1, isEquipped: false,
         });
 
         const player = makePlayerStub({ inventory: [ci] });
@@ -649,13 +656,12 @@ describe('SaveManager – save() with WeaponItem in inventory', () => {
 
         const saved = mgr.save();
         expect(saved.player.inventory[0].kind).toBe('CoreItem');
-        expect(saved.player.inventory[0].name).toBe('Test Core');
     });
 
     it('serializes a ChipItem with kind=ChipItem', () => {
         const chi = Object.create(ChipItem.prototype) as any;
         Object.assign(chi, {
-            id: 'ch1', name: 'Test Chip', level: 1, isEquipped: false,
+            id: 'ch1', level: 1, isEquipped: false,
         });
 
         const player = makePlayerStub({ inventory: [chi] });
@@ -664,14 +670,13 @@ describe('SaveManager – save() with WeaponItem in inventory', () => {
 
         const saved = mgr.save();
         expect(saved.player.inventory[0].kind).toBe('ChipItem');
-        expect(saved.player.inventory[0].name).toBe('Test Chip');
     });
 });
 
 // ─── loadSaveData() with inventory items ─────────────────────────────────────
 
 describe('SaveManager – loadSaveData() with inventory items', () => {
-    function makeMinimalSaveData(inventory: any[]): SaveData {
+    function makeMinimalSaveData(inventory: InventoryItemSaveData[]): SaveData {
         return {
             version: 'test',
             timestamp: new Date().toISOString(),
@@ -725,9 +730,9 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
         });
 
         const data = makeMinimalSaveData([{
-            kind: 'WeaponItem', id: 'w1', name: 'Sword Alpha',
-            weaponType: WeaponType.SWORD, damage: 20, buyPrice: 100, sellPrice: 50,
-            model: 'models/sword.glb', level: 1, isEquipped: false, tierName: 'Stable',
+            kind: 'WeaponItem', id: 'w1',
+            damage: 20, buyPrice: 100, sellPrice: 50,
+            isEquipped: false, tierName: Tier.STABLE,
         }]);
 
         (mgr as any).loadSaveData(data);
@@ -756,34 +761,35 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
         });
 
         const data = makeMinimalSaveData([{
-            kind: 'WeaponItem', id: 'w2', name: 'Lance Beta',
-            weaponType: WeaponType.LANCE, damage: 35, buyPrice: 200, sellPrice: 100,
-            model: 'models/lance.glb', level: 2, isEquipped: true, tierName: 'Stable',
+            kind: 'WeaponItem', id: 'w2',
+            damage: 35, buyPrice: 200, sellPrice: 100,
+            isEquipped: true, tierName: Tier.STABLE,
         }]);
 
         (mgr as any).loadSaveData(data);
         expect(player.setWeapon).toHaveBeenCalledWith(clonedItem);
     });
 
-    it('skips a WeaponItem entry with missing weaponType or level', () => {
+    it('throws when a WeaponItem entry is missing required save fields', () => {
         const data = makeMinimalSaveData([{
-            kind: 'WeaponItem', id: 'bad', name: 'Broken',
+            kind: 'WeaponItem', id: 'bad',
             // missing weaponType and level
-        }]);
+        } as unknown as InventoryItemSaveData]);
         const player = makePlayerStub();
         const playerRegistry = makePlayerRegistryWithPlayer(player);
         const mgr = makeSaveManager({ playerRegistry: playerRegistry });
-        (mgr as any).loadSaveData(data);
+
+        expect(() => (mgr as any).loadSaveData(data)).toThrow(/Invalid inventory save entry/i);
         expect(player.inventory).toHaveLength(0);
     });
 
     it('restores a CoreItem from inventory', () => {
-        const fakeCoreItem = { id: 'c1', name: 'Test Core', level: 1, isEquipped: false };
+        const fakeCoreItem = { id: 'c1', isEquipped: false };
         const coreRepository = mockDeep<CoreRepository>();
         coreRepository.getCoreByNameAndLevel.mockReturnValue(fakeCoreItem as CoreItem);
 
         const data = makeMinimalSaveData([{
-            kind: 'CoreItem', id: 'c1', name: 'Test Core', level: 1, isEquipped: false,
+            kind: 'CoreItem', id: 'c1', isEquipped: false,
         }]);
 
         const player = makePlayerStub();
@@ -795,12 +801,12 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
     });
 
     it('marks CoreItem as equipped when isEquipped=true', () => {
-        const fakeCoreItem = { id: 'c1', name: 'Core', level: 1, isEquipped: false };
+        const fakeCoreItem = { id: 'c1', isEquipped: false };
         const coreRepository = mockDeep<CoreRepository>();
         coreRepository.getCoreByNameAndLevel.mockReturnValue(fakeCoreItem as CoreItem);
 
         const data = makeMinimalSaveData([{
-            kind: 'CoreItem', id: 'c1', name: 'Core', level: 1, isEquipped: true,
+            kind: 'CoreItem', id: 'c1', isEquipped: true,
         }]);
 
         const player = makePlayerStub();
@@ -811,12 +817,12 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
     });
 
     it('restores a ChipItem from inventory', () => {
-        const fakeChipItem = { id: 'ch1', name: 'Speed Chip', level: 2, isEquipped: false };
+        const fakeChipItem = { id: 'ch1', isEquipped: false };
         const chipRepository = mockDeep<ChipRepository>();
         chipRepository.getChipByNameAndLevel.mockReturnValue(fakeChipItem as ChipItem);
 
         const data = makeMinimalSaveData([{
-            kind: 'ChipItem', id: 'ch1', name: 'Speed Chip', level: 2, isEquipped: false,
+            kind: 'ChipItem', id: 'ch1', isEquipped: false,
         }]);
 
         const player = makePlayerStub();
@@ -832,7 +838,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
         coreRepository.getCoreByNameAndLevel.mockReturnValue(undefined);
 
         const data = makeMinimalSaveData([{
-            kind: 'CoreItem', id: 'c2', name: 'Unknown Core', level: 1, isEquipped: false,
+            kind: 'CoreItem', id: 'c2', isEquipped: false,
         }]);
 
         const player = makePlayerStub();

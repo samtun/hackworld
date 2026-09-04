@@ -20,17 +20,11 @@ import {
     type EnemyTypeDefinition,
     getEnemyTypeDefinition,
 } from './EnemyType';
+import { EnemyActionType } from './EnemyActionType';
+import { VectorExtensions } from '../extensions/VectorExtensions';
 
 /** Maximum downward distance (metres) for the shadow floor raycast. */
 const SHADOW_CAST_DIST = 4.0;
-
-enum EnemyActionType {
-    Idle = 'Idle',
-    Run = 'Run',
-    Attack = 'Attack',
-    Death = 'Death',
-    TakeHit = 'TakeHit'
-}
 
 export interface EnemyArchetypeConfig {
     maxHp: number;
@@ -276,6 +270,7 @@ export class Enemy extends BaseMesh {
         private readonly floatingIndicatorManager: FloatingIndicatorManager,
         private readonly playerRegistry: PlayerRegistry,
         private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager,
+        private readonly vectorExtensions: VectorExtensions,
         assetManager: AssetManager,
         scene: THREE.Scene,
         physicsWorld: CANNON.World,
@@ -605,7 +600,7 @@ export class Enemy extends BaseMesh {
         if (this.handleDying(dt)) return;
 
         // Sync mesh with body
-        this.mesh.position.copy(this.body.position as any);
+        this.mesh.position.copy(this.vectorExtensions.toThreeVector3(this.body.position));
         this.mesh.position.y -= this.bodyHalfExtentY;
 
         this.updateBlockTimer(dt);
@@ -729,7 +724,7 @@ export class Enemy extends BaseMesh {
         }
 
         // Sync position during fade
-        this.mesh.position.copy(this.body.position as any);
+        this.mesh.position.copy(this.vectorExtensions.toThreeVector3(this.body.position));
         this.mesh.position.y -= this.bodyHalfExtentY;
         return true;
     }
@@ -749,7 +744,7 @@ export class Enemy extends BaseMesh {
         this.body.velocity.z *= 0.9;
 
         // Sync position while playing death animation
-        this.mesh.position.copy(this.body.position as any);
+        this.mesh.position.copy(this.vectorExtensions.toThreeVector3(this.body.position));
         this.mesh.position.y -= this.bodyHalfExtentY;
         return true;
     }

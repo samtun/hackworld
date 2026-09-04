@@ -2,6 +2,7 @@ import { EquippableItem } from '../EquippableItem';
 import { Player } from '../../player/Player';
 import { ChipType, ChipStats, IChip } from './Chip';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import { ChipInventorySaveData } from '../ItemSaveData';
 
 export class ChipItem extends EquippableItem implements IChip {
     private _type: ChipType;
@@ -111,5 +112,13 @@ export class ChipItem extends EquippableItem implements IChip {
             { ...this.stats }, // Deep copy stats
             this.level
         );
+    }
+
+    toSaveData(): ChipInventorySaveData {
+        return {
+            kind: 'ChipItem',
+            id: this.id,
+            isEquipped: this.isEquipped,
+        };
     }
 }

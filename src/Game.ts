@@ -464,16 +464,8 @@ export class Game {
         this.renderer.setSize(width, height);
         this.composer.setSize(width, height);
 
-        // Update particle scale factors for screen-independent sizing
         if (this.world.currentStage) {
-            // Update teleporters
-            this.world.currentStage.teleporters.forEach(tp => tp.updateScaleFactor());
-
-            // Update healing station particles if exists (Lobby specific)
-            const stage = this.world.currentStage as any;
-            if (stage.healingStation && typeof stage.healingStation.updateScaleFactor === 'function') {
-                stage.healingStation.updateScaleFactor();
-            }
+            this.world.currentStage.onWindowResize();
         }
     }
 

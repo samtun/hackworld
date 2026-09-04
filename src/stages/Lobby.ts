@@ -336,6 +336,11 @@ export class Lobby extends BaseStage {
         this.healingStation.update(dt);
     }
 
+    override onWindowResize(): void {
+        super.onWindowResize();
+        this.healingStation?.updateScaleFactor();
+    }
+
     /**
      * Override clear to also clean up NPCs and healing station
      */

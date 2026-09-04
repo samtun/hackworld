@@ -12,6 +12,7 @@ import { GameProgressManager } from './GameProgressManager';
 import { Player } from './player/Player';
 import { TierManager } from './items/TierManager';
 import { singleton } from 'tsyringe';
+import { deserializeInventoryEntry, InventoryItemSaveData } from './items/ItemSaveData';
 
 /**
  * Interface representing the complete save data structure
@@ -60,7 +61,7 @@ export interface SaveData {
         };
 
         // Inventory
-        inventory: any[];
+        inventory: InventoryItemSaveData[];
     };
     // Card Collection
     cardCollection: string[];
@@ -287,40 +288,18 @@ export class SaveManager {
                 },
                 inventory: player.inventory.map(i => {
                     if (i instanceof WeaponItem) {
-                        const wi = i as any;
-                        return {
-                            kind: WeaponItem.name,
-                            id: wi.id,
-                            name: wi.name,
-                            buyPrice: wi.buyPrice ?? wi.baseBuyPrice,
-                            sellPrice: wi.sellPrice ?? wi.baseSellPrice,
-                            weaponType: wi.weaponType,
-                            damage: wi.damage ?? wi.baseDamage,
-                            model: wi.model,
-                            level: wi.level,
-                            isEquipped: !!wi.isEquipped,
-                            tierName: wi.tier.name,
-                        };
-                    } else if (i instanceof CoreItem) {
-                        const ci = i as any;
-                        return {
-                            kind: CoreItem.name,
-                            id: ci.id,
-                            name: ci.name,
-                            level: ci.level,
-                            isEquipped: !!ci.isEquipped,
-                        };
-                    } else if (i instanceof ChipItem) {
-                        const chi = i as any;
-                        return {
-                            kind: ChipItem.name,
-                            id: chi.id,
-                            name: chi.name,
-                            level: chi.level,
-                            isEquipped: !!chi.isEquipped,
-                        };
+                        return i.toSaveData();
                     }
-                    return structuredClone(i);
+
+                    if (i instanceof CoreItem) {
+                        return i.toSaveData();
+                    }
+
+                    if (i instanceof ChipItem) {
+                        return i.toSaveData();
+                    }
+
+                    throw new Error(`Unsupported inventory item type for save: ${i.constructor?.name ?? typeof i}`);
                 }),
                 tech: structuredClone(player.tech),
                 skillTech: structuredClone(player.skillTech)
@@ -510,56 +489,58 @@ export class SaveManager {
 
         // Restore weapon tech
         if (saveData.player.tech) {
-            (player as any).tech = structuredClone(saveData.player.tech);
+            player.tech = structuredClone(saveData.player.tech);
         }
 
         // Restore skill tech
         if (saveData.player.skillTech) {
-            player.skillTech = structuredClone(saveData.player.skillTech) as any;
+            player.skillTech = structuredClone(saveData.player.skillTech);
         }
 
         // Restore inventory
         player.inventory = [];
 
-        for (const itemData of saveData.player.inventory) {
-            if (itemData.kind === WeaponItem.name) {
-                // Restore weapon by finding a weapon with matching properties
-                // We use weaponType and level to find the right weapon from the repository
-                if (itemData.weaponType && itemData.level) {
-                    const baseWeapon = this.weaponRepository.getWeaponByTypeAndLevel(itemData.weaponType, itemData.level);
-                    const weaponItem = baseWeapon.cloneWith(itemData.damage, itemData.buyPrice, itemData.sellPrice, itemData.id);
-                    if (itemData.tierName) {
-                        weaponItem.tier = this.tierManager.tiers.get(itemData.tierName)!;
-                    }
-                    if (itemData.isEquipped) {
-                        weaponItem.isEquipped = true;
-                        player.setWeapon(weaponItem);
-                    }
-                    player.inventory.push(weaponItem);
-                } else {
-                    console.warn('Invalid weapon data in save file:', itemData);
+        for (const rawItemData of saveData.player.inventory) {
+            const itemData = deserializeInventoryEntry(rawItemData);
+
+            if (itemData.kind === 'WeaponItem') {
+                const weaponData = itemData;
+                const baseWeapon = this.weaponRepository.getWeaponById(weaponData.id);
+                if (baseWeapon == null) {
+                    throw new Error(`Unknown weapon id in save data: ${weaponData.id}`);
                 }
-            } else if (itemData.kind === CoreItem.name) {
-                // Restore core by name and level from repository
-                if (itemData.name && itemData.level) {
-                    const coreItem = this.coreRepository.getCoreByNameAndLevel(itemData.name, itemData.level);
-                    if (coreItem) {
-                        if (itemData.isEquipped) {
-                            coreItem.isEquipped = true;
-                        }
-                        player.inventory.push(coreItem);
-                    }
+
+                const tier = this.tierManager.tiers.get(weaponData.tierName);
+                if (tier == null) {
+                    throw new Error(`Unknown tier name in save data: ${weaponData.tierName}`);
                 }
-            } else if (itemData.kind === ChipItem.name) {
-                // Restore chip by name and level from repository
-                if (itemData.name && itemData.level) {
-                    const chipItem = this.chipRepository.getChipByNameAndLevel(itemData.name, itemData.level);
-                    if (chipItem) {
-                        if (itemData.isEquipped) {
-                            chipItem.isEquipped = true;
-                        }
-                        player.inventory.push(chipItem);
+
+                const weaponItem = baseWeapon.cloneWith(weaponData.damage, weaponData.buyPrice, weaponData.sellPrice, tier, weaponData.id);
+                weaponItem.tier = tier;
+
+                if (weaponData.isEquipped) {
+                    weaponItem.isEquipped = true;
+                    player.setWeapon(weaponItem);
+                }
+
+                player.inventory.push(weaponItem);
+            } else if (itemData.kind === 'CoreItem') {
+                const coreData = itemData;
+                const coreItem = this.coreRepository.getCoreById(coreData.id);
+                if (coreItem) {
+                    if (coreData.isEquipped) {
+                        coreItem.isEquipped = true;
                     }
+                    player.inventory.push(coreItem);
+                }
+            } else if (itemData.kind === 'ChipItem') {
+                const chipData = itemData;
+                const chipItem = this.chipRepository.getChipById(chipData.id);
+                if (chipItem) {
+                    if (chipData.isEquipped) {
+                        chipItem.isEquipped = true;
+                    }
+                    player.inventory.push(chipItem);
                 }
             }
         }

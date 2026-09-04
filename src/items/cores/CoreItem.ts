@@ -2,6 +2,7 @@ import { EquippableItem } from '../EquippableItem';
 import { Player } from '../../player/Player';
 import { CoreStats, CoreStealEffect, CoreType, ICore } from './Core';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import { CoreInventorySaveData } from '../ItemSaveData';
 
 export class CoreItem extends EquippableItem implements ICore {
     private _type: CoreType;
@@ -141,5 +142,13 @@ export class CoreItem extends EquippableItem implements ICore {
             this.level,
             this._type
         );
+    }
+
+    toSaveData(): CoreInventorySaveData {
+        return {
+            kind: 'CoreItem',
+            id: this.id,
+            isEquipped: this.isEquipped,
+        };
     }
 }
