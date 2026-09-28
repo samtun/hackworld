@@ -82,7 +82,7 @@ function makeSellableItem(id: string, buyPrice: number, sellPrice: number): Item
         name: `Item_${id}`,
         buyPrice,
         sellPrice,
-        clone: vi.fn(function (this: any) {
+        clone: vi.fn(function (this: Item & { clone: () => Item }) {
             return { ...this, id: `${id}_clone`, clone: this.clone };
         }),
     } as unknown as Item;
@@ -97,8 +97,8 @@ function makeEquippableItem(id: string, buyPrice: number, sellPrice: number, equ
         baseBuyPrice: buyPrice,
         baseSellPrice: sellPrice,
         isEquipped: equipped,
-        clone: vi.fn(function (this: any) {
-            const c = Object.create(EquippableItem.prototype);
+        clone: vi.fn(function (this: EquippableItem & { clone: () => EquippableItem }) {
+            const c = Object.create(EquippableItem.prototype) as EquippableItem;
             Object.assign(c, { ...this, id: `${id}_clone` });
             c.isEquipped = false;
             return c;
@@ -166,7 +166,7 @@ describe('BaseTrader – buy transaction', () => {
         (trader as any).handleTransaction(player);
 
         const bought = player.inventory[0];
-        expect((bought as unknown as EquippableItem).isEquipped).toBe(false);
+        expect((bought as any).isEquipped).toBe(false);
     });
 
     it('adjusts selectedIndex when last item is bought', () => {
@@ -301,7 +301,7 @@ function makeTraderWithDOM(overrides: TestTraderOverrides = {}): TestTrader {
     const trader = makeTrader(overrides);
     const container = document.createElement('div');
     container.style.display = 'none';
-    (trader as any).container = container;
+    trader.container = container;
     return trader;
 }
 
@@ -309,35 +309,35 @@ describe('BaseTrader.show', () => {
     it('sets isVisible to true', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = false;
-        (trader as any).show();
+        trader.show();
         expect(trader.isVisible).toBe(true);
     });
 
     it('sets container.style.display to "flex"', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = false;
-        (trader as any).show();
-        expect((trader as any).container.style.display).toBe('flex');
+        trader.show();
+        expect(trader.container.style.display).toBe('flex');
     });
 
     it('resets selectedIndex to 0', () => {
         const trader = makeTraderWithDOM();
         trader.selectedIndex = 3;
-        (trader as any).show();
+        trader.show();
         expect(trader.selectedIndex).toBe(0);
     });
 
     it('resets activePanel to TRADER', () => {
         const trader = makeTraderWithDOM();
         trader.activePanel = TraderPanel.PLAYER;
-        (trader as any).show();
+        trader.show();
         expect(trader.activePanel).toBe(TraderPanel.TRADER);
     });
 
     it('marks needsRender as true', () => {
         const trader = makeTraderWithDOM();
         trader.needsRender = false;
-        (trader as any).show();
+        trader.show();
         expect(trader.needsRender).toBe(true);
     });
 
@@ -345,7 +345,7 @@ describe('BaseTrader.show', () => {
         const trader = makeTraderWithDOM();
         (trader as any).traderSelectedIndex = 5;
         (trader as any).playerSelectedIndex = 3;
-        (trader as any).show();
+        trader.show();
         expect((trader as any).traderSelectedIndex).toBe(0);
         expect((trader as any).playerSelectedIndex).toBe(0);
     });
@@ -354,7 +354,7 @@ describe('BaseTrader.show', () => {
         const audioManagerMock = mockDeep<AudioManager>();
         const trader = makeTraderWithDOM({ audioManager: audioManagerMock });
         trader.isVisible = false;
-        (trader as any).show();
+        trader.show();
         expect(audioManagerMock.playUiOpen).toHaveBeenCalledOnce();
     });
 });
@@ -363,28 +363,28 @@ describe('BaseTrader.hide', () => {
     it('sets isVisible to false', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = true;
-        (trader as any).hide();
+        trader.hide();
         expect(trader.isVisible).toBe(false);
     });
 
     it('sets container.style.display to "none"', () => {
         const trader = makeTraderWithDOM();
-        (trader as any).container.style.display = 'flex';
-        (trader as any).hide();
-        expect((trader as any).container.style.display).toBe('none');
+        trader.container.style.display = 'flex';
+        trader.hide();
+        expect(trader.container.style.display).toBe('none');
     });
 
     it('calls uiManager.hideControlHints', () => {
         const trader = makeTraderWithDOM();
-        (trader as any).hide();
-        expect((trader as any).uiManager.hideControlHints).toHaveBeenCalledOnce();
+        trader.hide();
+        expect(trader.uiManager.hideControlHints).toHaveBeenCalledOnce();
     });
 
     it('plays the UI close sound when hidden from visible', () => {
         const audioManagerMock = mockDeep<AudioManager>();
         const trader = makeTraderWithDOM({ audioManager: audioManagerMock });
         trader.isVisible = true;
-        (trader as any).hide();
+        trader.hide();
         expect(audioManagerMock.playUiClose).toHaveBeenCalledOnce();
     });
 });
@@ -393,36 +393,39 @@ describe('BaseTrader.toggle', () => {
     it('calls show() when currently hidden', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = false;
-        const spy = vi.spyOn(trader as any, 'show');
-        (trader as any).toggle();
+        const spy = vi.spyOn(trader, 'show');
+        trader.toggle();
         expect(spy).toHaveBeenCalledOnce();
     });
 
     it('calls hide() when currently visible', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = true;
-        const spy = vi.spyOn(trader as any, 'hide');
-        (trader as any).toggle();
+        const spy = vi.spyOn(trader, 'hide');
+        trader.toggle();
         expect(spy).toHaveBeenCalledOnce();
     });
 
     it('transitions from hidden to visible', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = false;
-        (trader as any).toggle();
+        trader.toggle();
         expect(trader.isVisible).toBe(true);
     });
 
     it('transitions from visible to hidden', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = true;
-        (trader as any).toggle();
+        trader.toggle();
         expect(trader.isVisible).toBe(false);
     });
 });
 
-function makeNavPlayer() {
-    return { bits: 1000, inventory: [] as Item[] } as any;
+function makeNavPlayer(): Player {
+    return {
+        bits: 1000,
+        inventory: [] as Item[],
+    } as unknown as Player;
 }
 
 describe('BaseTrader.handleNavigation – up/down', () => {

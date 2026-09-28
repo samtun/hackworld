@@ -37,11 +37,11 @@ function makeCardManager(overrides: CardManagerTestOverrides = {}): CardManager 
     return cardManager;
 }
 
-function makePlayer(overrides: Record<string, any> = {}): Player {
+function makePlayer(overrides: Record<string, unknown> = {}): Player {
     return {
         boosterPacks: 0,
         ...overrides,
-    } as any;
+    } as unknown as Player;
 }
 
 describe('CardManager', () => {
@@ -87,7 +87,7 @@ describe('CardManager', () => {
             const cardManager = makeCardManager();
             cardManager.isVisible = false;
             cardManager.needsRender = false;
-            const renderSpy = vi.spyOn(cardManager, 'render' as any);
+            const renderSpy = vi.spyOn(cardManager as any, 'render');
             cardManager.update(makePlayer());
             expect(renderSpy).not.toHaveBeenCalled();
         });
@@ -96,7 +96,7 @@ describe('CardManager', () => {
             const cardManager = makeCardManager();
             cardManager.isVisible = true;
             cardManager.needsRender = false;
-            const renderSpy = vi.spyOn(cardManager, 'render' as any);
+            const renderSpy = vi.spyOn(cardManager as any, 'render');
             cardManager.update(makePlayer());
             expect(renderSpy).not.toHaveBeenCalled();
         });
@@ -105,7 +105,7 @@ describe('CardManager', () => {
             const cardManager = makeCardManager();
             cardManager.isVisible = true;
             cardManager.needsRender = true;
-            const renderSpy = vi.spyOn(cardManager, 'render' as any).mockImplementation(() => { });
+            const renderSpy = vi.spyOn(cardManager as any, 'render').mockImplementation(() => { });
             cardManager.update(makePlayer());
             expect(renderSpy).toHaveBeenCalledOnce();
         });
@@ -114,7 +114,7 @@ describe('CardManager', () => {
             const cardManager = makeCardManager();
             cardManager.isVisible = true;
             cardManager.needsRender = true;
-            vi.spyOn(cardManager, 'render' as any).mockImplementation(() => { });
+            vi.spyOn(cardManager as any, 'render').mockImplementation(() => { });
             cardManager.update(makePlayer());
             expect(cardManager.needsRender).toBe(false);
         });
@@ -128,7 +128,7 @@ describe('CardManager', () => {
             cardManager.isVisible = true;
             cardManager.needsRender = false;
             (cardManager as any).selectedMenuIndex = 1;
-            const renderSpy = vi.spyOn(cardManager, 'render' as any).mockImplementation(() => { });
+            const renderSpy = vi.spyOn(cardManager as any, 'render').mockImplementation(() => { });
             cardManager.update(makePlayer());
             expect((cardManager as any).selectedMenuIndex).toBe(0);
             expect(renderSpy).toHaveBeenCalledOnce();
@@ -145,7 +145,7 @@ describe('CardManager', () => {
             cardManager.isVisible = true;
             cardManager.needsRender = false;
             (cardManager as any).selectedMenuIndex = 0;
-            const renderSpy = vi.spyOn(cardManager, 'render' as any).mockImplementation(() => { });
+            const renderSpy = vi.spyOn(cardManager as any, 'render').mockImplementation(() => { });
             cardManager.update(makePlayer());
             expect((cardManager as any).selectedMenuIndex).toBe(1);
             expect(renderSpy).toHaveBeenCalledOnce();
@@ -159,7 +159,7 @@ describe('CardManager', () => {
             const cardManager = makeCardManager({ inputManager: inputManagerMock });
             cardManager.isVisible = true;
             cardManager.needsRender = false;
-            const renderSpy = vi.spyOn(cardManager, 'render' as any).mockImplementation(() => { });
+            const renderSpy = vi.spyOn(cardManager as any, 'render').mockImplementation(() => { });
             cardManager.update(makePlayer({ boosterPacks: 0 }));
             expect(renderSpy).toHaveBeenCalledOnce();
         });
@@ -171,7 +171,7 @@ describe('CardManager', () => {
             const cardManager = makeCardManager({ inputManager: inputManagerMock });
             cardManager.isVisible = true;
             cardManager.needsRender = false;
-            const renderSpy = vi.spyOn(cardManager, 'render' as any).mockImplementation(() => { });
+            const renderSpy = vi.spyOn(cardManager as any, 'render').mockImplementation(() => { });
             cardManager.update(makePlayer());
             expect(renderSpy).toHaveBeenCalledOnce();
         });
@@ -180,7 +180,7 @@ describe('CardManager', () => {
             const cardManager = makeCardManager();
             cardManager.isVisible = true;
             cardManager.needsRender = false;
-            const renderSpy = vi.spyOn(cardManager, 'render' as any).mockImplementation(() => { });
+            const renderSpy = vi.spyOn(cardManager as any, 'render').mockImplementation(() => { });
             cardManager.update(makePlayer());
             cardManager.update(makePlayer());
             expect(renderSpy).not.toHaveBeenCalled();
@@ -193,7 +193,7 @@ describe('CardManager', () => {
             const cardManager = makeCardManager({ inputManager: inputManagerMock });
             cardManager.isVisible = true;
             cardManager.needsRender = false;
-            const renderSpy = vi.spyOn(cardManager, 'render' as any).mockImplementation(() => { });
+            const renderSpy = vi.spyOn(cardManager as any, 'render').mockImplementation(() => { });
             // First frame: button pressed
             cardManager.update(makePlayer());
             // Second frame: button still held

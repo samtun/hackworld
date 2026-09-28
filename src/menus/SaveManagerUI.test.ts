@@ -96,7 +96,7 @@ describe('show', () => {
 describe('hide', () => {
     it('sets isVisible to false', () => {
         const ui = makeSaveManagerUI();
-        (ui as any).isVisible = true;
+        ui.isVisible = true;
         ui.hide();
         expect(ui.isVisible).toBe(false);
     });
@@ -295,7 +295,7 @@ describe('update select', () => {
         inputManager.isSelectPressed.mockReturnValue(true);
         const ui = makeSaveManagerUI({ audioManager: audioManager, inputManager: inputManager });
         (ui as any).saveCallback = onSave;
-        (ui as any).isVisible = true;
+        ui.isVisible = true;
         (ui as any).selectedButton = 'save';
         (ui as any).inputDebounceState.lastSelectState = false;
 
@@ -311,7 +311,7 @@ describe('update select', () => {
         inputManager.isSelectPressed.mockReturnValue(true);
         const ui = makeSaveManagerUI({ audioManager: audioManager, inputManager: inputManager });
         (ui as any).resetCallback = onReset;
-        (ui as any).isVisible = true;
+        ui.isVisible = true;
         (ui as any).selectedButton = 'reset';
         (ui as any).inputDebounceState.lastSelectState = false;
 
@@ -325,7 +325,7 @@ describe('update select', () => {
         const inputManager = mockDeep<InputManager>();
         inputManager.isSelectPressed.mockReturnValue(true);
         const ui = makeSaveManagerUI({ audioManager: audioManager, inputManager: inputManager });
-        (ui as any).isVisible = true;
+        ui.isVisible = true;
         (ui as any).selectedButton = 'load';
         (ui as any).inputDebounceState.lastSelectState = false;
         const clickSpy = vi.spyOn((ui as any).fileInput, 'click');

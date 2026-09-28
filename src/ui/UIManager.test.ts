@@ -57,7 +57,7 @@ function makeMockMinimapContext() {
         arc: vi.fn((x: number, y: number, radius: number) => {
             arcCalls.push({ color: fillStyle, x, y, radius });
         }),
-    } as any;
+    } as unknown as CanvasRenderingContext2D;
 
     Object.defineProperty(ctx, 'fillStyle', {
         get: () => fillStyle,
@@ -95,8 +95,8 @@ describe('UIManager', () => {
             const ui = makeUIManager();
             const pui1 = makeMockPui();
             const pui2 = makeMockPui();
-            ui.playerUIs.set('p1', pui1 as any);
-            ui.playerUIs.set('p2', pui2 as any);
+            ui.playerUIs.set('p1', pui1 as unknown as typeof pui1);
+            ui.playerUIs.set('p2', pui2 as unknown as typeof pui2);
 
             ui.displayInsufficientTPWarning();
 
@@ -116,8 +116,8 @@ describe('UIManager', () => {
         it('calls pui.update for the matching player', () => {
             const ui = makeUIManager();
             const pui = makeMockPui();
-            const player = { id: 'abc' } as any;
-            ui.playerUIs.set('abc', pui as any);
+            const player = { id: 'abc' } as unknown as Parameters<typeof ui.update>[0];
+            ui.playerUIs.set('abc', pui as unknown as typeof pui);
 
             ui.update(player, 0.016);
 
@@ -126,15 +126,15 @@ describe('UIManager', () => {
 
         it('does nothing when no playerUIs exist', () => {
             const ui = makeUIManager();
-            const player = { id: 'abc' } as any;
+            const player = { id: 'abc' } as unknown as Parameters<typeof ui.update>[0];
             expect(() => ui.update(player, 0.016)).not.toThrow();
         });
 
         it('does nothing when player has no matching UI', () => {
             const ui = makeUIManager();
             const pui = makeMockPui();
-            ui.playerUIs.set('other', pui as any);
-            const player = { id: 'abc' } as any;
+            ui.playerUIs.set('other', pui as unknown as typeof pui);
+            const player = { id: 'abc' } as unknown as Parameters<typeof ui.update>[0];
 
             ui.update(player, 0.016);
 
@@ -148,7 +148,7 @@ describe('UIManager', () => {
             const canvas = document.createElement('canvas');
             canvas.width = 240;
             canvas.height = 180;
-            (canvas as any).getContext = vi.fn().mockReturnValue(ctx);
+            canvas.getContext = vi.fn().mockReturnValue(ctx);
             const wrapper = document.createElement('div');
             const ui = makeUIManager();
             (ui as any).minimapCanvas = canvas;
@@ -159,7 +159,7 @@ describe('UIManager', () => {
                 bounds: { minX: -1, maxX: 1, minZ: -1, maxZ: 1 },
             };
 
-            ui.update({ id: 'p1', position: { x: 0, z: 0 } } as any, 0.016);
+            ui.update({ id: 'p1', position: { x: 0, z: 0 } } as unknown as Parameters<typeof ui.update>[0], 0.016);
 
             expect(
                 fillRectCalls.some(call =>
@@ -175,7 +175,7 @@ describe('UIManager', () => {
         it('renders inactive teleporter marker in inactive color', () => {
             const { ctx, arcCalls } = makeMockMinimapContext();
             const canvas = document.createElement('canvas');
-            (canvas as any).getContext = vi.fn().mockReturnValue(ctx);
+            canvas.getContext = vi.fn().mockReturnValue(ctx);
             const wrapper = document.createElement('div');
             const ui = makeUIManager();
             (ui as any).minimapCanvas = canvas;
@@ -187,7 +187,7 @@ describe('UIManager', () => {
                 teleporter: { x: 3, z: -2, active: false },
             };
 
-            ui.update({ id: 'p1', position: { x: 0, z: 0 } } as any, 0.016);
+            ui.update({ id: 'p1', position: { x: 0, z: 0 } } as unknown as Parameters<typeof ui.update>[0], 0.016);
 
             expect(arcCalls.some(call => call.color === '#ffedd0')).toBe(true);
             expect(arcCalls.some(call => call.color === '#ffea00')).toBe(true);
@@ -196,7 +196,7 @@ describe('UIManager', () => {
         it('renders active teleporter marker in active color', () => {
             const { ctx, arcCalls } = makeMockMinimapContext();
             const canvas = document.createElement('canvas');
-            (canvas as any).getContext = vi.fn().mockReturnValue(ctx);
+            canvas.getContext = vi.fn().mockReturnValue(ctx);
             const wrapper = document.createElement('div');
             const ui = makeUIManager();
             (ui as any).minimapCanvas = canvas;
@@ -208,7 +208,7 @@ describe('UIManager', () => {
                 teleporter: { x: 3, z: -2, active: true },
             };
 
-            ui.update({ id: 'p1', position: { x: 0, z: 0 } } as any, 0.016);
+            ui.update({ id: 'p1', position: { x: 0, z: 0 } } as unknown as Parameters<typeof ui.update>[0], 0.016);
 
             expect(arcCalls.some(call => call.color === '#df961f')).toBe(true);
             expect(arcCalls.some(call => call.color === '#ffea00')).toBe(true);
