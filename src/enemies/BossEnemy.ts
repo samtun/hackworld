@@ -8,6 +8,8 @@ import { AudioManager } from '../AudioManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { PlayerRegistry } from '../player/PlayerRegistry';
 import { PhysicsBodyMetadataManager } from '../PhysicsBodyMetadata';
+import { EnemyActionType } from './EnemyActionType';
+import { VectorExtensions } from '../extensions/VectorExtensions';
 
 enum BossAttackType {
     Melee1 = 'Melee1',
@@ -30,6 +32,7 @@ export class BossEnemy extends Enemy {
         floatingIndicatorManager: FloatingIndicatorManager,
         playerRegistry: PlayerRegistry,
         physicsBodyMetadataManager: PhysicsBodyMetadataManager,
+        vectorExtensions: VectorExtensions,
         assetManager: AssetManager,
         scene: THREE.Scene,
         world: CANNON.World,
@@ -43,6 +46,7 @@ export class BossEnemy extends Enemy {
             floatingIndicatorManager,
             playerRegistry,
             physicsBodyMetadataManager,
+            vectorExtensions,
             assetManager,
             scene,
             world,
@@ -179,7 +183,7 @@ export class BossEnemy extends Enemy {
 
         // TODO handle different attack behaviors based on this.currentAttackType
 
-        this.fadeToAction('Attack' as any, 0.1); // Use attack animation for all three attack types
+        this.fadeToAction(EnemyActionType.Attack, 0.1); // Use attack animation for all three attack types
     }
 
     /**

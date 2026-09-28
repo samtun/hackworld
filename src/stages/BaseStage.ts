@@ -267,15 +267,16 @@ export abstract class BaseStage {
         // Remove visual meshes
         for (const mesh of this.meshes) {
             this.scene.remove(mesh);
-            const m = mesh as any;
-            if (m.geometry) m.geometry.dispose();
-            if (m.material) {
-                if (Array.isArray(m.material)) {
-                    m.material.forEach((mat: any) => mat.dispose());
-                } else {
-                    m.material.dispose();
+            mesh.traverse((child) => {
+                if (child instanceof THREE.Mesh) {
+                    child.geometry.dispose();
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach((material) => material.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
                 }
-            }
+            });
         }
         this.meshes = [];
 
@@ -320,9 +321,9 @@ export abstract class BaseStage {
         const geo = new THREE.BoxGeometry(w, h, d);
         const mat = new THREE.MeshStandardMaterial({ color: 0x555555 });
         const mesh = new THREE.Mesh(geo, mat);
-        mesh.position.copy(pos as any);
+        mesh.position.set(pos.x, pos.y, pos.z);
         if (rot) {
-            mesh.quaternion.copy(rot as any);
+            mesh.quaternion.set(rot.x, rot.y, rot.z, rot.w);
         }
         mesh.castShadow = true;
         mesh.receiveShadow = true;
@@ -863,6 +864,10 @@ export abstract class BaseStage {
                 updateWallUniforms(this.wallMaterials, player.position, cameraPosition, this.shaderTime);
             }
         }
+    }
+
+    onWindowResize(): void {
+        this.teleporters.forEach(tp => tp.updateScaleFactor());
     }
 
     /**

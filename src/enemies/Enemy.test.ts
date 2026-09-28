@@ -15,6 +15,7 @@ import { container } from 'tsyringe';
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { BlobShadow } from '../BlobShadow';
 import { DungeonNavGrid } from '../navigation/DungeonNavGrid';
+import { VectorExtensions } from '../extensions/VectorExtensions';
 
 
 const WORLD_COLLISION_GROUP = 1;
@@ -90,7 +91,6 @@ function makeEnemy(overrides: EnemyDependencyOverrides = {}): Enemy {
             { agility: 1, body: { position: { x: 0, y: 1, z: 0 } } } as Player]
     });
 
-
     const finalPlayerRegistry = overrides.playerRegistry || defaultPlayerRegistry;
     const finalAssetManager = overrides.assetManager || createDefaultAssetManager();
     const finalPhysicsWorld = overrides.physicsWorld || createDefaultPhysicsWorld(defaultPhysicsMaterial);
@@ -117,6 +117,7 @@ function makeEnemy(overrides: EnemyDependencyOverrides = {}): Enemy {
         floatingIndicatorManager,
         playerRegistry,
         new PhysicsBodyMetadataManager(),
+        new VectorExtensions(),
         assetManager,
         scene,
         physicsWorld,

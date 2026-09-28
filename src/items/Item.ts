@@ -1,4 +1,6 @@
 
+import { InventoryItemSaveData } from './ItemSaveData';
+
 export abstract class Item {
     id: string;
     name: string;
@@ -24,4 +26,5 @@ export abstract class Item {
 
     abstract getType(): string;
     abstract clone(newId?: string): Item;
+    abstract toSaveData(): InventoryItemSaveData;
 }

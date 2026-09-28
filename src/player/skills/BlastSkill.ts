@@ -93,7 +93,7 @@ export class BlastSkill extends Skill {
 
         // Create visual effect
         this.fx = new BlastFx(this.DURATION, this.RANGE, this.effectiveWaves, this.assetManager);
-        this.fx.setPosition(player.position as any);
+        this.fx.setPosition(new CANNON.Vec3(player.position.x, player.position.y, player.position.z));
         this.fx.addToScene(scene);
         this.isBeingExecuted = true;
     }

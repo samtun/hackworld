@@ -8,6 +8,7 @@ import { SaveManager } from '../SaveManager';
 import { XDataUpgradeManager } from '../items/xdata/XDataUpgradeManager';
 import { WeaponTrader } from '../items/weapons/WeaponTrader';
 import { Npc } from '../npcs/Npc';
+import { MainframeNpc } from '../npcs/MainframeNpc';
 import { CoreTrader } from '../items/cores/CoreTrader';
 import { CardManager } from '../items/cards/CardManager';
 import { ShaderUtils } from '../ShaderUtils';
@@ -49,7 +50,7 @@ export class Lobby extends BaseStage {
     }
 
     // NPCs
-    mainframeNpc?: Npc;
+    mainframeNpc?: MainframeNpc;
     nylethNpc?: Npc;
     xDataManagerNpc?: Npc;
     saveManagerNpc?: Npc;
@@ -314,8 +315,7 @@ export class Lobby extends BaseStage {
      */
     private updateMainframeDialogue(): void {
         if (this.mainframeNpc) {
-            // mainframeNpc is a MainframeNpc instance and exposes updateDialogue
-            (this.mainframeNpc as any).updateDialogue(this.gameProgressManager.progress);
+            this.mainframeNpc.updateDialogue(this.gameProgressManager.progress);
         }
     }
 
@@ -334,6 +334,11 @@ export class Lobby extends BaseStage {
 
         if (!this.healingStation) return;
         this.healingStation.update(dt);
+    }
+
+    override onWindowResize(): void {
+        super.onWindowResize();
+        this.healingStation?.updateScaleFactor();
     }
 
     /**

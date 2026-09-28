@@ -9,6 +9,8 @@ import { RecoveryFx } from './RecoveryFx';
 import { AssetManager } from '../../AssetManager';
 import { UIManager } from '../../ui/UIManager';
 
+type RecoveryParticle = THREE.Mesh & { velocity?: THREE.Vector3 };
+
 /**
  * Recovery Skill
  */
@@ -18,7 +20,7 @@ export class RecoverySkill extends Skill {
     private readonly PARTICLE_COUNT = 60;
     private readonly RECOVERY_DURATION = 5; // Seconds of post-heal recovery at Overclocked+
 
-    private particles: THREE.Mesh[] = [];
+    private particles: RecoveryParticle[] = [];
     private effectTimer: number = 0;
     private fx: RecoveryFx | undefined;
     private effectiveDuration: number = this.BASE_DURATION;
@@ -138,7 +140,7 @@ export class RecoverySkill extends Skill {
 
     private createHealingParticles(player: Player, scene: THREE.Scene): void {
         this.fx = new RecoveryFx(this.effectiveDuration, this.assetManager);
-        this.fx.setPosition(player.position as any);
+        this.fx.setPosition(new CANNON.Vec3(player.position.x, player.position.y, player.position.z));
         this.fx.addToScene(scene);
 
         this.effectTimer = 0;
@@ -160,7 +162,7 @@ export class RecoverySkill extends Skill {
             opacity: 0.9
         });
 
-        const particle = new THREE.Mesh(geometry, material);
+        const particle: RecoveryParticle = new THREE.Mesh(geometry, material);
         particle.position.set(
             player.body.position.x + Math.cos(angle) * radius,
             player.body.position.y + height - player.body.position.y * 0.5,
@@ -168,7 +170,7 @@ export class RecoverySkill extends Skill {
         );
 
         // Store velocity for upward movement
-        (particle as any).velocity = new THREE.Vector3(
+        particle.velocity = new THREE.Vector3(
             0,
             1.2 + Math.random(), // Upward movement
             0
@@ -230,7 +232,7 @@ export class RecoverySkill extends Skill {
                     material.opacity = (1 - progress) * 0.9;
 
                     // Move particles upward
-                    const velocity = (particle as any).velocity;
+                    const velocity = particle.velocity;
                     if (velocity) {
                         particle.position.y += velocity.y * dt;
                     }

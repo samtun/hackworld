@@ -12,6 +12,7 @@ import { WeaponRepository } from "../items/weapons/WeaponRepository";
 import { SkillFactory } from "./skills/SkillFactory";
 import { WeaponFactory } from "../items/weapons/WeaponFactory";
 import { PhysicsBodyMetadataManager } from "../PhysicsBodyMetadata";
+import { VectorExtensions } from "../extensions/VectorExtensions";
 
 @singleton()
 export class PlayerFactory {
@@ -29,6 +30,7 @@ export class PlayerFactory {
         private readonly skillFactory: SkillFactory,
         private readonly weaponFactory: WeaponFactory,
         private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager,
+        private readonly vectorExtensions: VectorExtensions,
     ) { }
 
     public createPlayer(spawnPosition: CANNON.Vec3): Player {
@@ -47,6 +49,7 @@ export class PlayerFactory {
             this.skillFactory,
             this.weaponFactory,
             this.physicsBodyMetadataManager,
+            this.vectorExtensions,
         );
     }
 }

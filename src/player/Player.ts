@@ -28,6 +28,7 @@ import { PlayerActionType } from './PlayerActionType';
 import { SkillFactory } from './skills/SkillFactory';
 import { WeaponFactory } from '../items/weapons/WeaponFactory';
 import { ChipType } from '../items/chips/Chip';
+import { VectorExtensions } from '../extensions/VectorExtensions';
 
 export const PLAYER_COLLISION_GROUP = 2;
 
@@ -284,10 +285,11 @@ export class Player extends BaseMesh {
         private readonly skillFactory: SkillFactory,
         private readonly weaponFactory: WeaponFactory,
         private readonly physicsBodyMetadataManager: PhysicsBodyMetadataManager,
+        private readonly vectorExtensions: VectorExtensions,
     ) {
         super('models/main_character.glb', assetManager);
         this.id = crypto.randomUUID();
-        this.position = position.clone() as any;
+        this.position = this.vectorExtensions.toThreeVector3(position);
         this.chargeFx = assetManager.get('models/fx/dash_charge_fx.glb').scene.clone();
         this.chargeFx.receiveShadow = false;
         this.chargeFx.traverse((node) => {

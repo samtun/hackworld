@@ -36,7 +36,7 @@ interface TestTraderOverrides {
  * Build a TestTrader via Object.create, bypassing the constructor to avoid DOM
  * creation in the node test environment.
  */
-function makeTrader(overrides: TestTraderOverrides = {}): TestTrader {
+function makeTrader(overrides: TestTraderOverrides = {}): BaseTrader {
     const {
         audioManager = mockDeep<AudioManager>(),
         menuManager = mockDeep<MenuManager>({
@@ -110,7 +110,7 @@ function makeEquippableItem(id: string, buyPrice: number, sellPrice: number, equ
 // ─── handleTransaction – buy ──────────────────────────────────────────────────
 
 describe('BaseTrader – buy transaction', () => {
-    let trader: TestTrader;
+    let trader: BaseTrader;
     let player: ReturnType<typeof makePlayer>;
 
     beforeEach(() => {
@@ -194,7 +194,7 @@ describe('BaseTrader – buy transaction', () => {
 // ─── handleTransaction – sell ─────────────────────────────────────────────────
 
 describe('BaseTrader – sell transaction', () => {
-    let trader: TestTrader;
+    let trader: BaseTrader;
     let player: ReturnType<typeof makePlayer>;
 
     beforeEach(() => {
@@ -297,11 +297,11 @@ describe('BaseTrader – trader inventory', () => {
  * Build a TestTrader with a container that has a proper style object
  * so show() and hide() don't throw.
  */
-function makeTraderWithDOM(overrides: TestTraderOverrides = {}): TestTrader {
+function makeTraderWithDOM(overrides: TestTraderOverrides = {}): BaseTrader {
     const trader = makeTrader(overrides);
     const container = document.createElement('div');
     container.style.display = 'none';
-    (trader as any).container = container;
+    trader.container = container;
     return trader;
 }
 
@@ -309,35 +309,35 @@ describe('BaseTrader.show', () => {
     it('sets isVisible to true', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = false;
-        (trader as any).show();
+        trader.show();
         expect(trader.isVisible).toBe(true);
     });
 
     it('sets container.style.display to "flex"', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = false;
-        (trader as any).show();
-        expect((trader as any).container.style.display).toBe('flex');
+        trader.show();
+        expect(trader.container.style.display).toBe('flex');
     });
 
     it('resets selectedIndex to 0', () => {
         const trader = makeTraderWithDOM();
         trader.selectedIndex = 3;
-        (trader as any).show();
+        trader.show();
         expect(trader.selectedIndex).toBe(0);
     });
 
     it('resets activePanel to TRADER', () => {
         const trader = makeTraderWithDOM();
         trader.activePanel = TraderPanel.PLAYER;
-        (trader as any).show();
+        trader.show();
         expect(trader.activePanel).toBe(TraderPanel.TRADER);
     });
 
     it('marks needsRender as true', () => {
         const trader = makeTraderWithDOM();
         trader.needsRender = false;
-        (trader as any).show();
+        trader.show();
         expect(trader.needsRender).toBe(true);
     });
 
@@ -345,7 +345,7 @@ describe('BaseTrader.show', () => {
         const trader = makeTraderWithDOM();
         (trader as any).traderSelectedIndex = 5;
         (trader as any).playerSelectedIndex = 3;
-        (trader as any).show();
+        trader.show();
         expect((trader as any).traderSelectedIndex).toBe(0);
         expect((trader as any).playerSelectedIndex).toBe(0);
     });
@@ -354,7 +354,7 @@ describe('BaseTrader.show', () => {
         const audioManagerMock = mockDeep<AudioManager>();
         const trader = makeTraderWithDOM({ audioManager: audioManagerMock });
         trader.isVisible = false;
-        (trader as any).show();
+        trader.show();
         expect(audioManagerMock.playUiOpen).toHaveBeenCalledOnce();
     });
 });
@@ -363,20 +363,20 @@ describe('BaseTrader.hide', () => {
     it('sets isVisible to false', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = true;
-        (trader as any).hide();
+        trader.hide();
         expect(trader.isVisible).toBe(false);
     });
 
     it('sets container.style.display to "none"', () => {
         const trader = makeTraderWithDOM();
-        (trader as any).container.style.display = 'flex';
-        (trader as any).hide();
-        expect((trader as any).container.style.display).toBe('none');
+        trader.container.style.display = 'flex';
+        trader.hide();
+        expect(trader.container.style.display).toBe('none');
     });
 
     it('calls uiManager.hideControlHints', () => {
         const trader = makeTraderWithDOM();
-        (trader as any).hide();
+        trader.hide();
         expect((trader as any).uiManager.hideControlHints).toHaveBeenCalledOnce();
     });
 
@@ -384,7 +384,7 @@ describe('BaseTrader.hide', () => {
         const audioManagerMock = mockDeep<AudioManager>();
         const trader = makeTraderWithDOM({ audioManager: audioManagerMock });
         trader.isVisible = true;
-        (trader as any).hide();
+        trader.hide();
         expect(audioManagerMock.playUiClose).toHaveBeenCalledOnce();
     });
 });
@@ -393,30 +393,30 @@ describe('BaseTrader.toggle', () => {
     it('calls show() when currently hidden', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = false;
-        const spy = vi.spyOn(trader as any, 'show');
-        (trader as any).toggle();
+        const spy = vi.spyOn(trader, 'show');
+        trader.toggle();
         expect(spy).toHaveBeenCalledOnce();
     });
 
     it('calls hide() when currently visible', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = true;
-        const spy = vi.spyOn(trader as any, 'hide');
-        (trader as any).toggle();
+        const spy = vi.spyOn(trader, 'hide');
+        trader.toggle();
         expect(spy).toHaveBeenCalledOnce();
     });
 
     it('transitions from hidden to visible', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = false;
-        (trader as any).toggle();
+        trader.toggle();
         expect(trader.isVisible).toBe(true);
     });
 
     it('transitions from visible to hidden', () => {
         const trader = makeTraderWithDOM();
         trader.isVisible = true;
-        (trader as any).toggle();
+        trader.toggle();
         expect(trader.isVisible).toBe(false);
     });
 });
@@ -484,7 +484,13 @@ describe('BaseTrader.handleNavigation – up/down', () => {
             isNavigateUpPressed: vi.fn().mockReturnValue(true),
         });
         const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
-        (trader as any).lastNavigateUpState = true;
+        (trader as any).inputDebounceState ={
+            lastNavigateUpState: true,
+            lastNavigateDownState: false,
+            lastNavigateLeftState: false,
+            lastNavigateRightState: false,
+            lastSelectState: false,
+        };
         trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(1); // unchanged
     });
@@ -495,7 +501,13 @@ describe('BaseTrader.handleNavigation – up/down', () => {
         });
         const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
         trader.selectedIndex = 0;
-        (trader as any).lastNavigateDownState = true;
+        (trader as any).inputDebounceState ={
+            lastNavigateUpState: false,
+            lastNavigateDownState: true,
+            lastNavigateLeftState: false,
+            lastNavigateRightState: false,
+            lastSelectState: false,
+        };
         trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(0); // unchanged
     });

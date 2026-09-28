@@ -2,6 +2,7 @@ import { EquippableItem } from '../EquippableItem';
 import { Player } from '../../player/Player';
 import { CoreStats, CoreStealEffect, CoreType, ICore } from './Core';
 import { ItemLevelHelper } from '../ItemLevelHelper';
+import { CoreInventorySaveData } from '../ItemSaveData';
 
 export class CoreItem extends EquippableItem implements ICore {
     private _type: CoreType;
@@ -68,8 +69,8 @@ export class CoreItem extends EquippableItem implements ICore {
                 return {
                     resource: 'hp',
                     amountPercent: 0.004,
-                    procChanceAlpha: 0.01,
-                    procChanceOmega: 0.05,
+                    procChanceAlpha: 0.02,
+                    procChanceOmega: 0.06,
                 };
             case CoreType.BACKDOOR:
                 return {
@@ -141,5 +142,13 @@ export class CoreItem extends EquippableItem implements ICore {
             this.level,
             this._type
         );
+    }
+
+    toSaveData(): CoreInventorySaveData {
+        return {
+            kind: 'CoreItem',
+            id: this.id,
+            isEquipped: this.isEquipped,
+        };
     }
 }

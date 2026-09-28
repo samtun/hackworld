@@ -30,7 +30,7 @@ export class NewEntity extends BaseMesh {
     body: CANNON.Body;
     private someState: number;
 
-    constructor(scene: THREE.Scene, world: CANNON.World, params: any) { /* init mesh, body, state */ }
+    constructor(scene: THREE.Scene, world: CANNON.World, param1: string, param2: number) { /* init mesh, body, state */ }
     update(deltaTime: number): void { /* logic + sync mesh to body */ }
     cleanup(): void { this.disposeMesh(); world.removeBody(this.body); }
 }
@@ -61,7 +61,7 @@ export class NewEntity extends BaseMesh {
 ### Physics/Rendering Sync
 ```typescript
 // Type casting required for CANNON.Vec3/Quaternion → THREE compatibility
-this.mesh.position.copy(this.body.position as any);
+this.mesh.position.copy(this.vectorExtensions.toThreeVector3(this.body.position));
 this.mesh.quaternion.copy(this.body.quaternion as any);
 ```
 
@@ -91,15 +91,8 @@ Items are identified by name/type/level (not UUID). Weapons: `WeaponRepository.g
 - Files: `src/Foo.ts` → `src/Foo.test.ts`; framework: `vitest`
 - Commands: `npm test` / `npm run test:coverage`
 
-**Bypassing constructors** for 3D classes (no Three.js/Cannon-es in Node):
-```ts
-function makePlayer(overrides = {}): Player {
-    const player = Object.create(Player.prototype) as Player;
-    Object.assign(player, { /* minimal fields */ });
-    (player as any).syncPosition = vi.fn();
-    return Object.assign(player, overrides);
-}
-```
+**Use mocks where possible**
+- instead of manually bypassing constructors with `as any`, use `vi.mock<T>()` or `vi.mockDeep<T>()` to mock dependencies and isolate the unit under test
 
 **Test quality rules:**
 - Never make private members public just for testing — use public APIs

@@ -56,7 +56,7 @@ window.addEventListener('DOMContentLoaded', () => {
         // Check dependency injection for WorldFactory in development mode
         debugContainer(WorldFactory);
     }
-    const game = container.resolve(Game);
-    // Expose game for debugging/testing
-    (window as any).game = game;
+
+    // Start the game
+    container.resolve(Game);
 });

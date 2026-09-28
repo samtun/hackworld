@@ -1,5 +1,5 @@
 import { InputManager } from '../controls/InputManager';
-import { resetInputDebounce } from '../ui/UiUtils';
+import { InputDebounceState, resetInputDebounce } from '../ui/UiUtils';
 import { getHint } from '../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
 import { UIManager } from '../ui/UIManager';
@@ -26,9 +26,11 @@ export class SaveManagerUI {
     private playtimeDisplay: HTMLDivElement;
     private saveStatusText: HTMLDivElement;
     private autoCloseTimer?: number;
-    private lastSelectState: boolean = false;
-    private lastNavigateLeftState: boolean = false;
-    private lastNavigateRightState: boolean = false;
+    private inputDebounceState: InputDebounceState = {
+        lastSelectState: false,
+        lastNavigateLeftState: false,
+        lastNavigateRightState: false,
+    };
     private selectedButton: 'save' | 'load' | 'reset' = 'save';
 
     constructor(
@@ -176,7 +178,7 @@ export class SaveManagerUI {
         this.updateButtonHighlight();
 
         // Reset input states to prevent immediate action on open
-        resetInputDebounce(this as any);
+        resetInputDebounce(this.inputDebounceState);
         if (!wasVisible) {
             this.audioManager.playUiOpen();
         }
@@ -254,7 +256,7 @@ export class SaveManagerUI {
         const rightPressed = this.inputManager.isNavigateRightPressed();
 
         // Only change selection on button press (not held) and respect boundaries
-        if (leftPressed && !this.lastNavigateLeftState) {
+        if (leftPressed && !this.inputDebounceState.lastNavigateLeftState) {
             if (this.selectedButton === 'load') {
                 this.selectedButton = 'save';
                 this.updateButtonHighlight();
@@ -266,7 +268,7 @@ export class SaveManagerUI {
             }
         }
 
-        if (rightPressed && !this.lastNavigateRightState) {
+        if (rightPressed && !this.inputDebounceState.lastNavigateRightState) {
             if (this.selectedButton === 'save') {
                 this.selectedButton = 'load';
                 this.updateButtonHighlight();
@@ -280,7 +282,7 @@ export class SaveManagerUI {
 
         // Selection
         const isSelectPressed = this.inputManager.isSelectPressed();
-        if (isSelectPressed && !this.lastSelectState) {
+        if (isSelectPressed && !this.inputDebounceState.lastSelectState) {
             if (this.selectedButton === 'save' && this.saveCallback) {
                 this.audioManager.playUiOpen();
                 this.saveCallback();
@@ -299,9 +301,9 @@ export class SaveManagerUI {
             }
         }
 
-        this.lastSelectState = isSelectPressed;
-        this.lastNavigateLeftState = leftPressed;
-        this.lastNavigateRightState = rightPressed;
+        this.inputDebounceState.lastSelectState = isSelectPressed;
+        this.inputDebounceState.lastNavigateLeftState = leftPressed;
+        this.inputDebounceState.lastNavigateRightState = rightPressed;
 
         // Cancel with ESC/B button
         const isCancelPressed = this.inputManager.isCancelPressed();

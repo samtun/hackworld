@@ -729,7 +729,7 @@ export class DebugValueEditor {
         // Update game progress
         this.updateInputValue('gameProgress', this.gameProgressManager.progress);
 
-        const playerTech = (player as any).tech || {};
+        const playerTech = player.tech || {};
         this.updateInputValue('swordTech', playerTech[WeaponType.SWORD] || 0);
         this.updateInputValue('doubleSwordTech', playerTech[WeaponType.DUAL_BLADE] || 0);
         this.updateInputValue('lanceTech', playerTech[WeaponType.LANCE] || 0);
@@ -750,10 +750,10 @@ export class DebugValueEditor {
             this.gameProgressManager.progress = Math.max(0, val);
         });
 
-        this.applyInputValue('swordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.SWORD] = Math.max(0, val); });
-        this.applyInputValue('doubleSwordTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.DUAL_BLADE] = Math.max(0, val); });
-        this.applyInputValue('lanceTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.LANCE] = Math.max(0, val); });
-        this.applyInputValue('hammerTech', (val) => { if (!(player as any).tech) (player as any).tech = {}; (player as any).tech[WeaponType.HAMMER] = Math.max(0, val); });
+        this.applyInputValue('swordTech', (val) => { player.tech[WeaponType.SWORD] = Math.max(0, val); });
+        this.applyInputValue('doubleSwordTech', (val) => { player.tech[WeaponType.DUAL_BLADE] = Math.max(0, val); });
+        this.applyInputValue('lanceTech', (val) => { player.tech[WeaponType.LANCE] = Math.max(0, val); });
+        this.applyInputValue('hammerTech', (val) => { player.tech[WeaponType.HAMMER] = Math.max(0, val); });
 
         this.applyInputValue('recoveryTech', (val) => { player.skillTech[SkillTechType.RECOVERY] = Math.max(0, Math.min(9999, val)); });
         this.applyInputValue('blastTech', (val) => { player.skillTech[SkillTechType.BLAST] = Math.max(0, Math.min(9999, val)); });

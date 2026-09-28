@@ -112,7 +112,7 @@ export class ItemDropManager {
     checkInteraction(key: ItemDropType, playerPosition: THREE.Vector3) {
         const arr = this.drops.get(key) || [];
         for (const d of arr) {
-            const dist = playerPosition.distanceTo((d.mesh as any).position);
+            const dist = playerPosition.distanceTo(d.mesh.position);
             if (dist < 1.5) return d;
         }
         return null;

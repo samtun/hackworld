@@ -1,6 +1,6 @@
 import { InputManager } from '../controls/InputManager';
 import { Npc } from './Npc';
-import { resetInputDebounce } from '../ui/UiUtils';
+import { InputDebounceState, resetInputDebounce } from '../ui/UiUtils';
 import { getHint, HintConfigs } from '../ui/InputHints';
 import { MenuManager, MENU_COLORS, MENU_STYLES } from '../ui/MenuManager';
 import { UIManager } from '../ui/UIManager';
@@ -19,8 +19,10 @@ export class NpcDialogueManager {
     dialogueText!: HTMLDivElement;
 
     // Input tracking for debouncing
-    private lastSelectState: boolean = false;
-    private lastCancelState: boolean = false;
+    private inputDebounceState: InputDebounceState = {
+        lastSelectState: false,
+        lastCancelState: false,
+    };
 
     // Callback to execute after dialogue completes
     private onDialogueCompleteCallback?: () => void;
@@ -79,7 +81,7 @@ export class NpcDialogueManager {
         this.container.style.display = 'flex';
         this.updateDialogue();
         // Reset input state to prevent immediate action on open
-        resetInputDebounce(this as any);
+        resetInputDebounce(this.inputDebounceState);
     }
 
     /**
@@ -122,12 +124,12 @@ export class NpcDialogueManager {
         const cancel = this.inputManager.isCancelPressed();
 
         // Exit dialogue on cancel
-        if (cancel && !this.lastCancelState) {
+        if (cancel && !this.inputDebounceState.lastCancelState) {
             this.hide();
         }
 
         // Advance dialogue on select
-        if (select && !this.lastSelectState) {
+        if (select && !this.inputDebounceState.lastSelectState) {
             if (this.currentNpc) {
                 this.currentLineIndex++;
                 if (this.currentLineIndex >= this.currentNpc.dialogue.length) {
@@ -148,7 +150,7 @@ export class NpcDialogueManager {
         }
 
         // Update last states for debouncing
-        this.lastSelectState = select;
-        this.lastCancelState = cancel;
+        this.inputDebounceState.lastSelectState = select;
+        this.inputDebounceState.lastCancelState = cancel;
     }
 }

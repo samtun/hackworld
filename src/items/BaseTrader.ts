@@ -2,7 +2,7 @@ import { Item } from './Item';
 import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { Player } from '../player/Player';
 import { InputManager } from '../controls/InputManager';
-import { resetInputDebounce, shakeElement } from '../ui/UiUtils';
+import { InputDebounceState, resetInputDebounce, shakeElement } from '../ui/UiUtils';
 import { formatItemLabel } from './ItemDisplay';
 import { TradeMode } from './TradeMode';
 import { TraderPanel } from './TraderPanel';
@@ -51,11 +51,13 @@ export abstract class BaseTrader {
     protected playerSelectedIndex: number = 0;
 
     // debounce
-    protected lastNavigateUpState: boolean = false;
-    protected lastNavigateDownState: boolean = false;
-    protected lastNavigateLeftState: boolean = false;
-    protected lastNavigateRightState: boolean = false;
-    protected lastSelectState: boolean = false;
+    protected inputDebounceState: InputDebounceState = {
+        lastNavigateUpState: false,
+        lastNavigateDownState: false,
+        lastNavigateLeftState: false,
+        lastNavigateRightState: false,
+        lastSelectState: false,
+    };
 
     // inventories
     traderInventory: Item[] = [];
@@ -273,7 +275,7 @@ export abstract class BaseTrader {
         this.needsRender = true;
         this.pendingSort = true;
         sortInventory(this.traderInventory);
-        resetInputDebounce(this as any);
+        resetInputDebounce(this.inputDebounceState);
         if (!wasVisible) {
             this.audioManager.playUiOpen();
         }
@@ -350,7 +352,7 @@ export abstract class BaseTrader {
             itemDiv.innerHTML = formatItemLabel(item, priceText);
             const isSelected = isActive && index === this.selectedIndex;
             Object.assign(itemDiv.style, { padding: '8px', backgroundColor: isSelected ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.TRANSPARENT, border: isSelected ? '2px solid #fff' : '2px solid transparent', opacity: canAfford ? '1' : '0.5', transition: 'transform 0.1s', position: 'relative' });
-            if ((item as any).isEquipped) {
+            if (item instanceof EquippableItem && item.isEquipped) {
                 const triangle = document.createElement('div');
                 triangle.style.position = 'absolute'; triangle.style.top = '0'; triangle.style.left = '0'; triangle.style.width = '0'; triangle.style.height = '0'; triangle.style.borderLeft = '12px solid #ffd700'; triangle.style.borderBottom = '12px solid transparent'; itemDiv.appendChild(triangle);
             }
@@ -367,28 +369,28 @@ export abstract class BaseTrader {
         const navigateLeft = this.inputManager.isNavigateLeftPressed();
         const navigateRight = this.inputManager.isNavigateRightPressed();
         const select = this.inputManager.isSelectPressed();
-        const cancel = (this.inputManager as any).isCancelPressed ? (this.inputManager as any).isCancelPressed() : false;
+        const cancel = this.inputManager.isCancelPressed();
         const previousIndex = this.selectedIndex;
         const previousPanel = this.activePanel;
         if (cancel) { this.hide(); return; }
 
-        if (navigateUp && !this.lastNavigateUpState) {
+        if (navigateUp && !this.inputDebounceState.lastNavigateUpState) {
             if (this.selectedIndex > 0) this.selectedIndex--;
         }
 
-        if (navigateDown && !this.lastNavigateDownState) {
+        if (navigateDown && !this.inputDebounceState.lastNavigateDownState) {
             const maxIndex = this.activePanel === TraderPanel.TRADER
                 ? this.traderInventory.length - 1
                 : (this.filterPlayerInventory(player) || []).length - 1;
             if (this.selectedIndex < maxIndex) this.selectedIndex++;
         }
 
-        if (navigateLeft && !this.lastNavigateLeftState && this.activePanel !== TraderPanel.TRADER) {
+        if (navigateLeft && !this.inputDebounceState.lastNavigateLeftState && this.activePanel !== TraderPanel.TRADER) {
             this.playerSelectedIndex = this.selectedIndex;
             this.activePanel = TraderPanel.TRADER;
             this.selectedIndex = this.traderSelectedIndex;
         }
-        if (navigateRight && !this.lastNavigateRightState && this.activePanel !== TraderPanel.PLAYER) {
+        if (navigateRight && !this.inputDebounceState.lastNavigateRightState && this.activePanel !== TraderPanel.PLAYER) {
             this.traderSelectedIndex = this.selectedIndex;
             this.activePanel = TraderPanel.PLAYER;
             this.selectedIndex = this.playerSelectedIndex;
@@ -398,13 +400,13 @@ export abstract class BaseTrader {
             this.audioManager.playMenuNavigate();
         }
 
-        if (select && !this.lastSelectState) this.handleTransaction(player);
+        if (select && !this.inputDebounceState.lastSelectState) this.handleTransaction(player);
 
-        this.lastNavigateUpState = navigateUp;
-        this.lastNavigateDownState = navigateDown;
-        this.lastNavigateLeftState = navigateLeft;
-        this.lastNavigateRightState = navigateRight;
-        this.lastSelectState = select;
+        this.inputDebounceState.lastNavigateUpState = navigateUp;
+        this.inputDebounceState.lastNavigateDownState = navigateDown;
+        this.inputDebounceState.lastNavigateLeftState = navigateLeft;
+        this.inputDebounceState.lastNavigateRightState = navigateRight;
+        this.inputDebounceState.lastSelectState = select;
     }
 
     protected handleTransaction(player: Player) {

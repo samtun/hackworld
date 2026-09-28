@@ -92,7 +92,7 @@ describe('NpcDialogueManager', () => {
             const debounceSpy = vi.spyOn(UiUtils, 'resetInputDebounce');
             const mgr = makeDialogueManager();
             mgr.show(makeNpc());
-            expect(debounceSpy).toHaveBeenCalledWith(mgr);
+            expect(debounceSpy).toHaveBeenCalledWith((mgr as any).inputDebounceState);
         });
 
         it('plays the dialogue tick when a line is shown', () => {
@@ -192,12 +192,12 @@ describe('NpcDialogueManager', () => {
             const updateDialogueSpy = vi.spyOn((mgr as any), 'updateDialogue');
             showAndDebounce(mgr, npc);
 
-            expect((mgr as any).lastSelectState).toBe(false);
+            expect((mgr as any).inputDebounceState.lastSelectState).toBe(false);
             inputManager.isSelectPressed.mockReturnValue(true);
             mgr.update();
             expect(mgr.currentLineIndex).toBe(1);
             expect(updateDialogueSpy).toHaveBeenCalled();
-            expect((mgr as any).lastSelectState).toBe(true);
+            expect((mgr as any).inputDebounceState.lastSelectState).toBe(true);
         });
 
         it('does not advance on select if already pressed last frame (debounce)', () => {
@@ -261,11 +261,11 @@ describe('NpcDialogueManager', () => {
             inputManager.isCancelPressed.mockReturnValue(false);
             const mgr = makeDialogueManager({ inputManager: inputManager });
             showAndDebounce(mgr);
-            expect((mgr as any).lastCancelState).toBe(false);
+            expect((mgr as any).inputDebounceState.lastCancelState).toBe(false);
 
             inputManager.isCancelPressed.mockReturnValue(true);
             mgr.update();
-            expect((mgr as any).lastCancelState).toBe(true);
+            expect((mgr as any).inputDebounceState.lastCancelState).toBe(true);
         });
     });
 });

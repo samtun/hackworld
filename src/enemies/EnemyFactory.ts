@@ -9,7 +9,7 @@ import { AudioManager } from '../AudioManager';
 import { FloatingIndicatorManager } from '../FloatingIndicatorManager';
 import { PlayerRegistry } from '../player/PlayerRegistry';
 import { PhysicsBodyMetadataManager } from '../PhysicsBodyMetadata';
-
+import { VectorExtensions } from '../extensions/VectorExtensions';
 
 @singleton()
 export class EnemyFactory {
@@ -18,6 +18,7 @@ export class EnemyFactory {
         @inject(delay(() => CANNON.World)) private readonly physicsWorld: CANNON.World,
         @inject(delay(() => CANNON.Material)) private readonly physicsMaterial: CANNON.Material,
         private readonly audioManager: AudioManager,
+        private readonly vectorExtensions: VectorExtensions,
         private readonly floatingIndicatorManager: FloatingIndicatorManager,
         private readonly playerRegistry: PlayerRegistry,
         private readonly assetManager: AssetManager,
@@ -34,6 +35,7 @@ export class EnemyFactory {
             this.floatingIndicatorManager,
             this.playerRegistry,
             this.physicsBodyMetadataManager,
+            this.vectorExtensions,
             this.assetManager,
             this.scene,
             this.physicsWorld,
@@ -53,6 +55,7 @@ export class EnemyFactory {
             this.floatingIndicatorManager,
             this.playerRegistry,
             this.physicsBodyMetadataManager,
+            this.vectorExtensions,
             this.assetManager,
             this.scene,
             this.physicsWorld,

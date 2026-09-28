@@ -78,10 +78,18 @@ function makeDungeonManager(overrides: DungeonSelectionTestOverrides = {}): Dung
     if (overrides.isVisible !== undefined) mgr.isVisible = overrides.isVisible;
     if (overrides.needsRender !== undefined) mgr.needsRender = overrides.needsRender;
     if (overrides.selectedIndex !== undefined) mgr.selectedIndex = overrides.selectedIndex;
-    if (overrides.onDungeonSelected !== undefined) (mgr as any).onDungeonSelected = overrides.onDungeonSelected;
-    if (overrides.waitForRelease !== undefined) (mgr as any).waitForRelease = overrides.waitForRelease;
-    if (overrides.lastNavigateDownState !== undefined) (mgr as any).lastNavigateDownState = overrides.lastNavigateDownState;
-    if (overrides.stageClasses) (mgr as any).stageMetadata = overrides.stageClasses.map((cls) => cls.getStageMetadata());
+    if (overrides.onDungeonSelected !== undefined) {
+        (mgr as any).onDungeonSelected = overrides.onDungeonSelected;
+    }
+    if (overrides.waitForRelease !== undefined) {
+        (mgr as any).waitForRelease = overrides.waitForRelease;
+    }
+    if (overrides.lastNavigateDownState !== undefined) {
+        (mgr as any).lastNavigateDownState = overrides.lastNavigateDownState;
+    }
+    if (overrides.stageClasses) {
+        (mgr as any).stageMetadata = overrides.stageClasses.map((cls) => cls.getStageMetadata());
+    }
 
     return mgr;
 }
@@ -92,7 +100,7 @@ function makeFakeDungeon(name = 'Test Dungeon', description = 'A test dungeon', 
     };
 }
 
-function makeInput(overrides: Record<string, unknown> = {}) {
+function makeInput(overrides: Partial<InputManager> = {}): InputManager {
     return {
         isNavigateUpPressed: vi.fn().mockReturnValue(false),
         isNavigateDownPressed: vi.fn().mockReturnValue(false),
@@ -100,7 +108,7 @@ function makeInput(overrides: Record<string, unknown> = {}) {
         isCancelPressed: vi.fn().mockReturnValue(false),
         isControllerConnected: vi.fn().mockReturnValue(false),
         ...overrides,
-    } as any;
+    } as unknown as InputManager;
 }
 
 function makeGameProgressManager(progress: number = 99) {

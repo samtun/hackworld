@@ -56,6 +56,15 @@ function makeCore(level = 1): CoreItem {
 class PlainItem extends Item {
     getType() { return 'plain'; }
     clone() { return new PlainItem(this.id, this.name, this.baseBuyPrice, this.baseSellPrice); }
+    toSaveData() {
+        return {
+            kind: 'CoreItem' as const,
+            id: this.id,
+            name: this.name,
+            level: 1,
+            isEquipped: false,
+        };
+    }
 }
 
 describe('formatItemLabel', () => {
