@@ -1,3 +1,15 @@
+## [4.3.1](https://github.com/samtun/hackworld/compare/v4.3.0...v4.3.1) (2026-09-28)
+
+
+### Bug Fixes
+
+* increase hp steal probability of phishing core ([a53c55b](https://github.com/samtun/hackworld/commit/a53c55b2162c4dcf1567425c2932b06ff8eae58f))
+
+
+### Reverts
+
+* revert broken as unknown changes ([a43e031](https://github.com/samtun/hackworld/commit/a43e031b03abae37b00619280e444fefc11dc88e))
+
 # [4.3.0](https://github.com/samtun/hackworld/compare/v4.2.0...v4.3.0) (2026-08-31)
 
 
