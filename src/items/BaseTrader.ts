@@ -352,7 +352,7 @@ export abstract class BaseTrader {
             itemDiv.innerHTML = formatItemLabel(item, priceText);
             const isSelected = isActive && index === this.selectedIndex;
             Object.assign(itemDiv.style, { padding: '8px', backgroundColor: isSelected ? MENU_COLORS.ITEM_SELECTED : MENU_COLORS.TRANSPARENT, border: isSelected ? '2px solid #fff' : '2px solid transparent', opacity: canAfford ? '1' : '0.5', transition: 'transform 0.1s', position: 'relative' });
-            if ((item as any).isEquipped) {
+            if (item instanceof EquippableItem && item.isEquipped) {
                 const triangle = document.createElement('div');
                 triangle.style.position = 'absolute'; triangle.style.top = '0'; triangle.style.left = '0'; triangle.style.width = '0'; triangle.style.height = '0'; triangle.style.borderLeft = '12px solid #ffd700'; triangle.style.borderBottom = '12px solid transparent'; itemDiv.appendChild(triangle);
             }
@@ -369,7 +369,7 @@ export abstract class BaseTrader {
         const navigateLeft = this.inputManager.isNavigateLeftPressed();
         const navigateRight = this.inputManager.isNavigateRightPressed();
         const select = this.inputManager.isSelectPressed();
-        const cancel = (this.inputManager as any).isCancelPressed ? (this.inputManager as any).isCancelPressed() : false;
+        const cancel = this.inputManager.isCancelPressed();
         const previousIndex = this.selectedIndex;
         const previousPanel = this.activePanel;
         if (cancel) { this.hide(); return; }

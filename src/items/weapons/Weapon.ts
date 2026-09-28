@@ -142,8 +142,10 @@ export class Weapon extends BaseMesh {
         });
 
         // Add a custom property to identify this as an attack hitbox
-        (this.body as any).isAttackHitbox = true;
-        (this.body as any).weaponType = this.weaponType;
+        Object.assign(this.body, {
+            isAttackHitbox: true,
+            weaponType: this.weaponType,
+        });
 
         // Register collision callback if set
         if (this.onHit) {
