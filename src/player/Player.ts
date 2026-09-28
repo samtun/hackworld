@@ -413,7 +413,7 @@ export class Player extends BaseMesh {
 
     public setWeapon(weaponItem: WeaponItem) {
         this.currentWeaponType = weaponItem.weaponType;
-        this.weapon.changeWeaponType(this.rightHandBone ?? this.mesh, weaponItem.weaponType, weaponItem.damage);
+        this.weapon.changeWeaponType(this.rightHandBone ?? this.mesh, weaponItem);
     }
 
     equipCore(itemId: string) {

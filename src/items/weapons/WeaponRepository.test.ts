@@ -17,6 +17,14 @@ describe('WeaponRepository', () => {
             expect(weapons.length).toBeGreaterThan(0);
         });
 
+        it('expands each weapon family into all six levels', () => {
+            const repo = makeWeaponRepository();
+
+            expect(repo.getAllWeapons()).toHaveLength(24);
+            expect(repo.getWeaponById('aegis_sword_alpha')?.level).toBe(1);
+            expect(repo.getWeaponById('aegis_sword_omega')?.level).toBe(6);
+        });
+
         it('returns clones (not the internal instances)', () => {
             const repo = makeWeaponRepository();
             repo.getAllWeapons();
@@ -41,6 +49,24 @@ describe('WeaponRepository', () => {
             expect(weapon).toBeDefined();
             expect(weapon.weaponType).toBe(WeaponType.SWORD);
             expect(weapon.level).toBe(1);
+        });
+
+        it('derives the sell price by rounding down one third of the price', () => {
+            const repo = makeWeaponRepository();
+            const weapon = repo.getWeaponByTypeAndLevel(WeaponType.SWORD, 1);
+
+            expect(weapon.buyPrice).toBe(100);
+            expect(weapon.sellPrice).toBe(33);
+        });
+
+        it('loads the price and damage associated with the requested level', () => {
+            const repo = makeWeaponRepository();
+            const weapon = repo.getWeaponByTypeAndLevel(WeaponType.DUAL_BLADE, 4);
+
+            expect(weapon.buyPrice).toBe(940);
+            expect(weapon.sellPrice).toBe(313);
+            expect(weapon.damage).toBe(500);
+            expect(weapon.id).toBe('rune_blade_delta');
         });
 
         it('throws for an invalid level', () => {

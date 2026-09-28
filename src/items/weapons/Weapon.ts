@@ -3,6 +3,7 @@ import * as CANNON from 'cannon-es';
 import { AssetManager } from '../../AssetManager.ts';
 import { BaseMesh } from '../../BaseMesh.ts';
 import { WeaponType } from './WeaponType';
+import type { WeaponItem } from './WeaponItem';
 
 interface WeaponStats {
     attackSpeed: number; // Duration in seconds
@@ -17,13 +18,6 @@ interface WeaponHitboxConfig {
 }
 
 export class Weapon extends BaseMesh {
-    private static WEAPON_MODEL_PATHS: Record<WeaponType, string> = {
-        [WeaponType.SWORD]: 'models/aegis_sword.glb',
-        [WeaponType.DUAL_BLADE]: 'models/rune_blade.glb',
-        [WeaponType.LANCE]: 'models/fierce_lance.glb',
-        [WeaponType.HAMMER]: 'models/battle_hawk.glb'
-    };
-
     private static WEAPON_CONFIGS: Record<WeaponType, WeaponStats> = {
         [WeaponType.SWORD]: {
             attackSpeed: 0.3,
@@ -209,7 +203,7 @@ export class Weapon extends BaseMesh {
         }
     }
 
-    changeWeaponType(parent: THREE.Object3D, newType: WeaponType, newDamage: number) {
+    changeWeaponType(parent: THREE.Object3D, weaponItem: WeaponItem) {
         // Dispose of old mesh resources
         this.disposeMesh();
 
@@ -227,9 +221,9 @@ export class Weapon extends BaseMesh {
         this.parentBone = parent;
 
         // Update type, stats, and damage
-        this.weaponType = newType;
-        this.stats = Weapon.WEAPON_CONFIGS[newType];
-        this.damage = newDamage;
+        this.weaponType = weaponItem.weaponType;
+        this.stats = Weapon.WEAPON_CONFIGS[weaponItem.weaponType];
+        this.damage = weaponItem.damage;
 
         // Create new empty group
         this.mesh = new THREE.Group();
@@ -242,6 +236,6 @@ export class Weapon extends BaseMesh {
         parent.add(this.mesh);
 
         // Load the new weapon model
-        this.replaceModel(Weapon.WEAPON_MODEL_PATHS[newType]);
+        this.replaceModel(weaponItem.model);
     }
 }
