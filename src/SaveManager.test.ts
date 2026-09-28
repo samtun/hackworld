@@ -585,9 +585,9 @@ describe('SaveManager – resetGame()', () => {
 describe('SaveManager – save() with WeaponItem in inventory', () => {
     beforeEach(() => {
         stubStorage();
-        vi.stubGlobal('URL', {
-            createObjectURL: vi.fn(() => 'blob:fake'),
-            revokeObjectURL: vi.fn(),
+        vi.stubGlobal('URL', class extends URL {
+            static createObjectURL = vi.fn(() => 'blob:fake');
+            static revokeObjectURL = vi.fn();
         });
     });
 
@@ -718,7 +718,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
                 damage: 20, level: 1, isEquipped: false, tier: { name: 'Stable' },
             }),
         });
-        weaponRepository.getWeaponByTypeAndLevel.mockReturnValue(fakeWeaponItem);
+        weaponRepository.getWeaponById.mockReturnValue(fakeWeaponItem);
         tierManager.tiers.get.mockReturnValue({ name: 'Stable' } as WeaponTierDefinition);
         const player = makePlayerStub();
         const playerRegistry = makePlayerRegistryWithPlayer(player);
@@ -751,7 +751,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
         const playerRegistry = makePlayerRegistryWithPlayer(player);
         const weaponRepository = mockDeep<WeaponRepository>();
         const tierManager = mockDeep<TierManager>();
-        weaponRepository.getWeaponByTypeAndLevel.mockReturnValue(fakeWeaponItem);
+        weaponRepository.getWeaponById.mockReturnValue(fakeWeaponItem);
         tierManager.tiers.get.mockReturnValue({ name: 'Stable' } as WeaponTierDefinition);
 
         const mgr = makeSaveManager({
@@ -786,7 +786,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
     it('restores a CoreItem from inventory', () => {
         const fakeCoreItem = { id: 'c1', isEquipped: false };
         const coreRepository = mockDeep<CoreRepository>();
-        coreRepository.getCoreByNameAndLevel.mockReturnValue(fakeCoreItem as CoreItem);
+        coreRepository.getCoreById.mockReturnValue(fakeCoreItem as CoreItem);
 
         const data = makeMinimalSaveData([{
             kind: 'CoreItem', id: 'c1', isEquipped: false,
@@ -803,7 +803,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
     it('marks CoreItem as equipped when isEquipped=true', () => {
         const fakeCoreItem = { id: 'c1', isEquipped: false };
         const coreRepository = mockDeep<CoreRepository>();
-        coreRepository.getCoreByNameAndLevel.mockReturnValue(fakeCoreItem as CoreItem);
+        coreRepository.getCoreById.mockReturnValue(fakeCoreItem as CoreItem);
 
         const data = makeMinimalSaveData([{
             kind: 'CoreItem', id: 'c1', isEquipped: true,
@@ -819,7 +819,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
     it('restores a ChipItem from inventory', () => {
         const fakeChipItem = { id: 'ch1', isEquipped: false };
         const chipRepository = mockDeep<ChipRepository>();
-        chipRepository.getChipByNameAndLevel.mockReturnValue(fakeChipItem as ChipItem);
+        chipRepository.getChipById.mockReturnValue(fakeChipItem as ChipItem);
 
         const data = makeMinimalSaveData([{
             kind: 'ChipItem', id: 'ch1', isEquipped: false,
