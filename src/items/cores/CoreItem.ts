@@ -69,8 +69,8 @@ export class CoreItem extends EquippableItem implements ICore {
                 return {
                     resource: 'hp',
                     amountPercent: 0.004,
-                    procChanceAlpha: 0.01,
-                    procChanceOmega: 0.05,
+                    procChanceAlpha: 0.02,
+                    procChanceOmega: 0.06,
                 };
             case CoreType.BACKDOOR:
                 return {
