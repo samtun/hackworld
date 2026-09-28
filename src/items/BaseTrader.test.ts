@@ -36,7 +36,7 @@ interface TestTraderOverrides {
  * Build a TestTrader via Object.create, bypassing the constructor to avoid DOM
  * creation in the node test environment.
  */
-function makeTrader(overrides: TestTraderOverrides = {}): TestTrader {
+function makeTrader(overrides: TestTraderOverrides = {}): BaseTrader {
     const {
         audioManager = mockDeep<AudioManager>(),
         menuManager = mockDeep<MenuManager>({
@@ -82,7 +82,7 @@ function makeSellableItem(id: string, buyPrice: number, sellPrice: number): Item
         name: `Item_${id}`,
         buyPrice,
         sellPrice,
-        clone: vi.fn(function (this: Item & { clone: () => Item }) {
+        clone: vi.fn(function (this: any) {
             return { ...this, id: `${id}_clone`, clone: this.clone };
         }),
     } as unknown as Item;
@@ -97,8 +97,8 @@ function makeEquippableItem(id: string, buyPrice: number, sellPrice: number, equ
         baseBuyPrice: buyPrice,
         baseSellPrice: sellPrice,
         isEquipped: equipped,
-        clone: vi.fn(function (this: EquippableItem & { clone: () => EquippableItem }) {
-            const c = Object.create(EquippableItem.prototype) as EquippableItem;
+        clone: vi.fn(function (this: any) {
+            const c = Object.create(EquippableItem.prototype);
             Object.assign(c, { ...this, id: `${id}_clone` });
             c.isEquipped = false;
             return c;
@@ -110,7 +110,7 @@ function makeEquippableItem(id: string, buyPrice: number, sellPrice: number, equ
 // ─── handleTransaction – buy ──────────────────────────────────────────────────
 
 describe('BaseTrader – buy transaction', () => {
-    let trader: TestTrader;
+    let trader: BaseTrader;
     let player: ReturnType<typeof makePlayer>;
 
     beforeEach(() => {
@@ -166,7 +166,7 @@ describe('BaseTrader – buy transaction', () => {
         (trader as any).handleTransaction(player);
 
         const bought = player.inventory[0];
-        expect((bought as any).isEquipped).toBe(false);
+        expect((bought as unknown as EquippableItem).isEquipped).toBe(false);
     });
 
     it('adjusts selectedIndex when last item is bought', () => {
@@ -194,7 +194,7 @@ describe('BaseTrader – buy transaction', () => {
 // ─── handleTransaction – sell ─────────────────────────────────────────────────
 
 describe('BaseTrader – sell transaction', () => {
-    let trader: TestTrader;
+    let trader: BaseTrader;
     let player: ReturnType<typeof makePlayer>;
 
     beforeEach(() => {
@@ -297,7 +297,7 @@ describe('BaseTrader – trader inventory', () => {
  * Build a TestTrader with a container that has a proper style object
  * so show() and hide() don't throw.
  */
-function makeTraderWithDOM(overrides: TestTraderOverrides = {}): TestTrader {
+function makeTraderWithDOM(overrides: TestTraderOverrides = {}): BaseTrader {
     const trader = makeTrader(overrides);
     const container = document.createElement('div');
     container.style.display = 'none';
@@ -377,7 +377,7 @@ describe('BaseTrader.hide', () => {
     it('calls uiManager.hideControlHints', () => {
         const trader = makeTraderWithDOM();
         trader.hide();
-        expect(trader.uiManager.hideControlHints).toHaveBeenCalledOnce();
+        expect((trader as any).uiManager.hideControlHints).toHaveBeenCalledOnce();
     });
 
     it('plays the UI close sound when hidden from visible', () => {
@@ -421,11 +421,8 @@ describe('BaseTrader.toggle', () => {
     });
 });
 
-function makeNavPlayer(): Player {
-    return {
-        bits: 1000,
-        inventory: [] as Item[],
-    } as unknown as Player;
+function makeNavPlayer() {
+    return { bits: 1000, inventory: [] as Item[] } as any;
 }
 
 describe('BaseTrader.handleNavigation – up/down', () => {
@@ -487,7 +484,13 @@ describe('BaseTrader.handleNavigation – up/down', () => {
             isNavigateUpPressed: vi.fn().mockReturnValue(true),
         });
         const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
-        (trader as any).inputDebounceState.lastNavigateUpState = true;
+        (trader as any).inputDebounceState ={
+            lastNavigateUpState: true,
+            lastNavigateDownState: false,
+            lastNavigateLeftState: false,
+            lastNavigateRightState: false,
+            lastSelectState: false,
+        };
         trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(1); // unchanged
     });
@@ -498,7 +501,13 @@ describe('BaseTrader.handleNavigation – up/down', () => {
         });
         const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
         trader.selectedIndex = 0;
-        (trader as any).inputDebounceState.lastNavigateDownState = true;
+        (trader as any).inputDebounceState ={
+            lastNavigateUpState: false,
+            lastNavigateDownState: true,
+            lastNavigateLeftState: false,
+            lastNavigateRightState: false,
+            lastSelectState: false,
+        };
         trader.update(makeNavPlayer());
         expect(trader.selectedIndex).toBe(0); // unchanged
     });

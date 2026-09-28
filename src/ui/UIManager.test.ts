@@ -5,6 +5,7 @@ import { InputManager } from '../controls/InputManager';
 import { StartMenuFactory } from '../menus/StartMenuFactory';
 import { PlayerUiFactory } from './PlayerUiFactory';
 import { mock, mockDeep } from 'vitest-mock-extended';
+import { PlayerUi } from './PlayerUi';
 
 interface UIManagerOverrides {
     mobileControlsManager?: MobileControlsManager;
@@ -29,7 +30,7 @@ function makeMockPui() {
         flashTPWarning: vi.fn(),
         update: vi.fn(),
         destroy: vi.fn(),
-    };
+    } as unknown as PlayerUi;
 }
 
 function makeMockMinimapContext() {
@@ -95,8 +96,8 @@ describe('UIManager', () => {
             const ui = makeUIManager();
             const pui1 = makeMockPui();
             const pui2 = makeMockPui();
-            ui.playerUIs.set('p1', pui1 as unknown as typeof pui1);
-            ui.playerUIs.set('p2', pui2 as unknown as typeof pui2);
+            ui.playerUIs.set('p1', pui1);
+            ui.playerUIs.set('p2', pui2);
 
             ui.displayInsufficientTPWarning();
 
@@ -117,7 +118,7 @@ describe('UIManager', () => {
             const ui = makeUIManager();
             const pui = makeMockPui();
             const player = { id: 'abc' } as unknown as Parameters<typeof ui.update>[0];
-            ui.playerUIs.set('abc', pui as unknown as typeof pui);
+            ui.playerUIs.set('abc', pui);
 
             ui.update(player, 0.016);
 
@@ -133,7 +134,7 @@ describe('UIManager', () => {
         it('does nothing when player has no matching UI', () => {
             const ui = makeUIManager();
             const pui = makeMockPui();
-            ui.playerUIs.set('other', pui as unknown as typeof pui);
+            ui.playerUIs.set('other', pui);
             const player = { id: 'abc' } as unknown as Parameters<typeof ui.update>[0];
 
             ui.update(player, 0.016);
