@@ -203,6 +203,14 @@ export class Weapon extends BaseMesh {
         }
     }
 
+    detachFromParent(): void {
+        this.stopAttack();
+        if (!this.parentBone) return;
+
+        this.parentBone.remove(this.mesh);
+        this.parentBone = undefined;
+    }
+
     changeWeaponType(parent: THREE.Object3D, weaponItem: WeaponItem) {
         // Dispose of old mesh resources
         this.disposeMesh();

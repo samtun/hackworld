@@ -194,6 +194,7 @@ export class World {
         const commonAssets = [
             // Weapons
             'models/aegis_sword.glb',
+            'models/broad_sword.glb',
             'models/rune_blade.glb',
             'models/tampered_blade.glb',
             'models/fierce_lance.glb',

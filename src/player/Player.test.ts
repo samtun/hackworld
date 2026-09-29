@@ -94,10 +94,13 @@ function createDefaultAssetManager(): AssetManager {
 
     const dummyRightHandBone = new THREE.Bone();
     dummyRightHandBone.name = 'HandR';
+    const dummyLeftHandBone = new THREE.Bone();
+    dummyLeftHandBone.name = 'HandL';
 
     const dummyScene = new THREE.Group();
     dummyScene.add(dummyMesh);
     dummyScene.add(dummyRightHandBone);
+    dummyScene.add(dummyLeftHandBone);
 
     const gltfMock = mock<GLTF>();
     gltfMock.scene = dummyScene;
@@ -494,6 +497,98 @@ describe('Core hit steal effects', () => {
 
         expect(player.hp).toBe(500);
         vi.restoreAllMocks();
+    });
+});
+
+describe('Player dual-blade weapons', () => {
+    it('attaches independent weapon instances to HandR and HandL', () => {
+        const primaryWeapon = createWeapon(false);
+        const offhandWeapon = createWeapon(false);
+        const weaponFactory = mockDeep<WeaponFactory>();
+        weaponFactory.createWeapon
+            .mockReturnValueOnce(primaryWeapon)
+            .mockReturnValueOnce(offhandWeapon);
+        const player = makePlayer({ weaponFactory });
+        const dualBlade = new WeaponItem('dual', 'Dual Blade', 100, 50, WeaponType.DUAL_BLADE, 20, 'dual.glb', stableTier);
+
+        player.setWeapon(dualBlade);
+
+        expect((primaryWeapon as any).parentBone.name).toBe('HandR');
+        expect((offhandWeapon as any).parentBone.name).toBe('HandL');
+        expect((player as any).offhandWeapon).toBe(offhandWeapon);
+    });
+
+    it('removes the offhand weapon when switching to a single weapon', () => {
+        const primaryWeapon = createWeapon(false);
+        const offhandWeapon = createWeapon(false);
+        const weaponFactory = mockDeep<WeaponFactory>();
+        weaponFactory.createWeapon
+            .mockReturnValueOnce(primaryWeapon)
+            .mockReturnValueOnce(offhandWeapon);
+        const player = makePlayer({ weaponFactory });
+        const dualBlade = new WeaponItem('dual', 'Dual Blade', 100, 50, WeaponType.DUAL_BLADE, 20, 'dual.glb', stableTier);
+        const sword = new WeaponItem('sword', 'Sword', 100, 50, WeaponType.SWORD, 10, 'sword.glb', stableTier);
+        player.setWeapon(dualBlade);
+
+        player.setWeapon(sword);
+
+        expect((offhandWeapon as any).parentBone).toBeUndefined();
+        expect((offhandWeapon as any).mesh.parent).toBeNull();
+    });
+
+    it('allows each blade to hit an enemy once during the same swing', () => {
+        const primaryWeapon = createWeapon(false);
+        const offhandWeapon = createWeapon(false);
+        const weaponFactory = mockDeep<WeaponFactory>();
+        weaponFactory.createWeapon
+            .mockReturnValueOnce(primaryWeapon)
+            .mockReturnValueOnce(offhandWeapon);
+        const player = makePlayer({ weaponFactory });
+        const dualBlade = new WeaponItem('dual', 'Dual Blade', 100, 50, WeaponType.DUAL_BLADE, 20, 'dual.glb', stableTier);
+        player.setWeapon(dualBlade);
+
+        const enemy = {
+            isDead: false,
+            isDying: false,
+            techDropRateFactor: 1,
+            isBlocking: false,
+            takeDamage: vi.fn(),
+        } as unknown as Enemy;
+
+        (player as any).handleAttackHit(enemy, primaryWeapon);
+        (player as any).handleAttackHit(enemy, primaryWeapon);
+        (player as any).handleAttackHit(enemy, offhandWeapon);
+        (player as any).handleAttackHit(enemy, offhandWeapon);
+
+        expect(enemy.takeDamage).toHaveBeenCalledTimes(2);
+    });
+
+    it('creates and removes both hitboxes together when an attack is interrupted', () => {
+        const primaryWeapon = createWeapon(false);
+        const offhandWeapon = createWeapon(false);
+        const weaponFactory = mockDeep<WeaponFactory>();
+        weaponFactory.createWeapon
+            .mockReturnValueOnce(primaryWeapon)
+            .mockReturnValueOnce(offhandWeapon);
+        const inputManager = mockDeep<InputManager>();
+        inputManager.getMovementVector.mockReturnValue(new THREE.Vector2(0, 0));
+        const player = makePlayer({ weaponFactory, inputManager });
+        const dualBlade = new WeaponItem('dual', 'Dual Blade', 100, 50, WeaponType.DUAL_BLADE, 20, 'dual.glb', stableTier);
+        player.setWeapon(dualBlade);
+        inputManager.isAttackJustPressed.mockReturnValue(true);
+
+        (player as any).handleCombat(0.12);
+
+        expect(primaryWeapon.isAttacking).toBe(true);
+        expect(offhandWeapon.isAttacking).toBe(true);
+        expect(primaryWeapon.body).toBeDefined();
+        expect(offhandWeapon.body).toBeDefined();
+        expect(primaryWeapon.body).not.toBe(offhandWeapon.body);
+
+        player.takeDamage(1);
+
+        expect(primaryWeapon.isAttacking).toBe(false);
+        expect(offhandWeapon.isAttacking).toBe(false);
     });
 });
 
