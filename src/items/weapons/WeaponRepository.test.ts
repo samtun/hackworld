@@ -20,7 +20,7 @@ describe('WeaponRepository', () => {
         it('expands each weapon family into all six levels', () => {
             const repo = makeWeaponRepository();
 
-            expect(repo.getAllWeapons()).toHaveLength(24);
+            expect(repo.getAllWeapons()).toHaveLength(30);
             expect(repo.getWeaponById('aegis_sword_alpha')?.level).toBe(1);
             expect(repo.getWeaponById('aegis_sword_omega')?.level).toBe(6);
         });
@@ -67,6 +67,19 @@ describe('WeaponRepository', () => {
             expect(weapon.sellPrice).toBe(313);
             expect(weapon.damage).toBe(500);
             expect(weapon.id).toBe('rune_blade_delta');
+        });
+
+        it('includes the Tampered Blade as a stronger dual blade', () => {
+            const repo = makeWeaponRepository();
+            const runeBlade = repo.getWeaponById('rune_blade_alpha');
+            const tamperedBlade = repo.getWeaponById('tampered_blade_alpha');
+
+            expect(repo.getWeaponsByType(WeaponType.DUAL_BLADE)).toHaveLength(12);
+            expect(tamperedBlade?.name).toBe('Tampered Blade');
+            expect(tamperedBlade?.weaponType).toBe(WeaponType.DUAL_BLADE);
+            expect(tamperedBlade?.model).toBe('models/tampered_blade.glb');
+            expect(tamperedBlade?.buyPrice).toBeGreaterThan(runeBlade!.buyPrice);
+            expect(tamperedBlade?.damage).toBeGreaterThan(runeBlade!.damage);
         });
 
         it('throws for an invalid level', () => {

@@ -195,6 +195,7 @@ export class World {
             // Weapons
             'models/aegis_sword.glb',
             'models/rune_blade.glb',
+            'models/tampered_blade.glb',
             'models/fierce_lance.glb',
             'models/battle_hawk.glb',
             // NPCs

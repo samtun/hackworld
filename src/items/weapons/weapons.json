@@ -36,6 +36,24 @@
         "omega_damage": 1120
     },
     {
+        "id": "tampered_blade",
+        "name": "Tampered Blade",
+        "weaponType": "dual_blade",
+        "model": "models/tampered_blade.glb",
+        "alpha_price": 176,
+        "alpha_damage": 88,
+        "beta_price": 308,
+        "beta_damage": 154,
+        "gamma_price": 528,
+        "gamma_damage": 286,
+        "delta_price": 1034,
+        "delta_damage": 550,
+        "epsilon_price": 1628,
+        "epsilon_damage": 858,
+        "omega_price": 2310,
+        "omega_damage": 1232
+    },
+    {
         "id": "fierce_lance",
         "name": "Fierce Lance",
         "weaponType": "lance",
