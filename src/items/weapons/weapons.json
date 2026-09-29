@@ -18,6 +18,24 @@
         "omega_damage": 1400
     },
     {
+        "id": "broad_sword",
+        "name": "Broad Sword",
+        "weaponType": "sword",
+        "model": "models/broad_sword.glb",
+        "alpha_price": 115,
+        "alpha_damage": 115,
+        "beta_price": 200,
+        "beta_damage": 200,
+        "gamma_price": 360,
+        "gamma_damage": 360,
+        "delta_price": 660,
+        "delta_damage": 660,
+        "epsilon_price": 1060,
+        "epsilon_damage": 1060,
+        "omega_price": 1500,
+        "omega_damage": 1500
+    },
+    {
         "id": "rune_blade",
         "name": "Rune Blade",
         "weaponType": "dual_blade",
