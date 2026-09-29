@@ -228,6 +228,15 @@ export class Player extends BaseMesh {
     private readonly SKILL_ANIMATION_MAX_DURATION: number = 2.0;
     public onSkillUnlocked?: (skillIndex: number) => void;
 
+    private attackActions: THREE.AnimationAction[] = [];
+
+    private weaponAttackActions: Record<WeaponType, PlayerActionType> = {
+        [WeaponType.SWORD]: PlayerActionType.AttackSword,
+        [WeaponType.DUAL_BLADE]: PlayerActionType.AttackDualBlade,
+        [WeaponType.LANCE]: PlayerActionType.AttackLance,
+        [WeaponType.HAMMER]: PlayerActionType.AttackHammer
+    };
+
     // A bonus on drop chances in percentage points (e.g. 0.05 for +5% drop chances)
     get luckDropChanceBonus(): number {
         return this.luck / this.LUCK_DIVISOR;
@@ -620,8 +629,12 @@ export class Player extends BaseMesh {
             const runTwoHandedClip = getClip(PlayerActionType.RunTwoHanded);
             const jumpClip = getClip(PlayerActionType.Jump);
             const takeHitClip = getClip(PlayerActionType.TakeHit);
-            const attackOneHandClip = getClip(PlayerActionType.AttackOneHanded);
-            const attackTwoHandClip = getClip(PlayerActionType.AttackTwoHanded);
+            const attackSword = getClip(PlayerActionType.AttackSword);
+            // TODO Replace with a specific attack animation for dual blades if available in the future
+            const attackDualBlade = getClip(PlayerActionType.AttackDualBlade);
+            const attackHammer = getClip(PlayerActionType.AttackHammer);
+            // TODO Replace with a specific attack animation for lances if available in the future
+            const attackLance = getClip(PlayerActionType.AttackLance);
             const startChargeClip = getClip(PlayerActionType.StartCharge);
             const dashClip = getClip(PlayerActionType.Dash);
             const deathClip = getClip(PlayerActionType.Death);
@@ -631,14 +644,17 @@ export class Player extends BaseMesh {
                 const action = this.mixer.clipAction(idleClip);
                 this.actions[PlayerActionType.Idle] = action;
             }
+
             if (runOneHandedClip) {
                 const action = this.mixer.clipAction(runOneHandedClip);
                 this.actions[PlayerActionType.RunOneHanded] = action;
             }
+
             if (runTwoHandedClip) {
                 const action = this.mixer.clipAction(runTwoHandedClip);
                 this.actions[PlayerActionType.RunTwoHanded] = action;
             }
+
             if (jumpClip) {
                 let action = this.mixer.clipAction(jumpClip);
                 action.loop = THREE.LoopOnce;
@@ -646,6 +662,7 @@ export class Player extends BaseMesh {
                 action.clampWhenFinished = true;
                 this.actions[PlayerActionType.Jump] = action;
             }
+
             if (takeHitClip) {
                 const action = this.mixer.clipAction(takeHitClip);
                 action.timeScale = 1.6;
@@ -653,40 +670,64 @@ export class Player extends BaseMesh {
                 action.clampWhenFinished = true;
                 this.actions[PlayerActionType.TakeHit] = action;
             }
+
             if (startChargeClip) {
                 const action = this.mixer.clipAction(startChargeClip);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
                 this.actions[PlayerActionType.StartCharge] = action;
             }
+
             if (dashClip) {
                 const action = this.mixer.clipAction(dashClip);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
                 this.actions[PlayerActionType.Dash] = action;
             }
-            if (attackOneHandClip) {
-                const action = this.mixer.clipAction(attackOneHandClip);
+
+            if (attackSword) {
+                const action = this.mixer.clipAction(attackSword);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
-                // Speed up attack animation to match gameplay feel if needed
                 action.timeScale = 1.6;
-                this.actions[PlayerActionType.AttackOneHanded] = action;
+                this.actions[PlayerActionType.AttackSword] = action;
+                this.attackActions.push(action);
             }
-            if (attackTwoHandClip) {
-                const action = this.mixer.clipAction(attackTwoHandClip);
+
+            if (attackDualBlade) {
+                const action = this.mixer.clipAction(attackDualBlade);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
-                // Speed up attack animation to match gameplay feel if needed
-                action.timeScale = 1.6;
-                this.actions[PlayerActionType.AttackTwoHanded] = action;
+                action.timeScale = 2.2;
+                this.actions[PlayerActionType.AttackDualBlade] = action;
+                this.attackActions.push(action);
             }
+
+            if (attackHammer) {
+                const action = this.mixer.clipAction(attackHammer);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                action.timeScale = 1.6;
+                this.actions[PlayerActionType.AttackHammer] = action;
+                this.attackActions.push(action);
+            }
+
+            if (attackLance) {
+                const action = this.mixer.clipAction(attackLance);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                action.timeScale = 2.0;
+                this.actions[PlayerActionType.AttackLance] = action;
+                this.attackActions.push(action);
+            }
+
             if (deathClip) {
                 const action = this.mixer.clipAction(deathClip);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
                 this.actions[PlayerActionType.Death] = action;
             }
+
             if (powerUpClip) {
                 const action = this.mixer.clipAction(powerUpClip);
                 action.loop = THREE.LoopOnce;
@@ -697,8 +738,7 @@ export class Player extends BaseMesh {
             // Listen for animation finished events
             this.mixer.addEventListener('finished', (e) => {
                 const finishedAction = e.action;
-                if (finishedAction === this.actions[PlayerActionType.AttackOneHanded] ||
-                    finishedAction === this.actions[PlayerActionType.AttackTwoHanded]) {
+                if (this.isAttackAction(finishedAction)) {
                     this.weapon.stopAttack();
                     this.attackHitEnemies.clear();
                 }
@@ -755,16 +795,15 @@ export class Player extends BaseMesh {
 
         // High priority: Skill animation
         if (this.isUsingSkill) {
-            if (this.currentAction !== this.actions[PlayerActionType.AttackOneHanded]) {
-                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? PlayerActionType.AttackTwoHanded : PlayerActionType.AttackOneHanded, 0.001);
-            }
+            // TODO Introduce skill-specific animations in the future
+            this.fadeToAction(PlayerActionType.SkillRanged, 0.001);
             return;
         }
 
         // High priority: Attack
         if (this.weapon.isAttacking) {
-            if (this.currentAction !== this.actions[PlayerActionType.AttackOneHanded]) {
-                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? PlayerActionType.AttackTwoHanded : PlayerActionType.AttackOneHanded, 0.001);
+            if (!this.isAttackAction(this.currentAction)) {
+                this.fadeToAction(this.weaponAttackActions[this.weapon.weaponType], 0.001);
             }
             return;
         }
@@ -772,9 +811,7 @@ export class Player extends BaseMesh {
         // Jump / Fall
         // Only trigger jump animation if strictly not grounded
         if (!this.isGrounded) {
-            if (this.currentAction !== this.actions[PlayerActionType.Jump]) {
-                this.fadeToAction(PlayerActionType.Jump, 0.1);
-            }
+            this.fadeToAction(PlayerActionType.Jump, 0.1);
             return;
         }
 
@@ -786,6 +823,10 @@ export class Player extends BaseMesh {
         } else {
             this.fadeToAction(PlayerActionType.Idle, 0.15);
         }
+    }
+
+    private isAttackAction(action: THREE.AnimationAction | null): boolean {
+        return action != null && this.attackActions.includes(action);
     }
 
     update(dt: number, isNearInteractive: boolean = false) {
@@ -898,9 +939,7 @@ export class Player extends BaseMesh {
         if (!this.isChargingAttack) return false;
 
         // Force charging animation regardless of other states
-        if (this.currentAction !== this.actions[PlayerActionType.StartCharge]) {
-            this.fadeToAction(PlayerActionType.StartCharge, 0.05);
-        }
+        this.fadeToAction(PlayerActionType.StartCharge, 0.05);
 
         this.chargeTimer += dt;
         this.invulnerableTimer = 0; // allow damage while charging

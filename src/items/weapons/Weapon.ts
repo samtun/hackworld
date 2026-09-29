@@ -57,7 +57,7 @@ export class Weapon extends BaseMesh {
         },
         [WeaponType.DUAL_BLADE]: {
             radius: 0.37,
-            height: 1.3,
+            height: 1.0,
         },
         [WeaponType.LANCE]: {
             radius: 0.32,
