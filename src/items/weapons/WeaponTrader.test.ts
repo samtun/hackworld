@@ -37,7 +37,7 @@ describe('WeaponTrader', () => {
 
         trader.update(makePlayer());
 
-        expect(trader.traderInventory).toHaveLength(12);
+        expect(trader.traderInventory).toHaveLength(60);
         expect(trader.traderInventory.every(weapon =>
             !weapon.id.startsWith('broad_sword_') && !weapon.id.startsWith('tampered_blade_'),
         )).toBe(true);

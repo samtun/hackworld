@@ -61,7 +61,7 @@ export class CoreTrader extends BaseTrader {
 
     /**
      * Populates the trader inventory based on the player's current level.
-     * Spawns 1–3 cores equippable by the player and 1–2 cores one level below.
+    * Spawns 1–3 trader-eligible cores equippable by the player and 1–2 one level below.
      */
     private refreshInventory(player: Player): void {
         this.traderInventory = [];
@@ -71,7 +71,7 @@ export class CoreTrader extends BaseTrader {
         // Spawn 1-3 cores at the equippable level
         const equippableCount = 1 + Math.floor(Math.random() * 3);
         for (let i = 0; i < equippableCount; i++) {
-            const core = this.coreRepository.getRandomCoreOfLevel(equippableLevel);
+            const core = this.coreRepository.getRandomTraderEligibleCoreOfLevel(equippableLevel);
             if (core) this.traderInventory.push(core);
         }
 
@@ -79,7 +79,7 @@ export class CoreTrader extends BaseTrader {
         if (lowerLevel < equippableLevel) {
             const lowerCount = 1 + Math.floor(Math.random() * 2);
             for (let i = 0; i < lowerCount; i++) {
-                const core = this.coreRepository.getRandomCoreOfLevel(lowerLevel);
+                const core = this.coreRepository.getRandomTraderEligibleCoreOfLevel(lowerLevel);
                 if (core) this.traderInventory.push(core);
             }
         }

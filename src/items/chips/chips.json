@@ -8,7 +8,8 @@
         },
         "buyPrice": 150,
         "sellPrice": 50,
-        "level": 1
+        "level": 1,
+        "traderEligible": true
     },
     {
         "id": "firewire_beta",
@@ -19,7 +20,8 @@
         },
         "buyPrice": 225,
         "sellPrice": 75,
-        "level": 2
+        "level": 2,
+        "traderEligible": true
     },
     {
         "id": "firewire_gamma",
@@ -30,7 +32,8 @@
         },
         "buyPrice": 300,
         "sellPrice": 100,
-        "level": 3
+        "level": 3,
+        "traderEligible": true
     },
     {
         "id": "firewire_delta",
@@ -41,7 +44,8 @@
         },
         "buyPrice": 450,
         "sellPrice": 150,
-        "level": 4
+        "level": 4,
+        "traderEligible": true
     },
     {
         "id": "firewire_epsilon",
@@ -52,7 +56,8 @@
         },
         "buyPrice": 750,
         "sellPrice": 250,
-        "level": 5
+        "level": 5,
+        "traderEligible": true
     },
     {
         "id": "firewire_omega",
@@ -63,7 +68,8 @@
         },
         "buyPrice": 1200,
         "sellPrice": 400,
-        "level": 6
+        "level": 6,
+        "traderEligible": true
     },
     {
         "id": "overclock_alpha",
@@ -74,7 +80,8 @@
         },
         "buyPrice": 150,
         "sellPrice": 50,
-        "level": 1
+        "level": 1,
+        "traderEligible": true
     },
     {
         "id": "overclock_beta",
@@ -85,7 +92,8 @@
         },
         "buyPrice": 225,
         "sellPrice": 75,
-        "level": 2
+        "level": 2,
+        "traderEligible": true
     },
     {
         "id": "overclock_gamma",
@@ -96,7 +104,8 @@
         },
         "buyPrice": 300,
         "sellPrice": 100,
-        "level": 3
+        "level": 3,
+        "traderEligible": true
     },
     {
         "id": "overclock_delta",
@@ -107,7 +116,8 @@
         },
         "buyPrice": 450,
         "sellPrice": 150,
-        "level": 4
+        "level": 4,
+        "traderEligible": true
     },
     {
         "id": "overclock_epsilon",
@@ -118,7 +128,8 @@
         },
         "buyPrice": 750,
         "sellPrice": 250,
-        "level": 5
+        "level": 5,
+        "traderEligible": true
     },
     {
         "id": "overclock_omega",
@@ -129,7 +140,8 @@
         },
         "buyPrice": 1200,
         "sellPrice": 400,
-        "level": 6
+        "level": 6,
+        "traderEligible": true
     },
     {
         "id": "datamine_alpha",
@@ -140,7 +152,8 @@
         },
         "buyPrice": 150,
         "sellPrice": 50,
-        "level": 1
+        "level": 1,
+        "traderEligible": false
     },
     {
         "id": "datamine_beta",
@@ -151,7 +164,8 @@
         },
         "buyPrice": 225,
         "sellPrice": 75,
-        "level": 2
+        "level": 2,
+        "traderEligible": false
     },
     {
         "id": "datamine_gamma",
@@ -162,7 +176,8 @@
         },
         "buyPrice": 300,
         "sellPrice": 100,
-        "level": 3
+        "level": 3,
+        "traderEligible": false
     },
     {
         "id": "datamine_delta",
@@ -173,7 +188,8 @@
         },
         "buyPrice": 450,
         "sellPrice": 150,
-        "level": 4
+        "level": 4,
+        "traderEligible": false
     },
     {
         "id": "datamine_epsilon",
@@ -184,7 +200,8 @@
         },
         "buyPrice": 750,
         "sellPrice": 250,
-        "level": 5
+        "level": 5,
+        "traderEligible": false
     },
     {
         "id": "datamine_omega",
@@ -195,7 +212,8 @@
         },
         "buyPrice": 1200,
         "sellPrice": 400,
-        "level": 6
+        "level": 6,
+        "traderEligible": false
     },
     {
         "id": "razorwire_alpha",
@@ -206,7 +224,8 @@
         },
         "buyPrice": 150,
         "sellPrice": 50,
-        "level": 1
+        "level": 1,
+        "traderEligible": false
     },
     {
         "id": "razorwire_beta",
@@ -217,7 +236,8 @@
         },
         "buyPrice": 225,
         "sellPrice": 75,
-        "level": 2
+        "level": 2,
+        "traderEligible": false
     },
     {
         "id": "razorwire_gamma",
@@ -228,7 +248,8 @@
         },
         "buyPrice": 300,
         "sellPrice": 100,
-        "level": 3
+        "level": 3,
+        "traderEligible": false
     },
     {
         "id": "razorwire_delta",
@@ -239,7 +260,8 @@
         },
         "buyPrice": 450,
         "sellPrice": 150,
-        "level": 4
+        "level": 4,
+        "traderEligible": false
     },
     {
         "id": "razorwire_epsilon",
@@ -250,7 +272,8 @@
         },
         "buyPrice": 750,
         "sellPrice": 250,
-        "level": 5
+        "level": 5,
+        "traderEligible": false
     },
     {
         "id": "razorwire_omega",
@@ -261,7 +284,8 @@
         },
         "buyPrice": 1200,
         "sellPrice": 400,
-        "level": 6
+        "level": 6,
+        "traderEligible": false
     },
     {
         "id": "patchwork_alpha",
@@ -272,7 +296,8 @@
         },
         "buyPrice": 150,
         "sellPrice": 50,
-        "level": 1
+        "level": 1,
+        "traderEligible": true
     },
     {
         "id": "patchwork_beta",
@@ -283,7 +308,8 @@
         },
         "buyPrice": 225,
         "sellPrice": 75,
-        "level": 2
+        "level": 2,
+        "traderEligible": true
     },
     {
         "id": "patchwork_gamma",
@@ -294,7 +320,8 @@
         },
         "buyPrice": 300,
         "sellPrice": 100,
-        "level": 3
+        "level": 3,
+        "traderEligible": true
     },
     {
         "id": "patchwork_delta",
@@ -305,7 +332,8 @@
         },
         "buyPrice": 450,
         "sellPrice": 150,
-        "level": 4
+        "level": 4,
+        "traderEligible": true
     },
     {
         "id": "patchwork_epsilon",
@@ -316,7 +344,8 @@
         },
         "buyPrice": 750,
         "sellPrice": 250,
-        "level": 5
+        "level": 5,
+        "traderEligible": true
     },
     {
         "id": "patchwork_omega",
@@ -327,7 +356,8 @@
         },
         "buyPrice": 1200,
         "sellPrice": 400,
-        "level": 6
+        "level": 6,
+        "traderEligible": true
     },
     {
         "id": "focus_alpha",
@@ -338,7 +368,8 @@
         },
         "buyPrice": 150,
         "sellPrice": 50,
-        "level": 1
+        "level": 1,
+        "traderEligible": false
     },
     {
         "id": "focus_beta",
@@ -349,7 +380,8 @@
         },
         "buyPrice": 225,
         "sellPrice": 75,
-        "level": 2
+        "level": 2,
+        "traderEligible": false
     },
     {
         "id": "focus_gamma",
@@ -360,7 +392,8 @@
         },
         "buyPrice": 300,
         "sellPrice": 100,
-        "level": 3
+        "level": 3,
+        "traderEligible": false
     },
     {
         "id": "focus_delta",
@@ -371,7 +404,8 @@
         },
         "buyPrice": 450,
         "sellPrice": 150,
-        "level": 4
+        "level": 4,
+        "traderEligible": false
     },
     {
         "id": "focus_epsilon",
@@ -382,7 +416,8 @@
         },
         "buyPrice": 750,
         "sellPrice": 250,
-        "level": 5
+        "level": 5,
+        "traderEligible": false
     },
     {
         "id": "focus_omega",
@@ -393,7 +428,8 @@
         },
         "buyPrice": 1200,
         "sellPrice": 400,
-        "level": 6
+        "level": 6,
+        "traderEligible": false
     },
     {
         "id": "amplifier_alpha",
@@ -404,7 +440,8 @@
         },
         "buyPrice": 150,
         "sellPrice": 50,
-        "level": 1
+        "level": 1,
+        "traderEligible": false
     },
     {
         "id": "amplifier_beta",
@@ -415,7 +452,8 @@
         },
         "buyPrice": 225,
         "sellPrice": 75,
-        "level": 2
+        "level": 2,
+        "traderEligible": false
     },
     {
         "id": "amplifier_gamma",
@@ -426,7 +464,8 @@
         },
         "buyPrice": 300,
         "sellPrice": 100,
-        "level": 3
+        "level": 3,
+        "traderEligible": false
     },
     {
         "id": "amplifier_delta",
@@ -437,7 +476,8 @@
         },
         "buyPrice": 450,
         "sellPrice": 150,
-        "level": 4
+        "level": 4,
+        "traderEligible": false
     },
     {
         "id": "amplifier_epsilon",
@@ -448,7 +488,8 @@
         },
         "buyPrice": 750,
         "sellPrice": 250,
-        "level": 5
+        "level": 5,
+        "traderEligible": false
     },
     {
         "id": "amplifier_omega",
@@ -459,6 +500,7 @@
         },
         "buyPrice": 1200,
         "sellPrice": 400,
-        "level": 6
+        "level": 6,
+        "traderEligible": false
     }
 ]

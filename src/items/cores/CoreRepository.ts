@@ -12,6 +12,7 @@ export class CoreRepository {
     // List structure: index corresponds to level - 1 (e.g. index 0 is level 1)
     // Each element is a Map: coreName -> CoreItem[]
     private coresByLevel: Map<string, CoreItem[]>[] = [];
+    private traderCoresByLevel: Map<string, CoreItem[]>[] = [];
 
     constructor() {
         this.loadCores();
@@ -25,12 +26,15 @@ export class CoreRepository {
             // Ensure the level map exists
             if (!this.coresByLevel[levelIndex]) {
                 this.coresByLevel[levelIndex] = new Map<string, CoreItem[]>();
+                this.traderCoresByLevel[levelIndex] = new Map<string, CoreItem[]>();
             }
 
             const levelMap = this.coresByLevel[levelIndex];
+            const traderLevelMap = this.traderCoresByLevel[levelIndex];
 
             if (!levelMap.has(data.name)) {
                 levelMap.set(data.name, []);
+                traderLevelMap.set(data.name, []);
             }
 
             const type = data.coreType as CoreType;
@@ -50,6 +54,9 @@ export class CoreRepository {
             );
 
             levelMap.get(data.name)!.push(core);
+            if (data.traderEligible) {
+                traderLevelMap.get(data.name)!.push(core);
+            }
         }
     }
 
@@ -107,6 +114,24 @@ export class CoreRepository {
             allCoresAtLevel.push(...cores);
         }
 
+        if (allCoresAtLevel.length === 0) return undefined;
+
+        const randomCore = allCoresAtLevel[Math.floor(Math.random() * allCoresAtLevel.length)];
+        return randomCore.clone();
+    }
+
+    /**
+     * Get a random trader-eligible core of a specific level.
+     * Returns a cloned instance with the original ID.
+     */
+    getRandomTraderEligibleCoreOfLevel(level: number): CoreItem | undefined {
+        const levelIndex = level - 1;
+        if (levelIndex < 0 || levelIndex >= this.traderCoresByLevel.length) return undefined;
+
+        const levelMap = this.traderCoresByLevel[levelIndex];
+        if (!levelMap) return undefined;
+
+        const allCoresAtLevel = Array.from(levelMap.values()).flat();
         if (allCoresAtLevel.length === 0) return undefined;
 
         const randomCore = allCoresAtLevel[Math.floor(Math.random() * allCoresAtLevel.length)];

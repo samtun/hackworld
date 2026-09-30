@@ -9,7 +9,8 @@
         },
         "buyPrice": 200,
         "sellPrice": 67,
-        "level": 1
+        "level": 1,
+        "traderEligible": true
     },
     {
         "id": "herald_core_beta",
@@ -21,7 +22,8 @@
         },
         "buyPrice": 300,
         "sellPrice": 100,
-        "level": 2
+        "level": 2,
+        "traderEligible": true
     },
     {
         "id": "herald_core_gamma",
@@ -33,7 +35,8 @@
         },
         "buyPrice": 400,
         "sellPrice": 133,
-        "level": 3
+        "level": 3,
+        "traderEligible": true
     },
     {
         "id": "herald_core_delta",
@@ -45,7 +48,8 @@
         },
         "buyPrice": 600,
         "sellPrice": 200,
-        "level": 4
+        "level": 4,
+        "traderEligible": true
     },
     {
         "id": "herald_core_epsilon",
@@ -57,7 +61,8 @@
         },
         "buyPrice": 1000,
         "sellPrice": 333,
-        "level": 5
+        "level": 5,
+        "traderEligible": true
     },
     {
         "id": "herald_core_omega",
@@ -69,7 +74,8 @@
         },
         "buyPrice": 1600,
         "sellPrice": 533,
-        "level": 6
+        "level": 6,
+        "traderEligible": true
     },
     {
         "id": "swift_core_alpha",
@@ -81,7 +87,8 @@
         },
         "buyPrice": 150,
         "sellPrice": 50,
-        "level": 1
+        "level": 1,
+        "traderEligible": true
     },
     {
         "id": "swift_core_beta",
@@ -93,7 +100,8 @@
         },
         "buyPrice": 225,
         "sellPrice": 75,
-        "level": 2
+        "level": 2,
+        "traderEligible": true
     },
     {
         "id": "swift_core_gamma",
@@ -105,7 +113,8 @@
         },
         "buyPrice": 300,
         "sellPrice": 100,
-        "level": 3
+        "level": 3,
+        "traderEligible": true
     },
     {
         "id": "swift_core_delta",
@@ -117,7 +126,8 @@
         },
         "buyPrice": 450,
         "sellPrice": 150,
-        "level": 4
+        "level": 4,
+        "traderEligible": true
     },
     {
         "id": "swift_core_epsilon",
@@ -129,7 +139,8 @@
         },
         "buyPrice": 750,
         "sellPrice": 250,
-        "level": 5
+        "level": 5,
+        "traderEligible": true
     },
     {
         "id": "swift_core_omega",
@@ -141,7 +152,8 @@
         },
         "buyPrice": 1200,
         "sellPrice": 400,
-        "level": 6
+        "level": 6,
+        "traderEligible": true
     },
     {
         "id": "defender_core_alpha",
@@ -153,7 +165,8 @@
         },
         "buyPrice": 180,
         "sellPrice": 60,
-        "level": 1
+        "level": 1,
+        "traderEligible": true
     },
     {
         "id": "defender_core_beta",
@@ -165,7 +178,8 @@
         },
         "buyPrice": 270,
         "sellPrice": 90,
-        "level": 2
+        "level": 2,
+        "traderEligible": true
     },
     {
         "id": "defender_core_gamma",
@@ -177,7 +191,8 @@
         },
         "buyPrice": 360,
         "sellPrice": 120,
-        "level": 3
+        "level": 3,
+        "traderEligible": true
     },
     {
         "id": "defender_core_delta",
@@ -189,7 +204,8 @@
         },
         "buyPrice": 540,
         "sellPrice": 180,
-        "level": 4
+        "level": 4,
+        "traderEligible": true
     },
     {
         "id": "defender_core_epsilon",
@@ -201,7 +217,8 @@
         },
         "buyPrice": 900,
         "sellPrice": 300,
-        "level": 5
+        "level": 5,
+        "traderEligible": true
     },
     {
         "id": "defender_core_omega",
@@ -213,7 +230,8 @@
         },
         "buyPrice": 1440,
         "sellPrice": 480,
-        "level": 6
+        "level": 6,
+        "traderEligible": true
     },
     {
         "id": "phishing_core_alpha",
@@ -225,7 +243,8 @@
         },
         "buyPrice": 300,
         "sellPrice": 100,
-        "level": 1
+        "level": 1,
+        "traderEligible": true
     },
     {
         "id": "phishing_core_beta",
@@ -237,7 +256,8 @@
         },
         "buyPrice": 450,
         "sellPrice": 150,
-        "level": 2
+        "level": 2,
+        "traderEligible": true
     },
     {
         "id": "phishing_core_gamma",
@@ -249,7 +269,8 @@
         },
         "buyPrice": 600,
         "sellPrice": 200,
-        "level": 3
+        "level": 3,
+        "traderEligible": true
     },
     {
         "id": "phishing_core_delta",
@@ -261,7 +282,8 @@
         },
         "buyPrice": 900,
         "sellPrice": 300,
-        "level": 4
+        "level": 4,
+        "traderEligible": true
     },
     {
         "id": "phishing_core_epsilon",
@@ -273,7 +295,8 @@
         },
         "buyPrice": 1300,
         "sellPrice": 433,
-        "level": 5
+        "level": 5,
+        "traderEligible": true
     },
     {
         "id": "phishing_core_omega",
@@ -285,7 +308,8 @@
         },
         "buyPrice": 1900,
         "sellPrice": 633,
-        "level": 6
+        "level": 6,
+        "traderEligible": true
     },
     {
         "id": "backdoor_core_alpha",
@@ -297,7 +321,8 @@
         },
         "buyPrice": 320,
         "sellPrice": 107,
-        "level": 1
+        "level": 1,
+        "traderEligible": true
     },
     {
         "id": "backdoor_core_beta",
@@ -309,7 +334,8 @@
         },
         "buyPrice": 480,
         "sellPrice": 160,
-        "level": 2
+        "level": 2,
+        "traderEligible": true
     },
     {
         "id": "backdoor_core_gamma",
@@ -321,7 +347,8 @@
         },
         "buyPrice": 640,
         "sellPrice": 213,
-        "level": 3
+        "level": 3,
+        "traderEligible": true
     },
     {
         "id": "backdoor_core_delta",
@@ -333,7 +360,8 @@
         },
         "buyPrice": 960,
         "sellPrice": 320,
-        "level": 4
+        "level": 4,
+        "traderEligible": true
     },
     {
         "id": "backdoor_core_epsilon",
@@ -345,7 +373,8 @@
         },
         "buyPrice": 1380,
         "sellPrice": 460,
-        "level": 5
+        "level": 5,
+        "traderEligible": true
     },
     {
         "id": "backdoor_core_omega",
@@ -357,6 +386,7 @@
         },
         "buyPrice": 1980,
         "sellPrice": 660,
-        "level": 6
+        "level": 6,
+        "traderEligible": true
     }
 ]

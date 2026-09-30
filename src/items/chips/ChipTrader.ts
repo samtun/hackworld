@@ -2,7 +2,6 @@ import { Player } from '../../player/Player';
 import { CardCollection } from '../cards/CardCollection';
 import { Item } from '../Item';
 import { ChipItem } from './ChipItem';
-import { ChipType } from './Chip';
 import { ChipRepository } from './ChipRepository';
 import { BaseTrader } from '../BaseTrader';
 import { TRADER_UI_COLORS } from '../TraderUIConstants';
@@ -16,9 +15,6 @@ import { UIManager } from '../../ui/UIManager';
 
 /** A.001 bonus: 5% buy discount and 5% sell bonus on chips when collection A.001 is complete */
 const A001_DISCOUNT = 0.05;
-
-/** Chip types that should NOT appear in the trader inventory (drop-only items) */
-const TRADER_EXCLUDED_CHIP_TYPES: ChipType[] = [ChipType.RAZORWIRE, ChipType.DATAMINE, ChipType.AMPLIFIER, ChipType.FOCUS];
 
 @singleton()
 export class ChipTrader extends BaseTrader {
@@ -66,7 +62,7 @@ export class ChipTrader extends BaseTrader {
     /**
      * Populates the trader inventory based on the player's current level.
      * Spawns 1–3 chips equippable by the player and 1–2 chips one level below.
-     * Razorwire and Datamine chips are excluded (drop-only items).
+    * Only chips marked as trader-eligible in the chip data can appear.
      */
     private refreshInventory(player: Player): void {
         this.traderInventory = [];
@@ -76,7 +72,7 @@ export class ChipTrader extends BaseTrader {
         // Spawn 1-3 chips at the equippable level
         const equippableCount = 1 + Math.floor(Math.random() * 3);
         for (let i = 0; i < equippableCount; i++) {
-            const chip = this.chipRepository.getRandomChipOfLevelExcluding(equippableLevel, TRADER_EXCLUDED_CHIP_TYPES);
+            const chip = this.chipRepository.getRandomTraderEligibleChipOfLevel(equippableLevel);
             if (chip) this.traderInventory.push(chip);
         }
 
@@ -84,7 +80,7 @@ export class ChipTrader extends BaseTrader {
         if (lowerLevel < equippableLevel) {
             const lowerCount = 1 + Math.floor(Math.random() * 2);
             for (let i = 0; i < lowerCount; i++) {
-                const chip = this.chipRepository.getRandomChipOfLevelExcluding(lowerLevel, TRADER_EXCLUDED_CHIP_TYPES);
+                const chip = this.chipRepository.getRandomTraderEligibleChipOfLevel(lowerLevel);
                 if (chip) this.traderInventory.push(chip);
             }
         }

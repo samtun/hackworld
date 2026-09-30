@@ -49,6 +49,20 @@ describe('CoreRepository', () => {
         });
     });
 
+    describe('getRandomTraderEligibleCoreOfLevel', () => {
+        it('returns a core marked as trader-eligible in data', () => {
+            const core = repo.getRandomTraderEligibleCoreOfLevel(1);
+
+            expect(core).toBeDefined();
+            expect(core!.level).toBe(1);
+            expect(core!.id).toMatch(/^(herald|swift|defender|phishing|backdoor)_core_alpha$/);
+        });
+
+        it('returns undefined for an out-of-range level', () => {
+            expect(repo.getRandomTraderEligibleCoreOfLevel(999)).toBeUndefined();
+        });
+    });
+
     describe('getCoreById', () => {
         it('returns a core for a known id', () => {
             const all = repo.getAllCores();

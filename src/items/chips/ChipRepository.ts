@@ -12,6 +12,7 @@ export class ChipRepository {
     // List structure: index corresponds to level - 1 (e.g. index 0 is level 1)
     // Each element is a Map: chipType -> ChipItem[]
     private chipsByLevel: Map<ChipType, ChipItem[]>[] = [];
+    private traderChipsByLevel: Map<ChipType, ChipItem[]>[] = [];
 
     constructor() {
         this.loadChips();
@@ -25,9 +26,11 @@ export class ChipRepository {
             // Ensure the level map exists
             if (!this.chipsByLevel[levelIndex]) {
                 this.chipsByLevel[levelIndex] = new Map<ChipType, ChipItem[]>();
+                this.traderChipsByLevel[levelIndex] = new Map<ChipType, ChipItem[]>();
             }
 
             const levelMap = this.chipsByLevel[levelIndex];
+            const traderLevelMap = this.traderChipsByLevel[levelIndex];
 
             // Validate chip type
             const type = data.chipType as ChipType;
@@ -38,6 +41,7 @@ export class ChipRepository {
 
             if (!levelMap.has(type)) {
                 levelMap.set(type, []);
+                traderLevelMap.set(type, []);
             }
 
             const chip = new ChipItem(
@@ -51,6 +55,9 @@ export class ChipRepository {
             );
 
             levelMap.get(type)!.push(chip);
+            if (data.traderEligible) {
+                traderLevelMap.get(type)!.push(chip);
+            }
         }
     }
 
@@ -93,22 +100,17 @@ export class ChipRepository {
     }
 
     /**
-     * Get a random chip of a specific level, excluding specified chip types
-     * Returns a cloned instance with the original ID
+     * Get a random trader-eligible chip of a specific level.
+     * Returns a cloned instance with the original ID.
      */
-    getRandomChipOfLevelExcluding(level: number, excludeTypes: ChipType[]): ChipItem | undefined {
+    getRandomTraderEligibleChipOfLevel(level: number): ChipItem | undefined {
         const levelIndex = level - 1;
-        if (levelIndex < 0 || levelIndex >= this.chipsByLevel.length) return undefined;
+        if (levelIndex < 0 || levelIndex >= this.traderChipsByLevel.length) return undefined;
 
-        const levelMap = this.chipsByLevel[levelIndex];
+        const levelMap = this.traderChipsByLevel[levelIndex];
         if (!levelMap) return undefined;
 
-        const allChipsAtLevel: ChipItem[] = [];
-        for (const [type, chips] of levelMap.entries()) {
-            if (!excludeTypes.includes(type)) {
-                allChipsAtLevel.push(...chips);
-            }
-        }
+        const allChipsAtLevel = Array.from(levelMap.values()).flat();
 
         if (allChipsAtLevel.length === 0) return undefined;
 
