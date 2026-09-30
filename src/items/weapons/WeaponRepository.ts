@@ -24,6 +24,7 @@ export class WeaponRepository {
     // List structure: index corresponds to level - 1 (e.g. index 0 is level 1)
     // Each element is a Map: weaponType -> WeaponItem[]
     private weaponsByLevel: Map<WeaponType, WeaponItem[]>[] = [];
+    private traderWeaponsByLevel: Map<WeaponType, WeaponItem[]>[] = [];
 
     constructor(tierManager: TierManager) {
         this.tierManager = tierManager;
@@ -42,11 +43,14 @@ export class WeaponRepository {
             WeaponRepository.WEAPON_LEVELS.forEach((levelData, levelIndex) => {
                 if (!this.weaponsByLevel[levelIndex]) {
                     this.weaponsByLevel[levelIndex] = new Map<WeaponType, WeaponItem[]>();
+                    this.traderWeaponsByLevel[levelIndex] = new Map<WeaponType, WeaponItem[]>();
                 }
 
                 const levelMap = this.weaponsByLevel[levelIndex];
+                const traderLevelMap = this.traderWeaponsByLevel[levelIndex];
                 if (!levelMap.has(type)) {
                     levelMap.set(type, []);
+                    traderLevelMap.set(type, []);
                 }
 
                 const price = data[levelData.priceKey];
@@ -63,6 +67,9 @@ export class WeaponRepository {
                 );
 
                 levelMap.get(type)!.push(weapon);
+                if (data.traderEligible) {
+                    traderLevelMap.get(type)!.push(weapon);
+                }
             });
         }
     }
@@ -103,6 +110,18 @@ export class WeaponRepository {
 
         const randomWeapon = weapons[Math.floor(Math.random() * weapons.length)];
         return randomWeapon.clone();
+    }
+
+    /**
+     * Get all trader-eligible weapons for a type and level.
+     * Returns cloned instances, or an empty list when no candidates exist.
+     */
+    getTraderEligibleWeaponsByTypeAndLevel(type: WeaponType, level: number): WeaponItem[] {
+        const levelIndex = level - 1;
+        if (levelIndex < 0 || levelIndex >= this.traderWeaponsByLevel.length) return [];
+
+        const levelMap = this.traderWeaponsByLevel[levelIndex];
+        return levelMap?.get(type)?.map(weapon => weapon.clone()) ?? [];
     }
 
     /**
