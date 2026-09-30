@@ -112,5 +112,24 @@
         "epsilon_damage": 1370,
         "omega_price": 2520,
         "omega_damage": 1960
+    },
+    {
+        "id": "tampered_hammer",
+        "name": "Tampered Hammer",
+        "weaponType": "hammer",
+        "traderEligible": true,
+        "model": "models/tampered_hammer.glb",
+        "alpha_price": 198,
+        "alpha_damage": 154,
+        "beta_price": 352,
+        "beta_damage": 275,
+        "gamma_price": 638,
+        "gamma_damage": 495,
+        "delta_price": 1232,
+        "delta_damage": 957,
+        "epsilon_price": 1936,
+        "epsilon_damage": 1507,
+        "omega_price": 2772,
+        "omega_damage": 2156
     }
 ]
