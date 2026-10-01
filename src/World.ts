@@ -200,6 +200,7 @@ export class World {
             'models/fierce_lance.glb',
             'models/battle_hawk.glb',
             'models/tampered_hammer.glb',
+            'models/tampered_lance.glb',
             // NPCs
             'models/trader_weapons.glb',
             'models/npc_placeholder.glb',

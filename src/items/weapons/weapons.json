@@ -95,6 +95,25 @@
         "omega_damage": 1820
     },
     {
+        "id": "tampered_lance",
+        "name": "Tampered Lance",
+        "weaponType": "lance",
+        "traderEligible": true,
+        "model": "models/tampered_lance.glb",
+        "alpha_price": 144,
+        "alpha_damage": 156,
+        "beta_price": 264,
+        "beta_damage": 276,
+        "gamma_price": 456,
+        "gamma_damage": 504,
+        "delta_price": 888,
+        "delta_damage": 972,
+        "epsilon_price": 1416,
+        "epsilon_damage": 1524,
+        "omega_price": 2016,
+        "omega_damage": 2184
+    },
+    {
         "id": "battle_hawk",
         "name": "Battle Hawk",
         "weaponType": "hammer",
