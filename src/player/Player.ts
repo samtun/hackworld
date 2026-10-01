@@ -424,7 +424,7 @@ export class Player extends BaseMesh {
             this.stopWeaponAttacks();
         }
         this.currentWeaponType = weaponItem.weaponType;
-        this.weapon.changeWeaponType(this.rightHandBone ?? this.mesh, weaponItem);
+        this.weapon.changeWeaponType(this.rightHandBone ?? this.mesh, false, weaponItem);
 
         if (weaponItem.weaponType !== WeaponType.DUAL_BLADE) {
             this.offhandWeapon?.detachFromParent();
@@ -443,7 +443,7 @@ export class Player extends BaseMesh {
             this.offhandWeapon = this.weaponFactory.createWeapon(weaponItem.model, weaponItem.weaponType, weaponItem.damage);
             this.configureWeaponHitHandling(this.offhandWeapon);
         }
-        this.offhandWeapon.changeWeaponType(this.leftHandBone, weaponItem);
+        this.offhandWeapon.changeWeaponType(this.leftHandBone, true, weaponItem);
         this.hasEquippedWeapon = true;
     }
 

@@ -229,38 +229,58 @@ describe('Weapon – changeWeaponType()', () => {
     it('updates weaponType', () => {
         const w = makeWeapon({ weaponType: WeaponType.SWORD });
         const parent = mockDeep<THREE.Object3D>();
-        w.changeWeaponType(parent, makeWeaponItem(WeaponType.LANCE, 50, 'models/lance.glb'));
+        w.changeWeaponType(parent, false, makeWeaponItem(WeaponType.LANCE, 50, 'models/lance.glb'));
         expect(w.weaponType).toBe(WeaponType.LANCE);
     });
 
     it('updates damage', () => {
         const w = makeWeapon({ damage: 10 });
         const parent = mockDeep<THREE.Object3D>();
-        w.changeWeaponType(parent, makeWeaponItem(WeaponType.HAMMER, 99, 'models/hammer.glb'));
+        w.changeWeaponType(parent, false, makeWeaponItem(WeaponType.HAMMER, 99, 'models/hammer.glb'));
         expect(w.damage).toBe(99);
     });
 
     it('updates stats to match new weapon type', () => {
         const w = makeWeapon({ weaponType: WeaponType.SWORD });
         const parent = mockDeep<THREE.Object3D>();
-        w.changeWeaponType(parent, makeWeaponItem(WeaponType.LANCE, 50, 'models/lance.glb'));
+        w.changeWeaponType(parent, false, makeWeaponItem(WeaponType.LANCE, 50, 'models/lance.glb'));
         // LANCE attackSpeed is 0.5
         expect(w.stats.attackSpeed).toBe(0.5);
         expect(w.stats.range).toBe(3.0);
+    });
+
+    it('positions the main-hand weapon on the left side of the hand', () => {
+        const w = makeWeapon();
+        const parent = new THREE.Group();
+        w.changeWeaponType(parent, false, makeWeaponItem(WeaponType.SWORD, 15, 'models/sword.glb'));
+
+        expect((w as any).mesh.position.x).toBeCloseTo(-0.07, 5);
+        expect((w as any).mesh.position.y).toBeCloseTo(0.1, 5);
+        expect((w as any).mesh.position.z).toBeCloseTo(0, 5);
+    });
+
+    it('positions the off-hand weapon on the right side of the hand', () => {
+        const w = makeWeapon();
+        const parent = new THREE.Group();
+        w.changeWeaponType(parent, true, makeWeaponItem(WeaponType.SWORD, 15, 'models/sword.glb'));
+
+        expect((w as any).mesh.position.x).toBeCloseTo(0.07, 5);
+        expect((w as any).mesh.position.y).toBeCloseTo(0.1, 5);
+        expect((w as any).mesh.position.z).toBeCloseTo(0, 5);
     });
 
     it('calls disposeMesh', () => {
         const w = makeWeapon();
         const disposeMeshSpy = vi.spyOn(Weapon.prototype as any, 'disposeMesh');
         const parent = mockDeep<THREE.Object3D>();
-        w.changeWeaponType(parent, makeWeaponItem(WeaponType.DUAL_BLADE, 20, 'models/dual.glb'));
+        w.changeWeaponType(parent, false, makeWeaponItem(WeaponType.DUAL_BLADE, 20, 'models/dual.glb'));
         expect(disposeMeshSpy).toHaveBeenCalled();
     });
 
     it('adds new mesh to parent', () => {
         const w = makeWeapon();
         const parent = mockDeep<THREE.Object3D>();
-        w.changeWeaponType(parent, makeWeaponItem(WeaponType.DUAL_BLADE, 20, 'models/dual.glb'));
+        w.changeWeaponType(parent, false, makeWeaponItem(WeaponType.DUAL_BLADE, 20, 'models/dual.glb'));
         expect(parent.add).toHaveBeenCalled();
     });
 
@@ -271,7 +291,7 @@ describe('Weapon – changeWeaponType()', () => {
         const w = makeWeapon({ physicsWorld: world });
         (w as any).body = fakeBody;
         const parent = mockDeep<THREE.Object3D>();
-        w.changeWeaponType(parent, makeWeaponItem(WeaponType.LANCE, 30, 'models/lance.glb'));
+        w.changeWeaponType(parent, false, makeWeaponItem(WeaponType.LANCE, 30, 'models/lance.glb'));
         expect(removeBodySpy).toHaveBeenCalledWith(fakeBody);
     });
 
@@ -280,7 +300,7 @@ describe('Weapon – changeWeaponType()', () => {
         const parentBone = mockDeep<THREE.Group>();
         (w as any).parentBone = parentBone;
         const parent = mockDeep<THREE.Group>();
-        w.changeWeaponType(parent, makeWeaponItem(WeaponType.SWORD, 15, 'models/sword.glb'));
+        w.changeWeaponType(parent, false, makeWeaponItem(WeaponType.SWORD, 15, 'models/sword.glb'));
         expect(parentBone.remove).toHaveBeenCalled();
     });
 
@@ -290,7 +310,7 @@ describe('Weapon – changeWeaponType()', () => {
         const parent = mockDeep<THREE.Object3D>();
         const weaponItem = makeWeaponItem(WeaponType.SWORD, 15, 'models/aegis_sword.glb');
 
-        w.changeWeaponType(parent, weaponItem);
+        w.changeWeaponType(parent, false, weaponItem);
 
         expect(replaceModelSpy).toHaveBeenCalledWith('models/aegis_sword.glb');
     });

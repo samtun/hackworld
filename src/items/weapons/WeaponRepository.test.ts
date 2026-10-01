@@ -20,7 +20,7 @@ describe('WeaponRepository', () => {
         it('expands each weapon family into all six levels', () => {
             const repo = makeWeaponRepository();
 
-            expect(repo.getAllWeapons()).toHaveLength(36);
+            expect(repo.getAllWeapons()).toHaveLength(48);
             expect(repo.getWeaponById('aegis_sword_alpha')?.level).toBe(1);
             expect(repo.getWeaponById('aegis_sword_omega')?.level).toBe(6);
         });

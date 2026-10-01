@@ -211,7 +211,7 @@ export class Weapon extends BaseMesh {
         this.parentBone = undefined;
     }
 
-    changeWeaponType(parent: THREE.Object3D, weaponItem: WeaponItem) {
+    changeWeaponType(parent: THREE.Object3D, isOffHand: boolean, weaponItem: WeaponItem) {
         // Dispose of old mesh resources
         this.disposeMesh();
 
@@ -239,7 +239,7 @@ export class Weapon extends BaseMesh {
         // Position and rotation for weapon in hand - adjust based on weapon type
         // The weapon needs to be oriented correctly relative to the hand bone
         this.mesh.rotation.set(-Math.PI / 2, 0, Math.PI); // Rotate so blade points forward from hand
-        this.mesh.position.set(-0.07, 0.1, 0); // Centered on hand
+        this.mesh.position.set(isOffHand ? 0.07 : -0.07, 0.1, 0); // Centered on hand
 
         parent.add(this.mesh);
 
