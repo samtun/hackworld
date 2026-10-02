@@ -1,3 +1,27 @@
+# [4.4.0](https://github.com/samtun/hackworld/compare/v4.3.1...v4.4.0) (2026-10-02)
+
+
+### Bug Fixes
+
+* make tampered weapons non eligible for traders ([820c4a9](https://github.com/samtun/hackworld/commit/820c4a9c71a96b98918c6dbbf872624a9c18b888))
+* reverse weapon model offset of offhand ([6783de6](https://github.com/samtun/hackworld/commit/6783de605822ca8501ea8eeafb785f98f5ac1290))
+
+
+### Features
+
+* add broad sword ([bbc03c4](https://github.com/samtun/hackworld/commit/bbc03c441443ce5ef10aa876269113adad873a23))
+* add new weapon tampered lance ([4060c12](https://github.com/samtun/hackworld/commit/4060c12208f3a2136c1f90292aaedb1167ddaa17))
+* add offhand weapon for dual blade weapons ([bf808ab](https://github.com/samtun/hackworld/commit/bf808ab9e8124b123610ec7b9cc251dbf00b1be4))
+* add Tampered Blade weapon with enhanced attributes and update weapon count ([cf684c2](https://github.com/samtun/hackworld/commit/cf684c2ccdc913ea6e550ce9bcf7def501675240))
+* add tampered hammer ([1f5ceb1](https://github.com/samtun/hackworld/commit/1f5ceb12712ff401f12f6f06c9500a0e93b9d4de))
+* implement trader-eligible weapon filtering and add tests for WeaponTrader ([7aeb121](https://github.com/samtun/hackworld/commit/7aeb121b41462e1f29e9a8ad0b6a556c53dfd3cf))
+* make chips and cores eligible in trader inventories ([d8eeab3](https://github.com/samtun/hackworld/commit/d8eeab3432a0b00907f88b570af471c4feb8a0e2))
+* refactor weapon handling to use WeaponItem for type changes and damage ([a9e6c47](https://github.com/samtun/hackworld/commit/a9e6c474b8ac162ec0c83e9a4a0c9ce7a1254568))
+* rework weapon models ([4a9b101](https://github.com/samtun/hackworld/commit/4a9b101809b6f036e36e9187e503c41fc3920f26))
+* scale down tampered blade model ([dd7f7a0](https://github.com/samtun/hackworld/commit/dd7f7a0313bf449e597c593533c332d246ebe9ef))
+* speed up dual blade animation and introduce placeholder action types for TBD player actions ([bbae0a5](https://github.com/samtun/hackworld/commit/bbae0a549ddaa7b48f4d31181b89b5296c200bc4))
+* update rune blade model ([0a8da4c](https://github.com/samtun/hackworld/commit/0a8da4ce5d121c19d4ca226698475843c2c4e2cd))
+
 ## [4.3.1](https://github.com/samtun/hackworld/compare/v4.3.0...v4.3.1) (2026-09-28)
 
 
