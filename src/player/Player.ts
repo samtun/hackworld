@@ -40,6 +40,9 @@ export class Player extends BaseMesh {
     innerMesh?: THREE.Mesh;
     position: THREE.Vector3;
     private rightHandBone?: THREE.Bone;
+    private leftHandBone?: THREE.Bone;
+    private offhandWeapon?: Weapon;
+    private hasEquippedWeapon = false;
 
     /** Flat circular shadow below the player. Hidden in performance mode. */
     public blobShadow!: BlobShadow;
@@ -169,7 +172,7 @@ export class Player extends BaseMesh {
     private chargeFxMaterial: THREE.MeshStandardMaterial | null = null;
     private chargeFxTexture: THREE.Texture | null = null;
     private dashHitEnemies: Set<Enemy> = new Set();
-    private attackHitEnemies: Set<Enemy> = new Set();
+    private attackHitEnemies: Map<Weapon, Set<Enemy>> = new Map();
     private attackLockedUntilRelease: boolean = false;
 
     /** Callback invoked when the player's weapon or skill hits a breakable entity. */
@@ -227,6 +230,15 @@ export class Player extends BaseMesh {
     // guaranteeing release if the callback is never called (e.g. the player dies mid-skill).
     private readonly SKILL_ANIMATION_MAX_DURATION: number = 2.0;
     public onSkillUnlocked?: (skillIndex: number) => void;
+
+    private attackActions: THREE.AnimationAction[] = [];
+
+    private weaponAttackActions: Record<WeaponType, PlayerActionType> = {
+        [WeaponType.SWORD]: PlayerActionType.AttackSword,
+        [WeaponType.DUAL_BLADE]: PlayerActionType.AttackDualBlade,
+        [WeaponType.LANCE]: PlayerActionType.AttackLance,
+        [WeaponType.HAMMER]: PlayerActionType.AttackHammer
+    };
 
     // A bonus on drop chances in percentage points (e.g. 0.05 for +5% drop chances)
     get luckDropChanceBonus(): number {
@@ -322,6 +334,9 @@ export class Player extends BaseMesh {
             if (obj instanceof THREE.Bone && obj.name === 'HandR') {
                 this.rightHandBone = obj;
             }
+            if (obj instanceof THREE.Bone && obj.name === 'HandL') {
+                this.leftHandBone = obj;
+            }
         });
 
         if (!this.innerMesh) {
@@ -336,14 +351,7 @@ export class Player extends BaseMesh {
 
         // Initialize weapon visual (after bone references are set)
         this.weapon = this.weaponFactory.createWeapon(swordItem.model, swordItem.weaponType, swordItem.damage);
-        this.weapon.onHit = (e: any) => {
-            const metadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(e.body);
-            if (metadata?.kind === PhysicsBodyKind.Enemy) {
-                this.handleAttackHit(metadata.entity);
-            } else if (metadata?.kind === PhysicsBodyKind.Breakable && !metadata.entity.isDestroyed) {
-                this.handleBreakableHit(metadata.entity);
-            }
-        };
+        this.configureWeaponHitHandling(this.weapon);
         this.setWeapon(swordItem);
 
         this.inventory.push(swordItem);
@@ -412,8 +420,56 @@ export class Player extends BaseMesh {
     }
 
     public setWeapon(weaponItem: WeaponItem) {
+        if (this.hasEquippedWeapon) {
+            this.stopWeaponAttacks();
+        }
         this.currentWeaponType = weaponItem.weaponType;
-        this.weapon.changeWeaponType(this.rightHandBone ?? this.mesh, weaponItem.weaponType, weaponItem.damage);
+        this.weapon.changeWeaponType(this.rightHandBone ?? this.mesh, false, weaponItem);
+
+        if (weaponItem.weaponType !== WeaponType.DUAL_BLADE) {
+            this.offhandWeapon?.detachFromParent();
+            this.hasEquippedWeapon = true;
+            return;
+        }
+
+        if (!this.leftHandBone) {
+            console.warn('[Player] HandL bone not found; dual-blade offhand will not be equipped.');
+            this.offhandWeapon?.detachFromParent();
+            this.hasEquippedWeapon = true;
+            return;
+        }
+
+        if (!this.offhandWeapon) {
+            this.offhandWeapon = this.weaponFactory.createWeapon(weaponItem.model, weaponItem.weaponType, weaponItem.damage);
+            this.configureWeaponHitHandling(this.offhandWeapon);
+        }
+        this.offhandWeapon.changeWeaponType(this.leftHandBone, true, weaponItem);
+        this.hasEquippedWeapon = true;
+    }
+
+    private configureWeaponHitHandling(weapon: Weapon): void {
+        weapon.onHit = (event: any) => {
+            const metadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(event.body);
+            if (metadata?.kind === PhysicsBodyKind.Enemy) {
+                this.handleAttackHit(metadata.entity, weapon);
+            } else if (metadata?.kind === PhysicsBodyKind.Breakable && !metadata.entity.isDestroyed) {
+                this.handleBreakableHit(metadata.entity);
+            }
+        };
+    }
+
+    private getAttackWeapons(): Weapon[] {
+        if (this.currentWeaponType === WeaponType.DUAL_BLADE && this.offhandWeapon) {
+            return [this.weapon, this.offhandWeapon];
+        }
+        return [this.weapon];
+    }
+
+    private stopWeaponAttacks(): void {
+        for (const weapon of this.getAttackWeapons()) {
+            weapon.stopAttack();
+        }
+        this.attackHitEnemies.clear();
     }
 
     equipCore(itemId: string) {
@@ -585,7 +641,7 @@ export class Player extends BaseMesh {
     }
 
     // Compute damage for a single hit, applying strength and critical hit multipliers
-    private getHitDamage(isCriticalHit: boolean, baseMultiplier: number = 1): number {
+    private getHitDamage(isCriticalHit: boolean, baseMultiplier: number = 1, weapon: Weapon = this.weapon): number {
         const equipped = this.inventory.find(i => i instanceof WeaponItem && i.isEquipped) as WeaponItem | undefined;
         if (!equipped) {
             return 0;
@@ -597,7 +653,7 @@ export class Player extends BaseMesh {
         const critMultiplier = isCriticalHit ? this.getCriticalHitDamageMultiplier() : 1.0;
 
         // Damage is directly from weapon (which already has level scaling in weapons.json)
-        const damage = Math.floor(this.weapon.damage * baseMultiplier * strengthMultiplier * critMultiplier);
+        const damage = Math.floor(weapon.damage * baseMultiplier * strengthMultiplier * critMultiplier);
 
         return damage;
     }
@@ -620,8 +676,12 @@ export class Player extends BaseMesh {
             const runTwoHandedClip = getClip(PlayerActionType.RunTwoHanded);
             const jumpClip = getClip(PlayerActionType.Jump);
             const takeHitClip = getClip(PlayerActionType.TakeHit);
-            const attackOneHandClip = getClip(PlayerActionType.AttackOneHanded);
-            const attackTwoHandClip = getClip(PlayerActionType.AttackTwoHanded);
+            const attackSword = getClip(PlayerActionType.AttackSword);
+            // TODO Replace with a specific attack animation for dual blades if available in the future
+            const attackDualBlade = getClip(PlayerActionType.AttackDualBlade);
+            const attackHammer = getClip(PlayerActionType.AttackHammer);
+            // TODO Replace with a specific attack animation for lances if available in the future
+            const attackLance = getClip(PlayerActionType.AttackLance);
             const startChargeClip = getClip(PlayerActionType.StartCharge);
             const dashClip = getClip(PlayerActionType.Dash);
             const deathClip = getClip(PlayerActionType.Death);
@@ -631,14 +691,17 @@ export class Player extends BaseMesh {
                 const action = this.mixer.clipAction(idleClip);
                 this.actions[PlayerActionType.Idle] = action;
             }
+
             if (runOneHandedClip) {
                 const action = this.mixer.clipAction(runOneHandedClip);
                 this.actions[PlayerActionType.RunOneHanded] = action;
             }
+
             if (runTwoHandedClip) {
                 const action = this.mixer.clipAction(runTwoHandedClip);
                 this.actions[PlayerActionType.RunTwoHanded] = action;
             }
+
             if (jumpClip) {
                 let action = this.mixer.clipAction(jumpClip);
                 action.loop = THREE.LoopOnce;
@@ -646,6 +709,7 @@ export class Player extends BaseMesh {
                 action.clampWhenFinished = true;
                 this.actions[PlayerActionType.Jump] = action;
             }
+
             if (takeHitClip) {
                 const action = this.mixer.clipAction(takeHitClip);
                 action.timeScale = 1.6;
@@ -653,40 +717,64 @@ export class Player extends BaseMesh {
                 action.clampWhenFinished = true;
                 this.actions[PlayerActionType.TakeHit] = action;
             }
+
             if (startChargeClip) {
                 const action = this.mixer.clipAction(startChargeClip);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
                 this.actions[PlayerActionType.StartCharge] = action;
             }
+
             if (dashClip) {
                 const action = this.mixer.clipAction(dashClip);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
                 this.actions[PlayerActionType.Dash] = action;
             }
-            if (attackOneHandClip) {
-                const action = this.mixer.clipAction(attackOneHandClip);
+
+            if (attackSword) {
+                const action = this.mixer.clipAction(attackSword);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
-                // Speed up attack animation to match gameplay feel if needed
                 action.timeScale = 1.6;
-                this.actions[PlayerActionType.AttackOneHanded] = action;
+                this.actions[PlayerActionType.AttackSword] = action;
+                this.attackActions.push(action);
             }
-            if (attackTwoHandClip) {
-                const action = this.mixer.clipAction(attackTwoHandClip);
+
+            if (attackDualBlade) {
+                const action = this.mixer.clipAction(attackDualBlade);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
-                // Speed up attack animation to match gameplay feel if needed
-                action.timeScale = 1.6;
-                this.actions[PlayerActionType.AttackTwoHanded] = action;
+                action.timeScale = 2.2;
+                this.actions[PlayerActionType.AttackDualBlade] = action;
+                this.attackActions.push(action);
             }
+
+            if (attackHammer) {
+                const action = this.mixer.clipAction(attackHammer);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                action.timeScale = 1.6;
+                this.actions[PlayerActionType.AttackHammer] = action;
+                this.attackActions.push(action);
+            }
+
+            if (attackLance) {
+                const action = this.mixer.clipAction(attackLance);
+                action.loop = THREE.LoopOnce;
+                action.clampWhenFinished = true;
+                action.timeScale = 2.0;
+                this.actions[PlayerActionType.AttackLance] = action;
+                this.attackActions.push(action);
+            }
+
             if (deathClip) {
                 const action = this.mixer.clipAction(deathClip);
                 action.loop = THREE.LoopOnce;
                 action.clampWhenFinished = true;
                 this.actions[PlayerActionType.Death] = action;
             }
+
             if (powerUpClip) {
                 const action = this.mixer.clipAction(powerUpClip);
                 action.loop = THREE.LoopOnce;
@@ -697,10 +785,8 @@ export class Player extends BaseMesh {
             // Listen for animation finished events
             this.mixer.addEventListener('finished', (e) => {
                 const finishedAction = e.action;
-                if (finishedAction === this.actions[PlayerActionType.AttackOneHanded] ||
-                    finishedAction === this.actions[PlayerActionType.AttackTwoHanded]) {
-                    this.weapon.stopAttack();
-                    this.attackHitEnemies.clear();
+                if (this.isAttackAction(finishedAction)) {
+                    this.stopWeaponAttacks();
                 }
                 // Handle PowerUp animation completion
                 if (finishedAction === this.actions[PlayerActionType.PowerUp]) {
@@ -755,16 +841,15 @@ export class Player extends BaseMesh {
 
         // High priority: Skill animation
         if (this.isUsingSkill) {
-            if (this.currentAction !== this.actions[PlayerActionType.AttackOneHanded]) {
-                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? PlayerActionType.AttackTwoHanded : PlayerActionType.AttackOneHanded, 0.001);
-            }
+            // TODO Introduce skill-specific animations in the future
+            this.fadeToAction(PlayerActionType.SkillRanged, 0.001);
             return;
         }
 
         // High priority: Attack
         if (this.weapon.isAttacking) {
-            if (this.currentAction !== this.actions[PlayerActionType.AttackOneHanded]) {
-                this.fadeToAction(this.weapon.weaponType === WeaponType.HAMMER ? PlayerActionType.AttackTwoHanded : PlayerActionType.AttackOneHanded, 0.001);
+            if (!this.isAttackAction(this.currentAction)) {
+                this.fadeToAction(this.weaponAttackActions[this.weapon.weaponType], 0.001);
             }
             return;
         }
@@ -772,9 +857,7 @@ export class Player extends BaseMesh {
         // Jump / Fall
         // Only trigger jump animation if strictly not grounded
         if (!this.isGrounded) {
-            if (this.currentAction !== this.actions[PlayerActionType.Jump]) {
-                this.fadeToAction(PlayerActionType.Jump, 0.1);
-            }
+            this.fadeToAction(PlayerActionType.Jump, 0.1);
             return;
         }
 
@@ -786,6 +869,10 @@ export class Player extends BaseMesh {
         } else {
             this.fadeToAction(PlayerActionType.Idle, 0.15);
         }
+    }
+
+    private isAttackAction(action: THREE.AnimationAction | null): boolean {
+        return action != null && this.attackActions.includes(action);
     }
 
     update(dt: number, isNearInteractive: boolean = false) {
@@ -898,9 +985,7 @@ export class Player extends BaseMesh {
         if (!this.isChargingAttack) return false;
 
         // Force charging animation regardless of other states
-        if (this.currentAction !== this.actions[PlayerActionType.StartCharge]) {
-            this.fadeToAction(PlayerActionType.StartCharge, 0.05);
-        }
+        this.fadeToAction(PlayerActionType.StartCharge, 0.05);
 
         this.chargeTimer += dt;
         this.invulnerableTimer = 0; // allow damage while charging
@@ -1047,7 +1132,10 @@ export class Player extends BaseMesh {
 
         // Immediate attack (requires fresh press and not charging)
         if (this.inputManager.isAttackJustPressed() && !this.weapon.isAttacking && !this.isChargingAttack) {
-            this.weapon.attack(this.getWeaponRangeMultiplier());
+            const rangeMultiplier = this.getWeaponRangeMultiplier();
+            for (const weapon of this.getAttackWeapons()) {
+                weapon.attack(rangeMultiplier);
+            }
             this.audioManager.playAttack('player');
         }
 
@@ -1062,8 +1150,13 @@ export class Player extends BaseMesh {
         }
 
         // Weapon update & hit checks
-        this.weapon.update(dt);
+        for (const weapon of this.getAttackWeapons()) {
+            weapon.update(dt);
+            this.checkWeaponBreakableHits(weapon);
+        }
+    }
 
+    private checkWeaponBreakableHits(weapon: Weapon): void {
         // Manual breakable detection during weapon attacks.
         // Cannon-es broadphase skips static-static pairs, so the weapon
         // trigger body (static) cannot detect static barrel bodies via
@@ -1071,25 +1164,25 @@ export class Player extends BaseMesh {
         // to all breakable entities each frame while attacking.
         // This follows the same pattern used by skill attacks (AreaAttackSkill,
         // LaserBeamSkill) which also iterate world.bodies for breakable detection.
-        if (this.weapon.isAttacking && this.weapon.body) {
-            const weaponPos = this.weapon.body.position;
-            const weaponShape = this.weapon.body.shapes[0] as CANNON.Cylinder;
-            const weaponRadius = weaponShape ? weaponShape.radiusTop : 0.5;
+        if (!weapon.isAttacking || !weapon.body) return;
 
-            for (const body of this.body.world!.bodies) {
-                const metadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(body);
-                if (metadata?.kind === PhysicsBodyKind.Breakable && !metadata.entity.isDestroyed) {
-                    const entity = metadata.entity;
-                    const dx = body.position.x - weaponPos.x;
-                    const dy = body.position.y - weaponPos.y;
-                    const dz = body.position.z - weaponPos.z;
-                    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
-                    // Use the breakable's own collision shape radius for hit detection
-                    const breakableShape = body.shapes[0] as CANNON.Cylinder;
-                    const breakableRadius = breakableShape?.radiusTop ?? 0.4;
-                    if (dist <= weaponRadius + breakableRadius) {
-                        this.handleBreakableHit(entity);
-                    }
+        const weaponPos = weapon.body.position;
+        const weaponShape = weapon.body.shapes[0] as CANNON.Cylinder;
+        const weaponRadius = weaponShape ? weaponShape.radiusTop : 0.5;
+
+        for (const body of this.body.world!.bodies) {
+            const metadata = this.physicsBodyMetadataManager.getPhysicsBodyMetadata(body);
+            if (metadata?.kind === PhysicsBodyKind.Breakable && !metadata.entity.isDestroyed) {
+                const entity = metadata.entity;
+                const dx = body.position.x - weaponPos.x;
+                const dy = body.position.y - weaponPos.y;
+                const dz = body.position.z - weaponPos.z;
+                const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                // Use the breakable's own collision shape radius for hit detection
+                const breakableShape = body.shapes[0] as CANNON.Cylinder;
+                const breakableRadius = breakableShape?.radiusTop ?? 0.4;
+                if (dist <= weaponRadius + breakableRadius) {
+                    this.handleBreakableHit(entity);
                 }
             }
         }
@@ -1315,15 +1408,20 @@ export class Player extends BaseMesh {
         this.dashHitEnemies.add(enemy);
     }
 
-    private handleAttackHit(enemy: Enemy) {
+    private handleAttackHit(enemy: Enemy, weapon: Weapon = this.weapon) {
         if (enemy.isDead || enemy.isDying) return;
 
         // Skip if we already hit this enemy during this attack
-        if (this.attackHitEnemies.has(enemy)) return;
+        let hitEnemies = this.attackHitEnemies.get(weapon);
+        if (!hitEnemies) {
+            hitEnemies = new Set<Enemy>();
+            this.attackHitEnemies.set(weapon, hitEnemies);
+        }
+        if (hitEnemies.has(enemy)) return;
 
         const wasBlocked = enemy.isBlocking;
         const isCriticalHit = Math.random() < this.getCriticalChance();
-        const damage = this.getHitDamage(isCriticalHit);
+        const damage = this.getHitDamage(isCriticalHit, 1, weapon);
         enemy.takeDamage(damage, isCriticalHit, this.body.position);
         console.log(`Hit enemy with ${this.currentWeaponType}! Damage: ${damage}`);
 
@@ -1334,7 +1432,7 @@ export class Player extends BaseMesh {
         this.tryIncrementWeaponTech(enemy.techDropRateFactor);
 
         // Mark this enemy as hit during this attack
-        this.attackHitEnemies.add(enemy);
+        hitEnemies.add(enemy);
     }
 
     private applyCoreStealEffects(): void {
@@ -1390,7 +1488,7 @@ export class Player extends BaseMesh {
         if (this.isBlocking) return;
 
         // Stop any ongoing attack
-        this.weapon.stopAttack();
+        this.stopWeaponAttacks();
 
         // Apply defense multiplier to reduce damage
         const defenseMultiplier = 1 - this.getDefenseMultiplier();

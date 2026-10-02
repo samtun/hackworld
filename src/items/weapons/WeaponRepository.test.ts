@@ -17,6 +17,14 @@ describe('WeaponRepository', () => {
             expect(weapons.length).toBeGreaterThan(0);
         });
 
+        it('expands each weapon family into all six levels', () => {
+            const repo = makeWeaponRepository();
+
+            expect(repo.getAllWeapons()).toHaveLength(48);
+            expect(repo.getWeaponById('aegis_sword_alpha')?.level).toBe(1);
+            expect(repo.getWeaponById('aegis_sword_omega')?.level).toBe(6);
+        });
+
         it('returns clones (not the internal instances)', () => {
             const repo = makeWeaponRepository();
             repo.getAllWeapons();
@@ -41,6 +49,39 @@ describe('WeaponRepository', () => {
             expect(weapon).toBeDefined();
             expect(weapon.weaponType).toBe(WeaponType.SWORD);
             expect(weapon.level).toBe(1);
+        });
+
+        it('derives the sell price by rounding down one third of the price', () => {
+            const repo = makeWeaponRepository();
+            const weapon = repo.getWeaponByTypeAndLevel(WeaponType.SWORD, 1);
+
+            expect(weapon.sellPrice).toBe(Math.floor(weapon.buyPrice / 3));
+        });
+
+        it('loads the price and damage associated with the requested level', () => {
+            const repo = makeWeaponRepository();
+            const weapon = repo.getWeaponByTypeAndLevel(WeaponType.DUAL_BLADE, 4);
+            const expected = weapon.id.startsWith('rune_blade_')
+                ? { buyPrice: 940, sellPrice: 313, damage: 500 }
+                : { buyPrice: 1034, sellPrice: 344, damage: 550 };
+
+            expect(weapon.buyPrice).toBe(expected.buyPrice);
+            expect(weapon.sellPrice).toBe(expected.sellPrice);
+            expect(weapon.damage).toBe(expected.damage);
+            expect(weapon.id).toMatch(/^(rune_blade|tampered_blade)_delta$/);
+        });
+
+        it('includes the Tampered Blade as a stronger dual blade', () => {
+            const repo = makeWeaponRepository();
+            const runeBlade = repo.getWeaponById('rune_blade_alpha');
+            const tamperedBlade = repo.getWeaponById('tampered_blade_alpha');
+
+            expect(repo.getWeaponsByType(WeaponType.DUAL_BLADE)).toHaveLength(12);
+            expect(tamperedBlade?.name).toBe('Tampered Blade');
+            expect(tamperedBlade?.weaponType).toBe(WeaponType.DUAL_BLADE);
+            expect(tamperedBlade?.model).toBe('models/tampered_blade.glb');
+            expect(tamperedBlade?.buyPrice).toBeGreaterThan(runeBlade!.buyPrice);
+            expect(tamperedBlade?.damage).toBeGreaterThan(runeBlade!.damage);
         });
 
         it('throws for an invalid level', () => {
@@ -70,6 +111,39 @@ describe('WeaponRepository', () => {
         it('returns undefined for level 0', () => {
             const repo = makeWeaponRepository();
             expect(repo.getRandomWeaponOfLevel(0)).toBeUndefined();
+        });
+    });
+
+    describe('getTraderEligibleWeaponsByTypeAndLevel', () => {
+        it('excludes ineligible weapon families at every level', () => {
+            const repo = makeWeaponRepository();
+            const suffixes = ['alpha', 'beta', 'gamma', 'delta', 'epsilon', 'omega'];
+
+            suffixes.forEach((suffix, index) => {
+                const level = index + 1;
+                expect(repo.getTraderEligibleWeaponsByTypeAndLevel(WeaponType.SWORD, level).map(weapon => weapon.id))
+                    .toEqual([`aegis_sword_${suffix}`]);
+                expect(repo.getTraderEligibleWeaponsByTypeAndLevel(WeaponType.DUAL_BLADE, level).map(weapon => weapon.id))
+                    .toEqual([`rune_blade_${suffix}`]);
+            });
+        });
+
+        it('returns cloned candidates and an empty list when no candidates exist', () => {
+            const repo = makeWeaponRepository();
+            const first = repo.getTraderEligibleWeaponsByTypeAndLevel(WeaponType.SWORD, 1);
+            const second = repo.getTraderEligibleWeaponsByTypeAndLevel(WeaponType.SWORD, 1);
+
+            expect(first[0]).not.toBe(second[0]);
+            expect(repo.getTraderEligibleWeaponsByTypeAndLevel(WeaponType.SWORD, 0)).toEqual([]);
+            expect(repo.getTraderEligibleWeaponsByTypeAndLevel(WeaponType.SWORD, 999)).toEqual([]);
+        });
+
+        it('does not remove ineligible families from general lookups', () => {
+            const repo = makeWeaponRepository();
+
+            expect(repo.getWeaponById('broad_sword_alpha')?.name).toBe('Broad Sword');
+            expect(repo.getWeaponById('tampered_blade_alpha')?.name).toBe('Tampered Blade');
+            expect(repo.getWeaponsByType(WeaponType.DUAL_BLADE)).toHaveLength(12);
         });
     });
 

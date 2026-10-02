@@ -107,16 +107,27 @@ export class WeaponTrader extends BaseTrader {
     private refreshInventory(player: Player): void {
         this.traderInventory = [];
         const a003Active = this.cardCollection.isAlbumComplete(Album.A003);
+        const eligibleWeaponPools = WeaponTrader.ALL_WEAPON_TYPES
+            .map(type => ({
+                weapons: this.weaponRepository.getTraderEligibleWeaponsByTypeAndLevel(
+                    type,
+                    this.getBaseWeaponLevel(player.getTechForWeapon(type)),
+                ),
+            }))
+            .filter(pool => pool.weapons.length > 0);
 
         // Random bonus entries
         // Loop 2 times over all tiers to get a good mix of potential weapon items
-        for (let i = 0; i < 2; i++) {
+        for (let i = 0; i < 10; i++) {
             for (const tier of this.tierManager.tiers.values()) {
-                const type = WeaponTrader.ALL_WEAPON_TYPES[
-                    Math.floor(Math.random() * WeaponTrader.ALL_WEAPON_TYPES.length)
+                if (eligibleWeaponPools.length === 0) continue;
+
+                const pool = eligibleWeaponPools[
+                    Math.floor(Math.random() * eligibleWeaponPools.length)
                 ];
-                const level = this.getBaseWeaponLevel(player.getTechForWeapon(type));
-                const weapon = this.weaponRepository.getWeaponByTypeAndLevel(type, level);
+                const weapon = pool.weapons[
+                    Math.floor(Math.random() * pool.weapons.length)
+                ].clone();
 
                 const roll = Math.random();
                 // A.003 bonus: increase tier spawn chance by 5%

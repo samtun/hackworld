@@ -82,6 +82,8 @@ When adding new player stats or inventory items, update all three:
 
 Items are identified by name/type/level (not UUID). Weapons: `WeaponRepository.getWeaponByTypeAndLevel()`. Cores/Chips: look up by name in their registry.
 
+When adding a weapon or changing its model, also add the model path to `World.preloadCommonAssets()` in `src/World.ts` so the asset is loaded before use.
+
 **Save compatibility:** Major version changes only from `SaveData` structure changes. Use `feat!` commit; `semantic-release` bumps major version and the in-game check warns players.
 
 ## Unit Testing
