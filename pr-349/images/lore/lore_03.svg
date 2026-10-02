@@ -1,0 +1,89 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <radialGradient id="bg3" cx="50%" cy="40%" r="65%">
+      <stop offset="0%" stop-color="#1f0800"/>
+      <stop offset="60%" stop-color="#0a0300"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+    <filter id="fire">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg3)"/>
+  <!-- Server rack silhouettes -->
+  <g fill="#0d0500">
+    <!-- Left racks -->
+    <rect x="80" y="200" width="140" height="680"/>
+    <rect x="240" y="200" width="140" height="680"/>
+    <rect x="400" y="200" width="140" height="680"/>
+    <!-- Right racks -->
+    <rect x="1300" y="200" width="140" height="680"/>
+    <rect x="1460" y="200" width="140" height="680"/>
+    <rect x="1620" y="200" width="140" height="680"/>
+    <!-- Center racks -->
+    <rect x="780" y="200" width="140" height="680"/>
+    <rect x="940" y="200" width="140" height="680"/>
+    <rect x="1100" y="200" width="140" height="680"/>
+  </g>
+  <!-- Server rack details (dark panels) -->
+  <g fill="#120400" stroke="#1a0700" stroke-width="1">
+    <rect x="90" y="220" width="120" height="20"/><rect x="90" y="250" width="120" height="20"/>
+    <rect x="90" y="280" width="120" height="20"/><rect x="90" y="310" width="120" height="20"/>
+    <rect x="250" y="220" width="120" height="20"/><rect x="250" y="250" width="120" height="20"/>
+    <rect x="790" y="220" width="120" height="20"/><rect x="790" y="250" width="120" height="20"/>
+    <rect x="950" y="220" width="120" height="20"/><rect x="950" y="250" width="120" height="20"/>
+    <rect x="1310" y="220" width="120" height="20"/><rect x="1310" y="250" width="120" height="20"/>
+    <rect x="1470" y="220" width="120" height="20"/><rect x="1470" y="250" width="120" height="20"/>
+  </g>
+  <!-- Fire and sparks on server racks -->
+  <g filter="url(#fire)">
+    <!-- Fire on left racks -->
+    <ellipse cx="150" cy="200" rx="40" ry="60" fill="#ff4400" opacity="0.85"/>
+    <ellipse cx="150" cy="200" rx="25" ry="40" fill="#ff8800" opacity="0.7"/>
+    <ellipse cx="150" cy="210" rx="12" ry="25" fill="#ffcc00" opacity="0.6"/>
+    <ellipse cx="310" cy="200" rx="35" ry="55" fill="#ff3300" opacity="0.8"/>
+    <ellipse cx="310" cy="205" rx="20" ry="35" fill="#ff7700" opacity="0.65"/>
+    <!-- Fire on center racks -->
+    <ellipse cx="1010" cy="200" rx="45" ry="65" fill="#ff5500" opacity="0.9"/>
+    <ellipse cx="1010" cy="195" rx="28" ry="45" fill="#ff9900" opacity="0.75"/>
+    <ellipse cx="1010" cy="205" rx="14" ry="28" fill="#ffdd00" opacity="0.6"/>
+    <!-- Fire on right racks -->
+    <ellipse cx="1530" cy="200" rx="38" ry="58" fill="#ff4400" opacity="0.85"/>
+    <ellipse cx="1530" cy="202" rx="22" ry="38" fill="#ff8800" opacity="0.7"/>
+  </g>
+  <!-- Red emergency lighting overlay -->
+  <rect width="1920" height="1080" fill="#ff0000" opacity="0.05"/>
+  <!-- Error screens on racks -->
+  <g fill="#cc0000" opacity="0.9">
+    <rect x="95" y="380" width="110" height="60"/>
+    <rect x="255" y="350" width="110" height="60"/>
+    <rect x="795" y="400" width="110" height="60"/>
+    <rect x="955" y="360" width="110" height="60"/>
+    <rect x="1315" y="390" width="110" height="60"/>
+  </g>
+  <!-- Error text on screens -->
+  <g fill="#ff0000" font-family="monospace" font-size="10" filter="url(#fire)">
+    <text x="100" y="405">CRITICAL</text><text x="100" y="420">FAILURE</text>
+    <text x="260" y="375">SYSTEM</text><text x="260" y="390">ERROR</text>
+    <text x="800" y="425">FATAL</text><text x="800" y="440">ERR 0xFF</text>
+  </g>
+  <!-- Sparks -->
+  <g fill="#ffaa00" filter="url(#fire)" opacity="0.8">
+    <circle cx="200" cy="300" r="3"/><circle cx="180" cy="280" r="2"/><circle cx="220" cy="260" r="2"/>
+    <circle cx="480" cy="350" r="3"/><circle cx="460" cy="320" r="2"/>
+    <circle cx="1050" cy="290" r="3"/><circle cx="1080" cy="270" r="2"/>
+    <circle cx="1600" cy="310" r="3"/><circle cx="1580" cy="285" r="2"/>
+  </g>
+  <!-- Smoke -->
+  <g fill="#1a0a00" opacity="0.4">
+    <ellipse cx="150" cy="120" rx="60" ry="30"/>
+    <ellipse cx="310" cy="110" rx="50" ry="25"/>
+    <ellipse cx="1010" cy="100" rx="70" ry="35"/>
+    <ellipse cx="1530" cy="115" rx="55" ry="28"/>
+  </g>
+  <!-- Floor reflection -->
+  <rect x="0" y="880" width="1920" height="200" fill="#0a0300" opacity="0.8"/>
+  <!-- Placeholder label -->
+  <text x="1880" y="30" font-family="monospace" font-size="12" fill="#333" text-anchor="end" opacity="0.5">PLACEHOLDER 03</text>
+</svg>
