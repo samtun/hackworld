@@ -10,17 +10,13 @@ export interface CoreStats {
     strength?: number;
     defense?: number;
     agility?: number;
-}
-
-export interface CoreStealEffect {
-    resource: 'hp' | 'tp';
-    amountPercent: number;
-    procChanceAlpha: number;
-    procChanceOmega: number;
+    tpStealChance?: number;
+    tpStealAmount?: number;
+    hpStealChance?: number;
+    hpStealAmount?: number;
 }
 
 export interface ICore {
     readonly type: CoreType;
     readonly stats: CoreStats;
-    getStealEffect(): CoreStealEffect | undefined;
 }

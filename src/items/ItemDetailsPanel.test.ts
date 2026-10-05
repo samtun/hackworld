@@ -24,7 +24,7 @@ function makeWeapon(damage: number, id = 'w1'): WeaponItem {
     return new WeaponItem(id, 'Sword', 100, 50, WeaponType.SWORD, damage, 'model.glb', stableTier, 1);
 }
 
-function makeCore(stats: { strength?: number; defense?: number; agility?: number }, id = 'c1'): CoreItem {
+function makeCore(stats: { strength?: number; defense?: number; agility?: number, tpStealChance?: number, tpStealAmount?: number, hpStealChance?: number, hpStealAmount?: number }, id = 'c1'): CoreItem {
     return new CoreItem(id, 'Herald Core', 200, 100, stats, 1, CoreType.HERALD);
 }
 
@@ -57,7 +57,7 @@ describe('ItemDetailsPanel.generateHTML – no equipped item', () => {
 
     it('shows chip multiplier without delta badge', () => {
         const html = ItemDetailsPanel.generateHTML(makeChip({ weaponRangeMultiplier: 1.1 }));
-        expect(html).toContain('+10%');
+        expect(html).toContain('+10.00%');
         expect(html).not.toContain('▲');
         expect(html).not.toContain('▼');
     });
@@ -123,6 +123,27 @@ describe('ItemDetailsPanel.generateHTML – weapon comparison', () => {
 // ─── generateHTML – CoreItem comparison ──────────────────────────────────────
 
 describe('ItemDetailsPanel.generateHTML – core comparison', () => {
+    it('shows percentage-stat values with a percent sign and a leading plus for positive values', () => {
+        const html = ItemDetailsPanel.generateHTML(makeCore({ tpStealChance: 0.25, hpStealAmount: 0.12 }));
+        expect(html).toContain('TP Steal Chance');
+        expect(html).toContain('25%');
+        expect(html).toContain('HP Steal Amount');
+        expect(html).toContain('12%');
+    });
+
+    it('shows percentage-stat deltas when comparing to the equipped core', () => {
+        const newCore = makeCore({ tpStealChance: 0.30, hpStealAmount: 0.18 }, 'c2');
+        const equipped = makeCore({ tpStealChance: 0.15, hpStealAmount: 0.06 }, 'c1');
+        const html = ItemDetailsPanel.generateHTML(newCore, equipped);
+        expect(html).toContain('TP Steal Chance');
+        expect(html).toContain('30%');
+        expect(html).toContain('▲');
+        expect(html).toContain('+15');
+        expect(html).toContain('HP Steal Amount');
+        expect(html).toContain('18%');
+        expect(html).toContain('+12');
+    });
+
     it('shows positive deltas in green', () => {
         const newCore = makeCore({ strength: 16, defense: 5 }, 'c2');
         const equipped = makeCore({ strength: 3, defense: 14 }, 'c1');
@@ -191,7 +212,7 @@ describe('ItemDetailsPanel.generateHTML – chip comparison', () => {
         const equipped = makeChip({ walkSpeedMultiplier: 1.10 }, 'ch1');
         const html = ItemDetailsPanel.generateHTML(newChip, equipped);
         expect(html).toContain('▲');
-        expect(html).toContain('+2%');
+        expect(html).toContain('+2.00%');
         expect(html).toContain('#44ff44');
     });
 
@@ -200,7 +221,7 @@ describe('ItemDetailsPanel.generateHTML – chip comparison', () => {
         const equipped = makeChip({ luckMultiplier: 1.20 }, 'ch1');
         const html = ItemDetailsPanel.generateHTML(newChip, equipped);
         expect(html).toContain('▼');
-        expect(html).toContain('-15%');
+        expect(html).toContain('-15.00%');
         expect(html).toContain('#ff4444');
     });
 
@@ -209,9 +230,9 @@ describe('ItemDetailsPanel.generateHTML – chip comparison', () => {
         const equipped = makeChip({ weaponRangeMultiplier: 1.10, healingMultiplier: 1.25 }, 'ch1');
         const html = ItemDetailsPanel.generateHTML(newChip, equipped);
         expect(html).toContain('Healing');
-        expect(html).toContain('+0%');
+        expect(html).toContain('+0.00%');
         expect(html).toContain('▼');
-        expect(html).toContain('-25%');
+        expect(html).toContain('-25.00%');
     });
 
     it('shows row with delta gain when equipped chip lacks a multiplier the new has', () => {
@@ -221,11 +242,11 @@ describe('ItemDetailsPanel.generateHTML – chip comparison', () => {
         // criticalDamageMultiplier gain: +20% (1.20 vs 1.00)
         expect(html).toContain('Crit Damage');
         expect(html).toContain('▲');
-        expect(html).toContain('+20%');
+        expect(html).toContain('+20.00%');
         // walkSpeedMultiplier loss: -10% (1.00 vs 1.10)
         expect(html).toContain('Walk Speed');
         expect(html).toContain('▼');
-        expect(html).toContain('-10%');
+        expect(html).toContain('-10.00%');
     });
 
     it('shows no delta badge when multiplier values are equal', () => {
@@ -242,6 +263,6 @@ describe('ItemDetailsPanel.generateHTML – chip comparison', () => {
         const equipped = makeChip({ walkSpeedMultiplier: 1.10 }, 'ch1');
         const html = ItemDetailsPanel.generateHTML(newChip, equipped);
         expect(html).toContain('▲');
-        expect(html).toContain('+1%');
+        expect(html).toContain('+1.00%');
     });
 });
