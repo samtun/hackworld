@@ -1,3 +1,10 @@
+# [4.6.0](https://github.com/samtun/hackworld/compare/v4.5.0...v4.6.0) (2026-10-05)
+
+
+### Features
+
+* add PhysicsWorld to fix body removal ([15e68e7](https://github.com/samtun/hackworld/commit/15e68e7f4e70de79c93fd92c18b17eb1154a20ec))
+
 # [4.5.0](https://github.com/samtun/hackworld/compare/v4.4.0...v4.5.0) (2026-10-05)
 
 
