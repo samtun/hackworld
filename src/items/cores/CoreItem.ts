@@ -1,6 +1,6 @@
 import { EquippableItem } from '../EquippableItem';
 import { Player } from '../../player/Player';
-import { CoreStats, CoreStealEffect, CoreType, ICore } from './Core';
+import { CoreStats, CoreType, ICore } from './Core';
 import { ItemLevelHelper } from '../ItemLevelHelper';
 import { CoreInventorySaveData } from '../ItemSaveData';
 
@@ -54,52 +54,11 @@ export class CoreItem extends EquippableItem implements ICore {
 
     // Get stats with level multiplier applied
     public getEffectiveStats(): CoreStats {
-        // Stats are now stored directly in JSON with level scaling applied
-        // No need for additional multiplier
-        return { ...this.stats };
+        return this.stats;
     }
 
     getType(): string {
         return 'core';
-    }
-
-    public getStealEffect(): CoreStealEffect | undefined {
-        switch (this._type) {
-            case CoreType.PHISHING:
-                return {
-                    resource: 'hp',
-                    amountPercent: 0.004,
-                    procChanceAlpha: 0.02,
-                    procChanceOmega: 0.06,
-                };
-            case CoreType.BACKDOOR:
-                return {
-                    resource: 'tp',
-                    amountPercent: 0.002,
-                    procChanceAlpha: 0.03,
-                    procChanceOmega: 0.10,
-                };
-            default:
-                return undefined;
-        }
-    }
-
-    public getStealEffectType(): CoreType | undefined {
-        return this.getStealEffect() ? this._type : undefined;
-    }
-
-    public getHpStealChance(): number {
-        if (this._type !== CoreType.PHISHING) return 0;
-        const effect = this.getStealEffect();
-        if (!effect) return 0;
-        return effect.procChanceAlpha + ((this.level - 1) * (effect.procChanceOmega - effect.procChanceAlpha)) / (6 - 1);
-    }
-
-    public getTpStealChance(): number {
-        if (this._type !== CoreType.BACKDOOR) return 0;
-        const effect = this.getStealEffect();
-        if (!effect) return 0;
-        return effect.procChanceAlpha + ((this.level - 1) * (effect.procChanceOmega - effect.procChanceAlpha)) / (6 - 1);
     }
 
     canEquip(player: Player): boolean {
