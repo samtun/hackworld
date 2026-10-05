@@ -422,7 +422,7 @@ describe('Core hit steal effects', () => {
         const player = makePlayer();
         player.maxHp = 1000;
         player.hp = 500;
-        const core = new CoreItem('phishing_core_alpha', 'Phishing Core', 100, 50, { agility: 1 }, 1, CoreType.PHISHING);
+        const core = new CoreItem('phishing_core_alpha', 'Phishing Core', 100, 50, { agility: 1, hpStealAmount: 0.004, hpStealChance: 0.06 }, 1, CoreType.PHISHING);
         core.isEquipped = true;
         player.inventory = [core];
 
@@ -450,7 +450,7 @@ describe('Core hit steal effects', () => {
         const player = makePlayer();
         player.maxTp = 1000;
         player.tp = 500;
-        const core = new CoreItem('backdoor_core_alpha', 'Backdoor Core', 100, 50, { defense: 1 }, 1, CoreType.BACKDOOR);
+        const core = new CoreItem('backdoor_core_alpha', 'Backdoor Core', 100, 50, { defense: 1, tpStealAmount: 0.002, tpStealChance: 0.1 }, 1, CoreType.BACKDOOR);
         core.isEquipped = true;
         player.inventory = [core];
 

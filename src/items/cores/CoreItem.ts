@@ -54,7 +54,8 @@ export class CoreItem extends EquippableItem implements ICore {
 
     // Get stats with level multiplier applied
     public getEffectiveStats(): CoreStats {
-        return this.stats;
+        // Return a copy of the stats object to prevent external mutation
+        return { ...this.stats };
     }
 
     getType(): string {
