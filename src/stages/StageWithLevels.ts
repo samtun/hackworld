@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { BaseStage } from './BaseStage';
+import { GeneratedStage } from './GeneratedStage';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
 import { TeleporterFactory } from '../props/TeleporterFactory';
@@ -37,7 +37,7 @@ interface EnemyScaleTuning {
     expDifficultyGain: number;
 }
 
-export abstract class StageWithLevels extends BaseStage {
+export abstract class StageWithLevels extends GeneratedStage {
     id: string;
     name: string;
     description: string;

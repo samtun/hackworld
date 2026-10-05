@@ -178,7 +178,7 @@ export class ItemDetailsPanel {
 
             const nv = newRaw ?? 1.0;
             const ev = equippedRaw ?? 1.0;
-            const newPct = ((nv - 1) * 100).toFixed(0);
+            const newPct = ((nv - 1) * 100).toFixed(2);
             const value = `+${newPct}%`;
             // Delta expressed as integer percentage-point difference
             const delta = equippedItem !== undefined ? Math.round((nv - ev) * 100) : undefined;

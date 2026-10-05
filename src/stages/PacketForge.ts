@@ -1,8 +1,8 @@
 import { injectable } from 'tsyringe';
 import * as CANNON from 'cannon-es';
-import { BaseStage, StageMetadata } from './BaseStage';
+import { GeneratedStage } from './GeneratedStage';
+import type { StageMetadata } from './BaseStage';
 import { Lobby } from './Lobby';
-import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
@@ -10,7 +10,7 @@ import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 @injectable()
-export class PacketForge extends BaseStage {
+export class PacketForge extends GeneratedStage {
     private static id: string = "packetForge";
     private static name: string = "Packet Forge";
     private static description: string = "Refinery tunnels overloaded with forged malware packets";
@@ -166,31 +166,6 @@ export class PacketForge extends BaseStage {
     }
 
     async load(): Promise<void> {
-        this.clear();
-        await this.loadEnvironmentMap();
-        this.createFloorCollider();
-
-        const generator = new RoomBasedDungeonGenerator();
-        const layout = generator.generate(PacketForge.generationConfig);
-        this.setMinimapLayout(layout.minimapLayout, false);
-
-        this.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
-        this.dungeonRooms = layout.rooms;
-
-        this.buildFloorFromLayout(layout, 0x0a1f32);
-        this.buildWallsFromLayout(layout);
-        this.buildObstaclesFromLayout(layout);
-
-        const tp = layout.teleporterPosition;
-        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getStageMetadata().id, false);
-
-        // Lobby return teleporter at spawn – always active so players can leave at any time
-        this.createLobbyReturnTeleporter(layout);
-
-        this.spawnEnemiesFromLayout(layout);
-        this.buildChestsFromLayout(layout);
-        this.buildBarrelsFromLayout(layout);
-        this.buildMinimapDropFromLayout(layout);
-        this.buildTrapsFromLayout(layout);
+        await this.loadGeneratedStage(PacketForge.generationConfig, Lobby.getStageMetadata().id, 0x0a1f32);
     }
 }
