@@ -35,6 +35,7 @@ import { WorldFactory } from './WorldFactory';
 import { PauseMenuFactory } from './menus/PauseMenuFactory';
 import { ChipTrader } from './items/chips/ChipTrader';
 import { CoreTrader } from './items/cores/CoreTrader';
+import { PhysicsWorld } from './PhysicsWorld';
 
 interface InteractiveEntity {
     type: InteractiveEntityType;
@@ -185,7 +186,7 @@ export class Game {
         this.scene.add(dirLight);
 
         // Setup Physics
-        this.physicsWorld = new CANNON.World();
+        this.physicsWorld = new PhysicsWorld();
         this.physicsWorld.gravity.set(0, -25, 0); // Stronger gravity for snappier gameplay feel
         container.registerInstance(CANNON.World, this.physicsWorld);
 
