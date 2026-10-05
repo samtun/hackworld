@@ -478,7 +478,7 @@ describe('Core hit steal effects', () => {
             isBlocking: false,
             hp: 100,
             takeDamage: vi.fn((amount: number) => {
-                enemy.hp = Math.max(0, enemy.hp - amount);
+                (enemy as any).hp = Math.max(0, enemy.hp - amount);
             })
         } as unknown as Enemy;
 
@@ -506,7 +506,7 @@ describe('Core hit steal effects', () => {
             isBlocking: false,
             hp: 100,
             takeDamage: vi.fn((amount: number) => {
-                enemy.hp = Math.max(0, enemy.hp - amount);
+                (enemy as any).hp = Math.max(0, enemy.hp - amount);
             })
         } as unknown as Enemy;
 

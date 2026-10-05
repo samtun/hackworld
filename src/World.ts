@@ -308,30 +308,27 @@ export class World {
         for (let i = this.enemies.length - 1; i >= 0; i--) {
             const enemy = this.enemies[i];
 
-            // Set up death fade callback if not already set
-            if (!enemy.onDeathFadeStart) {
-                enemy.onDeathFadeStart = (e: Enemy) => {
-                    // Grant EXP to player
-                    const expGained = player.gainExp(e.baseExp);
+            enemy.registerDeathFadeCallback((e: Enemy) => {
+                // Grant EXP to player
+                const expGained = player.gainExp(e.baseExp);
 
-                    // Spawn EXP number visual
-                    this.floatingIndicatorManager.spawnEXP(e.getDeathPosition(), expGained);
+                // Spawn EXP number visual
+                this.floatingIndicatorManager.spawnEXP(e.getDeathPosition(), expGained);
 
-                    // Try to drop an item
-                    // The ItemDropManager will select one strategy based on probabilities
-                    // and each strategy will check enemy.itemDropChance internally
-                    const itemDropped = this.itemDropManager.tryDropItem(e, player);
+                // Try to drop an item
+                // The ItemDropManager will select one strategy based on probabilities
+                // and each strategy will check enemy.itemDropChance internally
+                const itemDropped = this.itemDropManager.tryDropItem(e, player);
 
-                    // Independently try to drop an HP or TP potion (8% base chance)
-                    const potionPos = e.getDeathPosition();
-                    potionPos.y += 0.5;
-                    // If an item was dropped, offset the potion position slightly to avoid overlap
-                    if (itemDropped) {
-                        potionPos.x -= 0.75;
-                    }
-                    this.itemDropManager.tryDropPotion(potionPos, player, e.itemDropChance + player.luckDropChanceBonus);
-                };
-            }
+                // Independently try to drop an HP or TP potion (8% base chance)
+                const potionPos = e.getDeathPosition();
+                potionPos.y += 0.5;
+                // If an item was dropped, offset the potion position slightly to avoid overlap
+                if (itemDropped) {
+                    potionPos.x -= 0.75;
+                }
+                this.itemDropManager.tryDropPotion(potionPos, player, e.itemDropChance + player.luckDropChanceBonus);
+            });
 
             enemy.update(dt);
 

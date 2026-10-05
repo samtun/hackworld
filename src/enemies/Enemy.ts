@@ -109,24 +109,40 @@ export const DEFAULT_ENEMY_ARCHETYPE: EnemyArchetypeConfig = {
 };
 
 export class Enemy extends BaseMesh {
-    body: CANNON.Body;
-    maxHp: number = DEFAULT_ENEMY_ARCHETYPE.maxHp;
-    hp: number = this.maxHp;
+    readonly body: CANNON.Body;
+    private _maxHp: number = DEFAULT_ENEMY_ARCHETYPE.maxHp;
+    get maxHp(): number { return this._maxHp; }
+    private set maxHp(value: number) { this._maxHp = value; }
+    private _hp: number = this.maxHp;
+    get hp(): number { return this._hp; }
+    private set hp(value: number) { this._hp = value; }
     protected speed: number = DEFAULT_ENEMY_ARCHETYPE.speed;
     protected size: number = DEFAULT_ENEMY_ARCHETYPE.size;
     protected radius: number = DEFAULT_ENEMY_ARCHETYPE.size * ENEMY_RADIUS_FACTOR;
     protected attackRange: number = DEFAULT_ENEMY_ARCHETYPE.size * ENEMY_ATTACK_RANGE_FACTOR;
     protected attackCooldown: number = 1.0;
     protected attackTimer: number = 0;
-    isDead: boolean = false;
-    isDying: boolean = false;
-    deathTimer: number = 0;
-    flashTimer: number = 0;
-    stunTimer: number = 0;
-    itemDropChance: number = DEFAULT_ENEMY_ARCHETYPE.itemDropChance;
-    xDataDropChanceWeight: number = DEFAULT_ENEMY_ARCHETYPE.xDataDropChanceWeight;
-    baseExp: number = DEFAULT_ENEMY_ARCHETYPE.baseExp; // EXP granted on defeat, is influenced by player luck
-    damage: number = DEFAULT_ENEMY_ARCHETYPE.damage;
+    private _isDead: boolean = false;
+    get isDead(): boolean { return this._isDead; }
+    private set isDead(value: boolean) { this._isDead = value; }
+    private _isDying: boolean = false;
+    get isDying(): boolean { return this._isDying; }
+    private set isDying(value: boolean) { this._isDying = value; }
+    private deathTimer: number = 0;
+    private flashTimer: number = 0;
+    private stunTimer: number = 0;
+    private _itemDropChance: number = DEFAULT_ENEMY_ARCHETYPE.itemDropChance;
+    get itemDropChance(): number { return this._itemDropChance; }
+    private set itemDropChance(value: number) { this._itemDropChance = value; }
+    private _xDataDropChanceWeight: number = DEFAULT_ENEMY_ARCHETYPE.xDataDropChanceWeight;
+    get xDataDropChanceWeight(): number { return this._xDataDropChanceWeight; }
+    private set xDataDropChanceWeight(value: number) { this._xDataDropChanceWeight = value; }
+    private _baseExp: number = DEFAULT_ENEMY_ARCHETYPE.baseExp;
+    get baseExp(): number { return this._baseExp; }
+    private set baseExp(value: number) { this._baseExp = value; }
+    private _damage: number = DEFAULT_ENEMY_ARCHETYPE.damage;
+    get damage(): number { return this._damage; }
+    private set damage(value: number) { this._damage = value; }
     protected criticalChance: number = DEFAULT_ENEMY_ARCHETYPE.criticalChance;
     protected criticalHitMultiplier: number = DEFAULT_ENEMY_ARCHETYPE.criticalHitMultiplier;
     protected knockbackForce: number = 15.0;
@@ -137,7 +153,9 @@ export class Enemy extends BaseMesh {
      * Set to false by room-based stages and switched on once the player
      * enters the enemy's room, so enemies don't chase through walls.
      */
-    aggroEnabled: boolean = true;
+    private _aggroEnabled: boolean = true;
+    get aggroEnabled(): boolean { return this._aggroEnabled; }
+    private set aggroEnabled(value: boolean) { this._aggroEnabled = value; }
 
     /**
      * Countdown in seconds after a lazy room-entry spawn during which the
@@ -145,20 +163,22 @@ export class Enemy extends BaseMesh {
      * chasing the player before they are fully placed in the world.
      * Counts down to zero and then normal AI resumes.
      */
-    spawnInactiveTimer: number = 0;
+    private spawnInactiveTimer: number = 0;
 
     /**
      * When true this enemy is immune to electric trap damage and knockback.
      * Subclasses can set this to `true` to create trap-resistant enemy types.
      */
-    trapImmune: boolean = false;
+    private _trapImmune: boolean = false;
+    get trapImmune(): boolean { return this._trapImmune; }
+    protected set trapImmune(value: boolean) { this._trapImmune = value; }
 
     /**
      * Optional navigation grid for pathfinding around walls and obstacles.
      * When set, the enemy follows an A*-computed path instead of moving
      * directly toward the player.
      */
-    navGrid: DungeonNavGrid | null = null;
+    private navGrid: DungeonNavGrid | null = null;
 
     /** Current A* path waypoints the enemy is following. */
     private navPath: NavWaypoint[] = [];
@@ -193,12 +213,16 @@ export class Enemy extends BaseMesh {
      * Breakable barrels in the current room/stage.
      * Set by {@link BaseStage} so enemies can break barrels blocking their path.
      */
-    breakableBarrels: BreakableBarrel[] = [];
+    private breakableBarrels: BreakableBarrel[] = [];
 
     // Animation
-    isAttacking: boolean = false;
+    private _isAttacking: boolean = false;
+    get isAttacking(): boolean { return this._isAttacking; }
+    protected set isAttacking(value: boolean) { this._isAttacking = value; }
     protected attackAnimTimer: number = 0;
-    techDropRateFactor: number = DEFAULT_ENEMY_ARCHETYPE.techDropRateFactor;
+    private _techDropRateFactor: number = DEFAULT_ENEMY_ARCHETYPE.techDropRateFactor;
+    get techDropRateFactor(): number { return this._techDropRateFactor; }
+    private set techDropRateFactor(value: number) { this._techDropRateFactor = value; }
     protected bodyHalfExtentY: number;
     private footstepTimer: number = 0;
 
@@ -257,13 +281,9 @@ export class Enemy extends BaseMesh {
     private isCorneredForSpacing: boolean = false;
 
     /** Flat circular shadow below the enemy. */
-    public blobShadow: BlobShadow;
+    private readonly blobShadow: BlobShadow;
 
-    // Callback for spawning damage numbers
-    onDamageTaken?: (position: CANNON.Vec3, amount: number) => void;
-
-    // Callback when death fade starts (for rewards, drops, etc.)
-    onDeathFadeStart?: (enemy: Enemy) => void;
+    private deathFadeCallback?: (enemy: Enemy) => void;
 
     constructor(
         private readonly audioManager: AudioManager,
@@ -368,6 +388,25 @@ export class Enemy extends BaseMesh {
         this.blobShadow = new BlobShadow(scene, 0.5 * sizeScale);
     }
 
+    configureForRoom(
+        navGrid: DungeonNavGrid | null,
+        breakableBarrels: BreakableBarrel[],
+        spawnInactiveDuration: number,
+    ): void {
+        this.aggroEnabled = true;
+        this.spawnInactiveTimer = Math.max(0, spawnInactiveDuration);
+        this.navGrid = navGrid;
+        this.breakableBarrels = breakableBarrels;
+    }
+
+    enableAggro(): void {
+        this.aggroEnabled = true;
+    }
+
+    registerDeathFadeCallback(callback: (enemy: Enemy) => void): void {
+        this.deathFadeCallback ??= callback;
+    }
+
     protected setupAnimations(assetManager: AssetManager) {
         // Clear BaseMesh mixer to avoid conflict
         this.mixers = [];
@@ -426,9 +465,7 @@ export class Enemy extends BaseMesh {
                     this.isDeathFading = true;
                     this.deathFadeTimer = 0;
                     // Trigger death fade callback for rewards/drops
-                    if (this.onDeathFadeStart) {
-                        this.onDeathFadeStart(this);
-                    }
+                    this.deathFadeCallback?.(this);
                 }
             });
         }

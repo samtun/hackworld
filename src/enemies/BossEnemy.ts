@@ -18,7 +18,7 @@ enum BossAttackType {
 }
 
 export class BossEnemy extends Enemy {
-    private attacks: BossAttackType[] = [BossAttackType.Melee1, BossAttackType.Melee2, BossAttackType.Ranged];
+    private readonly attacks: readonly BossAttackType[] = [BossAttackType.Melee1, BossAttackType.Melee2, BossAttackType.Ranged];
     private currentAttackType: BossAttackType = BossAttackType.Melee1;
     private nextAttackIndex: number = 0;
 

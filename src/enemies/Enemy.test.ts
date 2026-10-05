@@ -164,14 +164,14 @@ describe('Enemy.takeDamage', () => {
     });
 
     it('does not take damage when already dead', () => {
-        enemy.isDead = true;
+        (enemy as any).isDead = true;
         (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(30, false);
         expect(enemy.hp).toBe(60); // unchanged
     });
 
     it('does not take damage when dying', () => {
-        enemy.isDying = true;
+        (enemy as any).isDying = true;
         (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(30, false);
         expect(enemy.hp).toBe(60); // unchanged
@@ -180,8 +180,8 @@ describe('Enemy.takeDamage', () => {
     it('sets flashTimer and stunTimer on damage', () => {
         (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(10, false);
-        expect(enemy.flashTimer).toBe(0.1);
-        expect(enemy.stunTimer).toBe(0.5);
+        expect((enemy as any).flashTimer).toBe(0.1);
+        expect((enemy as any).stunTimer).toBe(0.5);
     });
 
     it('calls die() when HP drops to 0', () => {
@@ -198,7 +198,7 @@ describe('Enemy.takeDamage', () => {
 
     it('cancels ongoing attack on hit', () => {
         (enemy as any).blockChance = 0; // ensure damage is taken
-        enemy.isAttacking = true;
+        (enemy as any).isAttacking = true;
         enemy.takeDamage(10, false);
         expect(enemy.isAttacking).toBe(false);
     });
@@ -228,7 +228,7 @@ describe('Enemy.takeDamage', () => {
     });
 
     it('enables aggro when hit while aggroEnabled is false', () => {
-        enemy.aggroEnabled = false;
+        (enemy as any).aggroEnabled = false;
         (enemy as any).blockChance = 0; // ensure damage is taken
         enemy.takeDamage(10, false);
         expect(enemy.aggroEnabled).toBe(true);
@@ -284,13 +284,13 @@ describe('Enemy.die', () => {
         // Simulate the animation-finished event path that starts the death fade
         enemy.die();
         const cb = vi.fn();
-        enemy.onDeathFadeStart = cb;
+        enemy.registerDeathFadeCallback(cb);
 
         // Manually trigger the isDeathFading path
         (enemy as any).isDying = false;
         (enemy as any).isDeathFading = true;
         (enemy as any).deathFadeTimer = 0;
-        (enemy as any).onDeathFadeStart!(enemy);
+        (enemy as any).deathFadeCallback!(enemy);
 
         expect(cb).toHaveBeenCalledWith(enemy);
     });
@@ -333,7 +333,7 @@ describe('Enemy.update – shadow position', () => {
     it('does not update shadow when isDead', () => {
         const updateSpy = vi.spyOn(BlobShadow.prototype, 'update');
         const enemy = makeEnemy();
-        enemy.isDead = true;
+        (enemy as any).isDead = true;
         enemy.update(0.016);
         // Expect update method to be called once, since makeEnemy calls update too
         expect(updateSpy).toHaveBeenCalledOnce();
@@ -517,9 +517,9 @@ describe('Enemy ranged combat behavior', () => {
             physicsWorld: physicsWorld,
         });
 
-        enemy.navGrid = mockDeep<DungeonNavGrid>({
+        Reflect.set(enemy, 'navGrid', mockDeep<DungeonNavGrid>({
             findPath: vi.fn().mockReturnValue([]),
-        });
+        }));
 
         enemy.update(0.016);
 
@@ -1417,7 +1417,7 @@ describe('Enemy.checkAttackHitboxCollision – barrel breaking', () => {
             body: { position: { x: 50, y: 0, z: 50 } }, // far away
             onHit: vi.fn(),
         };
-        enemy.breakableBarrels = [nearBarrel, farBarrel];
+        (enemy as any).breakableBarrels = [nearBarrel, farBarrel];
 
         enemy.checkAttackHitboxCollision();
 

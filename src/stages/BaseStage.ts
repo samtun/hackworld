@@ -914,10 +914,7 @@ export abstract class BaseStage {
                 const enemy = this.enemies[this.enemies.length - 1];
                 // Enable aggro so the enemy tracks the player, but hold it
                 // inactive for a brief period so it is positioned before engaging.
-                enemy.aggroEnabled = true;
-                enemy.spawnInactiveTimer = ENEMY_SPAWN_INACTIVE_DURATION;
-                enemy.navGrid = this.navGrid;
-                enemy.breakableBarrels = this.breakableBarrels;
+                enemy.configureForRoom(this.navGrid, this.breakableBarrels, ENEMY_SPAWN_INACTIVE_DURATION);
                 roomEnemies.push(enemy);
             }
         }
@@ -954,7 +951,7 @@ export abstract class BaseStage {
             const roomEnemies = this.roomEnemyMap.get(room.id) ?? [];
             for (const enemy of roomEnemies) {
                 if (!enemy.aggroEnabled) {
-                    enemy.aggroEnabled = true;
+                    enemy.enableAggro();
                 }
             }
 
