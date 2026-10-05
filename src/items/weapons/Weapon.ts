@@ -4,6 +4,7 @@ import { AssetManager } from '../../AssetManager.ts';
 import { BaseMesh } from '../../BaseMesh.ts';
 import { WeaponType } from './WeaponType';
 import type { WeaponItem } from './WeaponItem';
+import { Tier, type WeaponTierDefinition } from '../TierManager';
 
 interface WeaponStats {
     attackSpeed: number; // Duration in seconds
@@ -245,5 +246,63 @@ export class Weapon extends BaseMesh {
 
         // Load the new weapon model
         this.replaceModel(weaponItem.model);
+        this.applyTierOutline(weaponItem.tier);
+    }
+
+    private applyTierOutline(tier: WeaponTierDefinition): void {
+        if (tier.name === Tier.BROKEN || tier.name === Tier.STABLE) return;
+
+        const weaponMeshes: THREE.Mesh[] = [];
+        this.mesh.traverse((child) => {
+            if (child instanceof THREE.Mesh) weaponMeshes.push(child);
+        });
+
+        this.mesh.updateMatrixWorld(true);
+        const worldToWeapon = this.mesh.matrixWorld.clone().invert();
+
+        for (const weaponMesh of weaponMeshes) {
+            const outlineMaterial = new THREE.ShaderMaterial({
+                uniforms: {
+                    outlineColor: { value: new THREE.Color(tier.rimColor) },
+                    outlineWidth: { value: 0.1 },
+                    glowIntensity: { value: 1.0 },
+                    opacity: { value: 0.3 },
+                },
+                vertexShader: `
+                    uniform float outlineWidth;
+                    varying vec3 vViewNormal;
+
+                    void main() {
+                        vViewNormal = normalize(normalMatrix * normal);
+                        vec3 expandedPosition = position + normalize(normal) * outlineWidth;
+                        gl_Position = projectionMatrix * modelViewMatrix * vec4(expandedPosition, 1.0);
+                    }
+                `,
+                fragmentShader: `
+                    uniform vec3 outlineColor;
+                    uniform float glowIntensity;
+                    uniform float opacity;
+                    varying vec3 vViewNormal;
+
+                    void main() {
+                        float edgeFade = smoothstep(0.0, 2.6, abs(normalize(vViewNormal).z));
+                        gl_FragColor = vec4(outlineColor * glowIntensity, opacity * edgeFade);
+                        #include <colorspace_fragment>
+                    }
+                `,
+                side: THREE.BackSide,
+                blending: THREE.AdditiveBlending,
+                transparent: true,
+                depthWrite: false,
+                toneMapped: false,
+            });
+            const outlineMesh = new THREE.Mesh(weaponMesh.geometry, outlineMaterial);
+            outlineMesh.matrixAutoUpdate = false;
+            outlineMesh.matrix.multiplyMatrices(worldToWeapon, weaponMesh.matrixWorld);
+            outlineMesh.castShadow = false;
+            outlineMesh.receiveShadow = false;
+            outlineMesh.renderOrder = weaponMesh.renderOrder;
+            this.mesh.add(outlineMesh);
+        }
     }
 }

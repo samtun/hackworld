@@ -7,6 +7,7 @@ import { AssetManager } from '../../AssetManager';
 import { mock, mockDeep } from 'vitest-mock-extended';
 import { GLTF } from 'three/examples/jsm/Addons.js';
 import { WeaponItem } from './WeaponItem';
+import { Tier, TierManager } from '../TierManager';
 
 interface WeaponTestOverrides {
     assetManager?: AssetManager,
@@ -218,11 +219,12 @@ describe('Weapon – update(dt)', () => {
 // ─── changeWeaponType() ───────────────────────────────────────────────────────
 
 describe('Weapon – changeWeaponType()', () => {
-    function makeWeaponItem(weaponType: WeaponType, damage: number, model: string): WeaponItem {
+    function makeWeaponItem(weaponType: WeaponType, damage: number, model: string, tier: Tier = Tier.MAINTAINED): WeaponItem {
         const item = mockDeep<WeaponItem>();
         item.weaponType = weaponType;
         item.damage = damage;
         item.model = model;
+        item.tier = new TierManager().tiers.get(tier)!;
         return item;
     }
 
@@ -313,5 +315,66 @@ describe('Weapon – changeWeaponType()', () => {
         w.changeWeaponType(parent, false, weaponItem);
 
         expect(replaceModelSpy).toHaveBeenCalledWith('models/aegis_sword.glb');
+    });
+
+    it('creates a tier-colored additive outline without tinting the weapon material', () => {
+        const sourceMaterial = new THREE.MeshStandardMaterial({ color: 0xffffff });
+        sourceMaterial.name = 'WeaponSurface';
+        const assetScene = new THREE.Group();
+        assetScene.add(new THREE.Mesh(new THREE.BufferGeometry(), sourceMaterial));
+        const assetManager = mockDeep<AssetManager>();
+        assetManager.get.mockImplementation(() => {
+            const gltfMock = mock<GLTF>();
+            gltfMock.scene = assetScene.clone();
+            return gltfMock;
+        });
+        const weapon = makeWeapon({ assetManager });
+
+        weapon.changeWeaponType(new THREE.Group(), false, makeWeaponItem(WeaponType.SWORD, 15, 'models/sword.glb'));
+
+        let equippedSurfaceMaterial: THREE.MeshStandardMaterial | undefined;
+        let outlineMaterial: THREE.ShaderMaterial | undefined;
+        (weapon as any).mesh.traverse((child: THREE.Object3D) => {
+            if (!(child instanceof THREE.Mesh)) return;
+            if (child.material instanceof THREE.MeshStandardMaterial && child.material.name === 'WeaponSurface') {
+                equippedSurfaceMaterial = child.material;
+            }
+            if (child.material instanceof THREE.ShaderMaterial) {
+                outlineMaterial = child.material;
+            }
+        });
+
+        expect(equippedSurfaceMaterial).toBeDefined();
+        expect(equippedSurfaceMaterial!.color.getHexString()).toBe('ffffff');
+        expect(equippedSurfaceMaterial!.emissive.getHexString()).toBe('000000');
+        expect(outlineMaterial).toBeDefined();
+        expect(outlineMaterial!.uniforms.outlineColor.value.getHexString()).toBe('8f8fe9');
+        expect(outlineMaterial!.uniforms.outlineWidth.value).toBe(0.1);
+        expect(outlineMaterial!.uniforms.opacity.value).toBe(0.3);
+        expect(outlineMaterial!.fragmentShader).toContain('smoothstep(0.0, 0.6, abs(normalize(vViewNormal).z))');
+        expect(outlineMaterial!.fragmentShader).toContain('opacity * edgeFade');
+        expect(outlineMaterial!.side).toBe(THREE.BackSide);
+        expect(outlineMaterial!.blending).toBe(THREE.AdditiveBlending);
+        expect(sourceMaterial.emissive.getHexString()).toBe('000000');
+    });
+
+    it('omits the outline for Broken and Stable tiers', () => {
+        for (const tier of [Tier.BROKEN, Tier.STABLE]) {
+            const weapon = makeWeapon();
+            weapon.changeWeaponType(
+                new THREE.Group(),
+                false,
+                makeWeaponItem(WeaponType.SWORD, 15, 'models/sword.glb', tier),
+            );
+
+            let hasOutline = false;
+            (weapon as any).mesh.traverse((child: THREE.Object3D) => {
+                if (child instanceof THREE.Mesh && child.material instanceof THREE.ShaderMaterial) {
+                    hasOutline = true;
+                }
+            });
+
+            expect(hasOutline).toBe(false);
+        }
     });
 });
