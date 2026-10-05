@@ -351,7 +351,7 @@ describe('Weapon – changeWeaponType()', () => {
         expect(outlineMaterial!.uniforms.outlineColor.value.getHexString()).toBe('8f8fe9');
         expect(outlineMaterial!.uniforms.outlineWidth.value).toBe(0.1);
         expect(outlineMaterial!.uniforms.opacity.value).toBe(0.3);
-        expect(outlineMaterial!.fragmentShader).toContain('smoothstep(0.0, 0.6, abs(normalize(vViewNormal).z))');
+        expect(outlineMaterial!.fragmentShader).toContain('smoothstep(0.0, 2.6, abs(normalize(vViewNormal).z))');
         expect(outlineMaterial!.fragmentShader).toContain('opacity * edgeFade');
         expect(outlineMaterial!.side).toBe(THREE.BackSide);
         expect(outlineMaterial!.blending).toBe(THREE.AdditiveBlending);
