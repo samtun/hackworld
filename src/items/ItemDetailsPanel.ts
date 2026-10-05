@@ -62,7 +62,7 @@ export class ItemDetailsPanel {
         const arrow = delta > 0 ? '▲' : '▼';
         const color = delta > 0 ? '#44ff44' : '#ff4444';
         const suffix = isPercent ? '%' : '';
-        return ` <span style="color:${color};">${arrow} ${sign}${delta}${suffix}</span>`;
+        return ` <span style="color:${color};">${arrow} ${sign}${delta.toFixed(2)}${suffix}</span>`;
     }
 
     /**
@@ -116,28 +116,27 @@ export class ItemDetailsPanel {
             { key: 'strength', label: 'Strength' },
             { key: 'defense', label: 'Defense' },
             { key: 'agility', label: 'Agility' },
+            { key: 'tpStealChance', label: 'TP Steal Chance' },
+            { key: 'tpStealAmount', label: 'TP Steal Amount' },
+            { key: 'hpStealChance', label: 'HP Steal Chance' },
+            { key: 'hpStealAmount', label: 'HP Steal Amount' }
         ];
 
         for (const { key, label } of statDefs) {
-            const newVal = stats[key] ?? 0;
-            const equippedVal = equippedItem !== undefined ? (eStats[key] ?? 0) : undefined;
+            const isPercentageStat = key === 'tpStealChance' || key === 'hpStealChance' || key === 'tpStealAmount' || key === 'hpStealAmount';
+            let newVal = stats[key] ?? 0;
+            let equippedVal = equippedItem !== undefined ? (eStats[key] ?? 0) : undefined;
             const shouldShow = newVal !== 0 || (equippedVal !== undefined && equippedVal !== 0);
             if (!shouldShow) continue;
-            const sign = newVal > 0 ? '+' : '';
-            const value = newVal !== 0 ? `${sign}${newVal}` : '0';
+            if (isPercentageStat) {
+                newVal = newVal * 100;
+                equippedVal = equippedVal !== undefined ? equippedVal * 100 : undefined;
+            }
+            const sign = newVal > 0 && !isPercentageStat ? '+' : '';
+            const unit = isPercentageStat ? '%' : '';
+            const value = newVal !== 0 ? `${sign}${newVal}${unit}` : '0';
             const delta = equippedVal !== undefined ? newVal - equippedVal : undefined;
             details.push({ label, value, delta });
-        }
-
-        const stealEffect = item.getStealEffect();
-        if (stealEffect) {
-            const chance = item.getHpStealChance() || item.getTpStealChance();
-            const chanceText = `${(chance * 100).toFixed(0)}%`;
-            const label = stealEffect.resource === 'hp' ? 'HP Steal' : 'TP Steal';
-            const effectText = stealEffect.resource === 'hp'
-                ? `${(stealEffect.amountPercent * 100).toFixed(1)}% max HP / hit`
-                : `${(stealEffect.amountPercent * 100).toFixed(1)}% max TP / hit`;
-            details.push({ label, value: `${chanceText} % chance for  ${effectText}` });
         }
 
         details.push({ label: 'Price', value: `${item.sellPrice} bits` });
@@ -178,10 +177,10 @@ export class ItemDetailsPanel {
 
             const nv = newRaw ?? 1.0;
             const ev = equippedRaw ?? 1.0;
-            const newPct = ((nv - 1) * 100).toFixed(0);
+            const newPct = ((nv - 1) * 100).toFixed(2);
             const value = `+${newPct}%`;
             // Delta expressed as integer percentage-point difference
-            const delta = equippedItem !== undefined ? Math.round((nv - ev) * 100) : undefined;
+            const delta = equippedItem !== undefined ? (nv - ev) * 100 : undefined;
             details.push({ label, value, delta, isPercentDelta: true });
         }
 

@@ -4,7 +4,6 @@ import * as CANNON from 'cannon-es';
 import { StageWithLevels } from './StageWithLevels';
 import type { StageLevelConfig } from './StageWithLevels';
 import { Lobby } from './Lobby';
-import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
@@ -247,13 +246,7 @@ export class SecurityCore extends StageWithLevels {
     }
 
     async load(): Promise<void> {
-        this.clear();
-        await this.loadEnvironmentMap();
-        this.createFloorCollider();
-
-        // Generate room-based procedural layout
-        const generator = new RoomBasedDungeonGenerator();
-        const layout = generator.generate(
+        await this.loadGeneratedStage(
             this.buildGenerationConfig(SecurityCore.generationConfig, {
                 eliteFractionCap: 0.85,
                 eliteFractionGain: 0.25,
@@ -261,37 +254,9 @@ export class SecurityCore extends StageWithLevels {
                 areaPerEnemyDifficultyGain: 0.35,
                 trapDamageGain: 0.85,
             }),
+            this.levelConfig.teleporterDestination,
+            this.levelConfig.floorColor,
         );
-        this.setMinimapLayout(layout.minimapLayout, false);
-
-        // Spawn the player in front of the centred lobby return teleporter
-        this.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
-
-        // Register rooms for per-room enemy aggro and teleporter activation
-        this.dungeonRooms = layout.rooms;
-
-        // Floor segments for each room and corridor
-        this.buildFloorFromLayout(layout, this.levelConfig.floorColor);
-
-        // Build walls (with transparency shader) and obstacles
-        this.buildWallsFromLayout(layout);
-        this.buildObstaclesFromLayout(layout);
-
-        // Teleporter in the final room – starts inactive until all enemies are defeated
-        const tp = layout.teleporterPosition;
-        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), this.levelConfig.teleporterDestination, false);
-
-        // Lobby return teleporter at spawn – always active so players can leave at any time
-        this.createLobbyReturnTeleporter(layout);
-
-        // Spawn enemies with room assignments so aggro is room-gated
-        this.spawnEnemiesFromLayout(layout);
-
-        // Build loot chests, breakable barrels, and electric traps
-        this.buildChestsFromLayout(layout);
-        this.buildBarrelsFromLayout(layout);
-        this.buildMinimapDropFromLayout(layout);
-        this.buildTrapsFromLayout(layout);
     }
 
     protected override scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {

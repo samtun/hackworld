@@ -1,8 +1,8 @@
 import { injectable } from 'tsyringe';
 import * as CANNON from 'cannon-es';
-import { BaseStage, StageMetadata } from './BaseStage';
+import type { StageMetadata } from './BaseStage';
+import { GeneratedStage } from './GeneratedStage';
 import { Lobby } from './Lobby';
-import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
@@ -10,7 +10,7 @@ import { EnemyType } from '../enemies/EnemyType';
 import { getDungeonPropDefinitions } from './DungeonPropCatalog';
 
 @injectable()
-export class NetworkMatrix extends BaseStage {
+export class NetworkMatrix extends GeneratedStage {
     private static id: string = "networkMatrix";
     private static name: string = "Network Matrix";
     private static description: string = "The first layer of defense";
@@ -116,42 +116,6 @@ export class NetworkMatrix extends BaseStage {
     }
 
     async load(): Promise<void> {
-        this.clear();
-        await this.loadEnvironmentMap();
-        this.createFloorCollider();
-
-        // Generate room-based procedural layout
-        const generator = new RoomBasedDungeonGenerator();
-        const layout = generator.generate(NetworkMatrix.generationConfig);
-        this.setMinimapLayout(layout.minimapLayout, false);
-
-        // Spawn the player in front of the centred lobby return teleporter
-        this.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
-
-        // Register rooms for per-room enemy aggro and teleporter activation
-        this.dungeonRooms = layout.rooms;
-
-        // Floor segments for each room and corridor
-        this.buildFloorFromLayout(layout);
-
-        // Build walls (with transparency shader) and obstacles
-        this.buildWallsFromLayout(layout);
-        this.buildObstaclesFromLayout(layout);
-
-        // Teleporter in the final room – starts inactive until all enemies are defeated
-        const tp = layout.teleporterPosition;
-        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), Lobby.getStageMetadata().id, false);
-
-        // Lobby return teleporter at spawn – always active so players can leave at any time
-        this.createLobbyReturnTeleporter(layout);
-
-        // Spawn enemies with room assignments so aggro is room-gated
-        this.spawnEnemiesFromLayout(layout);
-
-        // Build loot chests, breakable barrels, and electric traps
-        this.buildChestsFromLayout(layout);
-        this.buildBarrelsFromLayout(layout);
-        this.buildMinimapDropFromLayout(layout);
-        this.buildTrapsFromLayout(layout);
+        await this.loadGeneratedStage(NetworkMatrix.generationConfig, Lobby.getStageMetadata().id);
     }
 }

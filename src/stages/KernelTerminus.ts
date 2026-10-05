@@ -4,7 +4,6 @@ import * as CANNON from 'cannon-es';
 import { StageWithLevels } from './StageWithLevels';
 import type { StageLevelConfig } from './StageWithLevels';
 import { Lobby } from './Lobby';
-import { RoomBasedDungeonGenerator } from './RoomBasedDungeonGenerator';
 import type { RoomGenerationConfig } from './RoomBasedDungeonGenerator';
 import { EnemySpawnType } from './RoomBasedDungeonGenerator';
 import type { EnemyArchetypeConfig } from '../enemies/Enemy';
@@ -249,12 +248,7 @@ export class KernelTerminus extends StageWithLevels {
     }
 
     async load(): Promise<void> {
-        this.clear();
-        await this.loadEnvironmentMap();
-        this.createFloorCollider();
-
-        const generator = new RoomBasedDungeonGenerator();
-        const layout = generator.generate(
+        await this.loadGeneratedStage(
             this.buildGenerationConfig(KernelTerminus.generationConfig, {
                 eliteFractionCap: 0.9,
                 eliteFractionGain: 0.22,
@@ -262,27 +256,9 @@ export class KernelTerminus extends StageWithLevels {
                 areaPerEnemyDifficultyGain: 0.4,
                 trapDamageGain: 0.9,
             }),
+            this.levelConfig.teleporterDestination,
+            this.levelConfig.floorColor,
         );
-        this.setMinimapLayout(layout.minimapLayout, false);
-
-        this.setSpawnPositionInFrontOfLobbyReturnTeleporter(layout);
-        this.dungeonRooms = layout.rooms;
-
-        this.buildFloorFromLayout(layout, this.levelConfig.floorColor);
-        this.buildWallsFromLayout(layout);
-        this.buildObstaclesFromLayout(layout);
-
-        const tp = layout.teleporterPosition;
-        this.createTeleporter(new CANNON.Vec3(tp.x, layout.teleporterElevation, tp.z), this.levelConfig.teleporterDestination, false);
-
-        // Lobby return teleporter at spawn – always active so players can leave at any time
-        this.createLobbyReturnTeleporter(layout);
-
-        this.spawnEnemiesFromLayout(layout);
-        this.buildChestsFromLayout(layout);
-        this.buildBarrelsFromLayout(layout);
-        this.buildMinimapDropFromLayout(layout);
-        this.buildTrapsFromLayout(layout);
     }
 
     protected override scaleEnemyConfig(config: Partial<EnemyArchetypeConfig>): Partial<EnemyArchetypeConfig> {

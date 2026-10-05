@@ -239,12 +239,14 @@
         "coreType": "phishing",
         "stats": {
             "agility": 1,
-            "defense": 1
+            "defense": 1,
+            "hpStealChance": 0.02,
+            "hpStealAmount": 0.004
         },
         "buyPrice": 300,
         "sellPrice": 100,
         "level": 1,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "phishing_core_beta",
@@ -252,12 +254,14 @@
         "coreType": "phishing",
         "stats": {
             "agility": 3,
-            "defense": 3
+            "defense": 3,
+            "hpStealChance": 0.028,
+            "hpStealAmount": 0.004
         },
         "buyPrice": 450,
         "sellPrice": 150,
         "level": 2,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "phishing_core_gamma",
@@ -265,12 +269,14 @@
         "coreType": "phishing",
         "stats": {
             "agility": 5,
-            "defense": 5
+            "defense": 5,
+            "hpStealChance": 0.036,
+            "hpStealAmount": 0.004
         },
         "buyPrice": 600,
         "sellPrice": 200,
         "level": 3,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "phishing_core_delta",
@@ -278,12 +284,14 @@
         "coreType": "phishing",
         "stats": {
             "agility": 7,
-            "defense": 7
+            "defense": 7,
+            "hpStealChance": 0.044,
+            "hpStealAmount": 0.004
         },
         "buyPrice": 900,
         "sellPrice": 300,
         "level": 4,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "phishing_core_epsilon",
@@ -291,12 +299,14 @@
         "coreType": "phishing",
         "stats": {
             "agility": 9,
-            "defense": 9
+            "defense": 9,
+            "hpStealChance": 0.052,
+            "hpStealAmount": 0.004
         },
         "buyPrice": 1300,
         "sellPrice": 433,
         "level": 5,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "phishing_core_omega",
@@ -304,12 +314,14 @@
         "coreType": "phishing",
         "stats": {
             "agility": 12,
-            "defense": 11
+            "defense": 11,
+            "hpStealChance": 0.06,
+            "hpStealAmount": 0.004
         },
         "buyPrice": 1900,
         "sellPrice": 633,
         "level": 6,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "backdoor_core_alpha",
@@ -317,12 +329,14 @@
         "coreType": "backdoor",
         "stats": {
             "strength": 1,
-            "agility": 1
+            "agility": 1,
+            "tpStealChance": 0.03,
+            "tpStealAmount": 0.002
         },
         "buyPrice": 320,
         "sellPrice": 107,
         "level": 1,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "backdoor_core_beta",
@@ -330,12 +344,14 @@
         "coreType": "backdoor",
         "stats": {
             "strength": 3,
-            "agility": 3
+            "agility": 3,
+            "tpStealChance": 0.044,
+            "tpStealAmount": 0.002
         },
         "buyPrice": 480,
         "sellPrice": 160,
         "level": 2,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "backdoor_core_gamma",
@@ -343,12 +359,14 @@
         "coreType": "backdoor",
         "stats": {
             "strength": 5,
-            "agility": 5
+            "agility": 5,
+            "tpStealChance": 0.058,
+            "tpStealAmount": 0.002
         },
         "buyPrice": 640,
         "sellPrice": 213,
         "level": 3,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "backdoor_core_delta",
@@ -356,12 +374,14 @@
         "coreType": "backdoor",
         "stats": {
             "strength": 7,
-            "agility": 7
+            "agility": 7,
+            "tpStealChance": 0.072,
+            "tpStealAmount": 0.002
         },
         "buyPrice": 960,
         "sellPrice": 320,
         "level": 4,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "backdoor_core_epsilon",
@@ -369,12 +389,14 @@
         "coreType": "backdoor",
         "stats": {
             "strength": 9,
-            "agility": 9
+            "agility": 9,
+            "tpStealChance": 0.086,
+            "tpStealAmount": 0.002
         },
         "buyPrice": 1380,
         "sellPrice": 460,
         "level": 5,
-        "traderEligible": true
+        "traderEligible": false
     },
     {
         "id": "backdoor_core_omega",
@@ -382,11 +404,13 @@
         "coreType": "backdoor",
         "stats": {
             "strength": 12,
-            "agility": 12
+            "agility": 12,
+            "tpStealChance": 0.10,
+            "tpStealAmount": 0.002
         },
         "buyPrice": 1980,
         "sellPrice": 660,
         "level": 6,
-        "traderEligible": true
+        "traderEligible": false
     }
 ]

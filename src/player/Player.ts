@@ -1439,22 +1439,19 @@ export class Player extends BaseMesh {
         const equippedCore = this.inventory.find(item => item instanceof CoreItem && item.isEquipped) as CoreItem | undefined;
         if (!equippedCore) return;
 
-        const stealEffect = equippedCore.getStealEffect();
-        if (!stealEffect) return;
+        const stats = equippedCore.getEffectiveStats();
 
-        if (stealEffect.resource === 'hp') {
-            const stealChance = equippedCore.getHpStealChance();
-            if (Math.random() < stealChance) {
-                const stealAmount = Math.max(1, Math.floor(this.maxHp * stealEffect.amountPercent));
+        if (stats.hpStealAmount && stats.hpStealChance) {
+            if (Math.random() < stats.hpStealChance) {
+                const stealAmount = Math.max(1, Math.floor(this.maxHp * stats.hpStealAmount));
                 this.heal(stealAmount, 0, true);
             }
             return;
         }
 
-        if (stealEffect.resource === 'tp') {
-            const stealChance = equippedCore.getTpStealChance();
-            if (Math.random() < stealChance) {
-                const stealAmount = Math.max(1, Math.floor(this.maxTp * stealEffect.amountPercent));
+        if (stats.tpStealAmount && stats.tpStealChance) {
+            if (Math.random() < stats.tpStealChance) {
+                const stealAmount = Math.max(1, Math.floor(this.maxTp * stats.tpStealAmount));
                 this.heal(0, stealAmount, true);
             }
         }

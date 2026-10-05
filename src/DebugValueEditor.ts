@@ -500,11 +500,6 @@ export class DebugValueEditor {
             let statsStr = Object.entries(core.stats)
                 .map(([key, val]) => `${key}: ${(val as number) > 0 ? '+' : ''}${val}`)
                 .join(', ');
-            const stealEffect = core.getStealEffect();
-            if (stealEffect != undefined) {
-                const chance = core.getHpStealChance() || core.getTpStealChance();
-                statsStr += `, ${(chance * 100).toFixed(2)}% chance for ${(stealEffect.amountPercent * 100).toFixed(2)}% ${stealEffect.resource} on hit`;
-            }
             return {
                 value: core.id,
                 text: `${core.name} ${ItemLevelHelper.getLevelChar(core.level)} (${statsStr})`
