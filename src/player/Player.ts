@@ -29,23 +29,50 @@ import { SkillFactory } from './skills/SkillFactory';
 import { WeaponFactory } from '../items/weapons/WeaponFactory';
 import { ChipType } from '../items/chips/Chip';
 import { VectorExtensions } from '../extensions/VectorExtensions';
+import { sortInventory } from '../items/ItemSorter';
 
 export const PLAYER_COLLISION_GROUP = 2;
 
+export interface PlayerSaveStub {
+    level: number;
+    exp: number;
+    expRequired: number;
+    money: number;
+    xData: number;
+    boosterPacks: number;
+    statPointsAvailable: number;
+    strengthUpgrades: number;
+    defenseUpgrades: number;
+    hpUpgrades: number;
+    tpUpgrades: number;
+    agilityUpgrades: number;
+    luckUpgrades: number;
+    strengthPoints: number;
+    defensePoints: number;
+    agilityPoints: number;
+    luckPoints: number;
+    tech: Record<WeaponType, number>;
+    skillTech: Record<SkillTechType, number>;
+    position: { x: number; y: number; z: number };
+    inventory: Item[];
+}
+
 export class Player extends BaseMesh {
-    id: string;
-    body: CANNON.Body;
-    weapon: Weapon;
-    currentWeaponType: WeaponType = WeaponType.SWORD;
-    innerMesh?: THREE.Mesh;
-    position: THREE.Vector3;
+    readonly id: string;
+    readonly body: CANNON.Body;
+    readonly weapon: Weapon;
+    private _currentWeaponType: WeaponType = WeaponType.SWORD;
+    get currentWeaponType(): WeaponType { return this._currentWeaponType; }
+    private set currentWeaponType(value: WeaponType) { this._currentWeaponType = value; }
+    private innerMesh?: THREE.Mesh;
+    readonly position: THREE.Vector3;
     private rightHandBone?: THREE.Bone;
     private leftHandBone?: THREE.Bone;
     private offhandWeapon?: Weapon;
     private hasEquippedWeapon = false;
 
     /** Flat circular shadow below the player. Hidden in performance mode. */
-    public blobShadow!: BlobShadow;
+    private blobShadow!: BlobShadow;
 
     // Knockback strength
     private readonly KNOCKBACK_FORCE = 80;
@@ -104,56 +131,108 @@ export class Player extends BaseMesh {
     private baseLuck: number = 1;
 
     // Stats (with equipment modifiers applied)
-    level: number = 1;
-    exp: number = 0;
-    expRequired: number = this.EXP_BASE; // EXP needed for next level
-    maxHp: number = this.baseHp;
-    hp: number = this.baseHp;
-    maxTp: number = this.baseTp;
-    tp: number = this.baseTp;
-    strength: number = 1;
-    defense: number = 1;
-    agility: number = 1;
-    luck: number = 1;
-    invulnerableTimer: number = 0;
+    private _level: number = 1;
+    get level(): number { return this._level; }
+    private set level(value: number) { this._level = value; }
+    private _exp: number = 0;
+    get exp(): number { return this._exp; }
+    private set exp(value: number) { this._exp = value; }
+    private _expRequired: number = this.EXP_BASE;
+    get expRequired(): number { return this._expRequired; }
+    private set expRequired(value: number) { this._expRequired = value; }
+    private _maxHp: number = this.baseHp;
+    get maxHp(): number { return this._maxHp; }
+    private set maxHp(value: number) { this._maxHp = value; }
+    private _hp: number = this.baseHp;
+    get hp(): number { return this._hp; }
+    private set hp(value: number) { this._hp = value; }
+    private _maxTp: number = this.baseTp;
+    get maxTp(): number { return this._maxTp; }
+    private set maxTp(value: number) { this._maxTp = value; }
+    private _tp: number = this.baseTp;
+    get tp(): number { return this._tp; }
+    private set tp(value: number) { this._tp = value; }
+    private _strength: number = 1;
+    get strength(): number { return this._strength; }
+    private set strength(value: number) { this._strength = value; }
+    private _defense: number = 1;
+    get defense(): number { return this._defense; }
+    private set defense(value: number) { this._defense = value; }
+    private _agility: number = 1;
+    get agility(): number { return this._agility; }
+    private set agility(value: number) { this._agility = value; }
+    private _luck: number = 1;
+    get luck(): number { return this._luck; }
+    private set luck(value: number) { this._luck = value; }
+    private _invulnerableTimer: number = 0;
+    get invulnerableTimer(): number { return this._invulnerableTimer; }
+    private set invulnerableTimer(value: number) { this._invulnerableTimer = value; }
 
     // Stat points available for allocation
-    statPointsAvailable: number = 0;
+    private _statPointsAvailable: number = 0;
+    get statPointsAvailable(): number { return this._statPointsAvailable; }
+    private set statPointsAvailable(value: number) { this._statPointsAvailable = value; }
 
     // X-Data resource
-    xData: number = 0;
+    private _xData: number = 0;
+    get xData(): number { return this._xData; }
+    private set xData(value: number) { this._xData = value; }
 
     // Booster Packs
-    boosterPacks: number = 0;
+    private _boosterPacks: number = 0;
+    get boosterPacks(): number { return this._boosterPacks; }
+    private set boosterPacks(value: number) { this._boosterPacks = value; }
 
     // Weapon tech/proficiency stats (gained on hit)
-    public tech: Record<WeaponType, number> = {
+    private _tech: Record<WeaponType, number> = {
         [WeaponType.SWORD]: 0,
         [WeaponType.DUAL_BLADE]: 0,
         [WeaponType.LANCE]: 0,
         [WeaponType.HAMMER]: 0,
     };
+    get tech(): Readonly<Record<WeaponType, number>> { return this._tech; }
 
     // Skill tech points (gained on skill use/hit)
-    public skillTech: Record<SkillTechType, number> = {
+    private _skillTech: Record<SkillTechType, number> = {
         [SkillTechType.RECOVERY]: 0,
         [SkillTechType.BLAST]: 0,
         [SkillTechType.RANGED]: 0,
     };
+    get skillTech(): Readonly<Record<SkillTechType, number>> { return this._skillTech; }
 
     // Upgrade levels for X-Data upgrades
-    strengthUpgrades: number = 0;
-    defenseUpgrades: number = 0;
-    hpUpgrades: number = 0;
-    tpUpgrades: number = 0;
-    agilityUpgrades: number = 0;
-    luckUpgrades: number = 0;
+    private _strengthUpgrades: number = 0;
+    get strengthUpgrades(): number { return this._strengthUpgrades; }
+    private set strengthUpgrades(value: number) { this._strengthUpgrades = value; }
+    private _defenseUpgrades: number = 0;
+    get defenseUpgrades(): number { return this._defenseUpgrades; }
+    private set defenseUpgrades(value: number) { this._defenseUpgrades = value; }
+    private _hpUpgrades: number = 0;
+    get hpUpgrades(): number { return this._hpUpgrades; }
+    private set hpUpgrades(value: number) { this._hpUpgrades = value; }
+    private _tpUpgrades: number = 0;
+    get tpUpgrades(): number { return this._tpUpgrades; }
+    private set tpUpgrades(value: number) { this._tpUpgrades = value; }
+    private _agilityUpgrades: number = 0;
+    get agilityUpgrades(): number { return this._agilityUpgrades; }
+    private set agilityUpgrades(value: number) { this._agilityUpgrades = value; }
+    private _luckUpgrades: number = 0;
+    get luckUpgrades(): number { return this._luckUpgrades; }
+    private set luckUpgrades(value: number) { this._luckUpgrades = value; }
 
     // Stat points allocated from leveling up (separate from X-Data upgrades)
-    strengthPoints: number = 0;
-    defensePoints: number = 0;
-    agilityPoints: number = 0;
-    luckPoints: number = 0;
+    private _strengthPoints: number = 0;
+    get strengthPoints(): number { return this._strengthPoints; }
+    private set strengthPoints(value: number) { this._strengthPoints = value; }
+    private _defensePoints: number = 0;
+    get defensePoints(): number { return this._defensePoints; }
+    private set defensePoints(value: number) { this._defensePoints = value; }
+    private _agilityPoints: number = 0;
+    get agilityPoints(): number { return this._agilityPoints; }
+    private set agilityPoints(value: number) { this._agilityPoints = value; }
+    private _luckPoints: number = 0;
+    get luckPoints(): number { return this._luckPoints; }
+    private set luckPoints(value: number) { this._luckPoints = value; }
 
     // Charged Attack
     private isChargingAttack: boolean = false;
@@ -179,7 +258,9 @@ export class Player extends BaseMesh {
     onBreakableHit?: (breakable: Breakable) => void;
 
     // Block state
-    isBlocking: boolean = false;
+    private _isBlocking: boolean = false;
+    get isBlocking(): boolean { return this._isBlocking; }
+    private set isBlocking(value: boolean) { this._isBlocking = value; }
     private blockTimer: number = 0;
     private readonly BLOCK_DURATION: number = 0.5;
     private blockShield: BlockShield | null = null;
@@ -205,15 +286,20 @@ export class Player extends BaseMesh {
     private footstepTimer: number = 0;
 
     // Death state
-    isDead: boolean = false;
+    private _isDead: boolean = false;
+    get isDead(): boolean { return this._isDead; }
+    private set isDead(value: boolean) { this._isDead = value; }
     private deathCallback?: () => void;
 
     // Level up animation state
     private isLevelingUp: boolean = false;
 
     // Inventory
-    inventory: Item[] = [];
-    bits: number = 0; // Starting money
+    private _inventory: Item[] = [];
+    get inventory(): readonly Item[] { return this._inventory; }
+    private _bits: number = 0;
+    get bits(): number { return this._bits; }
+    private set bits(value: number) { this._bits = value; }
 
     // Animations
     private mixer!: THREE.AnimationMixer;
@@ -221,7 +307,8 @@ export class Player extends BaseMesh {
     private currentAction: THREE.AnimationAction | null = null;
 
     // Skills
-    public skills: Skill[] = [];
+    private _skills: Skill[] = [];
+    get skills(): readonly Skill[] { return this._skills; }
     private isUsingSkill: boolean = false;
     private skillAnimationTimer: number = 0;
     // Safety timeout: maximum time the skill animation lock may hold the player. The
@@ -354,7 +441,7 @@ export class Player extends BaseMesh {
         this.configureWeaponHitHandling(this.weapon);
         this.setWeapon(swordItem);
 
-        this.inventory.push(swordItem);
+        this._inventory.push(swordItem);
         // We manually equip it here to sync state without triggering full equip logic yet
         swordItem.isEquipped = true;
         this.currentWeaponType = swordItem.weaponType;
@@ -397,7 +484,7 @@ export class Player extends BaseMesh {
         physicsWorld.addBody(this.body);
 
         // Initialize skills
-        this.skills = [
+        this._skills = [
             this.skillFactory.createSkill(SkillTechType.RECOVERY, this.resetSkillUsage),
             this.skillFactory.createSkill(SkillTechType.RANGED, this.resetSkillUsage),
             this.skillFactory.createSkill(SkillTechType.BLAST, this.resetSkillUsage),
@@ -411,6 +498,102 @@ export class Player extends BaseMesh {
         this.isUsingSkill = false;
         this.skillAnimationTimer = 0;
     };
+
+    addBits(amount: number): void {
+        this.bits += amount;
+    }
+
+    spendBits(amount: number): boolean {
+        if (amount < 0 || this.bits < amount) return false;
+        this.bits -= amount;
+        return true;
+    }
+
+    spendTp(amount: number): boolean {
+        if (amount < 0 || this.tp < amount) return false;
+        this.tp -= amount;
+        return true;
+    }
+
+    consumeBoosterPack(): boolean {
+        if (this.boosterPacks <= 0) return false;
+        this.boosterPacks--;
+        return true;
+    }
+
+    addInventoryItem(item: Item): void {
+        this._inventory.push(item);
+    }
+
+    removeInventoryItem(item: Item): boolean {
+        const index = this._inventory.indexOf(item);
+        if (index < 0) return false;
+        this._inventory.splice(index, 1);
+        return true;
+    }
+
+    sortInventory(): void {
+        sortInventory(this._inventory);
+    }
+
+    createSaveStub(): PlayerSaveStub {
+        return {
+            level: this.level,
+            exp: this.exp,
+            expRequired: this.expRequired,
+            money: this.bits,
+            xData: this.xData,
+            boosterPacks: this.boosterPacks,
+            statPointsAvailable: this.statPointsAvailable,
+            strengthUpgrades: this.strengthUpgrades,
+            defenseUpgrades: this.defenseUpgrades,
+            hpUpgrades: this.hpUpgrades,
+            tpUpgrades: this.tpUpgrades,
+            agilityUpgrades: this.agilityUpgrades,
+            luckUpgrades: this.luckUpgrades,
+            strengthPoints: this.strengthPoints,
+            defensePoints: this.defensePoints,
+            agilityPoints: this.agilityPoints,
+            luckPoints: this.luckPoints,
+            tech: { ...this._tech },
+            skillTech: { ...this._skillTech },
+            position: {
+                x: this.body.position.x,
+                y: this.body.position.y,
+                z: this.body.position.z,
+            },
+            inventory: [...this._inventory],
+        };
+    }
+
+    restoreSaveStub(stub: PlayerSaveStub): void {
+        this.level = stub.level;
+        this.exp = stub.exp;
+        this.expRequired = stub.expRequired;
+        this.bits = stub.money;
+        this.xData = stub.xData;
+        this.boosterPacks = stub.boosterPacks;
+        this.statPointsAvailable = stub.statPointsAvailable;
+        this.strengthUpgrades = stub.strengthUpgrades;
+        this.defenseUpgrades = stub.defenseUpgrades;
+        this.hpUpgrades = stub.hpUpgrades;
+        this.tpUpgrades = stub.tpUpgrades;
+        this.agilityUpgrades = stub.agilityUpgrades;
+        this.luckUpgrades = stub.luckUpgrades;
+        this.strengthPoints = stub.strengthPoints;
+        this.defensePoints = stub.defensePoints;
+        this.agilityPoints = stub.agilityPoints;
+        this.luckPoints = stub.luckPoints;
+        this._tech = { ...this._tech, ...stub.tech };
+        this._skillTech = { ...this._skillTech, ...stub.skillTech };
+        this._inventory = [...stub.inventory];
+
+        const equippedWeapon = this._inventory.find(
+            (item): item is WeaponItem => item instanceof WeaponItem && item.isEquipped,
+        );
+        if (equippedWeapon) this.setWeapon(equippedWeapon);
+        this.recalculateStats(true);
+    }
 
     equipWeapon(itemId: string) {
         const weaponItem = this.inventory.find(item => item.id === itemId);
@@ -614,7 +797,7 @@ export class Player extends BaseMesh {
         console.log(`Tech increment check: current tech=${weaponTechPoints}, ${random} <= dropChance=${dropChance.toFixed(4)}`);
         if (random <= dropChance) {
             console.log(`Tech increased from ${weaponTechPoints} to ${weaponTechPoints + 1}`);
-            this.tech[key] += 1;
+            this._tech[key] += 1;
             this.floatingIndicatorManager.spawnTech(this.body.position);
         }
     }
@@ -630,7 +813,7 @@ export class Player extends BaseMesh {
 
         const dropChance = Math.min(0.3, 0.05 + Math.log10(skillTechPoints + 3) * 0.02 + 0.00012 * skillTechPoints);
         if (Math.random() <= dropChance) {
-            this.skillTech[type] = Math.min(skillTechPoints + 1, this.TECH_POINT_CAP);
+            this._skillTech[type] = Math.min(skillTechPoints + 1, this.TECH_POINT_CAP);
             this.floatingIndicatorManager.spawnTech(this.body.position);
         }
     }

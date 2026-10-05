@@ -647,10 +647,9 @@ export class CardManager {
 
     private handleSelect(player: Player) {
         if (this.viewMode === ViewMode.MENU) {
-            if (this.selectedMenuIndex === 0 && player.boosterPacks > 0) {
+            if (this.selectedMenuIndex === 0 && player.consumeBoosterPack()) {
                 this.audioManager.playUiOpen();
                 // Open pack - generate 4 random cards
-                player.boosterPacks -= 1;
                 this.revealedCards = [];
                 for (let i = 0; i < 4; i++) {
                     this.revealedCards.push(CardDefinitions.getRandomCard());

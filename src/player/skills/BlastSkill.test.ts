@@ -35,6 +35,11 @@ function makePlayer(tier = Tier.STABLE) {
     return {
         getSkillTier: vi.fn().mockReturnValue(tier),
         tp: 3000, maxTp: 3300,
+        spendTp(amount: number) {
+            if (this.tp < amount) return false;
+            this.tp -= amount;
+            return true;
+        },
         position: { x: 0, y: 0, z: 0 },
         body: { position: { x: 0, y: 0, z: 0 } },
         getCriticalChance: vi.fn().mockReturnValue(0),

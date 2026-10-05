@@ -72,6 +72,22 @@ function makePlayer(overrides: Record<string, unknown> = {}) {
         inventory: [] as Item[],
     });
     Object.assign(playerMock, overrides);
+    const state = playerMock as unknown as { bits: number; inventory: Item[] };
+    Object.defineProperty(playerMock, 'bits', { value: state.bits, writable: true, configurable: true });
+    Object.defineProperty(playerMock, 'inventory', { value: [...state.inventory], writable: true, configurable: true });
+    playerMock.spendBits.mockImplementation((amount) => {
+        if (amount < 0 || state.bits < amount) return false;
+        state.bits -= amount;
+        return true;
+    });
+    playerMock.addBits.mockImplementation((amount) => { state.bits += amount; });
+    playerMock.addInventoryItem.mockImplementation((item) => { state.inventory.push(item); });
+    playerMock.removeInventoryItem.mockImplementation((item) => {
+        const index = state.inventory.indexOf(item);
+        if (index < 0) return false;
+        state.inventory.splice(index, 1);
+        return true;
+    });
     return playerMock;
 }
 
@@ -205,7 +221,7 @@ describe('BaseTrader – sell transaction', () => {
 
     it('credits player bits with sell price', () => {
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory.push(item);
+        player.addInventoryItem(item);
 
         (trader as any).handleTransaction(player);
 
@@ -214,7 +230,7 @@ describe('BaseTrader – sell transaction', () => {
 
     it('removes the item from player inventory', () => {
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory.push(item);
+        player.addInventoryItem(item);
 
         (trader as any).handleTransaction(player);
 
@@ -223,7 +239,7 @@ describe('BaseTrader – sell transaction', () => {
 
     it('adds a clone of the sold item to trader inventory', () => {
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory.push(item);
+        player.addInventoryItem(item);
 
         (trader as any).handleTransaction(player);
 
@@ -235,7 +251,7 @@ describe('BaseTrader – sell transaction', () => {
         trader = makeTrader({ audioManager: audioManagerMock });
         trader.activePanel = TraderPanel.PLAYER;
         const item = makeEquippableItem('e2', 200, 80, true); // equipped
-        player.inventory.push(item);
+        player.addInventoryItem(item);
 
         (trader as any).handleTransaction(player);
 
@@ -246,7 +262,7 @@ describe('BaseTrader – sell transaction', () => {
 
     it('can sell an un-equipped equippable item', () => {
         const item = makeEquippableItem('e3', 200, 80, false); // not equipped
-        player.inventory.push(item);
+        player.addInventoryItem(item);
 
         (trader as any).handleTransaction(player);
 
@@ -259,7 +275,7 @@ describe('BaseTrader – sell transaction', () => {
         trader = makeTrader({ audioManager: audioManagerMock });
         trader.activePanel = TraderPanel.PLAYER;
         const item = makeSellableItem('s1', 100, 40);
-        player.inventory.push(item);
+        player.addInventoryItem(item);
 
         (trader as any).handleTransaction(player);
 
@@ -484,7 +500,7 @@ describe('BaseTrader.handleNavigation – up/down', () => {
             isNavigateUpPressed: vi.fn().mockReturnValue(true),
         });
         const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
-        (trader as any).inputDebounceState ={
+        (trader as any).inputDebounceState = {
             lastNavigateUpState: true,
             lastNavigateDownState: false,
             lastNavigateLeftState: false,
@@ -501,7 +517,7 @@ describe('BaseTrader.handleNavigation – up/down', () => {
         });
         const trader = makeTraderWithInventory({ inputManager: inputManagerMock });
         trader.selectedIndex = 0;
-        (trader as any).inputDebounceState ={
+        (trader as any).inputDebounceState = {
             lastNavigateUpState: false,
             lastNavigateDownState: true,
             lastNavigateLeftState: false,

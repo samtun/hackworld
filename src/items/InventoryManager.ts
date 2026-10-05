@@ -9,7 +9,6 @@ import { ItemDetailsPanel } from './ItemDetailsPanel';
 import { Item } from './Item';
 import { EquippableItem } from './EquippableItem';
 import { formatItemLabel } from './ItemDisplay';
-import { sortInventory } from './ItemSorter';
 import { WeaponType } from './weapons/WeaponType';
 import { WeaponItem } from './weapons/WeaponItem';
 import { SkillTechType } from '../player/skills/SkillType';
@@ -366,7 +365,7 @@ export class InventoryManager {
         if (!this.isVisible) return;
 
         if (this.pendingSort) {
-            sortInventory(player.inventory);
+            player.sortInventory();
             this.pendingSort = false;
         }
 

@@ -83,7 +83,7 @@ export abstract class BaseTrader {
 
     // Optional: filter player's inventory to show in player panel
     protected filterPlayerInventory(player: Player): Item[] {
-        return player.inventory;
+        return [...player.inventory];
     }
 
     /**
@@ -297,7 +297,7 @@ export abstract class BaseTrader {
         if (!this.isVisible) return;
 
         if (this.pendingSort) {
-            sortInventory(player.inventory);
+            player.sortInventory();
             this.pendingSort = false;
         }
 
@@ -414,14 +414,13 @@ export abstract class BaseTrader {
             const item = this.traderInventory[this.selectedIndex];
             if (item && item.buyPrice !== undefined) {
                 const effectivePrice = this.getEffectiveBuyPrice(item, player);
-                if (player.bits >= effectivePrice) {
-                    player.bits -= effectivePrice;
+                if (player.spendBits(effectivePrice)) {
                     // Use crypto.randomUUID() for better uniqueness than Date.now()
                     const clone: Item = item.clone();
                     if (clone instanceof EquippableItem) {
                         clone.isEquipped = false;
                     }
-                    player.inventory.push(clone);
+                    player.addInventoryItem(clone);
                     this.traderInventory.splice(this.selectedIndex, 1);
                     if (this.selectedIndex >= this.traderInventory.length && this.selectedIndex > 0) this.selectedIndex--;
                     this.needsRender = true;
@@ -441,12 +440,11 @@ export abstract class BaseTrader {
                     this.audioManager.playInsufficient();
                     return;
                 }
-                player.bits += this.getEffectiveSellPrice(item, player);
+                player.addBits(this.getEffectiveSellPrice(item, player));
                 // Use crypto.randomUUID() for better uniqueness than Date.now()
                 const sold = item.clone();
                 this.traderInventory.push(sold as Item);
-                const idx = player.inventory.indexOf(item);
-                if (idx !== -1) player.inventory.splice(idx, 1);
+                player.removeInventoryItem(item);
                 if (this.selectedIndex >= playerItems.length - 1 && this.selectedIndex > 0) this.selectedIndex--;
                 this.needsRender = true;
                 this.audioManager.playSell();

@@ -38,10 +38,16 @@ function makeCardManager(overrides: CardManagerTestOverrides = {}): CardManager 
 }
 
 function makePlayer(overrides: Record<string, unknown> = {}): Player {
-    return {
+    const player = {
         boosterPacks: 0,
         ...overrides,
-    } as unknown as Player;
+        consumeBoosterPack() {
+            if (this.boosterPacks <= 0) return false;
+            this.boosterPacks--;
+            return true;
+        },
+    };
+    return player as unknown as Player;
 }
 
 describe('CardManager', () => {

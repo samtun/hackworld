@@ -34,6 +34,11 @@ function makePlayer(tier = Tier.STABLE) {
     return {
         id: 'p1',
         tp: 2000, maxTp: 2000,
+        spendTp: vi.fn(function (this: { tp: number }, amount: number) {
+            if (this.tp < amount) return false;
+            this.tp -= amount;
+            return true;
+        }),
         hp: 50, maxHp: 100,
         skills: [],
         getSkillTier: vi.fn().mockReturnValue(tier),
@@ -154,7 +159,7 @@ describe('RangedSkill', () => {
 
         it('sets isLeet to true at LEET tier', () => {
             const player = makePlayer(Tier.LEET);
-            player.tp = 5000;
+            Reflect.set(player, 'tp', 5000);
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [], addBody: vi.fn(), removeBody: vi.fn() } as any;
             skill.use(player, scene, world);
@@ -183,7 +188,7 @@ describe('RangedSkill', () => {
     describe('update()', () => {
         it('advances effectTimer while executing', () => {
             const player = makePlayer(Tier.STABLE);
-            player.tp = 2000;
+            Reflect.set(player, 'tp', 2000);
             (skill as any).cooldownTimer = 0;
             const scene = { add: vi.fn(), remove: vi.fn() } as any;
             const world = { bodies: [], addBody: vi.fn(), removeBody: vi.fn() } as any;

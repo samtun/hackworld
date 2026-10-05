@@ -46,7 +46,7 @@ export class CoreDropStrategy implements ItemDropStrategy {
             return;
         }
 
-        player.inventory.push(coreItem);
+        player.addInventoryItem(coreItem);
         console.log(`Picked up core ${coreItem})`);
     }
 }

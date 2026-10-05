@@ -13,6 +13,15 @@ import { CardCollection } from './items/cards/CardCollection';
 import { CardManager } from './items/cards/CardManager';
 import { UIManager } from './ui/UIManager';
 
+interface MutablePlayerDebugState {
+    hp: number;
+    tp: number;
+    xData: number;
+    bits: number;
+    tech: Record<WeaponType, number>;
+    skillTech: Record<SkillTechType, number>;
+}
+
 /**
  * Debug Value Editor - Development tool for live editing player stats and inventory
  * Only available in dev builds (import.meta.env.DEV)
@@ -481,7 +490,7 @@ export class DebugValueEditor {
             if (weaponId && this.player) {
                 const weapon = this.weaponRepository.getWeaponById(weaponId);
                 if (weapon) {
-                    this.player.inventory.push(weapon);
+                    this.player.addInventoryItem(weapon);
                     console.log(`Added weapon: ${weapon.name} (Level ${weapon.level})`);
 
                     // Reset selection
@@ -517,7 +526,7 @@ export class DebugValueEditor {
             if (coreId && this.player) {
                 const core = this.coreRepository.getCoreById(coreId);
                 if (core) {
-                    this.player.inventory.push(core);
+                    this.player.addInventoryItem(core);
                     console.log(`Added core: ${core.name} (Level ${core.level})`);
 
                     // Reset selection
@@ -571,7 +580,7 @@ export class DebugValueEditor {
             if (chipId && this.player) {
                 const chip = this.chipRepository.getChipById(chipId);
                 if (chip) {
-                    this.player.inventory.push(chip);
+                    this.player.addInventoryItem(chip);
                     console.log(`Added chip: ${chip.name} (Level ${chip.level})`);
 
                     // Reset selection
@@ -735,24 +744,25 @@ export class DebugValueEditor {
         this.updateInputValue('rangedTech', player.skillTech[SkillTechType.RANGED] || 0);
 
         // Apply changes from inputs to player (if user has modified them)
-        this.applyInputValue('hp', (val) => { player.hp = Math.max(0, Math.min(val, player.maxHp)); });
-        this.applyInputValue('tp', (val) => { player.tp = Math.max(0, Math.min(val, player.maxTp)); });
-        this.applyInputValue('xData', (val) => { player.xData = Math.max(0, val); });
-        this.applyInputValue('money', (val) => { player.bits = Math.max(0, val); });
+        const debugState = player as unknown as MutablePlayerDebugState;
+        this.applyInputValue('hp', (val) => { debugState.hp = Math.max(0, Math.min(val, player.maxHp)); });
+        this.applyInputValue('tp', (val) => { debugState.tp = Math.max(0, Math.min(val, player.maxTp)); });
+        this.applyInputValue('xData', (val) => { debugState.xData = Math.max(0, val); });
+        this.applyInputValue('money', (val) => { debugState.bits = Math.max(0, val); });
 
         // Apply game progress changes
         this.applyInputValue('gameProgress', (val) => {
             this.gameProgressManager.progress = Math.max(0, val);
         });
 
-        this.applyInputValue('swordTech', (val) => { player.tech[WeaponType.SWORD] = Math.max(0, val); });
-        this.applyInputValue('doubleSwordTech', (val) => { player.tech[WeaponType.DUAL_BLADE] = Math.max(0, val); });
-        this.applyInputValue('lanceTech', (val) => { player.tech[WeaponType.LANCE] = Math.max(0, val); });
-        this.applyInputValue('hammerTech', (val) => { player.tech[WeaponType.HAMMER] = Math.max(0, val); });
+        this.applyInputValue('swordTech', (val) => { debugState.tech[WeaponType.SWORD] = Math.max(0, val); });
+        this.applyInputValue('doubleSwordTech', (val) => { debugState.tech[WeaponType.DUAL_BLADE] = Math.max(0, val); });
+        this.applyInputValue('lanceTech', (val) => { debugState.tech[WeaponType.LANCE] = Math.max(0, val); });
+        this.applyInputValue('hammerTech', (val) => { debugState.tech[WeaponType.HAMMER] = Math.max(0, val); });
 
-        this.applyInputValue('recoveryTech', (val) => { player.skillTech[SkillTechType.RECOVERY] = Math.max(0, Math.min(9999, val)); });
-        this.applyInputValue('blastTech', (val) => { player.skillTech[SkillTechType.BLAST] = Math.max(0, Math.min(9999, val)); });
-        this.applyInputValue('rangedTech', (val) => { player.skillTech[SkillTechType.RANGED] = Math.max(0, Math.min(9999, val)); });
+        this.applyInputValue('recoveryTech', (val) => { debugState.skillTech[SkillTechType.RECOVERY] = Math.max(0, Math.min(9999, val)); });
+        this.applyInputValue('blastTech', (val) => { debugState.skillTech[SkillTechType.BLAST] = Math.max(0, Math.min(9999, val)); });
+        this.applyInputValue('rangedTech', (val) => { debugState.skillTech[SkillTechType.RANGED] = Math.max(0, Math.min(9999, val)); });
     }
 
     private updateInputValue(key: string, value: number): void {

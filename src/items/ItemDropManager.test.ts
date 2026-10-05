@@ -187,6 +187,8 @@ function makePlayerStub(overrides: Record<string, unknown> = {}) {
     };
     stub.collectXData = vi.fn((n: number) => { stub.xData += n; });
     stub.collectBoosterPack = vi.fn(() => { stub.boosterPacks += 1; });
+    stub.addBits = vi.fn((n: number) => { stub.bits += n; });
+    stub.addInventoryItem = vi.fn((item: unknown) => { stub.inventory.push(item); });
     return stub as any;
 }
 
