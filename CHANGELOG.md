@@ -1,3 +1,10 @@
+# [4.5.0](https://github.com/samtun/hackworld/compare/v4.4.0...v4.5.0) (2026-10-05)
+
+
+### Features
+
+* add weapon tier glow to equipped weapon ([1b5c7a2](https://github.com/samtun/hackworld/commit/1b5c7a2551aea9c993b9451dc68765d3eaeb9729))
+
 # [4.4.0](https://github.com/samtun/hackworld/compare/v4.3.1...v4.4.0) (2026-10-02)
 
 
