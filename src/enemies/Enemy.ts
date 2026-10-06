@@ -1450,7 +1450,7 @@ export class Enemy extends BaseMesh {
         // Immobilize enemy for block duration
         this.stunTimer = this.BLOCK_DURATION;
         // TODO: fade to a dedicated "Blocking" animation when available
-        this.fadeToAction(EnemyActionType.Idle, 0.1);
+        this.fadeToAction(EnemyActionType.Block, 0.1);
 
         if (!this.blockShield) {
             this.blockShield = new BlockShield();
