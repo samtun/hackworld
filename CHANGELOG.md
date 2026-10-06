@@ -1,3 +1,10 @@
+# [4.8.0](https://github.com/samtun/hackworld/compare/v4.7.0...v4.8.0) (2026-10-06)
+
+
+### Features
+
+* add block animation to enemy type (only code, visual is still tbd) ([7acb1e4](https://github.com/samtun/hackworld/commit/7acb1e487fb731577a6ba35815667ed16d89544e))
+
 # [4.7.0](https://github.com/samtun/hackworld/compare/v4.6.0...v4.7.0) (2026-10-06)
 
 
