@@ -1,3 +1,16 @@
+# [4.7.0](https://github.com/samtun/hackworld/compare/v4.6.0...v4.7.0) (2026-10-06)
+
+
+### Bug Fixes
+
+* revert to creating a copy of core stats ([7e82b0b](https://github.com/samtun/hackworld/commit/7e82b0b67985a587bcafec0b890a825a544f981b))
+
+
+### Features
+
+* enhance item details to include HP and TP steal stats with percentage formatting ([6d334b6](https://github.com/samtun/hackworld/commit/6d334b6ce43c63de0275e1b71edb95c5994be33c))
+* introduce GeneratedStage as a base class for dungeon stages and refactor load logic ([af11f5c](https://github.com/samtun/hackworld/commit/af11f5cf9a910005303fe4a119f29019e704c429))
+
 # [4.6.0](https://github.com/samtun/hackworld/compare/v4.5.0...v4.6.0) (2026-10-05)
 
 
