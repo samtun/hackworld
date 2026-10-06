@@ -10,15 +10,15 @@ function makeWeapon(level = 1, damage = 10, weaponType = WeaponType.SWORD): Weap
 
 function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
     const player = Object.create(Player.prototype) as Player;
+    const { inventory = [], ...playerOverrides } = overrides;
     Object.assign(player, {
         level: 1,
-        inventory: [] as WeaponItem[],
-        tech: {} as Record<WeaponType, number>,
         getTechForWeapon: vi.fn().mockReturnValue(0),
         setWeapon: vi.fn(),
         recalculateStats: vi.fn(),
-        ...overrides,
+        ...playerOverrides,
     });
+    Reflect.set(player, '_inventory', inventory);
     return player;
 }
 

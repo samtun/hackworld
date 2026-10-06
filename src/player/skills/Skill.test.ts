@@ -31,8 +31,15 @@ class TestSkill extends Skill {
     }
 }
 
-function makePlayer(tp: number, maxTp = 100): Partial<Player> {
-    return { tp, maxTp, hp: 100, maxHp: 100, collectionBonusSkillCooldownReduction: 0 } as Partial<Player>;
+function makePlayer(tp: number, maxTp = 100) {
+    return {
+        tp, maxTp, hp: 100, maxHp: 100, collectionBonusSkillCooldownReduction: 0,
+        spendTp(amount: number) {
+            if (this.tp < amount) return false;
+            this.tp -= amount;
+            return true;
+        },
+    };
 }
 
 function makeTestSkillWithOverrides(audioManager = mockDeep<AudioManager>(), uiManager = mockDeep<UIManager>()): TestSkill {

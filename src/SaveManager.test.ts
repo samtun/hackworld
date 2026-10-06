@@ -126,6 +126,39 @@ function makePlayerStub(overrides: Record<string, unknown> = {}) {
         enumerable: true
     });
 
+    playerMock.createSaveStub.mockImplementation(() => ({
+        level: playerMock.level,
+        exp: playerMock.exp,
+        expRequired: playerMock.expRequired,
+        money: playerMock.bits,
+        xData: playerMock.xData,
+        boosterPacks: playerMock.boosterPacks,
+        statPointsAvailable: playerMock.statPointsAvailable,
+        strengthUpgrades: playerMock.strengthUpgrades,
+        defenseUpgrades: playerMock.defenseUpgrades,
+        hpUpgrades: playerMock.hpUpgrades,
+        tpUpgrades: playerMock.tpUpgrades,
+        agilityUpgrades: playerMock.agilityUpgrades,
+        luckUpgrades: playerMock.luckUpgrades,
+        strengthPoints: playerMock.strengthPoints,
+        defensePoints: playerMock.defensePoints,
+        agilityPoints: playerMock.agilityPoints,
+        luckPoints: playerMock.luckPoints,
+        tech: { ...techData },
+        skillTech: { ...skillTechData },
+        position: { ...playerMock.body.position },
+        inventory: [...playerMock.inventory],
+    }));
+    playerMock.restoreSaveStub.mockImplementation((stub) => {
+        const { money, ...restoredPlayer } = stub;
+        Object.assign(playerMock, { ...restoredPlayer, bits: money });
+        Object.assign(techData, stub.tech);
+        Object.assign(skillTechData, stub.skillTech);
+        const equippedWeapon = stub.inventory.find(item => item instanceof WeaponItem && item.isEquipped);
+        if (equippedWeapon instanceof WeaponItem) playerMock.setWeapon(equippedWeapon);
+        playerMock.recalculateStats(true);
+    });
+
     return playerMock;
 }
 
@@ -394,9 +427,9 @@ describe('SaveManager – loadSaveData', () => {
         mgr.saveToLocalStorage();
 
         // Reset player to different values
-        player.level = 1;
-        player.bits = 0;
-        player.xData = 0;
+        Reflect.set(player, 'level', 1);
+        Reflect.set(player, 'bits', 0);
+        Reflect.set(player, 'xData', 0);
 
         // Load
         mgr.loadFromLocalStorage();
@@ -739,7 +772,7 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
         expect(player.inventory).toHaveLength(1);
     });
 
-    it('calls player.setWeapon for an equipped weapon', () => {
+    it('passes the equipped weapon to player restoration', () => {
         const clonedItem = {
             id: 'w2', isEquipped: false, tier: { name: 'Stable' },
         };
@@ -767,7 +800,9 @@ describe('SaveManager – loadSaveData() with inventory items', () => {
         }]);
 
         (mgr as any).loadSaveData(data);
-        expect(player.setWeapon).toHaveBeenCalledWith(clonedItem);
+        expect(player.restoreSaveStub).toHaveBeenCalledWith(expect.objectContaining({
+            inventory: [expect.objectContaining({ isEquipped: true })],
+        }));
     });
 
     it('throws when a WeaponItem entry is missing required save fields', () => {

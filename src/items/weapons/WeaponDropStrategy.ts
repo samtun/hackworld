@@ -143,7 +143,7 @@ export class WeaponDropStrategy implements ItemDropStrategy {
         const bonusMultiplier = drop.damage / baseWeapon.damage;
         const weaponItem = this.weaponBonusCalculator.applyWeaponBonus(baseWeapon, bonusMultiplier);
 
-        player.inventory.push(weaponItem);
+        player.addInventoryItem(weaponItem);
         console.log(`Picked up ${weaponItem.name} with ${weaponItem.damage} damage`);
     }
 }

@@ -9,10 +9,11 @@ import { ChipRepository } from './items/chips/ChipRepository';
 import { ChipItem } from './items/chips/ChipItem';
 import { NpcRegistry } from './npcs/NpcRegistry';
 import { GameProgressManager } from './GameProgressManager';
-import { Player } from './player/Player';
+import { Player, PlayerSaveStub } from './player/Player';
 import { TierManager } from './items/TierManager';
 import { singleton } from 'tsyringe';
 import { deserializeInventoryEntry, InventoryItemSaveData } from './items/ItemSaveData';
+import { Item } from './items/Item';
 
 /**
  * Interface representing the complete save data structure
@@ -258,35 +259,15 @@ export class SaveManager {
     }
 
     private createSaveData(player: Player): SaveData {
+        const playerStub = player.createSaveStub();
         return {
             version: __APP_VERSION__,
             timestamp: new Date().toISOString(),
             playtime: this.playTimeSeconds,
             gameProgress: this.gameProgressManager.progress,
             player: {
-                level: player.level,
-                exp: player.exp,
-                expRequired: player.expRequired,
-                money: player.bits,
-                xData: player.xData,
-                boosterPacks: player.boosterPacks,
-                statPointsAvailable: player.statPointsAvailable,
-                strengthUpgrades: player.strengthUpgrades,
-                defenseUpgrades: player.defenseUpgrades,
-                hpUpgrades: player.hpUpgrades,
-                tpUpgrades: player.tpUpgrades,
-                agilityUpgrades: player.agilityUpgrades,
-                luckUpgrades: player.luckUpgrades,
-                strengthPoints: player.strengthPoints,
-                defensePoints: player.defensePoints,
-                agilityPoints: player.agilityPoints,
-                luckPoints: player.luckPoints,
-                position: {
-                    x: player.body.position.x,
-                    y: player.body.position.y,
-                    z: player.body.position.z
-                },
-                inventory: player.inventory.map(i => {
+                ...playerStub,
+                inventory: playerStub.inventory.map(i => {
                     if (i instanceof WeaponItem) {
                         return i.toSaveData();
                     }
@@ -301,8 +282,8 @@ export class SaveManager {
 
                     throw new Error(`Unsupported inventory item type for save: ${i.constructor?.name ?? typeof i}`);
                 }),
-                tech: structuredClone(player.tech),
-                skillTech: structuredClone(player.skillTech)
+                tech: structuredClone(playerStub.tech),
+                skillTech: structuredClone(playerStub.skillTech)
             },
             cardCollection: this.cardCollection.getSaveData(),
             npcDialogueShown: this.npcRegistry.getShownDialogueList(),
@@ -464,41 +445,7 @@ export class SaveManager {
         // Load playtime
         this.playTimeSeconds = saveData.playtime || 0;
 
-        // Restore player stats
-        player.level = saveData.player.level;
-        player.exp = saveData.player.exp;
-        player.expRequired = saveData.player.expRequired;
-        player.bits = saveData.player.money;
-        player.xData = saveData.player.xData;
-        player.boosterPacks = saveData.player.boosterPacks;
-        player.statPointsAvailable = saveData.player.statPointsAvailable;
-
-        // Restore upgrades (from X-Data)
-        player.strengthUpgrades = saveData.player.strengthUpgrades;
-        player.defenseUpgrades = saveData.player.defenseUpgrades;
-        player.hpUpgrades = saveData.player.hpUpgrades;
-        player.tpUpgrades = saveData.player.tpUpgrades;
-        player.agilityUpgrades = saveData.player.agilityUpgrades;
-        player.luckUpgrades = saveData.player.luckUpgrades;
-
-        // Restore stat points (from leveling up)
-        player.strengthPoints = saveData.player.strengthPoints;
-        player.defensePoints = saveData.player.defensePoints;
-        player.agilityPoints = saveData.player.agilityPoints;
-        player.luckPoints = saveData.player.luckPoints;
-
-        // Restore weapon tech
-        if (saveData.player.tech) {
-            player.tech = structuredClone(saveData.player.tech);
-        }
-
-        // Restore skill tech
-        if (saveData.player.skillTech) {
-            player.skillTech = structuredClone(saveData.player.skillTech);
-        }
-
-        // Restore inventory
-        player.inventory = [];
+        const restoredInventory: Item[] = [];
 
         for (const rawItemData of saveData.player.inventory) {
             const itemData = deserializeInventoryEntry(rawItemData);
@@ -520,10 +467,9 @@ export class SaveManager {
 
                 if (weaponData.isEquipped) {
                     weaponItem.isEquipped = true;
-                    player.setWeapon(weaponItem);
                 }
 
-                player.inventory.push(weaponItem);
+                restoredInventory.push(weaponItem);
             } else if (itemData.kind === 'CoreItem') {
                 const coreData = itemData;
                 const coreItem = this.coreRepository.getCoreById(coreData.id);
@@ -531,7 +477,7 @@ export class SaveManager {
                     if (coreData.isEquipped) {
                         coreItem.isEquipped = true;
                     }
-                    player.inventory.push(coreItem);
+                    restoredInventory.push(coreItem);
                 }
             } else if (itemData.kind === 'ChipItem') {
                 const chipData = itemData;
@@ -540,13 +486,35 @@ export class SaveManager {
                     if (chipData.isEquipped) {
                         chipItem.isEquipped = true;
                     }
-                    player.inventory.push(chipItem);
+                    restoredInventory.push(chipItem);
                 }
             }
         }
 
-        // Recalculate stats based on equipped items
-        player.recalculateStats(true);
+        const playerData = saveData.player;
+        player.restoreSaveStub({
+            level: playerData.level,
+            exp: playerData.exp,
+            expRequired: playerData.expRequired,
+            money: playerData.money,
+            xData: playerData.xData,
+            boosterPacks: playerData.boosterPacks,
+            statPointsAvailable: playerData.statPointsAvailable,
+            strengthUpgrades: playerData.strengthUpgrades,
+            defenseUpgrades: playerData.defenseUpgrades,
+            hpUpgrades: playerData.hpUpgrades,
+            tpUpgrades: playerData.tpUpgrades,
+            agilityUpgrades: playerData.agilityUpgrades,
+            luckUpgrades: playerData.luckUpgrades,
+            strengthPoints: playerData.strengthPoints,
+            defensePoints: playerData.defensePoints,
+            agilityPoints: playerData.agilityPoints,
+            luckPoints: playerData.luckPoints,
+            tech: structuredClone(playerData.tech) as PlayerSaveStub['tech'],
+            skillTech: structuredClone(playerData.skillTech) as PlayerSaveStub['skillTech'],
+            position: playerData.position,
+            inventory: restoredInventory,
+        });
 
         // Restore playtime
         this.playTimeSeconds = saveData.playtime;

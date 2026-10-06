@@ -46,7 +46,7 @@ export class ChipDropStrategy implements ItemDropStrategy {
             return;
         }
 
-        player.inventory.push(chipItem);
+        player.addInventoryItem(chipItem);
         console.log(`Picked up chip ${chipItem}`);
     }
 }

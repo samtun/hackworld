@@ -9,12 +9,13 @@ function makeCore(level = 1): CoreItem {
 
 function makePlayer(overrides: Partial<Record<string, unknown>> = {}): Player {
     const player = Object.create(Player.prototype) as Player;
+    const { inventory = [], ...playerOverrides } = overrides;
     Object.assign(player, {
         level: 1,
-        inventory: [] as CoreItem[],
         recalculateStats: vi.fn(),
-        ...overrides,
+        ...playerOverrides,
     });
+    Reflect.set(player, '_inventory', inventory);
     return player;
 }
 

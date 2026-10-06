@@ -37,9 +37,23 @@ function makeSpawningStage() {
         { id: 1, centerX: 0, centerZ: 0, width: 10, depth: 10 },
     ];
 
-    // Stub spawnEnemy so it pushes a fake enemy object with the same fields Enemy has
+    // Stub spawnEnemy with the room-configuration methods used by real enemies.
     stage.spawnEnemy = vi.fn((pos: Vec3Like) => {
-        stage.enemies.push({ aggroEnabled: false, spawnInactiveTimer: 0, navGrid: null, spawnedAt: pos });
+        const enemy = {
+            aggroEnabled: false,
+            spawnInactiveTimer: 0,
+            navGrid: null as unknown,
+            breakableBarrels: [] as unknown[],
+            spawnedAt: pos,
+            configureForRoom: vi.fn(function (this: any, navGrid: unknown, breakableBarrels: unknown[], duration: number) {
+                this.aggroEnabled = true;
+                this.spawnInactiveTimer = duration;
+                this.navGrid = navGrid;
+                this.breakableBarrels = breakableBarrels;
+            }),
+            enableAggro: vi.fn(function (this: any) { this.aggroEnabled = true; }),
+        };
+        stage.enemies.push(enemy);
     });
     stage.spawnBoss = vi.fn();
     stage.getEnemyConfig = vi.fn().mockReturnValue({});
@@ -226,6 +240,7 @@ describe('BaseStage lazy enemy spawning', () => {
         expect(stage.enemies).toHaveLength(1);
         expect(stage.enemies[0].aggroEnabled).toBe(true);
         expect(stage.enemies[0].spawnInactiveTimer).toBe(0.5);
+        expect(stage.enemies[0].configureForRoom).toHaveBeenCalledWith(stage.navGrid, stage.breakableBarrels, 0.5);
         expect(stage.roomPendingSpawnData.size).toBe(0);
     });
 

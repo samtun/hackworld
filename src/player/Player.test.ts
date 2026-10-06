@@ -30,6 +30,7 @@ import { BlastSkill } from './skills/BlastSkill';
 import { ChipType } from '../items/chips/Chip';
 import { CoreType } from '../items/cores/Core';
 import { VectorExtensions } from '../extensions/VectorExtensions';
+import { Item } from '../items/Item';
 
 const physicsBodyMetadataManager = new PhysicsBodyMetadataManager();
 
@@ -196,6 +197,50 @@ function makePlayer(overrides: PlayerDependencyOverrides = {}): Player {
     return player;
 }
 
+function setPlayerState(player: Player, key: string, value: unknown): void {
+    Reflect.set(player, key, value);
+}
+
+function replacePlayerInventoryForTest(player: Player, items: Item[]): void {
+    Reflect.set(player, '_inventory', items);
+}
+
+describe('Player save stub', () => {
+    it('copies progression, tech, and inventory for saving', () => {
+        const player = makePlayer();
+        setPlayerState(player, 'level', 12);
+        setPlayerState(player, 'bits', 345);
+
+        const stub = player.createSaveStub();
+        stub.tech[WeaponType.SWORD] = 50;
+        stub.inventory.pop();
+
+        expect(stub.level).toBe(12);
+        expect(stub.money).toBe(345);
+        expect(player.getTechForWeapon(WeaponType.SWORD)).toBe(0);
+        expect(player.inventory).toHaveLength(1);
+    });
+
+    it('restores progression and inventory through the DTO boundary', () => {
+        const player = makePlayer();
+        const stub = {
+            ...player.createSaveStub(),
+            level: 5,
+            exp: 40,
+            expRequired: 500,
+            money: 200,
+            inventory: [],
+        };
+
+        player.restoreSaveStub(stub);
+
+        expect(player.level).toBe(5);
+        expect(player.exp).toBe(40);
+        expect(player.bits).toBe(200);
+        expect(player.inventory).toHaveLength(0);
+    });
+});
+
 // ─── recalculateStats ──────────────────────────────────────────────────────────
 
 describe('Player.recalculateStats', () => {
@@ -257,16 +302,16 @@ describe('Player.recalculateStats', () => {
     });
 
     it('fully heals the player when called with healing flag', () => {
-        player.hp = 1;
-        player.tp = 1;
+        setPlayerState(player, 'hp', 1);
+        setPlayerState(player, 'tp', 1);
         player.recalculateStats(true);
         expect(player.hp).toBe(player.maxHp);
         expect(player.tp).toBe(player.maxTp);
     });
 
     it('does not heal the player when called without healing flag', () => {
-        player.hp = 1;
-        player.tp = 1;
+        setPlayerState(player, 'hp', 1);
+        setPlayerState(player, 'tp', 1);
         player.recalculateStats(false);
         expect(player.hp).toBe(1);
         expect(player.tp).toBe(1);
@@ -293,8 +338,8 @@ describe('Player.recalculateStats', () => {
     });
 
     it('clamps current HP to new maxHp if it exceeds it', () => {
-        player.hp = 5000;
-        player.maxHp = 5000;
+        setPlayerState(player, 'hp', 5000);
+        setPlayerState(player, 'maxHp', 5000);
         // After recalculate at level 1, maxHp becomes 1700 so hp should clamp
         player.recalculateStats();
         expect(player.hp).toBe(1700);
@@ -304,7 +349,7 @@ describe('Player.recalculateStats', () => {
         const core = new CoreItem('c1', 'Test Core', 100, 50,
             { strength: 10, defense: 5 }, 1, CoreType.HERALD);
         core.isEquipped = true;
-        player.inventory = [core];
+        replacePlayerInventoryForTest(player, [core]);
         player.recalculateStats();
         expect(player.strength).toBe(11); // 1 base + 10 from core
         expect(player.defense).toBe(6);   // 1 base + 5 from core
@@ -314,7 +359,7 @@ describe('Player.recalculateStats', () => {
         const core = new CoreItem('c1', 'Swift Core', 150, 50,
             { agility: 22, defense: -11 }, 3, CoreType.SWIFT);
         core.isEquipped = true;
-        player.inventory = [core];
+        replacePlayerInventoryForTest(player, [core]);
         player.recalculateStats();
         expect(player.agility).toBe(23); // 1 base + 22 from core
     });
@@ -322,7 +367,7 @@ describe('Player.recalculateStats', () => {
     it('applies equipped chip luck multiplier', () => {
         const chip = new ChipItem('ch1', 'Datamine', 150, 50, 'datamine' as any, { luckMultiplier: 1.20 }, 1);
         chip.isEquipped = true;
-        player.inventory = [chip];
+        replacePlayerInventoryForTest(player, [chip]);
         player.recalculateStats();
         expect(player.luck).toBe(1); // floor(1 * 1.20) = 1 (low base luck)
     });
@@ -331,7 +376,7 @@ describe('Player.recalculateStats', () => {
         (player as any).luckPoints = 99;
         const chip = new ChipItem('ch1', 'Datamine', 150, 50, 'datamine' as any, { luckMultiplier: 1.10 }, 1);
         chip.isEquipped = true;
-        player.inventory = [chip];
+        replacePlayerInventoryForTest(player, [chip]);
         player.recalculateStats();
         expect(player.luck).toBe(110); // floor(100 * 1.10) = 110
     });
@@ -349,21 +394,21 @@ describe('Player.getCriticalChance', () => {
     it('returns the correct value at agility 100', () => {
         // log10(0.0035 * 100 + 20) - 1.29 + 0.00001 * 100 ≈ 0.019564414
         const player = makePlayer();
-        player.agility = 100;
+        setPlayerState(player, 'agility', 100);
         expect(player.getCriticalChance()).toBeCloseTo(0.01956, 4);
     });
 
     it('returns the correct value at agility 9999 (max)', () => {
         // log10(0.0035 * 9999 + 20) - 1.29 + 0.00001 * 9999 ≈ 0.18115
         const player = makePlayer();
-        player.agility = 9999;
+        setPlayerState(player, 'agility', 9999);
         expect(player.getCriticalChance()).toBeCloseTo(0.55032, 4);
     });
 
     it('increases with agility', () => {
         const low = makePlayer();
         const high = makePlayer();
-        high.agility = 500;
+        setPlayerState(high, 'agility', 500);
         expect(high.getCriticalChance()).toBeGreaterThan(low.getCriticalChance());
     });
 });
@@ -388,29 +433,29 @@ describe('Player.weaponDropBonusFactor', () => {
     it('caps at 1.5 at level 420 (the formula reaches 1.5 exactly at t=1.0)', () => {
         // t = (420 - 1) / (420 - 1) = 1.0 → factor = min(1 + 0.5 * 1, 1.5) = 1.5
         const player = makePlayer();
-        player.level = 420;
+        setPlayerState(player, 'level', 420);
         expect(player.weaponDropBonusFactor).toBe(1.5);
     });
 
     it('is still below 1.5 at level 419 (one below the cap threshold)', () => {
         // t = 418/419 < 1 → factor < 1.5; confirms the cap is exactly at level 420
         const player = makePlayer();
-        player.level = 419;
+        setPlayerState(player, 'level', 419);
         expect(player.weaponDropBonusFactor).toBeCloseTo(1.4976, 3);
         expect(player.weaponDropBonusFactor).toBeLessThan(1.5);
     });
 
     it('caps at 1.5 at very high levels', () => {
         const player = makePlayer();
-        player.level = 9999;
+        setPlayerState(player, 'level', 9999);
         expect(player.weaponDropBonusFactor).toBe(1.5);
     });
 
     it('increases monotonically with level', () => {
         const p100 = makePlayer();
-        p100.level = 100;
+        setPlayerState(p100, 'level', 100);
         const p200 = makePlayer();
-        p200.level = 200;
+        setPlayerState(p200, 'level', 200);
         expect(p200.weaponDropBonusFactor).toBeGreaterThan(p100.weaponDropBonusFactor);
     });
 });
@@ -420,11 +465,11 @@ describe('Player.weaponDropBonusFactor', () => {
 describe('Core hit steal effects', () => {
     it('heals HP when a Phishing Core proc triggers on a successful enemy hit', () => {
         const player = makePlayer();
-        player.maxHp = 1000;
-        player.hp = 500;
+        setPlayerState(player, 'maxHp', 1000);
+        setPlayerState(player, 'hp', 500);
         const core = new CoreItem('phishing_core_alpha', 'Phishing Core', 100, 50, { agility: 1, hpStealAmount: 0.004, hpStealChance: 0.06 }, 1, CoreType.PHISHING);
         core.isEquipped = true;
-        player.inventory = [core];
+        replacePlayerInventoryForTest(player, [core]);
 
         const enemy = {
             isDead: false,
@@ -433,7 +478,7 @@ describe('Core hit steal effects', () => {
             isBlocking: false,
             hp: 100,
             takeDamage: vi.fn((amount: number) => {
-                enemy.hp = Math.max(0, enemy.hp - amount);
+                (enemy as any).hp = Math.max(0, enemy.hp - amount);
             })
         } as unknown as Enemy;
 
@@ -448,11 +493,11 @@ describe('Core hit steal effects', () => {
 
     it('restores TP when a Backdoor Core proc triggers on a successful enemy hit', () => {
         const player = makePlayer();
-        player.maxTp = 1000;
-        player.tp = 500;
+        setPlayerState(player, 'maxTp', 1000);
+        setPlayerState(player, 'tp', 500);
         const core = new CoreItem('backdoor_core_alpha', 'Backdoor Core', 100, 50, { defense: 1, tpStealAmount: 0.002, tpStealChance: 0.1 }, 1, CoreType.BACKDOOR);
         core.isEquipped = true;
-        player.inventory = [core];
+        replacePlayerInventoryForTest(player, [core]);
 
         const enemy = {
             isDead: false,
@@ -461,7 +506,7 @@ describe('Core hit steal effects', () => {
             isBlocking: false,
             hp: 100,
             takeDamage: vi.fn((amount: number) => {
-                enemy.hp = Math.max(0, enemy.hp - amount);
+                (enemy as any).hp = Math.max(0, enemy.hp - amount);
             })
         } as unknown as Enemy;
 
@@ -476,11 +521,11 @@ describe('Core hit steal effects', () => {
 
     it('does not trigger a steal when the enemy is blocking the hit', () => {
         const player = makePlayer();
-        player.maxHp = 1000;
-        player.hp = 500;
+        setPlayerState(player, 'maxHp', 1000);
+        setPlayerState(player, 'hp', 500);
         const core = new CoreItem('phishing_core_alpha', 'Phishing Core', 100, 50, { agility: 1 }, 1, CoreType.PHISHING);
         core.isEquipped = true;
-        player.inventory = [core];
+        replacePlayerInventoryForTest(player, [core]);
 
         const enemy = {
             isDead: false,
@@ -595,7 +640,7 @@ describe('Player dual-blade weapons', () => {
 describe('Player.heal', () => {
     let player: Player;
 
-    beforeEach(() => { player = makePlayer(); player.hp = 100; player.tp = 30; });
+    beforeEach(() => { player = makePlayer(); setPlayerState(player, 'hp', 100); setPlayerState(player, 'tp', 30); });
 
     it('restores HP up to maxHp', () => {
         player.heal(50);
@@ -618,8 +663,8 @@ describe('Player.heal', () => {
     });
 
     it('does nothing when already at full health', () => {
-        player.hp = player.maxHp;
-        player.tp = player.maxTp;
+        setPlayerState(player, 'hp', player.maxHp);
+        setPlayerState(player, 'tp', player.maxTp);
         player.heal(50, 10);
         expect(player.hp).toBe(player.maxHp);
         expect(player.tp).toBe(player.maxTp);
@@ -646,14 +691,14 @@ describe('Player.takeDamage', () => {
     });
 
     it('ensures minimum 1 damage even with very high defense', () => {
-        player.defense = 9999;
+        setPlayerState(player, 'defense', 9999);
         player.takeDamage(1);
         // reducedDamage = Math.max(1, ...) ensures at least 1
         expect(player.hp).toBe(1699);
     });
 
     it('reduces damage with higher defense', () => {
-        player.defense = 1000;
+        setPlayerState(player, 'defense', 1000);
         const before = player.hp;
         player.takeDamage(100);
         expect(player.hp).toBeGreaterThan(before - 100); // damage is reduced
@@ -667,8 +712,8 @@ describe('Player.takeDamage', () => {
     });
 
     it('does not apply damage when already dead', () => {
-        player.isDead = true;
-        player.hp = 170;
+        setPlayerState(player, 'isDead', true);
+        setPlayerState(player, 'hp', 170);
         player.takeDamage(50);
         expect(player.hp).toBe(170);
     });
@@ -695,13 +740,13 @@ describe('Player.takeDamage', () => {
     it('applies knockback to the player', () => {
         const audioManagerMock = mock<AudioManager>();
         const player = makePlayer({ audioManager: audioManagerMock });
-        player.body = {
+        Reflect.set(player, 'body', {
             applyImpulse: vi.fn(),
             position: {
                 x: 0, y: 0, z: 0, copy: vi.fn(),
                 vsub: (_v: any) => ({ x: -1, y: 0, z: 0, length: () => 1, normalize: vi.fn() })
             }
-        } as any;
+        } as any);
         const sourcePos = { x: 1, y: 0, z: 0 } as any;
         player.takeDamage(50, sourcePos);
 
@@ -751,7 +796,7 @@ describe('Player.die', () => {
 describe('Player.applyDeathPenalty', () => {
     it('deducts 10% of current bits', () => {
         const player = makePlayer();
-        player.bits = 1000;
+        setPlayerState(player, 'bits', 1000);
         player.applyDeathPenalty();
         expect(player.bits).toBe(900);
     });
@@ -759,17 +804,17 @@ describe('Player.applyDeathPenalty', () => {
     it('deducts 10% of expRequired from exp', () => {
         // expRequired=350, so penalty = floor(350 * 0.1) = 35
         const player = makePlayer();
-        player.exp = 200;
-        player.expRequired = 350;
+        setPlayerState(player, 'exp', 200);
+        setPlayerState(player, 'expRequired', 350);
         player.applyDeathPenalty();
         expect(player.exp).toBe(165);
     });
 
     it('returns the actual amounts deducted', () => {
         const player = makePlayer();
-        player.bits = 500;
-        player.expRequired = 400;
-        player.exp = 100;
+        setPlayerState(player, 'bits', 500);
+        setPlayerState(player, 'expRequired', 400);
+        setPlayerState(player, 'exp', 100);
         const { bitsLost, expLost } = player.applyDeathPenalty();
         expect(bitsLost).toBe(50);
         expect(expLost).toBe(40);
@@ -778,7 +823,7 @@ describe('Player.applyDeathPenalty', () => {
     it('returns zero bitsLost when bits is less than 10', () => {
         // floor(9 * 0.1) = floor(0.9) = 0, so no bits are deducted
         const player = makePlayer();
-        player.bits = 9;
+        setPlayerState(player, 'bits', 9);
         const { bitsLost } = player.applyDeathPenalty();
         expect(bitsLost).toBe(0);
         expect(player.bits).toBe(9);
@@ -845,7 +890,7 @@ describe('Player.gainExp', () => {
         { luckAmount: 9999, expGain: 1000, expected: 1134 },
         { luckAmount: 1, expGain: 100, expected: 100 }, // test of a smaller exp gain that does not get any additional exp due to rounding down
     ])('increases exp correctly (with luck bonus)', ({ luckAmount, expGain, expected }) => {
-        player.luck = luckAmount;
+        setPlayerState(player, 'luck', luckAmount);
         const result = player.gainExp(expGain);
         expect(result).toBe(expected);
         expect(player.exp).toBe(expected);
@@ -885,8 +930,8 @@ describe('Player.gainExp', () => {
     });
 
     it('restores HP to maxHp on level up', () => {
-        player.hp = 10;
-        player.tp = 5;
+        setPlayerState(player, 'hp', 10);
+        setPlayerState(player, 'tp', 5);
         player.gainExp(2798);
         expect(player.hp).toBe(player.maxHp);
         expect(player.tp).toBe(player.maxTp);
@@ -905,16 +950,16 @@ describe('Player skill unlock progression', () => {
         expect(player.isSkillUnlocked(1)).toBe(false);
         expect(player.isSkillUnlocked(2)).toBe(false);
 
-        player.level = 9;
+        setPlayerState(player, 'level', 9);
         expect(player.isSkillUnlocked(0)).toBe(true);
         expect(player.isSkillUnlocked(1)).toBe(false);
         expect(player.isSkillUnlocked(2)).toBe(false);
 
-        player.level = 10;
+        setPlayerState(player, 'level', 10);
         expect(player.isSkillUnlocked(1)).toBe(true);
         expect(player.isSkillUnlocked(2)).toBe(false);
 
-        player.level = 25;
+        setPlayerState(player, 'level', 25);
         expect(player.isSkillUnlocked(2)).toBe(true);
     });
 
@@ -938,7 +983,7 @@ describe('Player skill unlock progression', () => {
         inputManagerMock.isSkill2JustPressed.mockReturnValue(false);
         const player = makePlayer({ inputManager: inputManagerMock });
 
-        player.skills[1] = skill2 as any; // Skill at index 1 is locked until level 10
+        Reflect.get(player, '_skills')[1] = skill2 as any; // Skill at index 1 is locked until level 10
 
         // Trigger skill 1 execution
         player.update(0.1);
@@ -986,7 +1031,7 @@ describe('Player.upgradeWithXData', () => {
 
     beforeEach(() => {
         player = makePlayer();
-        player.xData = 100;
+        setPlayerState(player, 'xData', 100);
     });
 
     it('upgrades strength and deducts X-Data cost', () => {
@@ -1012,13 +1057,13 @@ describe('Player.upgradeWithXData', () => {
     });
 
     it('upgrades HP and immediately heals by the upgrade amount', () => {
-        player.hp = 150;
+        setPlayerState(player, 'hp', 150);
         player.upgradeWithXData(StatType.HP);
         expect(player.hp).toBe(200);
     });
 
     it('upgrades TP and immediately restores by the upgrade amount', () => {
-        player.tp = 30;
+        setPlayerState(player, 'tp', 30);
         player.upgradeWithXData(StatType.TP);
         expect(player.tp).toBe(80);
     });
@@ -1095,21 +1140,21 @@ describe('Player.calculateExpRequired (via expRequired)', () => {
 
     it('expRequired at level 3', () => {
         const player = makePlayer();
-        player.level = 2;
+        setPlayerState(player, 'level', 2);
         player.gainExp(player.expRequired); // enough to level up to 3
         expect((player as any).expRequired).toBe(3401);
     });
 
     it('expRequired at level 101', () => {
         const player = makePlayer();
-        player.level = 100;
+        setPlayerState(player, 'level', 100);
         player.gainExp(player.expRequired);
         expect((player as any).expRequired).toBe(34840);
     });
 
     it('expRequired at level 998', () => {
         const player = makePlayer();
-        player.level = 997;
+        setPlayerState(player, 'level', 997);
         player.gainExp(player.expRequired);
         expect((player as any).expRequired).toBe(501100);
     });
@@ -1123,7 +1168,7 @@ describe('Player.addStatPoint', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         player = makePlayer();
-        player.statPointsAvailable = 5;
+        setPlayerState(player, 'statPointsAvailable', 5);
     });
 
     it('adds a strength point and decrements statPointsAvailable', () => {
@@ -1135,13 +1180,13 @@ describe('Player.addStatPoint', () => {
     it('plays the upgrade sound when a stat point is spent', () => {
         const audioManagerMock = mock<AudioManager>();
         const player = makePlayer({ audioManager: audioManagerMock });
-        player.statPointsAvailable = 5;
+        setPlayerState(player, 'statPointsAvailable', 5);
         player.addStatPoint(StatType.STRENGTH);
         expect(audioManagerMock.playUpgrade).toHaveBeenCalledOnce();
     });
 
     it('returns false when no points available', () => {
-        player.statPointsAvailable = 0;
+        setPlayerState(player, 'statPointsAvailable', 0);
         expect(player.addStatPoint(StatType.STRENGTH)).toBe(false);
     });
 
@@ -1200,7 +1245,7 @@ describe('CoreItem canEquip', () => {
     });
 
     it('allows equipping level-2 core at required player level', () => {
-        const player = makePlayer(); player.level = 10;
+        const player = makePlayer(); setPlayerState(player, 'level', 10);
         const core = new CoreItem('c2', 'Core+', 200, 100, { strength: 10 }, 2, CoreType.HERALD);
         expect(core.canEquip(player)).toBe(true);
     });
@@ -1307,21 +1352,21 @@ describe('Player.startBlock', () => {
 describe('Player.takeDamage – blocking', () => {
     it('absorbs damage completely when blocking', () => {
         const player = makePlayer();
-        player.isBlocking = true;
+        setPlayerState(player, 'isBlocking', true);
         player.takeDamage(50);
         expect(player.hp).toBe(player.maxHp);
     });
 
     it('reduces knockback when blocking', () => {
         const player = makePlayer();
-        player.body = {
+        Reflect.set(player, 'body', {
             applyImpulse: vi.fn(),
             position: {
                 x: 0, y: 0, z: 0, copy: vi.fn(),
                 vsub: (_v: any) => ({ x: -1, y: 0, z: 0, length: () => 1, normalize: vi.fn() })
             }
-        } as any;
-        player.isBlocking = true;
+        } as any);
+        setPlayerState(player, 'isBlocking', true);
         const sourcePos = { x: 1, y: 0, z: 0 } as any;
         player.takeDamage(50, sourcePos);
 
@@ -1337,7 +1382,7 @@ describe('Player.takeDamage – blocking', () => {
 describe('Player.handleBlock', () => {
     it('keeps isBlocking while the timer has not yet expired', () => {
         const player = makePlayer();
-        player.isBlocking = true;
+        setPlayerState(player, 'isBlocking', true);
         (player as any).blockTimer = 0.1;
         (player as any).handleBlock(0.2); // 0.1 + 0.2 = 0.3 < 0.5
         expect(player.isBlocking).toBe(true);
@@ -1345,7 +1390,7 @@ describe('Player.handleBlock', () => {
 
     it('clears isBlocking when the block timer reaches BLOCK_DURATION', () => {
         const player = makePlayer();
-        player.isBlocking = true;
+        setPlayerState(player, 'isBlocking', true);
         (player as any).blockTimer = 0.4;
         (player as any).handleBlock(0.15); // 0.4 + 0.15 = 0.55 ≥ 0.5
         expect(player.isBlocking).toBe(false);
@@ -1358,7 +1403,7 @@ describe('Player.equipWeapon', () => {
     it('equips the weapon matching the given id from inventory', () => {
         const weapon = new WeaponItem('w1', 'Sword', 100, 50, WeaponType.SWORD, 10, 'model.glb', stableTier, 1);
         const player = makePlayer();
-        player.inventory.push(weapon);
+        player.addInventoryItem(weapon);
         player.equipWeapon('w1');
         expect(weapon.isEquipped).toBe(true);
     });
@@ -1375,8 +1420,8 @@ describe('Player.equipCore', () => {
     it('equips the core matching the given id from inventory', () => {
         const core = new CoreItem('core1', 'Herald Core', 200, 100, { strength: 3 }, 1, CoreType.HERALD);
         const player = makePlayer();
-        player.level = 1;
-        player.inventory.push(core);
+        setPlayerState(player, 'level', 1);
+        player.addInventoryItem(core);
         player.equipCore('core1');
         expect(core.isEquipped).toBe(true);
     });
@@ -1393,8 +1438,8 @@ describe('Player.equipChip', () => {
     it('equips the chip matching the given id from inventory', () => {
         const chip = new ChipItem('chip1', 'Firewire', 150, 75, ChipType.FIREWIRE, { weaponRangeMultiplier: 1.1 }, 1);
         const player = makePlayer();
-        player.inventory.push(chip);
-        player.level = 1;
+        player.addInventoryItem(chip);
+        setPlayerState(player, 'level', 1);
         player.equipChip('chip1');
         expect(chip.isEquipped).toBe(true);
     });
@@ -1417,7 +1462,7 @@ describe('Player.getWeaponRangeMultiplier', () => {
         const chip = new ChipItem('chip1', 'Firewire', 150, 75, ChipType.FIREWIRE, { weaponRangeMultiplier: 1.15 }, 1);
         chip.isEquipped = true;
         const player = makePlayer();
-        player.inventory.push(chip);
+        player.addInventoryItem(chip);
         expect(player.getWeaponRangeMultiplier()).toBe(1.15);
     });
 
@@ -1425,7 +1470,7 @@ describe('Player.getWeaponRangeMultiplier', () => {
         const chip = new ChipItem('chip1', 'Overclock', 150, 75, ChipType.OVERCLOCK, {}, 1);
         chip.isEquipped = true;
         const player = makePlayer();
-        player.inventory.push(chip);
+        player.addInventoryItem(chip);
         expect(player.getWeaponRangeMultiplier()).toBe(1.0);
     });
 });
@@ -1442,7 +1487,7 @@ describe('Player.getCriticalHitMultiplier', () => {
         const chip = new ChipItem('chip1', 'Razorwire', 150, 50, ChipType.RAZORWIRE, { criticalDamageMultiplier: 1.20 }, 1);
         chip.isEquipped = true;
         const player = makePlayer();
-        player.inventory.push(chip);
+        player.addInventoryItem(chip);
         // 1.5 * 1.20 = 1.80
         expect(player.getCriticalHitDamageMultiplier()).toBeCloseTo(1.80, 4);
     });
@@ -1451,7 +1496,7 @@ describe('Player.getCriticalHitMultiplier', () => {
         const chip = new ChipItem('chip1', 'Firewire', 150, 75, ChipType.FIREWIRE, { weaponRangeMultiplier: 1.15 }, 1);
         chip.isEquipped = true;
         const player = makePlayer();
-        player.inventory.push(chip);
+        player.addInventoryItem(chip);
         expect(player.getCriticalHitDamageMultiplier()).toBe(1.5);
     });
 });
@@ -1468,7 +1513,7 @@ describe('Player.getHealingMultiplier', () => {
         const chip = new ChipItem('chip1', 'Patchwork', 150, 50, ChipType.PATCHWORK, { healingMultiplier: 1.30 }, 1);
         chip.isEquipped = true;
         const player = makePlayer();
-        player.inventory.push(chip);
+        player.addInventoryItem(chip);
         expect(player.getHealingMultiplier()).toBe(1.30);
     });
 
@@ -1476,7 +1521,7 @@ describe('Player.getHealingMultiplier', () => {
         const chip = new ChipItem('chip1', 'Overclock', 150, 75, ChipType.OVERCLOCK, { walkSpeedMultiplier: 1.10 }, 1);
         chip.isEquipped = true;
         const player = makePlayer();
-        player.inventory.push(chip);
+        player.addInventoryItem(chip);
         expect(player.getHealingMultiplier()).toBe(1.0);
     });
 });
@@ -1486,30 +1531,30 @@ describe('Player.getHealingMultiplier', () => {
 describe('Player.heal with Patchwork chip', () => {
     it('applies healing multiplier to HP', () => {
         const player = makePlayer();
-        player.hp = 100;
+        setPlayerState(player, 'hp', 100);
         const chip = new ChipItem('chip1', 'Patchwork', 150, 50, ChipType.PATCHWORK, { healingMultiplier: 1.40 }, 1);
         chip.isEquipped = true;
-        player.inventory = [chip];
+        replacePlayerInventoryForTest(player, [chip]);
         player.heal(50); // 50 * 1.40 = 70
         expect(player.hp).toBe(170);
     });
 
     it('applies healing multiplier to TP', () => {
         const player = makePlayer();
-        player.tp = 20;
+        setPlayerState(player, 'tp', 20);
         const chip = new ChipItem('chip1', 'Patchwork', 150, 50, ChipType.PATCHWORK, { healingMultiplier: 1.20 }, 1);
         chip.isEquipped = true;
-        player.inventory = [chip];
+        replacePlayerInventoryForTest(player, [chip]);
         player.heal(0, 10); // 10 * 1.20 = 12
         expect(player.tp).toBe(32);
     });
 
     it('does not exceed maxHp when healing with multiplier', () => {
         const player = makePlayer();
-        player.hp = 1600;
+        setPlayerState(player, 'hp', 1600);
         const chip = new ChipItem('chip1', 'Patchwork', 150, 50, ChipType.PATCHWORK, { healingMultiplier: 1.40 }, 1);
         chip.isEquipped = true;
-        player.inventory = [chip];
+        replacePlayerInventoryForTest(player, [chip]);
         player.heal(80); // 80 * 1.40 = 112, but maxHp is 1700, so capped to 1700
         expect(player.hp).toBe(1700);
     });
@@ -1527,7 +1572,7 @@ describe('Player.getCriticalHitChanceBonus', () => {
         const chip = new ChipItem('chip1', 'Focus', 150, 50, ChipType.FOCUS, { critChanceMultiplier: 1.02 }, 1);
         chip.isEquipped = true;
         const player = makePlayer();
-        player.inventory.push(chip);
+        player.addInventoryItem(chip);
         expect(player.getCriticalHitChanceBonus()).toBeCloseTo(0.02, 4);
     });
 
@@ -1535,7 +1580,7 @@ describe('Player.getCriticalHitChanceBonus', () => {
         const chip = new ChipItem('chip1', 'Firewire', 150, 75, ChipType.FIREWIRE, { weaponRangeMultiplier: 1.15 }, 1);
         chip.isEquipped = true;
         const player = makePlayer();
-        player.inventory.push(chip);
+        player.addInventoryItem(chip);
         expect(player.getCriticalHitChanceBonus()).toBe(0.0);
     });
 });
@@ -1552,7 +1597,7 @@ describe('Player.getSkillDamageMultiplier', () => {
         const chip = new ChipItem('chip1', 'Amplifier', 150, 50, ChipType.AMPLIFIER, { skillDamageBonus: 1.2 }, 1);
         chip.isEquipped = true;
         const player = makePlayer();
-        player.inventory.push(chip);
+        player.addInventoryItem(chip);
         expect(player.getSkillDamageMultiplier()).toBeCloseTo(1.2, 4);
     });
 
@@ -1560,7 +1605,7 @@ describe('Player.getSkillDamageMultiplier', () => {
         const chip = new ChipItem('chip1', 'Firewire', 150, 75, ChipType.FIREWIRE, { weaponRangeMultiplier: 1.15 }, 1);
         chip.isEquipped = true;
         const player = makePlayer();
-        player.inventory.push(chip);
+        player.addInventoryItem(chip);
         expect(player.getSkillDamageMultiplier()).toBe(1.0);
     });
 });
@@ -1598,7 +1643,7 @@ describe('Player.getSkillTier', () => {
             const tierManagerMock = mockDeep<TierManager>();
             tierManagerMock.getSkillTierForTech.mockReturnValue(skillLevel);
             const player = makePlayer({ tierManager: tierManagerMock });
-            player.skillTech[skillType] = skillTechPoints;
+            Reflect.get(player, '_skillTech')[skillType] = skillTechPoints;
             expect(player.getSkillTier(skillType)).toBe(skillLevel);
             expect(tierManagerMock.getSkillTierForTech).toHaveBeenCalledWith(skillTechPoints);
         });
@@ -1787,7 +1832,7 @@ describe('Player.addStatPoint – defense / agility / luck', () => {
     let player: Player;
     beforeEach(() => {
         player = makePlayer();
-        player.statPointsAvailable = 5;
+        setPlayerState(player, 'statPointsAvailable', 5);
     });
 
     it('adds a defense point and decrements statPointsAvailable', () => {
@@ -1842,8 +1887,8 @@ describe('Player collection bonus getters', () => {
             const cardCollectionMock = mock<CardCollection>();
             cardCollectionMock.isAlbumComplete.mockReturnValue(false);
             player = makePlayer({ cardCollection: cardCollectionMock });
-            player.level = 1;
-            player.luck = 1;
+            setPlayerState(player, 'level', 1);
+            setPlayerState(player, 'luck', 1);
             expect(player.collectionBonusItemDropChance).toBe(0);
         });
 
@@ -2045,7 +2090,7 @@ describe('Player die() / respawn() skill-state cleanup', () => {
         const inputManagerMock = mockDeep<InputManager>();
         inputManagerMock.isSkill1JustPressed.mockReturnValue(true);
         const player = makePlayer({ inputManager: inputManagerMock });
-        player.hp = 1;
+        setPlayerState(player, 'hp', 1);
         return player;
     }
 
@@ -2062,7 +2107,7 @@ describe('Player die() / respawn() skill-state cleanup', () => {
 
     it('clears isUsingSkill and skillAnimationTimer when respawn() is called', () => {
         const player = makePlayerForDeath();
-        player.isDead = true;
+        setPlayerState(player, 'isDead', true);
 
         expect((player as any).isUsingSkill).toBe(true);
         const position = { x: 1, y: 0, z: 1 };
